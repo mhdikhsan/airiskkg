@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "airiskkg"
+version = "0.1.0"
+description = "Python project for AI risk knowledge graph research."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ipykernel",
+    "jupyter",
+    "pandas",
+    "python-dotenv",
+    "pyyaml",
+    "rdflib",
+    "requests",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[project.scripts]
+airiskkg = "airiskkg.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
