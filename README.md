@@ -1,33 +1,45 @@
 # AI Risk Knowledge Graph
 
-Python project for AI risk knowledge graph research.
+Research project combining Python analysis with semantic ontology development for AI risk knowledge graphs.
 
-## Structure
+## Repository Structure
 
-```text
-data/          Research data and generated outputs
-notebooks/     Exploratory and preprocessing notebooks
-src/airiskkg/  Reusable Python code
-tests/         Lightweight checks for reusable code
-configs/       Example configuration files
-scripts/       Small command-line helpers
+```
+airiskkg/
+├── python/              # Python application and analysis
+│   ├── pyproject.toml
+│   ├── src/
+│   ├── tests/
+│   ├── notebooks/
+│   ├── scripts/
+│   ├── configs/
+│   └── README.md
+├── ontology/            # Semantic ontology and data
+│   ├── data/
+│   │   ├── raw/
+│   │   ├── processed/
+│   │   └── taxonomy/
+│   └── README.md
+└── README.md (this file)
 ```
 
-## Setup
+## Quick Start
+
+### Python Development
 
 ```powershell
+cd python
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-python -m ipykernel install --user --name airiskkg
 ```
 
-## Usage
+### Usage
 
 ```powershell
 airiskkg info
 python -m pytest
 ```
 
-Keep exploratory work in `notebooks/`. Move reusable functions into
-`src/airiskkg/` once they are stable enough to share across notebooks.
+See [python/README.md](python/README.md) for detailed Python setup and usage.
+
