@@ -1,0 +1,97 @@
+PREFIX pat:     <http://w3id.org/airiskkg/patterns#>
+PREFIX rp:      <http://w3id.org/beam/risk-pattern#>
+PREFIX beam:    <http://w3id.org/beam/core#>
+PREFIX atlas:   <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#>
+PREFIX mit:     <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#>
+PREFIX mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#>
+PREFIX owasp:   <http://w3id.org/airiskkg/taxonomy/owasp-llm#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:     <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a rp:RiskFinding ;
+        rdfs:label "Candidate sensitive data retrieval exposure"@en ;
+        dct:description "A vector store containing sensitive information is used by a retrieval step, and retrieved content can flow toward user-facing output."@en ;
+        rp:generatedFromMatch ?match ;
+        rp:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
+        rp:hasInterpretedMechanism pat:SensitiveDataRetrievalExposure ;
+        rp:hasEvidenceElement ?query ,
+            ?retrievalStep ,
+            ?vectorStore ,
+            ?retrievedResult ,
+            ?userFacingOutput ;
+        rp:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        rp:hasSuggestedControl ?suggestedControl ;
+        rp:findingStatus "candidate" .
+}
+WHERE {
+    ?match
+        a rp:MotifMatch ;
+        rp:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
+        rp:hasNodeBinding ?queryBinding ,
+            ?retrievalBinding ,
+            ?vectorStoreBinding ,
+            ?resultBinding .
+
+    ?queryBinding
+        rp:bindsPatternNode pat:VectorIR_QueryNode ;
+        rp:matchedElement ?query .
+
+    ?retrievalBinding
+        rp:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+        rp:matchedElement ?retrievalStep .
+
+    ?vectorStoreBinding
+        rp:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+        rp:matchedElement ?vectorStore .
+
+    ?resultBinding
+        rp:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+        rp:matchedElement ?retrievedResult .
+
+    ?vectorStore rp:containsDataCategory/rp:subDataCategoryOf* rp:SensitiveInformation .
+
+    {
+        ?retrievedResult rp:playsRole/rp:subRoleOf* rp:UserFacingOutput .
+        BIND(?retrievedResult AS ?userFacingOutput)
+    }
+    UNION
+    {
+        ?generationStep
+            beam:use ?retrievedResult ;
+            beam:produce ?userFacingOutput ;
+            rp:playsRole/rp:subRoleOf* rp:GenerationStep .
+        ?userFacingOutput rp:playsRole/rp:subRoleOf* rp:UserFacingOutput .
+    }
+    UNION
+    {
+        ?intermediateStep
+            beam:use ?retrievedResult ;
+            beam:produce ?enhancedContext .
+        ?generationStep
+            beam:use ?enhancedContext ;
+            beam:produce ?userFacingOutput ;
+            rp:playsRole/rp:subRoleOf* rp:GenerationStep .
+        ?userFacingOutput rp:playsRole/rp:subRoleOf* rp:UserFacingOutput .
+    }
+
+    VALUES ?riskTaxonomyEntry {
+        atlas:exposing-personal-information
+        owasp:llm02-sensitive-information-disclosure
+        mit:subdomain-2-1
+    }
+
+    VALUES ?suggestedControl {
+        mitctrl:privacy-control-for-user-data
+        mitctrl:retrieval-source-filtering
+        mitctrl:input-output-filtering
+        mitctrl:data-governance
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/sensitive-data-retrieval-exposure"
+    )) AS ?riskFinding)
+}
