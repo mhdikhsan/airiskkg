@@ -1,0 +1,182 @@
+@prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix beamr: <http://w3id.org/beam/risk#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology declaration
+#################################################################
+
+<http://w3id.org/airiskkg/taxonomy/nexus#> a owl:Ontology ;
+    rdfs:label "AI Risk KG Taxonomy Core" ;
+    dct:title "AI Risk KG Taxonomy Core" ;
+    dct:description """
+    A lightweight RDF adaptation of the AI Atlas Nexus taxonomy structure.
+    This vocabulary is used to represent external AI risk taxonomies,
+    risk groups, risk taxonomy entries, risk control taxonomies, and
+    control groups in a way that can be linked to BEAM risk findings
+    and graph risk patterns.
+    """ ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/tree/main/src/ai_atlas_nexus/data/knowledge_graph> .
+
+#################################################################
+# Taxonomy classes
+#################################################################
+
+nexus:Taxonomy a owl:Class ;
+    rdfs:subClassOf skos:ConceptScheme ;
+    rdfs:label "Taxonomy" ;
+    rdfs:comment "A structured concept scheme, such as IBM AI Risk Atlas, MIT AI Risk Repository, OWASP LLM Top 10, or MIT AI Risk Mitigation Taxonomy." .
+
+nexus:RiskTaxonomy a owl:Class ;
+    rdfs:subClassOf nexus:Taxonomy ;
+    rdfs:label "Risk Taxonomy" ;
+    rdfs:comment "A taxonomy that organizes AI risks or AI-related vulnerabilities." .
+
+nexus:RiskControlTaxonomy a owl:Class ;
+    rdfs:subClassOf nexus:Taxonomy ;
+    rdfs:label "Risk Control Taxonomy" ;
+    rdfs:comment "A taxonomy that organizes AI risk controls, mitigations, actions, or control groups." .
+
+#################################################################
+# Risk taxonomy classes
+#################################################################
+
+nexus:RiskGroup a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Risk Group" ;
+    rdfs:comment "A grouping concept within a risk taxonomy, such as Privacy, Fairness, Robustness, or Misinformation." .
+
+nexus:RiskTaxonomyEntry a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Risk Taxonomy Entry" ;
+    rdfs:comment """
+    A risk concept defined by an external taxonomy. This is not a concrete
+    system-specific risk finding. Concrete findings should be represented as
+    beamr:Risk or rp:RiskFinding.
+    """ .
+
+nexus:Risk a owl:Class ;
+    rdfs:subClassOf nexus:RiskTaxonomyEntry ;
+    rdfs:label "Risk" ;
+    rdfs:comment "A taxonomy-level AI risk entry adapted from AI Atlas Nexus." .
+
+#################################################################
+# Risk control taxonomy classes
+#################################################################
+
+nexus:RiskControlGroup a owl:Class ;
+    rdfs:subClassOf skos:Concept, beamr:RiskControl ;
+    rdfs:label "Risk Control Group" ;
+    rdfs:comment """
+    A grouping concept within a risk control taxonomy, such as Data Governance,
+    Model Safety Engineering, Testing & Auditing, or Human Oversight.
+    """ .
+
+nexus:RiskControl a owl:Class ;
+    rdfs:subClassOf skos:Concept, beamr:RiskControl ;
+    rdfs:label "Risk Control" ;
+    rdfs:comment """
+    A taxonomy-level control or mitigation entry. This may be linked to concrete
+    BEAM risk controls or used as a possible/required control for a graph risk pattern.
+    """ .
+
+#################################################################
+# Object properties
+#################################################################
+
+nexus:isDefinedByTaxonomy a owl:ObjectProperty ;
+    rdfs:label "is defined by taxonomy" ;
+    rdfs:domain skos:Concept ;
+    rdfs:range nexus:Taxonomy ;
+    rdfs:comment "Links a risk, risk group, control, or control group to the taxonomy that defines it." .
+
+nexus:isPartOf a owl:ObjectProperty ;
+    rdfs:label "is part of" ;
+    rdfs:domain skos:Concept ;
+    rdfs:range skos:Concept ;
+    rdfs:comment "Links a taxonomy entry to the group it belongs to." .
+
+nexus:mitigatesRiskTaxonomyEntry a owl:ObjectProperty ;
+    rdfs:label "mitigates risk taxonomy entry" ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range nexus:RiskTaxonomyEntry ;
+    rdfs:comment """
+    Links a risk control or control group to a risk taxonomy entry that it may mitigate.
+    This relation is used for general control-to-risk grounding, not as proof that
+    a specific system has implemented the control.
+    """ .
+
+nexus:hasRelatedRisk a owl:ObjectProperty ;
+    rdfs:label "has related risk" ;
+    rdfs:domain skos:Concept ;
+    rdfs:range nexus:RiskTaxonomyEntry ;
+    rdfs:comment "Links a control, action, or concept to a related risk taxonomy entry." .
+
+nexus:hasRelatedControl a owl:ObjectProperty ;
+    rdfs:label "has related control" ;
+    rdfs:domain nexus:RiskTaxonomyEntry ;
+    rdfs:range beamr:RiskControl ;
+    rdfs:comment "Links a risk taxonomy entry to a related control or mitigation concept." .
+
+#################################################################
+# Datatype properties
+#################################################################
+
+nexus:tag a owl:DatatypeProperty ;
+    rdfs:label "tag" ;
+    rdfs:domain skos:Concept ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A compact machine-readable tag for a taxonomy entry." .
+
+nexus:riskType a owl:DatatypeProperty ;
+    rdfs:label "risk type" ;
+    rdfs:domain nexus:RiskTaxonomyEntry ;
+    rdfs:range xsd:string ;
+    rdfs:comment """
+    Indicates where the risk mainly arises, for example input, training-data,
+    inference, output, agentic, or non-technical.
+    """ .
+
+nexus:phase a owl:DatatypeProperty ;
+    rdfs:label "phase" ;
+    rdfs:domain nexus:RiskTaxonomyEntry ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Lifecycle or development phase associated with a risk entry, if provided by the source taxonomy." .
+
+nexus:descriptor a owl:DatatypeProperty ;
+    rdfs:label "descriptor" ;
+    rdfs:domain nexus:RiskTaxonomyEntry ;
+    rdfs:range xsd:string ;
+    rdfs:comment """
+    Descriptor used by a source taxonomy, for example traditional AI risk,
+    specific to generative AI, amplified by generative AI, or specific to agentic AI.
+    """ .
+
+nexus:concern a owl:DatatypeProperty ;
+    rdfs:label "concern" ;
+    rdfs:domain nexus:RiskTaxonomyEntry ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Short explanation of the concern represented by the risk entry." .
+
+nexus:controlType a owl:DatatypeProperty ;
+    rdfs:label "control type" ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range xsd:string ;
+    rdfs:comment """
+    Indicates whether the control is preventive, detective, corrective, governance,
+    technical, operational, or transparency-oriented.
+    """ .
+
+nexus:lifecyclePhase a owl:DatatypeProperty ;
+    rdfs:label "lifecycle phase" ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range xsd:string ;
+    rdfs:comment """
+    Lifecycle phase where the control is mainly relevant, such as design-time,
+    development, deployment, operation, monitoring, or post-deployment.
+    """ .

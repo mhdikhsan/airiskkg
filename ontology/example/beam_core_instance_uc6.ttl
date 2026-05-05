@@ -1,0 +1,337 @@
+@prefix uc6:   <http://w3id.org/airiskkg/example/uc6-onlim#> .
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix rp:    <http://w3id.org/beam/risk-pattern#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix vann:  <http://purl.org/vocab/vann/> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+
+#################################################################
+# Ontology declaration
+#################################################################
+
+<http://w3id.org/airiskkg/example/uc6-onlim#> a owl:Ontology ;
+    dct:title "UC6 Onlim RAG-based Chatbot Architecture"@en ;
+    dct:description """
+    Architecture-only BEAM instance for UC6: a simplified RAG-based chatbot
+    for product-related questions. The system embeds a user question, retrieves
+    product information from a vector database, optionally applies Llatrieval
+    scoring and query reformulation, and generates a user-facing answer with
+    an LLM.
+
+    This file intentionally contains no risk findings, consequences, impacts,
+    or controls. Those are represented in a separate assessed-risk file.
+    """@en ;
+    vann:preferredNamespacePrefix "uc6" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/example/uc6-onlim#" ;
+    owl:imports <http://w3id.org/beam/core#> ,
+                <http://w3id.org/beam/risk-pattern#> .
+
+#################################################################
+# System
+#################################################################
+
+uc6:UC6_System
+    a beam:System ;
+    rdfs:label "Simple RAG-based Chatbot"@en ;
+    beam:description """
+    The workflow describes a simplified chatbot system based on a
+    retrieval-augmented generation approach. A natural language question
+    about a product is embedded, used for vector-based product information
+    retrieval, optionally enhanced through Llatrieval scoring and query
+    reformulation, and then passed to an LLM for answer generation.
+    """@en ;
+    beam:context """
+    The system is used in a demonstration environment, not as a real-world
+    deployed system. It is intended to showcase a RAG-based chatbot for
+    potential users. The product information vector database is assumed to
+    be pre-populated with product-related information.
+    """@en ;
+    beam:hasResource
+        uc6:QuestionsAboutProduct ,
+        uc6:EmbeddedQuestion ,
+        uc6:ProductInformationVectorDB ,
+        uc6:QueryTemplate ,
+        uc6:EmbeddedProductInfo ,
+        uc6:ScoringAndQueryReformulationPrompt ,
+        uc6:ReformulatedQuery ,
+        uc6:EmbeddedProductInfoEnhanced ,
+        uc6:SystemPromptTemplate ,
+        uc6:LLM ,
+        uc6:EventSummary ;
+    beam:hasProcess
+        uc6:Embedding ,
+        uc6:ProductInformationRetrieval ,
+        uc6:LlatrievalScoringAndQueryReformulation ,
+        uc6:LLMPrompting .
+
+#################################################################
+# Local data category extension for UC6
+#################################################################
+
+uc6:PrivateProductInformation
+    a rp:DataCategory ;
+    rdfs:label "Private Product Information"@en ;
+    rdfs:comment """
+    Product-related information that may contain private, confidential,
+    or sensitive content. This local data category is introduced to make
+    the architecture graph suitable for information-leakage pattern matching.
+    """@en ;
+    rp:subDataCategoryOf rp:ProductInformation ;
+    rp:subDataCategoryOf rp:SensitiveInformation .
+
+#################################################################
+# Input data
+#################################################################
+
+uc6:QuestionsAboutProduct
+    a beam:Data ;
+    rdfs:label "Questions about product"@en ;
+    dct:description """
+    Natural language questions submitted by users about products.
+    """@en ;
+    rp:playsRole rp:UserInput ;
+    rp:containsDataCategory rp:ProductInformation ;
+    beam:usedBy uc6:Embedding .
+
+uc6:EmbeddedQuestion
+    a beam:Data ;
+    rdfs:label "Embedded Question"@en ;
+    dct:description """
+    Vector representation of the user's natural language product question.
+    """@en ;
+    rp:containsDataCategory rp:ProductInformation ;
+    beam:usedBy uc6:ProductInformationRetrieval .
+
+#################################################################
+# Retrieval resources
+#################################################################
+
+uc6:ProductInformationVectorDB
+    a beam:Data ;
+    rdfs:label "Product Information Vector DB"@en ;
+    dct:description """
+    Vector database containing product information used as the knowledge
+    source for retrieval.
+    """@en ;
+    rp:playsRole rp:KnowledgeSource ;
+    rp:playsRole rp:VectorStore ;
+    rp:containsDataCategory rp:ProductInformation ;
+    rp:containsDataCategory uc6:PrivateProductInformation ;
+    beam:usedBy uc6:ProductInformationRetrieval .
+
+uc6:QueryTemplate
+    a beam:Data ;
+    rdfs:label "Query Template"@en ;
+    dct:description """
+    Query template used to structure the product information retrieval query.
+    """@en ;
+    rp:playsRole rp:PromptTemplate ;
+    beam:usedBy uc6:ProductInformationRetrieval .
+
+uc6:EmbeddedProductInfo
+    a beam:Data ;
+    rdfs:label "Embedded Product Info"@en ;
+    dct:description """
+    Product information retrieved from the vector database based on similarity
+    in embedding space.
+    """@en ;
+    rp:playsRole rp:RetrievedContext ;
+    rp:playsRole rp:RetrievedResult ;
+    rp:containsDataCategory rp:ProductInformation ;
+    rp:containsDataCategory uc6:PrivateProductInformation ;
+    rp:containsDataCategory rp:UntrustedContent ;
+    beam:usedBy uc6:LlatrievalScoringAndQueryReformulation .
+
+#################################################################
+# Llatrieval resources
+#################################################################
+
+uc6:ScoringAndQueryReformulationPrompt
+    a beam:Data ;
+    rdfs:label "Scoring and Query Reformulation Prompt"@en ;
+    dct:description """
+    Prompt used by the Llatrieval module to score retrieved product
+    information and reformulate the query when necessary.
+    """@en ;
+    rp:playsRole rp:PromptTemplate ;
+    rp:containsDataCategory rp:PromptInstruction ;
+    beam:usedBy uc6:LlatrievalScoringAndQueryReformulation .
+
+uc6:ReformulatedQuery
+    a beam:Data ;
+    rdfs:label "Reformulated Query"@en ;
+    dct:description """
+    Query reformulated by the Llatrieval module and sent back to the product
+    information retrieval step.
+    """@en ;
+    rp:playsRole rp:UserInput ;
+    rp:containsDataCategory rp:ProductInformation ;
+    beam:usedBy uc6:ProductInformationRetrieval .
+
+uc6:EmbeddedProductInfoEnhanced
+    a beam:Data ;
+    rdfs:label "Embedded Product Info Enhanced"@en ;
+    dct:description """
+    Enhanced retrieved product information after Llatrieval scoring and query
+    reformulation.
+    """@en ;
+    rp:playsRole rp:RetrievedContext ;
+    rp:playsRole rp:RetrievedResult ;
+    rp:containsDataCategory rp:ProductInformation ;
+    rp:containsDataCategory uc6:PrivateProductInformation ;
+    rp:containsDataCategory rp:UntrustedContent ;
+    beam:usedBy uc6:LLMPrompting .
+
+#################################################################
+# Model and generation resources
+#################################################################
+
+uc6:LLM
+    a beam:StatisticalModel ;
+    rdfs:label "LLM"@en ;
+    dct:description """
+    Large language model used by the Llatrieval module and by the final
+    LLM prompting/generation step.
+    """@en ;
+    rp:playsRole rp:GenerativeModel ;
+    beam:usedBy uc6:LlatrievalScoringAndQueryReformulation ;
+    beam:usedBy uc6:LLMPrompting .
+
+uc6:SystemPromptTemplate
+    a beam:Data ;
+    rdfs:label "System Prompt Template"@en ;
+    dct:description """
+    System prompt template used during LLM-based generation.
+    """@en ;
+    rp:playsRole rp:SystemPrompt ;
+    rp:playsRole rp:PromptTemplate ;
+    rp:containsDataCategory rp:PromptInstruction ;
+    beam:usedBy uc6:LLMPrompting .
+
+uc6:EventSummary
+    a beam:Data ;
+    rdfs:label "Event Summary"@en ;
+    dct:description """
+    User-facing output generated by the chatbot. In the updated UC6 diagram,
+    this represents the final generated answer or summary returned to the user.
+    """@en ;
+    rp:playsRole rp:UserFacingOutput ;
+    rp:containsDataCategory rp:ProductInformation .
+
+#################################################################
+# Processes
+#################################################################
+
+uc6:Embedding
+    a beam:Transform ;
+    rdfs:label "Embedding"@en ;
+    dct:description """
+    Transforms the natural language product question into an embedded question.
+    """@en ;
+    rp:playsRole rp:EmbeddingStep ;
+    beam:use uc6:QuestionsAboutProduct ;
+    beam:produce uc6:EmbeddedQuestion .
+
+uc6:ProductInformationRetrieval
+    a beam:Infer ;
+    rdfs:label "Product Information Retrieval"@en ;
+    dct:description """
+    Performs vector-based product information retrieval using the embedded
+    question, the product information vector database, and a query template.
+    It may also use a reformulated query produced by the Llatrieval module.
+    """@en ;
+    rp:playsRole rp:RetrievalStep ;
+    beam:use uc6:EmbeddedQuestion ;
+    beam:use uc6:ProductInformationVectorDB ;
+    beam:use uc6:QueryTemplate ;
+    beam:use uc6:ReformulatedQuery ;
+    beam:produce uc6:EmbeddedProductInfo .
+
+uc6:LlatrievalScoringAndQueryReformulation
+    a beam:Transform ;
+    rdfs:label "Llatrieval: Scoring and Query Reformulation"@en ;
+    dct:description """
+    Scores retrieved product information and reformulates the query when
+    the retrieved information is insufficient or needs improvement.
+    """@en ;
+    rp:playsRole rp:RerankingStep ;
+    rp:playsRole rp:QueryReformulationStep ;
+    beam:use uc6:EmbeddedProductInfo ;
+    beam:use uc6:ScoringAndQueryReformulationPrompt ;
+    beam:use uc6:LLM ;
+    beam:produce uc6:ReformulatedQuery ;
+    beam:produce uc6:EmbeddedProductInfoEnhanced .
+
+uc6:LLMPrompting
+    a beam:Transform ;
+    rdfs:label "LLM Prompting / Generation"@en ;
+    dct:description """
+    Constructs the final prompt using the enhanced retrieved product
+    information and the system prompt template, then uses the LLM to generate
+    a user-facing answer.
+    """@en ;
+    rp:playsRole rp:PromptConstructionStep ;
+    rp:playsRole rp:GenerationStep ;
+    beam:use uc6:EmbeddedProductInfoEnhanced ;
+    beam:use uc6:SystemPromptTemplate ;
+    beam:use uc6:LLM ;
+    beam:produce uc6:EventSummary .
+
+#################################################################
+# Process flow
+#################################################################
+
+uc6:Embedding
+    beam:inform uc6:ProductInformationRetrieval .
+
+uc6:ProductInformationRetrieval
+    beam:inform uc6:LlatrievalScoringAndQueryReformulation .
+
+uc6:LlatrievalScoringAndQueryReformulation
+    beam:inform uc6:ProductInformationRetrieval ;
+    beam:inform uc6:LLMPrompting .
+
+#################################################################
+# Task annotations
+#################################################################
+
+uc6:VectorDBPopulation
+    a beam:Task ;
+    rdfs:label "Vector DB population"@en ;
+    dct:description """
+    Task of populating the vector database with product information.
+    """@en .
+
+uc6:VectorBasedInformationRetrievalImplementation
+    a beam:Task ;
+    rdfs:label "Vector-based information retrieval implementation"@en ;
+    dct:description """
+    Task of implementing vector-based retrieval over product information.
+    """@en .
+
+uc6:LlatrievalImplementation
+    a beam:Task ;
+    rdfs:label "Llatrieval implementation"@en ;
+    dct:description """
+    Task of implementing retrieval scoring and query reformulation.
+    """@en .
+
+uc6:LLMGenerationImplementation
+    a beam:Task ;
+    rdfs:label "LLM generation implementation"@en ;
+    dct:description """
+    Task of implementing LLM-based answer generation.
+    """@en .
+
+uc6:ProductInformationVectorDB
+    beam:perform uc6:VectorDBPopulation .
+
+uc6:ProductInformationRetrieval
+    beam:perform uc6:VectorBasedInformationRetrievalImplementation .
+
+uc6:LlatrievalScoringAndQueryReformulation
+    beam:perform uc6:LlatrievalImplementation .
+
+uc6:LLMPrompting
+    beam:perform uc6:LLMGenerationImplementation .

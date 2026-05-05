@@ -1,0 +1,187 @@
+@prefix pat:   <http://w3id.org/airiskkg/patterns#> .
+@prefix rp:    <http://w3id.org/beam/risk-pattern#> .
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+<http://w3id.org/airiskkg/patterns/motif-library#>
+    a owl:Ontology ;
+    dct:title "AI Risk Pattern Motif Library"@en ;
+    dct:description """
+    A library of reusable architectural graph motifs for design-time AI risk
+    assessment. The motifs are architecture-driven: they describe reusable
+    component-flow structures that may later be interpreted as risk-relevant
+    configurations.
+    """@en ;
+    owl:imports <http://w3id.org/beam/core#> ,
+                <http://w3id.org/beam/risk-pattern#> .
+
+#################################################################
+# Additional architectural roles
+# Move these to risk_pattern_core.ttl later if you want them in core.
+#################################################################
+
+rp:VectorBasedRetrievalStep
+    a rp:PatternRole ;
+    rdfs:label "Vector-based Retrieval Step"@en ;
+    rp:subRoleOf rp:RetrievalStep ;
+    rdfs:comment """
+    A retrieval step that retrieves information using vector representations,
+    embeddings, or similarity search over a vector store.
+    """@en .
+
+rp:LLMBasedInformationRetrievalStep
+    a rp:PatternRole ;
+    rdfs:label "LLM-based Information Retrieval Step"@en ;
+    rp:subRoleOf rp:RetrievalStep ;
+    rdfs:comment """
+    A retrieval or answer-production step in which an LLM is directly used
+    to generate or retrieve an answer without an explicit vector store or
+    external knowledge source in the matched motif.
+    """@en .
+
+#################################################################
+# Motif 1: Vector-based Information Retrieval
+#################################################################
+
+pat:VectorBasedInformationRetrievalMotif
+    a rp:GraphMotif ;
+    rdfs:label "Vector-based Information Retrieval Motif"@en ;
+    dct:description """
+    Architectural motif in which a retrieval process uses a vector store or
+    knowledge source and produces a retrieved result or retrieved context.
+    This motif is risk-neutral by itself. Risk findings are generated only
+    after additional risk interpretation conditions are checked.
+    """@en ;
+    rp:hasPatternNode
+        pat:VectorIR_QueryNode ,
+        pat:VectorIR_VectorStoreNode ,
+        pat:VectorIR_RetrievalStepNode ,
+        pat:VectorIR_RetrievedResultNode ;
+    rp:hasPatternEdge
+        pat:VectorIR_RetrievalUsesQueryEdge ,
+        pat:VectorIR_RetrievalUsesVectorStoreEdge ,
+        pat:VectorIR_RetrievalProducesResultEdge .
+
+pat:VectorIR_QueryNode
+    a rp:PatternNode ;
+    rdfs:label "Query node"@en ;
+    rp:variableName "query" ;
+    rp:expectedClass beam:Data ;
+    rp:expectedRole rp:UserInput .
+
+pat:VectorIR_VectorStoreNode
+    a rp:PatternNode ;
+    rdfs:label "Vector store node"@en ;
+    rp:variableName "vectorStore" ;
+    rp:expectedClass beam:Data ;
+    rp:expectedRole rp:VectorStore .
+
+pat:VectorIR_RetrievalStepNode
+    a rp:PatternNode ;
+    rdfs:label "Vector-based retrieval step node"@en ;
+    rp:variableName "retrievalStep" ;
+    rp:expectedClass beam:Process ;
+    rp:expectedRole rp:RetrievalStep .
+
+pat:VectorIR_RetrievedResultNode
+    a rp:PatternNode ;
+    rdfs:label "Retrieved result node"@en ;
+    rp:variableName "retrievedResult" ;
+    rp:expectedClass beam:Data ;
+    rp:expectedRole rp:RetrievedContext .
+
+pat:VectorIR_RetrievalUsesQueryEdge
+    a rp:PatternEdge ;
+    rdfs:label "retrieval uses query"@en ;
+    rp:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    rp:patternPredicate beam:use ;
+    rp:targetPatternNode pat:VectorIR_QueryNode .
+
+pat:VectorIR_RetrievalUsesVectorStoreEdge
+    a rp:PatternEdge ;
+    rdfs:label "retrieval uses vector store"@en ;
+    rp:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    rp:patternPredicate beam:use ;
+    rp:targetPatternNode pat:VectorIR_VectorStoreNode .
+
+pat:VectorIR_RetrievalProducesResultEdge
+    a rp:PatternEdge ;
+    rdfs:label "retrieval produces retrieved result"@en ;
+    rp:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    rp:patternPredicate beam:produce ;
+    rp:targetPatternNode pat:VectorIR_RetrievedResultNode .
+
+#################################################################
+# Motif 2: LLM-based Information Retrieval
+#################################################################
+
+pat:LLMBasedInformationRetrievalMotif
+    a rp:GraphMotif ;
+    rdfs:label "LLM-based Information Retrieval Motif"@en ;
+    dct:description """
+    Architectural motif in which a user query is handled by an LLM-based
+    retrieval or answer-production process and produces a user-facing answer.
+    This differs from vector-based retrieval because the answer depends mainly
+    on the LLM process rather than on an explicit vector store in the motif.
+    """@en ;
+    rp:hasPatternNode
+        pat:LLMIR_QueryNode ,
+        pat:LLMIR_ModelNode ,
+        pat:LLMIR_RetrievalStepNode ,
+        pat:LLMIR_AnswerNode ;
+    rp:hasPatternEdge
+        pat:LLMIR_RetrievalUsesQueryEdge ,
+        pat:LLMIR_RetrievalUsesModelEdge ,
+        pat:LLMIR_RetrievalProducesAnswerEdge .
+
+pat:LLMIR_QueryNode
+    a rp:PatternNode ;
+    rdfs:label "Query node"@en ;
+    rp:variableName "query" ;
+    rp:expectedClass beam:Data ;
+    rp:expectedRole rp:UserInput .
+
+pat:LLMIR_ModelNode
+    a rp:PatternNode ;
+    rdfs:label "LLM node"@en ;
+    rp:variableName "llm" ;
+    rp:expectedClass beam:StatisticalModel ;
+    rp:expectedRole rp:GenerativeModel .
+
+pat:LLMIR_RetrievalStepNode
+    a rp:PatternNode ;
+    rdfs:label "LLM-based information retrieval step node"@en ;
+    rp:variableName "llmRetrievalStep" ;
+    rp:expectedClass beam:Process ;
+    rp:expectedRole rp:LLMBasedInformationRetrievalStep .
+
+pat:LLMIR_AnswerNode
+    a rp:PatternNode ;
+    rdfs:label "Answer node"@en ;
+    rp:variableName "answer" ;
+    rp:expectedClass beam:Data ;
+    rp:expectedRole rp:UserFacingOutput .
+
+pat:LLMIR_RetrievalUsesQueryEdge
+    a rp:PatternEdge ;
+    rdfs:label "LLM-based retrieval uses query"@en ;
+    rp:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
+    rp:patternPredicate beam:use ;
+    rp:targetPatternNode pat:LLMIR_QueryNode .
+
+pat:LLMIR_RetrievalUsesModelEdge
+    a rp:PatternEdge ;
+    rdfs:label "LLM-based retrieval uses generative model"@en ;
+    rp:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
+    rp:patternPredicate beam:use ;
+    rp:targetPatternNode pat:LLMIR_ModelNode .
+
+pat:LLMIR_RetrievalProducesAnswerEdge
+    a rp:PatternEdge ;
+    rdfs:label "LLM-based retrieval produces answer"@en ;
+    rp:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
+    rp:patternPredicate beam:produce ;
+    rp:targetPatternNode pat:LLMIR_AnswerNode .

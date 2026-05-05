@@ -1,0 +1,685 @@
+@prefix rp:     <http://w3id.org/beam/risk-pattern#> .
+@prefix beam:   <http://w3id.org/beam/core#> .
+@prefix beamr:  <http://w3id.org/beam/risk#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix vann:   <http://purl.org/vocab/vann/> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology declaration
+#################################################################
+
+<http://w3id.org/beam/risk-pattern#> a owl:Ontology ;
+    dct:title "BEAM Risk Pattern Core Ontology"@en ;
+    dct:description """
+    A lightweight ontology for representing reusable graph motifs for
+    design-time AI risk assessment.
+
+    In this model, a risk pattern is not a fixed checklist or template.
+    A risk pattern is represented as a graph motif over architectural
+    elements, roles, data categories, and relations. When the motif is
+    matched against an AI system architecture graph, the matched subgraph
+    can be interpreted as a risk mechanism and used to construct candidate
+    risk findings.
+
+    The executable SPARQL query is treated as an implementation of a graph
+    motif, not as the pattern itself.
+    """@en ;
+    vann:preferredNamespacePrefix "rp" ;
+    vann:preferredNamespaceUri "http://w3id.org/beam/risk-pattern#" ;
+    owl:imports <http://w3id.org/beam/core#> ,
+                <http://w3id.org/beam/risk#> .
+
+#################################################################
+# Core idea:
+# Architecture graph -> Graph motif match -> Motif interpretation
+# -> Candidate risk finding
+#################################################################
+
+#################################################################
+# Classes: graph motif representation
+#################################################################
+
+rp:GraphMotif a owl:Class ;
+    rdfs:label "Graph Motif"@en ;
+    rdfs:comment """
+    A reusable graph structure that can be matched against an AI system
+    architecture graph. A graph motif represents a risk-relevant architectural
+    configuration, but does not itself equal a concrete risk finding.
+    """@en .
+
+rp:PatternNode a owl:Class ;
+    rdfs:label "Pattern Node"@en ;
+    rdfs:comment """
+    A node in a graph motif. A pattern node can specify an expected class,
+    expected architectural role, expected data category, or other matching
+    condition. Pattern nodes are abstract and are bound to concrete system
+    elements during graph matching.
+    """@en .
+
+rp:PatternEdge a owl:Class ;
+    rdfs:label "Pattern Edge"@en ;
+    rdfs:comment """
+    An edge in a graph motif. A pattern edge specifies that two pattern nodes
+    should be connected by a given RDF property, such as beam:use,
+    beam:produce, or beam:inform.
+    """@en .
+
+rp:GraphCondition a owl:Class ;
+    rdfs:label "Graph Condition"@en ;
+    rdfs:comment """
+    A matching condition that cannot be represented as a simple pattern edge.
+    For example, a property path condition such as:
+    rp:containsDataCategory/rp:subDataCategoryOf* rp:SensitiveInformation.
+    """@en .
+
+rp:PropertyPathCondition a owl:Class ;
+    rdfs:subClassOf rp:GraphCondition ;
+    rdfs:label "Property Path Condition"@en ;
+    rdfs:comment """
+    A graph condition expressed using a property path or equivalent query
+    expression. This supports graph motif matching without forcing every
+    condition to be represented as a fixed direct edge.
+    """@en .
+
+#################################################################
+# Classes: interpretation layer
+#################################################################
+
+rp:MotifInterpretation a owl:Class ;
+    rdfs:label "Motif Interpretation"@en ;
+    rdfs:comment """
+    An interpretation of what a matched graph motif means from a risk
+    assessment perspective. The interpretation can connect the matched motif
+    to a risk mechanism, candidate risk taxonomy entries, and possible controls.
+    """@en .
+
+rp:RiskMechanism a owl:Class ;
+    rdfs:label "Risk Mechanism"@en ;
+    rdfs:comment """
+    An explanatory mechanism describing how or why a matched architectural
+    configuration can lead to a risk. In this model, the mechanism is not a
+    required checklist field. It is an interpretation of a matched graph motif.
+    """@en .
+
+rp:PatternImplementation a owl:Class ;
+    rdfs:label "Pattern Implementation"@en ;
+    rdfs:comment """
+    An executable or operational representation of a graph motif, such as a
+    SPARQL CONSTRUCT query, SHACL rule, or rule-based matcher. This is not the
+    pattern itself, but an implementation used to detect the pattern.
+    """@en .
+
+#################################################################
+# Classes: match and generated output
+#################################################################
+
+rp:MotifMatch a owl:Class ;
+    rdfs:label "Motif Match"@en ;
+    rdfs:comment """
+    A concrete match between a graph motif and an architecture graph. A motif
+    match contains bindings from abstract pattern nodes to concrete system
+    elements.
+    """@en .
+
+rp:NodeBinding a owl:Class ;
+    rdfs:label "Node Binding"@en ;
+    rdfs:comment """
+    A binding between an abstract pattern node and a concrete architecture
+    element matched in a system graph.
+    """@en .
+
+rp:EvidenceSubgraph a owl:Class ;
+    rdfs:label "Evidence Subgraph"@en ;
+    rdfs:comment """
+    The matched subgraph in the architecture that provides evidence for a
+    candidate risk finding.
+    """@en .
+
+rp:RiskFinding a owl:Class ;
+    rdfs:subClassOf beamr:Risk ;
+    rdfs:label "Risk Finding"@en ;
+    rdfs:comment """
+    A candidate or confirmed system-specific risk generated from a motif match.
+    A risk finding should be linked to the matched evidence elements, the motif
+    that generated it, the interpreted mechanism, and relevant taxonomy entries.
+    """@en .
+
+#################################################################
+# Classes: abstraction vocabulary
+#################################################################
+
+rp:PatternRole a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Pattern Role"@en ;
+    rdfs:comment """
+    An abstract role used for graph motif matching, such as Knowledge Source,
+    Retrieval Step, Retrieved Context, Generative Model, or User-facing Output.
+    Concrete BEAM elements can play one or more pattern roles.
+    """@en .
+
+rp:DataCategory a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Data Category"@en ;
+    rdfs:comment """
+    An abstract data category used for risk-pattern matching, such as
+    Sensitive Information, Personal Information, Product Information, or
+    Untrusted Content.
+    """@en .
+
+#################################################################
+# Object properties: architecture abstraction
+#################################################################
+
+rp:playsRole a owl:ObjectProperty ;
+    rdfs:label "plays role"@en ;
+    rdfs:domain rdfs:Resource ;
+    rdfs:range rp:PatternRole ;
+    rdfs:comment """
+    Links a concrete architecture element to an abstract pattern role.
+    This role abstraction makes graph motifs reusable across different
+    systems and use cases.
+    """@en .
+
+rp:subRoleOf a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:label "sub-role of"@en ;
+    rdfs:domain rp:PatternRole ;
+    rdfs:range rp:PatternRole ;
+    rdfs:comment "Relates a more specific pattern role to a more general pattern role."@en .
+
+rp:containsDataCategory a owl:ObjectProperty ;
+    rdfs:label "contains data category"@en ;
+    rdfs:domain beam:Data ;
+    rdfs:range rp:DataCategory ;
+    rdfs:comment """
+    Links a data resource to an abstract category of information it contains.
+    This supports graph matching over sensitive, personal, confidential,
+    untrusted, or domain-specific data.
+    """@en .
+
+rp:subDataCategoryOf a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:label "sub-data-category of"@en ;
+    rdfs:domain rp:DataCategory ;
+    rdfs:range rp:DataCategory ;
+    rdfs:comment """
+    Relates a more specific data category to a broader data category.
+    For example, Personal Information can be a subcategory of Sensitive
+    Information.
+    """@en .
+
+#################################################################
+# Object properties: graph motif structure
+#################################################################
+
+rp:hasPatternNode a owl:ObjectProperty ;
+    rdfs:label "has pattern node"@en ;
+    rdfs:domain rp:GraphMotif ;
+    rdfs:range rp:PatternNode ;
+    rdfs:comment "Links a graph motif to one of its abstract pattern nodes."@en .
+
+rp:hasPatternEdge a owl:ObjectProperty ;
+    rdfs:label "has pattern edge"@en ;
+    rdfs:domain rp:GraphMotif ;
+    rdfs:range rp:PatternEdge ;
+    rdfs:comment "Links a graph motif to one of its abstract pattern edges."@en .
+
+rp:hasCondition a owl:ObjectProperty ;
+    rdfs:label "has condition"@en ;
+    rdfs:domain rp:GraphMotif ;
+    rdfs:range rp:GraphCondition ;
+    rdfs:comment """
+    Links a graph motif to an additional matching condition, such as a
+    property path condition, negated condition, or cardinality condition.
+    """@en .
+
+rp:sourcePatternNode a owl:ObjectProperty ;
+    rdfs:label "source pattern node"@en ;
+    rdfs:domain rp:PatternEdge ;
+    rdfs:range rp:PatternNode ;
+    rdfs:comment "The source node of a pattern edge."@en .
+
+rp:targetPatternNode a owl:ObjectProperty ;
+    rdfs:label "target pattern node"@en ;
+    rdfs:domain rp:PatternEdge ;
+    rdfs:range rp:PatternNode ;
+    rdfs:comment "The target node of a pattern edge."@en .
+
+rp:patternPredicate a owl:ObjectProperty ;
+    rdfs:label "pattern predicate"@en ;
+    rdfs:domain rp:PatternEdge ;
+    rdfs:range rdf:Property ;
+    rdfs:comment """
+    The RDF property that should connect the source and target pattern nodes
+    in a matched architecture graph.
+    """@en .
+
+rp:expectedClass a owl:ObjectProperty ;
+    rdfs:label "expected class"@en ;
+    rdfs:domain rp:PatternNode ;
+    rdfs:range rdfs:Class ;
+    rdfs:comment """
+    The expected RDF class of a concrete element matched to this pattern node.
+    For example, beam:Data, beam:Infer, beam:Transform, or beam:StatisticalModel.
+    """@en .
+
+rp:expectedRole a owl:ObjectProperty ;
+    rdfs:label "expected role"@en ;
+    rdfs:domain rp:PatternNode ;
+    rdfs:range rp:PatternRole ;
+    rdfs:comment """
+    The expected abstract role of a concrete element matched to this pattern
+    node. This is the main abstraction mechanism for reusable graph motifs.
+    """@en .
+
+rp:expectedDataCategory a owl:ObjectProperty ;
+    rdfs:label "expected data category"@en ;
+    rdfs:domain rp:PatternNode ;
+    rdfs:range rp:DataCategory ;
+    rdfs:comment """
+    The expected data category contained by a concrete data element matched
+    to this pattern node.
+    """@en .
+
+#################################################################
+# Object properties: motif interpretation
+#################################################################
+
+rp:hasInterpretation a owl:ObjectProperty ;
+    rdfs:label "has interpretation"@en ;
+    rdfs:domain rp:GraphMotif ;
+    rdfs:range rp:MotifInterpretation ;
+    rdfs:comment """
+    Links a graph motif to an interpretation that explains what a match of
+    the motif may mean from a risk assessment perspective.
+    """@en .
+
+rp:interpretsMotif a owl:ObjectProperty ;
+    rdfs:label "interprets motif"@en ;
+    rdfs:domain rp:MotifInterpretation ;
+    rdfs:range rp:GraphMotif ;
+    rdfs:comment "Links an interpretation to the graph motif it interprets."@en .
+
+rp:interpretedAsMechanism a owl:ObjectProperty ;
+    rdfs:label "interpreted as mechanism"@en ;
+    rdfs:domain rp:MotifInterpretation ;
+    rdfs:range rp:RiskMechanism ;
+    rdfs:comment """
+    Links a motif interpretation to the risk mechanism that explains why
+    the matched graph motif may be risky.
+    """@en .
+
+rp:mayIndicateRisk a owl:ObjectProperty ;
+    rdfs:label "may indicate risk"@en ;
+    rdfs:domain rp:MotifInterpretation ;
+    rdfs:range skos:Concept ;
+    rdfs:comment """
+    Links a motif interpretation to an external risk taxonomy entry that
+    may be indicated by a match of the motif.
+    """@en .
+
+rp:suggestedControl a owl:ObjectProperty ;
+    rdfs:label "suggested control"@en ;
+    rdfs:domain rp:MotifInterpretation ;
+    rdfs:range beamr:RiskControl ;
+    rdfs:comment """
+    Links a motif interpretation to a possible control or mitigation that
+    should be checked or considered. This does not mean the control is
+    implemented in the assessed system.
+    """@en .
+
+#################################################################
+# Object properties: implementation
+#################################################################
+
+rp:implementedBy a owl:ObjectProperty ;
+    rdfs:label "implemented by"@en ;
+    rdfs:domain rp:GraphMotif ;
+    rdfs:range rp:PatternImplementation ;
+    rdfs:comment """
+    Links a graph motif to an executable implementation, such as a SPARQL
+    CONSTRUCT query, SHACL rule, or rule-based matcher.
+    """@en .
+
+rp:implementsMotif a owl:ObjectProperty ;
+    rdfs:label "implements motif"@en ;
+    rdfs:domain rp:PatternImplementation ;
+    rdfs:range rp:GraphMotif ;
+    rdfs:comment "Links an executable implementation to the graph motif it implements."@en .
+
+#################################################################
+# Object properties: match and generated risk finding
+#################################################################
+
+rp:matchesMotif a owl:ObjectProperty ;
+    rdfs:label "matches motif"@en ;
+    rdfs:domain rp:MotifMatch ;
+    rdfs:range rp:GraphMotif ;
+    rdfs:comment "Links a motif match to the graph motif that was matched."@en .
+
+rp:hasNodeBinding a owl:ObjectProperty ;
+    rdfs:label "has node binding"@en ;
+    rdfs:domain rp:MotifMatch ;
+    rdfs:range rp:NodeBinding ;
+    rdfs:comment "Links a motif match to a binding between a pattern node and a concrete system element."@en .
+
+rp:bindsPatternNode a owl:ObjectProperty ;
+    rdfs:label "binds pattern node"@en ;
+    rdfs:domain rp:NodeBinding ;
+    rdfs:range rp:PatternNode ;
+    rdfs:comment "Links a node binding to the abstract pattern node being bound."@en .
+
+rp:matchedElement a owl:ObjectProperty ;
+    rdfs:label "matched element"@en ;
+    rdfs:domain rp:NodeBinding ;
+    rdfs:range rdfs:Resource ;
+    rdfs:comment "Links a node binding to the concrete architecture element matched in the system graph."@en .
+
+rp:hasEvidenceSubgraph a owl:ObjectProperty ;
+    rdfs:label "has evidence subgraph"@en ;
+    rdfs:domain rp:MotifMatch ;
+    rdfs:range rp:EvidenceSubgraph ;
+    rdfs:comment "Links a motif match to the evidence subgraph found in the architecture graph."@en .
+
+rp:hasEvidenceElement a owl:ObjectProperty ;
+    rdfs:label "has evidence element"@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range rdfs:Resource ;
+    rdfs:comment """
+    Links a generated risk finding to concrete architecture elements that
+    provide evidence for the finding.
+    """@en .
+
+rp:generatedFromMatch a owl:ObjectProperty ;
+    rdfs:label "generated from match"@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range rp:MotifMatch ;
+    rdfs:comment "Links a risk finding to the motif match from which it was generated."@en .
+
+rp:generatedByMotif a owl:ObjectProperty ;
+    rdfs:label "generated by motif"@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range rp:GraphMotif ;
+    rdfs:comment "Links a risk finding to the graph motif that generated it."@en .
+
+rp:hasInterpretedMechanism a owl:ObjectProperty ;
+    rdfs:label "has interpreted mechanism"@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range rp:RiskMechanism ;
+    rdfs:comment """
+    Links a generated risk finding to the risk mechanism used to explain
+    the matched graph motif.
+    """@en .
+
+rp:hasCandidateRiskTaxonomyEntry a owl:ObjectProperty ;
+    rdfs:label "has candidate risk taxonomy entry"@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range skos:Concept ;
+    rdfs:comment """
+    Links a generated risk finding to external taxonomy entries that classify
+    the possible risk indicated by the motif match.
+    """@en .
+
+rp:hasSuggestedControl a owl:ObjectProperty ;
+    rdfs:label "has suggested control"@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range beamr:RiskControl ;
+    rdfs:comment """
+    Links a generated risk finding to possible controls or mitigations that
+    should be considered.
+    """@en .
+
+#################################################################
+# Datatype properties
+#################################################################
+
+rp:variableName a owl:DatatypeProperty ;
+    rdfs:label "variable name"@en ;
+    rdfs:domain rp:PatternNode ;
+    rdfs:range xsd:string ;
+    rdfs:comment """
+    Human-readable variable name for a pattern node, for example
+    knowledgeSource, retrievalStep, retrievedContext, or output.
+    """@en .
+
+rp:pathExpression a owl:DatatypeProperty ;
+    rdfs:label "path expression"@en ;
+    rdfs:domain rp:PropertyPathCondition ;
+    rdfs:range xsd:string ;
+    rdfs:comment """
+    A SPARQL-like property path expression used to operationalize a graph
+    condition. This is used only for implementation guidance.
+    """@en .
+
+rp:conditionExpression a owl:DatatypeProperty ;
+    rdfs:label "condition expression"@en ;
+    rdfs:domain rp:GraphCondition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A textual or query-oriented expression of a graph matching condition."@en .
+
+rp:implementationLanguage a owl:DatatypeProperty ;
+    rdfs:label "implementation language"@en ;
+    rdfs:domain rp:PatternImplementation ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The implementation language, for example SPARQL, SHACL, RIF, or custom rule language."@en .
+
+rp:implementationPath a owl:DatatypeProperty ;
+    rdfs:label "implementation path"@en ;
+    rdfs:domain rp:PatternImplementation ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Path or URI of the executable implementation file."@en .
+
+rp:confidenceScore a owl:DatatypeProperty ;
+    rdfs:label "confidence score"@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range xsd:decimal ;
+    rdfs:comment """
+    Optional confidence score for a generated risk finding. This can be used
+    when architecture extraction or role annotation is uncertain.
+    """@en .
+
+rp:findingStatus a owl:DatatypeProperty ;
+    rdfs:label "finding status"@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range xsd:string ;
+    rdfs:comment """
+    Status of a risk finding, for example candidate, reviewed, confirmed,
+    rejected, or mitigated.
+    """@en .
+
+#################################################################
+# Pattern roles: general data roles
+#################################################################
+
+rp:UserInput a rp:PatternRole ;
+    skos:prefLabel "User Input"@en .
+
+rp:KnowledgeSource a rp:PatternRole ;
+    skos:prefLabel "Knowledge Source"@en .
+
+rp:VectorStore a rp:PatternRole ;
+    skos:prefLabel "Vector Store"@en ;
+    rp:subRoleOf rp:KnowledgeSource .
+
+rp:RetrievedContext a rp:PatternRole ;
+    skos:prefLabel "Retrieved Context"@en .
+
+rp:RetrievedResult a rp:PatternRole ;
+    skos:prefLabel "Retrieved Result"@en ;
+    rp:subRoleOf rp:RetrievedContext .
+
+rp:PromptTemplate a rp:PatternRole ;
+    skos:prefLabel "Prompt Template"@en .
+
+rp:SystemPrompt a rp:PatternRole ;
+    skos:prefLabel "System Prompt"@en ;
+    rp:subRoleOf rp:PromptTemplate .
+
+rp:UserFacingOutput a rp:PatternRole ;
+    skos:prefLabel "User-facing Output"@en .
+
+#################################################################
+# Pattern roles: process roles
+#################################################################
+
+rp:EmbeddingStep a rp:PatternRole ;
+    skos:prefLabel "Embedding Step"@en .
+
+rp:RetrievalStep a rp:PatternRole ;
+    skos:prefLabel "Retrieval Step"@en .
+
+rp:RerankingStep a rp:PatternRole ;
+    skos:prefLabel "Reranking Step"@en .
+
+rp:QueryReformulationStep a rp:PatternRole ;
+    skos:prefLabel "Query Reformulation Step"@en .
+
+rp:PromptConstructionStep a rp:PatternRole ;
+    skos:prefLabel "Prompt Construction Step"@en .
+
+rp:GenerationStep a rp:PatternRole ;
+    skos:prefLabel "Generation Step"@en .
+
+rp:InferenceStep a rp:PatternRole ;
+    skos:prefLabel "Inference Step"@en .
+
+rp:TrainingStep a rp:PatternRole ;
+    skos:prefLabel "Training Step"@en .
+
+#################################################################
+# Pattern roles: model roles
+#################################################################
+
+rp:Model a rp:PatternRole ;
+    skos:prefLabel "Model"@en .
+
+rp:MLModel a rp:PatternRole ;
+    skos:prefLabel "Machine Learning Model"@en ;
+    rp:subRoleOf rp:Model .
+
+rp:GenerativeModel a rp:PatternRole ;
+    skos:prefLabel "Generative Model"@en ;
+    rp:subRoleOf rp:Model .
+
+rp:ClassifierModel a rp:PatternRole ;
+    skos:prefLabel "Classifier Model"@en ;
+    rp:subRoleOf rp:MLModel .
+
+rp:RegressionModel a rp:PatternRole ;
+    skos:prefLabel "Regression Model"@en ;
+    rp:subRoleOf rp:MLModel .
+
+#################################################################
+# Pattern roles: human and governance roles
+#################################################################
+
+rp:HumanActor a rp:PatternRole ;
+    skos:prefLabel "Human Actor"@en .
+
+rp:HumanOversightActor a rp:PatternRole ;
+    skos:prefLabel "Human Oversight Actor"@en ;
+    rp:subRoleOf rp:HumanActor .
+
+rp:AffectedStakeholder a rp:PatternRole ;
+    skos:prefLabel "Affected Stakeholder"@en ;
+    rp:subRoleOf rp:HumanActor .
+
+#################################################################
+# Data categories
+#################################################################
+
+rp:Information a rp:DataCategory ;
+    skos:prefLabel "Information"@en .
+
+rp:ProductInformation a rp:DataCategory ;
+    skos:prefLabel "Product Information"@en ;
+    rp:subDataCategoryOf rp:Information .
+
+rp:SensitiveInformation a rp:DataCategory ;
+    skos:prefLabel "Sensitive Information"@en ;
+    rp:subDataCategoryOf rp:Information .
+
+rp:PersonalInformation a rp:DataCategory ;
+    skos:prefLabel "Personal Information"@en ;
+    rp:subDataCategoryOf rp:SensitiveInformation .
+
+rp:ConfidentialInformation a rp:DataCategory ;
+    skos:prefLabel "Confidential Information"@en ;
+    rp:subDataCategoryOf rp:SensitiveInformation .
+
+rp:PromptInstruction a rp:DataCategory ;
+    skos:prefLabel "Prompt Instruction"@en ;
+    rp:subDataCategoryOf rp:Information .
+
+rp:UntrustedContent a rp:DataCategory ;
+    skos:prefLabel "Untrusted Content"@en ;
+    rp:subDataCategoryOf rp:Information .
+
+rp:GeneratedContent a rp:DataCategory ;
+    skos:prefLabel "Generated Content"@en ;
+    rp:subDataCategoryOf rp:Information .
+
+rp:TrainingDataCategory a rp:DataCategory ;
+    skos:prefLabel "Training Data"@en ;
+    rp:subDataCategoryOf rp:Information .
+
+rp:ValidationDataCategory a rp:DataCategory ;
+    skos:prefLabel "Validation Data"@en ;
+    rp:subDataCategoryOf rp:Information .
+
+#################################################################
+# Common risk mechanisms
+# These are interpretive concepts, not fixed pattern fields.
+#################################################################
+
+rp:SensitiveDataPropagationToGeneration
+    a rp:RiskMechanism ;
+    rdfs:label "Sensitive Data Propagation to Generation"@en ;
+    dct:description """
+    Sensitive information can propagate from a knowledge source, input,
+    or intermediate context into a generative model step and potentially
+    into user-facing output.
+    """@en .
+
+rp:UntrustedContextInjection
+    a rp:RiskMechanism ;
+    rdfs:label "Untrusted Context Injection"@en ;
+    dct:description """
+    Untrusted or externally controlled content can enter a prompt construction
+    or generation step and influence model behavior.
+    """@en .
+
+rp:InsufficientRetrievedContext
+    a rp:RiskMechanism ;
+    rdfs:label "Insufficient Retrieved Context"@en ;
+    dct:description """
+    A retrieval step may provide incomplete, irrelevant, or insufficient context
+    for downstream generation or decision-making.
+    """@en .
+
+rp:PromptContextOverrun
+    a rp:RiskMechanism ;
+    rdfs:label "Prompt Context Overrun"@en ;
+    dct:description """
+    The amount of retrieved or constructed prompt context may exceed model,
+    system, cost, latency, or quality constraints.
+    """@en .
+
+rp:BiasedTrainingDataPropagation
+    a rp:RiskMechanism ;
+    rdfs:label "Biased Training Data Propagation"@en ;
+    dct:description """
+    Biases or representational gaps in training data can propagate into
+    trained model behavior and downstream system outputs.
+    """@en .
+
+rp:UnsupportedModelInference
+    a rp:RiskMechanism ;
+    rdfs:label "Unsupported Model Inference"@en ;
+    dct:description """
+    A model may produce outputs in contexts, data distributions, or input
+    conditions for which it is not sufficiently validated or robust.
+    """@en .

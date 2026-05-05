@@ -1,0 +1,174 @@
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix beam: <http://w3id.org/beam/core#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix easy-ai: <https://kastle-lab.org/easy-ai2/>.
+@prefix agento: <http://www.w3id.org/agentic-ai/onto#>.
+
+<http://w3id.org/beam/core#> rdf:type owl:Ontology ;
+    <http://purl.org/dc/terms/description> """  An ontology to describe the core components of AI systems 
+                                                based on an extended/adapted version of boxology: 
+                                                Boxology's Extended Annotation Model (BEAM)"""@en ;
+    <http://purl.org/dc/terms/license> <https://creativecommons.org/licenses/by/4.0> ;
+    <http://purl.org/dc/terms/modified> "2026-02-05" ;
+    <http://purl.org/dc/terms/title> "The BEAM ontology"@en ;
+    <http://purl.org/vocab/vann/preferredNamespacePrefix> "beam" ;
+    <http://purl.org/vocab/vann/preferredNamespaceUri> "http://w3id.org/beam/core#" ;
+    owl:versionInfo "0.1.0" .
+
+### classes
+
+beam:Element a owl:Class ;
+    rdfs:label "Element" .
+
+    beam:System a owl:Class ;
+        rdfs:subClassOf beam:Element ;
+        rdfs:label "System" .
+
+    beam:Resource a owl:Class ;
+        rdfs:label "Resource" ;
+        rdfs:subClassOf beam:Element .
+
+        beam:Instance a owl:Class ;
+            rdfs:label "Instance" ;
+            rdfs:subClassOf beam:Resource, easy-ai:Artifact .
+
+            beam:Data a owl:Class ;
+                rdfs:label "Data" ;
+                rdfs:subClassOf beam:Instance .
+
+            beam:Symbol a owl:Class ;
+                rdfs:label "Symbol" ;
+                rdfs:subClassOf beam:Instance .
+
+        beam:Model a owl:Class ;
+            rdfs:label "Model" ;
+            rdfs:subClassOf beam:Resource, easy-ai:Model .
+
+            beam:SemanticModel a owl:Class ;
+                rdfs:label "Semantic Model" ;
+                rdfs:subClassOf beam:Model .
+
+            beam:StatisticalModel a owl:Class ;
+                rdfs:label "Statistical Model" ;
+                rdfs:subClassOf beam:Model .
+
+    beam:Process a owl:Class ;
+        rdfs:label "Process" ;
+        rdfs:subClassOf beam:Element, easy-ai:Process .
+
+        beam:Generate a owl:Class ;
+            rdfs:label "Generate" ;
+            rdfs:subClassOf beam:Process .
+            
+            beam:Train a owl:Class ;
+                rdfs:label "Train" ;
+                rdfs:subClassOf beam:Generate .
+
+            beam:Engineer a owl:Class ;
+                rdfs:label "Engineer" ;
+                rdfs:subClassOf beam:Generate .
+
+        beam:Transform a owl:Class ;
+            rdfs:label "Transform" ;
+            rdfs:subClassOf beam:Process .
+
+        beam:Infer a owl:Class ;
+            rdfs:label "Infer" ;
+            rdfs:subClassOf beam:Process .
+
+    beam:Agent a owl:Class ;
+        rdfs:subClassOf beam:Element, easy-ai:Actor ;
+        rdfs:label "Agent" .
+
+beam:Note a owl:Class ;
+    rdfs:label "Note" ;
+    rdfs:comment """A class to hold information about custom annotation to 
+                    System, Container, and various elements of AI systems as part of BEAM notation""" .
+
+beam:Task a owl:Class ;
+    rdfs:label "Task" ;
+    rdfs:subClassOf agento:Task .
+
+### object properties
+
+beam:inform a owl:TransitiveProperty ;
+    rdfs:label "inform" ;
+	rdfs:domain beam:Process ;
+	rdfs:range beam:Process .
+
+beam:usedBy a owl:ObjectProperty ;
+    rdfs:label "used by" ;
+	rdfs:domain beam:Resource ;
+	rdfs:range beam:Process .
+
+beam:participatedIn a owl:ObjectProperty ;
+    rdfs:label "participated in" ;
+	rdfs:domain beam:Agent ;
+	rdfs:range beam:Process .
+
+beam:use a owl:ObjectProperty ;
+    rdfs:label "use" ;
+	rdfs:domain beam:Process ;
+	rdfs:range beam:Resource ;
+    owl:inverseOf beam:usedBy .
+
+beam:produce a owl:ObjectProperty ;
+    rdfs:label "produce" ;
+	rdfs:domain beam:Process ;
+	rdfs:range beam:Resource .
+
+beam:producedBy a owl:ObjectProperty ;
+    rdfs:label "produced by" ;
+	rdfs:domain beam:Resource ;
+	rdfs:range beam:Process ;
+    owl:inverseOf beam:produce .
+
+beam:contain a owl:TransitiveProperty ;
+    rdfs:label "contain" ; 
+    rdfs:domain beam:Element ;
+    rdfs:range beam:Element .
+
+beam:hasResource a owl:ObjectProperty ;
+    rdfs:label "has resource" ; 
+    rdfs:domain beam:System ;
+    rdfs:range beam:Resource .
+
+beam:hasProcess a owl:ObjectProperty ;
+    rdfs:label "has process" ; 
+    rdfs:domain beam:System ;
+    rdfs:range beam:Process .
+
+beam:hasAgent a owl:ObjectProperty ;
+    rdfs:label "has agent" ; 
+    rdfs:domain beam:System ;
+    rdfs:range beam:Agent .
+
+beam:note a owl:ObjectProperty ;
+    rdfs:label "note" ; 
+    rdfs:domain beam:Element ;
+    rdfs:range beam:Note .
+
+beam:perform a owl:ObjectProperty ;
+    rdfs:label "perform" ;
+    rdfs:domain beam:Element ;
+    rdfs:range beam:Task .
+
+beam:performedBy a owl:ObjectProperty ;
+    rdfs:label "performed by" ;
+    rdfs:domain beam:Task ;
+    rdfs:range beam:Element ;
+    owl:inverseOf beam:perform .
+
+### data properties
+
+beam:description a owl:DatatypeProperty ;
+    rdfs:label "description" ;
+    rdfs:domain beam:System ;
+    rdfs:range xsd:String .
+
+beam:context a owl:DatatypeProperty ;
+    rdfs:label "context" ;
+    rdfs:domain beam:System ;
+    rdfs:range xsd:String .

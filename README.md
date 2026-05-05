@@ -1,45 +1,47 @@
-# AI Risk Knowledge Graph
+# AI Risk Knowledge Graph Python Workspace
 
-Research project combining Python analysis with semantic ontology development for AI risk knowledge graphs.
+This folder contains the  workspace for the working paper:
 
-## Repository Structure
+**A Pattern-Based Method for Design-Time AI Risk Assessment Using Knowledge Graphs Operationalization**
 
-```
-airiskkg/
-├── python/              # Python application and analysis
-│   ├── pyproject.toml
-│   ├── src/
-│   ├── tests/
-│   ├── notebooks/
-│   ├── scripts/
-│   ├── configs/
-│   └── README.md
-├── ontology/            # Semantic ontology and data
-│   ├── data/
-│   │   ├── raw/
-│   │   ├── processed/
-│   │   └── taxonomy/
-│   └── README.md
-└── README.md (this file)
+The code supports simple analysis, preprocessing, and experimentation around
+AI risk knowledge graphs and ontology patterns.
+
+## Structure
+
+```text
+src/airiskkg/  Reusable Python code and CLI tools
+tests/         Tests
+notebooks/     Exploratory notebooks
+scripts/       Helper scripts
+configs/       Configuration examples
 ```
 
-## Quick Start
-
-### Python Development
+## Setup
 
 ```powershell
-cd python
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
+python -m ipykernel install --user --name airiskkg
 ```
 
-### Usage
+## Usage
 
 ```powershell
+# Show project information
 airiskkg info
+
+# Run tests
 python -m pytest
+
+# Run notebooks
+jupyter lab notebooks/
 ```
 
-See [python/README.md](python/README.md) for detailed Python setup and usage.
+## Development
 
+Keep exploratory work in `notebooks/`. Move reusable code into
+`src/airiskkg/` when it becomes useful across notebooks or scripts.
+
+The related ontology files are stored in `../ontology/`.
