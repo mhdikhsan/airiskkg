@@ -236,6 +236,16 @@ rp:hasCondition a owl:ObjectProperty ;
     property path condition, negated condition, or cardinality condition.
     """@en .
 
+rp:hasInterpretationCondition a owl:ObjectProperty ;
+    rdfs:label "has interpretation condition"@en ;
+    rdfs:domain rp:MotifInterpretation ;
+    rdfs:range rp:GraphCondition ;
+    rdfs:comment """
+    Links a motif interpretation to a condition that is evaluated after a
+    motif match exists. This keeps motif matching separate from risk
+    interpretation.
+    """@en .
+
 rp:sourcePatternNode a owl:ObjectProperty ;
     rdfs:label "source pattern node"@en ;
     rdfs:domain rp:PatternEdge ;
@@ -378,6 +388,15 @@ rp:matchedElement a owl:ObjectProperty ;
     rdfs:range rdfs:Resource ;
     rdfs:comment "Links a node binding to the concrete architecture element matched in the system graph."@en .
 
+rp:boundToElement a owl:ObjectProperty ;
+    rdfs:label "bound to element"@en ;
+    rdfs:domain rp:NodeBinding ;
+    rdfs:range rdfs:Resource ;
+    rdfs:comment """
+    Alias-style property for linking a node binding to the concrete
+    architecture element matched in the system graph.
+    """@en .
+
 rp:hasEvidenceSubgraph a owl:ObjectProperty ;
     rdfs:label "has evidence subgraph"@en ;
     rdfs:domain rp:MotifMatch ;
@@ -430,6 +449,15 @@ rp:hasSuggestedControl a owl:ObjectProperty ;
     rdfs:comment """
     Links a generated risk finding to possible controls or mitigations that
     should be considered.
+    """@en .
+
+rp:producesOutputType a owl:ObjectProperty ;
+    rdfs:label "produces output type"@en ;
+    rdfs:domain rp:PatternImplementation ;
+    rdfs:range rdfs:Class ;
+    rdfs:comment """
+    Links an executable pattern implementation to the RDF class of output
+    resource it constructs, such as rp:MotifMatch or rp:RiskFinding.
     """@en .
 
 #################################################################
@@ -563,6 +591,10 @@ rp:MLModel a rp:PatternRole ;
 rp:GenerativeModel a rp:PatternRole ;
     skos:prefLabel "Generative Model"@en ;
     rp:subRoleOf rp:Model .
+
+rp:LLM a rp:PatternRole ;
+    skos:prefLabel "Large Language Model"@en ;
+    rp:subRoleOf rp:GenerativeModel .
 
 rp:ClassifierModel a rp:PatternRole ;
     skos:prefLabel "Classifier Model"@en ;

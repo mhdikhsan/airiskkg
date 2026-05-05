@@ -63,7 +63,9 @@ pat:VectorBasedInformationRetrievalMotif
     rp:hasPatternEdge
         pat:VectorIR_RetrievalUsesQueryEdge ,
         pat:VectorIR_RetrievalUsesVectorStoreEdge ,
-        pat:VectorIR_RetrievalProducesResultEdge .
+        pat:VectorIR_RetrievalProducesResultEdge ;
+    rp:implementedBy pat:VectorIR_MatchingOQP ;
+    rp:hasInterpretation pat:SensitiveDataRetrievalExposureInterpretation .
 
 pat:VectorIR_QueryNode
     a rp:PatternNode ;
@@ -135,7 +137,9 @@ pat:LLMBasedInformationRetrievalMotif
     rp:hasPatternEdge
         pat:LLMIR_RetrievalUsesQueryEdge ,
         pat:LLMIR_RetrievalUsesModelEdge ,
-        pat:LLMIR_RetrievalProducesAnswerEdge .
+        pat:LLMIR_RetrievalProducesAnswerEdge ;
+    rp:implementedBy pat:LLMIR_MatchingOQP ;
+    rp:hasInterpretation pat:DirectLLMAnsweringWithoutGroundingInterpretation .
 
 pat:LLMIR_QueryNode
     a rp:PatternNode ;
@@ -153,10 +157,10 @@ pat:LLMIR_ModelNode
 
 pat:LLMIR_RetrievalStepNode
     a rp:PatternNode ;
-    rdfs:label "LLM-based information retrieval step node"@en ;
+    rdfs:label "LLM-based answering or generation step node"@en ;
     rp:variableName "llmRetrievalStep" ;
     rp:expectedClass beam:Process ;
-    rp:expectedRole rp:LLMBasedInformationRetrievalStep .
+    rp:expectedRole rp:GenerationStep .
 
 pat:LLMIR_AnswerNode
     a rp:PatternNode ;

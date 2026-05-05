@@ -4,12 +4,15 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+pytest-cache-files-*/
 .mypy_cache/
 .ruff_cache/
 .ipynb_checkpoints/
 *.egg-info/
 build/
 dist/
+docs/
+
 
 # Keep folder structure, but avoid committing generated research outputs by default.
 data/processed/**

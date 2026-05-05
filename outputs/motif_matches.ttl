@@ -1,0 +1,32 @@
+@prefix pat: <http://w3id.org/airiskkg/patterns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rp: <http://w3id.org/beam/risk-pattern#> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> a rp:MotifMatch ;
+    rdfs:label "Vector-based information retrieval motif match"@en ;
+    rp:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/query>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieval-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieved-result>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/vector-store> ;
+    rp:matchesMotif pat:VectorBasedInformationRetrievalMotif .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/query> a rp:NodeBinding ;
+    rp:bindsPatternNode pat:VectorIR_QueryNode ;
+    rp:boundToElement <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> ;
+    rp:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieval-step> a rp:NodeBinding ;
+    rp:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+    rp:boundToElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
+    rp:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieved-result> a rp:NodeBinding ;
+    rp:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+    rp:boundToElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> ;
+    rp:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/vector-store> a rp:NodeBinding ;
+    rp:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+    rp:boundToElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB> ;
+    rp:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB> .
+

@@ -1,0 +1,2675 @@
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix beamr: <http://w3id.org/beam/risk#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix ns1: <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix pat: <http://w3id.org/airiskkg/patterns#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rp: <http://w3id.org/beam/risk-pattern#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#> a owl:Ontology ;
+    dct:description """\r
+    Architecture-only BEAM instance for UC6: a simplified RAG-based chatbot\r
+    for product-related questions. The system embeds a user question, retrieves\r
+    product information from a vector database, optionally applies Llatrieval\r
+    scoring and query reformulation, and generates a user-facing answer with\r
+    an LLM.\r
+\r
+    This file intentionally contains no risk findings, consequences, impacts,\r
+    or controls. Those are represented in a separate assessed-risk file.\r
+    """@en ;
+    dct:title "UC6 Onlim RAG-based Chatbot Architecture"@en ;
+    vann:preferredNamespacePrefix "uc6" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/example/uc6-onlim#" ;
+    owl:imports beam:,
+        rp: .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#UC6_System> a beam:System ;
+    rdfs:label "Simple RAG-based Chatbot"@en ;
+    beam:context """\r
+    The system is used in a demonstration environment, not as a real-world\r
+    deployed system. It is intended to showcase a RAG-based chatbot for\r
+    potential users. The product information vector database is assumed to\r
+    be pre-populated with product-related information.\r
+    """@en ;
+    beam:description """\r
+    The workflow describes a simplified chatbot system based on a\r
+    retrieval-augmented generation approach. A natural language question\r
+    about a product is embedded, used for vector-based product information\r
+    retrieval, optionally enhanced through Llatrieval scoring and query\r
+    reformulation, and then passed to an LLM for answer generation.\r
+    """@en ;
+    beam:hasProcess <http://w3id.org/airiskkg/example/uc6-onlim#Embedding>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
+    beam:hasResource <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedQuestion>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#EventSummary>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#QueryTemplate>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#QuestionsAboutProduct>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ScoringAndQueryReformulationPrompt>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#SystemPromptTemplate> .
+
+<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ProductInformationRetrieval%2Fvector-ir%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfo/sensitive-data-retrieval-exposure> a rp:RiskFinding ;
+    rdfs:label "Candidate sensitive data retrieval exposure"@en ;
+    dct:description "A vector store containing sensitive information is used by a retrieval step, and retrieved content can flow toward user-facing output."@en ;
+    rp:findingStatus "candidate" ;
+    rp:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
+    rp:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> ;
+    rp:hasCandidateRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#exposing-personal-information>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm02-sensitive-information-disclosure> ;
+    rp:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#EventSummary>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> ;
+    rp:hasInterpretedMechanism pat:SensitiveDataRetrievalExposure ;
+    rp:hasSuggestedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#privacy-control-for-user-data>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-source-filtering> .
+
+<http://w3id.org/airiskkg/imports> a owl:Ontology ;
+    rdfs:label "AI Risk KG Ontology Imports" ;
+    dct:description """\r
+    Aggregator ontology for loading the BEAM core ontology, BEAM risk extension,\r
+    and the BEAM risk-pattern core ontology together.\r
+    """ ;
+    dct:title "AI Risk KG Ontology Imports" ;
+    owl:imports <http://w3id.org/beam/core>,
+        <http://w3id.org/beam/risk>,
+        <http://w3id.org/beam/risk-pattern> .
+
+pat:DirectLLMAnsweringWithoutGroundingOQP a rp:PatternImplementation ;
+    rdfs:label "Direct LLM answering without grounding interpretation OQP"@en ;
+    rp:implementationLanguage "SPARQL-CONSTRUCT" ;
+    rp:implementationPath "ontology/patterns/implementation/interpret_direct_llm_without_grounding.construct.rq" ;
+    rp:implementsMotif pat:LLMBasedInformationRetrievalMotif ;
+    rp:producesOutputType rp:RiskFinding .
+
+pat:SensitiveDataRetrievalExposureOQP a rp:PatternImplementation ;
+    rdfs:label "Sensitive data retrieval exposure interpretation OQP"@en ;
+    rp:implementationLanguage "SPARQL-CONSTRUCT" ;
+    rp:implementationPath "ontology/patterns/implementation/interpret_sensitive_data_retrieval.construct.rq" ;
+    rp:implementsMotif pat:VectorBasedInformationRetrievalMotif ;
+    rp:producesOutputType rp:RiskFinding .
+
+<http://w3id.org/airiskkg/patterns/risk-interpretation#> a owl:Ontology ;
+    dct:description """
+    Interpretation layer for the AI Risk KG pattern library. This file keeps
+    risk mechanisms, interpretation conditions, candidate taxonomy links, and
+    executable OQP metadata separate from the architecture motifs.
+    """@en ;
+    dct:title "AI Risk Pattern Interpretation Library"@en ;
+    owl:imports <http://w3id.org/airiskkg/patterns/motif-library#>,
+        beam:,
+        beamr:,
+        rp: .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#> a owl:Ontology ;
+    rdfs:label "IBM AI Risk Atlas Subset for AI Risk KG" ;
+    dct:description """\r
+    A selected RDF subset of IBM AI Risk Atlas concepts adapted from AI Atlas Nexus.\r
+    This subset contains only the groups and risk entries needed for the current\r
+    graph-pattern-based AI risk assessment examples.\r
+    """ ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/risk_atlas_data.yaml> ;
+    dct:title "IBM AI Risk Atlas Subset for AI Risk KG" .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#decision-bias> a ns1:Risk ;
+    ns1:descriptor "traditional risk of AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-curation-process>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#societal-impact-assessment>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#testing-auditing> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#fairness> ;
+    ns1:riskType "output" ;
+    ns1:tag "decision-bias" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#fairness> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-1-1>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-1-3> ;
+    skos:definition "Model decisions may systematically advantage one group over another." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Decision bias" .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#evasion-attack> a ns1:Risk ;
+    ns1:descriptor "traditional risk of AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#model-safety-engineering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#red-teaming>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#threat-modelling> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness-model-behavior-manipulation> ;
+    ns1:riskType "inference" ;
+    ns1:tag "evasion-attack" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness-model-behavior-manipulation> ;
+    skos:definition "Inputs may be modified to cause a trained model to produce incorrect results." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Evasion attack" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-2>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-3> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#prompt-leaking> a ns1:Risk ;
+    ns1:descriptor "specific to generative AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#red-teaming>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-architecture-documentation> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness-prompt-attacks> ;
+    ns1:riskType "inference" ;
+    ns1:tag "prompt-leaking" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness-prompt-attacks> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm07-system-prompt-leakage> ;
+    skos:definition "An attacker may attempt to extract system prompts or hidden instructions from a model." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Prompt leaking" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-2> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#reidentification> a ns1:Risk ;
+    ns1:descriptor "amplified by synthetic data",
+        "traditional risk of AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#privacy-control-for-user-data> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#privacy> ;
+    ns1:riskType "training-data" ;
+    ns1:tag "reidentification" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#privacy> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1> ;
+    skos:definition "Individuals may be identified from data that was intended to be anonymized or de-identified." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Reidentification" .
+
+<http://w3id.org/airiskkg/taxonomy/mappings#> a owl:Ontology ;
+    rdfs:label "AI Risk KG Taxonomy Mappings" ;
+    dct:description """\r
+    Cross-taxonomy mappings between selected IBM AI Risk Atlas, MIT AI Risk Repository,\r
+    OWASP LLM Top 10, and MIT AI Risk Control concepts. These mappings are intentionally\r
+    conservative: closeMatch is used for strong conceptual similarity, while relatedMatch\r
+    is used for weaker or contextual relationships.\r
+    """ ;
+    dct:title "AI Risk KG Taxonomy Mappings" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> a owl:Ontology ;
+    rdfs:label "MIT AI Risk Repository Subset for AI Risk KG" ;
+    dct:description """\r
+    A selected RDF subset of the MIT AI Risk Repository domain taxonomy,\r
+    adapted from AI Atlas Nexus for use in graph-pattern-based AI risk assessment.\r
+    """ ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_repository_data.yaml> ;
+    dct:title "MIT AI Risk Repository Subset for AI Risk KG" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-1-2> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-1> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-1> ;
+    skos:definition "AI may expose users to harmful, abusive, unsafe, or inappropriate content." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Exposure to toxic content" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-5-2> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-5> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-5> ;
+    skos:definition "AI systems may reduce human control, agency, or autonomy in decision-making." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Loss of human agency and autonomy" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> a owl:Ontology ;
+    rdfs:label "MIT AI Risk Control Subset for AI Risk KG" ;
+    dct:description """\r
+    A selected RDF subset of the MIT Draft AI Risk Mitigation Taxonomy and related\r
+    risk controls, adapted from AI Atlas Nexus. This file provides a control\r
+    grounding layer for graph-pattern-based AI risk assessment.\r
+    """ ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_mitigation_data.yaml>,
+        <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_repository_data_controls.yaml> ;
+    dct:title "MIT AI Risk Control Subset for AI Risk KG" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#incident-response-plan> a ns1:RiskControl ;
+    ns1:controlType "corrective" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "post-deployment" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#incident-reporting>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#incident-response-recovery> ;
+    skos:definition "A plan for responding to AI safety incidents, security failures, misuse, or harmful outputs." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Incident Response Plan" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#pre-deployment-risk-assessment> a ns1:RiskControl ;
+    ns1:controlType "governance" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-management>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#staged-deployment> ;
+    skos:definition "Assessment of risks before deployment or before expanding system access." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Pre-deployment Risk Assessment" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#safety-decision-frameworks> a ns1:RiskControlGroup ;
+    ns1:controlType "governance" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#governance-oversight-controls> ;
+    skos:definition """\r
+    Protocols and commitments that constrain decision-making about model development,\r
+    deployment, and capability scaling.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Safety Decision Frameworks" .
+
+ns1: a owl:Ontology ;
+    rdfs:label "AI Risk KG Taxonomy Core" ;
+    dct:description """\r
+    A lightweight RDF adaptation of the AI Atlas Nexus taxonomy structure.\r
+    This vocabulary is used to represent external AI risk taxonomies,\r
+    risk groups, risk taxonomy entries, risk control taxonomies, and\r
+    control groups in a way that can be linked to BEAM risk findings\r
+    and graph risk patterns.\r
+    """ ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/tree/main/src/ai_atlas_nexus/data/knowledge_graph> ;
+    dct:title "AI Risk KG Taxonomy Core" .
+
+ns1:concern a owl:DatatypeProperty ;
+    rdfs:label "concern" ;
+    rdfs:comment "Short explanation of the concern represented by the risk entry." ;
+    rdfs:domain ns1:RiskTaxonomyEntry ;
+    rdfs:range xsd:string .
+
+ns1:controlType a owl:DatatypeProperty ;
+    rdfs:label "control type" ;
+    rdfs:comment """\r
+    Indicates whether the control is preventive, detective, corrective, governance,\r
+    technical, operational, or transparency-oriented.\r
+    """ ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range xsd:string .
+
+ns1:descriptor a owl:DatatypeProperty ;
+    rdfs:label "descriptor" ;
+    rdfs:comment """\r
+    Descriptor used by a source taxonomy, for example traditional AI risk,\r
+    specific to generative AI, amplified by generative AI, or specific to agentic AI.\r
+    """ ;
+    rdfs:domain ns1:RiskTaxonomyEntry ;
+    rdfs:range xsd:string .
+
+ns1:hasRelatedControl a owl:ObjectProperty ;
+    rdfs:label "has related control" ;
+    rdfs:comment "Links a risk taxonomy entry to a related control or mitigation concept." ;
+    rdfs:domain ns1:RiskTaxonomyEntry ;
+    rdfs:range beamr:RiskControl .
+
+ns1:hasRelatedRisk a owl:ObjectProperty ;
+    rdfs:label "has related risk" ;
+    rdfs:comment "Links a control, action, or concept to a related risk taxonomy entry." ;
+    rdfs:domain skos:Concept ;
+    rdfs:range ns1:RiskTaxonomyEntry .
+
+ns1:isDefinedByTaxonomy a owl:ObjectProperty ;
+    rdfs:label "is defined by taxonomy" ;
+    rdfs:comment "Links a risk, risk group, control, or control group to the taxonomy that defines it." ;
+    rdfs:domain skos:Concept ;
+    rdfs:range ns1:Taxonomy .
+
+ns1:isPartOf a owl:ObjectProperty ;
+    rdfs:label "is part of" ;
+    rdfs:comment "Links a taxonomy entry to the group it belongs to." ;
+    rdfs:domain skos:Concept ;
+    rdfs:range skos:Concept .
+
+ns1:lifecyclePhase a owl:DatatypeProperty ;
+    rdfs:label "lifecycle phase" ;
+    rdfs:comment """\r
+    Lifecycle phase where the control is mainly relevant, such as design-time,\r
+    development, deployment, operation, monitoring, or post-deployment.\r
+    """ ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range xsd:string .
+
+ns1:mitigatesRiskTaxonomyEntry a owl:ObjectProperty ;
+    rdfs:label "mitigates risk taxonomy entry" ;
+    rdfs:comment """\r
+    Links a risk control or control group to a risk taxonomy entry that it may mitigate.\r
+    This relation is used for general control-to-risk grounding, not as proof that\r
+    a specific system has implemented the control.\r
+    """ ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range ns1:RiskTaxonomyEntry .
+
+ns1:phase a owl:DatatypeProperty ;
+    rdfs:label "phase" ;
+    rdfs:comment "Lifecycle or development phase associated with a risk entry, if provided by the source taxonomy." ;
+    rdfs:domain ns1:RiskTaxonomyEntry ;
+    rdfs:range xsd:string .
+
+ns1:riskType a owl:DatatypeProperty ;
+    rdfs:label "risk type" ;
+    rdfs:comment """\r
+    Indicates where the risk mainly arises, for example input, training-data,\r
+    inference, output, agentic, or non-technical.\r
+    """ ;
+    rdfs:domain ns1:RiskTaxonomyEntry ;
+    rdfs:range xsd:string .
+
+ns1:tag a owl:DatatypeProperty ;
+    rdfs:label "tag" ;
+    rdfs:comment "A compact machine-readable tag for a taxonomy entry." ;
+    rdfs:domain skos:Concept ;
+    rdfs:range xsd:string .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#> a owl:Ontology ;
+    rdfs:label "OWASP LLM Top 10 Subset for AI Risk KG" ;
+    dct:description """\r
+    RDF representation of selected OWASP Top 10 for Large Language Model Applications\r
+    entries adapted from AI Atlas Nexus.\r
+    """ ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/owasp_llm_2.0_data.yaml> ;
+    dct:title "OWASP LLM Top 10 Subset for AI Risk KG" .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#llm03-supply-chain> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    ns1:tag "llm03-supply-chain" ;
+    skos:definition "LLM supply chains may be vulnerable through models, data, dependencies, or deployment platforms." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    skos:prefLabel "LLM03:2025 Supply Chain" .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#llm05-improper-output-handling> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    ns1:tag "llm05-improper-output-handling" ;
+    skos:definition "Generated outputs may be insufficiently validated, sanitized, or constrained before downstream use." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    skos:prefLabel "LLM05:2025 Improper Output Handling" .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#llm06-excessive-agency> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    ns1:tag "llm06-excessive-agency" ;
+    skos:definition "LLM systems may be granted excessive ability to invoke tools, act, or affect external systems." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    skos:prefLabel "LLM06:2025 Excessive Agency" .
+
+beam:Engineer a owl:Class ;
+    rdfs:label "Engineer" ;
+    rdfs:subClassOf beam:Generate .
+
+beam:SemanticModel a owl:Class ;
+    rdfs:label "Semantic Model" ;
+    rdfs:subClassOf beam:Model .
+
+beam:Symbol a owl:Class ;
+    rdfs:label "Symbol" ;
+    rdfs:subClassOf beam:Instance .
+
+beam:Train a owl:Class ;
+    rdfs:label "Train" ;
+    rdfs:subClassOf beam:Generate .
+
+beam:contain a owl:TransitiveProperty ;
+    rdfs:label "contain" ;
+    rdfs:domain beam:Element ;
+    rdfs:range beam:Element .
+
+beam:context a owl:DatatypeProperty ;
+    rdfs:label "context" ;
+    rdfs:domain beam:System ;
+    rdfs:range xsd:String .
+
+beam:description a owl:DatatypeProperty ;
+    rdfs:label "description" ;
+    rdfs:domain beam:System ;
+    rdfs:range xsd:String .
+
+beam:hasAgent a owl:ObjectProperty ;
+    rdfs:label "has agent" ;
+    rdfs:domain beam:System ;
+    rdfs:range beam:Agent .
+
+beam:hasProcess a owl:ObjectProperty ;
+    rdfs:label "has process" ;
+    rdfs:domain beam:System ;
+    rdfs:range beam:Process .
+
+beam:hasResource a owl:ObjectProperty ;
+    rdfs:label "has resource" ;
+    rdfs:domain beam:System ;
+    rdfs:range beam:Resource .
+
+beam:inform a owl:TransitiveProperty ;
+    rdfs:label "inform" ;
+    rdfs:domain beam:Process ;
+    rdfs:range beam:Process .
+
+beam:note a owl:ObjectProperty ;
+    rdfs:label "note" ;
+    rdfs:domain beam:Element ;
+    rdfs:range beam:Note .
+
+beam:participatedIn a owl:ObjectProperty ;
+    rdfs:label "participated in" ;
+    rdfs:domain beam:Agent ;
+    rdfs:range beam:Process .
+
+beam:performedBy a owl:ObjectProperty ;
+    rdfs:label "performed by" ;
+    rdfs:domain beam:Task ;
+    rdfs:range beam:Element ;
+    owl:inverseOf beam:perform .
+
+beam:producedBy a owl:ObjectProperty ;
+    rdfs:label "produced by" ;
+    rdfs:domain beam:Resource ;
+    rdfs:range beam:Process ;
+    owl:inverseOf beam:produce .
+
+beamr:associatedTo a owl:ObjectProperty ;
+    rdfs:label "associated to" ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range beam:Element .
+
+beamr:hasConsequence a owl:ObjectProperty ;
+    rdfs:label "has consequence" ;
+    rdfs:domain beamr:Risk ;
+    rdfs:range beamr:Consequence ;
+    rdfs:subPropertyOf <https://w3id.org/airohasConsequence> .
+
+beamr:hasImpact a owl:ObjectProperty ;
+    rdfs:label "has impact" ;
+    rdfs:domain beamr:Consequence ;
+    rdfs:range beamr:Impact ;
+    rdfs:subPropertyOf <https://w3id.org/airohasImpact> .
+
+beamr:hasRisk a owl:ObjectProperty ;
+    rdfs:label "has risk" ;
+    rdfs:domain [ a owl:Class ;
+            owl:unionOf ( beam:Element beam:Task ) ] ;
+    rdfs:range beamr:Risk .
+
+beamr:isRiskSourceFor a owl:ObjectProperty ;
+    rdfs:label "is risk source for" ;
+    rdfs:domain beamr:RiskSource ;
+    rdfs:range beamr:Risk ;
+    rdfs:subPropertyOf <https://w3id.org/airoisRiskSourceFor> .
+
+beamr:modifiesRiskConcept a owl:ObjectProperty ;
+    rdfs:label "modifies risk concept" ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range beamr:RiskConcept ;
+    rdfs:subPropertyOf <https://w3id.org/airomodifiesRiskConcept> .
+
+beamr:originatedFrom a owl:ObjectProperty ;
+    rdfs:label "originated from" ;
+    rdfs:domain beamr:RiskSource ;
+    rdfs:range beam:Element .
+
+rp:AffectedStakeholder a rp:PatternRole ;
+    rp:subRoleOf rp:HumanActor ;
+    skos:prefLabel "Affected Stakeholder"@en .
+
+rp:BiasedTrainingDataPropagation a rp:RiskMechanism ;
+    rdfs:label "Biased Training Data Propagation"@en ;
+    dct:description """\r
+    Biases or representational gaps in training data can propagate into\r
+    trained model behavior and downstream system outputs.\r
+    """@en .
+
+rp:ClassifierModel a rp:PatternRole ;
+    rp:subRoleOf rp:MLModel ;
+    skos:prefLabel "Classifier Model"@en .
+
+rp:ConfidentialInformation a rp:DataCategory ;
+    rp:subDataCategoryOf rp:SensitiveInformation ;
+    skos:prefLabel "Confidential Information"@en .
+
+rp:GeneratedContent a rp:DataCategory ;
+    rp:subDataCategoryOf rp:Information ;
+    skos:prefLabel "Generated Content"@en .
+
+rp:HumanOversightActor a rp:PatternRole ;
+    rp:subRoleOf rp:HumanActor ;
+    skos:prefLabel "Human Oversight Actor"@en .
+
+rp:InferenceStep a rp:PatternRole ;
+    skos:prefLabel "Inference Step"@en .
+
+rp:InsufficientRetrievedContext a rp:RiskMechanism ;
+    rdfs:label "Insufficient Retrieved Context"@en ;
+    dct:description """\r
+    A retrieval step may provide incomplete, irrelevant, or insufficient context\r
+    for downstream generation or decision-making.\r
+    """@en .
+
+rp:LLM a rp:PatternRole ;
+    rp:subRoleOf rp:GenerativeModel ;
+    skos:prefLabel "Large Language Model"@en .
+
+rp:LLMBasedInformationRetrievalStep a rp:PatternRole ;
+    rdfs:label "LLM-based Information Retrieval Step"@en ;
+    rp:subRoleOf rp:RetrievalStep ;
+    rdfs:comment """\r
+    A retrieval or answer-production step in which an LLM is directly used\r
+    to generate or retrieve an answer without an explicit vector store or\r
+    external knowledge source in the matched motif.\r
+    """@en .
+
+rp:PersonalInformation a rp:DataCategory ;
+    rp:subDataCategoryOf rp:SensitiveInformation ;
+    skos:prefLabel "Personal Information"@en .
+
+rp:PromptContextOverrun a rp:RiskMechanism ;
+    rdfs:label "Prompt Context Overrun"@en ;
+    dct:description """\r
+    The amount of retrieved or constructed prompt context may exceed model,\r
+    system, cost, latency, or quality constraints.\r
+    """@en .
+
+rp:RegressionModel a rp:PatternRole ;
+    rp:subRoleOf rp:MLModel ;
+    skos:prefLabel "Regression Model"@en .
+
+rp:SensitiveDataPropagationToGeneration a rp:RiskMechanism ;
+    rdfs:label "Sensitive Data Propagation to Generation"@en ;
+    dct:description """\r
+    Sensitive information can propagate from a knowledge source, input,\r
+    or intermediate context into a generative model step and potentially\r
+    into user-facing output.\r
+    """@en .
+
+rp:TrainingDataCategory a rp:DataCategory ;
+    rp:subDataCategoryOf rp:Information ;
+    skos:prefLabel "Training Data"@en .
+
+rp:TrainingStep a rp:PatternRole ;
+    skos:prefLabel "Training Step"@en .
+
+rp:UnsupportedModelInference a rp:RiskMechanism ;
+    rdfs:label "Unsupported Model Inference"@en ;
+    dct:description """\r
+    A model may produce outputs in contexts, data distributions, or input\r
+    conditions for which it is not sufficiently validated or robust.\r
+    """@en .
+
+rp:UntrustedContextInjection a rp:RiskMechanism ;
+    rdfs:label "Untrusted Context Injection"@en ;
+    dct:description """\r
+    Untrusted or externally controlled content can enter a prompt construction\r
+    or generation step and influence model behavior.\r
+    """@en .
+
+rp:ValidationDataCategory a rp:DataCategory ;
+    rp:subDataCategoryOf rp:Information ;
+    skos:prefLabel "Validation Data"@en .
+
+rp:VectorBasedRetrievalStep a rp:PatternRole ;
+    rdfs:label "Vector-based Retrieval Step"@en ;
+    rp:subRoleOf rp:RetrievalStep ;
+    rdfs:comment """\r
+    A retrieval step that retrieves information using vector representations,\r
+    embeddings, or similarity search over a vector store.\r
+    """@en .
+
+rp:bindsPatternNode a owl:ObjectProperty ;
+    rdfs:label "binds pattern node"@en ;
+    rdfs:comment "Links a node binding to the abstract pattern node being bound."@en ;
+    rdfs:domain rp:NodeBinding ;
+    rdfs:range rp:PatternNode .
+
+rp:boundToElement a owl:ObjectProperty ;
+    rdfs:label "bound to element"@en ;
+    rdfs:comment """
+    Alias-style property for linking a node binding to the concrete
+    architecture element matched in the system graph.
+    """@en ;
+    rdfs:domain rp:NodeBinding ;
+    rdfs:range rdfs:Resource .
+
+rp:conditionExpression a owl:DatatypeProperty ;
+    rdfs:label "condition expression"@en ;
+    rdfs:comment "A textual or query-oriented expression of a graph matching condition."@en ;
+    rdfs:domain rp:GraphCondition ;
+    rdfs:range xsd:string .
+
+rp:confidenceScore a owl:DatatypeProperty ;
+    rdfs:label "confidence score"@en ;
+    rdfs:comment """\r
+    Optional confidence score for a generated risk finding. This can be used\r
+    when architecture extraction or role annotation is uncertain.\r
+    """@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range xsd:decimal .
+
+rp:containsDataCategory a owl:ObjectProperty ;
+    rdfs:label "contains data category"@en ;
+    rdfs:comment """\r
+    Links a data resource to an abstract category of information it contains.\r
+    This supports graph matching over sensitive, personal, confidential,\r
+    untrusted, or domain-specific data.\r
+    """@en ;
+    rdfs:domain beam:Data ;
+    rdfs:range rp:DataCategory .
+
+rp:expectedClass a owl:ObjectProperty ;
+    rdfs:label "expected class"@en ;
+    rdfs:comment """\r
+    The expected RDF class of a concrete element matched to this pattern node.\r
+    For example, beam:Data, beam:Infer, beam:Transform, or beam:StatisticalModel.\r
+    """@en ;
+    rdfs:domain rp:PatternNode ;
+    rdfs:range rdfs:Class .
+
+rp:expectedDataCategory a owl:ObjectProperty ;
+    rdfs:label "expected data category"@en ;
+    rdfs:comment """\r
+    The expected data category contained by a concrete data element matched\r
+    to this pattern node.\r
+    """@en ;
+    rdfs:domain rp:PatternNode ;
+    rdfs:range rp:DataCategory .
+
+rp:expectedRole a owl:ObjectProperty ;
+    rdfs:label "expected role"@en ;
+    rdfs:comment """\r
+    The expected abstract role of a concrete element matched to this pattern\r
+    node. This is the main abstraction mechanism for reusable graph motifs.\r
+    """@en ;
+    rdfs:domain rp:PatternNode ;
+    rdfs:range rp:PatternRole .
+
+rp:findingStatus a owl:DatatypeProperty ;
+    rdfs:label "finding status"@en ;
+    rdfs:comment """\r
+    Status of a risk finding, for example candidate, reviewed, confirmed,\r
+    rejected, or mitigated.\r
+    """@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range xsd:string .
+
+rp:generatedByMotif a owl:ObjectProperty ;
+    rdfs:label "generated by motif"@en ;
+    rdfs:comment "Links a risk finding to the graph motif that generated it."@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range rp:GraphMotif .
+
+rp:generatedFromMatch a owl:ObjectProperty ;
+    rdfs:label "generated from match"@en ;
+    rdfs:comment "Links a risk finding to the motif match from which it was generated."@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range rp:MotifMatch .
+
+rp:hasCandidateRiskTaxonomyEntry a owl:ObjectProperty ;
+    rdfs:label "has candidate risk taxonomy entry"@en ;
+    rdfs:comment """\r
+    Links a generated risk finding to external taxonomy entries that classify\r
+    the possible risk indicated by the motif match.\r
+    """@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range skos:Concept .
+
+rp:hasCondition a owl:ObjectProperty ;
+    rdfs:label "has condition"@en ;
+    rdfs:comment """\r
+    Links a graph motif to an additional matching condition, such as a\r
+    property path condition, negated condition, or cardinality condition.
+    """@en ;
+    rdfs:domain rp:GraphMotif ;
+    rdfs:range rp:GraphCondition .
+
+rp:hasEvidenceElement a owl:ObjectProperty ;
+    rdfs:label "has evidence element"@en ;
+    rdfs:comment """\r
+    Links a generated risk finding to concrete architecture elements that\r
+    provide evidence for the finding.\r
+    """@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range rdfs:Resource .
+
+rp:hasEvidenceSubgraph a owl:ObjectProperty ;
+    rdfs:label "has evidence subgraph"@en ;
+    rdfs:comment "Links a motif match to the evidence subgraph found in the architecture graph."@en ;
+    rdfs:domain rp:MotifMatch ;
+    rdfs:range rp:EvidenceSubgraph .
+
+rp:hasInterpretation a owl:ObjectProperty ;
+    rdfs:label "has interpretation"@en ;
+    rdfs:comment """\r
+    Links a graph motif to an interpretation that explains what a match of\r
+    the motif may mean from a risk assessment perspective.\r
+    """@en ;
+    rdfs:domain rp:GraphMotif ;
+    rdfs:range rp:MotifInterpretation .
+
+rp:hasInterpretationCondition a owl:ObjectProperty ;
+    rdfs:label "has interpretation condition"@en ;
+    rdfs:comment """
+    Links a motif interpretation to a condition that is evaluated after a
+    motif match exists. This keeps motif matching separate from risk
+    interpretation.
+    """@en ;
+    rdfs:domain rp:MotifInterpretation ;
+    rdfs:range rp:GraphCondition .
+
+rp:hasInterpretedMechanism a owl:ObjectProperty ;
+    rdfs:label "has interpreted mechanism"@en ;
+    rdfs:comment """\r
+    Links a generated risk finding to the risk mechanism used to explain\r
+    the matched graph motif.\r
+    """@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range rp:RiskMechanism .
+
+rp:hasNodeBinding a owl:ObjectProperty ;
+    rdfs:label "has node binding"@en ;
+    rdfs:comment "Links a motif match to a binding between a pattern node and a concrete system element."@en ;
+    rdfs:domain rp:MotifMatch ;
+    rdfs:range rp:NodeBinding .
+
+rp:hasPatternEdge a owl:ObjectProperty ;
+    rdfs:label "has pattern edge"@en ;
+    rdfs:comment "Links a graph motif to one of its abstract pattern edges."@en ;
+    rdfs:domain rp:GraphMotif ;
+    rdfs:range rp:PatternEdge .
+
+rp:hasPatternNode a owl:ObjectProperty ;
+    rdfs:label "has pattern node"@en ;
+    rdfs:comment "Links a graph motif to one of its abstract pattern nodes."@en ;
+    rdfs:domain rp:GraphMotif ;
+    rdfs:range rp:PatternNode .
+
+rp:hasSuggestedControl a owl:ObjectProperty ;
+    rdfs:label "has suggested control"@en ;
+    rdfs:comment """\r
+    Links a generated risk finding to possible controls or mitigations that\r
+    should be considered.
+    """@en ;
+    rdfs:domain rp:RiskFinding ;
+    rdfs:range beamr:RiskControl .
+
+rp:implementationLanguage a owl:DatatypeProperty ;
+    rdfs:label "implementation language"@en ;
+    rdfs:comment "The implementation language, for example SPARQL, SHACL, RIF, or custom rule language."@en ;
+    rdfs:domain rp:PatternImplementation ;
+    rdfs:range xsd:string .
+
+rp:implementationPath a owl:DatatypeProperty ;
+    rdfs:label "implementation path"@en ;
+    rdfs:comment "Path or URI of the executable implementation file."@en ;
+    rdfs:domain rp:PatternImplementation ;
+    rdfs:range xsd:string .
+
+rp:implementedBy a owl:ObjectProperty ;
+    rdfs:label "implemented by"@en ;
+    rdfs:comment """\r
+    Links a graph motif to an executable implementation, such as a SPARQL\r
+    CONSTRUCT query, SHACL rule, or rule-based matcher.\r
+    """@en ;
+    rdfs:domain rp:GraphMotif ;
+    rdfs:range rp:PatternImplementation .
+
+rp:implementsMotif a owl:ObjectProperty ;
+    rdfs:label "implements motif"@en ;
+    rdfs:comment "Links an executable implementation to the graph motif it implements."@en ;
+    rdfs:domain rp:PatternImplementation ;
+    rdfs:range rp:GraphMotif .
+
+rp:interpretedAsMechanism a owl:ObjectProperty ;
+    rdfs:label "interpreted as mechanism"@en ;
+    rdfs:comment """\r
+    Links a motif interpretation to the risk mechanism that explains why\r
+    the matched graph motif may be risky.\r
+    """@en ;
+    rdfs:domain rp:MotifInterpretation ;
+    rdfs:range rp:RiskMechanism .
+
+rp:interpretsMotif a owl:ObjectProperty ;
+    rdfs:label "interprets motif"@en ;
+    rdfs:comment "Links an interpretation to the graph motif it interprets."@en ;
+    rdfs:domain rp:MotifInterpretation ;
+    rdfs:range rp:GraphMotif .
+
+rp:matchedElement a owl:ObjectProperty ;
+    rdfs:label "matched element"@en ;
+    rdfs:comment "Links a node binding to the concrete architecture element matched in the system graph."@en ;
+    rdfs:domain rp:NodeBinding ;
+    rdfs:range rdfs:Resource .
+
+rp:matchesMotif a owl:ObjectProperty ;
+    rdfs:label "matches motif"@en ;
+    rdfs:comment "Links a motif match to the graph motif that was matched."@en ;
+    rdfs:domain rp:MotifMatch ;
+    rdfs:range rp:GraphMotif .
+
+rp:mayIndicateRisk a owl:ObjectProperty ;
+    rdfs:label "may indicate risk"@en ;
+    rdfs:comment """\r
+    Links a motif interpretation to an external risk taxonomy entry that\r
+    may be indicated by a match of the motif.\r
+    """@en ;
+    rdfs:domain rp:MotifInterpretation ;
+    rdfs:range skos:Concept .
+
+rp:pathExpression a owl:DatatypeProperty ;
+    rdfs:label "path expression"@en ;
+    rdfs:comment """\r
+    A SPARQL-like property path expression used to operationalize a graph\r
+    condition. This is used only for implementation guidance.\r
+    """@en ;
+    rdfs:domain rp:PropertyPathCondition ;
+    rdfs:range xsd:string .
+
+rp:patternPredicate a owl:ObjectProperty ;
+    rdfs:label "pattern predicate"@en ;
+    rdfs:comment """\r
+    The RDF property that should connect the source and target pattern nodes\r
+    in a matched architecture graph.\r
+    """@en ;
+    rdfs:domain rp:PatternEdge ;
+    rdfs:range rdf:Property .
+
+rp:playsRole a owl:ObjectProperty ;
+    rdfs:label "plays role"@en ;
+    rdfs:comment """\r
+    Links a concrete architecture element to an abstract pattern role.\r
+    This role abstraction makes graph motifs reusable across different\r
+    systems and use cases.\r
+    """@en ;
+    rdfs:domain rdfs:Resource ;
+    rdfs:range rp:PatternRole .
+
+rp:producesOutputType a owl:ObjectProperty ;
+    rdfs:label "produces output type"@en ;
+    rdfs:comment """
+    Links an executable pattern implementation to the RDF class of output
+    resource it constructs, such as rp:MotifMatch or rp:RiskFinding.
+    """@en ;
+    rdfs:domain rp:PatternImplementation ;
+    rdfs:range rdfs:Class .
+
+rp:sourcePatternNode a owl:ObjectProperty ;
+    rdfs:label "source pattern node"@en ;
+    rdfs:comment "The source node of a pattern edge."@en ;
+    rdfs:domain rp:PatternEdge ;
+    rdfs:range rp:PatternNode .
+
+rp:subDataCategoryOf a owl:ObjectProperty,
+        owl:TransitiveProperty ;
+    rdfs:label "sub-data-category of"@en ;
+    rdfs:comment """\r
+    Relates a more specific data category to a broader data category.\r
+    For example, Personal Information can be a subcategory of Sensitive\r
+    Information.\r
+    """@en ;
+    rdfs:domain rp:DataCategory ;
+    rdfs:range rp:DataCategory .
+
+rp:subRoleOf a owl:ObjectProperty,
+        owl:TransitiveProperty ;
+    rdfs:label "sub-role of"@en ;
+    rdfs:comment "Relates a more specific pattern role to a more general pattern role."@en ;
+    rdfs:domain rp:PatternRole ;
+    rdfs:range rp:PatternRole .
+
+rp:suggestedControl a owl:ObjectProperty ;
+    rdfs:label "suggested control"@en ;
+    rdfs:comment """\r
+    Links a motif interpretation to a possible control or mitigation that\r
+    should be checked or considered. This does not mean the control is\r
+    implemented in the assessed system.\r
+    """@en ;
+    rdfs:domain rp:MotifInterpretation ;
+    rdfs:range beamr:RiskControl .
+
+rp:targetPatternNode a owl:ObjectProperty ;
+    rdfs:label "target pattern node"@en ;
+    rdfs:comment "The target node of a pattern edge."@en ;
+    rdfs:domain rp:PatternEdge ;
+    rdfs:range rp:PatternNode .
+
+rp:variableName a owl:DatatypeProperty ;
+    rdfs:label "variable name"@en ;
+    rdfs:comment """\r
+    Human-readable variable name for a pattern node, for example\r
+    knowledgeSource, retrievalStep, retrievedContext, or output.\r
+    """@en ;
+    rdfs:domain rp:PatternNode ;
+    rdfs:range xsd:string .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#LLMGenerationImplementation> a beam:Task ;
+    rdfs:label "LLM generation implementation"@en ;
+    dct:description """\r
+    Task of implementing LLM-based answer generation.\r
+    """@en .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalImplementation> a beam:Task ;
+    rdfs:label "Llatrieval implementation"@en ;
+    dct:description """\r
+    Task of implementing retrieval scoring and query reformulation.\r
+    """@en .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#VectorBasedInformationRetrievalImplementation> a beam:Task ;
+    rdfs:label "Vector-based information retrieval implementation"@en ;
+    dct:description """\r
+    Task of implementing vector-based retrieval over product information.\r
+    """@en .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#VectorDBPopulation> a beam:Task ;
+    rdfs:label "Vector DB population"@en ;
+    dct:description """\r
+    Task of populating the vector database with product information.\r
+    """@en .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> a rp:MotifMatch ;
+    rdfs:label "Vector-based information retrieval motif match"@en ;
+    rp:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/query>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieval-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieved-result>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/vector-store> ;
+    rp:matchesMotif pat:VectorBasedInformationRetrievalMotif .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/query> a rp:NodeBinding ;
+    rp:bindsPatternNode pat:VectorIR_QueryNode ;
+    rp:boundToElement <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> ;
+    rp:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieval-step> a rp:NodeBinding ;
+    rp:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+    rp:boundToElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
+    rp:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieved-result> a rp:NodeBinding ;
+    rp:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+    rp:boundToElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> ;
+    rp:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/vector-store> a rp:NodeBinding ;
+    rp:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+    rp:boundToElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB> ;
+    rp:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB> .
+
+pat:DirectLLMAnsweringWithoutGrounding a rp:RiskMechanism ;
+    rdfs:label "Direct LLM answering without grounding"@en ;
+    dct:description "A mechanism in which an LLM produces a user-facing answer without an explicit grounding source, retrieval support, verification, or control represented in the architecture graph."@en .
+
+pat:DirectLLMAnsweringWithoutGroundingInterpretation a rp:MotifInterpretation ;
+    rdfs:label "Direct LLM answering without grounding interpretation"@en ;
+    dct:description "Interprets an LLM-based information retrieval motif as a potential unsupported answer mechanism when no explicit knowledge source or grounding control is represented in the architecture graph."@en ;
+    rp:hasInterpretationCondition pat:LLMIR_NoExplicitKnowledgeSourceCondition ;
+    rp:interpretedAsMechanism pat:DirectLLMAnsweringWithoutGrounding ;
+    rp:interpretsMotif pat:LLMBasedInformationRetrievalMotif ;
+    rp:mayIndicateRisk <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#hallucination>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-3-1>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm09-misinformation> ;
+    rp:suggestedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-quality-evaluation>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-architecture-documentation> .
+
+pat:LLMIR_MatchingOQP a rp:PatternImplementation ;
+    rdfs:label "LLM information retrieval motif matching OQP"@en ;
+    rp:implementationLanguage "SPARQL-CONSTRUCT" ;
+    rp:implementationPath "ontology/patterns/implementation/match_llm_ir.construct.rq" ;
+    rp:implementsMotif pat:LLMBasedInformationRetrievalMotif ;
+    rp:producesOutputType rp:MotifMatch .
+
+pat:LLMIR_NoExplicitKnowledgeSourceCondition a rp:GraphCondition ;
+    rdfs:label "LLM-based answering has no explicit knowledge source"@en ;
+    rp:conditionExpression "FILTER NOT EXISTS { ?step beam:use ?knowledgeSource . ?knowledgeSource rp:playsRole/rp:subRoleOf* rp:KnowledgeSource . } FILTER NOT EXISTS { ?step beam:use ?retrievedContext . ?retrievedContext rp:playsRole/rp:subRoleOf* rp:RetrievedContext . }" .
+
+pat:LLMIR_RetrievalProducesAnswerEdge a rp:PatternEdge ;
+    rdfs:label "LLM-based retrieval produces answer"@en ;
+    rp:patternPredicate beam:produce ;
+    rp:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
+    rp:targetPatternNode pat:LLMIR_AnswerNode .
+
+pat:LLMIR_RetrievalUsesModelEdge a rp:PatternEdge ;
+    rdfs:label "LLM-based retrieval uses generative model"@en ;
+    rp:patternPredicate beam:use ;
+    rp:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
+    rp:targetPatternNode pat:LLMIR_ModelNode .
+
+pat:LLMIR_RetrievalUsesQueryEdge a rp:PatternEdge ;
+    rdfs:label "LLM-based retrieval uses query"@en ;
+    rp:patternPredicate beam:use ;
+    rp:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
+    rp:targetPatternNode pat:LLMIR_QueryNode .
+
+pat:SensitiveDataRetrievalExposureInterpretation a rp:MotifInterpretation ;
+    rdfs:label "Sensitive data retrieval exposure interpretation"@en ;
+    dct:description "Interprets a vector-based information retrieval motif as a potential sensitive data exposure mechanism when the vector store contains sensitive information and retrieved content can flow toward user-facing output."@en ;
+    rp:hasInterpretationCondition pat:VectorIR_RetrievedContentFlowsToOutputCondition,
+        pat:VectorIR_SensitiveVectorStoreCondition ;
+    rp:interpretedAsMechanism pat:SensitiveDataRetrievalExposure ;
+    rp:interpretsMotif pat:VectorBasedInformationRetrievalMotif ;
+    rp:mayIndicateRisk <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#exposing-personal-information>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm02-sensitive-information-disclosure> ;
+    rp:suggestedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#privacy-control-for-user-data>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-source-filtering> .
+
+pat:VectorIR_MatchingOQP a rp:PatternImplementation ;
+    rdfs:label "Vector information retrieval motif matching OQP"@en ;
+    rp:implementationLanguage "SPARQL-CONSTRUCT" ;
+    rp:implementationPath "ontology/patterns/implementation/match_vector_ir.construct.rq" ;
+    rp:implementsMotif pat:VectorBasedInformationRetrievalMotif ;
+    rp:producesOutputType rp:MotifMatch .
+
+pat:VectorIR_RetrievalProducesResultEdge a rp:PatternEdge ;
+    rdfs:label "retrieval produces retrieved result"@en ;
+    rp:patternPredicate beam:produce ;
+    rp:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    rp:targetPatternNode pat:VectorIR_RetrievedResultNode .
+
+pat:VectorIR_RetrievalUsesQueryEdge a rp:PatternEdge ;
+    rdfs:label "retrieval uses query"@en ;
+    rp:patternPredicate beam:use ;
+    rp:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    rp:targetPatternNode pat:VectorIR_QueryNode .
+
+pat:VectorIR_RetrievalUsesVectorStoreEdge a rp:PatternEdge ;
+    rdfs:label "retrieval uses vector store"@en ;
+    rp:patternPredicate beam:use ;
+    rp:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    rp:targetPatternNode pat:VectorIR_VectorStoreNode .
+
+pat:VectorIR_RetrievedContentFlowsToOutputCondition a rp:GraphCondition ;
+    rdfs:label "Retrieved content can flow to user-facing output"@en ;
+    rp:conditionExpression "?retrievedResult is used directly or through an intermediate step by a generation step that produces ?userFacingOutput with role rp:UserFacingOutput" .
+
+pat:VectorIR_SensitiveVectorStoreCondition a rp:PropertyPathCondition ;
+    rdfs:label "Vector store contains sensitive information"@en ;
+    rp:conditionExpression "?vectorStore rp:containsDataCategory/rp:subDataCategoryOf* rp:SensitiveInformation" ;
+    rp:pathExpression "rp:containsDataCategory/rp:subDataCategoryOf*" .
+
+<http://w3id.org/airiskkg/patterns/motif-library#> a owl:Ontology ;
+    dct:description """\r
+    A library of reusable architectural graph motifs for design-time AI risk\r
+    assessment. The motifs are architecture-driven: they describe reusable\r
+    component-flow structures that may later be interpreted as risk-relevant\r
+    configurations.\r
+    """@en ;
+    dct:title "AI Risk Pattern Motif Library"@en ;
+    owl:imports beam:,
+        rp: .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#confidential-data-in-prompt> a ns1:Risk ;
+    ns1:descriptor "specific to generative AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#prompt-context-limiting>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-architecture-documentation> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#intellectual-property> ;
+    ns1:riskType "inference" ;
+    ns1:tag "confidential-data-in-prompt" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#intellectual-property> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm02-sensitive-information-disclosure> ;
+    skos:definition "Confidential information may be included in prompts and exposed through model interaction or output." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Confidential data in prompt" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm07-system-prompt-leakage> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#data-curation> a ns1:Risk ;
+    ns1:descriptor "traditional risk of AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-curation-process>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#testing-auditing> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#value-alignment> ;
+    ns1:riskType "training-data" ;
+    ns1:tag "data-curation" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#value-alignment> ;
+    skos:definition "Improper collection, preparation, labeling, or generation of data may degrade model behavior." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Improper data curation" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-1-3>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-3>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm04-data-and-model-poisoning> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#data-usage-restrictions> a ns1:Risk ;
+    ns1:descriptor "traditional risk of AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-disclosure>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-documentation> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#data-laws> ;
+    ns1:riskType "training-data" ;
+    ns1:tag "data-usage-restrictions" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#data-laws> ;
+    skos:definition "Legal or policy restrictions may limit whether certain data can be used for an AI use case." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Data usage restrictions" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-4> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#impact-on-the-environment> a ns1:Risk ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-disclosure>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#societal-impact-assessment> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#societal-impact> ;
+    ns1:riskType "non-technical" ;
+    ns1:tag "impact-on-the-environment" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#societal-impact> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-6-6> ;
+    skos:definition "Training or operating AI systems may increase energy use, water use, or carbon emissions." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Impact on the environment" .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#incomplete-advice> a ns1:Risk ;
+    ns1:descriptor "specific to generative AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#human-oversight-protocol>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-quality-evaluation>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-documentation> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#value-alignment> ;
+    ns1:riskType "output" ;
+    ns1:tag "incomplete-advice" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#value-alignment> ;
+    skos:definition "Generated advice or recommendation may omit important context and lead users to act on incomplete information." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Incomplete advice" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-3-1>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-5-1>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm09-misinformation> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#legal-accountability> a ns1:Risk ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-disclosure>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-management>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-register>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-documentation> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#governance> ;
+    ns1:riskType "non-technical" ;
+    ns1:tag "legal-accountability" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#governance> ;
+    skos:definition "Weak documentation or governance may make responsibility for AI system outcomes unclear." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Legal accountability" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-4> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#poor-model-accuracy> a ns1:Risk ;
+    ns1:descriptor "traditional risk of AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#red-teaming>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-quality-evaluation>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#testing-auditing> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#accuracy> ;
+    ns1:riskType "inference" ;
+    ns1:tag "poor-model-accuracy" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#accuracy> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-3> ;
+    skos:definition "A model may perform insufficiently for the intended task or context." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Poor model accuracy" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm09-misinformation> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-1-1> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-1> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-1> ;
+    skos:definition "AI may treat individuals or groups unfairly or represent them in harmful ways." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Unfair discrimination and misrepresentation" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-4-3> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-4> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-4> ;
+    skos:definition "AI systems may be used to manipulate, deceive, impersonate, or exploit people." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Fraud, scams, and targeted manipulation" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-5-1> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-5> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-5> ;
+    skos:definition "Users may place inappropriate trust in AI systems or use them unsafely." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Overreliance and unsafe use" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-6-6> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-6> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-6> ;
+    skos:definition "AI development or operation may contribute to environmental harm through resource use or emissions." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Environmental harm" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#content-safety-controls> a ns1:RiskControlGroup ;
+    ns1:controlType "technical" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "operation" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#technical-security-controls> ;
+    skos:definition """\r
+    Technical systems and processes that detect, filter, label, or restrict harmful,\r
+    unsafe, or manipulated AI-generated content.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Content Safety Controls" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#incident-reporting> a ns1:RiskControlGroup ;
+    ns1:controlType "transparency-accountability" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "post-deployment" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#transparency-accountability-controls> ;
+    skos:definition """\r
+    Processes that document and share AI safety incidents, security breaches, failures,\r
+    near-misses, and other relevant risk events with appropriate stakeholders.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Incident Reporting" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#incident-response-recovery> a ns1:RiskControlGroup ;
+    ns1:controlType "corrective" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "operation",
+        "post-deployment" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#operational-process-controls> ;
+    skos:definition """\r
+    Protocols and technical systems that respond to security incidents, safety failures,\r
+    model misuse, or harmful system behavior.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Incident Response & Recovery" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#post-deployment-behavior-monitoring> a ns1:RiskControl ;
+    ns1:controlType "detective" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "post-deployment" ;
+    ns1:mitigatesRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#redundant-actions-agentic>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm10-unbounded-consumption> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#post-deployment-monitoring> ;
+    skos:definition "Ongoing monitoring of AI system behavior, outputs, user interactions, failures, and misuse signals after deployment." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Post-deployment Behavior Monitoring" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#post-deployment-monitoring> a ns1:RiskControlGroup ;
+    ns1:controlType "detective" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "post-deployment" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#operational-process-controls> ;
+    skos:definition """\r
+    Ongoing monitoring processes that track AI behavior, user interactions, misuse,\r
+    performance degradation, and societal impacts after deployment.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Post-deployment Monitoring" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-register> a ns1:RiskControl ;
+    ns1:controlType "governance" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "design-time" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-management> ;
+    skos:definition "A structured repository of risks, their prioritization, owners, and mitigation plans." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Risk Register" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#staged-deployment> a ns1:RiskControlGroup ;
+    ns1:controlType "operational" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#operational-process-controls> ;
+    skos:definition """\r
+    Deployment protocols that release AI systems in stages and require validation\r
+    before expanding access or capability.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Staged Deployment" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#user-rights-recourse> a ns1:RiskControlGroup ;
+    ns1:controlType "transparency-accountability" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "post-deployment" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#transparency-accountability-controls> ;
+    skos:definition """\r
+    Frameworks and procedures that enable users to identify AI system interactions,\r
+    request explanations, report issues, appeal decisions, or seek remediation.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "User Rights & Recourse" .
+
+ns1:RiskControlTaxonomy a owl:Class ;
+    rdfs:label "Risk Control Taxonomy" ;
+    rdfs:comment "A taxonomy that organizes AI risk controls, mitigations, actions, or control groups." ;
+    rdfs:subClassOf ns1:Taxonomy .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#llm04-data-and-model-poisoning> a ns1:Risk ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-curation-process>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#model-infrastructure-security>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#threat-modelling> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    ns1:tag "llm04-data-and-model-poisoning" ;
+    skos:definition "Training, fine-tuning, or embedding data may be manipulated to compromise model behavior." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    skos:prefLabel "LLM04:2025 Data and Model Poisoning" .
+
+beam:Infer a owl:Class ;
+    rdfs:label "Infer" ;
+    rdfs:subClassOf beam:Process .
+
+beam:Note a owl:Class ;
+    rdfs:label "Note" ;
+    rdfs:comment """A class to hold information about custom annotation to \r
+                    System, Container, and various elements of AI systems as part of BEAM notation""" .
+
+beam:perform a owl:ObjectProperty ;
+    rdfs:label "perform" ;
+    rdfs:domain beam:Element ;
+    rdfs:range beam:Task .
+
+beam:usedBy a owl:ObjectProperty ;
+    rdfs:label "used by" ;
+    rdfs:domain beam:Resource ;
+    rdfs:range beam:Process .
+
+beamr:Impact a owl:Class ;
+    rdfs:label "Impact" ;
+    rdfs:subClassOf beamr:Consequence,
+        <https://w3id.org/airoImpact> .
+
+rp:EmbeddingStep a rp:PatternRole ;
+    skos:prefLabel "Embedding Step"@en .
+
+rp:EvidenceSubgraph a owl:Class ;
+    rdfs:label "Evidence Subgraph"@en ;
+    rdfs:comment """\r
+    The matched subgraph in the architecture that provides evidence for a\r
+    candidate risk finding.\r
+    """@en .
+
+rp:PromptConstructionStep a rp:PatternRole ;
+    skos:prefLabel "Prompt Construction Step"@en .
+
+rp:QueryReformulationStep a rp:PatternRole ;
+    skos:prefLabel "Query Reformulation Step"@en .
+
+rp:RerankingStep a rp:PatternRole ;
+    skos:prefLabel "Reranking Step"@en .
+
+rp:SystemPrompt a rp:PatternRole ;
+    rp:subRoleOf rp:PromptTemplate ;
+    skos:prefLabel "System Prompt"@en .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#Embedding> a beam:Transform ;
+    rdfs:label "Embedding"@en ;
+    dct:description """\r
+    Transforms the natural language product question into an embedded question.\r
+    """@en ;
+    beam:inform <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
+    beam:produce <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedQuestion> ;
+    beam:use <http://w3id.org/airiskkg/example/uc6-onlim#QuestionsAboutProduct> ;
+    rp:playsRole rp:EmbeddingStep .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#QueryTemplate> a beam:Data ;
+    rdfs:label "Query Template"@en ;
+    dct:description """\r
+    Query template used to structure the product information retrieval query.\r
+    """@en ;
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
+    rp:playsRole rp:PromptTemplate .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#QuestionsAboutProduct> a beam:Data ;
+    rdfs:label "Questions about product"@en ;
+    dct:description """\r
+    Natural language questions submitted by users about products.\r
+    """@en ;
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#Embedding> ;
+    rp:containsDataCategory rp:ProductInformation ;
+    rp:playsRole rp:UserInput .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#ScoringAndQueryReformulationPrompt> a beam:Data ;
+    rdfs:label "Scoring and Query Reformulation Prompt"@en ;
+    dct:description """\r
+    Prompt used by the Llatrieval module to score retrieved product\r
+    information and reformulate the query when necessary.\r
+    """@en ;
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> ;
+    rp:containsDataCategory rp:PromptInstruction ;
+    rp:playsRole rp:PromptTemplate .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#SystemPromptTemplate> a beam:Data ;
+    rdfs:label "System Prompt Template"@en ;
+    dct:description """\r
+    System prompt template used during LLM-based generation.\r
+    """@en ;
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting> ;
+    rp:containsDataCategory rp:PromptInstruction ;
+    rp:playsRole rp:PromptTemplate,
+        rp:SystemPrompt .
+
+pat:LLMIR_AnswerNode a rp:PatternNode ;
+    rdfs:label "Answer node"@en ;
+    rp:expectedClass beam:Data ;
+    rp:expectedRole rp:UserFacingOutput ;
+    rp:variableName "answer" .
+
+pat:LLMIR_ModelNode a rp:PatternNode ;
+    rdfs:label "LLM node"@en ;
+    rp:expectedClass beam:StatisticalModel ;
+    rp:expectedRole rp:GenerativeModel ;
+    rp:variableName "llm" .
+
+pat:LLMIR_QueryNode a rp:PatternNode ;
+    rdfs:label "Query node"@en ;
+    rp:expectedClass beam:Data ;
+    rp:expectedRole rp:UserInput ;
+    rp:variableName "query" .
+
+pat:SensitiveDataRetrievalExposure a rp:RiskMechanism ;
+    rdfs:label "Sensitive data retrieval exposure"@en ;
+    dct:description "A mechanism in which sensitive information stored or retrieved through a retrieval component may propagate into downstream prompts, model inputs, or generated user-facing outputs."@en .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#accuracy> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Accuracy" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#computational-inefficiency> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Computational inefficiency" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#data-laws> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Data laws" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#fairness> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Fairness" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#governance> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Governance" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#intellectual-property> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Intellectual property" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#personal-information-in-data> a ns1:Risk ;
+    ns1:descriptor "traditional risk of AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-curation-process>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#privacy-control-for-user-data> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#privacy> ;
+    ns1:riskType "training-data" ;
+    ns1:tag "personal-information-in-data" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#privacy> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1> ;
+    skos:definition "Personal or sensitive information in training, tuning, or retrieval data can increase unwanted disclosure risks." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Personal information in data" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm02-sensitive-information-disclosure> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#personal-information-in-prompt> a ns1:Risk ;
+    ns1:descriptor "specific to generative AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#privacy-control-for-user-data>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#prompt-context-limiting> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#privacy> ;
+    ns1:riskType "inference" ;
+    ns1:tag "personal-information-in-prompt" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#privacy> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm02-sensitive-information-disclosure> ;
+    skos:definition "Personal or sensitive personal information may be included in prompts and become exposed through model outputs." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Personal information in prompt" .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#redundant-actions-agentic> a ns1:Risk ;
+    ns1:descriptor "specific to agentic AI" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#computational-inefficiency> ;
+    ns1:riskType "agentic" ;
+    ns1:tag "redundant-actions-agentic" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#computational-inefficiency> ;
+    skos:definition "Unnecessary or repeated actions may waste computation, increase cost, and reduce system efficiency." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Redundant actions" .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness-model-behavior-manipulation> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Robustness: model behavior manipulation" .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#societal-impact> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Societal impact" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-3> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Misinformation" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-4> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Malicious Actors & Misuse" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-6> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Socioeconomic & Environmental" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-1-3> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-1> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-1> ;
+    skos:definition "AI system performance may differ across demographic or social groups." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Unequal performance across groups" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#access-management> a ns1:RiskControlGroup ;
+    ns1:controlType "preventive" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "operation" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#operational-process-controls> ;
+    skos:definition """\r
+    Policies and verification systems that govern who can use AI systems,\r
+    under which purposes, and with which restrictions.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Access Management" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#human-oversight-protocol> a ns1:RiskControl ;
+    ns1:controlType "governance" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "operation" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#governance-oversight-controls>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#user-rights-recourse> ;
+    skos:definition "Defined procedures for human oversight, review, intervention, and accountability in AI system operation." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Human Oversight Protocol" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#model-infrastructure-security> a ns1:RiskControlGroup ;
+    ns1:controlType "technical" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "development",
+        "operation" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#technical-security-controls> ;
+    skos:definition """\r
+    Technical and physical safeguards that secure AI models, model weights,\r
+    infrastructure, and system access against unauthorized use, theft, or tampering.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Model & Infrastructure Security" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#societal-impact-assessment> a ns1:RiskControlGroup ;
+    ns1:controlType "governance" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "design-time" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#governance-oversight-controls> ;
+    skos:definition """\r
+    Processes that assess the societal effects of AI systems, including impacts on\r
+    employment, power relations, rights, and affected stakeholders.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Societal Impact Assessment" .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#llm07-system-prompt-leakage> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    ns1:tag "llm07-system-prompt-leakage" ;
+    skos:definition "System prompts or hidden instructions may be exposed to users or attackers." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    skos:prefLabel "LLM07:2025 System Prompt Leakage" .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#llm10-unbounded-consumption> a ns1:Risk ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#access-management>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#post-deployment-behavior-monitoring>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#prompt-context-limiting> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    ns1:tag "llm10-unbounded-consumption" ;
+    skos:definition "LLM applications may allow excessive or uncontrolled inference, causing cost, availability, or abuse risks." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    skos:prefLabel "LLM10:2025 Unbounded Consumption" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#impact-on-the-environment>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#redundant-actions-agentic> .
+
+beam:Agent a owl:Class ;
+    rdfs:label "Agent" ;
+    rdfs:subClassOf beam:Element,
+        <https://kastle-lab.org/easy-ai2/Actor> .
+
+beam:Generate a owl:Class ;
+    rdfs:label "Generate" ;
+    rdfs:subClassOf beam:Process .
+
+beam:Instance a owl:Class ;
+    rdfs:label "Instance" ;
+    rdfs:subClassOf beam:Resource,
+        <https://kastle-lab.org/easy-ai2/Artifact> .
+
+beam:Model a owl:Class ;
+    rdfs:label "Model" ;
+    rdfs:subClassOf beam:Resource,
+        <https://kastle-lab.org/easy-ai2/Model> .
+
+beam:StatisticalModel a owl:Class ;
+    rdfs:label "Statistical Model" ;
+    rdfs:subClassOf beam:Model .
+
+beamr: a owl:Ontology ;
+    dct:description "  A beam extension to describe the risk components of AI systems based on existing concepts defined in the AI Risk Ontology (AIRO)."@en ;
+    dct:license <https://creativecommons.org/licenses/by/4.0> ;
+    dct:modified "2025-03-05" ;
+    dct:title "The BEAM Risk extension"@en ;
+    vann:preferredNamespacePrefix "beamr" ;
+    vann:preferredNamespaceUri "http://w3id.org/beam/risk#" ;
+    owl:imports <https://w3id.org/airo>,
+        <https://w3id.org/beam/core#> ;
+    owl:versionInfo "0.1.0" .
+
+beamr:RiskSource a owl:Class ;
+    rdfs:label "Risk Source" ;
+    rdfs:subClassOf beamr:RiskConcept,
+        <https://w3id.org/airoRiskSource> .
+
+rp:GenerationStep a rp:PatternRole ;
+    skos:prefLabel "Generation Step"@en .
+
+rp:HumanActor a rp:PatternRole ;
+    skos:prefLabel "Human Actor"@en .
+
+rp:KnowledgeSource a rp:PatternRole ;
+    skos:prefLabel "Knowledge Source"@en .
+
+rp:MLModel a rp:PatternRole ;
+    rp:subRoleOf rp:Model ;
+    skos:prefLabel "Machine Learning Model"@en .
+
+rp:Model a rp:PatternRole ;
+    skos:prefLabel "Model"@en .
+
+rp:PromptInstruction a rp:DataCategory ;
+    rp:subDataCategoryOf rp:Information ;
+    skos:prefLabel "Prompt Instruction"@en .
+
+rp:PropertyPathCondition a owl:Class ;
+    rdfs:label "Property Path Condition"@en ;
+    rdfs:comment """\r
+    A graph condition expressed using a property path or equivalent query\r
+    expression. This supports graph motif matching without forcing every\r
+    condition to be represented as a fixed direct edge.\r
+    """@en ;
+    rdfs:subClassOf rp:GraphCondition .
+
+rp:RetrievedResult a rp:PatternRole ;
+    rp:subRoleOf rp:RetrievedContext ;
+    skos:prefLabel "Retrieved Result"@en .
+
+rp:UntrustedContent a rp:DataCategory ;
+    rp:subDataCategoryOf rp:Information ;
+    skos:prefLabel "Untrusted Content"@en .
+
+rp:UserFacingOutput a rp:PatternRole ;
+    skos:prefLabel "User-facing Output"@en .
+
+rp:VectorStore a rp:PatternRole ;
+    rp:subRoleOf rp:KnowledgeSource ;
+    skos:prefLabel "Vector Store"@en .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced> a beam:Data ;
+    rdfs:label "Embedded Product Info Enhanced"@en ;
+    dct:description """\r
+    Enhanced retrieved product information after Llatrieval scoring and query\r
+    reformulation.\r
+    """@en ;
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting> ;
+    rp:containsDataCategory <http://w3id.org/airiskkg/example/uc6-onlim#PrivateProductInformation>,
+        rp:ProductInformation,
+        rp:UntrustedContent ;
+    rp:playsRole rp:RetrievedContext,
+        rp:RetrievedResult .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedQuestion> a beam:Data ;
+    rdfs:label "Embedded Question"@en ;
+    dct:description """\r
+    Vector representation of the user's natural language product question.\r
+    """@en ;
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
+    rp:containsDataCategory rp:ProductInformation .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#EventSummary> a beam:Data ;
+    rdfs:label "Event Summary"@en ;
+    dct:description """\r
+    User-facing output generated by the chatbot. In the updated UC6 diagram,\r
+    this represents the final generated answer or summary returned to the user.\r
+    """@en ;
+    rp:containsDataCategory rp:ProductInformation ;
+    rp:playsRole rp:UserFacingOutput .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#LLM> a beam:StatisticalModel ;
+    rdfs:label "LLM"@en ;
+    dct:description """\r
+    Large language model used by the Llatrieval module and by the final\r
+    LLM prompting/generation step.\r
+    """@en ;
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> ;
+    rp:playsRole rp:GenerativeModel .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#PrivateProductInformation> a rp:DataCategory ;
+    rdfs:label "Private Product Information"@en ;
+    rp:subDataCategoryOf rp:ProductInformation,
+        rp:SensitiveInformation ;
+    rdfs:comment """\r
+    Product-related information that may contain private, confidential,\r
+    or sensitive content. This local data category is introduced to make\r
+    the architecture graph suitable for information-leakage pattern matching.\r
+    """@en .
+
+pat:LLMBasedInformationRetrievalMotif a rp:GraphMotif ;
+    rdfs:label "LLM-based Information Retrieval Motif"@en ;
+    dct:description """\r
+    Architectural motif in which a user query is handled by an LLM-based\r
+    retrieval or answer-production process and produces a user-facing answer.\r
+    This differs from vector-based retrieval because the answer depends mainly\r
+    on the LLM process rather than on an explicit vector store in the motif.\r
+    """@en ;
+    rp:hasInterpretation pat:DirectLLMAnsweringWithoutGroundingInterpretation ;
+    rp:hasPatternEdge pat:LLMIR_RetrievalProducesAnswerEdge,
+        pat:LLMIR_RetrievalUsesModelEdge,
+        pat:LLMIR_RetrievalUsesQueryEdge ;
+    rp:hasPatternNode pat:LLMIR_AnswerNode,
+        pat:LLMIR_ModelNode,
+        pat:LLMIR_QueryNode,
+        pat:LLMIR_RetrievalStepNode ;
+    rp:implementedBy pat:LLMIR_MatchingOQP .
+
+pat:VectorIR_QueryNode a rp:PatternNode ;
+    rdfs:label "Query node"@en ;
+    rp:expectedClass beam:Data ;
+    rp:expectedRole rp:UserInput ;
+    rp:variableName "query" .
+
+pat:VectorIR_RetrievedResultNode a rp:PatternNode ;
+    rdfs:label "Retrieved result node"@en ;
+    rp:expectedClass beam:Data ;
+    rp:expectedRole rp:RetrievedContext ;
+    rp:variableName "retrievedResult" .
+
+pat:VectorIR_VectorStoreNode a rp:PatternNode ;
+    rdfs:label "Vector store node"@en ;
+    rp:expectedClass beam:Data ;
+    rp:expectedRole rp:VectorStore ;
+    rp:variableName "vectorStore" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-4> a ns1:Risk ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-disclosure>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-architecture-documentation>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-documentation> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-7> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-7> ;
+    skos:definition "AI systems may be difficult to understand, explain, audit, or correct." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Lack of transparency or interpretability" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#prompt-context-limiting> a ns1:RiskControl ;
+    ns1:controlType "technical" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "design-time" ;
+    ns1:mitigatesRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#confidential-data-in-prompt>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#personal-information-in-prompt>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm10-unbounded-consumption> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#model-safety-engineering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#operational-process-controls> ;
+    skos:definition "Limiting prompt size, retrieved context size, query budget, or model invocation budget to reduce cost, latency, and unbounded consumption risks." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Prompt Context Limiting" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-management> a ns1:RiskControlGroup ;
+    ns1:controlType "governance" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "design-time",
+        "development" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#governance-oversight-controls> ;
+    skos:definition """\r
+    Systematic methods that identify, evaluate, document, and manage AI risks.\r
+    Examples include risk registers, pre-deployment risk assessments, independent\r
+    risk assessments, and enterprise risk management frameworks.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Risk Management" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#technical-security-controls> a ns1:RiskControlGroup ;
+    ns1:controlType "technical" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:definition """\r
+    Technical, physical, and engineering safeguards that secure AI systems and constrain\r
+    model behavior to support safety, security, alignment, and content integrity.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Technical & Security Controls" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> .
+
+ns1:RiskTaxonomy a owl:Class ;
+    rdfs:label "Risk Taxonomy" ;
+    rdfs:comment "A taxonomy that organizes AI risks or AI-related vulnerabilities." ;
+    rdfs:subClassOf ns1:Taxonomy .
+
+ns1:Taxonomy a owl:Class ;
+    rdfs:label "Taxonomy" ;
+    rdfs:comment "A structured concept scheme, such as IBM AI Risk Atlas, MIT AI Risk Repository, OWASP LLM Top 10, or MIT AI Risk Mitigation Taxonomy." ;
+    rdfs:subClassOf skos:ConceptScheme .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#llm08-vector-and-embedding-weaknesses> a ns1:Risk ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-quality-evaluation>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-source-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#threat-modelling> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    ns1:tag "llm08-vector-and-embedding-weaknesses" ;
+    skos:definition "Weaknesses in vector generation, storage, or retrieval may affect RAG systems and downstream outputs." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    skos:prefLabel "LLM08:2025 Vector and Embedding Weaknesses" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#poor-model-accuracy>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#prompt-injection>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-2>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-3> .
+
+beam:Transform a owl:Class ;
+    rdfs:label "Transform" ;
+    rdfs:subClassOf beam:Process .
+
+beam:produce a owl:ObjectProperty ;
+    rdfs:label "produce" ;
+    rdfs:domain beam:Process ;
+    rdfs:range beam:Resource .
+
+beamr:Consequence a owl:Class ;
+    rdfs:label "Consequence" ;
+    rdfs:subClassOf beamr:RiskConcept,
+        <https://w3id.org/airoConsequence> .
+
+rp: a owl:Ontology ;
+    dct:description """\r
+    A lightweight ontology for representing reusable graph motifs for\r
+    design-time AI risk assessment.\r
+\r
+    In this model, a risk pattern is not a fixed checklist or template.\r
+    A risk pattern is represented as a graph motif over architectural\r
+    elements, roles, data categories, and relations. When the motif is\r
+    matched against an AI system architecture graph, the matched subgraph\r
+    can be interpreted as a risk mechanism and used to construct candidate\r
+    risk findings.\r
+\r
+    The executable SPARQL query is treated as an implementation of a graph\r
+    motif, not as the pattern itself.\r
+    """@en ;
+    dct:title "BEAM Risk Pattern Core Ontology"@en ;
+    vann:preferredNamespacePrefix "rp" ;
+    vann:preferredNamespaceUri "http://w3id.org/beam/risk-pattern#" ;
+    owl:imports beam:,
+        beamr: .
+
+rp:GenerativeModel a rp:PatternRole ;
+    rp:subRoleOf rp:Model ;
+    skos:prefLabel "Generative Model"@en .
+
+rp:SensitiveInformation a rp:DataCategory ;
+    rp:subDataCategoryOf rp:Information ;
+    skos:prefLabel "Sensitive Information"@en .
+
+pat:LLMIR_RetrievalStepNode a rp:PatternNode ;
+    rdfs:label "LLM-based answering or generation step node"@en ;
+    rp:expectedClass beam:Process ;
+    rp:expectedRole rp:GenerationStep ;
+    rp:variableName "llmRetrievalStep" .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#exposing-personal-information> a ns1:Risk ;
+    ns1:descriptor "amplified by generative AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#privacy-control-for-user-data>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-source-filtering> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#privacy> ;
+    ns1:riskType "output" ;
+    ns1:tag "exposing-personal-information" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#privacy> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm02-sensitive-information-disclosure> ;
+    skos:definition "Personal information used in data, prompts, or generation processes may be revealed in outputs." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Exposing personal information" .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#hallucination> a ns1:Risk ;
+    ns1:descriptor "specific to generative AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#red-teaming>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-quality-evaluation>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-architecture-documentation> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness> ;
+    ns1:riskType "output" ;
+    ns1:tag "hallucination" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-3-1>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm09-misinformation> ;
+    skos:definition "A model may produce inaccurate, unsupported, or untruthful content that appears plausible." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Hallucination" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-3> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#prompt-injection> a ns1:Risk ;
+    ns1:descriptor "specific to generative AI" ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#model-safety-engineering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#red-teaming>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-source-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#threat-modelling> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness-prompt-attacks> ;
+    ns1:riskType "inference" ;
+    ns1:tag "prompt-injection" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness-prompt-attacks> ;
+    skos:closeMatch <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm01-prompt-injection> ;
+    skos:definition "Manipulated instructions or content in prompts may force a generative model to produce unintended outputs." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Prompt injection attack" ;
+    skos:relatedMatch <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-2>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-4-3>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm08-vector-and-embedding-weaknesses> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Robustness" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness-prompt-attacks> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#robustness> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Robustness: prompt attacks" .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#value-alignment> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Value alignment" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-2> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Privacy & Security" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-5> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Human-Computer Interaction" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-7> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "AI System Safety, Failures, & Limitations" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-2> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-2> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-2> ;
+    skos:definition "AI systems may contain vulnerabilities that enable unauthorized access, manipulation, or unsafe behavior." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "AI system security vulnerabilities and attacks" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-3-1> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-3> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-3> ;
+    skos:definition "AI systems may generate or spread incorrect, deceptive, or misleading information." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "False or misleading information" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-curation-process> a ns1:RiskControl ;
+    ns1:controlType "operational" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "development" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance> ;
+    skos:definition "Processes for selecting, cleaning, filtering, documenting, and governing data used by AI systems." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Data Curation Process" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#governance-oversight-controls> a ns1:RiskControlGroup ;
+    ns1:controlType "governance" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:definition """\r
+    Formal organizational structures and policy frameworks that establish human oversight,\r
+    accountability, ethical conduct, and risk management throughout AI development and deployment.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Governance & Oversight Controls" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#risk-disclosure> a ns1:RiskControlGroup ;
+    ns1:controlType "transparency-accountability" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#transparency-accountability-controls> ;
+    skos:definition """\r
+    Reporting and notification practices that communicate risk information, mitigation\r
+    plans, safety evaluations, and relevant risk assessment summaries.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Risk Disclosure" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#transparency-accountability-controls> a ns1:RiskControlGroup ;
+    ns1:controlType "transparency-accountability" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:definition """\r
+    Disclosure practices and verification mechanisms that communicate AI system information,\r
+    support external scrutiny, and enable accountability to users, regulators, and the public.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Transparency & Accountability Controls" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#llm01-prompt-injection> a ns1:Risk ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#red-teaming>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-source-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#threat-modelling> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    ns1:tag "llm01-prompt-injection" ;
+    skos:definition "User or external inputs may alter LLM behavior or output in unintended ways." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    skos:prefLabel "LLM01:2025 Prompt Injection" .
+
+beam: a owl:Ontology ;
+    dct:description """  An ontology to describe the core components of AI systems \r
+                                                based on an extended/adapted version of boxology: \r
+                                                Boxology's Extended Annotation Model (BEAM)"""@en ;
+    dct:license <https://creativecommons.org/licenses/by/4.0> ;
+    dct:modified "2026-02-05" ;
+    dct:title "The BEAM ontology"@en ;
+    vann:preferredNamespacePrefix "beam" ;
+    vann:preferredNamespaceUri "http://w3id.org/beam/core#" ;
+    owl:versionInfo "0.1.0" .
+
+beam:use a owl:ObjectProperty ;
+    rdfs:label "use" ;
+    rdfs:domain beam:Process ;
+    rdfs:range beam:Resource ;
+    owl:inverseOf beam:usedBy .
+
+beamr:Risk a owl:Class ;
+    rdfs:label "Risk" ;
+    rdfs:subClassOf beamr:RiskConcept,
+        <https://w3id.org/airoRisk> .
+
+beamr:RiskConcept a owl:Class ;
+    rdfs:label "Risk Concept" ;
+    rdfs:subClassOf <https://w3id.org/airoRiskConcept> .
+
+rp:PromptTemplate a rp:PatternRole ;
+    skos:prefLabel "Prompt Template"@en .
+
+rp:RetrievalStep a rp:PatternRole ;
+    skos:prefLabel "Retrieval Step"@en .
+
+rp:RetrievedContext a rp:PatternRole ;
+    skos:prefLabel "Retrieved Context"@en .
+
+rp:UserInput a rp:PatternRole ;
+    skos:prefLabel "User Input"@en .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting> a beam:Transform ;
+    rdfs:label "LLM Prompting / Generation"@en ;
+    dct:description """\r
+    Constructs the final prompt using the enhanced retrieved product\r
+    information and the system prompt template, then uses the LLM to generate\r
+    a user-facing answer.\r
+    """@en ;
+    beam:perform <http://w3id.org/airiskkg/example/uc6-onlim#LLMGenerationImplementation> ;
+    beam:produce <http://w3id.org/airiskkg/example/uc6-onlim#EventSummary> ;
+    beam:use <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#SystemPromptTemplate> ;
+    rp:playsRole rp:GenerationStep,
+        rp:PromptConstructionStep .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> a beam:Transform ;
+    rdfs:label "Llatrieval: Scoring and Query Reformulation"@en ;
+    dct:description """\r
+    Scores retrieved product information and reformulates the query when\r
+    the retrieved information is insufficient or needs improvement.\r
+    """@en ;
+    beam:inform <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
+    beam:perform <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalImplementation> ;
+    beam:produce <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> ;
+    beam:use <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ScoringAndQueryReformulationPrompt> ;
+    rp:playsRole rp:QueryReformulationStep,
+        rp:RerankingStep .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB> a beam:Data ;
+    rdfs:label "Product Information Vector DB"@en ;
+    dct:description """\r
+    Vector database containing product information used as the knowledge\r
+    source for retrieval.\r
+    """@en ;
+    beam:perform <http://w3id.org/airiskkg/example/uc6-onlim#VectorDBPopulation> ;
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
+    rp:containsDataCategory <http://w3id.org/airiskkg/example/uc6-onlim#PrivateProductInformation>,
+        rp:ProductInformation ;
+    rp:playsRole rp:KnowledgeSource,
+        rp:VectorStore .
+
+pat:VectorBasedInformationRetrievalMotif a rp:GraphMotif ;
+    rdfs:label "Vector-based Information Retrieval Motif"@en ;
+    dct:description """\r
+    Architectural motif in which a retrieval process uses a vector store or\r
+    knowledge source and produces a retrieved result or retrieved context.\r
+    This motif is risk-neutral by itself. Risk findings are generated only\r
+    after additional risk interpretation conditions are checked.\r
+    """@en ;
+    rp:hasInterpretation pat:SensitiveDataRetrievalExposureInterpretation ;
+    rp:hasPatternEdge pat:VectorIR_RetrievalProducesResultEdge,
+        pat:VectorIR_RetrievalUsesQueryEdge,
+        pat:VectorIR_RetrievalUsesVectorStoreEdge ;
+    rp:hasPatternNode pat:VectorIR_QueryNode,
+        pat:VectorIR_RetrievalStepNode,
+        pat:VectorIR_RetrievedResultNode,
+        pat:VectorIR_VectorStoreNode ;
+    rp:implementedBy pat:VectorIR_MatchingOQP .
+
+pat:VectorIR_RetrievalStepNode a rp:PatternNode ;
+    rdfs:label "Vector-based retrieval step node"@en ;
+    rp:expectedClass beam:Process ;
+    rp:expectedRole rp:RetrievalStep ;
+    rp:variableName "retrievalStep" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-architecture-documentation> a ns1:RiskControl ;
+    ns1:controlType "transparency-accountability" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "design-time" ;
+    ns1:mitigatesRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#legal-accountability>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-4> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-documentation> ;
+    skos:definition "Documentation of the system architecture, components, data flows, model use, limitations, and intended use." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "System Architecture Documentation" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#system-documentation> a ns1:RiskControlGroup ;
+    ns1:controlType "transparency-accountability" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "design-time",
+        "development" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#transparency-accountability-controls> ;
+    skos:definition """\r
+    Documentation protocols that record technical specifications, intended uses,\r
+    limitations, system architecture, model information, and safety evaluation results.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "System Documentation" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#threat-modelling> a ns1:RiskControl ;
+    ns1:controlType "detective" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "design-time" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#model-infrastructure-security>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#testing-auditing> ;
+    skos:definition "A process to identify threats, vulnerabilities, and possible attack paths affecting a system." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Threat Modelling" .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> a beam:Data ;
+    rdfs:label "Embedded Product Info"@en ;
+    dct:description """\r
+    Product information retrieved from the vector database based on similarity\r
+    in embedding space.\r
+    """@en ;
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> ;
+    rp:containsDataCategory <http://w3id.org/airiskkg/example/uc6-onlim#PrivateProductInformation>,
+        rp:ProductInformation,
+        rp:UntrustedContent ;
+    rp:playsRole rp:RetrievedContext,
+        rp:RetrievedResult .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> a beam:Data ;
+    rdfs:label "Reformulated Query"@en ;
+    dct:description """\r
+    Query reformulated by the Llatrieval module and sent back to the product\r
+    information retrieval step.\r
+    """@en ;
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
+    rp:containsDataCategory rp:ProductInformation ;
+    rp:playsRole rp:UserInput .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-1> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Discrimination & Toxicity" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-3> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-7> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-7> ;
+    skos:definition "AI systems may fail to perform reliably or effectively under varying conditions." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Lack of capability or robustness" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#model-safety-engineering> a ns1:RiskControlGroup ;
+    ns1:controlType "technical" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "development" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#technical-security-controls> ;
+    skos:definition """\r
+    Technical methods and safeguards that constrain model behavior and protect against\r
+    exploitation, unsafe outputs, or vulnerabilities.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Model Safety Engineering" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-quality-evaluation> a ns1:RiskControl ;
+    ns1:controlType "detective" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "development" ;
+    ns1:mitigatesRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#hallucination>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#incomplete-advice>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-3-1>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-7-3>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm08-vector-and-embedding-weaknesses>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm09-misinformation> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#testing-auditing> ;
+    skos:definition "Evaluation of retrieval relevance, completeness, source quality, and grounding quality in retrieval-augmented systems." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Retrieval Quality Evaluation" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#testing-auditing> a ns1:RiskControlGroup ;
+    ns1:controlType "detective" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "development" ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#operational-process-controls> ;
+    skos:definition """\r
+    Internal and external evaluations that assess AI systems, infrastructure, and\r
+    compliance processes. Examples include red teaming, penetration testing, third-party\r
+    audits, dangerous capability evaluations, and bug bounty programs.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Testing & Auditing" .
+
+beam:System a owl:Class ;
+    rdfs:label "System" ;
+    rdfs:subClassOf beam:Element .
+
+rp:GraphCondition a owl:Class ;
+    rdfs:label "Graph Condition"@en ;
+    rdfs:comment """\r
+    A matching condition that cannot be represented as a simple pattern edge.\r
+    For example, a property path condition such as:\r
+    rp:containsDataCategory/rp:subDataCategoryOf* rp:SensitiveInformation.\r
+    """@en .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#operational-process-controls> a ns1:RiskControlGroup ;
+    ns1:controlType "operational" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:definition """\r
+    Processes and management frameworks governing deployment, usage, monitoring,\r
+    incident handling, and validation across the AI system lifecycle.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Operational Process Controls" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#privacy-control-for-user-data> a ns1:RiskControl ;
+    ns1:controlType "preventive" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "design-time" ;
+    ns1:mitigatesRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#exposing-personal-information>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#personal-information-in-data>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#personal-information-in-prompt>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm02-sensitive-information-disclosure> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#access-management>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance> ;
+    skos:definition "Controls that reduce unauthorized access, use, retrieval, or disclosure of user or personal data." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Privacy Control for User Data" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#red-teaming> a ns1:RiskControl ;
+    ns1:controlType "detective" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "development" ;
+    ns1:mitigatesRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#hallucination>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#prompt-injection>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm01-prompt-injection>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm09-misinformation> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#model-safety-engineering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#testing-auditing> ;
+    skos:definition "Adversarial testing to identify unsafe behavior, vulnerabilities, or misuse pathways." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Red Teaming" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-source-filtering> a ns1:RiskControl ;
+    ns1:controlType "technical" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "design-time" ;
+    ns1:mitigatesRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#exposing-personal-information>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#prompt-injection>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm01-prompt-injection>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm08-vector-and-embedding-weaknesses> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#model-safety-engineering> ;
+    skos:definition "Filtering or restricting which knowledge sources, documents, or records can be retrieved and injected into model context." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Retrieval Source Filtering" .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#llm09-misinformation> a ns1:Risk ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#human-oversight-protocol>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#red-teaming>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-quality-evaluation> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    ns1:tag "llm09-misinformation" ;
+    skos:definition "LLMs may produce false or misleading information that appears credible." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    skos:prefLabel "LLM09:2025 Misinformation" .
+
+beam:Resource a owl:Class ;
+    rdfs:label "Resource" ;
+    rdfs:subClassOf beam:Element .
+
+beam:Task a owl:Class ;
+    rdfs:label "Task" ;
+    rdfs:subClassOf <http://www.w3id.org/agentic-ai/onto#Task> .
+
+rp:Information a rp:DataCategory ;
+    skos:prefLabel "Information"@en .
+
+rp:MotifMatch a owl:Class ;
+    rdfs:label "Motif Match"@en ;
+    rdfs:comment """\r
+    A concrete match between a graph motif and an architecture graph. A motif\r
+    match contains bindings from abstract pattern nodes to concrete system\r
+    elements.\r
+    """@en .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#privacy> a ns1:RiskGroup ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> ;
+    skos:prefLabel "Privacy" ;
+    skos:topConceptOf <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> .
+
+ns1:RiskTaxonomyEntry a owl:Class ;
+    rdfs:label "Risk Taxonomy Entry" ;
+    rdfs:comment """\r
+    A risk concept defined by an external taxonomy. This is not a concrete\r
+    system-specific risk finding. Concrete findings should be represented as\r
+    beamr:Risk or rp:RiskFinding.\r
+    """ ;
+    rdfs:subClassOf skos:Concept .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#llm02-sensitive-information-disclosure> a ns1:Risk ;
+    ns1:hasRelatedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#privacy-control-for-user-data>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-source-filtering> ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    ns1:tag "llm02-sensitive-information-disclosure" ;
+    skos:definition "Sensitive information may be exposed through the LLM or its surrounding application context." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> ;
+    skos:prefLabel "LLM02:2025 Sensitive Information Disclosure" .
+
+rp:MotifInterpretation a owl:Class ;
+    rdfs:label "Motif Interpretation"@en ;
+    rdfs:comment """\r
+    An interpretation of what a matched graph motif means from a risk\r
+    assessment perspective. The interpretation can connect the matched motif\r
+    to a risk mechanism, candidate risk taxonomy entries, and possible controls.\r
+    """@en .
+
+rp:NodeBinding a owl:Class ;
+    rdfs:label "Node Binding"@en ;
+    rdfs:comment """\r
+    A binding between an abstract pattern node and a concrete architecture\r
+    element matched in a system graph.\r
+    """@en .
+
+rp:ProductInformation a rp:DataCategory ;
+    rp:subDataCategoryOf rp:Information ;
+    skos:prefLabel "Product Information"@en .
+
+rp:PatternImplementation a owl:Class ;
+    rdfs:label "Pattern Implementation"@en ;
+    rdfs:comment """\r
+    An executable or operational representation of a graph motif, such as a\r
+    SPARQL CONSTRUCT query, SHACL rule, or rule-based matcher. This is not the\r
+    pattern itself, but an implementation used to detect the pattern.\r
+    """@en .
+
+<http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> a beam:Infer ;
+    rdfs:label "Product Information Retrieval"@en ;
+    dct:description """\r
+    Performs vector-based product information retrieval using the embedded\r
+    question, the product information vector database, and a query template.\r
+    It may also use a reformulated query produced by the Llatrieval module.\r
+    """@en ;
+    beam:inform <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> ;
+    beam:perform <http://w3id.org/airiskkg/example/uc6-onlim#VectorBasedInformationRetrievalImplementation> ;
+    beam:produce <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> ;
+    beam:use <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedQuestion>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#QueryTemplate>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> ;
+    rp:playsRole rp:RetrievalStep .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1> a ns1:Risk ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    ns1:isPartOf <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-2> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#domain-2> ;
+    skos:definition "AI systems may leak, infer, or expose sensitive information about individuals or organizations." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> ;
+    skos:prefLabel "Compromise of privacy by obtaining, leaking or inferring sensitive information" .
+
+beamr:RiskControl a owl:Class ;
+    rdfs:label "Risk Control" ;
+    rdfs:subClassOf <https://w3id.org/airoRiskControl> .
+
+rp:PatternEdge a owl:Class ;
+    rdfs:label "Pattern Edge"@en ;
+    rdfs:comment """\r
+    An edge in a graph motif. A pattern edge specifies that two pattern nodes\r
+    should be connected by a given RDF property, such as beam:use,\r
+    beam:produce, or beam:inform.\r
+    """@en .
+
+rp:RiskMechanism a owl:Class ;
+    rdfs:label "Risk Mechanism"@en ;
+    rdfs:comment """\r
+    An explanatory mechanism describing how or why a matched architectural\r
+    configuration can lead to a risk. In this model, the mechanism is not a\r
+    required checklist field. It is an interpretation of a matched graph motif.\r
+    """@en .
+
+rp:GraphMotif a owl:Class ;
+    rdfs:label "Graph Motif"@en ;
+    rdfs:comment """\r
+    A reusable graph structure that can be matched against an AI system\r
+    architecture graph. A graph motif represents a risk-relevant architectural\r
+    configuration, but does not itself equal a concrete risk finding.\r
+    """@en .
+
+rp:RiskFinding a owl:Class ;
+    rdfs:label "Risk Finding"@en ;
+    rdfs:comment """\r
+    A candidate or confirmed system-specific risk generated from a motif match.\r
+    A risk finding should be linked to the matched evidence elements, the motif\r
+    that generated it, the interpreted mechanism, and relevant taxonomy entries.\r
+    """@en ;
+    rdfs:subClassOf beamr:Risk .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering> a ns1:RiskControl ;
+    ns1:controlType "technical" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "deployment",
+        "operation" ;
+    ns1:mitigatesRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#hallucination>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#prompt-injection>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm01-prompt-injection>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm02-sensitive-information-disclosure>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm09-misinformation> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#content-safety-controls>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#model-safety-engineering> ;
+    skos:definition "Filtering or constraining inputs and outputs to reduce unsafe, sensitive, harmful, or policy-violating content." ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Input/Output Filtering" .
+
+beam:Element a owl:Class ;
+    rdfs:label "Element" .
+
+beam:Process a owl:Class ;
+    rdfs:label "Process" ;
+    rdfs:subClassOf beam:Element,
+        <https://kastle-lab.org/easy-ai2/Process> .
+
+ns1:RiskControl a owl:Class ;
+    rdfs:label "Risk Control" ;
+    rdfs:comment """\r
+    A taxonomy-level control or mitigation entry. This may be linked to concrete\r
+    BEAM risk controls or used as a possible/required control for a graph risk pattern.\r
+    """ ;
+    rdfs:subClassOf beamr:RiskControl,
+        skos:Concept .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance> a ns1:RiskControlGroup ;
+    ns1:controlType "operational" ;
+    ns1:isDefinedByTaxonomy <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    ns1:lifecyclePhase "design-time",
+        "development" ;
+    ns1:mitigatesRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#data-curation>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#data-usage-restrictions>,
+        <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#personal-information-in-data>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1> ;
+    skos:broader <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#operational-process-controls> ;
+    skos:definition """\r
+    Policies and procedures that govern responsible data acquisition, curation, usage,\r
+    privacy, quality, and compliance.\r
+    """ ;
+    skos:inScheme <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> ;
+    skos:prefLabel "Data Governance" .
+
+rp:DataCategory a owl:Class ;
+    rdfs:label "Data Category"@en ;
+    rdfs:comment """\r
+    An abstract data category used for risk-pattern matching, such as\r
+    Sensitive Information, Personal Information, Product Information, or\r
+    Untrusted Content.\r
+    """@en ;
+    rdfs:subClassOf skos:Concept .
+
+beam:Data a owl:Class ;
+    rdfs:label "Data" ;
+    rdfs:subClassOf beam:Instance .
+
+rp:PatternNode a owl:Class ;
+    rdfs:label "Pattern Node"@en ;
+    rdfs:comment """\r
+    A node in a graph motif. A pattern node can specify an expected class,\r
+    expected architectural role, expected data category, or other matching\r
+    condition. Pattern nodes are abstract and are bound to concrete system\r
+    elements during graph matching.\r
+    """@en .
+
+ns1:RiskGroup a owl:Class ;
+    rdfs:label "Risk Group" ;
+    rdfs:comment "A grouping concept within a risk taxonomy, such as Privacy, Fairness, Robustness, or Misinformation." ;
+    rdfs:subClassOf skos:Concept .
+
+ns1:RiskControlGroup a owl:Class ;
+    rdfs:label "Risk Control Group" ;
+    rdfs:comment """\r
+    A grouping concept within a risk control taxonomy, such as Data Governance,\r
+    Model Safety Engineering, Testing & Auditing, or Human Oversight.\r
+    """ ;
+    rdfs:subClassOf beamr:RiskControl,
+        skos:Concept .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#OWASP_LLM_Top_10_2025> a ns1:RiskTaxonomy,
+        skos:ConceptScheme ;
+    dct:description "A taxonomy of critical security vulnerabilities and risks in LLM applications." ;
+    owl:versionInfo "2.0" ;
+    skos:prefLabel "OWASP Top 10 for Large Language Model Applications" .
+
+rp:PatternRole a owl:Class ;
+    rdfs:label "Pattern Role"@en ;
+    rdfs:comment """\r
+    An abstract role used for graph motif matching, such as Knowledge Source,\r
+    Retrieval Step, Retrieved Context, Generative Model, or User-facing Output.\r
+    Concrete BEAM elements can play one or more pattern roles.\r
+    """@en ;
+    rdfs:subClassOf skos:Concept .
+
+ns1:Risk a owl:Class ;
+    rdfs:label "Risk" ;
+    rdfs:comment "A taxonomy-level AI risk entry adapted from AI Atlas Nexus." ;
+    rdfs:subClassOf ns1:RiskTaxonomyEntry .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy> a ns1:RiskTaxonomy,
+        skos:ConceptScheme ;
+    dct:description "A domain taxonomy of AI risks organized into high-level AI risk domains and subdomains." ;
+    skos:prefLabel "MIT AI Risk Repository: Domain Taxonomy of AI Risks" .
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#IBM_AI_Risk_Atlas> a ns1:RiskTaxonomy,
+        skos:ConceptScheme ;
+    dct:description "A taxonomy of risks associated with AI systems, including traditional AI, generative AI, synthetic data, and agentic AI risks." ;
+    skos:prefLabel "IBM AI Risk Atlas" .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#MIT_Draft_AI_Risk_Mitigation_Taxonomy> a ns1:RiskControlTaxonomy,
+        skos:ConceptScheme ;
+    dct:description """\r
+    A taxonomy of AI risk mitigations organized into governance and oversight controls,\r
+    technical and security controls, operational process controls, and transparency\r
+    and accountability controls.\r
+    """ ;
+    owl:versionInfo "1" ;
+    skos:prefLabel "MIT Draft AI Risk Mitigation Taxonomy" .
+

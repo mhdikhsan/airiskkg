@@ -1,0 +1,25 @@
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix pat: <http://w3id.org/airiskkg/patterns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rp: <http://w3id.org/beam/risk-pattern#> .
+
+<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ProductInformationRetrieval%2Fvector-ir%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfo/sensitive-data-retrieval-exposure> a rp:RiskFinding ;
+    rdfs:label "Candidate sensitive data retrieval exposure"@en ;
+    dct:description "A vector store containing sensitive information is used by a retrieval step, and retrieved content can flow toward user-facing output."@en ;
+    rp:findingStatus "candidate" ;
+    rp:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
+    rp:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> ;
+    rp:hasCandidateRiskTaxonomyEntry <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#exposing-personal-information>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#subdomain-2-1>,
+        <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm02-sensitive-information-disclosure> ;
+    rp:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#EventSummary>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB>,
+        <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> ;
+    rp:hasInterpretedMechanism pat:SensitiveDataRetrievalExposure ;
+    rp:hasSuggestedControl <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#data-governance>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#input-output-filtering>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#privacy-control-for-user-data>,
+        <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#retrieval-source-filtering> .
+
