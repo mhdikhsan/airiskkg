@@ -1,47 +1,36 @@
-# AI Risk Knowledge Graph Python Workspace
+# AI Risk Knowledge Graph
 
-This folder contains the  workspace for the working paper:
+This repository supports the working paper:
 
 **A Pattern-Based Method for Design-Time AI Risk Assessment Using Knowledge Graphs Operationalization**
 
-The code supports simple analysis, preprocessing, and experimentation around
-AI risk knowledge graphs and ontology patterns.
+It contains ontology files and a small Python workspace for AI risk knowledge
+graph analysis, preprocessing, and experimentation.
 
 ## Structure
 
 ```text
-src/airiskkg/  Reusable Python code and CLI tools
-tests/         Tests
-notebooks/     Exploratory notebooks
-scripts/       Helper scripts
-configs/       Configuration examples
+ontology/
+  core/                     Core ontology files
+  patterns/                 Risk and motif pattern definitions
+    implementation/         SPARQL construct queries for patterns
+  taxonomy/                 AI risk taxonomy sources and mappings
+  example/                  Example ontology instance data
+
+python/
+  src/airiskkg/             Reusable Python code and CLI tools
+  tests/                    Tests
+  notebooks/                Exploratory notebooks
+  scripts/                  Helper scripts
+  configs/                  Configuration examples
+  pyproject.toml            Python package configuration
 ```
 
-## Setup
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-python -m ipykernel install --user --name airiskkg
-```
-
-## Usage
-
-```powershell
-# Show project information
-airiskkg info
-
-# Run tests
-python -m pytest
-
-# Run notebooks
-jupyter lab notebooks/
-```
 
 ## Development
 
-Keep exploratory work in `notebooks/`. Move reusable code into
-`src/airiskkg/` when it becomes useful across notebooks or scripts.
+Keep exploratory Python work in `python/notebooks/`. Move reusable code into
+`python/src/airiskkg/` when it becomes useful across notebooks or scripts.
 
-The related ontology files are stored in `../ontology/`.
+Keep ontology sources in `ontology/`, grouped by core model, patterns,
+taxonomies, and examples.
