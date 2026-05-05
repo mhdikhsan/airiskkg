@@ -1,0 +1,102 @@
+@prefix owasp: <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
+@prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+#################################################################
+# Ontology declaration
+#################################################################
+
+<http://w3id.org/airiskkg/taxonomy/owasp-llm#> a owl:Ontology ;
+    rdfs:label "OWASP LLM Top 10 Subset for AI Risk KG" ;
+    dct:title "OWASP LLM Top 10 Subset for AI Risk KG" ;
+    dct:description """
+    RDF representation of selected OWASP Top 10 for Large Language Model Applications
+    entries adapted from AI Atlas Nexus.
+    """ ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/owasp_llm_2.0_data.yaml> .
+
+#################################################################
+# Taxonomy
+#################################################################
+
+owasp:OWASP_LLM_Top_10_2025 a nexus:RiskTaxonomy, skos:ConceptScheme ;
+    skos:prefLabel "OWASP Top 10 for Large Language Model Applications" ;
+    dct:description "A taxonomy of critical security vulnerabilities and risks in LLM applications." ;
+    owl:versionInfo "2.0" .
+
+#################################################################
+# Entries
+#################################################################
+
+owasp:llm01-prompt-injection a nexus:Risk ;
+    skos:prefLabel "LLM01:2025 Prompt Injection" ;
+    skos:definition "User or external inputs may alter LLM behavior or output in unintended ways." ;
+    skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:tag "llm01-prompt-injection" .
+
+owasp:llm02-sensitive-information-disclosure a nexus:Risk ;
+    skos:prefLabel "LLM02:2025 Sensitive Information Disclosure" ;
+    skos:definition "Sensitive information may be exposed through the LLM or its surrounding application context." ;
+    skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:tag "llm02-sensitive-information-disclosure" .
+
+owasp:llm03-supply-chain a nexus:Risk ;
+    skos:prefLabel "LLM03:2025 Supply Chain" ;
+    skos:definition "LLM supply chains may be vulnerable through models, data, dependencies, or deployment platforms." ;
+    skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:tag "llm03-supply-chain" .
+
+owasp:llm04-data-and-model-poisoning a nexus:Risk ;
+    skos:prefLabel "LLM04:2025 Data and Model Poisoning" ;
+    skos:definition "Training, fine-tuning, or embedding data may be manipulated to compromise model behavior." ;
+    skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:tag "llm04-data-and-model-poisoning" .
+
+owasp:llm05-improper-output-handling a nexus:Risk ;
+    skos:prefLabel "LLM05:2025 Improper Output Handling" ;
+    skos:definition "Generated outputs may be insufficiently validated, sanitized, or constrained before downstream use." ;
+    skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:tag "llm05-improper-output-handling" .
+
+owasp:llm06-excessive-agency a nexus:Risk ;
+    skos:prefLabel "LLM06:2025 Excessive Agency" ;
+    skos:definition "LLM systems may be granted excessive ability to invoke tools, act, or affect external systems." ;
+    skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:tag "llm06-excessive-agency" .
+
+owasp:llm07-system-prompt-leakage a nexus:Risk ;
+    skos:prefLabel "LLM07:2025 System Prompt Leakage" ;
+    skos:definition "System prompts or hidden instructions may be exposed to users or attackers." ;
+    skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:tag "llm07-system-prompt-leakage" .
+
+owasp:llm08-vector-and-embedding-weaknesses a nexus:Risk ;
+    skos:prefLabel "LLM08:2025 Vector and Embedding Weaknesses" ;
+    skos:definition "Weaknesses in vector generation, storage, or retrieval may affect RAG systems and downstream outputs." ;
+    skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:tag "llm08-vector-and-embedding-weaknesses" .
+
+owasp:llm09-misinformation a nexus:Risk ;
+    skos:prefLabel "LLM09:2025 Misinformation" ;
+    skos:definition "LLMs may produce false or misleading information that appears credible." ;
+    skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:tag "llm09-misinformation" .
+
+owasp:llm10-unbounded-consumption a nexus:Risk ;
+    skos:prefLabel "LLM10:2025 Unbounded Consumption" ;
+    skos:definition "LLM applications may allow excessive or uncontrolled inference, causing cost, availability, or abuse risks." ;
+    skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
+    nexus:tag "llm10-unbounded-consumption" .

@@ -1,0 +1,192 @@
+PREFIX pat:     <http://w3id.org/airiskkg/patterns#>
+PREFIX rp:      <http://w3id.org/beam/risk-pattern#>
+PREFIX beam:    <http://w3id.org/beam/core#>
+PREFIX beamr:   <http://w3id.org/beam/risk#>
+PREFIX atlas:   <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#>
+PREFIX mit:     <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#>
+PREFIX mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#>
+PREFIX owasp:   <http://w3id.org/airiskkg/taxonomy/owasp-llm#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:     <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a rp:RiskFinding ;
+        rdfs:label ?riskLabel ;
+        dct:description ?riskDescription ;
+        rp:generatedFromMatch ?match ;
+        rp:generatedByMotif ?motif ;
+        rp:hasInterpretedMechanism ?mechanism ;
+        rp:hasEvidenceElement ?evidence1 ;
+        rp:hasEvidenceElement ?evidence2 ;
+        rp:hasEvidenceElement ?evidence3 ;
+        rp:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        rp:hasSuggestedControl ?suggestedControl ;
+        rp:findingStatus "candidate" .
+
+}
+WHERE {
+    {
+        #################################################################
+        # Interpretation 1:
+        # Vector IR + sensitive vector store + user-facing downstream flow
+        # → candidate information leakage risk
+        #################################################################
+
+        ?match
+            a rp:MotifMatch ;
+            rp:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
+            rp:hasNodeBinding ?sourceBinding ;
+            rp:hasNodeBinding ?retrievalBinding ;
+            rp:hasNodeBinding ?resultBinding .
+
+        ?sourceBinding
+            rp:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+            rp:matchedElement ?vectorStore .
+
+        ?retrievalBinding
+            rp:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+            rp:matchedElement ?retrievalStep .
+
+        ?resultBinding
+            rp:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+            rp:matchedElement ?retrievedResult .
+
+        ?vectorStore
+            rp:containsDataCategory/rp:subDataCategoryOf* rp:SensitiveInformation .
+
+        {
+            ?retrievedResult
+                rp:playsRole ?outputRole .
+            ?outputRole rp:subRoleOf* rp:UserFacingOutput .
+        }
+        UNION
+        {
+            ?generationStep
+                beam:use ?retrievedResult ;
+                beam:produce ?userFacingOutput ;
+                rp:playsRole ?generationRole .
+
+            ?generationRole rp:subRoleOf* rp:GenerationStep .
+
+            ?userFacingOutput
+                rp:playsRole ?outputRole .
+            ?outputRole rp:subRoleOf* rp:UserFacingOutput .
+        }
+        UNION
+        {
+            ?intermediateStep
+                beam:use ?retrievedResult ;
+                beam:produce ?enhancedContext .
+
+            ?generationStep
+                beam:use ?enhancedContext ;
+                beam:produce ?userFacingOutput ;
+                rp:playsRole ?generationRole .
+
+            ?generationRole rp:subRoleOf* rp:GenerationStep .
+
+            ?userFacingOutput
+                rp:playsRole ?outputRole .
+            ?outputRole rp:subRoleOf* rp:UserFacingOutput .
+        }
+
+        BIND(pat:VectorBasedInformationRetrievalMotif AS ?motif)
+        BIND(pat:SensitiveDataRetrievalExposure AS ?mechanism)
+
+        BIND("Candidate Information Leakage from vector-based retrieval"@en AS ?riskLabel)
+        BIND("A vector store containing sensitive information is used by a retrieval step, and the retrieved context may flow into user-facing output."@en AS ?riskDescription)
+
+        VALUES ?riskTaxonomyEntry {
+            atlas:exposing-personal-information
+            owasp:llm02-sensitive-information-disclosure
+            mit:privacy-and-data-protection
+        }
+
+        VALUES ?suggestedControl {
+            mitctrl:data-minimization
+            mitctrl:sensitive-data-filtering
+            mitctrl:access-control
+        }
+
+        BIND(?vectorStore AS ?evidence1)
+        BIND(?retrievalStep AS ?evidence2)
+        BIND(?retrievedResult AS ?evidence3)
+
+        BIND(IRI(CONCAT(
+            "http://w3id.org/airiskkg/generated/risk-finding/",
+            ENCODE_FOR_URI(STR(?match)),
+            "-information-leakage"
+        )) AS ?riskFinding)
+    }
+    UNION
+    {
+        #################################################################
+        # Interpretation 2:
+        # LLM-based IR + no explicit knowledge source
+        # → candidate confabulation risk
+        #################################################################
+
+        ?match
+            a rp:MotifMatch ;
+            rp:matchesMotif pat:LLMBasedInformationRetrievalMotif ;
+            rp:hasNodeBinding ?queryBinding ;
+            rp:hasNodeBinding ?retrievalBinding ;
+            rp:hasNodeBinding ?modelBinding ;
+            rp:hasNodeBinding ?answerBinding .
+
+        ?queryBinding
+            rp:bindsPatternNode pat:LLMIR_QueryNode ;
+            rp:matchedElement ?query .
+
+        ?retrievalBinding
+            rp:bindsPatternNode pat:LLMIR_RetrievalStepNode ;
+            rp:matchedElement ?llmRetrievalStep .
+
+        ?modelBinding
+            rp:bindsPatternNode pat:LLMIR_ModelNode ;
+            rp:matchedElement ?llm .
+
+        ?answerBinding
+            rp:bindsPatternNode pat:LLMIR_AnswerNode ;
+            rp:matchedElement ?answer .
+
+        FILTER NOT EXISTS {
+            ?llmRetrievalStep
+                beam:use ?knowledgeSource .
+
+            ?knowledgeSource
+                rp:playsRole ?knowledgeSourceRole .
+
+            ?knowledgeSourceRole rp:subRoleOf* rp:KnowledgeSource .
+        }
+
+        BIND(pat:LLMBasedInformationRetrievalMotif AS ?motif)
+        BIND(pat:DirectLLMAnsweringWithoutGrounding AS ?mechanism)
+
+        BIND("Candidate Confabulation from LLM-based information retrieval"@en AS ?riskLabel)
+        BIND("An LLM-based information retrieval step produces a user-facing answer without an explicit knowledge source represented in the matched architecture."@en AS ?riskDescription)
+
+        VALUES ?riskTaxonomyEntry {
+            atlas:incorrect-output
+            atlas:hallucination
+            mit:information-integrity
+        }
+
+        VALUES ?suggestedControl {
+            mitctrl:grounding
+            mitctrl:retrieval-augmentation
+            mitctrl:output-verification
+        }
+
+        BIND(?query AS ?evidence1)
+        BIND(?llmRetrievalStep AS ?evidence2)
+        BIND(?answer AS ?evidence3)
+
+        BIND(IRI(CONCAT(
+            "http://w3id.org/airiskkg/generated/risk-finding/",
+            ENCODE_FOR_URI(STR(?match)),
+            "-confabulation"
+        )) AS ?riskFinding)
+    }
+}

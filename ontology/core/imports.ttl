@@ -1,0 +1,15 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/imports> a owl:Ontology ;
+    rdfs:label "AI Risk KG Ontology Imports" ;
+    dct:title "AI Risk KG Ontology Imports" ;
+    dct:description """
+    Aggregator ontology for loading the BEAM core ontology, BEAM risk extension,
+    and the BEAM risk-pattern core ontology together.
+    """ ;
+    owl:imports
+        <http://w3id.org/beam/core> ,
+        <http://w3id.org/beam/risk> ,
+        <http://w3id.org/beam/risk-pattern> .

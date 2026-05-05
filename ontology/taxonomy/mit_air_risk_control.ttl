@@ -1,0 +1,488 @@
+@prefix mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> .
+@prefix nexus:  <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix beamr:  <http://w3id.org/beam/risk#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+
+#################################################################
+# Ontology declaration
+#################################################################
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> a owl:Ontology ;
+    rdfs:label "MIT AI Risk Control Subset for AI Risk KG" ;
+    dct:title "MIT AI Risk Control Subset for AI Risk KG" ;
+    dct:description """
+    A selected RDF subset of the MIT Draft AI Risk Mitigation Taxonomy and related
+    risk controls, adapted from AI Atlas Nexus. This file provides a control
+    grounding layer for graph-pattern-based AI risk assessment.
+    """ ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_mitigation_data.yaml> ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_repository_data_controls.yaml> .
+
+#################################################################
+# Control taxonomy
+#################################################################
+
+mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy
+    a nexus:RiskControlTaxonomy, skos:ConceptScheme ;
+    skos:prefLabel "MIT Draft AI Risk Mitigation Taxonomy" ;
+    dct:description """
+    A taxonomy of AI risk mitigations organized into governance and oversight controls,
+    technical and security controls, operational process controls, and transparency
+    and accountability controls.
+    """ ;
+    owl:versionInfo "1" .
+
+#################################################################
+# Top-level control groups
+#################################################################
+
+mitctrl:governance-oversight-controls
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Governance & Oversight Controls" ;
+    skos:definition """
+    Formal organizational structures and policy frameworks that establish human oversight,
+    accountability, ethical conduct, and risk management throughout AI development and deployment.
+    """ ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    skos:topConceptOf mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "governance" .
+
+mitctrl:technical-security-controls
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Technical & Security Controls" ;
+    skos:definition """
+    Technical, physical, and engineering safeguards that secure AI systems and constrain
+    model behavior to support safety, security, alignment, and content integrity.
+    """ ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    skos:topConceptOf mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "technical" .
+
+mitctrl:operational-process-controls
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Operational Process Controls" ;
+    skos:definition """
+    Processes and management frameworks governing deployment, usage, monitoring,
+    incident handling, and validation across the AI system lifecycle.
+    """ ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    skos:topConceptOf mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "operational" .
+
+mitctrl:transparency-accountability-controls
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Transparency & Accountability Controls" ;
+    skos:definition """
+    Disclosure practices and verification mechanisms that communicate AI system information,
+    support external scrutiny, and enable accountability to users, regulators, and the public.
+    """ ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    skos:topConceptOf mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "transparency-accountability" .
+
+#################################################################
+# Governance and oversight control groups
+#################################################################
+
+mitctrl:risk-management
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Risk Management" ;
+    skos:definition """
+    Systematic methods that identify, evaluate, document, and manage AI risks.
+    Examples include risk registers, pre-deployment risk assessments, independent
+    risk assessments, and enterprise risk management frameworks.
+    """ ;
+    skos:broader mitctrl:governance-oversight-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "governance" ;
+    nexus:lifecyclePhase "design-time" ;
+    nexus:lifecyclePhase "development" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:safety-decision-frameworks
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Safety Decision Frameworks" ;
+    skos:definition """
+    Protocols and commitments that constrain decision-making about model development,
+    deployment, and capability scaling.
+    """ ;
+    skos:broader mitctrl:governance-oversight-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "governance" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:societal-impact-assessment
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Societal Impact Assessment" ;
+    skos:definition """
+    Processes that assess the societal effects of AI systems, including impacts on
+    employment, power relations, rights, and affected stakeholders.
+    """ ;
+    skos:broader mitctrl:governance-oversight-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "governance" ;
+    nexus:lifecyclePhase "design-time" .
+
+#################################################################
+# Technical and security control groups
+#################################################################
+
+mitctrl:model-infrastructure-security
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Model & Infrastructure Security" ;
+    skos:definition """
+    Technical and physical safeguards that secure AI models, model weights,
+    infrastructure, and system access against unauthorized use, theft, or tampering.
+    """ ;
+    skos:broader mitctrl:technical-security-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "technical" ;
+    nexus:lifecyclePhase "development" ;
+    nexus:lifecyclePhase "deployment" ;
+    nexus:lifecyclePhase "operation" .
+
+mitctrl:model-safety-engineering
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Model Safety Engineering" ;
+    skos:definition """
+    Technical methods and safeguards that constrain model behavior and protect against
+    exploitation, unsafe outputs, or vulnerabilities.
+    """ ;
+    skos:broader mitctrl:technical-security-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "technical" ;
+    nexus:lifecyclePhase "development" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:content-safety-controls
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Content Safety Controls" ;
+    skos:definition """
+    Technical systems and processes that detect, filter, label, or restrict harmful,
+    unsafe, or manipulated AI-generated content.
+    """ ;
+    skos:broader mitctrl:technical-security-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "technical" ;
+    nexus:lifecyclePhase "deployment" ;
+    nexus:lifecyclePhase "operation" .
+
+#################################################################
+# Operational process control groups
+#################################################################
+
+mitctrl:testing-auditing
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Testing & Auditing" ;
+    skos:definition """
+    Internal and external evaluations that assess AI systems, infrastructure, and
+    compliance processes. Examples include red teaming, penetration testing, third-party
+    audits, dangerous capability evaluations, and bug bounty programs.
+    """ ;
+    skos:broader mitctrl:operational-process-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "detective" ;
+    nexus:lifecyclePhase "development" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:data-governance
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Data Governance" ;
+    skos:definition """
+    Policies and procedures that govern responsible data acquisition, curation, usage,
+    privacy, quality, and compliance.
+    """ ;
+    skos:broader mitctrl:operational-process-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "operational" ;
+    nexus:lifecyclePhase "design-time" ;
+    nexus:lifecyclePhase "development" .
+
+mitctrl:access-management
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Access Management" ;
+    skos:definition """
+    Policies and verification systems that govern who can use AI systems,
+    under which purposes, and with which restrictions.
+    """ ;
+    skos:broader mitctrl:operational-process-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "preventive" ;
+    nexus:lifecyclePhase "deployment" ;
+    nexus:lifecyclePhase "operation" .
+
+mitctrl:staged-deployment
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Staged Deployment" ;
+    skos:definition """
+    Deployment protocols that release AI systems in stages and require validation
+    before expanding access or capability.
+    """ ;
+    skos:broader mitctrl:operational-process-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "operational" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:post-deployment-monitoring
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Post-deployment Monitoring" ;
+    skos:definition """
+    Ongoing monitoring processes that track AI behavior, user interactions, misuse,
+    performance degradation, and societal impacts after deployment.
+    """ ;
+    skos:broader mitctrl:operational-process-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "detective" ;
+    nexus:lifecyclePhase "post-deployment" .
+
+mitctrl:incident-response-recovery
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Incident Response & Recovery" ;
+    skos:definition """
+    Protocols and technical systems that respond to security incidents, safety failures,
+    model misuse, or harmful system behavior.
+    """ ;
+    skos:broader mitctrl:operational-process-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "corrective" ;
+    nexus:lifecyclePhase "operation" ;
+    nexus:lifecyclePhase "post-deployment" .
+
+#################################################################
+# Transparency and accountability control groups
+#################################################################
+
+mitctrl:system-documentation
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "System Documentation" ;
+    skos:definition """
+    Documentation protocols that record technical specifications, intended uses,
+    limitations, system architecture, model information, and safety evaluation results.
+    """ ;
+    skos:broader mitctrl:transparency-accountability-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "transparency-accountability" ;
+    nexus:lifecyclePhase "design-time" ;
+    nexus:lifecyclePhase "development" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:risk-disclosure
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Risk Disclosure" ;
+    skos:definition """
+    Reporting and notification practices that communicate risk information, mitigation
+    plans, safety evaluations, and relevant risk assessment summaries.
+    """ ;
+    skos:broader mitctrl:transparency-accountability-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "transparency-accountability" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:incident-reporting
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "Incident Reporting" ;
+    skos:definition """
+    Processes that document and share AI safety incidents, security breaches, failures,
+    near-misses, and other relevant risk events with appropriate stakeholders.
+    """ ;
+    skos:broader mitctrl:transparency-accountability-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "transparency-accountability" ;
+    nexus:lifecyclePhase "post-deployment" .
+
+mitctrl:user-rights-recourse
+    a nexus:RiskControlGroup ;
+    skos:prefLabel "User Rights & Recourse" ;
+    skos:definition """
+    Frameworks and procedures that enable users to identify AI system interactions,
+    request explanations, report issues, appeal decisions, or seek remediation.
+    """ ;
+    skos:broader mitctrl:transparency-accountability-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "transparency-accountability" ;
+    nexus:lifecyclePhase "deployment" ;
+    nexus:lifecyclePhase "post-deployment" .
+
+#################################################################
+# Concrete control/action examples
+#################################################################
+
+mitctrl:risk-register
+    a nexus:RiskControl ;
+    skos:prefLabel "Risk Register" ;
+    skos:definition "A structured repository of risks, their prioritization, owners, and mitigation plans." ;
+    skos:broader mitctrl:risk-management ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "governance" ;
+    nexus:lifecyclePhase "design-time" .
+
+mitctrl:pre-deployment-risk-assessment
+    a nexus:RiskControl ;
+    skos:prefLabel "Pre-deployment Risk Assessment" ;
+    skos:definition "Assessment of risks before deployment or before expanding system access." ;
+    skos:broader mitctrl:risk-management ;
+    skos:broader mitctrl:staged-deployment ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "governance" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:threat-modelling
+    a nexus:RiskControl ;
+    skos:prefLabel "Threat Modelling" ;
+    skos:definition "A process to identify threats, vulnerabilities, and possible attack paths affecting a system." ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:broader mitctrl:model-infrastructure-security ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "detective" ;
+    nexus:lifecyclePhase "design-time" .
+
+mitctrl:red-teaming
+    a nexus:RiskControl ;
+    skos:prefLabel "Red Teaming" ;
+    skos:definition "Adversarial testing to identify unsafe behavior, vulnerabilities, or misuse pathways." ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "detective" ;
+    nexus:lifecyclePhase "development" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:input-output-filtering
+    a nexus:RiskControl ;
+    skos:prefLabel "Input/Output Filtering" ;
+    skos:definition "Filtering or constraining inputs and outputs to reduce unsafe, sensitive, harmful, or policy-violating content." ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:broader mitctrl:content-safety-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "technical" ;
+    nexus:lifecyclePhase "deployment" ;
+    nexus:lifecyclePhase "operation" .
+
+mitctrl:data-curation-process
+    a nexus:RiskControl ;
+    skos:prefLabel "Data Curation Process" ;
+    skos:definition "Processes for selecting, cleaning, filtering, documenting, and governing data used by AI systems." ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "operational" ;
+    nexus:lifecyclePhase "development" .
+
+mitctrl:privacy-control-for-user-data
+    a nexus:RiskControl ;
+    skos:prefLabel "Privacy Control for User Data" ;
+    skos:definition "Controls that reduce unauthorized access, use, retrieval, or disclosure of user or personal data." ;
+    skos:broader mitctrl:data-governance ;
+    skos:broader mitctrl:access-management ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "preventive" ;
+    nexus:lifecyclePhase "design-time" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:retrieval-source-filtering
+    a nexus:RiskControl ;
+    skos:prefLabel "Retrieval Source Filtering" ;
+    skos:definition "Filtering or restricting which knowledge sources, documents, or records can be retrieved and injected into model context." ;
+    skos:broader mitctrl:data-governance ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "technical" ;
+    nexus:lifecyclePhase "design-time" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:retrieval-quality-evaluation
+    a nexus:RiskControl ;
+    skos:prefLabel "Retrieval Quality Evaluation" ;
+    skos:definition "Evaluation of retrieval relevance, completeness, source quality, and grounding quality in retrieval-augmented systems." ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "detective" ;
+    nexus:lifecyclePhase "development" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:prompt-context-limiting
+    a nexus:RiskControl ;
+    skos:prefLabel "Prompt Context Limiting" ;
+    skos:definition "Limiting prompt size, retrieved context size, query budget, or model invocation budget to reduce cost, latency, and unbounded consumption risks." ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:broader mitctrl:operational-process-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "technical" ;
+    nexus:lifecyclePhase "design-time" ;
+    nexus:lifecyclePhase "deployment" .
+
+mitctrl:human-oversight-protocol
+    a nexus:RiskControl ;
+    skos:prefLabel "Human Oversight Protocol" ;
+    skos:definition "Defined procedures for human oversight, review, intervention, and accountability in AI system operation." ;
+    skos:broader mitctrl:governance-oversight-controls ;
+    skos:broader mitctrl:user-rights-recourse ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "governance" ;
+    nexus:lifecyclePhase "deployment" ;
+    nexus:lifecyclePhase "operation" .
+
+mitctrl:system-architecture-documentation
+    a nexus:RiskControl ;
+    skos:prefLabel "System Architecture Documentation" ;
+    skos:definition "Documentation of the system architecture, components, data flows, model use, limitations, and intended use." ;
+    skos:broader mitctrl:system-documentation ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "transparency-accountability" ;
+    nexus:lifecyclePhase "design-time" .
+
+mitctrl:post-deployment-behavior-monitoring
+    a nexus:RiskControl ;
+    skos:prefLabel "Post-deployment Behavior Monitoring" ;
+    skos:definition "Ongoing monitoring of AI system behavior, outputs, user interactions, failures, and misuse signals after deployment." ;
+    skos:broader mitctrl:post-deployment-monitoring ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "detective" ;
+    nexus:lifecyclePhase "post-deployment" .
+
+mitctrl:incident-response-plan
+    a nexus:RiskControl ;
+    skos:prefLabel "Incident Response Plan" ;
+    skos:definition "A plan for responding to AI safety incidents, security failures, misuse, or harmful outputs." ;
+    skos:broader mitctrl:incident-response-recovery ;
+    skos:broader mitctrl:incident-reporting ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "corrective" ;
+    nexus:lifecyclePhase "post-deployment" .
