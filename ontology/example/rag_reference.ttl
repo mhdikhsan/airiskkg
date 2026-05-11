@@ -1,0 +1,99 @@
+@prefix rw:    <http://w3id.org/airiskkg/example/realworld-langchain-rag#> .
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix rp:    <http://w3id.org/beam/risk-pattern#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix vann:  <http://purl.org/vocab/vann/> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+
+<http://w3id.org/airiskkg/example/realworld-langchain-rag#> a owl:Ontology ;
+    dct:title "Real-world Public RAG Application Use Case"@en ;
+    dct:source <https://docs.langchain.com/oss/python/langchain/rag> ;
+    dct:source <https://github.com/streamlit/example-app-langchain-rag> ;
+    vann:preferredNamespacePrefix "rw" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/example/realworld-langchain-rag#" ;
+    owl:imports <http://w3id.org/beam/core#> ,
+        <http://w3id.org/beam/risk-pattern#> .
+
+rw:RealWorldRAGSystem
+    a beam:System ;
+    rdfs:label "Public document Q&A RAG application"@en ;
+    beam:hasResource
+        rw:PublicQuestion ,
+        rw:VectorStore ,
+        rw:RetrievedContext ,
+        rw:Prompt ,
+        rw:LLM ,
+        rw:Answer ;
+    beam:hasProcess
+        rw:RetrieveContext ,
+        rw:BuildPrompt ,
+        rw:GenerateAnswer .
+
+rw:PublicQuestion
+    a beam:Data ;
+    rdfs:label "Public question"@en ;
+    rp:playsRole rp:PublicUserInput ;
+    rp:containsDataCategory rp:ExternalUserContent ;
+    beam:usedBy rw:RetrieveContext ,
+        rw:BuildPrompt .
+
+rw:VectorStore
+    a beam:Data ;
+    rdfs:label "Vector store"@en ;
+    rp:playsRole rp:VectorStore ;
+    rp:containsDataCategory rp:Information ;
+    beam:usedBy rw:RetrieveContext .
+
+rw:RetrievedContext
+    a beam:Data ;
+    rdfs:label "Retrieved context"@en ;
+    rp:playsRole rp:RetrievedContext ;
+    rp:containsDataCategory rp:Information ;
+    beam:usedBy rw:BuildPrompt .
+
+rw:Prompt
+    a beam:Data ;
+    rdfs:label "RAG prompt"@en ;
+    rp:playsRole rp:PromptTemplate ;
+    rp:containsDataCategory rp:PromptInstruction ;
+    rp:containsDataCategory rp:ExternalUserContent ;
+    beam:usedBy rw:GenerateAnswer .
+
+rw:LLM
+    a beam:StatisticalModel ;
+    rdfs:label "LLM"@en ;
+    rp:playsRole rp:GenerativeModel ;
+    beam:usedBy rw:GenerateAnswer .
+
+rw:Answer
+    a beam:Data ;
+    rdfs:label "Answer"@en ;
+    rp:playsRole rp:PublicUserFacingOutput ;
+    rp:containsDataCategory rp:GeneratedContent .
+
+rw:RetrieveContext
+    a beam:Infer ;
+    rdfs:label "Retrieve context"@en ;
+    rp:playsRole rp:RetrievalStep ;
+    beam:use rw:PublicQuestion ,
+        rw:VectorStore ;
+    beam:produce rw:RetrievedContext ;
+    beam:inform rw:BuildPrompt .
+
+rw:BuildPrompt
+    a beam:Transform ;
+    rdfs:label "Build prompt"@en ;
+    rp:playsRole rp:PromptConstructionStep ;
+    beam:use rw:PublicQuestion ,
+        rw:RetrievedContext ;
+    beam:produce rw:Prompt ;
+    beam:inform rw:GenerateAnswer .
+
+rw:GenerateAnswer
+    a beam:Transform ;
+    rdfs:label "Generate answer"@en ;
+    rp:playsRole rp:GenerationStep ;
+    beam:use rw:Prompt ,
+        rw:LLM ;
+    beam:produce rw:Answer .

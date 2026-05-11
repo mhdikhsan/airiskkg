@@ -525,6 +525,10 @@ rp:findingStatus a owl:DatatypeProperty ;
 rp:UserInput a rp:PatternRole ;
     skos:prefLabel "User Input"@en .
 
+rp:PublicUserInput a rp:PatternRole ;
+    skos:prefLabel "Public User Input"@en ;
+    rp:subRoleOf rp:UserInput .
+
 rp:KnowledgeSource a rp:PatternRole ;
     skos:prefLabel "Knowledge Source"@en .
 
@@ -548,6 +552,10 @@ rp:SystemPrompt a rp:PatternRole ;
 
 rp:UserFacingOutput a rp:PatternRole ;
     skos:prefLabel "User-facing Output"@en .
+
+rp:PublicUserFacingOutput a rp:PatternRole ;
+    skos:prefLabel "Public User-facing Output"@en ;
+    rp:subRoleOf rp:UserFacingOutput .
 
 #################################################################
 # Pattern roles: process roles
@@ -649,6 +657,10 @@ rp:PromptInstruction a rp:DataCategory ;
 rp:UntrustedContent a rp:DataCategory ;
     skos:prefLabel "Untrusted Content"@en ;
     rp:subDataCategoryOf rp:Information .
+
+rp:ExternalUserContent a rp:DataCategory ;
+    skos:prefLabel "External User Content"@en ;
+    rp:subDataCategoryOf rp:UntrustedContent .
 
 rp:GeneratedContent a rp:DataCategory ;
     skos:prefLabel "Generated Content"@en ;

@@ -33,13 +33,13 @@ PATTERN_FILES = [
 ]
 
 MATCHING_OQPS = [
-    IMPLEMENTATION_DIR / "match_vector_ir.construct.rq",
-    IMPLEMENTATION_DIR / "match_llm_ir.construct.rq",
+    IMPLEMENTATION_DIR / "match_vector_ir.rq",
+    IMPLEMENTATION_DIR / "match_llm_ir.rq",
 ]
 
 INTERPRETATION_OQPS = [
-    IMPLEMENTATION_DIR / "interpret_sensitive_data_retrieval.construct.rq",
-    IMPLEMENTATION_DIR / "interpret_direct_llm_without_grounding.construct.rq",
+    IMPLEMENTATION_DIR / "risk_sensitive_retrieval.rq",
+    IMPLEMENTATION_DIR / "risk_ungrounded_llm.rq",
 ]
 
 
@@ -81,7 +81,7 @@ def load_uc6_graph() -> Graph:
         _load_turtle(graph, path)
     for path in sorted(TAXONOMY_DIR.glob("*.ttl")):
         _load_turtle(graph, path)
-    _load_turtle(graph, EXAMPLE_DIR / "beam_core_instance_uc6.ttl")
+    _load_turtle(graph, EXAMPLE_DIR / "uc6_onlim.ttl")
     return graph
 
 

@@ -1,0 +1,22 @@
+PREFIX owasp: <http://w3id.org/airiskkg/taxonomy/owasp-llm#>
+PREFIX nexus: <http://w3id.org/airiskkg/taxonomy/nexus#>
+PREFIX skos:  <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?riskCategory ?riskCategoryLabel ?mechanism ?mechanismLabel ?condition ?conditionLabel
+WHERE {
+    ?riskCategory
+        skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+        skos:prefLabel ?riskCategoryLabel ;
+        nexus:hasRiskMechanism ?mechanism ;
+        nexus:hasRiskCondition ?condition .
+
+    OPTIONAL {
+        ?mechanism rdfs:label ?mechanismLabel .
+    }
+
+    OPTIONAL {
+        ?condition skos:prefLabel ?conditionLabel .
+    }
+}
+ORDER BY ?riskCategoryLabel ?mechanismLabel ?conditionLabel

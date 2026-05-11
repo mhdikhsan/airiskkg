@@ -1,35 +1,27 @@
 @prefix owasp: <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
 @prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix rp:    <http://w3id.org/beam/risk-pattern#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-
-#################################################################
-# Ontology declaration
-#################################################################
 
 <http://w3id.org/airiskkg/taxonomy/owasp-llm#> a owl:Ontology ;
     rdfs:label "OWASP LLM Top 10 Subset for AI Risk KG" ;
     dct:title "OWASP LLM Top 10 Subset for AI Risk KG" ;
     dct:description """
     RDF representation of selected OWASP Top 10 for Large Language Model Applications
-    entries adapted from AI Atlas Nexus.
+    2025 entries for AI Risk KG. OWASP GenAI Security is used as the primary
+    generative-AI/LLM application security taxonomy baseline; AI Atlas Nexus
+    remains a secondary adaptation and alignment source.
     """ ;
+    dct:source <https://github.com/owasp/www-project-top-10-for-large-language-model-applications> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/owasp_llm_2.0_data.yaml> .
-
-#################################################################
-# Taxonomy
-#################################################################
 
 owasp:OWASP_LLM_Top_10_2025 a nexus:RiskTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "OWASP Top 10 for Large Language Model Applications" ;
     dct:description "A taxonomy of critical security vulnerabilities and risks in LLM applications." ;
     owl:versionInfo "2.0" .
-
-#################################################################
-# Entries
-#################################################################
 
 owasp:llm01-prompt-injection a nexus:Risk ;
     skos:prefLabel "LLM01:2025 Prompt Injection" ;
@@ -100,3 +92,177 @@ owasp:llm10-unbounded-consumption a nexus:Risk ;
     skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
     nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
     nexus:tag "llm10-unbounded-consumption" .
+
+owasp:llm01-prompt-injection
+    nexus:hasRiskMechanism owasp:mechanism-instruction-override ;
+    nexus:hasRiskCondition owasp:condition-untrusted-input-enters-prompt-context ,
+        owasp:condition-retrieved-content-enters-generation-context .
+
+owasp:llm02-sensitive-information-disclosure
+    nexus:hasRiskMechanism owasp:mechanism-sensitive-data-propagation ;
+    nexus:hasRiskCondition owasp:condition-sensitive-data-in-context ,
+        owasp:condition-generated-output-exposed-to-user .
+
+owasp:llm03-supply-chain
+    nexus:hasRiskMechanism owasp:mechanism-supply-chain-compromise ;
+    nexus:hasRiskCondition owasp:condition-externally-sourced-model-data-or-dependency .
+
+owasp:llm04-data-and-model-poisoning
+    nexus:hasRiskMechanism owasp:mechanism-data-or-model-poisoning ;
+    nexus:hasRiskCondition owasp:condition-untrusted-data-enters-training-finetuning-or-indexing .
+
+owasp:llm05-improper-output-handling
+    nexus:hasRiskMechanism owasp:mechanism-unsafe-output-propagation ;
+    nexus:hasRiskCondition owasp:condition-llm-output-used-without-validation .
+
+owasp:llm06-excessive-agency
+    nexus:hasRiskMechanism owasp:mechanism-excessive-agency-action-execution ;
+    nexus:hasRiskCondition owasp:condition-llm-can-trigger-tools-or-state-changes .
+
+owasp:llm07-system-prompt-leakage
+    nexus:hasRiskMechanism owasp:mechanism-system-prompt-exposure ;
+    nexus:hasRiskCondition owasp:condition-hidden-instructions-in-prompt-context ,
+        owasp:condition-generated-output-exposed-to-user .
+
+owasp:llm08-vector-and-embedding-weaknesses
+    nexus:hasRiskMechanism owasp:mechanism-vector-embedding-retrieval-weakness ;
+    nexus:hasRiskCondition owasp:condition-vector-store-used-for-retrieval ,
+        owasp:condition-retrieved-content-enters-generation-context ,
+        owasp:condition-retrieval-filtering-or-ranking-is-risk-relevant .
+
+owasp:llm09-misinformation
+    nexus:hasRiskMechanism owasp:mechanism-unsupported-generation ;
+    nexus:hasRiskCondition owasp:condition-generation-without-grounding-or-verification ,
+        owasp:condition-generated-output-exposed-to-user .
+
+owasp:llm10-unbounded-consumption
+    nexus:hasRiskMechanism owasp:mechanism-unbounded-resource-consumption ;
+    nexus:hasRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
+
+owasp:mechanism-instruction-override
+    a rp:RiskMechanism ;
+    rdfs:label "Instruction override by untrusted context"@en ;
+    dct:description "Untrusted user, retrieved, or tool-supplied content changes model behavior by overriding or conflicting with intended instructions."@en ;
+    nexus:mechanismForRisk owasp:llm01-prompt-injection .
+
+owasp:mechanism-sensitive-data-propagation
+    a rp:RiskMechanism ;
+    rdfs:label "Sensitive data propagation through LLM context"@en ;
+    dct:description "Sensitive information enters prompt, retrieval context, model output, logs, or downstream application flows where it may be disclosed."@en ;
+    nexus:mechanismForRisk owasp:llm02-sensitive-information-disclosure .
+
+owasp:mechanism-supply-chain-compromise
+    a rp:RiskMechanism ;
+    rdfs:label "Compromised LLM supply chain dependency"@en ;
+    dct:description "A model, dataset, dependency, plugin, provider, or deployment artifact is compromised, unverifiable, or insufficiently governed."@en ;
+    nexus:mechanismForRisk owasp:llm03-supply-chain .
+
+owasp:mechanism-data-or-model-poisoning
+    a rp:RiskMechanism ;
+    rdfs:label "Data or model poisoning"@en ;
+    dct:description "Training, fine-tuning, evaluation, or retrieval/indexing data is manipulated so model behavior or retrieved context becomes attacker-influenced or unreliable."@en ;
+    nexus:mechanismForRisk owasp:llm04-data-and-model-poisoning .
+
+owasp:mechanism-unsafe-output-propagation
+    a rp:RiskMechanism ;
+    rdfs:label "Unsafe generated output propagation"@en ;
+    dct:description "LLM output is treated as trusted content or executable instruction without adequate validation, escaping, review, or constraint."@en ;
+    nexus:mechanismForRisk owasp:llm05-improper-output-handling .
+
+owasp:mechanism-excessive-agency-action-execution
+    a rp:RiskMechanism ;
+    rdfs:label "Excessive agency action execution"@en ;
+    dct:description "An LLM-driven component can invoke tools, alter state, access resources, or trigger external actions beyond intended limits or oversight."@en ;
+    nexus:mechanismForRisk owasp:llm06-excessive-agency .
+
+owasp:mechanism-system-prompt-exposure
+    a rp:RiskMechanism ;
+    rdfs:label "System prompt exposure"@en ;
+    dct:description "Hidden instructions, policies, tool schemas, or operational configuration become visible through output, context, logs, or adversarial interaction."@en ;
+    nexus:mechanismForRisk owasp:llm07-system-prompt-leakage .
+
+owasp:mechanism-vector-embedding-retrieval-weakness
+    a rp:RiskMechanism ;
+    rdfs:label "Vector and embedding retrieval weakness"@en ;
+    dct:description "Embedding, indexing, chunking, similarity search, source filtering, or ranking causes irrelevant, malicious, stale, or unauthorized context to enter generation."@en ;
+    nexus:mechanismForRisk owasp:llm08-vector-and-embedding-weaknesses .
+
+owasp:mechanism-unsupported-generation
+    a rp:RiskMechanism ;
+    rdfs:label "Unsupported or ungrounded generation"@en ;
+    dct:description "The LLM produces plausible but unsupported or misleading content because grounding, verification, source quality, or task boundaries are insufficient."@en ;
+    nexus:mechanismForRisk owasp:llm09-misinformation .
+
+owasp:mechanism-unbounded-resource-consumption
+    a rp:RiskMechanism ;
+    rdfs:label "Unbounded resource consumption"@en ;
+    dct:description "Prompt size, retrieval breadth, tool loops, model calls, or user traffic exceed intended cost, latency, rate, or availability limits."@en ;
+    nexus:mechanismForRisk owasp:llm10-unbounded-consumption .
+
+owasp:condition-untrusted-input-enters-prompt-context
+    a nexus:RiskCondition ;
+    skos:prefLabel "Untrusted input enters prompt context"@en ;
+    nexus:conditionForRisk owasp:llm01-prompt-injection .
+
+owasp:condition-retrieved-content-enters-generation-context
+    a nexus:RiskCondition ;
+    skos:prefLabel "Retrieved content enters generation context"@en ;
+    nexus:conditionForRisk owasp:llm01-prompt-injection ,
+        owasp:llm08-vector-and-embedding-weaknesses .
+
+owasp:condition-sensitive-data-in-context
+    a nexus:RiskCondition ;
+    skos:prefLabel "Sensitive data is present in prompt or retrieval context"@en ;
+    nexus:conditionForRisk owasp:llm02-sensitive-information-disclosure .
+
+owasp:condition-generated-output-exposed-to-user
+    a nexus:RiskCondition ;
+    skos:prefLabel "Generated output is exposed to a user or downstream system"@en ;
+    nexus:conditionForRisk owasp:llm02-sensitive-information-disclosure ,
+        owasp:llm07-system-prompt-leakage ,
+        owasp:llm09-misinformation .
+
+owasp:condition-externally-sourced-model-data-or-dependency
+    a nexus:RiskCondition ;
+    skos:prefLabel "Externally sourced model, data, component, or provider is used"@en ;
+    nexus:conditionForRisk owasp:llm03-supply-chain .
+
+owasp:condition-untrusted-data-enters-training-finetuning-or-indexing
+    a nexus:RiskCondition ;
+    skos:prefLabel "Untrusted data enters training, fine-tuning, evaluation, or indexing"@en ;
+    nexus:conditionForRisk owasp:llm04-data-and-model-poisoning .
+
+owasp:condition-llm-output-used-without-validation
+    a nexus:RiskCondition ;
+    skos:prefLabel "LLM output is used without validation or sanitization"@en ;
+    nexus:conditionForRisk owasp:llm05-improper-output-handling .
+
+owasp:condition-llm-can-trigger-tools-or-state-changes
+    a nexus:RiskCondition ;
+    skos:prefLabel "LLM can trigger tools, permissions, transactions, or state changes"@en ;
+    nexus:conditionForRisk owasp:llm06-excessive-agency .
+
+owasp:condition-hidden-instructions-in-prompt-context
+    a nexus:RiskCondition ;
+    skos:prefLabel "Hidden instructions or system configuration are present in prompt context"@en ;
+    nexus:conditionForRisk owasp:llm07-system-prompt-leakage .
+
+owasp:condition-vector-store-used-for-retrieval
+    a nexus:RiskCondition ;
+    skos:prefLabel "Vector store or embedding index is used for retrieval"@en ;
+    nexus:conditionForRisk owasp:llm08-vector-and-embedding-weaknesses .
+
+owasp:condition-retrieval-filtering-or-ranking-is-risk-relevant
+    a nexus:RiskCondition ;
+    skos:prefLabel "Retrieval filtering, ranking, chunking, or source selection is risk-relevant"@en ;
+    nexus:conditionForRisk owasp:llm08-vector-and-embedding-weaknesses .
+
+owasp:condition-generation-without-grounding-or-verification
+    a nexus:RiskCondition ;
+    skos:prefLabel "Generation occurs without sufficient grounding, source attribution, or verification"@en ;
+    nexus:conditionForRisk owasp:llm09-misinformation .
+
+owasp:condition-unbounded-prompt-retrieval-tool-or-model-use
+    a nexus:RiskCondition ;
+    skos:prefLabel "Prompt, retrieval, tool, or model use is not bounded by cost, rate, or loop controls"@en ;
+    nexus:conditionForRisk owasp:llm10-unbounded-consumption .

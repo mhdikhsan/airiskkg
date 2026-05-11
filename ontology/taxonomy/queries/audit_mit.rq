@@ -1,0 +1,35 @@
+PREFIX owasp: <http://w3id.org/airiskkg/taxonomy/owasp-llm#>
+PREFIX nexus: <http://w3id.org/airiskkg/taxonomy/nexus#>
+PREFIX mit:   <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#>
+PREFIX skos:  <http://www.w3.org/2004/02/skos/core#>
+
+SELECT ?owaspRisk ?label
+       (COUNT(DISTINCT ?mitRisk) AS ?mitRiskCount)
+       (COUNT(DISTINCT ?control) AS ?controlCount)
+       (COUNT(DISTINCT ?reverseControl) AS ?reverseControlCount)
+WHERE {
+    ?owaspRisk
+        skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
+        skos:prefLabel ?label .
+
+    OPTIONAL {
+        {
+            ?owaspRisk skos:closeMatch ?mitRisk .
+        }
+        UNION
+        {
+            ?owaspRisk skos:relatedMatch ?mitRisk .
+        }
+        FILTER(STRSTARTS(STR(?mitRisk), STR(mit:)))
+    }
+
+    OPTIONAL {
+        ?owaspRisk nexus:hasRelatedControl ?control .
+    }
+
+    OPTIONAL {
+        ?reverseControl nexus:mitigatesRiskTaxonomyEntry ?owaspRisk .
+    }
+}
+GROUP BY ?owaspRisk ?label
+ORDER BY ?label
