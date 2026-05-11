@@ -65,6 +65,15 @@ nexus:Risk a owl:Class ;
     rdfs:label "Risk" ;
     rdfs:comment "A taxonomy-level AI risk entry adapted from AI Atlas Nexus." .
 
+nexus:RiskCondition a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Risk Condition" ;
+    rdfs:comment """
+    A condition under which a risk taxonomy entry may become relevant. This is
+    used for source-taxonomy knowledge bases such as OWASP LLM, where a risk
+    category is grounded by mechanisms and observable or queryable conditions.
+    """ .
+
 #################################################################
 # Risk control taxonomy classes
 #################################################################
@@ -116,6 +125,33 @@ nexus:hasRelatedRisk a owl:ObjectProperty ;
     rdfs:domain skos:Concept ;
     rdfs:range nexus:RiskTaxonomyEntry ;
     rdfs:comment "Links a control, action, or concept to a related risk taxonomy entry." .
+
+nexus:hasRiskMechanism a owl:ObjectProperty ;
+    rdfs:label "has risk mechanism" ;
+    rdfs:domain nexus:RiskTaxonomyEntry ;
+    rdfs:range rdfs:Resource ;
+    rdfs:comment """
+    Links a risk taxonomy entry to a mechanism explaining how the risk can
+    arise. The mechanism may be represented using the risk-pattern ontology.
+    """ .
+
+nexus:mechanismForRisk a owl:ObjectProperty ;
+    rdfs:label "mechanism for risk" ;
+    rdfs:domain rdfs:Resource ;
+    rdfs:range nexus:RiskTaxonomyEntry ;
+    rdfs:comment "Reverse link from a risk mechanism to the taxonomy entry it explains." .
+
+nexus:hasRiskCondition a owl:ObjectProperty ;
+    rdfs:label "has risk condition" ;
+    rdfs:domain nexus:RiskTaxonomyEntry ;
+    rdfs:range nexus:RiskCondition ;
+    rdfs:comment "Links a risk taxonomy entry to a condition that can make the risk applicable." .
+
+nexus:conditionForRisk a owl:ObjectProperty ;
+    rdfs:label "condition for risk" ;
+    rdfs:domain nexus:RiskCondition ;
+    rdfs:range nexus:RiskTaxonomyEntry ;
+    rdfs:comment "Reverse link from a risk condition to the taxonomy entry it supports." .
 
 nexus:hasRelatedControl a owl:ObjectProperty ;
     rdfs:label "has related control" ;
