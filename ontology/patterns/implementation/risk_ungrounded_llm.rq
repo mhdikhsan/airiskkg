@@ -1,74 +1,70 @@
 PREFIX pat:     <http://w3id.org/airiskkg/patterns#>
-PREFIX rp:      <http://w3id.org/beam/risk-pattern#>
+PREFIX pair:      <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam:    <http://w3id.org/beam/core#>
-PREFIX atlas:   <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#>
-PREFIX mit:     <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#>
-PREFIX mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#>
-PREFIX owasp:   <http://w3id.org/airiskkg/taxonomy/owasp-llm#>
 PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX dct:     <http://purl.org/dc/terms/>
 
 CONSTRUCT {
     ?riskFinding
-        a rp:RiskFinding ;
+        a pair:RiskFinding ;
         rdfs:label "Candidate direct LLM answering without grounding"@en ;
         dct:description "An LLM-based answering step produces a user-facing answer without an explicit knowledge source or retrieved grounding context represented in the architecture graph."@en ;
-        rp:generatedFromMatch ?match ;
-        rp:generatedByMotif pat:LLMBasedInformationRetrievalMotif ;
-        rp:hasInterpretedMechanism pat:DirectLLMAnsweringWithoutGrounding ;
-        rp:hasEvidenceElement ?query ,
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif pat:DirectLLMAnsweringMotif ;
+        pair:hasInterpretedMechanism ?mechanism ;
+        pair:hasEvidenceElement ?query ,
             ?step ,
             ?llm ,
             ?answer ;
-        rp:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
-        rp:hasSuggestedControl ?suggestedControl ;
-        rp:findingStatus "candidate" .
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition ;
+        pair:findingStatus "candidate" .
 }
 WHERE {
+    pat:DirectLLMAnsweringWithoutGroundingInterpretation
+        pair:interpretedAsMechanism ?mechanism ;
+        pair:hasInterpretationCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
     ?match
-        a rp:MotifMatch ;
-        rp:matchesMotif pat:LLMBasedInformationRetrievalMotif ;
-        rp:hasNodeBinding ?queryBinding ,
+        a pair:MotifMatch ;
+        pair:matchesMotif pat:DirectLLMAnsweringMotif ;
+        pair:hasNodeBinding ?queryBinding ,
             ?stepBinding ,
             ?modelBinding ,
             ?answerBinding .
 
     ?queryBinding
-        rp:bindsPatternNode pat:LLMIR_QueryNode ;
-        rp:matchedElement ?query .
+        pair:bindsPatternNode pat:DirectLLM_QueryNode ;
+        pair:matchedElement ?query .
 
     ?stepBinding
-        rp:bindsPatternNode pat:LLMIR_RetrievalStepNode ;
-        rp:matchedElement ?step .
+        pair:bindsPatternNode pat:DirectLLM_GenerationStepNode ;
+        pair:matchedElement ?step .
 
     ?modelBinding
-        rp:bindsPatternNode pat:LLMIR_ModelNode ;
-        rp:matchedElement ?llm .
+        pair:bindsPatternNode pat:DirectLLM_ModelNode ;
+        pair:matchedElement ?llm .
 
     ?answerBinding
-        rp:bindsPatternNode pat:LLMIR_AnswerNode ;
-        rp:matchedElement ?answer .
+        pair:bindsPatternNode pat:DirectLLM_AnswerNode ;
+        pair:matchedElement ?answer .
 
     FILTER NOT EXISTS {
         ?step beam:use ?knowledgeSource .
-        ?knowledgeSource rp:playsRole/rp:subRoleOf* rp:KnowledgeSource .
+        ?knowledgeSource pair:playsRole/pair:subRoleOf* pair:KnowledgeSource .
     }
 
     FILTER NOT EXISTS {
         ?step beam:use ?retrievedContext .
-        ?retrievedContext rp:playsRole/rp:subRoleOf* rp:RetrievedContext .
-    }
-
-    VALUES ?riskTaxonomyEntry {
-        atlas:hallucination
-        owasp:llm09-misinformation
-        mit:subdomain-3-1
-    }
-
-    VALUES ?suggestedControl {
-        mitctrl:retrieval-quality-evaluation
-        mitctrl:input-output-filtering
-        mitctrl:system-architecture-documentation
+        ?retrievedContext pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
     }
 
     BIND(IRI(CONCAT(

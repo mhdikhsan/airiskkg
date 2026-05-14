@@ -1,6 +1,6 @@
 @prefix owasp: <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
 @prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
-@prefix rp:    <http://w3id.org/beam/risk-pattern#> .
+@prefix pair:    <http://w3id.org/airiskkg/pair-ai#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
@@ -140,61 +140,61 @@ owasp:llm10-unbounded-consumption
     nexus:hasRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
 
 owasp:mechanism-instruction-override
-    a rp:RiskMechanism ;
+    a pair:RiskMechanism ;
     rdfs:label "Instruction override by untrusted context"@en ;
     dct:description "Untrusted user, retrieved, or tool-supplied content changes model behavior by overriding or conflicting with intended instructions."@en ;
     nexus:mechanismForRisk owasp:llm01-prompt-injection .
 
 owasp:mechanism-sensitive-data-propagation
-    a rp:RiskMechanism ;
+    a pair:RiskMechanism ;
     rdfs:label "Sensitive data propagation through LLM context"@en ;
     dct:description "Sensitive information enters prompt, retrieval context, model output, logs, or downstream application flows where it may be disclosed."@en ;
     nexus:mechanismForRisk owasp:llm02-sensitive-information-disclosure .
 
 owasp:mechanism-supply-chain-compromise
-    a rp:RiskMechanism ;
+    a pair:RiskMechanism ;
     rdfs:label "Compromised LLM supply chain dependency"@en ;
     dct:description "A model, dataset, dependency, plugin, provider, or deployment artifact is compromised, unverifiable, or insufficiently governed."@en ;
     nexus:mechanismForRisk owasp:llm03-supply-chain .
 
 owasp:mechanism-data-or-model-poisoning
-    a rp:RiskMechanism ;
+    a pair:RiskMechanism ;
     rdfs:label "Data or model poisoning"@en ;
     dct:description "Training, fine-tuning, evaluation, or retrieval/indexing data is manipulated so model behavior or retrieved context becomes attacker-influenced or unreliable."@en ;
     nexus:mechanismForRisk owasp:llm04-data-and-model-poisoning .
 
 owasp:mechanism-unsafe-output-propagation
-    a rp:RiskMechanism ;
+    a pair:RiskMechanism ;
     rdfs:label "Unsafe generated output propagation"@en ;
     dct:description "LLM output is treated as trusted content or executable instruction without adequate validation, escaping, review, or constraint."@en ;
     nexus:mechanismForRisk owasp:llm05-improper-output-handling .
 
 owasp:mechanism-excessive-agency-action-execution
-    a rp:RiskMechanism ;
+    a pair:RiskMechanism ;
     rdfs:label "Excessive agency action execution"@en ;
     dct:description "An LLM-driven component can invoke tools, alter state, access resources, or trigger external actions beyond intended limits or oversight."@en ;
     nexus:mechanismForRisk owasp:llm06-excessive-agency .
 
 owasp:mechanism-system-prompt-exposure
-    a rp:RiskMechanism ;
+    a pair:RiskMechanism ;
     rdfs:label "System prompt exposure"@en ;
     dct:description "Hidden instructions, policies, tool schemas, or operational configuration become visible through output, context, logs, or adversarial interaction."@en ;
     nexus:mechanismForRisk owasp:llm07-system-prompt-leakage .
 
 owasp:mechanism-vector-embedding-retrieval-weakness
-    a rp:RiskMechanism ;
+    a pair:RiskMechanism ;
     rdfs:label "Vector and embedding retrieval weakness"@en ;
     dct:description "Embedding, indexing, chunking, similarity search, source filtering, or ranking causes irrelevant, malicious, stale, or unauthorized context to enter generation."@en ;
     nexus:mechanismForRisk owasp:llm08-vector-and-embedding-weaknesses .
 
 owasp:mechanism-unsupported-generation
-    a rp:RiskMechanism ;
+    a pair:RiskMechanism ;
     rdfs:label "Unsupported or ungrounded generation"@en ;
     dct:description "The LLM produces plausible but unsupported or misleading content because grounding, verification, source quality, or task boundaries are insufficient."@en ;
     nexus:mechanismForRisk owasp:llm09-misinformation .
 
 owasp:mechanism-unbounded-resource-consumption
-    a rp:RiskMechanism ;
+    a pair:RiskMechanism ;
     rdfs:label "Unbounded resource consumption"@en ;
     dct:description "Prompt size, retrieval breadth, tool loops, model calls, or user traffic exceed intended cost, latency, rate, or availability limits."@en ;
     nexus:mechanismForRisk owasp:llm10-unbounded-consumption .

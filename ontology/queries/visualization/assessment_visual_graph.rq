@@ -1,0 +1,84 @@
+PREFIX pair:   <http://w3id.org/airiskkg/pair-ai#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+CONSTRUCT {
+  ?finding a pair:RiskFinding ;
+           rdfs:label ?findingLabel ;
+           pair:generatedFromMatch ?match ;
+           pair:generatedByMotif ?motif ;
+           pair:hasInterpretedMechanism ?mechanism ;
+           pair:hasCandidateRiskTaxonomyEntry ?risk ;
+           pair:hasSuggestedControl ?control ;
+           pair:hasSatisfiedCondition ?condition ;
+           pair:hasEvidenceElement ?evidence .
+
+  ?match a pair:MotifMatch ;
+         rdfs:label ?matchLabel ;
+         pair:matchesMotif ?matchedMotif ;
+         pair:hasNodeBinding ?binding .
+
+  ?binding pair:bindsPatternNode ?patternNode ;
+           pair:matchedElement ?matchedElement .
+
+  ?motif rdfs:label ?motifLabel .
+  ?matchedMotif rdfs:label ?matchedMotifLabel .
+  ?mechanism rdfs:label ?mechanismLabel .
+  ?risk skos:prefLabel ?riskLabel .
+  ?control skos:prefLabel ?controlLabel .
+  ?condition rdfs:label ?conditionLabel .
+  ?condition skos:prefLabel ?sourceConditionLabel .
+  ?evidence rdfs:label ?evidenceLabel .
+  ?matchedElement rdfs:label ?matchedElementLabel .
+  ?patternNode rdfs:label ?patternNodeLabel .
+}
+WHERE {
+  ?finding a pair:RiskFinding .
+
+  OPTIONAL { ?finding rdfs:label ?findingLabel . }
+
+  OPTIONAL {
+    ?finding pair:generatedFromMatch ?match .
+    OPTIONAL { ?match rdfs:label ?matchLabel . }
+    OPTIONAL { ?match pair:matchesMotif ?matchedMotif . }
+    OPTIONAL { ?matchedMotif rdfs:label ?matchedMotifLabel . }
+    OPTIONAL {
+      ?match pair:hasNodeBinding ?binding .
+      OPTIONAL { ?binding pair:bindsPatternNode ?patternNode . }
+      OPTIONAL { ?binding pair:matchedElement ?matchedElement . }
+      OPTIONAL { ?patternNode rdfs:label ?patternNodeLabel . }
+      OPTIONAL { ?matchedElement rdfs:label ?matchedElementLabel . }
+    }
+  }
+
+  OPTIONAL {
+    ?finding pair:generatedByMotif ?motif .
+    OPTIONAL { ?motif rdfs:label ?motifLabel . }
+  }
+
+  OPTIONAL {
+    ?finding pair:hasInterpretedMechanism ?mechanism .
+    OPTIONAL { ?mechanism rdfs:label ?mechanismLabel . }
+  }
+
+  OPTIONAL {
+    ?finding pair:hasCandidateRiskTaxonomyEntry ?risk .
+    OPTIONAL { ?risk skos:prefLabel ?riskLabel . }
+  }
+
+  OPTIONAL {
+    ?finding pair:hasSuggestedControl ?control .
+    OPTIONAL { ?control skos:prefLabel ?controlLabel . }
+  }
+
+  OPTIONAL {
+    ?finding pair:hasSatisfiedCondition ?condition .
+    OPTIONAL { ?condition rdfs:label ?conditionLabel . }
+    OPTIONAL { ?condition skos:prefLabel ?sourceConditionLabel . }
+  }
+
+  OPTIONAL {
+    ?finding pair:hasEvidenceElement ?evidence .
+    OPTIONAL { ?evidence rdfs:label ?evidenceLabel . }
+  }
+}

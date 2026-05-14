@@ -1,191 +1,2602 @@
 @prefix pat:   <http://w3id.org/airiskkg/patterns#> .
-@prefix rp:    <http://w3id.org/beam/risk-pattern#> .
+@prefix pair:    <http://w3id.org/airiskkg/pair-ai#> .
 @prefix beam:  <http://w3id.org/beam/core#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 
 <http://w3id.org/airiskkg/patterns/motif-library#>
     a owl:Ontology ;
-    dct:title "AI Risk Pattern Motif Library"@en ;
+    dct:title "LLM Application Motif Library"@en ;
     dct:description """
-    A library of reusable architectural graph motifs for design-time AI risk
-    assessment. The motifs are architecture-driven: they describe reusable
-    component-flow structures that may later be interpreted as risk-relevant
-    configurations.
+    Reusable architecture motifs for PAIR-AI assessment of LLM-based
+    applications. The library combines method-specific motifs with selected
+    GenAI and ML system design patterns used to describe LLM application
+    architecture and lifecycle.
     """@en ;
+    dct:source
+        <https://mercari.github.io/ml-system-design-pattern/> ,
+        <https://martinfowler.com/articles/gen-ai-patterns/> ;
     owl:imports <http://w3id.org/beam/core#> ,
-                <http://w3id.org/beam/risk-pattern#> .
+                <http://w3id.org/airiskkg/pair-ai#> .
 
-#################################################################
-# Additional architectural roles
-# Move these to risk_pattern_core.ttl later if you want them in core.
-#################################################################
 
-rp:VectorBasedRetrievalStep
-    a rp:PatternRole ;
-    rdfs:label "Vector-based Retrieval Step"@en ;
-    rp:subRoleOf rp:RetrievalStep ;
-    rdfs:comment """
-    A retrieval step that retrieves information using vector representations,
-    embeddings, or similarity search over a vector store.
-    """@en .
-
-rp:LLMBasedInformationRetrievalStep
-    a rp:PatternRole ;
-    rdfs:label "LLM-based Information Retrieval Step"@en ;
-    rp:subRoleOf rp:RetrievalStep ;
-    rdfs:comment """
-    A retrieval or answer-production step in which an LLM is directly used
-    to generate or retrieve an answer without an explicit vector store or
-    external knowledge source in the matched motif.
-    """@en .
-
-#################################################################
 # Motif 1: Vector-based Information Retrieval
-#################################################################
 
 pat:VectorBasedInformationRetrievalMotif
-    a rp:GraphMotif ;
+    a pair:GraphMotif ;
     rdfs:label "Vector-based Information Retrieval Motif"@en ;
     dct:description """
     Architectural motif in which a retrieval process uses a vector store or
     knowledge source and produces a retrieved result or retrieved context.
-    This motif is risk-neutral by itself. Risk findings are generated only
-    after additional risk interpretation conditions are checked.
     """@en ;
-    rp:hasPatternNode
+    pair:hasPatternNode
         pat:VectorIR_QueryNode ,
         pat:VectorIR_VectorStoreNode ,
         pat:VectorIR_RetrievalStepNode ,
         pat:VectorIR_RetrievedResultNode ;
-    rp:hasPatternEdge
+    pair:hasPatternEdge
         pat:VectorIR_RetrievalUsesQueryEdge ,
         pat:VectorIR_RetrievalUsesVectorStoreEdge ,
         pat:VectorIR_RetrievalProducesResultEdge ;
-    rp:implementedBy pat:VectorIR_MatchingOQP ;
-    rp:hasInterpretation pat:SensitiveDataRetrievalExposureInterpretation .
+    pair:implementedBy pat:VectorIR_MatchingOQP .
 
 pat:VectorIR_QueryNode
-    a rp:PatternNode ;
+    a pair:PatternNode ;
     rdfs:label "Query node"@en ;
-    rp:variableName "query" ;
-    rp:expectedClass beam:Data ;
-    rp:expectedRole rp:UserInput .
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
 
 pat:VectorIR_VectorStoreNode
-    a rp:PatternNode ;
+    a pair:PatternNode ;
     rdfs:label "Vector store node"@en ;
-    rp:variableName "vectorStore" ;
-    rp:expectedClass beam:Data ;
-    rp:expectedRole rp:VectorStore .
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:VectorStore .
 
 pat:VectorIR_RetrievalStepNode
-    a rp:PatternNode ;
+    a pair:PatternNode ;
     rdfs:label "Vector-based retrieval step node"@en ;
-    rp:variableName "retrievalStep" ;
-    rp:expectedClass beam:Process ;
-    rp:expectedRole rp:RetrievalStep .
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalStep .
 
 pat:VectorIR_RetrievedResultNode
-    a rp:PatternNode ;
+    a pair:PatternNode ;
     rdfs:label "Retrieved result node"@en ;
-    rp:variableName "retrievedResult" ;
-    rp:expectedClass beam:Data ;
-    rp:expectedRole rp:RetrievedContext .
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
 
 pat:VectorIR_RetrievalUsesQueryEdge
-    a rp:PatternEdge ;
+    a pair:PatternEdge ;
     rdfs:label "retrieval uses query"@en ;
-    rp:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-    rp:patternPredicate beam:use ;
-    rp:targetPatternNode pat:VectorIR_QueryNode .
+    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:VectorIR_QueryNode .
 
 pat:VectorIR_RetrievalUsesVectorStoreEdge
-    a rp:PatternEdge ;
+    a pair:PatternEdge ;
     rdfs:label "retrieval uses vector store"@en ;
-    rp:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-    rp:patternPredicate beam:use ;
-    rp:targetPatternNode pat:VectorIR_VectorStoreNode .
+    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:VectorIR_VectorStoreNode .
 
 pat:VectorIR_RetrievalProducesResultEdge
-    a rp:PatternEdge ;
+    a pair:PatternEdge ;
     rdfs:label "retrieval produces retrieved result"@en ;
-    rp:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-    rp:patternPredicate beam:produce ;
-    rp:targetPatternNode pat:VectorIR_RetrievedResultNode .
+    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:VectorIR_RetrievedResultNode .
 
-#################################################################
-# Motif 2: LLM-based Information Retrieval
-#################################################################
+# Motif 2: Direct LLM Answering
 
-pat:LLMBasedInformationRetrievalMotif
-    a rp:GraphMotif ;
-    rdfs:label "LLM-based Information Retrieval Motif"@en ;
+pat:DirectLLMAnsweringMotif
+    a pair:GraphMotif ;
+    rdfs:label "Direct LLM Answering Motif"@en ;
+    skos:altLabel "Direct Prompting Motif"@en ;
     dct:description """
-    Architectural motif in which a user query is handled by an LLM-based
-    retrieval or answer-production process and produces a user-facing answer.
-    This differs from vector-based retrieval because the answer depends mainly
-    on the LLM process rather than on an explicit vector store in the motif.
+    Architectural motif in which a user query is handled directly by a
+    generative model step and produces a user-facing answer. 
     """@en ;
-    rp:hasPatternNode
-        pat:LLMIR_QueryNode ,
-        pat:LLMIR_ModelNode ,
-        pat:LLMIR_RetrievalStepNode ,
-        pat:LLMIR_AnswerNode ;
-    rp:hasPatternEdge
-        pat:LLMIR_RetrievalUsesQueryEdge ,
-        pat:LLMIR_RetrievalUsesModelEdge ,
-        pat:LLMIR_RetrievalProducesAnswerEdge ;
-    rp:implementedBy pat:LLMIR_MatchingOQP ;
-    rp:hasInterpretation pat:DirectLLMAnsweringWithoutGroundingInterpretation .
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:DirectLLM_QueryNode ,
+        pat:DirectLLM_ModelNode ,
+        pat:DirectLLM_GenerationStepNode ,
+        pat:DirectLLM_AnswerNode ;
+    pair:hasPatternEdge
+        pat:DirectLLM_GenerationUsesQueryEdge ,
+        pat:DirectLLM_GenerationUsesModelEdge ,
+        pat:DirectLLM_GenerationProducesAnswerEdge ;
+    pair:implementedBy pat:DirectLLM_MatchingOQP .
 
-pat:LLMIR_QueryNode
-    a rp:PatternNode ;
+pat:DirectLLM_QueryNode
+    a pair:PatternNode ;
     rdfs:label "Query node"@en ;
-    rp:variableName "query" ;
-    rp:expectedClass beam:Data ;
-    rp:expectedRole rp:UserInput .
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
 
-pat:LLMIR_ModelNode
-    a rp:PatternNode ;
+pat:DirectLLM_ModelNode
+    a pair:PatternNode ;
     rdfs:label "LLM node"@en ;
-    rp:variableName "llm" ;
-    rp:expectedClass beam:StatisticalModel ;
-    rp:expectedRole rp:GenerativeModel .
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:GenerativeModel .
 
-pat:LLMIR_RetrievalStepNode
-    a rp:PatternNode ;
-    rdfs:label "LLM-based answering or generation step node"@en ;
-    rp:variableName "llmRetrievalStep" ;
-    rp:expectedClass beam:Process ;
-    rp:expectedRole rp:GenerationStep .
+pat:DirectLLM_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Direct LLM generation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:GenerationStep .
 
-pat:LLMIR_AnswerNode
-    a rp:PatternNode ;
+pat:DirectLLM_AnswerNode
+    a pair:PatternNode ;
     rdfs:label "Answer node"@en ;
-    rp:variableName "answer" ;
-    rp:expectedClass beam:Data ;
-    rp:expectedRole rp:UserFacingOutput .
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserFacingOutput .
 
-pat:LLMIR_RetrievalUsesQueryEdge
-    a rp:PatternEdge ;
-    rdfs:label "LLM-based retrieval uses query"@en ;
-    rp:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
-    rp:patternPredicate beam:use ;
-    rp:targetPatternNode pat:LLMIR_QueryNode .
+pat:DirectLLM_GenerationUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "direct LLM generation uses query"@en ;
+    pair:sourcePatternNode pat:DirectLLM_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:DirectLLM_QueryNode .
 
-pat:LLMIR_RetrievalUsesModelEdge
-    a rp:PatternEdge ;
-    rdfs:label "LLM-based retrieval uses generative model"@en ;
-    rp:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
-    rp:patternPredicate beam:use ;
-    rp:targetPatternNode pat:LLMIR_ModelNode .
+pat:DirectLLM_GenerationUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "direct LLM generation uses generative model"@en ;
+    pair:sourcePatternNode pat:DirectLLM_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:DirectLLM_ModelNode .
 
-pat:LLMIR_RetrievalProducesAnswerEdge
-    a rp:PatternEdge ;
-    rdfs:label "LLM-based retrieval produces answer"@en ;
-    rp:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
-    rp:patternPredicate beam:produce ;
-    rp:targetPatternNode pat:LLMIR_AnswerNode .
+pat:DirectLLM_GenerationProducesAnswerEdge
+    a pair:PatternEdge ;
+    rdfs:label "direct LLM generation produces answer"@en ;
+    pair:sourcePatternNode pat:DirectLLM_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:DirectLLM_AnswerNode .
+
+# Role vocabulary for ML system design motifs
+
+pat:PredictionRequestRole
+    a pair:PatternRole ;
+    skos:prefLabel "Prediction Request"@en .
+
+pat:PredictionResultRole
+    a pair:PatternRole ;
+    skos:prefLabel "Prediction Result"@en .
+
+pat:PredictionStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Prediction Step"@en .
+
+pat:PredictionQueueRole
+    a pair:PatternRole ;
+    skos:prefLabel "Prediction Queue"@en .
+
+pat:BatchDatasetRole
+    a pair:PatternRole ;
+    skos:prefLabel "Batch Dataset"@en .
+
+pat:JobSchedulerRole
+    a pair:PatternRole ;
+    skos:prefLabel "Job Scheduler"@en .
+
+pat:PreprocessingStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Preprocessing Step"@en .
+
+pat:PreprocessedDataRole
+    a pair:PatternRole ;
+    skos:prefLabel "Preprocessed Data"@en .
+
+pat:FastPredictionStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Fast Prediction Step"@en ;
+    pair:subRoleOf pat:PredictionStepRole .
+
+pat:SlowPredictionStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Slow Prediction Step"@en ;
+    pair:subRoleOf pat:PredictionStepRole .
+
+pat:TrainingDatasetRole
+    a pair:PatternRole ;
+    skos:prefLabel "Training Dataset"@en .
+
+pat:TrainingStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Training Step"@en .
+
+pat:TrainingPipelineRole
+    a pair:PatternRole ;
+    skos:prefLabel "Training Pipeline"@en .
+
+pat:EvaluationStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Evaluation Step"@en .
+
+pat:EvaluationResultRole
+    a pair:PatternRole ;
+    skos:prefLabel "Evaluation Result"@en .
+
+pat:ModelArtifactRole
+    a pair:PatternRole ;
+    skos:prefLabel "Model Artifact"@en ;
+    pair:subRoleOf pair:Model .
+
+pat:ModelRegistryRole
+    a pair:PatternRole ;
+    skos:prefLabel "Model Registry"@en .
+
+pat:ReleaseApprovalRole
+    a pair:PatternRole ;
+    skos:prefLabel "Release Approval"@en .
+
+pat:DeploymentStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Deployment Step"@en .
+
+pat:ServingImageRole
+    a pair:PatternRole ;
+    skos:prefLabel "Serving Image"@en .
+
+pat:PredictionLogRole
+    a pair:PatternRole ;
+    skos:prefLabel "Prediction Log"@en .
+
+pat:LoggingStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Logging Step"@en .
+
+pat:MonitoringStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Monitoring Step"@en .
+
+pat:MonitoringBaselineRole
+    a pair:PatternRole ;
+    skos:prefLabel "Monitoring Baseline"@en .
+
+pat:AlertRole
+    a pair:PatternRole ;
+    skos:prefLabel "Alert"@en .
+
+pat:ModelLoadStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Model Load Step"@en .
+
+pat:LoadedModelRole
+    a pair:PatternRole ;
+    skos:prefLabel "Loaded Model"@en ;
+    pair:subRoleOf pair:Model .
+
+pat:ImageBuildStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Image Build Step"@en .
+
+
+# ML system design motifs: serving patterns
+#
+pat:SynchronousPredictionMotif
+    a pair:GraphMotif ;
+    rdfs:label "Synchronous Prediction Motif"@en ;
+    dct:description "Architectural motif in which a prediction step runs inline with a request workflow and produces a result before the workflow proceeds."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:SyncPred_RequestNode ,
+        pat:SyncPred_ModelNode ,
+        pat:SyncPred_PredictionStepNode ,
+        pat:SyncPred_ResultNode ,
+        pat:SyncPred_DownstreamStepNode ;
+    pair:hasPatternEdge
+        pat:SyncPred_PredictionUsesRequestEdge ,
+        pat:SyncPred_PredictionUsesModelEdge ,
+        pat:SyncPred_PredictionProducesResultEdge ,
+        pat:SyncPred_PredictionInformsDownstreamEdge .
+
+pat:SyncPred_RequestNode
+    a pair:PatternNode ;
+    rdfs:label "Synchronous prediction request node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionRequestRole .
+
+pat:SyncPred_ModelNode
+    a pair:PatternNode ;
+    rdfs:label "Synchronous prediction model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:Model .
+
+pat:SyncPred_PredictionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Synchronous prediction step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:PredictionStepRole .
+
+pat:SyncPred_ResultNode
+    a pair:PatternNode ;
+    rdfs:label "Synchronous prediction result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionResultRole .
+
+pat:SyncPred_DownstreamStepNode
+    a pair:PatternNode ;
+    rdfs:label "Downstream workflow step node"@en ;
+    pair:expectedClass beam:Process .
+
+pat:SyncPred_PredictionUsesRequestEdge
+    a pair:PatternEdge ;
+    rdfs:label "synchronous prediction uses request"@en ;
+    pair:sourcePatternNode pat:SyncPred_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:SyncPred_RequestNode .
+
+pat:SyncPred_PredictionUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "synchronous prediction uses model"@en ;
+    pair:sourcePatternNode pat:SyncPred_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:SyncPred_ModelNode .
+
+pat:SyncPred_PredictionProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "synchronous prediction produces result"@en ;
+    pair:sourcePatternNode pat:SyncPred_PredictionStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:SyncPred_ResultNode .
+
+pat:SyncPred_PredictionInformsDownstreamEdge
+    a pair:PatternEdge ;
+    rdfs:label "synchronous prediction informs downstream step"@en ;
+    pair:sourcePatternNode pat:SyncPred_PredictionStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:SyncPred_DownstreamStepNode .
+
+pat:AsynchronousPredictionMotif
+    a pair:GraphMotif ;
+    rdfs:label "Asynchronous Prediction Motif"@en ;
+    dct:description "Architectural motif in which prediction requests are decoupled from prediction execution through a queue, cache, or similar intermediary resource."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:AsyncPred_RequestNode ,
+        pat:AsyncPred_EnqueueStepNode ,
+        pat:AsyncPred_QueueNode ,
+        pat:AsyncPred_PredictionStepNode ,
+        pat:AsyncPred_ResultNode ;
+    pair:hasPatternEdge
+        pat:AsyncPred_EnqueueUsesRequestEdge ,
+        pat:AsyncPred_EnqueueProducesQueueEdge ,
+        pat:AsyncPred_PredictionUsesQueueEdge ,
+        pat:AsyncPred_PredictionProducesResultEdge .
+
+pat:AsyncPred_RequestNode
+    a pair:PatternNode ;
+    rdfs:label "Asynchronous prediction request node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionRequestRole .
+
+pat:AsyncPred_EnqueueStepNode
+    a pair:PatternNode ;
+    rdfs:label "Prediction request enqueue step node"@en ;
+    pair:expectedClass beam:Process .
+
+pat:AsyncPred_QueueNode
+    a pair:PatternNode ;
+    rdfs:label "Prediction queue node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionQueueRole .
+
+pat:AsyncPred_PredictionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Asynchronous prediction step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:PredictionStepRole .
+
+pat:AsyncPred_ResultNode
+    a pair:PatternNode ;
+    rdfs:label "Asynchronous prediction result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionResultRole .
+
+pat:AsyncPred_EnqueueUsesRequestEdge
+    a pair:PatternEdge ;
+    rdfs:label "enqueue step uses prediction request"@en ;
+    pair:sourcePatternNode pat:AsyncPred_EnqueueStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:AsyncPred_RequestNode .
+
+pat:AsyncPred_EnqueueProducesQueueEdge
+    a pair:PatternEdge ;
+    rdfs:label "enqueue step produces queued prediction request"@en ;
+    pair:sourcePatternNode pat:AsyncPred_EnqueueStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:AsyncPred_QueueNode .
+
+pat:AsyncPred_PredictionUsesQueueEdge
+    a pair:PatternEdge ;
+    rdfs:label "asynchronous prediction uses queue"@en ;
+    pair:sourcePatternNode pat:AsyncPred_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:AsyncPred_QueueNode .
+
+pat:AsyncPred_PredictionProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "asynchronous prediction produces result"@en ;
+    pair:sourcePatternNode pat:AsyncPred_PredictionStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:AsyncPred_ResultNode .
+
+pat:BatchPredictionMotif
+    a pair:GraphMotif ;
+    rdfs:label "Batch Prediction Motif"@en ;
+    dct:description "Architectural motif in which a scheduled job runs prediction over a batch dataset and stores batch prediction results."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:BatchPred_SchedulerNode ,
+        pat:BatchPred_DatasetNode ,
+        pat:BatchPred_ModelNode ,
+        pat:BatchPred_JobNode ,
+        pat:BatchPred_ResultNode ;
+    pair:hasPatternEdge
+        pat:BatchPred_SchedulerInformsJobEdge ,
+        pat:BatchPred_JobUsesDatasetEdge ,
+        pat:BatchPred_JobUsesModelEdge ,
+        pat:BatchPred_JobProducesResultEdge .
+
+pat:BatchPred_SchedulerNode
+    a pair:PatternNode ;
+    rdfs:label "Batch prediction scheduler node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:JobSchedulerRole .
+
+pat:BatchPred_DatasetNode
+    a pair:PatternNode ;
+    rdfs:label "Batch prediction dataset node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:BatchDatasetRole .
+
+pat:BatchPred_ModelNode
+    a pair:PatternNode ;
+    rdfs:label "Batch prediction model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:Model .
+
+pat:BatchPred_JobNode
+    a pair:PatternNode ;
+    rdfs:label "Batch prediction job node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:PredictionStepRole .
+
+pat:BatchPred_ResultNode
+    a pair:PatternNode ;
+    rdfs:label "Batch prediction result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionResultRole .
+
+pat:BatchPred_SchedulerInformsJobEdge
+    a pair:PatternEdge ;
+    rdfs:label "batch scheduler informs prediction job"@en ;
+    pair:sourcePatternNode pat:BatchPred_SchedulerNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:BatchPred_JobNode .
+
+pat:BatchPred_JobUsesDatasetEdge
+    a pair:PatternEdge ;
+    rdfs:label "batch prediction job uses dataset"@en ;
+    pair:sourcePatternNode pat:BatchPred_JobNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:BatchPred_DatasetNode .
+
+pat:BatchPred_JobUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "batch prediction job uses model"@en ;
+    pair:sourcePatternNode pat:BatchPred_JobNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:BatchPred_ModelNode .
+
+pat:BatchPred_JobProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "batch prediction job produces result"@en ;
+    pair:sourcePatternNode pat:BatchPred_JobNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:BatchPred_ResultNode .
+
+pat:PreprocessPredictionMotif
+    a pair:GraphMotif ;
+    rdfs:label "Prep-Pred / Preprocess-Prediction Motif"@en ;
+    dct:description "Architectural motif in which preprocessing and prediction are represented as separate steps connected by preprocessed data."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:PrepPred_InputNode ,
+        pat:PrepPred_PreprocessStepNode ,
+        pat:PrepPred_PreprocessedDataNode ,
+        pat:PrepPred_ModelNode ,
+        pat:PrepPred_PredictionStepNode ,
+        pat:PrepPred_ResultNode ;
+    pair:hasPatternEdge
+        pat:PrepPred_PreprocessUsesInputEdge ,
+        pat:PrepPred_PreprocessProducesDataEdge ,
+        pat:PrepPred_PreprocessInformsPredictionEdge ,
+        pat:PrepPred_PredictionUsesDataEdge ,
+        pat:PrepPred_PredictionUsesModelEdge ,
+        pat:PrepPred_PredictionProducesResultEdge .
+
+pat:PrepPred_InputNode
+    a pair:PatternNode ;
+    rdfs:label "Raw prediction input node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionRequestRole .
+
+pat:PrepPred_PreprocessStepNode
+    a pair:PatternNode ;
+    rdfs:label "Preprocessing step node"@en ;
+    pair:expectedClass beam:Transform ;
+    pair:expectedRole pat:PreprocessingStepRole .
+
+pat:PrepPred_PreprocessedDataNode
+    a pair:PatternNode ;
+    rdfs:label "Preprocessed data node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PreprocessedDataRole .
+
+pat:PrepPred_ModelNode
+    a pair:PatternNode ;
+    rdfs:label "Prep-pred model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:Model .
+
+pat:PrepPred_PredictionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Prep-pred prediction step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:PredictionStepRole .
+
+pat:PrepPred_ResultNode
+    a pair:PatternNode ;
+    rdfs:label "Prep-pred prediction result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionResultRole .
+
+pat:PrepPred_PreprocessUsesInputEdge
+    a pair:PatternEdge ;
+    rdfs:label "preprocess uses raw input"@en ;
+    pair:sourcePatternNode pat:PrepPred_PreprocessStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PrepPred_InputNode .
+
+pat:PrepPred_PreprocessProducesDataEdge
+    a pair:PatternEdge ;
+    rdfs:label "preprocess produces preprocessed data"@en ;
+    pair:sourcePatternNode pat:PrepPred_PreprocessStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PrepPred_PreprocessedDataNode .
+
+pat:PrepPred_PreprocessInformsPredictionEdge
+    a pair:PatternEdge ;
+    rdfs:label "preprocess informs prediction"@en ;
+    pair:sourcePatternNode pat:PrepPred_PreprocessStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:PrepPred_PredictionStepNode .
+
+pat:PrepPred_PredictionUsesDataEdge
+    a pair:PatternEdge ;
+    rdfs:label "prediction uses preprocessed data"@en ;
+    pair:sourcePatternNode pat:PrepPred_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PrepPred_PreprocessedDataNode .
+
+pat:PrepPred_PredictionUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "prediction uses model"@en ;
+    pair:sourcePatternNode pat:PrepPred_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PrepPred_ModelNode .
+
+pat:PrepPred_PredictionProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "prediction produces result"@en ;
+    pair:sourcePatternNode pat:PrepPred_PredictionStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PrepPred_ResultNode .
+
+pat:MultiStagePredictionMotif
+    a pair:GraphMotif ;
+    rdfs:label "Multi-stage Prediction Motif"@en ;
+    dct:description "Architectural motif in which one prediction path returns a quick result while another prediction path produces a slower or richer result."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:MultiStage_RequestNode ,
+        pat:MultiStage_FastModelNode ,
+        pat:MultiStage_FastPredictionStepNode ,
+        pat:MultiStage_QuickResultNode ,
+        pat:MultiStage_SlowModelNode ,
+        pat:MultiStage_SlowPredictionStepNode ,
+        pat:MultiStage_ImprovedResultNode ;
+    pair:hasPatternEdge
+        pat:MultiStage_FastUsesRequestEdge ,
+        pat:MultiStage_FastUsesModelEdge ,
+        pat:MultiStage_FastProducesResultEdge ,
+        pat:MultiStage_FastInformsSlowEdge ,
+        pat:MultiStage_SlowUsesRequestEdge ,
+        pat:MultiStage_SlowUsesModelEdge ,
+        pat:MultiStage_SlowProducesResultEdge .
+
+pat:MultiStage_RequestNode
+    a pair:PatternNode ;
+    rdfs:label "Multi-stage prediction request node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionRequestRole .
+
+pat:MultiStage_FastModelNode
+    a pair:PatternNode ;
+    rdfs:label "Fast prediction model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:Model .
+
+pat:MultiStage_FastPredictionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Fast prediction step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:FastPredictionStepRole .
+
+pat:MultiStage_QuickResultNode
+    a pair:PatternNode ;
+    rdfs:label "Quick prediction result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionResultRole .
+
+pat:MultiStage_SlowModelNode
+    a pair:PatternNode ;
+    rdfs:label "Slow prediction model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:Model .
+
+pat:MultiStage_SlowPredictionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Slow prediction step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:SlowPredictionStepRole .
+
+pat:MultiStage_ImprovedResultNode
+    a pair:PatternNode ;
+    rdfs:label "Improved prediction result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionResultRole .
+
+pat:MultiStage_FastUsesRequestEdge
+    a pair:PatternEdge ;
+    rdfs:label "fast prediction uses request"@en ;
+    pair:sourcePatternNode pat:MultiStage_FastPredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:MultiStage_RequestNode .
+
+pat:MultiStage_FastUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "fast prediction uses model"@en ;
+    pair:sourcePatternNode pat:MultiStage_FastPredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:MultiStage_FastModelNode .
+
+pat:MultiStage_FastProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "fast prediction produces quick result"@en ;
+    pair:sourcePatternNode pat:MultiStage_FastPredictionStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:MultiStage_QuickResultNode .
+
+pat:MultiStage_FastInformsSlowEdge
+    a pair:PatternEdge ;
+    rdfs:label "fast prediction informs slow prediction"@en ;
+    pair:sourcePatternNode pat:MultiStage_FastPredictionStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:MultiStage_SlowPredictionStepNode .
+
+pat:MultiStage_SlowUsesRequestEdge
+    a pair:PatternEdge ;
+    rdfs:label "slow prediction uses request"@en ;
+    pair:sourcePatternNode pat:MultiStage_SlowPredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:MultiStage_RequestNode .
+
+pat:MultiStage_SlowUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "slow prediction uses model"@en ;
+    pair:sourcePatternNode pat:MultiStage_SlowPredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:MultiStage_SlowModelNode .
+
+pat:MultiStage_SlowProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "slow prediction produces improved result"@en ;
+    pair:sourcePatternNode pat:MultiStage_SlowPredictionStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:MultiStage_ImprovedResultNode .
+
+
+# ML system design motifs: training patterns
+
+pat:BatchTrainingMotif
+    a pair:GraphMotif ;
+    rdfs:label "Batch Training Motif"@en ;
+    dct:description "Architectural motif in which a scheduled training job prepares data, trains a model, evaluates it, and records the resulting model artifact and evaluation result."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:BatchTrain_SchedulerNode ,
+        pat:BatchTrain_DatasetNode ,
+        pat:BatchTrain_PreprocessStepNode ,
+        pat:BatchTrain_TrainingDataNode ,
+        pat:BatchTrain_TrainingStepNode ,
+        pat:BatchTrain_ModelArtifactNode ,
+        pat:BatchTrain_EvaluationStepNode ,
+        pat:BatchTrain_EvaluationResultNode ;
+    pair:hasPatternEdge
+        pat:BatchTrain_SchedulerInformsPreprocessEdge ,
+        pat:BatchTrain_PreprocessUsesDatasetEdge ,
+        pat:BatchTrain_PreprocessProducesTrainingDataEdge ,
+        pat:BatchTrain_PreprocessInformsTrainingEdge ,
+        pat:BatchTrain_TrainingUsesDataEdge ,
+        pat:BatchTrain_TrainingProducesModelEdge ,
+        pat:BatchTrain_TrainingInformsEvaluationEdge ,
+        pat:BatchTrain_EvaluationUsesModelEdge ,
+        pat:BatchTrain_EvaluationProducesResultEdge .
+
+pat:BatchTrain_SchedulerNode
+    a pair:PatternNode ;
+    rdfs:label "Batch training scheduler node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:JobSchedulerRole .
+
+pat:BatchTrain_DatasetNode
+    a pair:PatternNode ;
+    rdfs:label "Batch training dataset node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:TrainingDatasetRole .
+
+pat:BatchTrain_PreprocessStepNode
+    a pair:PatternNode ;
+    rdfs:label "Batch training preprocessing step node"@en ;
+    pair:expectedClass beam:Transform ;
+    pair:expectedRole pat:PreprocessingStepRole .
+
+pat:BatchTrain_TrainingDataNode
+    a pair:PatternNode ;
+    rdfs:label "Prepared training data node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PreprocessedDataRole .
+
+pat:BatchTrain_TrainingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Batch training step node"@en ;
+    pair:expectedClass beam:Train ;
+    pair:expectedRole pat:TrainingStepRole .
+
+pat:BatchTrain_ModelArtifactNode
+    a pair:PatternNode ;
+    rdfs:label "Trained model artifact node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:ModelArtifactRole .
+
+pat:BatchTrain_EvaluationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Model evaluation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:EvaluationStepRole .
+
+pat:BatchTrain_EvaluationResultNode
+    a pair:PatternNode ;
+    rdfs:label "Model evaluation result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:EvaluationResultRole .
+
+pat:BatchTrain_SchedulerInformsPreprocessEdge
+    a pair:PatternEdge ;
+    rdfs:label "batch training scheduler informs preprocessing"@en ;
+    pair:sourcePatternNode pat:BatchTrain_SchedulerNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:BatchTrain_PreprocessStepNode .
+
+pat:BatchTrain_PreprocessUsesDatasetEdge
+    a pair:PatternEdge ;
+    rdfs:label "training preprocess uses dataset"@en ;
+    pair:sourcePatternNode pat:BatchTrain_PreprocessStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:BatchTrain_DatasetNode .
+
+pat:BatchTrain_PreprocessProducesTrainingDataEdge
+    a pair:PatternEdge ;
+    rdfs:label "training preprocess produces prepared data"@en ;
+    pair:sourcePatternNode pat:BatchTrain_PreprocessStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:BatchTrain_TrainingDataNode .
+
+pat:BatchTrain_PreprocessInformsTrainingEdge
+    a pair:PatternEdge ;
+    rdfs:label "training preprocess informs training"@en ;
+    pair:sourcePatternNode pat:BatchTrain_PreprocessStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:BatchTrain_TrainingStepNode .
+
+pat:BatchTrain_TrainingUsesDataEdge
+    a pair:PatternEdge ;
+    rdfs:label "training uses prepared data"@en ;
+    pair:sourcePatternNode pat:BatchTrain_TrainingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:BatchTrain_TrainingDataNode .
+
+pat:BatchTrain_TrainingProducesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "training produces model artifact"@en ;
+    pair:sourcePatternNode pat:BatchTrain_TrainingStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:BatchTrain_ModelArtifactNode .
+
+pat:BatchTrain_TrainingInformsEvaluationEdge
+    a pair:PatternEdge ;
+    rdfs:label "training informs evaluation"@en ;
+    pair:sourcePatternNode pat:BatchTrain_TrainingStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:BatchTrain_EvaluationStepNode .
+
+pat:BatchTrain_EvaluationUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "evaluation uses model artifact"@en ;
+    pair:sourcePatternNode pat:BatchTrain_EvaluationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:BatchTrain_ModelArtifactNode .
+
+pat:BatchTrain_EvaluationProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "evaluation produces result"@en ;
+    pair:sourcePatternNode pat:BatchTrain_EvaluationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:BatchTrain_EvaluationResultNode .
+
+pat:PipelineTrainingMotif
+    a pair:GraphMotif ;
+    rdfs:label "Pipeline Training Motif"@en ;
+    dct:description "Architectural motif in which training is decomposed into independently executable pipeline jobs connected by intermediate data and workflow dependencies."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Pipeline-training-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:PipeTrain_SourceDataNode ,
+        pat:PipeTrain_PreprocessJobNode ,
+        pat:PipeTrain_IntermediateDataNode ,
+        pat:PipeTrain_TrainingJobNode ,
+        pat:PipeTrain_ModelArtifactNode ,
+        pat:PipeTrain_EvaluationJobNode ,
+        pat:PipeTrain_EvaluationResultNode ;
+    pair:hasPatternEdge
+        pat:PipeTrain_PreprocessUsesSourceEdge ,
+        pat:PipeTrain_PreprocessProducesIntermediateEdge ,
+        pat:PipeTrain_PreprocessInformsTrainingEdge ,
+        pat:PipeTrain_TrainingUsesIntermediateEdge ,
+        pat:PipeTrain_TrainingProducesModelEdge ,
+        pat:PipeTrain_TrainingInformsEvaluationEdge ,
+        pat:PipeTrain_EvaluationUsesModelEdge ,
+        pat:PipeTrain_EvaluationProducesResultEdge .
+
+pat:PipeTrain_SourceDataNode
+    a pair:PatternNode ;
+    rdfs:label "Pipeline training source data node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:TrainingDatasetRole .
+
+pat:PipeTrain_PreprocessJobNode
+    a pair:PatternNode ;
+    rdfs:label "Pipeline preprocessing job node"@en ;
+    pair:expectedClass beam:Transform ;
+    pair:expectedRole pat:PreprocessingStepRole .
+
+pat:PipeTrain_IntermediateDataNode
+    a pair:PatternNode ;
+    rdfs:label "Pipeline intermediate data node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PreprocessedDataRole .
+
+pat:PipeTrain_TrainingJobNode
+    a pair:PatternNode ;
+    rdfs:label "Pipeline training job node"@en ;
+    pair:expectedClass beam:Train ;
+    pair:expectedRole pat:TrainingStepRole .
+
+pat:PipeTrain_ModelArtifactNode
+    a pair:PatternNode ;
+    rdfs:label "Pipeline model artifact node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:ModelArtifactRole .
+
+pat:PipeTrain_EvaluationJobNode
+    a pair:PatternNode ;
+    rdfs:label "Pipeline evaluation job node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:EvaluationStepRole .
+
+pat:PipeTrain_EvaluationResultNode
+    a pair:PatternNode ;
+    rdfs:label "Pipeline evaluation result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:EvaluationResultRole .
+
+pat:PipeTrain_PreprocessUsesSourceEdge
+    a pair:PatternEdge ;
+    rdfs:label "pipeline preprocess uses source data"@en ;
+    pair:sourcePatternNode pat:PipeTrain_PreprocessJobNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PipeTrain_SourceDataNode .
+
+pat:PipeTrain_PreprocessProducesIntermediateEdge
+    a pair:PatternEdge ;
+    rdfs:label "pipeline preprocess produces intermediate data"@en ;
+    pair:sourcePatternNode pat:PipeTrain_PreprocessJobNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PipeTrain_IntermediateDataNode .
+
+pat:PipeTrain_PreprocessInformsTrainingEdge
+    a pair:PatternEdge ;
+    rdfs:label "pipeline preprocess informs training"@en ;
+    pair:sourcePatternNode pat:PipeTrain_PreprocessJobNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:PipeTrain_TrainingJobNode .
+
+pat:PipeTrain_TrainingUsesIntermediateEdge
+    a pair:PatternEdge ;
+    rdfs:label "pipeline training uses intermediate data"@en ;
+    pair:sourcePatternNode pat:PipeTrain_TrainingJobNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PipeTrain_IntermediateDataNode .
+
+pat:PipeTrain_TrainingProducesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "pipeline training produces model artifact"@en ;
+    pair:sourcePatternNode pat:PipeTrain_TrainingJobNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PipeTrain_ModelArtifactNode .
+
+pat:PipeTrain_TrainingInformsEvaluationEdge
+    a pair:PatternEdge ;
+    rdfs:label "pipeline training informs evaluation"@en ;
+    pair:sourcePatternNode pat:PipeTrain_TrainingJobNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:PipeTrain_EvaluationJobNode .
+
+pat:PipeTrain_EvaluationUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "pipeline evaluation uses model artifact"@en ;
+    pair:sourcePatternNode pat:PipeTrain_EvaluationJobNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PipeTrain_ModelArtifactNode .
+
+pat:PipeTrain_EvaluationProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "pipeline evaluation produces result"@en ;
+    pair:sourcePatternNode pat:PipeTrain_EvaluationJobNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PipeTrain_EvaluationResultNode .
+
+
+# ML system design motifs: lifecycle patterns
+
+pat:TrainThenServeMotif
+    a pair:GraphMotif ;
+    rdfs:label "Train-Then-Serve Motif"@en ;
+    dct:description "Lifecycle motif in which training and serving are separated by evaluation, approval, and a release step before the model is used for production prediction."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:TrainServe_TrainingStepNode ,
+        pat:TrainServe_CandidateModelNode ,
+        pat:TrainServe_EvaluationStepNode ,
+        pat:TrainServe_ApprovalNode ,
+        pat:TrainServe_ReleaseStepNode ,
+        pat:TrainServe_DeployedModelNode ,
+        pat:TrainServe_PredictionStepNode ;
+    pair:hasPatternEdge
+        pat:TrainServe_TrainingProducesCandidateEdge ,
+        pat:TrainServe_TrainingInformsEvaluationEdge ,
+        pat:TrainServe_EvaluationUsesCandidateEdge ,
+        pat:TrainServe_EvaluationProducesApprovalEdge ,
+        pat:TrainServe_ReleaseUsesApprovalEdge ,
+        pat:TrainServe_ReleaseUsesCandidateEdge ,
+        pat:TrainServe_ReleaseProducesDeployedModelEdge ,
+        pat:TrainServe_ReleaseInformsPredictionEdge ,
+        pat:TrainServe_PredictionUsesModelEdge .
+
+pat:TrainServe_TrainingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Train-then-serve training step node"@en ;
+    pair:expectedClass beam:Train ;
+    pair:expectedRole pat:TrainingStepRole .
+
+pat:TrainServe_CandidateModelNode
+    a pair:PatternNode ;
+    rdfs:label "Candidate model artifact node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:ModelArtifactRole .
+
+pat:TrainServe_EvaluationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Pre-release evaluation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:EvaluationStepRole .
+
+pat:TrainServe_ApprovalNode
+    a pair:PatternNode ;
+    rdfs:label "Release approval node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:ReleaseApprovalRole .
+
+pat:TrainServe_ReleaseStepNode
+    a pair:PatternNode ;
+    rdfs:label "Manual release step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:DeploymentStepRole .
+
+pat:TrainServe_DeployedModelNode
+    a pair:PatternNode ;
+    rdfs:label "Deployed model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:LoadedModelRole .
+
+pat:TrainServe_PredictionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Production prediction step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:PredictionStepRole .
+
+pat:TrainServe_TrainingProducesCandidateEdge
+    a pair:PatternEdge ;
+    rdfs:label "training produces candidate model"@en ;
+    pair:sourcePatternNode pat:TrainServe_TrainingStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:TrainServe_CandidateModelNode .
+
+pat:TrainServe_TrainingInformsEvaluationEdge
+    a pair:PatternEdge ;
+    rdfs:label "training informs evaluation"@en ;
+    pair:sourcePatternNode pat:TrainServe_TrainingStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:TrainServe_EvaluationStepNode .
+
+pat:TrainServe_EvaluationUsesCandidateEdge
+    a pair:PatternEdge ;
+    rdfs:label "evaluation uses candidate model"@en ;
+    pair:sourcePatternNode pat:TrainServe_EvaluationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:TrainServe_CandidateModelNode .
+
+pat:TrainServe_EvaluationProducesApprovalEdge
+    a pair:PatternEdge ;
+    rdfs:label "evaluation produces release approval"@en ;
+    pair:sourcePatternNode pat:TrainServe_EvaluationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:TrainServe_ApprovalNode .
+
+pat:TrainServe_ReleaseUsesApprovalEdge
+    a pair:PatternEdge ;
+    rdfs:label "release uses approval"@en ;
+    pair:sourcePatternNode pat:TrainServe_ReleaseStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:TrainServe_ApprovalNode .
+
+pat:TrainServe_ReleaseUsesCandidateEdge
+    a pair:PatternEdge ;
+    rdfs:label "release uses candidate model"@en ;
+    pair:sourcePatternNode pat:TrainServe_ReleaseStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:TrainServe_CandidateModelNode .
+
+pat:TrainServe_ReleaseProducesDeployedModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "release produces deployed model"@en ;
+    pair:sourcePatternNode pat:TrainServe_ReleaseStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:TrainServe_DeployedModelNode .
+
+pat:TrainServe_ReleaseInformsPredictionEdge
+    a pair:PatternEdge ;
+    rdfs:label "release informs production prediction"@en ;
+    pair:sourcePatternNode pat:TrainServe_ReleaseStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:TrainServe_PredictionStepNode .
+
+pat:TrainServe_PredictionUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "production prediction uses deployed model"@en ;
+    pair:sourcePatternNode pat:TrainServe_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:TrainServe_DeployedModelNode .
+
+pat:TrainingToServingMotif
+    a pair:GraphMotif ;
+    rdfs:label "Training-to-Serving Motif"@en ;
+    dct:description "Lifecycle motif in which a training pipeline automatically produces a model artifact that is built or deployed into a serving prediction path."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:TrainToServe_TrainingPipelineNode ,
+        pat:TrainToServe_ModelArtifactNode ,
+        pat:TrainToServe_AutoDeploymentNode ,
+        pat:TrainToServe_DeployedModelNode ,
+        pat:TrainToServe_PredictionStepNode ;
+    pair:hasPatternEdge
+        pat:TrainToServe_TrainingProducesModelEdge ,
+        pat:TrainToServe_TrainingInformsDeploymentEdge ,
+        pat:TrainToServe_DeploymentUsesModelEdge ,
+        pat:TrainToServe_DeploymentProducesDeployedModelEdge ,
+        pat:TrainToServe_DeploymentInformsPredictionEdge ,
+        pat:TrainToServe_PredictionUsesModelEdge .
+
+pat:TrainToServe_TrainingPipelineNode
+    a pair:PatternNode ;
+    rdfs:label "Automated training pipeline node"@en ;
+    pair:expectedClass beam:Train ;
+    pair:expectedRole pat:TrainingPipelineRole .
+
+pat:TrainToServe_ModelArtifactNode
+    a pair:PatternNode ;
+    rdfs:label "Automatically trained model artifact node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:ModelArtifactRole .
+
+pat:TrainToServe_AutoDeploymentNode
+    a pair:PatternNode ;
+    rdfs:label "Automatic model deployment step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:DeploymentStepRole .
+
+pat:TrainToServe_DeployedModelNode
+    a pair:PatternNode ;
+    rdfs:label "Automatically deployed model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:LoadedModelRole .
+
+pat:TrainToServe_PredictionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Training-to-serving prediction step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:PredictionStepRole .
+
+pat:TrainToServe_TrainingProducesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "training pipeline produces model"@en ;
+    pair:sourcePatternNode pat:TrainToServe_TrainingPipelineNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:TrainToServe_ModelArtifactNode .
+
+pat:TrainToServe_TrainingInformsDeploymentEdge
+    a pair:PatternEdge ;
+    rdfs:label "training pipeline informs deployment"@en ;
+    pair:sourcePatternNode pat:TrainToServe_TrainingPipelineNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:TrainToServe_AutoDeploymentNode .
+
+pat:TrainToServe_DeploymentUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "automatic deployment uses model"@en ;
+    pair:sourcePatternNode pat:TrainToServe_AutoDeploymentNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:TrainToServe_ModelArtifactNode .
+
+pat:TrainToServe_DeploymentProducesDeployedModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "automatic deployment produces deployed model"@en ;
+    pair:sourcePatternNode pat:TrainToServe_AutoDeploymentNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:TrainToServe_DeployedModelNode .
+
+pat:TrainToServe_DeploymentInformsPredictionEdge
+    a pair:PatternEdge ;
+    rdfs:label "automatic deployment informs prediction"@en ;
+    pair:sourcePatternNode pat:TrainToServe_AutoDeploymentNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:TrainToServe_PredictionStepNode .
+
+pat:TrainToServe_PredictionUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "prediction uses automatically deployed model"@en ;
+    pair:sourcePatternNode pat:TrainToServe_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:TrainToServe_DeployedModelNode .
+
+# ML system design motifs: operation patterns
+
+pat:PredictionLoggingMotif
+    a pair:GraphMotif ;
+    rdfs:label "Prediction Logging Motif"@en ;
+    dct:description "Operational motif in which prediction inputs, results, latency, or related events are collected into prediction logs for analysis and service improvement."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:PredLog_RequestNode ,
+        pat:PredLog_ResultNode ,
+        pat:PredLog_PredictionStepNode ,
+        pat:PredLog_LoggingStepNode ,
+        pat:PredLog_LogRecordNode ;
+    pair:hasPatternEdge
+        pat:PredLog_PredictionUsesRequestEdge ,
+        pat:PredLog_PredictionProducesResultEdge ,
+        pat:PredLog_PredictionInformsLoggingEdge ,
+        pat:PredLog_LoggingUsesRequestEdge ,
+        pat:PredLog_LoggingUsesResultEdge ,
+        pat:PredLog_LoggingProducesLogEdge .
+
+pat:PredLog_RequestNode
+    a pair:PatternNode ;
+    rdfs:label "Logged prediction request node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionRequestRole .
+
+pat:PredLog_ResultNode
+    a pair:PatternNode ;
+    rdfs:label "Logged prediction result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionResultRole .
+
+pat:PredLog_PredictionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Logged prediction step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:PredictionStepRole .
+
+pat:PredLog_LoggingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Prediction logging step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:LoggingStepRole .
+
+pat:PredLog_LogRecordNode
+    a pair:PatternNode ;
+    rdfs:label "Prediction log record node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionLogRole .
+
+pat:PredLog_PredictionUsesRequestEdge
+    a pair:PatternEdge ;
+    rdfs:label "logged prediction uses request"@en ;
+    pair:sourcePatternNode pat:PredLog_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PredLog_RequestNode .
+
+pat:PredLog_PredictionProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "logged prediction produces result"@en ;
+    pair:sourcePatternNode pat:PredLog_PredictionStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PredLog_ResultNode .
+
+pat:PredLog_PredictionInformsLoggingEdge
+    a pair:PatternEdge ;
+    rdfs:label "prediction informs logging"@en ;
+    pair:sourcePatternNode pat:PredLog_PredictionStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:PredLog_LoggingStepNode .
+
+pat:PredLog_LoggingUsesRequestEdge
+    a pair:PatternEdge ;
+    rdfs:label "logging uses prediction request"@en ;
+    pair:sourcePatternNode pat:PredLog_LoggingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PredLog_RequestNode .
+
+pat:PredLog_LoggingUsesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "logging uses prediction result"@en ;
+    pair:sourcePatternNode pat:PredLog_LoggingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PredLog_ResultNode .
+
+pat:PredLog_LoggingProducesLogEdge
+    a pair:PatternEdge ;
+    rdfs:label "logging produces prediction log"@en ;
+    pair:sourcePatternNode pat:PredLog_LoggingStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PredLog_LogRecordNode .
+
+pat:PredictionMonitoringMotif
+    a pair:GraphMotif ;
+    rdfs:label "Prediction Monitoring Motif"@en ;
+    dct:description "Operational motif in which prediction logs or prediction result trends are monitored against expected behavior and may produce alerts."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:PredMon_LogNode ,
+        pat:PredMon_BaselineNode ,
+        pat:PredMon_MonitoringStepNode ,
+        pat:PredMon_AlertNode ;
+    pair:hasPatternEdge
+        pat:PredMon_MonitoringUsesLogEdge ,
+        pat:PredMon_MonitoringUsesBaselineEdge ,
+        pat:PredMon_MonitoringProducesAlertEdge .
+
+pat:PredMon_LogNode
+    a pair:PatternNode ;
+    rdfs:label "Prediction monitoring log node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:PredictionLogRole .
+
+pat:PredMon_BaselineNode
+    a pair:PatternNode ;
+    rdfs:label "Prediction monitoring baseline node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:MonitoringBaselineRole .
+
+pat:PredMon_MonitoringStepNode
+    a pair:PatternNode ;
+    rdfs:label "Prediction monitoring step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:MonitoringStepRole .
+
+pat:PredMon_AlertNode
+    a pair:PatternNode ;
+    rdfs:label "Prediction monitoring alert node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:AlertRole .
+
+pat:PredMon_MonitoringUsesLogEdge
+    a pair:PatternEdge ;
+    rdfs:label "monitoring uses prediction log"@en ;
+    pair:sourcePatternNode pat:PredMon_MonitoringStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PredMon_LogNode .
+
+pat:PredMon_MonitoringUsesBaselineEdge
+    a pair:PatternEdge ;
+    rdfs:label "monitoring uses baseline"@en ;
+    pair:sourcePatternNode pat:PredMon_MonitoringStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PredMon_BaselineNode .
+
+pat:PredMon_MonitoringProducesAlertEdge
+    a pair:PatternEdge ;
+    rdfs:label "monitoring produces alert"@en ;
+    pair:sourcePatternNode pat:PredMon_MonitoringStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PredMon_AlertNode .
+
+pat:ModelLoadMotif
+    a pair:GraphMotif ;
+    rdfs:label "Model Load Motif"@en ;
+    dct:description "Operational motif in which a prediction server image and model artifact are managed separately, and the model is loaded by the server before prediction."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:ModelLoad_ServerImageNode ,
+        pat:ModelLoad_ModelArtifactNode ,
+        pat:ModelLoad_LoadStepNode ,
+        pat:ModelLoad_LoadedModelNode ,
+        pat:ModelLoad_PredictionStepNode ;
+    pair:hasPatternEdge
+        pat:ModelLoad_LoadUsesImageEdge ,
+        pat:ModelLoad_LoadUsesModelArtifactEdge ,
+        pat:ModelLoad_LoadProducesLoadedModelEdge ,
+        pat:ModelLoad_LoadInformsPredictionEdge ,
+        pat:ModelLoad_PredictionUsesLoadedModelEdge .
+
+pat:ModelLoad_ServerImageNode
+    a pair:PatternNode ;
+    rdfs:label "Reusable prediction server image node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:ServingImageRole .
+
+pat:ModelLoad_ModelArtifactNode
+    a pair:PatternNode ;
+    rdfs:label "Separately managed model artifact node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:ModelArtifactRole .
+
+pat:ModelLoad_LoadStepNode
+    a pair:PatternNode ;
+    rdfs:label "Model load step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:ModelLoadStepRole .
+
+pat:ModelLoad_LoadedModelNode
+    a pair:PatternNode ;
+    rdfs:label "Loaded model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:LoadedModelRole .
+
+pat:ModelLoad_PredictionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Model-load prediction step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:PredictionStepRole .
+
+pat:ModelLoad_LoadUsesImageEdge
+    a pair:PatternEdge ;
+    rdfs:label "model load uses server image"@en ;
+    pair:sourcePatternNode pat:ModelLoad_LoadStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ModelLoad_ServerImageNode .
+
+pat:ModelLoad_LoadUsesModelArtifactEdge
+    a pair:PatternEdge ;
+    rdfs:label "model load uses model artifact"@en ;
+    pair:sourcePatternNode pat:ModelLoad_LoadStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ModelLoad_ModelArtifactNode .
+
+pat:ModelLoad_LoadProducesLoadedModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "model load produces loaded model"@en ;
+    pair:sourcePatternNode pat:ModelLoad_LoadStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ModelLoad_LoadedModelNode .
+
+pat:ModelLoad_LoadInformsPredictionEdge
+    a pair:PatternEdge ;
+    rdfs:label "model load informs prediction"@en ;
+    pair:sourcePatternNode pat:ModelLoad_LoadStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:ModelLoad_PredictionStepNode .
+
+pat:ModelLoad_PredictionUsesLoadedModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "prediction uses loaded model"@en ;
+    pair:sourcePatternNode pat:ModelLoad_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ModelLoad_LoadedModelNode .
+
+pat:ModelInImageMotif
+    a pair:GraphMotif ;
+    rdfs:label "Model-in-Image Motif"@en ;
+    dct:description "Operational motif in which a trained model artifact is packaged into a serving image that is deployed as the prediction service runtime."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> ;
+    pair:hasPatternNode
+        pat:ModelImage_TrainingStepNode ,
+        pat:ModelImage_ModelArtifactNode ,
+        pat:ModelImage_ImageBuildStepNode ,
+        pat:ModelImage_ServingImageNode ,
+        pat:ModelImage_DeploymentStepNode ,
+        pat:ModelImage_PredictionStepNode ;
+    pair:hasPatternEdge
+        pat:ModelImage_TrainingProducesModelEdge ,
+        pat:ModelImage_TrainingInformsImageBuildEdge ,
+        pat:ModelImage_ImageBuildUsesModelEdge ,
+        pat:ModelImage_ImageBuildProducesImageEdge ,
+        pat:ModelImage_DeploymentUsesImageEdge ,
+        pat:ModelImage_DeploymentInformsPredictionEdge .
+
+pat:ModelImage_TrainingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Model-in-image training step node"@en ;
+    pair:expectedClass beam:Train ;
+    pair:expectedRole pat:TrainingStepRole .
+
+pat:ModelImage_ModelArtifactNode
+    a pair:PatternNode ;
+    rdfs:label "Model-in-image model artifact node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:ModelArtifactRole .
+
+pat:ModelImage_ImageBuildStepNode
+    a pair:PatternNode ;
+    rdfs:label "Serving image build step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:ImageBuildStepRole .
+
+pat:ModelImage_ServingImageNode
+    a pair:PatternNode ;
+    rdfs:label "Serving image containing model node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:ServingImageRole .
+
+pat:ModelImage_DeploymentStepNode
+    a pair:PatternNode ;
+    rdfs:label "Model-in-image deployment step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:DeploymentStepRole .
+
+pat:ModelImage_PredictionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Model-in-image prediction step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pat:PredictionStepRole .
+
+pat:ModelImage_TrainingProducesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "training produces model artifact for image"@en ;
+    pair:sourcePatternNode pat:ModelImage_TrainingStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ModelImage_ModelArtifactNode .
+
+pat:ModelImage_TrainingInformsImageBuildEdge
+    a pair:PatternEdge ;
+    rdfs:label "training informs image build"@en ;
+    pair:sourcePatternNode pat:ModelImage_TrainingStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:ModelImage_ImageBuildStepNode .
+
+pat:ModelImage_ImageBuildUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "image build uses model artifact"@en ;
+    pair:sourcePatternNode pat:ModelImage_ImageBuildStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ModelImage_ModelArtifactNode .
+
+pat:ModelImage_ImageBuildProducesImageEdge
+    a pair:PatternEdge ;
+    rdfs:label "image build produces serving image"@en ;
+    pair:sourcePatternNode pat:ModelImage_ImageBuildStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ModelImage_ServingImageNode .
+
+pat:ModelImage_DeploymentUsesImageEdge
+    a pair:PatternEdge ;
+    rdfs:label "deployment uses serving image"@en ;
+    pair:sourcePatternNode pat:ModelImage_DeploymentStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ModelImage_ServingImageNode .
+
+pat:ModelImage_DeploymentInformsPredictionEdge
+    a pair:PatternEdge ;
+    rdfs:label "deployment informs prediction"@en ;
+    pair:sourcePatternNode pat:ModelImage_DeploymentStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:ModelImage_PredictionStepNode .
+
+
+# Role vocabulary for GenAI product motifs
+
+pat:FoundationLLMRole
+    a pair:PatternRole ;
+    skos:prefLabel "Foundation LLM"@en ;
+    pair:subRoleOf pair:GenerativeModel .
+
+pat:LLMResponseRole
+    a pair:PatternRole ;
+    skos:prefLabel "LLM Response"@en ;
+    pair:subRoleOf pair:UserFacingOutput .
+
+pat:EvalDatasetRole
+    a pair:PatternRole ;
+    skos:prefLabel "Evaluation Dataset"@en .
+
+pat:ExpectedOutputRole
+    a pair:PatternRole ;
+    skos:prefLabel "Expected Output"@en .
+
+pat:ScoringStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Scoring Step"@en .
+
+pat:JudgeModelRole
+    a pair:PatternRole ;
+    skos:prefLabel "Judge Model"@en ;
+    pair:subRoleOf pair:GenerativeModel .
+
+pat:EvaluationScoreRole
+    a pair:PatternRole ;
+    skos:prefLabel "Evaluation Score"@en .
+
+pat:SourceDocumentRole
+    a pair:PatternRole ;
+    skos:prefLabel "Source Document"@en ;
+    pair:subRoleOf pair:KnowledgeSource .
+
+pat:ChunkingStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Chunking Step"@en .
+
+pat:DocumentChunkRole
+    a pair:PatternRole ;
+    skos:prefLabel "Document Chunk"@en ;
+    pair:subRoleOf pair:KnowledgeSource .
+
+pat:EmbeddingModelRole
+    a pair:PatternRole ;
+    skos:prefLabel "Embedding Model"@en ;
+    pair:subRoleOf pair:Model .
+
+pat:EmbeddingVectorRole
+    a pair:PatternRole ;
+    skos:prefLabel "Embedding Vector"@en .
+
+pat:VectorIndexRole
+    a pair:PatternRole ;
+    skos:prefLabel "Vector Index"@en ;
+    pair:subRoleOf pair:VectorStore .
+
+pat:VectorSearchStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Vector Search Step"@en ;
+    pair:subRoleOf pair:RetrievalStep .
+
+pat:KeywordIndexRole
+    a pair:PatternRole ;
+    skos:prefLabel "Keyword Index"@en ;
+    pair:subRoleOf pair:KnowledgeSource .
+
+pat:KeywordSearchStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Keyword Search Step"@en ;
+    pair:subRoleOf pair:RetrievalStep .
+
+pat:RetrievedCandidateSetRole
+    a pair:PatternRole ;
+    skos:prefLabel "Retrieved Candidate Set"@en ;
+    pair:subRoleOf pair:RetrievedContext .
+
+pat:AggregationStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Aggregation Step"@en .
+
+pat:RewrittenQueryRole
+    a pair:PatternRole ;
+    skos:prefLabel "Rewritten Query"@en ;
+    pair:subRoleOf pair:UserInput .
+
+pat:RerankedContextRole
+    a pair:PatternRole ;
+    skos:prefLabel "Reranked Context"@en ;
+    pair:subRoleOf pair:RetrievedContext .
+
+pat:GuardrailStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Guardrail Step"@en .
+
+pat:InputGuardrailStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Input Guardrail Step"@en ;
+    pair:subRoleOf pat:GuardrailStepRole .
+
+pat:OutputGuardrailStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Output Guardrail Step"@en ;
+    pair:subRoleOf pat:GuardrailStepRole .
+
+pat:GuardrailDecisionRole
+    a pair:PatternRole ;
+    skos:prefLabel "Guardrail Decision"@en .
+
+pat:SanitizedOutputRole
+    a pair:PatternRole ;
+    skos:prefLabel "Sanitized Output"@en ;
+    pair:subRoleOf pair:UserFacingOutput .
+
+pat:FineTuningDatasetRole
+    a pair:PatternRole ;
+    skos:prefLabel "Fine-Tuning Dataset"@en ;
+    pair:subRoleOf pat:TrainingDatasetRole .
+
+pat:FineTuningStepRole
+    a pair:PatternRole ;
+    skos:prefLabel "Fine-Tuning Step"@en ;
+    pair:subRoleOf pat:TrainingStepRole .
+
+pat:FineTunedModelRole
+    a pair:PatternRole ;
+    skos:prefLabel "Fine-Tuned Model"@en ;
+    pair:subRoleOf pair:GenerativeModel .
+
+
+# GenAI product motifs 
+
+pat:EvalsMotif
+    a pair:GraphMotif ;
+    rdfs:label "Evals Motif"@en ;
+    dct:description "GenAI motif in which model input, generated output, expected output, and optional retrieval context are scored or judged to produce evaluation results for a task."@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:Evals_InputNode ,
+        pat:Evals_ModelOutputNode ,
+        pat:Evals_ExpectedOutputNode ,
+        pat:Evals_ContextNode ,
+        pat:Evals_ScorerNode ,
+        pat:Evals_JudgeModelNode ,
+        pat:Evals_ScoreNode ;
+    pair:hasPatternEdge
+        pat:Evals_ScorerUsesInputEdge ,
+        pat:Evals_ScorerUsesModelOutputEdge ,
+        pat:Evals_ScorerUsesExpectedOutputEdge ,
+        pat:Evals_ScorerUsesContextEdge ,
+        pat:Evals_ScorerUsesJudgeModelEdge ,
+        pat:Evals_ScorerProducesScoreEdge .
+
+pat:Evals_InputNode
+    a pair:PatternNode ;
+    rdfs:label "Evaluation input node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:Evals_ModelOutputNode
+    a pair:PatternNode ;
+    rdfs:label "Evaluation model output node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:LLMResponseRole .
+
+pat:Evals_ExpectedOutputNode
+    a pair:PatternNode ;
+    rdfs:label "Expected output node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:ExpectedOutputRole .
+
+pat:Evals_ContextNode
+    a pair:PatternNode ;
+    rdfs:label "Evaluation retrieval context node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
+
+pat:Evals_ScorerNode
+    a pair:PatternNode ;
+    rdfs:label "Evaluation scorer node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:ScoringStepRole .
+
+pat:Evals_JudgeModelNode
+    a pair:PatternNode ;
+    rdfs:label "Judge model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:JudgeModelRole .
+
+pat:Evals_ScoreNode
+    a pair:PatternNode ;
+    rdfs:label "Evaluation score node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:EvaluationScoreRole .
+
+pat:Evals_ScorerUsesInputEdge
+    a pair:PatternEdge ;
+    rdfs:label "scorer uses input"@en ;
+    pair:sourcePatternNode pat:Evals_ScorerNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Evals_InputNode .
+
+pat:Evals_ScorerUsesModelOutputEdge
+    a pair:PatternEdge ;
+    rdfs:label "scorer uses model output"@en ;
+    pair:sourcePatternNode pat:Evals_ScorerNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Evals_ModelOutputNode .
+
+pat:Evals_ScorerUsesExpectedOutputEdge
+    a pair:PatternEdge ;
+    rdfs:label "scorer uses expected output"@en ;
+    pair:sourcePatternNode pat:Evals_ScorerNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Evals_ExpectedOutputNode .
+
+pat:Evals_ScorerUsesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "scorer uses retrieval context"@en ;
+    pair:sourcePatternNode pat:Evals_ScorerNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Evals_ContextNode .
+
+pat:Evals_ScorerUsesJudgeModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "scorer uses judge model"@en ;
+    pair:sourcePatternNode pat:Evals_ScorerNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Evals_JudgeModelNode .
+
+pat:Evals_ScorerProducesScoreEdge
+    a pair:PatternEdge ;
+    rdfs:label "scorer produces evaluation score"@en ;
+    pair:sourcePatternNode pat:Evals_ScorerNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Evals_ScoreNode .
+
+pat:EmbeddingsMotif
+    a pair:GraphMotif ;
+    rdfs:label "Embeddings Motif"@en ;
+    dct:description "GenAI motif in which source documents or data blocks are chunked and transformed by an embedding model into vectors stored in a vector index."@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:Embedding_SourceDocumentNode ,
+        pat:Embedding_ChunkingStepNode ,
+        pat:Embedding_DocumentChunkNode ,
+        pat:Embedding_ModelNode ,
+        pat:Embedding_GenerationStepNode ,
+        pat:Embedding_VectorNode ,
+        pat:Embedding_VectorIndexNode ;
+    pair:hasPatternEdge
+        pat:Embedding_ChunkingUsesSourceEdge ,
+        pat:Embedding_ChunkingProducesChunkEdge ,
+        pat:Embedding_GenerationUsesChunkEdge ,
+        pat:Embedding_GenerationUsesModelEdge ,
+        pat:Embedding_GenerationProducesVectorEdge ,
+        pat:Embedding_VectorIndexUsesVectorEdge ;
+    pair:implementedBy pat:Embeddings_MatchingOQP .
+
+pat:Embedding_SourceDocumentNode
+    a pair:PatternNode ;
+    rdfs:label "Embedding source document node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:SourceDocumentRole .
+
+pat:Embedding_ChunkingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Document chunking step node"@en ;
+    pair:expectedClass beam:Transform ;
+    pair:expectedRole pat:ChunkingStepRole .
+
+pat:Embedding_DocumentChunkNode
+    a pair:PatternNode ;
+    rdfs:label "Document chunk node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:DocumentChunkRole .
+
+pat:Embedding_ModelNode
+    a pair:PatternNode ;
+    rdfs:label "Embedding model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:EmbeddingModelRole .
+
+pat:Embedding_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Embedding generation step node"@en ;
+    pair:expectedClass beam:Transform ;
+    pair:expectedRole pair:EmbeddingStep .
+
+pat:Embedding_VectorNode
+    a pair:PatternNode ;
+    rdfs:label "Embedding vector node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:EmbeddingVectorRole .
+
+pat:Embedding_VectorIndexNode
+    a pair:PatternNode ;
+    rdfs:label "Vector index node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:VectorIndexRole .
+
+pat:Embedding_ChunkingUsesSourceEdge
+    a pair:PatternEdge ;
+    rdfs:label "chunking uses source document"@en ;
+    pair:sourcePatternNode pat:Embedding_ChunkingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Embedding_SourceDocumentNode .
+
+pat:Embedding_ChunkingProducesChunkEdge
+    a pair:PatternEdge ;
+    rdfs:label "chunking produces document chunk"@en ;
+    pair:sourcePatternNode pat:Embedding_ChunkingStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Embedding_DocumentChunkNode .
+
+pat:Embedding_GenerationUsesChunkEdge
+    a pair:PatternEdge ;
+    rdfs:label "embedding generation uses document chunk"@en ;
+    pair:sourcePatternNode pat:Embedding_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Embedding_DocumentChunkNode .
+
+pat:Embedding_GenerationUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "embedding generation uses embedding model"@en ;
+    pair:sourcePatternNode pat:Embedding_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Embedding_ModelNode .
+
+pat:Embedding_GenerationProducesVectorEdge
+    a pair:PatternEdge ;
+    rdfs:label "embedding generation produces vector"@en ;
+    pair:sourcePatternNode pat:Embedding_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Embedding_VectorNode .
+
+pat:Embedding_VectorIndexUsesVectorEdge
+    a pair:PatternEdge ;
+    rdfs:label "vector index uses embedding vector"@en ;
+    pair:sourcePatternNode pat:Embedding_VectorIndexNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Embedding_VectorNode .
+
+pat:RetrievalAugmentedGenerationMotif
+    a pair:GraphMotif ;
+    rdfs:label "Retrieval Augmented Generation (RAG) Motif"@en ;
+    dct:description "GenAI motif in which a user query is embedded, used to retrieve relevant context from a vector index, combined with a prompt template, and sent to an LLM to produce an answer."@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:RAG_QueryNode ,
+        pat:RAG_EmbeddingModelNode ,
+        pat:RAG_QueryEmbeddingStepNode ,
+        pat:RAG_QueryVectorNode ,
+        pat:RAG_VectorIndexNode ,
+        pat:RAG_RetrievalStepNode ,
+        pat:RAG_RetrievedContextNode ,
+        pat:RAG_PromptTemplateNode ,
+        pat:RAG_PromptConstructionStepNode ,
+        pat:RAG_PromptNode ,
+        pat:RAG_LLMNode ,
+        pat:RAG_GenerationStepNode ,
+        pat:RAG_ResponseNode ;
+    pair:hasPatternEdge
+        pat:RAG_QueryEmbeddingUsesQueryEdge ,
+        pat:RAG_QueryEmbeddingUsesModelEdge ,
+        pat:RAG_QueryEmbeddingProducesVectorEdge ,
+        pat:RAG_RetrievalUsesQueryVectorEdge ,
+        pat:RAG_RetrievalUsesVectorIndexEdge ,
+        pat:RAG_RetrievalProducesContextEdge ,
+        pat:RAG_PromptConstructionUsesQueryEdge ,
+        pat:RAG_PromptConstructionUsesContextEdge ,
+        pat:RAG_PromptConstructionUsesTemplateEdge ,
+        pat:RAG_PromptConstructionProducesPromptEdge ,
+        pat:RAG_GenerationUsesPromptEdge ,
+        pat:RAG_GenerationUsesLLMEdge ,
+        pat:RAG_GenerationProducesResponseEdge ;
+    pair:implementedBy pat:RAG_MatchingOQP .
+
+pat:RAG_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "RAG query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:RAG_EmbeddingModelNode
+    a pair:PatternNode ;
+    rdfs:label "RAG embedding model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:EmbeddingModelRole .
+
+pat:RAG_QueryEmbeddingStepNode
+    a pair:PatternNode ;
+    rdfs:label "RAG query embedding step node"@en ;
+    pair:expectedClass beam:Transform ;
+    pair:expectedRole pair:EmbeddingStep .
+
+pat:RAG_QueryVectorNode
+    a pair:PatternNode ;
+    rdfs:label "RAG query vector node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:EmbeddingVectorRole .
+
+pat:RAG_VectorIndexNode
+    a pair:PatternNode ;
+    rdfs:label "RAG vector index node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:VectorIndexRole .
+
+pat:RAG_RetrievalStepNode
+    a pair:PatternNode ;
+    rdfs:label "RAG retrieval step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalStep .
+
+pat:RAG_RetrievedContextNode
+    a pair:PatternNode ;
+    rdfs:label "RAG retrieved context node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
+
+pat:RAG_PromptTemplateNode
+    a pair:PatternNode ;
+    rdfs:label "RAG prompt template node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:PromptTemplate .
+
+pat:RAG_PromptConstructionStepNode
+    a pair:PatternNode ;
+    rdfs:label "RAG prompt construction step node"@en ;
+    pair:expectedClass beam:Transform ;
+    pair:expectedRole pair:PromptConstructionStep .
+
+pat:RAG_PromptNode
+    a pair:PatternNode ;
+    rdfs:label "RAG composed prompt node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:PromptTemplate .
+
+pat:RAG_LLMNode
+    a pair:PatternNode ;
+    rdfs:label "RAG foundation LLM node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:FoundationLLMRole .
+
+pat:RAG_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "RAG generation step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pair:GenerationStep .
+
+pat:RAG_ResponseNode
+    a pair:PatternNode ;
+    rdfs:label "RAG response node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:LLMResponseRole .
+
+pat:RAG_QueryEmbeddingUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG query embedding uses query"@en ;
+    pair:sourcePatternNode pat:RAG_QueryEmbeddingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RAG_QueryNode .
+
+pat:RAG_QueryEmbeddingUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG query embedding uses model"@en ;
+    pair:sourcePatternNode pat:RAG_QueryEmbeddingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RAG_EmbeddingModelNode .
+
+pat:RAG_QueryEmbeddingProducesVectorEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG query embedding produces vector"@en ;
+    pair:sourcePatternNode pat:RAG_QueryEmbeddingStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RAG_QueryVectorNode .
+
+pat:RAG_RetrievalUsesQueryVectorEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG retrieval uses query vector"@en ;
+    pair:sourcePatternNode pat:RAG_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RAG_QueryVectorNode .
+
+pat:RAG_RetrievalUsesVectorIndexEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG retrieval uses vector index"@en ;
+    pair:sourcePatternNode pat:RAG_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RAG_VectorIndexNode .
+
+pat:RAG_RetrievalProducesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG retrieval produces context"@en ;
+    pair:sourcePatternNode pat:RAG_RetrievalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RAG_RetrievedContextNode .
+
+pat:RAG_PromptConstructionUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG prompt construction uses query"@en ;
+    pair:sourcePatternNode pat:RAG_PromptConstructionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RAG_QueryNode .
+
+pat:RAG_PromptConstructionUsesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG prompt construction uses context"@en ;
+    pair:sourcePatternNode pat:RAG_PromptConstructionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RAG_RetrievedContextNode .
+
+pat:RAG_PromptConstructionUsesTemplateEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG prompt construction uses template"@en ;
+    pair:sourcePatternNode pat:RAG_PromptConstructionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RAG_PromptTemplateNode .
+
+pat:RAG_PromptConstructionProducesPromptEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG prompt construction produces prompt"@en ;
+    pair:sourcePatternNode pat:RAG_PromptConstructionStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RAG_PromptNode .
+
+pat:RAG_GenerationUsesPromptEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG generation uses prompt"@en ;
+    pair:sourcePatternNode pat:RAG_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RAG_PromptNode .
+
+pat:RAG_GenerationUsesLLMEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG generation uses LLM"@en ;
+    pair:sourcePatternNode pat:RAG_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RAG_LLMNode .
+
+pat:RAG_GenerationProducesResponseEdge
+    a pair:PatternEdge ;
+    rdfs:label "RAG generation produces response"@en ;
+    pair:sourcePatternNode pat:RAG_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RAG_ResponseNode .
+
+pat:HybridRetrieverMotif
+    a pair:GraphMotif ;
+    rdfs:label "Hybrid Retriever Motif"@en ;
+    dct:description "GenAI motif in which vector search and keyword or structured search are combined and aggregated to produce a candidate context set."@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:Hybrid_QueryNode ,
+        pat:Hybrid_VectorIndexNode ,
+        pat:Hybrid_KeywordIndexNode ,
+        pat:Hybrid_VectorSearchNode ,
+        pat:Hybrid_KeywordSearchNode ,
+        pat:Hybrid_AggregationNode ,
+        pat:Hybrid_CandidateSetNode ;
+    pair:hasPatternEdge
+        pat:Hybrid_VectorSearchUsesQueryEdge ,
+        pat:Hybrid_VectorSearchUsesIndexEdge ,
+        pat:Hybrid_KeywordSearchUsesQueryEdge ,
+        pat:Hybrid_KeywordSearchUsesIndexEdge ,
+        pat:Hybrid_VectorSearchInformsAggregationEdge ,
+        pat:Hybrid_KeywordSearchInformsAggregationEdge ,
+        pat:Hybrid_AggregationProducesCandidateSetEdge .
+
+pat:Hybrid_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "Hybrid retriever query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:Hybrid_VectorIndexNode
+    a pair:PatternNode ;
+    rdfs:label "Hybrid retriever vector index node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:VectorIndexRole .
+
+pat:Hybrid_KeywordIndexNode
+    a pair:PatternNode ;
+    rdfs:label "Hybrid retriever keyword index node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:KeywordIndexRole .
+
+pat:Hybrid_VectorSearchNode
+    a pair:PatternNode ;
+    rdfs:label "Vector search step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:VectorSearchStepRole .
+
+pat:Hybrid_KeywordSearchNode
+    a pair:PatternNode ;
+    rdfs:label "Keyword search step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:KeywordSearchStepRole .
+
+pat:Hybrid_AggregationNode
+    a pair:PatternNode ;
+    rdfs:label "Hybrid retriever aggregation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:AggregationStepRole .
+
+pat:Hybrid_CandidateSetNode
+    a pair:PatternNode ;
+    rdfs:label "Hybrid retrieved candidate set node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:RetrievedCandidateSetRole .
+
+pat:Hybrid_VectorSearchUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "vector search uses query"@en ;
+    pair:sourcePatternNode pat:Hybrid_VectorSearchNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Hybrid_QueryNode .
+
+pat:Hybrid_VectorSearchUsesIndexEdge
+    a pair:PatternEdge ;
+    rdfs:label "vector search uses vector index"@en ;
+    pair:sourcePatternNode pat:Hybrid_VectorSearchNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Hybrid_VectorIndexNode .
+
+pat:Hybrid_KeywordSearchUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "keyword search uses query"@en ;
+    pair:sourcePatternNode pat:Hybrid_KeywordSearchNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Hybrid_QueryNode .
+
+pat:Hybrid_KeywordSearchUsesIndexEdge
+    a pair:PatternEdge ;
+    rdfs:label "keyword search uses keyword index"@en ;
+    pair:sourcePatternNode pat:Hybrid_KeywordSearchNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Hybrid_KeywordIndexNode .
+
+pat:Hybrid_VectorSearchInformsAggregationEdge
+    a pair:PatternEdge ;
+    rdfs:label "vector search informs aggregation"@en ;
+    pair:sourcePatternNode pat:Hybrid_VectorSearchNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:Hybrid_AggregationNode .
+
+pat:Hybrid_KeywordSearchInformsAggregationEdge
+    a pair:PatternEdge ;
+    rdfs:label "keyword search informs aggregation"@en ;
+    pair:sourcePatternNode pat:Hybrid_KeywordSearchNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:Hybrid_AggregationNode .
+
+pat:Hybrid_AggregationProducesCandidateSetEdge
+    a pair:PatternEdge ;
+    rdfs:label "aggregation produces retrieved candidate set"@en ;
+    pair:sourcePatternNode pat:Hybrid_AggregationNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Hybrid_CandidateSetNode .
+
+pat:QueryRewritingMotif
+    a pair:GraphMotif ;
+    rdfs:label "Query Rewriting Motif"@en ;
+    dct:description "GenAI motif in which an LLM reformulates a user query into alternative queries that are then used for retrieval."@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:QueryRewrite_OriginalQueryNode ,
+        pat:QueryRewrite_LLMNode ,
+        pat:QueryRewrite_RewriteStepNode ,
+        pat:QueryRewrite_RewrittenQueryNode ,
+        pat:QueryRewrite_RetrievalStepNode ,
+        pat:QueryRewrite_RetrievedContextNode ;
+    pair:hasPatternEdge
+        pat:QueryRewrite_RewriteUsesQueryEdge ,
+        pat:QueryRewrite_RewriteUsesLLMEdge ,
+        pat:QueryRewrite_RewriteProducesQueryEdge ,
+        pat:QueryRewrite_RewriteInformsRetrievalEdge ,
+        pat:QueryRewrite_RetrievalUsesRewrittenQueryEdge ,
+        pat:QueryRewrite_RetrievalProducesContextEdge ;
+    pair:implementedBy pat:QueryRewriting_MatchingOQP .
+
+pat:QueryRewrite_OriginalQueryNode
+    a pair:PatternNode ;
+    rdfs:label "Original query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:QueryRewrite_LLMNode
+    a pair:PatternNode ;
+    rdfs:label "Query rewriting LLM node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:FoundationLLMRole .
+
+pat:QueryRewrite_RewriteStepNode
+    a pair:PatternNode ;
+    rdfs:label "Query rewriting step node"@en ;
+    pair:expectedClass beam:Transform ;
+    pair:expectedRole pair:QueryReformulationStep .
+
+pat:QueryRewrite_RewrittenQueryNode
+    a pair:PatternNode ;
+    rdfs:label "Rewritten query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:RewrittenQueryRole .
+
+pat:QueryRewrite_RetrievalStepNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieval using rewritten query node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalStep .
+
+pat:QueryRewrite_RetrievedContextNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieved context from rewritten query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
+
+pat:QueryRewrite_RewriteUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "query rewrite uses original query"@en ;
+    pair:sourcePatternNode pat:QueryRewrite_RewriteStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:QueryRewrite_OriginalQueryNode .
+
+pat:QueryRewrite_RewriteUsesLLMEdge
+    a pair:PatternEdge ;
+    rdfs:label "query rewrite uses LLM"@en ;
+    pair:sourcePatternNode pat:QueryRewrite_RewriteStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:QueryRewrite_LLMNode .
+
+pat:QueryRewrite_RewriteProducesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "query rewrite produces rewritten query"@en ;
+    pair:sourcePatternNode pat:QueryRewrite_RewriteStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:QueryRewrite_RewrittenQueryNode .
+
+pat:QueryRewrite_RewriteInformsRetrievalEdge
+    a pair:PatternEdge ;
+    rdfs:label "query rewrite informs retrieval"@en ;
+    pair:sourcePatternNode pat:QueryRewrite_RewriteStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:QueryRewrite_RetrievalStepNode .
+
+pat:QueryRewrite_RetrievalUsesRewrittenQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses rewritten query"@en ;
+    pair:sourcePatternNode pat:QueryRewrite_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:QueryRewrite_RewrittenQueryNode .
+
+pat:QueryRewrite_RetrievalProducesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval produces context from rewritten query"@en ;
+    pair:sourcePatternNode pat:QueryRewrite_RetrievalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:QueryRewrite_RetrievedContextNode .
+
+pat:RerankerMotif
+    a pair:GraphMotif ;
+    rdfs:label "Reranker Motif"@en ;
+    dct:description "GenAI motif in which a candidate set of retrieved fragments is ranked against the input query so that the most useful context is passed to the LLM."@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:Reranker_QueryNode ,
+        pat:Reranker_CandidateSetNode ,
+        pat:Reranker_ModelNode ,
+        pat:Reranker_RerankingStepNode ,
+        pat:Reranker_RankedContextNode ;
+    pair:hasPatternEdge
+        pat:Reranker_RerankingUsesQueryEdge ,
+        pat:Reranker_RerankingUsesCandidateSetEdge ,
+        pat:Reranker_RerankingUsesModelEdge ,
+        pat:Reranker_RerankingProducesContextEdge ;
+    pair:implementedBy pat:Reranker_MatchingOQP .
+
+pat:Reranker_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "Reranker query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:Reranker_CandidateSetNode
+    a pair:PatternNode ;
+    rdfs:label "Reranker candidate context set node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:RetrievedCandidateSetRole .
+
+pat:Reranker_ModelNode
+    a pair:PatternNode ;
+    rdfs:label "Reranker model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:Model .
+
+pat:Reranker_RerankingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Reranking step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RerankingStep .
+
+pat:Reranker_RankedContextNode
+    a pair:PatternNode ;
+    rdfs:label "Reranked context node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:RerankedContextRole .
+
+pat:Reranker_RerankingUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "reranking uses query"@en ;
+    pair:sourcePatternNode pat:Reranker_RerankingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Reranker_QueryNode .
+
+pat:Reranker_RerankingUsesCandidateSetEdge
+    a pair:PatternEdge ;
+    rdfs:label "reranking uses candidate set"@en ;
+    pair:sourcePatternNode pat:Reranker_RerankingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Reranker_CandidateSetNode .
+
+pat:Reranker_RerankingUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "reranking uses reranker model"@en ;
+    pair:sourcePatternNode pat:Reranker_RerankingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Reranker_ModelNode .
+
+pat:Reranker_RerankingProducesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "reranking produces selected context"@en ;
+    pair:sourcePatternNode pat:Reranker_RerankingStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Reranker_RankedContextNode .
+
+pat:GuardrailsMotif
+    a pair:GraphMotif ;
+    rdfs:label "Guardrails Motif"@en ;
+    dct:description "GenAI motif in which input and output guardrail steps screen or sanitize user prompts and generated responses around the primary LLM generation step."@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:Guardrails_UserPromptNode ,
+        pat:Guardrails_InputGuardrailStepNode ,
+        pat:Guardrails_InputDecisionNode ,
+        pat:Guardrails_LLMNode ,
+        pat:Guardrails_GenerationStepNode ,
+        pat:Guardrails_RawResponseNode ,
+        pat:Guardrails_OutputGuardrailStepNode ,
+        pat:Guardrails_SanitizedResponseNode ;
+    pair:hasPatternEdge
+        pat:Guardrails_InputGuardrailUsesPromptEdge ,
+        pat:Guardrails_InputGuardrailProducesDecisionEdge ,
+        pat:Guardrails_InputGuardrailInformsGenerationEdge ,
+        pat:Guardrails_GenerationUsesPromptEdge ,
+        pat:Guardrails_GenerationUsesLLMEdge ,
+        pat:Guardrails_GenerationProducesRawResponseEdge ,
+        pat:Guardrails_GenerationInformsOutputGuardrailEdge ,
+        pat:Guardrails_OutputGuardrailUsesRawResponseEdge ,
+        pat:Guardrails_OutputGuardrailProducesSanitizedResponseEdge .
+
+pat:Guardrails_UserPromptNode
+    a pair:PatternNode ;
+    rdfs:label "Guardrails user prompt node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:Guardrails_InputGuardrailStepNode
+    a pair:PatternNode ;
+    rdfs:label "Input guardrail step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:InputGuardrailStepRole .
+
+pat:Guardrails_InputDecisionNode
+    a pair:PatternNode ;
+    rdfs:label "Input guardrail decision node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:GuardrailDecisionRole .
+
+pat:Guardrails_LLMNode
+    a pair:PatternNode ;
+    rdfs:label "Guarded LLM node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:FoundationLLMRole .
+
+pat:Guardrails_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Guarded generation step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pair:GenerationStep .
+
+pat:Guardrails_RawResponseNode
+    a pair:PatternNode ;
+    rdfs:label "Raw LLM response node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:LLMResponseRole .
+
+pat:Guardrails_OutputGuardrailStepNode
+    a pair:PatternNode ;
+    rdfs:label "Output guardrail step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:OutputGuardrailStepRole .
+
+pat:Guardrails_SanitizedResponseNode
+    a pair:PatternNode ;
+    rdfs:label "Sanitized response node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:SanitizedOutputRole .
+
+pat:Guardrails_InputGuardrailUsesPromptEdge
+    a pair:PatternEdge ;
+    rdfs:label "input guardrail uses prompt"@en ;
+    pair:sourcePatternNode pat:Guardrails_InputGuardrailStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Guardrails_UserPromptNode .
+
+pat:Guardrails_InputGuardrailProducesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "input guardrail produces decision"@en ;
+    pair:sourcePatternNode pat:Guardrails_InputGuardrailStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Guardrails_InputDecisionNode .
+
+pat:Guardrails_InputGuardrailInformsGenerationEdge
+    a pair:PatternEdge ;
+    rdfs:label "input guardrail informs generation"@en ;
+    pair:sourcePatternNode pat:Guardrails_InputGuardrailStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:Guardrails_GenerationStepNode .
+
+pat:Guardrails_GenerationUsesPromptEdge
+    a pair:PatternEdge ;
+    rdfs:label "guarded generation uses prompt"@en ;
+    pair:sourcePatternNode pat:Guardrails_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Guardrails_UserPromptNode .
+
+pat:Guardrails_GenerationUsesLLMEdge
+    a pair:PatternEdge ;
+    rdfs:label "guarded generation uses LLM"@en ;
+    pair:sourcePatternNode pat:Guardrails_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Guardrails_LLMNode .
+
+pat:Guardrails_GenerationProducesRawResponseEdge
+    a pair:PatternEdge ;
+    rdfs:label "guarded generation produces raw response"@en ;
+    pair:sourcePatternNode pat:Guardrails_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Guardrails_RawResponseNode .
+
+pat:Guardrails_GenerationInformsOutputGuardrailEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation informs output guardrail"@en ;
+    pair:sourcePatternNode pat:Guardrails_GenerationStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:Guardrails_OutputGuardrailStepNode .
+
+pat:Guardrails_OutputGuardrailUsesRawResponseEdge
+    a pair:PatternEdge ;
+    rdfs:label "output guardrail uses raw response"@en ;
+    pair:sourcePatternNode pat:Guardrails_OutputGuardrailStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Guardrails_RawResponseNode .
+
+pat:Guardrails_OutputGuardrailProducesSanitizedResponseEdge
+    a pair:PatternEdge ;
+    rdfs:label "output guardrail produces sanitized response"@en ;
+    pair:sourcePatternNode pat:Guardrails_OutputGuardrailStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Guardrails_SanitizedResponseNode .
+
+pat:FineTuningMotif
+    a pair:GraphMotif ;
+    rdfs:label "Fine Tuning Motif"@en ;
+    dct:description "GenAI motif in which a pre-trained LLM is further trained with a task- or domain-specific dataset to produce a fine-tuned model."@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:FineTune_BaseModelNode ,
+        pat:FineTune_DatasetNode ,
+        pat:FineTune_TrainingStepNode ,
+        pat:FineTune_EvaluationStepNode ,
+        pat:FineTune_EvaluationScoreNode ,
+        pat:FineTune_FineTunedModelNode ;
+    pair:hasPatternEdge
+        pat:FineTune_TrainingUsesBaseModelEdge ,
+        pat:FineTune_TrainingUsesDatasetEdge ,
+        pat:FineTune_TrainingProducesModelEdge ,
+        pat:FineTune_TrainingInformsEvaluationEdge ,
+        pat:FineTune_EvaluationUsesModelEdge ,
+        pat:FineTune_EvaluationProducesScoreEdge .
+
+pat:FineTune_BaseModelNode
+    a pair:PatternNode ;
+    rdfs:label "Fine tuning base model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:FoundationLLMRole .
+
+pat:FineTune_DatasetNode
+    a pair:PatternNode ;
+    rdfs:label "Fine tuning dataset node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:FineTuningDatasetRole .
+
+pat:FineTune_TrainingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Fine tuning training step node"@en ;
+    pair:expectedClass beam:Train ;
+    pair:expectedRole pat:FineTuningStepRole .
+
+pat:FineTune_EvaluationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Fine tuning evaluation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pat:EvaluationStepRole .
+
+pat:FineTune_EvaluationScoreNode
+    a pair:PatternNode ;
+    rdfs:label "Fine tuning evaluation score node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pat:EvaluationScoreRole .
+
+pat:FineTune_FineTunedModelNode
+    a pair:PatternNode ;
+    rdfs:label "Fine-tuned model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pat:FineTunedModelRole .
+
+pat:FineTune_TrainingUsesBaseModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "fine tuning uses base model"@en ;
+    pair:sourcePatternNode pat:FineTune_TrainingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:FineTune_BaseModelNode .
+
+pat:FineTune_TrainingUsesDatasetEdge
+    a pair:PatternEdge ;
+    rdfs:label "fine tuning uses dataset"@en ;
+    pair:sourcePatternNode pat:FineTune_TrainingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:FineTune_DatasetNode .
+
+pat:FineTune_TrainingProducesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "fine tuning produces model"@en ;
+    pair:sourcePatternNode pat:FineTune_TrainingStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:FineTune_FineTunedModelNode .
+
+pat:FineTune_TrainingInformsEvaluationEdge
+    a pair:PatternEdge ;
+    rdfs:label "fine tuning informs evaluation"@en ;
+    pair:sourcePatternNode pat:FineTune_TrainingStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:FineTune_EvaluationStepNode .
+
+pat:FineTune_EvaluationUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "fine tuning evaluation uses model"@en ;
+    pair:sourcePatternNode pat:FineTune_EvaluationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:FineTune_FineTunedModelNode .
+
+pat:FineTune_EvaluationProducesScoreEdge
+    a pair:PatternEdge ;
+    rdfs:label "fine tuning evaluation produces score"@en ;
+    pair:sourcePatternNode pat:FineTune_EvaluationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:FineTune_EvaluationScoreNode .

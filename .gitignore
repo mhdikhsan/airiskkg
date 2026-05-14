@@ -15,6 +15,7 @@ docs/
 
 
 # Keep folder structure, but avoid committing generated research outputs by default.
+outputs/*.ttl
 data/processed/**
 !data/processed/
 !data/processed/.gitkeep
