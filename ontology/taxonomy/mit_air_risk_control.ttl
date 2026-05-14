@@ -386,6 +386,32 @@ mitctrl:input-output-filtering
     nexus:lifecyclePhase "deployment" ;
     nexus:lifecyclePhase "operation" .
 
+mitctrl:redaction
+    a nexus:RiskControl ;
+    skos:prefLabel "Redaction" ;
+    skos:definition "Removing, masking, or transforming sensitive information before it enters model context, generated output, logs, or downstream flows." ;
+    skos:broader mitctrl:data-governance ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "technical" ;
+    nexus:lifecyclePhase "design-time" ;
+    nexus:lifecyclePhase "deployment" ;
+    nexus:lifecyclePhase "operation" .
+
+mitctrl:data-minimization
+    a nexus:RiskControl ;
+    skos:prefLabel "Data Minimization" ;
+    skos:definition "Limiting collection, storage, retrieval, prompt inclusion, and disclosure of data to what is necessary for the intended use." ;
+    skos:broader mitctrl:data-governance ;
+    skos:broader mitctrl:access-management ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:controlType "preventive" ;
+    nexus:lifecyclePhase "design-time" ;
+    nexus:lifecyclePhase "development" ;
+    nexus:lifecyclePhase "deployment" .
+
 mitctrl:data-curation-process
     a nexus:RiskControl ;
     skos:prefLabel "Data Curation Process" ;

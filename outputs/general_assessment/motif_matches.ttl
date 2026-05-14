@@ -1,0 +1,28 @@
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix pat: <http://w3id.org/airiskkg/patterns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrieveContext/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23PublicQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrievedContext> a pair:MotifMatch ;
+    rdfs:label "Vector-based information retrieval motif match"@en ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrieveContext/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23PublicQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrievedContext/binding/query>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrieveContext/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23PublicQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrievedContext/binding/retrieval-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrieveContext/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23PublicQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrievedContext/binding/retrieved-result>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrieveContext/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23PublicQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrievedContext/binding/vector-store> ;
+    pair:matchesMotif pat:VectorBasedInformationRetrievalMotif .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrieveContext/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23PublicQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrievedContext/binding/query> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_QueryNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/realworld-langchain-rag#PublicQuestion> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrieveContext/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23PublicQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrievedContext/binding/retrieval-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/realworld-langchain-rag#RetrieveContext> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrieveContext/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23PublicQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrievedContext/binding/retrieved-result> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/realworld-langchain-rag#RetrievedContext> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrieveContext/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23PublicQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Frealworld-langchain-rag%23RetrievedContext/binding/vector-store> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/realworld-langchain-rag#VectorStore> .
+

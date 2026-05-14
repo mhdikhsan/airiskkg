@@ -1,0 +1,62 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX beamr: <http://w3id.org/beam/risk#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate unbounded LLM or retrieval consumption"@en ;
+        dct:description "A query rewriting, retrieval, tool, or generation loop is represented without an explicit budget, rate, or loop control."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasInterpretedMechanism ?mechanism ;
+        pair:hasEvidenceElement ?loopSource ,
+            ?loopTarget ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    pat:UnboundedConsumptionInterpretation
+        pair:interpretedAsMechanism ?mechanism ;
+        pair:hasInterpretationCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    ?match
+        a pair:MotifMatch ;
+        pair:matchesMotif ?motif ;
+        pair:hasNodeBinding/pair:matchedElement ?loopSource ;
+        pair:hasNodeBinding/pair:matchedElement ?loopTarget .
+    VALUES ?motif {
+        pat:QueryRewritingMotif
+        pat:RetrievalAugmentedGenerationMotif
+    }
+    ?loopSource beam:inform+ ?loopTarget .
+    ?loopTarget beam:inform+ ?loopSource .
+    FILTER(STR(?loopSource) < STR(?loopTarget))
+
+    FILTER NOT EXISTS {
+        ?controlStep pair:playsRole/pair:subRoleOf* pair:RateLimitControlStep .
+        ?controlStep beam:inform* ?loopSource .
+    }
+    FILTER NOT EXISTS {
+        pat:UnboundedConsumptionInterpretation pair:suggestedControl ?implementedControl .
+        ?implementedControl beamr:associatedTo ?loopSource .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/unbounded-consumption"
+    )) AS ?riskFinding)
+}

@@ -19,8 +19,3 @@ IMPLEMENTATION_DIR = PATTERNS_DIR / "implementation"
 TAXONOMY_DIR = ONTOLOGY_DIR / "taxonomy"
 EXAMPLE_DIR = ONTOLOGY_DIR / "example"
 OUTPUTS_DIR = REPO_ROOT / "outputs"
-
-DATA_DIR = REPO_ROOT / "ontology" / "data"
-RAW_DATA_DIR = DATA_DIR / "raw"
-PROCESSED_DATA_DIR = DATA_DIR / "processed"
-NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"

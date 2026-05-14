@@ -57,7 +57,7 @@ nexus:RiskTaxonomyEntry a owl:Class ;
     rdfs:comment """
     A risk concept defined by an external taxonomy. This is not a concrete
     system-specific risk finding. Concrete findings should be represented as
-    beamr:Risk or rp:RiskFinding.
+    beamr:Risk or pair:RiskFinding.
     """ .
 
 nexus:Risk a owl:Class ;

@@ -1,45 +1,45 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-from rdflib import DCTERMS, RDF, RDFS, Graph, Namespace, URIRef
+from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 
 from airiskkg.paths import (
     CORE_DIR,
     EXAMPLE_DIR,
-    IMPLEMENTATION_DIR,
     OUTPUTS_DIR,
     PATTERNS_DIR,
     TAXONOMY_DIR,
+    REPO_ROOT,
 )
 
 
-RP = Namespace("http://w3id.org/beam/risk-pattern#")
+PAIR = Namespace("http://w3id.org/airiskkg/pair-ai#")
 PAT = Namespace("http://w3id.org/airiskkg/patterns#")
 BEAM = Namespace("http://w3id.org/beam/core#")
 BEAMR = Namespace("http://w3id.org/beam/risk#")
+OWASP = Namespace("http://w3id.org/airiskkg/taxonomy/owasp-llm#")
+ATLAS = Namespace("http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#")
+MIT = Namespace("http://w3id.org/airiskkg/taxonomy/mit-ai-risk#")
+MITCTRL = Namespace("http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#")
+NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 
 CORE_FILES = [
     CORE_DIR / "beam_core.ttl",
     CORE_DIR / "beam_core_risk.ttl",
     CORE_DIR / "imports.ttl",
-    CORE_DIR / "risk_pattern.ttl",
+    CORE_DIR / "pair_ai_pattern.ttl",
 ]
 
 PATTERN_FILES = [
     PATTERNS_DIR / "motif.ttl",
-    PATTERNS_DIR / "risk_interpretation.ttl",
+    PATTERNS_DIR / "risk_pattern_library.ttl",
 ]
 
-MATCHING_OQPS = [
-    IMPLEMENTATION_DIR / "match_vector_ir.rq",
-    IMPLEMENTATION_DIR / "match_llm_ir.rq",
-]
-
-INTERPRETATION_OQPS = [
-    IMPLEMENTATION_DIR / "risk_sensitive_retrieval.rq",
-    IMPLEMENTATION_DIR / "risk_ungrounded_llm.rq",
+DEFAULT_ARCHITECTURE_FILES = [
+    EXAMPLE_DIR / "uc6_onlim.ttl",
 ]
 
 
@@ -52,19 +52,25 @@ class AssessmentResult:
 
     @property
     def motif_match_count(self) -> int:
-        return len(set(self.motif_matches.subjects(RDF.type, RP.MotifMatch)))
+        return len(set(self.motif_matches.subjects(RDF.type, PAIR.MotifMatch)))
 
     @property
     def risk_finding_count(self) -> int:
-        return len(set(self.risk_findings.subjects(RDF.type, RP.RiskFinding)))
+        return len(set(self.risk_findings.subjects(RDF.type, PAIR.RiskFinding)))
 
 
 def _bind_prefixes(graph: Graph) -> Graph:
-    graph.bind("rp", RP)
+    graph.bind("pair", PAIR)
     graph.bind("pat", PAT)
     graph.bind("beam", BEAM)
     graph.bind("beamr", BEAMR)
+    graph.bind("owasp", OWASP)
+    graph.bind("atlas", ATLAS)
+    graph.bind("mit", MIT)
+    graph.bind("mitctrl", MITCTRL)
+    graph.bind("nexus", NEXUS)
     graph.bind("rdfs", RDFS)
+    graph.bind("skos", SKOS)
     graph.bind("dct", DCTERMS)
     return graph
 
@@ -73,7 +79,31 @@ def _load_turtle(graph: Graph, path: Path) -> None:
     graph.parse(path, format="turtle")
 
 
-def load_uc6_graph() -> Graph:
+def _as_path_list(paths: Path | str | Iterable[Path | str] | None) -> list[Path]:
+    if paths is None:
+        return list(DEFAULT_ARCHITECTURE_FILES)
+    if isinstance(paths, (str, Path)):
+        paths = [paths]
+
+    resolved_paths: list[Path] = []
+    for path_value in paths:
+        path = Path(path_value)
+        if not path.is_absolute():
+            path = REPO_ROOT / path
+        if not path.is_file():
+            raise FileNotFoundError(f"Architecture graph not found: {path}")
+        resolved_paths.append(path)
+    return resolved_paths
+
+
+def _resolve_output_dir(output_dir: Path | str) -> Path:
+    path = Path(output_dir)
+    if not path.is_absolute():
+        path = REPO_ROOT / path
+    return path
+
+
+def load_assessment_graph(architecture_paths: Path | str | Iterable[Path | str] | None = None) -> Graph:
     graph = _bind_prefixes(Graph())
     for path in CORE_FILES:
         _load_turtle(graph, path)
@@ -81,8 +111,13 @@ def load_uc6_graph() -> Graph:
         _load_turtle(graph, path)
     for path in sorted(TAXONOMY_DIR.glob("*.ttl")):
         _load_turtle(graph, path)
-    _load_turtle(graph, EXAMPLE_DIR / "uc6_onlim.ttl")
+    for path in _as_path_list(architecture_paths):
+        _load_turtle(graph, path)
     return graph
+
+
+def load_uc6_graph() -> Graph:
+    return load_assessment_graph(DEFAULT_ARCHITECTURE_FILES)
 
 
 def run_construct_query(graph: Graph, query_path: Path) -> Graph:
@@ -93,22 +128,38 @@ def run_construct_query(graph: Graph, query_path: Path) -> Graph:
     return constructed
 
 
+def implementation_paths_for_output_type(graph: Graph, output_type: URIRef) -> list[Path]:
+    paths: list[Path] = []
+    for implementation in graph.subjects(PAIR.producesOutputType, output_type):
+        path_value = graph.value(implementation, PAIR.implementationPath)
+        if path_value is None:
+            continue
+        path = REPO_ROOT / str(path_value)
+        paths.append(path)
+    return sorted(set(paths))
+
+
 def _merge(target: Graph, source: Graph) -> None:
     for triple in source:
         target.add(triple)
 
 
-def run_uc6_assessment(write_outputs: bool = True) -> AssessmentResult:
-    working_graph = load_uc6_graph()
+def run_assessment(
+    architecture_paths: Path | str | Iterable[Path | str] | None = None,
+    *,
+    write_outputs: bool = True,
+    output_dir: Path | str = OUTPUTS_DIR,
+) -> AssessmentResult:
+    working_graph = load_assessment_graph(architecture_paths)
     motif_matches = _bind_prefixes(Graph())
     risk_findings = _bind_prefixes(Graph())
 
-    for query_path in MATCHING_OQPS:
+    for query_path in implementation_paths_for_output_type(working_graph, PAIR.MotifMatch):
         constructed = run_construct_query(working_graph, query_path)
         _merge(motif_matches, constructed)
         _merge(working_graph, constructed)
 
-    for query_path in INTERPRETATION_OQPS:
+    for query_path in implementation_paths_for_output_type(working_graph, PAIR.RiskFinding):
         constructed = run_construct_query(working_graph, query_path)
         _merge(risk_findings, constructed)
         _merge(working_graph, constructed)
@@ -124,12 +175,17 @@ def run_uc6_assessment(write_outputs: bool = True) -> AssessmentResult:
     )
 
     if write_outputs:
-        OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-        motif_matches.serialize(OUTPUTS_DIR / "motif_matches.ttl", format="turtle")
-        risk_findings.serialize(OUTPUTS_DIR / "risk_findings.ttl", format="turtle")
-        combined_graph.serialize(OUTPUTS_DIR / "combined_assessment_graph.ttl", format="turtle")
+        output_path = _resolve_output_dir(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        motif_matches.serialize(output_path / "motif_matches.ttl", format="turtle")
+        risk_findings.serialize(output_path / "risk_findings.ttl", format="turtle")
+        combined_graph.serialize(output_path / "combined_assessment_graph.ttl", format="turtle")
 
     return result
+
+
+def run_uc6_assessment(write_outputs: bool = True) -> AssessmentResult:
+    return run_assessment(DEFAULT_ARCHITECTURE_FILES, write_outputs=write_outputs)
 
 
 def _label(graph: Graph, resource: URIRef) -> str:
@@ -141,15 +197,15 @@ def print_assessment_summary(result: AssessmentResult) -> None:
     print(f"Motif matches: {result.motif_match_count}")
     print(f"Risk findings: {result.risk_finding_count}")
 
-    for finding in sorted(result.risk_findings.subjects(RDF.type, RP.RiskFinding), key=str):
+    for finding in sorted(result.risk_findings.subjects(RDF.type, PAIR.RiskFinding), key=str):
         print(f"- {_label(result.risk_findings, finding)}")
-        evidence = sorted(result.risk_findings.objects(finding, RP.hasEvidenceElement), key=str)
+        evidence = sorted(result.risk_findings.objects(finding, PAIR.hasEvidenceElement), key=str)
         for element in evidence:
             print(f"  evidence: {_label(result.combined_graph, element)}")
 
 
 def main() -> None:
-    result = run_uc6_assessment(write_outputs=True)
+    result = run_assessment(write_outputs=True)
     print_assessment_summary(result)
 
 

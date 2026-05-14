@@ -1,58 +1,54 @@
 PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
-PREFIX rp:   <http://w3id.org/beam/risk-pattern#>
+PREFIX pair:   <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 CONSTRUCT {
     ?match
-        a rp:MotifMatch ;
+        a pair:MotifMatch ;
         rdfs:label "Vector-based information retrieval motif match"@en ;
-        rp:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
-        rp:hasNodeBinding ?queryBinding ,
+        pair:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
+        pair:hasNodeBinding ?queryBinding ,
             ?retrievalBinding ,
             ?vectorStoreBinding ,
             ?resultBinding .
 
     ?queryBinding
-        a rp:NodeBinding ;
-        rp:bindsPatternNode pat:VectorIR_QueryNode ;
-        rp:matchedElement ?query ;
-        rp:boundToElement ?query .
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:VectorIR_QueryNode ;
+        pair:matchedElement ?query .
 
     ?retrievalBinding
-        a rp:NodeBinding ;
-        rp:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
-        rp:matchedElement ?retrievalStep ;
-        rp:boundToElement ?retrievalStep .
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+        pair:matchedElement ?retrievalStep .
 
     ?vectorStoreBinding
-        a rp:NodeBinding ;
-        rp:bindsPatternNode pat:VectorIR_VectorStoreNode ;
-        rp:matchedElement ?vectorStore ;
-        rp:boundToElement ?vectorStore .
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+        pair:matchedElement ?vectorStore .
 
     ?resultBinding
-        a rp:NodeBinding ;
-        rp:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
-        rp:matchedElement ?retrievedResult ;
-        rp:boundToElement ?retrievedResult .
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+        pair:matchedElement ?retrievedResult .
 }
 WHERE {
     ?retrievalStep
         beam:use ?query ;
         beam:use ?vectorStore ;
         beam:produce ?retrievedResult ;
-        rp:playsRole ?retrievalRole .
-    ?retrievalRole rp:subRoleOf* rp:RetrievalStep .
+        pair:playsRole ?retrievalRole .
+    ?retrievalRole pair:subRoleOf* pair:RetrievalStep .
 
-    ?query rp:playsRole ?queryRole .
-    ?queryRole rp:subRoleOf* rp:UserInput .
+    ?query pair:playsRole ?queryRole .
+    ?queryRole pair:subRoleOf* pair:UserInput .
 
-    ?vectorStore rp:playsRole ?vectorStoreRole .
-    ?vectorStoreRole rp:subRoleOf* rp:VectorStore .
+    ?vectorStore pair:playsRole ?vectorStoreRole .
+    ?vectorStoreRole pair:subRoleOf* pair:VectorStore .
 
-    ?retrievedResult rp:playsRole ?retrievedRole .
-    ?retrievedRole rp:subRoleOf* rp:RetrievedContext .
+    ?retrievedResult pair:playsRole ?retrievedRole .
+    ?retrievedRole pair:subRoleOf* pair:RetrievedContext .
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/",

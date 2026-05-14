@@ -1,68 +1,77 @@
 PREFIX pat:     <http://w3id.org/airiskkg/patterns#>
-PREFIX rp:      <http://w3id.org/beam/risk-pattern#>
+PREFIX pair:      <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam:    <http://w3id.org/beam/core#>
-PREFIX atlas:   <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#>
-PREFIX mit:     <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#>
-PREFIX mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#>
-PREFIX owasp:   <http://w3id.org/airiskkg/taxonomy/owasp-llm#>
+PREFIX beamr:   <http://w3id.org/beam/risk#>
 PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX dct:     <http://purl.org/dc/terms/>
 
 CONSTRUCT {
     ?riskFinding
-        a rp:RiskFinding ;
+        a pair:RiskFinding ;
         rdfs:label "Candidate sensitive data retrieval exposure"@en ;
-        dct:description "A vector store containing sensitive information is used by a retrieval step, and retrieved content can flow toward user-facing output."@en ;
-        rp:generatedFromMatch ?match ;
-        rp:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
-        rp:hasInterpretedMechanism pat:SensitiveDataRetrievalExposure ;
-        rp:hasEvidenceElement ?query ,
+        dct:description "Sensitive retrieved context reaches an LLM generation step and user-facing output without a represented disclosure control."@en ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
+        pair:hasInterpretedMechanism ?mechanism ;
+        pair:hasEvidenceElement ?query ,
             ?retrievalStep ,
             ?vectorStore ,
             ?retrievedResult ,
+            ?generationStep ,
+            ?llm ,
             ?userFacingOutput ;
-        rp:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
-        rp:hasSuggestedControl ?suggestedControl ;
-        rp:findingStatus "candidate" .
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition ;
+        pair:findingStatus "candidate" .
 }
 WHERE {
+    pat:SensitiveDataRetrievalExposureInterpretation
+        pair:interpretedAsMechanism ?mechanism ;
+        pair:hasInterpretationCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
     ?match
-        a rp:MotifMatch ;
-        rp:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
-        rp:hasNodeBinding ?queryBinding ,
+        a pair:MotifMatch ;
+        pair:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
+        pair:hasNodeBinding ?queryBinding ,
             ?retrievalBinding ,
             ?vectorStoreBinding ,
             ?resultBinding .
 
     ?queryBinding
-        rp:bindsPatternNode pat:VectorIR_QueryNode ;
-        rp:matchedElement ?query .
+        pair:bindsPatternNode pat:VectorIR_QueryNode ;
+        pair:matchedElement ?query .
 
     ?retrievalBinding
-        rp:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
-        rp:matchedElement ?retrievalStep .
+        pair:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+        pair:matchedElement ?retrievalStep .
 
     ?vectorStoreBinding
-        rp:bindsPatternNode pat:VectorIR_VectorStoreNode ;
-        rp:matchedElement ?vectorStore .
+        pair:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+        pair:matchedElement ?vectorStore .
 
     ?resultBinding
-        rp:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
-        rp:matchedElement ?retrievedResult .
+        pair:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+        pair:matchedElement ?retrievedResult .
 
-    ?vectorStore rp:containsDataCategory/rp:subDataCategoryOf* rp:SensitiveInformation .
+    ?vectorStore pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
+    ?retrievedResult pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
 
-    {
-        ?retrievedResult rp:playsRole/rp:subRoleOf* rp:UserFacingOutput .
-        BIND(?retrievedResult AS ?userFacingOutput)
-    }
-    UNION
     {
         ?generationStep
             beam:use ?retrievedResult ;
+            beam:use ?llm ;
             beam:produce ?userFacingOutput ;
-            rp:playsRole/rp:subRoleOf* rp:GenerationStep .
-        ?userFacingOutput rp:playsRole/rp:subRoleOf* rp:UserFacingOutput .
+            pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+        ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+        ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
     }
     UNION
     {
@@ -71,22 +80,25 @@ WHERE {
             beam:produce ?enhancedContext .
         ?generationStep
             beam:use ?enhancedContext ;
+            beam:use ?llm ;
             beam:produce ?userFacingOutput ;
-            rp:playsRole/rp:subRoleOf* rp:GenerationStep .
-        ?userFacingOutput rp:playsRole/rp:subRoleOf* rp:UserFacingOutput .
+            pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+        ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+        ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
     }
 
-    VALUES ?riskTaxonomyEntry {
-        atlas:exposing-personal-information
-        owasp:llm02-sensitive-information-disclosure
-        mit:subdomain-2-1
-    }
-
-    VALUES ?suggestedControl {
-        mitctrl:privacy-control-for-user-data
-        mitctrl:retrieval-source-filtering
-        mitctrl:input-output-filtering
-        mitctrl:data-governance
+    FILTER NOT EXISTS {
+        pat:SensitiveDataRetrievalExposureInterpretation
+            pair:suggestedControl ?implementedDisclosureControl .
+        ?implementedDisclosureControl beamr:associatedTo ?controlledElement .
+        FILTER(?controlledElement IN (
+            ?retrievalStep,
+            ?vectorStore,
+            ?retrievedResult,
+            ?generationStep,
+            ?llm,
+            ?userFacingOutput
+        ))
     }
 
     BIND(IRI(CONCAT(

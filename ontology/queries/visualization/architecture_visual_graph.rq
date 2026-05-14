@@ -1,0 +1,39 @@
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX pair:   <http://w3id.org/airiskkg/pair-ai#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+CONSTRUCT {
+  ?s ?p ?o .
+  ?s rdfs:label ?sLabel .
+  ?o rdfs:label ?oLabel .
+  ?role rdfs:label ?roleLabel .
+  ?category rdfs:label ?categoryLabel .
+}
+WHERE {
+  VALUES ?p {
+    beam:hasResource
+    beam:hasProcess
+    beam:hasAgent
+    beam:contain
+    beam:use
+    beam:produce
+    beam:inform
+    beam:usedBy
+    pair:playsRole
+    pair:containsDataCategory
+  }
+
+  ?s ?p ?o .
+
+  OPTIONAL { ?s rdfs:label ?sLabel . }
+  OPTIONAL { ?o rdfs:label ?oLabel . }
+  OPTIONAL {
+    ?s pair:playsRole ?role .
+    ?role (rdfs:label|skos:prefLabel) ?roleLabel .
+  }
+  OPTIONAL {
+    ?s pair:containsDataCategory ?category .
+    ?category (rdfs:label|skos:prefLabel) ?categoryLabel .
+  }
+}

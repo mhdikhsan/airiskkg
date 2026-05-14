@@ -1,17 +1,13 @@
 import argparse
 
-from airiskkg.assessment_runner import print_assessment_summary, run_uc6_assessment
+from airiskkg.assessment_runner import print_assessment_summary, run_assessment, run_uc6_assessment
 from airiskkg.paths import (
-    DATA_DIR,
     DOCS_REFERENCE_DIR,
     EXAMPLE_DIR,
     IMPLEMENTATION_DIR,
-    NOTEBOOKS_DIR,
     ONTOLOGY_DIR,
     OUTPUTS_DIR,
     PATTERNS_DIR,
-    PROCESSED_DATA_DIR,
-    RAW_DATA_DIR,
     REPO_ROOT,
     TAXONOMY_DIR,
 )
@@ -19,7 +15,23 @@ from airiskkg.paths import (
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="AI Risk Knowledge Graph project utilities.")
-    parser.add_argument("command", choices=["info", "assess-uc6"], help="Command to run.")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    subparsers.add_parser("info", help="Print project paths.")
+
+    assess_parser = subparsers.add_parser("assess", help="Run PAIR-AI assessment for architecture graph TTL files.")
+    assess_parser.add_argument(
+        "architecture_graph",
+        nargs="*",
+        help="Architecture graph TTL file(s). Defaults to ontology/example/uc6_onlim.ttl.",
+    )
+    assess_parser.add_argument(
+        "--output-dir",
+        default=OUTPUTS_DIR,
+        help="Directory for motif_matches.ttl, risk_findings.ttl, and combined_assessment_graph.ttl.",
+    )
+
+    subparsers.add_parser("assess-uc6", help="Run the UC6 example assessment.")
     args = parser.parse_args()
 
     if args.command == "info":
@@ -33,10 +45,13 @@ def main() -> None:
         print(f"example: {EXAMPLE_DIR}")
         print(f"outputs: {OUTPUTS_DIR}")
         print(f"docs reference: {DOCS_REFERENCE_DIR}")
-        print(f"data: {DATA_DIR}")
-        print(f"raw: {RAW_DATA_DIR}")
-        print(f"processed: {PROCESSED_DATA_DIR}")
-        print(f"notebooks: {NOTEBOOKS_DIR}")
+    elif args.command == "assess":
+        result = run_assessment(
+            args.architecture_graph or None,
+            write_outputs=True,
+            output_dir=args.output_dir,
+        )
+        print_assessment_summary(result)
     elif args.command == "assess-uc6":
         result = run_uc6_assessment(write_outputs=True)
         print_assessment_summary(result)

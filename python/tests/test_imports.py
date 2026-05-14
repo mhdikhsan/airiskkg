@@ -1,5 +1,5 @@
-from airiskkg.paths import DATA_DIR
+from airiskkg.paths import ONTOLOGY_DIR
 
 
 def test_paths_import() -> None:
-    assert DATA_DIR.name == "data"
+    assert ONTOLOGY_DIR.name == "ontology"
