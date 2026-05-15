@@ -23,7 +23,7 @@ def main() -> None:
     assess_parser.add_argument(
         "architecture_graph",
         nargs="*",
-        help="Architecture graph TTL file(s). Defaults to ontology/example/uc6_onlim.ttl.",
+        help="Architecture graph TTL file(s). Defaults to ontology/example/uc6.ttl.",
     )
     assess_parser.add_argument(
         "--output-dir",

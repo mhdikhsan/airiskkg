@@ -1,4 +1,4 @@
-@prefix uc6:   <http://w3id.org/airiskkg/example/uc6-onlim#> .
+@prefix uc6:   <http://w3id.org/airiskkg/example/uc6#> .
 @prefix beam:  <http://w3id.org/beam/core#> .
 @prefix pair:    <http://w3id.org/airiskkg/pair-ai#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
@@ -6,16 +6,16 @@
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#> a owl:Ontology ;
-    dct:title "UC6 Onlim LLM-based IR Workflow"@en ;
+<http://w3id.org/airiskkg/example/uc6#> a owl:Ontology ;
+    dct:title "UC6 LLM-based IR Workflow"@en ;
     vann:preferredNamespacePrefix "uc6" ;
-    vann:preferredNamespaceUri "http://w3id.org/airiskkg/example/uc6-onlim#" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/example/uc6#" ;
     owl:imports <http://w3id.org/beam/core#> ,
         <http://w3id.org/airiskkg/pair-ai#> .
 
 uc6:UC6_System
     a beam:System ;
-    rdfs:label "Onlim public LLM-based IR workflow"@en ;
+    rdfs:label "RAG-based Chatbot System"@en ;
     beam:hasResource
         uc6:QuestionsAboutProduct ,
         uc6:EmbeddedQuestion ,

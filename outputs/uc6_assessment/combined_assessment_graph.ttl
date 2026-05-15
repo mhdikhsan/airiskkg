@@ -15,45 +15,45 @@
 @prefix vann: <http://purl.org/vocab/vann/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#> a owl:Ontology ;
-    dct:title "UC6 Onlim LLM-based IR Workflow"@en ;
+<http://w3id.org/airiskkg/example/uc6#> a owl:Ontology ;
+    dct:title "UC6 LLM-based IR Workflow"@en ;
     vann:preferredNamespacePrefix "uc6" ;
-    vann:preferredNamespaceUri "http://w3id.org/airiskkg/example/uc6-onlim#" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/example/uc6#" ;
     owl:imports pair:,
         beam: .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#UC6_System> a beam:System ;
-    rdfs:label "Onlim public LLM-based IR workflow"@en ;
-    beam:hasProcess <http://w3id.org/airiskkg/example/uc6-onlim#Embedding>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
-    beam:hasResource <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedQuestion>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#EventSummary>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#QueryTemplate>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#QuestionsAboutProduct>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ScoringAndQueryReformulationPrompt>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#SystemPromptTemplate> .
+<http://w3id.org/airiskkg/example/uc6#UC6_System> a beam:System ;
+    rdfs:label "RAG-based Chatbot System"@en ;
+    beam:hasProcess <http://w3id.org/airiskkg/example/uc6#Embedding>,
+        <http://w3id.org/airiskkg/example/uc6#LLMPrompting>,
+        <http://w3id.org/airiskkg/example/uc6#LlatrievalScoringAndQueryReformulation>,
+        <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> ;
+    beam:hasResource <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfoEnhanced>,
+        <http://w3id.org/airiskkg/example/uc6#EmbeddedQuestion>,
+        <http://w3id.org/airiskkg/example/uc6#EventSummary>,
+        <http://w3id.org/airiskkg/example/uc6#LLM>,
+        <http://w3id.org/airiskkg/example/uc6#ProductInformationVectorDB>,
+        <http://w3id.org/airiskkg/example/uc6#QueryTemplate>,
+        <http://w3id.org/airiskkg/example/uc6#QuestionsAboutProduct>,
+        <http://w3id.org/airiskkg/example/uc6#ReformulatedQuery>,
+        <http://w3id.org/airiskkg/example/uc6#ScoringAndQueryReformulationPrompt>,
+        <http://w3id.org/airiskkg/example/uc6#SystemPromptTemplate> .
 
-<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523LlatrievalScoringAndQueryReformulation%2Fquery-rewriting%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfo/prompt-injection> a pair:RiskFinding ;
+<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523LlatrievalScoringAndQueryReformulation%2Fquery-rewriting%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523EmbeddedProductInfo/prompt-injection> a pair:RiskFinding ;
     rdfs:label "Candidate prompt injection exposure"@en ;
     dct:description "Untrusted user or retrieved content can enter LLM prompt or generation context."@en ;
     pair:findingStatus "candidate" ;
     pair:generatedByMotif pat:QueryRewritingMotif ;
-    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> ;
+    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo> ;
     pair:hasCandidateRiskTaxonomyEntry atlas:prompt-injection,
         mit:subdomain-2-2,
         mit:subdomain-4-3,
         owasp:llm01-prompt-injection ;
-    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#EventSummary>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting> ;
+    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6#EventSummary>,
+        <http://w3id.org/airiskkg/example/uc6#LLM>,
+        <http://w3id.org/airiskkg/example/uc6#LLMPrompting> ;
     pair:hasInterpretedMechanism owasp:mechanism-instruction-override ;
     pair:hasSatisfiedCondition pat:PromptInjection_UntrustedPromptContextCondition,
         owasp:condition-retrieved-content-enters-generation-context,
@@ -66,20 +66,20 @@
         mitctrl:retrieval-source-filtering,
         mitctrl:threat-modelling .
 
-<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523LlatrievalScoringAndQueryReformulation%2Fquery-rewriting%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfo/unbounded-consumption> a pair:RiskFinding ;
+<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523LlatrievalScoringAndQueryReformulation%2Fquery-rewriting%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523EmbeddedProductInfo/unbounded-consumption> a pair:RiskFinding ;
     rdfs:label "Candidate unbounded LLM or retrieval consumption"@en ;
     dct:description "A query rewriting, retrieval, tool, or generation loop is represented without an explicit budget, rate, or loop control."@en ;
     pair:findingStatus "candidate" ;
     pair:generatedByMotif pat:QueryRewritingMotif ;
-    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> ;
+    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo> ;
     pair:hasCandidateRiskTaxonomyEntry atlas:impact-on-the-environment,
         atlas:redundant-actions-agentic,
         mit:subdomain-2-2,
         mit:subdomain-6-6,
         mit:subdomain-7-3,
         owasp:llm10-unbounded-consumption ;
-    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
+    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6#LlatrievalScoringAndQueryReformulation>,
+        <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> ;
     pair:hasInterpretedMechanism owasp:mechanism-unbounded-resource-consumption ;
     pair:hasSatisfiedCondition pat:UnboundedConsumption_UnboundedUseCondition,
         owasp:condition-unbounded-prompt-retrieval-tool-or-model-use ;
@@ -90,21 +90,21 @@
         mitctrl:post-deployment-behavior-monitoring,
         mitctrl:prompt-context-limiting .
 
-<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523LlatrievalScoringAndQueryReformulation%2Freranker%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfo%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfoEnhanced/prompt-injection> a pair:RiskFinding ;
+<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523LlatrievalScoringAndQueryReformulation%2Freranker%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523EmbeddedProductInfo%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523EmbeddedProductInfoEnhanced/prompt-injection> a pair:RiskFinding ;
     rdfs:label "Candidate prompt injection exposure"@en ;
     dct:description "Untrusted user or retrieved content can enter LLM prompt or generation context."@en ;
     pair:findingStatus "candidate" ;
     pair:generatedByMotif pat:RerankerMotif ;
-    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced> ;
+    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced> ;
     pair:hasCandidateRiskTaxonomyEntry atlas:prompt-injection,
         mit:subdomain-2-2,
         mit:subdomain-4-3,
         owasp:llm01-prompt-injection ;
-    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#EventSummary>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting> ;
+    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfoEnhanced>,
+        <http://w3id.org/airiskkg/example/uc6#EventSummary>,
+        <http://w3id.org/airiskkg/example/uc6#LLM>,
+        <http://w3id.org/airiskkg/example/uc6#LLMPrompting> ;
     pair:hasInterpretedMechanism owasp:mechanism-instruction-override ;
     pair:hasSatisfiedCondition pat:PromptInjection_UntrustedPromptContextCondition,
         owasp:condition-retrieved-content-enters-generation-context,
@@ -117,21 +117,21 @@
         mitctrl:retrieval-source-filtering,
         mitctrl:threat-modelling .
 
-<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523LlatrievalScoringAndQueryReformulation%2Freranker%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfo%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfoEnhanced/vector-embedding-weakness> a pair:RiskFinding ;
+<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523LlatrievalScoringAndQueryReformulation%2Freranker%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523EmbeddedProductInfo%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523EmbeddedProductInfoEnhanced/vector-embedding-weakness> a pair:RiskFinding ;
     rdfs:label "Candidate vector and embedding weakness"@en ;
     dct:description "A vector retrieval or embedding path is present and should be checked for retrieval filtering, ranking, provenance, and evaluation controls."@en ;
     pair:findingStatus "candidate" ;
     pair:generatedByMotif pat:RerankerMotif ;
-    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced> ;
+    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced> ;
     pair:hasCandidateRiskTaxonomyEntry atlas:poor-model-accuracy,
         atlas:prompt-injection,
         mit:subdomain-2-2,
         mit:subdomain-7-3,
         owasp:llm08-vector-and-embedding-weaknesses ;
-    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> ;
+    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfoEnhanced>,
+        <http://w3id.org/airiskkg/example/uc6#LLM>,
+        <http://w3id.org/airiskkg/example/uc6#LlatrievalScoringAndQueryReformulation> ;
     pair:hasInterpretedMechanism owasp:mechanism-vector-embedding-retrieval-weakness ;
     pair:hasSatisfiedCondition pat:VectorEmbeddingWeakness_RetrievalCondition,
         owasp:condition-retrieval-filtering-or-ranking-is-risk-relevant,
@@ -145,20 +145,20 @@
         mitctrl:retrieval-source-filtering,
         mitctrl:threat-modelling .
 
-<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ProductInformationRetrieval%2Fvector-ir%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfo/prompt-injection> a pair:RiskFinding ;
+<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523ProductInformationRetrieval%2Fvector-ir%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523EmbeddedProductInfo/prompt-injection> a pair:RiskFinding ;
     rdfs:label "Candidate prompt injection exposure"@en ;
     dct:description "Untrusted user or retrieved content can enter LLM prompt or generation context."@en ;
     pair:findingStatus "candidate" ;
     pair:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
-    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> ;
+    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo> ;
     pair:hasCandidateRiskTaxonomyEntry atlas:prompt-injection,
         mit:subdomain-2-2,
         mit:subdomain-4-3,
         owasp:llm01-prompt-injection ;
-    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#EventSummary>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting> ;
+    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6#EventSummary>,
+        <http://w3id.org/airiskkg/example/uc6#LLM>,
+        <http://w3id.org/airiskkg/example/uc6#LLMPrompting> ;
     pair:hasInterpretedMechanism owasp:mechanism-instruction-override ;
     pair:hasSatisfiedCondition pat:PromptInjection_UntrustedPromptContextCondition,
         owasp:condition-retrieved-content-enters-generation-context,
@@ -171,22 +171,22 @@
         mitctrl:retrieval-source-filtering,
         mitctrl:threat-modelling .
 
-<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ProductInformationRetrieval%2Fvector-ir%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfo/sensitive-data-retrieval-exposure> a pair:RiskFinding ;
+<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523ProductInformationRetrieval%2Fvector-ir%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523EmbeddedProductInfo/sensitive-data-retrieval-exposure> a pair:RiskFinding ;
     rdfs:label "Candidate sensitive data retrieval exposure"@en ;
     dct:description "Sensitive retrieved context reaches an LLM generation step and user-facing output without a represented disclosure control."@en ;
     pair:findingStatus "candidate" ;
     pair:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
-    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> ;
+    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo> ;
     pair:hasCandidateRiskTaxonomyEntry atlas:exposing-personal-information,
         mit:subdomain-2-1,
         owasp:llm02-sensitive-information-disclosure ;
-    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#EventSummary>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> ;
+    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6#EventSummary>,
+        <http://w3id.org/airiskkg/example/uc6#LLM>,
+        <http://w3id.org/airiskkg/example/uc6#LLMPrompting>,
+        <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval>,
+        <http://w3id.org/airiskkg/example/uc6#ProductInformationVectorDB>,
+        <http://w3id.org/airiskkg/example/uc6#ReformulatedQuery> ;
     pair:hasInterpretedMechanism owasp:mechanism-sensitive-data-propagation ;
     pair:hasSatisfiedCondition pat:SensitiveInfo_OutputExposureCondition,
         pat:SensitiveInfo_SensitiveContextCondition,
@@ -208,21 +208,21 @@
         mitctrl:redaction,
         mitctrl:retrieval-source-filtering .
 
-<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ProductInformationRetrieval%2Fvector-ir%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6-onlim%2523EmbeddedProductInfo/vector-embedding-weakness> a pair:RiskFinding ;
+<http://w3id.org/airiskkg/generated/risk-finding/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fgenerated%2Fmotif-match%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523ProductInformationRetrieval%2Fvector-ir%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523ReformulatedQuery%2Fhttp%253A%252F%252Fw3id.org%252Fairiskkg%252Fexample%252Fuc6%2523EmbeddedProductInfo/vector-embedding-weakness> a pair:RiskFinding ;
     rdfs:label "Candidate vector and embedding weakness"@en ;
     dct:description "A vector retrieval or embedding path is present and should be checked for retrieval filtering, ranking, provenance, and evaluation controls."@en ;
     pair:findingStatus "candidate" ;
     pair:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
-    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> ;
+    pair:generatedFromMatch <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo> ;
     pair:hasCandidateRiskTaxonomyEntry atlas:poor-model-accuracy,
         atlas:prompt-injection,
         mit:subdomain-2-2,
         mit:subdomain-7-3,
         owasp:llm08-vector-and-embedding-weaknesses ;
-    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> ;
+    pair:hasEvidenceElement <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval>,
+        <http://w3id.org/airiskkg/example/uc6#ProductInformationVectorDB>,
+        <http://w3id.org/airiskkg/example/uc6#ReformulatedQuery> ;
     pair:hasInterpretedMechanism owasp:mechanism-vector-embedding-retrieval-weakness ;
     pair:hasSatisfiedCondition pat:VectorEmbeddingWeakness_RetrievalCondition,
         owasp:condition-retrieval-filtering-or-ranking-is-risk-relevant,
@@ -1059,57 +1059,57 @@ beamr:originatedFrom a owl:ObjectProperty ;
     rdfs:domain beamr:RiskSource ;
     rdfs:range beam:Element .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/llm> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/llm> a pair:NodeBinding ;
     pair:bindsPatternNode pat:QueryRewrite_LLMNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#LLM> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#LLM> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieval-step> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/retrieval-step> a pair:NodeBinding ;
     pair:bindsPatternNode pat:QueryRewrite_RetrievalStepNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieved-context> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/retrieved-context> a pair:NodeBinding ;
     pair:bindsPatternNode pat:QueryRewrite_RetrievedContextNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/rewrite-step> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/rewrite-step> a pair:NodeBinding ;
     pair:bindsPatternNode pat:QueryRewrite_RewriteStepNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#LlatrievalScoringAndQueryReformulation> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/rewritten-query> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/rewritten-query> a pair:NodeBinding ;
     pair:bindsPatternNode pat:QueryRewrite_RewrittenQueryNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#ReformulatedQuery> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced/binding/candidate-set> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced/binding/candidate-set> a pair:NodeBinding ;
     pair:bindsPatternNode pat:Reranker_CandidateSetNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced/binding/reranked-context> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced/binding/reranked-context> a pair:NodeBinding ;
     pair:bindsPatternNode pat:Reranker_RankedContextNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfoEnhanced> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced/binding/reranker-model> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced/binding/reranker-model> a pair:NodeBinding ;
     pair:bindsPatternNode pat:Reranker_ModelNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#LLM> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#LLM> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced/binding/reranking-step> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced/binding/reranking-step> a pair:NodeBinding ;
     pair:bindsPatternNode pat:Reranker_RerankingStepNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#LlatrievalScoringAndQueryReformulation> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/query> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/query> a pair:NodeBinding ;
     pair:bindsPatternNode pat:VectorIR_QueryNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#ReformulatedQuery> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieval-step> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/retrieval-step> a pair:NodeBinding ;
     pair:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieved-result> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/retrieved-result> a pair:NodeBinding ;
     pair:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/vector-store> a pair:NodeBinding ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/vector-store> a pair:NodeBinding ;
     pair:bindsPatternNode pat:VectorIR_VectorStoreNode ;
-    pair:matchedElement <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB> .
+    pair:matchedElement <http://w3id.org/airiskkg/example/uc6#ProductInformationVectorDB> .
 
 pair:AIRiskPattern a owl:Class ;
     rdfs:label "AI Risk Pattern"@en .
@@ -2507,52 +2507,52 @@ beamr:Impact a owl:Class ;
     rdfs:subClassOf beamr:Consequence,
         <https://w3id.org/airoImpact> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#Embedding> a beam:Transform ;
+<http://w3id.org/airiskkg/example/uc6#Embedding> a beam:Transform ;
     rdfs:label "Embedding"@en ;
     pair:playsRole pair:EmbeddingStep ;
-    beam:inform <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
-    beam:produce <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedQuestion> ;
-    beam:use <http://w3id.org/airiskkg/example/uc6-onlim#QuestionsAboutProduct> .
+    beam:inform <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> ;
+    beam:produce <http://w3id.org/airiskkg/example/uc6#EmbeddedQuestion> ;
+    beam:use <http://w3id.org/airiskkg/example/uc6#QuestionsAboutProduct> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#QueryTemplate> a beam:Data ;
+<http://w3id.org/airiskkg/example/uc6#QueryTemplate> a beam:Data ;
     rdfs:label "Query template"@en ;
     pair:playsRole pair:PromptTemplate ;
-    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> .
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#QuestionsAboutProduct> a beam:Data ;
+<http://w3id.org/airiskkg/example/uc6#QuestionsAboutProduct> a beam:Data ;
     rdfs:label "Questions about product"@en ;
     pair:containsDataCategory pair:ExternalUserContent,
         pair:ProductInformation ;
     pair:playsRole pair:PublicUserInput ;
-    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#Embedding> .
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6#Embedding> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#ScoringAndQueryReformulationPrompt> a beam:Data ;
+<http://w3id.org/airiskkg/example/uc6#ScoringAndQueryReformulationPrompt> a beam:Data ;
     rdfs:label "Scoring and query reformulation prompt"@en ;
     pair:containsDataCategory pair:PromptInstruction ;
     pair:playsRole pair:PromptTemplate ;
-    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> .
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6#LlatrievalScoringAndQueryReformulation> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#SystemPromptTemplate> a beam:Data ;
+<http://w3id.org/airiskkg/example/uc6#SystemPromptTemplate> a beam:Data ;
     rdfs:label "System prompt template"@en ;
     pair:containsDataCategory pair:PromptInstruction ;
     pair:playsRole pair:SystemPrompt ;
-    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting> .
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6#LLMPrompting> .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> a pair:MotifMatch ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo> a pair:MotifMatch ;
     rdfs:label "Query rewriting motif match"@en ;
-    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/llm>,
-        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieval-step>,
-        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieved-context>,
-        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/rewrite-step>,
-        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/rewritten-query> ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/llm>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/retrieval-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/retrieved-context>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/rewrite-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/rewritten-query> ;
     pair:matchesMotif pat:QueryRewritingMotif .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced> a pair:MotifMatch ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced> a pair:MotifMatch ;
     rdfs:label "Reranker motif match"@en ;
-    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced/binding/candidate-set>,
-        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced/binding/reranked-context>,
-        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced/binding/reranker-model>,
-        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfoEnhanced/binding/reranking-step> ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced/binding/candidate-set>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced/binding/reranked-context>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced/binding/reranker-model>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23LlatrievalScoringAndQueryReformulation/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfoEnhanced/binding/reranking-step> ;
     pair:matchesMotif pat:RerankerMotif .
 
 pair:ExternalDependency a pair:PatternRole ;
@@ -3177,22 +3177,22 @@ beamr:RiskSource a owl:Class ;
     rdfs:subClassOf beamr:RiskConcept,
         <https://w3id.org/airoRiskSource> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedQuestion> a beam:Data ;
+<http://w3id.org/airiskkg/example/uc6#EmbeddedQuestion> a beam:Data ;
     rdfs:label "Embedded question"@en ;
     pair:containsDataCategory pair:ProductInformation ;
-    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> .
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#PrivateProductInformation> a pair:DataCategory ;
+<http://w3id.org/airiskkg/example/uc6#PrivateProductInformation> a pair:DataCategory ;
     rdfs:label "Private Product Information"@en ;
     pair:subDataCategoryOf pair:ProductInformation,
         pair:SensitiveInformation .
 
-<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo> a pair:MotifMatch ;
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo> a pair:MotifMatch ;
     rdfs:label "Vector-based information retrieval motif match"@en ;
-    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/query>,
-        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieval-step>,
-        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/retrieved-result>,
-        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6-onlim%23EmbeddedProductInfo/binding/vector-store> ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/query>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/retrieval-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/retrieved-result>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ProductInformationRetrieval/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23ReformulatedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fuc6%23EmbeddedProductInfo/binding/vector-store> ;
     pair:matchesMotif pat:VectorBasedInformationRetrievalMotif .
 
 pair:EmbeddingStep a pair:PatternRole ;
@@ -4019,12 +4019,12 @@ beamr:RiskConcept a owl:Class ;
     rdfs:label "Risk Concept" ;
     rdfs:subClassOf <https://w3id.org/airoRiskConcept> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB> a beam:Data ;
+<http://w3id.org/airiskkg/example/uc6#ProductInformationVectorDB> a beam:Data ;
     rdfs:label "Product information vector DB"@en ;
-    pair:containsDataCategory <http://w3id.org/airiskkg/example/uc6-onlim#PrivateProductInformation>,
+    pair:containsDataCategory <http://w3id.org/airiskkg/example/uc6#PrivateProductInformation>,
         pair:ProductInformation ;
     pair:playsRole pair:VectorStore ;
-    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> .
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> .
 
 pair:GenerativeModel a pair:PatternRole ;
     pair:subRoleOf pair:Model ;
@@ -4275,15 +4275,15 @@ beam: a owl:Ontology ;
     vann:preferredNamespaceUri "http://w3id.org/beam/core#" ;
     owl:versionInfo "0.1.0" .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced> a beam:Data ;
+<http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfoEnhanced> a beam:Data ;
     rdfs:label "Embedded product info enhanced"@en ;
-    pair:containsDataCategory <http://w3id.org/airiskkg/example/uc6-onlim#PrivateProductInformation>,
+    pair:containsDataCategory <http://w3id.org/airiskkg/example/uc6#PrivateProductInformation>,
         pair:ProductInformation,
         pair:UntrustedContent ;
     pair:playsRole pair:RetrievedResult ;
-    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting> .
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6#LLMPrompting> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#EventSummary> a beam:Data ;
+<http://w3id.org/airiskkg/example/uc6#EventSummary> a beam:Data ;
     rdfs:label "Event summary"@en ;
     pair:containsDataCategory pair:ProductInformation ;
     pair:playsRole pair:PublicUserFacingOutput .
@@ -4444,12 +4444,12 @@ beam:Train a owl:Class ;
     rdfs:label "Train" ;
     rdfs:subClassOf beam:Generate .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> a beam:Data ;
+<http://w3id.org/airiskkg/example/uc6#ReformulatedQuery> a beam:Data ;
     rdfs:label "Reformulated query"@en ;
     pair:containsDataCategory pair:ExternalUserContent,
         pair:ProductInformation ;
     pair:playsRole pair:PublicUserInput ;
-    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> .
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> .
 
 pair:RetrievedContext a pair:PatternRole ;
     skos:prefLabel "Retrieved Context"@en .
@@ -4609,26 +4609,26 @@ owasp:llm10-unbounded-consumption a nexus:Risk ;
         mit:subdomain-6-6,
         mit:subdomain-7-3 .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting> a beam:Transform ;
+<http://w3id.org/airiskkg/example/uc6#LLMPrompting> a beam:Transform ;
     rdfs:label "LLM prompting"@en ;
     pair:playsRole pair:GenerationStep,
         pair:PromptConstructionStep ;
-    beam:produce <http://w3id.org/airiskkg/example/uc6-onlim#EventSummary> ;
-    beam:use <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#SystemPromptTemplate> .
+    beam:produce <http://w3id.org/airiskkg/example/uc6#EventSummary> ;
+    beam:use <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfoEnhanced>,
+        <http://w3id.org/airiskkg/example/uc6#LLM>,
+        <http://w3id.org/airiskkg/example/uc6#SystemPromptTemplate> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> a beam:Transform ;
+<http://w3id.org/airiskkg/example/uc6#LlatrievalScoringAndQueryReformulation> a beam:Transform ;
     rdfs:label "Llatrieval scoring and query reformulation"@en ;
     pair:playsRole pair:QueryReformulationStep,
         pair:RerankingStep ;
-    beam:inform <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> ;
-    beam:produce <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfoEnhanced>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> ;
-    beam:use <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LLM>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ScoringAndQueryReformulationPrompt> .
+    beam:inform <http://w3id.org/airiskkg/example/uc6#LLMPrompting>,
+        <http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> ;
+    beam:produce <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfoEnhanced>,
+        <http://w3id.org/airiskkg/example/uc6#ReformulatedQuery> ;
+    beam:use <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo>,
+        <http://w3id.org/airiskkg/example/uc6#LLM>,
+        <http://w3id.org/airiskkg/example/uc6#ScoringAndQueryReformulationPrompt> .
 
 mit:subdomain-7-4 a nexus:Risk ;
     nexus:hasRelatedControl mitctrl:risk-disclosure,
@@ -4725,11 +4725,11 @@ owasp:llm06-excessive-agency a nexus:Risk ;
         mit:subdomain-5-2,
         mit:subdomain-7-4 .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#LLM> a beam:StatisticalModel ;
+<http://w3id.org/airiskkg/example/uc6#LLM> a beam:StatisticalModel ;
     rdfs:label "LLM"@en ;
     pair:playsRole pair:GenerativeModel ;
-    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#LLMPrompting>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> .
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6#LLMPrompting>,
+        <http://w3id.org/airiskkg/example/uc6#LlatrievalScoringAndQueryReformulation> .
 
 pair:UserInput a pair:PatternRole ;
     skos:prefLabel "User Input"@en .
@@ -4783,23 +4783,23 @@ beam:Transform a owl:Class ;
     rdfs:label "Transform" ;
     rdfs:subClassOf beam:Process .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> a beam:Data ;
+<http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo> a beam:Data ;
     rdfs:label "Embedded product info"@en ;
-    pair:containsDataCategory <http://w3id.org/airiskkg/example/uc6-onlim#PrivateProductInformation>,
+    pair:containsDataCategory <http://w3id.org/airiskkg/example/uc6#PrivateProductInformation>,
         pair:ProductInformation,
         pair:UntrustedContent ;
     pair:playsRole pair:RetrievedResult ;
-    beam:usedBy <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> .
+    beam:usedBy <http://w3id.org/airiskkg/example/uc6#LlatrievalScoringAndQueryReformulation> .
 
-<http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationRetrieval> a beam:Infer ;
+<http://w3id.org/airiskkg/example/uc6#ProductInformationRetrieval> a beam:Infer ;
     rdfs:label "Product information retrieval"@en ;
     pair:playsRole pair:RetrievalStep ;
-    beam:inform <http://w3id.org/airiskkg/example/uc6-onlim#LlatrievalScoringAndQueryReformulation> ;
-    beam:produce <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedProductInfo> ;
-    beam:use <http://w3id.org/airiskkg/example/uc6-onlim#EmbeddedQuestion>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ProductInformationVectorDB>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#QueryTemplate>,
-        <http://w3id.org/airiskkg/example/uc6-onlim#ReformulatedQuery> .
+    beam:inform <http://w3id.org/airiskkg/example/uc6#LlatrievalScoringAndQueryReformulation> ;
+    beam:produce <http://w3id.org/airiskkg/example/uc6#EmbeddedProductInfo> ;
+    beam:use <http://w3id.org/airiskkg/example/uc6#EmbeddedQuestion>,
+        <http://w3id.org/airiskkg/example/uc6#ProductInformationVectorDB>,
+        <http://w3id.org/airiskkg/example/uc6#QueryTemplate>,
+        <http://w3id.org/airiskkg/example/uc6#ReformulatedQuery> .
 
 pair:DataCategory a owl:Class ;
     rdfs:label "Data Category"@en ;

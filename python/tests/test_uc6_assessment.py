@@ -22,12 +22,12 @@ def test_uc6_graph_loads() -> None:
 
 
 def test_generic_assessment_graph_loads_architecture_path() -> None:
-    graph = load_assessment_graph(EXAMPLE_DIR / "uc6_onlim.ttl")
+    graph = load_assessment_graph(EXAMPLE_DIR / "uc6.ttl")
     assert len(graph) > 0
 
 
 def test_generic_assessment_runner_accepts_architecture_path() -> None:
-    result = run_assessment(EXAMPLE_DIR / "uc6_onlim.ttl", write_outputs=False)
+    result = run_assessment(EXAMPLE_DIR / "uc6.ttl", write_outputs=False)
     assert result.motif_match_count > 0
 
 
