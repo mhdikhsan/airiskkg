@@ -39,7 +39,7 @@ PATTERN_FILES = [
 ]
 
 DEFAULT_ARCHITECTURE_FILES = [
-    EXAMPLE_DIR / "uc6_onlim.ttl",
+    EXAMPLE_DIR / "uc6.ttl",
 ]
 
 
