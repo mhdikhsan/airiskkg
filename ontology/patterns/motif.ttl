@@ -9,12 +9,9 @@
 
 <http://w3id.org/airiskkg/patterns/motif-library#>
     a owl:Ontology ;
-    dct:title "LLM Application Motif Library"@en ;
+    dct:title "Architecuture Motif's Library"@en ;
     dct:description """
-    Reusable architecture motifs for PAIR-AI assessment of LLM-based
-    applications. The library combines method-specific motifs with selected
-    GenAI and ML system design patterns used to describe LLM application
-    architecture and lifecycle.
+    Reusable architecture motifs for PAIR-AI assessment.
     """@en ;
     dct:source
         <https://mercari.github.io/ml-system-design-pattern/> ,
@@ -24,258 +21,71 @@
 
 
 # Motif 1: Vector-based Information Retrieval
+# pat:VectorBasedInformationRetrievalMotif
+#     a pair:GraphMotif ;
+#     rdfs:label "Vector-based Information Retrieval Motif"@en ;
+#     dct:description """
+#     Architectural motif in which a retrieval process uses a vector store or
+#     knowledge source and produces a retrieved result or retrieved context.
+#     """@en ;
+#     pair:hasPatternNode
+#         pat:VectorIR_QueryNode ,
+#         pat:VectorIR_VectorStoreNode ,
+#         pat:VectorIR_RetrievalStepNode ,
+#         pat:VectorIR_RetrievedResultNode ;
+#     pair:hasPatternEdge
+#         pat:VectorIR_RetrievalUsesQueryEdge ,
+#         pat:VectorIR_RetrievalUsesVectorStoreEdge ,
+#         pat:VectorIR_RetrievalProducesResultEdge ;
+#     pair:implementedBy pat:VectorIR_MatchingOQP .
 
-pat:VectorBasedInformationRetrievalMotif
-    a pair:GraphMotif ;
-    rdfs:label "Vector-based Information Retrieval Motif"@en ;
-    dct:description """
-    Architectural motif in which a retrieval process uses a vector store or
-    knowledge source and produces a retrieved result or retrieved context.
-    """@en ;
-    pair:hasPatternNode
-        pat:VectorIR_QueryNode ,
-        pat:VectorIR_VectorStoreNode ,
-        pat:VectorIR_RetrievalStepNode ,
-        pat:VectorIR_RetrievedResultNode ;
-    pair:hasPatternEdge
-        pat:VectorIR_RetrievalUsesQueryEdge ,
-        pat:VectorIR_RetrievalUsesVectorStoreEdge ,
-        pat:VectorIR_RetrievalProducesResultEdge ;
-    pair:implementedBy pat:VectorIR_MatchingOQP .
+# pat:VectorIR_QueryNode
+#     a pair:PatternNode ;
+#     rdfs:label "Query node"@en ;
+#     pair:expectedClass beam:Data ;
+#     pair:expectedRole pair:UserInput .
 
-pat:VectorIR_QueryNode
-    a pair:PatternNode ;
-    rdfs:label "Query node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
+# pat:VectorIR_VectorStoreNode
+#     a pair:PatternNode ;
+#     rdfs:label "Vector store node"@en ;
+#     pair:expectedClass beam:Data ;
+#     pair:expectedRole pair:VectorStore .
 
-pat:VectorIR_VectorStoreNode
-    a pair:PatternNode ;
-    rdfs:label "Vector store node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:VectorStore .
+# pat:VectorIR_RetrievalStepNode
+#     a pair:PatternNode ;
+#     rdfs:label "Vector-based retrieval step node"@en ;
+#     pair:expectedClass beam:Process ;
+#     pair:expectedRole pair:RetrievalStep .
 
-pat:VectorIR_RetrievalStepNode
-    a pair:PatternNode ;
-    rdfs:label "Vector-based retrieval step node"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:RetrievalStep .
+# pat:VectorIR_RetrievedResultNode
+#     a pair:PatternNode ;
+#     rdfs:label "Retrieved result node"@en ;
+#     pair:expectedClass beam:Data ;
+#     pair:expectedRole pair:RetrievedContext .
 
-pat:VectorIR_RetrievedResultNode
-    a pair:PatternNode ;
-    rdfs:label "Retrieved result node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:RetrievedContext .
+# pat:VectorIR_RetrievalUsesQueryEdge
+#     a pair:PatternEdge ;
+#     rdfs:label "retrieval uses query"@en ;
+#     pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+#     pair:patternPredicate beam:use ;
+#     pair:targetPatternNode pat:VectorIR_QueryNode .
 
-pat:VectorIR_RetrievalUsesQueryEdge
-    a pair:PatternEdge ;
-    rdfs:label "retrieval uses query"@en ;
-    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:VectorIR_QueryNode .
+# pat:VectorIR_RetrievalUsesVectorStoreEdge
+#     a pair:PatternEdge ;
+#     rdfs:label "retrieval uses vector store"@en ;
+#     pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+#     pair:patternPredicate beam:use ;
+#     pair:targetPatternNode pat:VectorIR_VectorStoreNode .
 
-pat:VectorIR_RetrievalUsesVectorStoreEdge
-    a pair:PatternEdge ;
-    rdfs:label "retrieval uses vector store"@en ;
-    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:VectorIR_VectorStoreNode .
-
-pat:VectorIR_RetrievalProducesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "retrieval produces retrieved result"@en ;
-    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:VectorIR_RetrievedResultNode .
-
-# Motif 2: Direct LLM Answering
-
-pat:DirectLLMAnsweringMotif
-    a pair:GraphMotif ;
-    rdfs:label "Direct LLM Answering Motif"@en ;
-    skos:altLabel "Direct Prompting Motif"@en ;
-    dct:description """
-    Architectural motif in which a user query is handled directly by a
-    generative model step and produces a user-facing answer. 
-    """@en ;
-    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:hasPatternNode
-        pat:DirectLLM_QueryNode ,
-        pat:DirectLLM_ModelNode ,
-        pat:DirectLLM_GenerationStepNode ,
-        pat:DirectLLM_AnswerNode ;
-    pair:hasPatternEdge
-        pat:DirectLLM_GenerationUsesQueryEdge ,
-        pat:DirectLLM_GenerationUsesModelEdge ,
-        pat:DirectLLM_GenerationProducesAnswerEdge ;
-    pair:implementedBy pat:DirectLLM_MatchingOQP .
-
-pat:DirectLLM_QueryNode
-    a pair:PatternNode ;
-    rdfs:label "Query node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
-
-pat:DirectLLM_ModelNode
-    a pair:PatternNode ;
-    rdfs:label "LLM node"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:GenerativeModel .
-
-pat:DirectLLM_GenerationStepNode
-    a pair:PatternNode ;
-    rdfs:label "Direct LLM generation step node"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:GenerationStep .
-
-pat:DirectLLM_AnswerNode
-    a pair:PatternNode ;
-    rdfs:label "Answer node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserFacingOutput .
-
-pat:DirectLLM_GenerationUsesQueryEdge
-    a pair:PatternEdge ;
-    rdfs:label "direct LLM generation uses query"@en ;
-    pair:sourcePatternNode pat:DirectLLM_GenerationStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:DirectLLM_QueryNode .
-
-pat:DirectLLM_GenerationUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "direct LLM generation uses generative model"@en ;
-    pair:sourcePatternNode pat:DirectLLM_GenerationStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:DirectLLM_ModelNode .
-
-pat:DirectLLM_GenerationProducesAnswerEdge
-    a pair:PatternEdge ;
-    rdfs:label "direct LLM generation produces answer"@en ;
-    pair:sourcePatternNode pat:DirectLLM_GenerationStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:DirectLLM_AnswerNode .
-
-# Role vocabulary for ML system design motifs
-
-pat:PredictionRequestRole
-    a pair:PatternRole ;
-    skos:prefLabel "Prediction Request"@en .
-
-pat:PredictionResultRole
-    a pair:PatternRole ;
-    skos:prefLabel "Prediction Result"@en .
-
-pat:PredictionStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Prediction Step"@en .
-
-pat:PredictionQueueRole
-    a pair:PatternRole ;
-    skos:prefLabel "Prediction Queue"@en .
-
-pat:BatchDatasetRole
-    a pair:PatternRole ;
-    skos:prefLabel "Batch Dataset"@en .
-
-pat:JobSchedulerRole
-    a pair:PatternRole ;
-    skos:prefLabel "Job Scheduler"@en .
-
-pat:PreprocessingStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Preprocessing Step"@en .
-
-pat:PreprocessedDataRole
-    a pair:PatternRole ;
-    skos:prefLabel "Preprocessed Data"@en .
-
-pat:FastPredictionStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Fast Prediction Step"@en ;
-    pair:subRoleOf pat:PredictionStepRole .
-
-pat:SlowPredictionStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Slow Prediction Step"@en ;
-    pair:subRoleOf pat:PredictionStepRole .
-
-pat:TrainingDatasetRole
-    a pair:PatternRole ;
-    skos:prefLabel "Training Dataset"@en .
-
-pat:TrainingStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Training Step"@en .
-
-pat:TrainingPipelineRole
-    a pair:PatternRole ;
-    skos:prefLabel "Training Pipeline"@en .
-
-pat:EvaluationStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Evaluation Step"@en .
-
-pat:EvaluationResultRole
-    a pair:PatternRole ;
-    skos:prefLabel "Evaluation Result"@en .
-
-pat:ModelArtifactRole
-    a pair:PatternRole ;
-    skos:prefLabel "Model Artifact"@en ;
-    pair:subRoleOf pair:Model .
-
-pat:ModelRegistryRole
-    a pair:PatternRole ;
-    skos:prefLabel "Model Registry"@en .
-
-pat:ReleaseApprovalRole
-    a pair:PatternRole ;
-    skos:prefLabel "Release Approval"@en .
-
-pat:DeploymentStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Deployment Step"@en .
-
-pat:ServingImageRole
-    a pair:PatternRole ;
-    skos:prefLabel "Serving Image"@en .
-
-pat:PredictionLogRole
-    a pair:PatternRole ;
-    skos:prefLabel "Prediction Log"@en .
-
-pat:LoggingStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Logging Step"@en .
-
-pat:MonitoringStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Monitoring Step"@en .
-
-pat:MonitoringBaselineRole
-    a pair:PatternRole ;
-    skos:prefLabel "Monitoring Baseline"@en .
-
-pat:AlertRole
-    a pair:PatternRole ;
-    skos:prefLabel "Alert"@en .
-
-pat:ModelLoadStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Model Load Step"@en .
-
-pat:LoadedModelRole
-    a pair:PatternRole ;
-    skos:prefLabel "Loaded Model"@en ;
-    pair:subRoleOf pair:Model .
-
-pat:ImageBuildStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Image Build Step"@en .
-
+# pat:VectorIR_RetrievalProducesResultEdge
+#     a pair:PatternEdge ;
+#     rdfs:label "retrieval produces retrieved result"@en ;
+#     pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+#     pair:patternPredicate beam:produce ;
+#     pair:targetPatternNode pat:VectorIR_RetrievedResultNode .
 
 # ML system design motifs: serving patterns
-#
+
 pat:SynchronousPredictionMotif
     a pair:GraphMotif ;
     rdfs:label "Synchronous Prediction Motif"@en ;
@@ -297,7 +107,7 @@ pat:SyncPred_RequestNode
     a pair:PatternNode ;
     rdfs:label "Synchronous prediction request node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionRequestRole .
+    pair:expectedRole pair:PredictionRequest .
 
 pat:SyncPred_ModelNode
     a pair:PatternNode ;
@@ -309,13 +119,13 @@ pat:SyncPred_PredictionStepNode
     a pair:PatternNode ;
     rdfs:label "Synchronous prediction step node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:PredictionStepRole .
+    pair:expectedRole pair:PredictionStep .
 
 pat:SyncPred_ResultNode
     a pair:PatternNode ;
     rdfs:label "Synchronous prediction result node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionResultRole .
+    pair:expectedRole pair:PredictionResult .
 
 pat:SyncPred_DownstreamStepNode
     a pair:PatternNode ;
@@ -371,7 +181,7 @@ pat:AsyncPred_RequestNode
     a pair:PatternNode ;
     rdfs:label "Asynchronous prediction request node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionRequestRole .
+    pair:expectedRole pair:PredictionRequest .
 
 pat:AsyncPred_EnqueueStepNode
     a pair:PatternNode ;
@@ -382,19 +192,19 @@ pat:AsyncPred_QueueNode
     a pair:PatternNode ;
     rdfs:label "Prediction queue node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionQueueRole .
+    pair:expectedRole pair:PredictionQueue .
 
 pat:AsyncPred_PredictionStepNode
     a pair:PatternNode ;
     rdfs:label "Asynchronous prediction step node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:PredictionStepRole .
+    pair:expectedRole pair:PredictionStep .
 
 pat:AsyncPred_ResultNode
     a pair:PatternNode ;
     rdfs:label "Asynchronous prediction result node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionResultRole .
+    pair:expectedRole pair:PredictionResult .
 
 pat:AsyncPred_EnqueueUsesRequestEdge
     a pair:PatternEdge ;
@@ -445,13 +255,13 @@ pat:BatchPred_SchedulerNode
     a pair:PatternNode ;
     rdfs:label "Batch prediction scheduler node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:JobSchedulerRole .
+    pair:expectedRole pair:JobScheduler .
 
 pat:BatchPred_DatasetNode
     a pair:PatternNode ;
     rdfs:label "Batch prediction dataset node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:BatchDatasetRole .
+    pair:expectedRole pair:BatchDataset .
 
 pat:BatchPred_ModelNode
     a pair:PatternNode ;
@@ -463,13 +273,13 @@ pat:BatchPred_JobNode
     a pair:PatternNode ;
     rdfs:label "Batch prediction job node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:PredictionStepRole .
+    pair:expectedRole pair:PredictionStep .
 
 pat:BatchPred_ResultNode
     a pair:PatternNode ;
     rdfs:label "Batch prediction result node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionResultRole .
+    pair:expectedRole pair:PredictionResult .
 
 pat:BatchPred_SchedulerInformsJobEdge
     a pair:PatternEdge ;
@@ -523,19 +333,19 @@ pat:PrepPred_InputNode
     a pair:PatternNode ;
     rdfs:label "Raw prediction input node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionRequestRole .
+    pair:expectedRole pair:PredictionRequest .
 
 pat:PrepPred_PreprocessStepNode
     a pair:PatternNode ;
     rdfs:label "Preprocessing step node"@en ;
     pair:expectedClass beam:Transform ;
-    pair:expectedRole pat:PreprocessingStepRole .
+    pair:expectedRole pair:PreprocessingStep .
 
 pat:PrepPred_PreprocessedDataNode
     a pair:PatternNode ;
     rdfs:label "Preprocessed data node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PreprocessedDataRole .
+    pair:expectedRole pair:PreprocessedData .
 
 pat:PrepPred_ModelNode
     a pair:PatternNode ;
@@ -547,13 +357,13 @@ pat:PrepPred_PredictionStepNode
     a pair:PatternNode ;
     rdfs:label "Prep-pred prediction step node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:PredictionStepRole .
+    pair:expectedRole pair:PredictionStep .
 
 pat:PrepPred_ResultNode
     a pair:PatternNode ;
     rdfs:label "Prep-pred prediction result node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionResultRole .
+    pair:expectedRole pair:PredictionResult .
 
 pat:PrepPred_PreprocessUsesInputEdge
     a pair:PatternEdge ;
@@ -623,7 +433,7 @@ pat:MultiStage_RequestNode
     a pair:PatternNode ;
     rdfs:label "Multi-stage prediction request node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionRequestRole .
+    pair:expectedRole pair:PredictionRequest .
 
 pat:MultiStage_FastModelNode
     a pair:PatternNode ;
@@ -635,13 +445,13 @@ pat:MultiStage_FastPredictionStepNode
     a pair:PatternNode ;
     rdfs:label "Fast prediction step node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:FastPredictionStepRole .
+    pair:expectedRole pair:FastPredictionStep .
 
 pat:MultiStage_QuickResultNode
     a pair:PatternNode ;
     rdfs:label "Quick prediction result node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionResultRole .
+    pair:expectedRole pair:PredictionResult .
 
 pat:MultiStage_SlowModelNode
     a pair:PatternNode ;
@@ -653,13 +463,13 @@ pat:MultiStage_SlowPredictionStepNode
     a pair:PatternNode ;
     rdfs:label "Slow prediction step node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:SlowPredictionStepRole .
+    pair:expectedRole pair:SlowPredictionStep .
 
 pat:MultiStage_ImprovedResultNode
     a pair:PatternNode ;
     rdfs:label "Improved prediction result node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionResultRole .
+    pair:expectedRole pair:PredictionResult .
 
 pat:MultiStage_FastUsesRequestEdge
     a pair:PatternEdge ;
@@ -742,49 +552,49 @@ pat:BatchTrain_SchedulerNode
     a pair:PatternNode ;
     rdfs:label "Batch training scheduler node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:JobSchedulerRole .
+    pair:expectedRole pair:JobScheduler .
 
 pat:BatchTrain_DatasetNode
     a pair:PatternNode ;
     rdfs:label "Batch training dataset node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:TrainingDatasetRole .
+    pair:expectedRole pair:TrainingDataset .
 
 pat:BatchTrain_PreprocessStepNode
     a pair:PatternNode ;
     rdfs:label "Batch training preprocessing step node"@en ;
     pair:expectedClass beam:Transform ;
-    pair:expectedRole pat:PreprocessingStepRole .
+    pair:expectedRole pair:PreprocessingStep .
 
 pat:BatchTrain_TrainingDataNode
     a pair:PatternNode ;
     rdfs:label "Prepared training data node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PreprocessedDataRole .
+    pair:expectedRole pair:PreprocessedData .
 
 pat:BatchTrain_TrainingStepNode
     a pair:PatternNode ;
     rdfs:label "Batch training step node"@en ;
     pair:expectedClass beam:Train ;
-    pair:expectedRole pat:TrainingStepRole .
+    pair:expectedRole pair:TrainingStep .
 
 pat:BatchTrain_ModelArtifactNode
     a pair:PatternNode ;
     rdfs:label "Trained model artifact node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:ModelArtifactRole .
+    pair:expectedRole pair:ModelArtifact .
 
 pat:BatchTrain_EvaluationStepNode
     a pair:PatternNode ;
     rdfs:label "Model evaluation step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:EvaluationStepRole .
+    pair:expectedRole pair:EvaluationStep .
 
 pat:BatchTrain_EvaluationResultNode
     a pair:PatternNode ;
     rdfs:label "Model evaluation result node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:EvaluationResultRole .
+    pair:expectedRole pair:EvaluationResult .
 
 pat:BatchTrain_SchedulerInformsPreprocessEdge
     a pair:PatternEdge ;
@@ -876,43 +686,43 @@ pat:PipeTrain_SourceDataNode
     a pair:PatternNode ;
     rdfs:label "Pipeline training source data node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:TrainingDatasetRole .
+    pair:expectedRole pair:TrainingDataset .
 
 pat:PipeTrain_PreprocessJobNode
     a pair:PatternNode ;
     rdfs:label "Pipeline preprocessing job node"@en ;
     pair:expectedClass beam:Transform ;
-    pair:expectedRole pat:PreprocessingStepRole .
+    pair:expectedRole pair:PreprocessingStep .
 
 pat:PipeTrain_IntermediateDataNode
     a pair:PatternNode ;
     rdfs:label "Pipeline intermediate data node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PreprocessedDataRole .
+    pair:expectedRole pair:PreprocessedData .
 
 pat:PipeTrain_TrainingJobNode
     a pair:PatternNode ;
     rdfs:label "Pipeline training job node"@en ;
     pair:expectedClass beam:Train ;
-    pair:expectedRole pat:TrainingStepRole .
+    pair:expectedRole pair:TrainingStep .
 
 pat:PipeTrain_ModelArtifactNode
     a pair:PatternNode ;
     rdfs:label "Pipeline model artifact node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:ModelArtifactRole .
+    pair:expectedRole pair:ModelArtifact .
 
 pat:PipeTrain_EvaluationJobNode
     a pair:PatternNode ;
     rdfs:label "Pipeline evaluation job node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:EvaluationStepRole .
+    pair:expectedRole pair:EvaluationStep .
 
 pat:PipeTrain_EvaluationResultNode
     a pair:PatternNode ;
     rdfs:label "Pipeline evaluation result node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:EvaluationResultRole .
+    pair:expectedRole pair:EvaluationResult .
 
 pat:PipeTrain_PreprocessUsesSourceEdge
     a pair:PatternEdge ;
@@ -1001,43 +811,43 @@ pat:TrainServe_TrainingStepNode
     a pair:PatternNode ;
     rdfs:label "Train-then-serve training step node"@en ;
     pair:expectedClass beam:Train ;
-    pair:expectedRole pat:TrainingStepRole .
+    pair:expectedRole pair:TrainingStep .
 
 pat:TrainServe_CandidateModelNode
     a pair:PatternNode ;
     rdfs:label "Candidate model artifact node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:ModelArtifactRole .
+    pair:expectedRole pair:ModelArtifact .
 
 pat:TrainServe_EvaluationStepNode
     a pair:PatternNode ;
     rdfs:label "Pre-release evaluation step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:EvaluationStepRole .
+    pair:expectedRole pair:EvaluationStep .
 
 pat:TrainServe_ApprovalNode
     a pair:PatternNode ;
     rdfs:label "Release approval node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:ReleaseApprovalRole .
+    pair:expectedRole pair:ReleaseApproval .
 
 pat:TrainServe_ReleaseStepNode
     a pair:PatternNode ;
     rdfs:label "Manual release step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:DeploymentStepRole .
+    pair:expectedRole pair:DeploymentStep .
 
 pat:TrainServe_DeployedModelNode
     a pair:PatternNode ;
     rdfs:label "Deployed model node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:LoadedModelRole .
+    pair:expectedRole pair:LoadedModel .
 
 pat:TrainServe_PredictionStepNode
     a pair:PatternNode ;
     rdfs:label "Production prediction step node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:PredictionStepRole .
+    pair:expectedRole pair:PredictionStep .
 
 pat:TrainServe_TrainingProducesCandidateEdge
     a pair:PatternEdge ;
@@ -1125,31 +935,31 @@ pat:TrainToServe_TrainingPipelineNode
     a pair:PatternNode ;
     rdfs:label "Automated training pipeline node"@en ;
     pair:expectedClass beam:Train ;
-    pair:expectedRole pat:TrainingPipelineRole .
+    pair:expectedRole pair:TrainingPipeline .
 
 pat:TrainToServe_ModelArtifactNode
     a pair:PatternNode ;
     rdfs:label "Automatically trained model artifact node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:ModelArtifactRole .
+    pair:expectedRole pair:ModelArtifact .
 
 pat:TrainToServe_AutoDeploymentNode
     a pair:PatternNode ;
     rdfs:label "Automatic model deployment step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:DeploymentStepRole .
+    pair:expectedRole pair:DeploymentStep .
 
 pat:TrainToServe_DeployedModelNode
     a pair:PatternNode ;
     rdfs:label "Automatically deployed model node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:LoadedModelRole .
+    pair:expectedRole pair:LoadedModel .
 
 pat:TrainToServe_PredictionStepNode
     a pair:PatternNode ;
     rdfs:label "Training-to-serving prediction step node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:PredictionStepRole .
+    pair:expectedRole pair:PredictionStep .
 
 pat:TrainToServe_TrainingProducesModelEdge
     a pair:PatternEdge ;
@@ -1218,31 +1028,31 @@ pat:PredLog_RequestNode
     a pair:PatternNode ;
     rdfs:label "Logged prediction request node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionRequestRole .
+    pair:expectedRole pair:PredictionRequest .
 
 pat:PredLog_ResultNode
     a pair:PatternNode ;
     rdfs:label "Logged prediction result node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionResultRole .
+    pair:expectedRole pair:PredictionResult .
 
 pat:PredLog_PredictionStepNode
     a pair:PatternNode ;
     rdfs:label "Logged prediction step node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:PredictionStepRole .
+    pair:expectedRole pair:PredictionStep .
 
 pat:PredLog_LoggingStepNode
     a pair:PatternNode ;
     rdfs:label "Prediction logging step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:LoggingStepRole .
+    pair:expectedRole pair:LoggingStep .
 
 pat:PredLog_LogRecordNode
     a pair:PatternNode ;
     rdfs:label "Prediction log record node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionLogRole .
+    pair:expectedRole pair:PredictionLog .
 
 pat:PredLog_PredictionUsesRequestEdge
     a pair:PatternEdge ;
@@ -1305,25 +1115,25 @@ pat:PredMon_LogNode
     a pair:PatternNode ;
     rdfs:label "Prediction monitoring log node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:PredictionLogRole .
+    pair:expectedRole pair:PredictionLog .
 
 pat:PredMon_BaselineNode
     a pair:PatternNode ;
     rdfs:label "Prediction monitoring baseline node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:MonitoringBaselineRole .
+    pair:expectedRole pair:MonitoringBaseline .
 
 pat:PredMon_MonitoringStepNode
     a pair:PatternNode ;
     rdfs:label "Prediction monitoring step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:MonitoringStepRole .
+    pair:expectedRole pair:MonitoringStep .
 
 pat:PredMon_AlertNode
     a pair:PatternNode ;
     rdfs:label "Prediction monitoring alert node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:AlertRole .
+    pair:expectedRole pair:Alert .
 
 pat:PredMon_MonitoringUsesLogEdge
     a pair:PatternEdge ;
@@ -1368,31 +1178,31 @@ pat:ModelLoad_ServerImageNode
     a pair:PatternNode ;
     rdfs:label "Reusable prediction server image node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:ServingImageRole .
+    pair:expectedRole pair:ServingImage .
 
 pat:ModelLoad_ModelArtifactNode
     a pair:PatternNode ;
     rdfs:label "Separately managed model artifact node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:ModelArtifactRole .
+    pair:expectedRole pair:ModelArtifact .
 
 pat:ModelLoad_LoadStepNode
     a pair:PatternNode ;
     rdfs:label "Model load step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:ModelLoadStepRole .
+    pair:expectedRole pair:ModelLoadStep .
 
 pat:ModelLoad_LoadedModelNode
     a pair:PatternNode ;
     rdfs:label "Loaded model node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:LoadedModelRole .
+    pair:expectedRole pair:LoadedModel .
 
 pat:ModelLoad_PredictionStepNode
     a pair:PatternNode ;
     rdfs:label "Model-load prediction step node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:PredictionStepRole .
+    pair:expectedRole pair:PredictionStep .
 
 pat:ModelLoad_LoadUsesImageEdge
     a pair:PatternEdge ;
@@ -1453,37 +1263,37 @@ pat:ModelImage_TrainingStepNode
     a pair:PatternNode ;
     rdfs:label "Model-in-image training step node"@en ;
     pair:expectedClass beam:Train ;
-    pair:expectedRole pat:TrainingStepRole .
+    pair:expectedRole pair:TrainingStep .
 
 pat:ModelImage_ModelArtifactNode
     a pair:PatternNode ;
     rdfs:label "Model-in-image model artifact node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:ModelArtifactRole .
+    pair:expectedRole pair:ModelArtifact .
 
 pat:ModelImage_ImageBuildStepNode
     a pair:PatternNode ;
     rdfs:label "Serving image build step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:ImageBuildStepRole .
+    pair:expectedRole pair:ImageBuildStep .
 
 pat:ModelImage_ServingImageNode
     a pair:PatternNode ;
     rdfs:label "Serving image containing model node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:ServingImageRole .
+    pair:expectedRole pair:ServingImage .
 
 pat:ModelImage_DeploymentStepNode
     a pair:PatternNode ;
     rdfs:label "Model-in-image deployment step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:DeploymentStepRole .
+    pair:expectedRole pair:DeploymentStep .
 
 pat:ModelImage_PredictionStepNode
     a pair:PatternNode ;
     rdfs:label "Model-in-image prediction step node"@en ;
     pair:expectedClass beam:Infer ;
-    pair:expectedRole pat:PredictionStepRole .
+    pair:expectedRole pair:PredictionStep .
 
 pat:ModelImage_TrainingProducesModelEdge
     a pair:PatternEdge ;
@@ -1527,142 +1337,71 @@ pat:ModelImage_DeploymentInformsPredictionEdge
     pair:patternPredicate beam:inform ;
     pair:targetPatternNode pat:ModelImage_PredictionStepNode .
 
-
-# Role vocabulary for GenAI product motifs
-
-pat:FoundationLLMRole
-    a pair:PatternRole ;
-    skos:prefLabel "Foundation LLM"@en ;
-    pair:subRoleOf pair:GenerativeModel .
-
-pat:LLMResponseRole
-    a pair:PatternRole ;
-    skos:prefLabel "LLM Response"@en ;
-    pair:subRoleOf pair:UserFacingOutput .
-
-pat:EvalDatasetRole
-    a pair:PatternRole ;
-    skos:prefLabel "Evaluation Dataset"@en .
-
-pat:ExpectedOutputRole
-    a pair:PatternRole ;
-    skos:prefLabel "Expected Output"@en .
-
-pat:ScoringStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Scoring Step"@en .
-
-pat:JudgeModelRole
-    a pair:PatternRole ;
-    skos:prefLabel "Judge Model"@en ;
-    pair:subRoleOf pair:GenerativeModel .
-
-pat:EvaluationScoreRole
-    a pair:PatternRole ;
-    skos:prefLabel "Evaluation Score"@en .
-
-pat:SourceDocumentRole
-    a pair:PatternRole ;
-    skos:prefLabel "Source Document"@en ;
-    pair:subRoleOf pair:KnowledgeSource .
-
-pat:ChunkingStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Chunking Step"@en .
-
-pat:DocumentChunkRole
-    a pair:PatternRole ;
-    skos:prefLabel "Document Chunk"@en ;
-    pair:subRoleOf pair:KnowledgeSource .
-
-pat:EmbeddingModelRole
-    a pair:PatternRole ;
-    skos:prefLabel "Embedding Model"@en ;
-    pair:subRoleOf pair:Model .
-
-pat:EmbeddingVectorRole
-    a pair:PatternRole ;
-    skos:prefLabel "Embedding Vector"@en .
-
-pat:VectorIndexRole
-    a pair:PatternRole ;
-    skos:prefLabel "Vector Index"@en ;
-    pair:subRoleOf pair:VectorStore .
-
-pat:VectorSearchStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Vector Search Step"@en ;
-    pair:subRoleOf pair:RetrievalStep .
-
-pat:KeywordIndexRole
-    a pair:PatternRole ;
-    skos:prefLabel "Keyword Index"@en ;
-    pair:subRoleOf pair:KnowledgeSource .
-
-pat:KeywordSearchStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Keyword Search Step"@en ;
-    pair:subRoleOf pair:RetrievalStep .
-
-pat:RetrievedCandidateSetRole
-    a pair:PatternRole ;
-    skos:prefLabel "Retrieved Candidate Set"@en ;
-    pair:subRoleOf pair:RetrievedContext .
-
-pat:AggregationStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Aggregation Step"@en .
-
-pat:RewrittenQueryRole
-    a pair:PatternRole ;
-    skos:prefLabel "Rewritten Query"@en ;
-    pair:subRoleOf pair:UserInput .
-
-pat:RerankedContextRole
-    a pair:PatternRole ;
-    skos:prefLabel "Reranked Context"@en ;
-    pair:subRoleOf pair:RetrievedContext .
-
-pat:GuardrailStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Guardrail Step"@en .
-
-pat:InputGuardrailStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Input Guardrail Step"@en ;
-    pair:subRoleOf pat:GuardrailStepRole .
-
-pat:OutputGuardrailStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Output Guardrail Step"@en ;
-    pair:subRoleOf pat:GuardrailStepRole .
-
-pat:GuardrailDecisionRole
-    a pair:PatternRole ;
-    skos:prefLabel "Guardrail Decision"@en .
-
-pat:SanitizedOutputRole
-    a pair:PatternRole ;
-    skos:prefLabel "Sanitized Output"@en ;
-    pair:subRoleOf pair:UserFacingOutput .
-
-pat:FineTuningDatasetRole
-    a pair:PatternRole ;
-    skos:prefLabel "Fine-Tuning Dataset"@en ;
-    pair:subRoleOf pat:TrainingDatasetRole .
-
-pat:FineTuningStepRole
-    a pair:PatternRole ;
-    skos:prefLabel "Fine-Tuning Step"@en ;
-    pair:subRoleOf pat:TrainingStepRole .
-
-pat:FineTunedModelRole
-    a pair:PatternRole ;
-    skos:prefLabel "Fine-Tuned Model"@en ;
-    pair:subRoleOf pair:GenerativeModel .
-
-
 # GenAI product motifs 
+
+pat:DirectPromptingMotif
+    a pair:GraphMotif ;
+    rdfs:label "Direct Prompting Motif"@en ;   
+    dct:description """
+    Architectural motif in which a user query is handled directly by a
+    generative model step and produces a user-facing answer. 
+    """@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:DP_QueryNode ,
+        pat:DP_ModelNode ,
+        pat:DP_GenerationStepNode ,
+        pat:DP_AnswerNode ;
+    pair:hasPatternEdge
+        pat:DP_GenerationUsesQueryEdge ,
+        pat:DP_GenerationUsesModelEdge ,
+        pat:DP_GenerationProducesAnswerEdge ;
+    pair:implementedBy pat:DP_MatchingOQP .
+
+pat:DP_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "Query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:DP_ModelNode
+    a pair:PatternNode ;
+    rdfs:label "LLM node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:GenerativeModel .
+
+pat:DP_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Direct LLM generation step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pair:GenerationStep .
+
+pat:DP_AnswerNode
+    a pair:PatternNode ;
+    rdfs:label "Answer node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserFacingOutput .
+
+pat:DP_GenerationUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "direct LLM generation uses query"@en ;
+    pair:sourcePatternNode pat:DP_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:DP_QueryNode .
+
+pat:DP_GenerationUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "direct LLM generation uses generative model"@en ;
+    pair:sourcePatternNode pat:DP_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:DP_ModelNode .
+
+pat:DP_GenerationProducesAnswerEdge
+    a pair:PatternEdge ;
+    rdfs:label "direct LLM generation produces answer"@en ;
+    pair:sourcePatternNode pat:DP_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:DP_AnswerNode .
 
 pat:EvalsMotif
     a pair:GraphMotif ;
@@ -1695,13 +1434,13 @@ pat:Evals_ModelOutputNode
     a pair:PatternNode ;
     rdfs:label "Evaluation model output node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:LLMResponseRole .
+    pair:expectedRole pair:LLMResponse .
 
 pat:Evals_ExpectedOutputNode
     a pair:PatternNode ;
     rdfs:label "Expected output node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:ExpectedOutputRole .
+    pair:expectedRole pair:ExpectedOutput .
 
 pat:Evals_ContextNode
     a pair:PatternNode ;
@@ -1713,19 +1452,19 @@ pat:Evals_ScorerNode
     a pair:PatternNode ;
     rdfs:label "Evaluation scorer node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:ScoringStepRole .
+    pair:expectedRole pair:ScoringStep .
 
 pat:Evals_JudgeModelNode
     a pair:PatternNode ;
     rdfs:label "Judge model node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:JudgeModelRole .
+    pair:expectedRole pair:JudgeModel .
 
 pat:Evals_ScoreNode
     a pair:PatternNode ;
     rdfs:label "Evaluation score node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:EvaluationScoreRole .
+    pair:expectedRole pair:EvaluationScore .
 
 pat:Evals_ScorerUsesInputEdge
     a pair:PatternEdge ;
@@ -1795,25 +1534,25 @@ pat:Embedding_SourceDocumentNode
     a pair:PatternNode ;
     rdfs:label "Embedding source document node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:SourceDocumentRole .
+    pair:expectedRole pair:SourceDocument .
 
 pat:Embedding_ChunkingStepNode
     a pair:PatternNode ;
     rdfs:label "Document chunking step node"@en ;
     pair:expectedClass beam:Transform ;
-    pair:expectedRole pat:ChunkingStepRole .
+    pair:expectedRole pair:ChunkingStep .
 
 pat:Embedding_DocumentChunkNode
     a pair:PatternNode ;
     rdfs:label "Document chunk node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:DocumentChunkRole .
+    pair:expectedRole pair:DocumentChunk .
 
 pat:Embedding_ModelNode
     a pair:PatternNode ;
     rdfs:label "Embedding model node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:EmbeddingModelRole .
+    pair:expectedRole pair:EmbeddingModel .
 
 pat:Embedding_GenerationStepNode
     a pair:PatternNode ;
@@ -1825,13 +1564,13 @@ pat:Embedding_VectorNode
     a pair:PatternNode ;
     rdfs:label "Embedding vector node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:EmbeddingVectorRole .
+    pair:expectedRole pair:EmbeddingVector .
 
 pat:Embedding_VectorIndexNode
     a pair:PatternNode ;
     rdfs:label "Vector index node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:VectorIndexRole .
+    pair:expectedRole pair:VectorIndex .
 
 pat:Embedding_ChunkingUsesSourceEdge
     a pair:PatternEdge ;
@@ -1920,7 +1659,7 @@ pat:RAG_EmbeddingModelNode
     a pair:PatternNode ;
     rdfs:label "RAG embedding model node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:EmbeddingModelRole .
+    pair:expectedRole pair:EmbeddingModel .
 
 pat:RAG_QueryEmbeddingStepNode
     a pair:PatternNode ;
@@ -1932,13 +1671,13 @@ pat:RAG_QueryVectorNode
     a pair:PatternNode ;
     rdfs:label "RAG query vector node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:EmbeddingVectorRole .
+    pair:expectedRole pair:EmbeddingVector .
 
 pat:RAG_VectorIndexNode
     a pair:PatternNode ;
     rdfs:label "RAG vector index node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:VectorIndexRole .
+    pair:expectedRole pair:VectorIndex .
 
 pat:RAG_RetrievalStepNode
     a pair:PatternNode ;
@@ -1974,7 +1713,7 @@ pat:RAG_LLMNode
     a pair:PatternNode ;
     rdfs:label "RAG foundation LLM node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:FoundationLLMRole .
+    pair:expectedRole pair:FoundationLLM .
 
 pat:RAG_GenerationStepNode
     a pair:PatternNode ;
@@ -1986,7 +1725,7 @@ pat:RAG_ResponseNode
     a pair:PatternNode ;
     rdfs:label "RAG response node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:LLMResponseRole .
+    pair:expectedRole pair:LLMResponse .
 
 pat:RAG_QueryEmbeddingUsesQueryEdge
     a pair:PatternEdge ;
@@ -2111,37 +1850,37 @@ pat:Hybrid_VectorIndexNode
     a pair:PatternNode ;
     rdfs:label "Hybrid retriever vector index node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:VectorIndexRole .
+    pair:expectedRole pair:VectorIndex .
 
 pat:Hybrid_KeywordIndexNode
     a pair:PatternNode ;
     rdfs:label "Hybrid retriever keyword index node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:KeywordIndexRole .
+    pair:expectedRole pair:KeywordIndex .
 
 pat:Hybrid_VectorSearchNode
     a pair:PatternNode ;
     rdfs:label "Vector search step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:VectorSearchStepRole .
+    pair:expectedRole pair:VectorSearchStep .
 
 pat:Hybrid_KeywordSearchNode
     a pair:PatternNode ;
     rdfs:label "Keyword search step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:KeywordSearchStepRole .
+    pair:expectedRole pair:KeywordSearchStep .
 
 pat:Hybrid_AggregationNode
     a pair:PatternNode ;
     rdfs:label "Hybrid retriever aggregation step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:AggregationStepRole .
+    pair:expectedRole pair:AggregationStep .
 
 pat:Hybrid_CandidateSetNode
     a pair:PatternNode ;
     rdfs:label "Hybrid retrieved candidate set node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:RetrievedCandidateSetRole .
+    pair:expectedRole pair:RetrievedCandidateSet .
 
 pat:Hybrid_VectorSearchUsesQueryEdge
     a pair:PatternEdge ;
@@ -2223,7 +1962,7 @@ pat:QueryRewrite_LLMNode
     a pair:PatternNode ;
     rdfs:label "Query rewriting LLM node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:FoundationLLMRole .
+    pair:expectedRole pair:FoundationLLM .
 
 pat:QueryRewrite_RewriteStepNode
     a pair:PatternNode ;
@@ -2235,7 +1974,7 @@ pat:QueryRewrite_RewrittenQueryNode
     a pair:PatternNode ;
     rdfs:label "Rewritten query node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:RewrittenQueryRole .
+    pair:expectedRole pair:RewrittenQuery .
 
 pat:QueryRewrite_RetrievalStepNode
     a pair:PatternNode ;
@@ -2319,7 +2058,7 @@ pat:Reranker_CandidateSetNode
     a pair:PatternNode ;
     rdfs:label "Reranker candidate context set node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:RetrievedCandidateSetRole .
+    pair:expectedRole pair:RetrievedCandidateSet .
 
 pat:Reranker_ModelNode
     a pair:PatternNode ;
@@ -2337,7 +2076,7 @@ pat:Reranker_RankedContextNode
     a pair:PatternNode ;
     rdfs:label "Reranked context node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:RerankedContextRole .
+    pair:expectedRole pair:RerankedContext .
 
 pat:Reranker_RerankingUsesQueryEdge
     a pair:PatternEdge ;
@@ -2402,19 +2141,19 @@ pat:Guardrails_InputGuardrailStepNode
     a pair:PatternNode ;
     rdfs:label "Input guardrail step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:InputGuardrailStepRole .
+    pair:expectedRole pair:InputGuardrailStep .
 
 pat:Guardrails_InputDecisionNode
     a pair:PatternNode ;
     rdfs:label "Input guardrail decision node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:GuardrailDecisionRole .
+    pair:expectedRole pair:GuardrailDecision .
 
 pat:Guardrails_LLMNode
     a pair:PatternNode ;
     rdfs:label "Guarded LLM node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:FoundationLLMRole .
+    pair:expectedRole pair:FoundationLLM .
 
 pat:Guardrails_GenerationStepNode
     a pair:PatternNode ;
@@ -2426,19 +2165,19 @@ pat:Guardrails_RawResponseNode
     a pair:PatternNode ;
     rdfs:label "Raw LLM response node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:LLMResponseRole .
+    pair:expectedRole pair:LLMResponse .
 
 pat:Guardrails_OutputGuardrailStepNode
     a pair:PatternNode ;
     rdfs:label "Output guardrail step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:OutputGuardrailStepRole .
+    pair:expectedRole pair:OutputGuardrailStep .
 
 pat:Guardrails_SanitizedResponseNode
     a pair:PatternNode ;
     rdfs:label "Sanitized response node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:SanitizedOutputRole .
+    pair:expectedRole pair:SanitizedOutput .
 
 pat:Guardrails_InputGuardrailUsesPromptEdge
     a pair:PatternEdge ;
@@ -2527,37 +2266,37 @@ pat:FineTune_BaseModelNode
     a pair:PatternNode ;
     rdfs:label "Fine tuning base model node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:FoundationLLMRole .
+    pair:expectedRole pair:FoundationLLM .
 
 pat:FineTune_DatasetNode
     a pair:PatternNode ;
     rdfs:label "Fine tuning dataset node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:FineTuningDatasetRole .
+    pair:expectedRole pair:FineTuningDataset .
 
 pat:FineTune_TrainingStepNode
     a pair:PatternNode ;
     rdfs:label "Fine tuning training step node"@en ;
     pair:expectedClass beam:Train ;
-    pair:expectedRole pat:FineTuningStepRole .
+    pair:expectedRole pair:FineTuningStep .
 
 pat:FineTune_EvaluationStepNode
     a pair:PatternNode ;
     rdfs:label "Fine tuning evaluation step node"@en ;
     pair:expectedClass beam:Process ;
-    pair:expectedRole pat:EvaluationStepRole .
+    pair:expectedRole pair:EvaluationStep .
 
 pat:FineTune_EvaluationScoreNode
     a pair:PatternNode ;
     rdfs:label "Fine tuning evaluation score node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pat:EvaluationScoreRole .
+    pair:expectedRole pair:EvaluationScore .
 
 pat:FineTune_FineTunedModelNode
     a pair:PatternNode ;
     rdfs:label "Fine-tuned model node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pat:FineTunedModelRole .
+    pair:expectedRole pair:FineTunedModel .
 
 pat:FineTune_TrainingUsesBaseModelEdge
     a pair:PatternEdge ;

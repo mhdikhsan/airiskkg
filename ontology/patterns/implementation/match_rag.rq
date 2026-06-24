@@ -3,144 +3,77 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
+
+
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
-        rdfs:label "Retrieval augmented generation motif match"@en ;
+        rdfs:label "Retrieval Augmented Generation motif match"@en ;
         pair:matchesMotif pat:RetrievalAugmentedGenerationMotif ;
-        pair:hasNodeBinding ?queryBinding ,
-            ?queryEmbeddingStepBinding ,
-            ?queryVectorBinding ,
-            ?vectorIndexBinding ,
-            ?retrievalStepBinding ,
-            ?retrievedContextBinding ,
-            ?promptTemplateBinding ,
-            ?promptConstructionStepBinding ,
-            ?promptBinding ,
-            ?llmBinding ,
-            ?generationStepBinding ,
-            ?answerBinding .
+        pair:hasNodeBinding
+            ?queryB , ?embedStepB , ?queryVecB , ?vectorIndexB ,
+            ?retrievalStepB , ?retrievedCtxB , ?promptConstructB ,
+            ?promptB , ?llmB , ?genStepB , ?responseB .
 
-    ?queryBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_QueryNode ;
-        pair:matchedElement ?query .
-
-    ?queryEmbeddingStepBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_QueryEmbeddingStepNode ;
-        pair:matchedElement ?queryEmbeddingStep .
-
-    ?queryVectorBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_QueryVectorNode ;
-        pair:matchedElement ?queryVector .
-
-    ?vectorIndexBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_VectorIndexNode ;
-        pair:matchedElement ?vectorIndex .
-
-    ?retrievalStepBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_RetrievalStepNode ;
-        pair:matchedElement ?retrievalStep .
-
-    ?retrievedContextBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_RetrievedContextNode ;
-        pair:matchedElement ?retrievedContext .
-
-    ?promptTemplateBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_PromptTemplateNode ;
-        pair:matchedElement ?promptTemplate .
-
-    ?promptConstructionStepBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_PromptConstructionStepNode ;
-        pair:matchedElement ?promptConstructionStep .
-
-    ?promptBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_PromptNode ;
-        pair:matchedElement ?prompt .
-
-    ?llmBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_LLMNode ;
-        pair:matchedElement ?llm .
-
-    ?generationStepBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_GenerationStepNode ;
-        pair:matchedElement ?generationStep .
-
-    ?answerBinding a pair:NodeBinding ;
-        pair:bindsPatternNode pat:RAG_ResponseNode ;
-        pair:matchedElement ?answer .
+    ?queryB          a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_QueryNode ;                pair:matchedElement ?query .
+    ?embedStepB      a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_QueryEmbeddingStepNode ;   pair:matchedElement ?embedStep .
+    ?queryVecB       a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_QueryVectorNode ;          pair:matchedElement ?queryVec .
+    ?vectorIndexB    a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_VectorIndexNode ;          pair:matchedElement ?vectorIndex .
+    ?retrievalStepB  a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_RetrievalStepNode ;        pair:matchedElement ?retrievalStep .
+    ?retrievedCtxB   a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_RetrievedContextNode ;     pair:matchedElement ?retrievedCtx .
+    ?promptConstructB a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_PromptConstructionStepNode ; pair:matchedElement ?promptConstruct .
+    ?promptB         a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_PromptNode ;               pair:matchedElement ?prompt .
+    ?llmB            a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_LLMNode ;                  pair:matchedElement ?llm .
+    ?genStepB        a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_GenerationStepNode ;       pair:matchedElement ?genStep .
+    ?responseB       a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_ResponseNode ;             pair:matchedElement ?response .
 }
 WHERE {
-    ?query pair:playsRole ?queryRole .
-    ?queryRole pair:subRoleOf* pair:UserInput .
 
-    ?queryEmbeddingStep
-        beam:use ?query ;
-        beam:produce ?queryVector ;
-        pair:playsRole ?embeddingRole .
-    ?embeddingRole pair:subRoleOf* pair:EmbeddingStep .
+    ?embedStep a beam:Transform ;
+               pair:playsRole/pair:subRoleOf* pair:EmbeddingStep ;
+               beam:use ?query ;
+               beam:produce ?queryVec .
+    ?query    a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
+    ?queryVec a beam:Data ; pair:playsRole/pair:subRoleOf* pair:EmbeddingVector .
 
-    ?retrievalStep
-        beam:use ?queryVector ;
-        beam:use ?vectorIndex ;
-        beam:produce ?retrievedContext ;
-        pair:playsRole ?retrievalRole .
-    ?retrievalRole pair:subRoleOf* pair:RetrievalStep .
+    ?retrievalStep pair:playsRole/pair:subRoleOf* pair:RetrievalStep ;
+                   beam:use ?queryVec ;
+                   beam:use ?vectorIndex ;
+                   beam:produce ?retrievedCtx .
+    ?vectorIndex  a beam:Data ; pair:playsRole/pair:subRoleOf* pair:VectorIndex .
+    ?retrievedCtx a beam:Data ; pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
 
-    ?vectorIndex pair:playsRole ?vectorIndexRole .
-    {
-        ?vectorIndexRole pair:subRoleOf* pair:VectorStore .
-    }
-    UNION
-    {
-        ?vectorIndexRole pair:subRoleOf* pat:VectorIndexRole .
-    }
+    ?promptConstruct a beam:Transform ;
+                     pair:playsRole/pair:subRoleOf* pair:PromptConstructionStep ;
+                     beam:use ?query ;
+                     beam:use ?retrievedCtx ;
+                     beam:produce ?prompt .
+    ?prompt a beam:Data ; pair:playsRole/pair:subRoleOf* pair:PromptTemplate .
 
-    ?retrievedContext pair:playsRole ?retrievedContextRole .
-    ?retrievedContextRole pair:subRoleOf* pair:RetrievedContext .
+    ?genStep a beam:Infer ;
+             pair:playsRole/pair:subRoleOf* pair:GenerationStep ;
+             beam:use ?prompt ;
+             beam:use ?llm ;
+             beam:produce ?response .
+    ?llm      a beam:StatisticalModel ; pair:playsRole/pair:subRoleOf* pair:FoundationLLM .
+    ?response a beam:Data ; pair:playsRole/pair:subRoleOf* pair:LLMResponse .
 
-    ?promptConstructionStep
-        beam:use ?query ;
-        beam:use ?retrievedContext ;
-        beam:produce ?prompt ;
-        pair:playsRole ?promptConstructionRole .
-    ?promptConstructionRole pair:subRoleOf* pair:PromptConstructionStep .
-
-    ?promptTemplate pair:playsRole ?promptTemplateRole .
-    ?promptTemplateRole pair:subRoleOf* pair:PromptTemplate .
-    FILTER(?promptTemplate IN (?prompt))
-
-    ?generationStep
-        beam:use ?prompt ;
-        beam:use ?llm ;
-        beam:produce ?answer ;
-        pair:playsRole ?generationRole .
-    ?generationRole pair:subRoleOf* pair:GenerationStep .
-
-    ?llm pair:playsRole ?llmRole .
-    ?llmRole pair:subRoleOf* pair:GenerativeModel .
-
-    ?answer pair:playsRole ?answerRole .
-    ?answerRole pair:subRoleOf* pair:UserFacingOutput .
-
+    # deterministic match IRI keyed on the generation + retrieval steps
     BIND(IRI(CONCAT(
-        "http://w3id.org/airiskkg/generated/motif-match/",
-        ENCODE_FOR_URI(STR(?generationStep)),
-        "/rag/",
-        ENCODE_FOR_URI(STR(?query)),
-        "/",
-        ENCODE_FOR_URI(STR(?answer))
+        "http://w3id.org/airiskkg/generated/motif-match/rag/",
+        ENCODE_FOR_URI(STR(?genStep)), "/",
+        ENCODE_FOR_URI(STR(?retrievalStep))
     )) AS ?match)
 
-    BIND(IRI(CONCAT(STR(?match), "/binding/query")) AS ?queryBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/query-embedding-step")) AS ?queryEmbeddingStepBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/query-vector")) AS ?queryVectorBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/vector-index")) AS ?vectorIndexBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/retrieval-step")) AS ?retrievalStepBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/retrieved-context")) AS ?retrievedContextBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/prompt-template")) AS ?promptTemplateBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/prompt-construction-step")) AS ?promptConstructionStepBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/prompt")) AS ?promptBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/llm")) AS ?llmBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/generation-step")) AS ?generationStepBinding)
-    BIND(IRI(CONCAT(STR(?match), "/binding/answer")) AS ?answerBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/query"))             AS ?queryB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/embed-step"))        AS ?embedStepB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/query-vector"))      AS ?queryVecB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/vector-index"))      AS ?vectorIndexB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/retrieval-step"))    AS ?retrievalStepB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/retrieved-context")) AS ?retrievedCtxB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/prompt-construct"))  AS ?promptConstructB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/prompt"))            AS ?promptB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/llm"))               AS ?llmB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/generation-step"))   AS ?genStepB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/response"))          AS ?responseB)
 }
