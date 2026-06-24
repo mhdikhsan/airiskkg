@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PAIR-AI Risk Assessment</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>PAIR-AI Risk Assessment</h1>
+      <p class="subtitle">Pattern-based, design-time AI risk assessment over a knowledge graph.</p>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ============ INPUT ============ -->
+    <section class="panel input-panel">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="builder" role="tab">Guided builder</button>
+        <button class="tab" data-tab="source" role="tab">Turtle source</button>
+      </div>
+
+      <!-- Guided builder -->
+      <div class="tab-body" data-tab-body="builder">
+        <div class="field-row">
+          <label class="field">
+            <span>System name</span>
+            <input id="system-name" type="text" placeholder="MyRagSystem" value="MyRagSystem" />
+          </label>
+          <label class="field">
+            <span>System label</span>
+            <input id="system-label" type="text" placeholder="RAG-based chatbot" value="RAG-based chatbot" />
+          </label>
+        </div>
+
+        <div class="builder-section">
+          <div class="builder-section-head">
+            <h3>Resources <span class="hint">data &amp; models</span></h3>
+            <button class="btn small" id="add-resource">+ Add resource</button>
+          </div>
+          <div id="resources"></div>
+        </div>
+
+        <div class="builder-section">
+          <div class="builder-section-head">
+            <h3>Processes <span class="hint">steps that use &amp; produce resources</span></h3>
+            <button class="btn small" id="add-process">+ Add process</button>
+          </div>
+          <div id="processes"></div>
+        </div>
+
+        <div class="builder-actions">
+          <button class="btn" id="load-example-into-builder">Load example…</button>
+          <button class="btn primary" id="generate-ttl">Generate Turtle →</button>
+        </div>
+        <p class="builder-help">
+          Tip: build the graph here, then switch to <strong>Turtle source</strong> to review and run the assessment.
+        </p>
+      </div>
+
+      <!-- Turtle source -->
+      <div class="tab-body hidden" data-tab-body="source">
+        <div class="source-toolbar">
+          <label class="field inline">
+            <span>Example</span>
+            <select id="example-select">
+              <option value="">— choose —</option>
+            </select>
+          </label>
+          <label class="btn small file-btn">
+            Upload .ttl
+            <input id="file-input" type="file" accept=".ttl,text/turtle" hidden />
+          </label>
+        </div>
+        <textarea id="ttl-source" spellcheck="false"
+          placeholder="Paste a BEAM/PAIR-AI architecture graph in Turtle, or generate one from the builder."></textarea>
+        <div class="builder-actions">
+          <button class="btn primary run" id="run-assessment">Run assessment</button>
+        </div>
+      </div>
+
+      <div id="input-error" class="error hidden"></div>
+    </section>
+
+    <!-- ============ RESULTS ============ -->
+    <section class="panel results-panel">
+      <div id="results-empty" class="results-empty">
+        <p>Describe an architecture and run an assessment to see candidate risk findings.</p>
+      </div>
+      <div id="results" class="hidden"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
