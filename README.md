@@ -42,3 +42,30 @@ and curated motif interpretations. Assessment runs in two executable steps:
 
 The SPARQL CONSTRUCT files in `ontology/patterns/implementation/` are executable
 implementations of motifs or motif interpretations. 
+
+## Web UI
+
+A Flask-based web UI makes it easier for developers to run an assessment without
+hand-writing Turtle or reading raw TTL output.
+
+```bash
+cd python
+pip install -e ".[web]"
+airiskkg serve            # then open http://127.0.0.1:5000
+```
+
+The UI provides:
+
+- **Guided builder** — describe a system as resources and processes, choosing
+  roles and data categories from the pattern vocabulary and wiring them together
+  with `use` / `produce` / `inform` edges. It generates a valid architecture
+  graph for you.
+- **Turtle source** — load a bundled example, upload, or paste an architecture
+  graph, then review and run the assessment.
+- **Findings view** — motif/finding counts, an OWASP-LLM category breakdown, and
+  per-finding cards showing the interpreted mechanism, cross-taxonomy risk
+  entries (OWASP / MIT / IBM Risk Atlas), evidence elements, and suggested
+  controls.
+
+The UI is a thin layer over the same `airiskkg.assessment_runner` pipeline used by
+the CLI; assessment logic lives in one place.
