@@ -12,6 +12,7 @@ pytest-cache-files-*/
 build/
 dist/
 docs/
+old/
 
 
 # Keep folder structure, but avoid committing generated research outputs by default.
