@@ -12,17 +12,17 @@ CONSTRUCT {
         pair:findingStatus "candidate" ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
-        pair:hasInterpretedMechanism ?mechanism ;
-        pair:hasEvidenceElement ?evidenceElement ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?evidenceElement ;
         pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
         pair:hasSuggestedControl ?suggestedControl ;
         pair:hasSatisfiedCondition ?satisfiedCondition ,
             ?sourceRiskCondition .
 }
 WHERE {
-    pat:VectorAndEmbeddingWeaknessInterpretation
-        pair:interpretedAsMechanism ?mechanism ;
-        pair:hasInterpretationCondition ?satisfiedCondition ;
+    pat:VectorAndEmbeddingWeaknessRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
         pair:mayIndicateRisk ?riskTaxonomyEntry ;
         pair:suggestedControl ?suggestedControl .
 
@@ -43,7 +43,7 @@ WHERE {
         pair:hasNodeBinding/pair:matchedElement ?evidenceElement .
 
     FILTER NOT EXISTS {
-        pat:VectorAndEmbeddingWeaknessInterpretation pair:suggestedControl ?implementedControl .
+        pat:VectorAndEmbeddingWeaknessRiskPattern pair:suggestedControl ?implementedControl .
         ?implementedControl beamr:associatedTo ?evidenceElement .
     }
 

@@ -13,8 +13,8 @@ CONSTRUCT {
         pair:findingStatus "candidate" ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
-        pair:hasInterpretedMechanism ?mechanism ;
-        pair:hasEvidenceElement ?untrustedSource ,
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?untrustedSource ,
             ?pipelineStep ,
             ?producedArtifact ;
         pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
@@ -23,9 +23,9 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
-    pat:DataAndModelPoisoningInterpretation
-        pair:interpretedAsMechanism ?mechanism ;
-        pair:hasInterpretationCondition ?satisfiedCondition ;
+    pat:DataAndModelPoisoningRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
         pair:mayIndicateRisk ?riskTaxonomyEntry ;
         pair:suggestedControl ?suggestedControl .
 
@@ -54,7 +54,7 @@ WHERE {
     }
 
     FILTER NOT EXISTS {
-        pat:DataAndModelPoisoningInterpretation pair:suggestedControl ?implementedControl .
+        pat:DataAndModelPoisoningRiskPattern pair:suggestedControl ?implementedControl .
         ?implementedControl beamr:associatedTo ?untrustedSource .
     }
 

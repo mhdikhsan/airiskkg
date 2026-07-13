@@ -12,8 +12,8 @@ CONSTRUCT {
         dct:description "Sensitive retrieved context reaches an LLM generation step and user-facing output without a represented disclosure control."@en ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
-        pair:hasInterpretedMechanism ?mechanism ;
-        pair:hasEvidenceElement ?query ,
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?query ,
             ?retrievalStep ,
             ?vectorStore ,
             ?retrievedResult ,
@@ -27,9 +27,9 @@ CONSTRUCT {
         pair:findingStatus "candidate" .
 }
 WHERE {
-    pat:SensitiveDataRetrievalExposureInterpretation
-        pair:interpretedAsMechanism ?mechanism ;
-        pair:hasInterpretationCondition ?satisfiedCondition ;
+    pat:SensitiveDataRetrievalExposureRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
         pair:mayIndicateRisk ?riskTaxonomyEntry ;
         pair:suggestedControl ?suggestedControl .
 
@@ -88,7 +88,7 @@ WHERE {
     }
 
     FILTER NOT EXISTS {
-        pat:SensitiveDataRetrievalExposureInterpretation
+        pat:SensitiveDataRetrievalExposureRiskPattern
             pair:suggestedControl ?implementedDisclosureControl .
         ?implementedDisclosureControl beamr:associatedTo ?controlledElement .
         FILTER(?controlledElement IN (

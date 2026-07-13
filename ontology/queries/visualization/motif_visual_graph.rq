@@ -10,7 +10,7 @@ CONSTRUCT {
          pair:hasPatternNode ?node ;
          pair:hasPatternEdge ?edge ;
          pair:implementedBy ?motifImplementation ;
-         pair:hasInterpretation ?interpretation .
+         pair:hasRiskPattern ?riskPattern .
 
   ?node rdfs:label ?nodeLabel ;
         pair:expectedClass ?expectedClass ;
@@ -25,17 +25,17 @@ CONSTRUCT {
                        pair:implementationPath ?motifImplementationPath ;
                        pair:producesOutputType ?motifOutputType .
 
-  ?interpretation rdfs:label ?interpretationLabel ;
-                  pair:implementedBy ?interpretationImplementation ;
-                  pair:interpretedAsMechanism ?mechanism ;
+  ?riskPattern rdfs:label ?riskPatternLabel ;
+                  pair:implementedBy ?riskPatternImplementation ;
+                  pair:hasMechanism ?mechanism ;
                   pair:mayIndicateRisk ?risk ;
                   pair:suggestedControl ?control ;
-                  pair:hasInterpretationCondition ?condition .
+                  pair:hasApplicabilityCondition ?condition .
 
-  ?interpretationImplementation rdfs:label ?interpretationImplementationLabel ;
-                                pair:implementationPath ?interpretationImplementationPath ;
-                                pair:producesOutputType ?interpretationOutputType ;
-                                pair:implementsInterpretation ?interpretation .
+  ?riskPatternImplementation rdfs:label ?riskPatternImplementationLabel ;
+                                pair:implementationPath ?riskPatternImplementationPath ;
+                                pair:producesOutputType ?riskPatternOutputType ;
+                                pair:implementsRiskPattern ?riskPattern .
 
   ?mechanism rdfs:label ?mechanismLabel .
   ?risk skos:prefLabel ?riskLabel .
@@ -69,29 +69,29 @@ WHERE {
   }
 
   OPTIONAL {
-    ?motif pair:hasInterpretation ?interpretation .
-    OPTIONAL { ?interpretation rdfs:label ?interpretationLabel . }
+    ?motif pair:hasRiskPattern ?riskPattern .
+    OPTIONAL { ?riskPattern rdfs:label ?riskPatternLabel . }
     OPTIONAL {
-      ?interpretation pair:interpretedAsMechanism ?mechanism .
+      ?riskPattern pair:hasMechanism ?mechanism .
       OPTIONAL { ?mechanism rdfs:label ?mechanismLabel . }
     }
     OPTIONAL {
-      ?interpretation pair:mayIndicateRisk ?risk .
+      ?riskPattern pair:mayIndicateRisk ?risk .
       OPTIONAL { ?risk skos:prefLabel ?riskLabel . }
     }
     OPTIONAL {
-      ?interpretation pair:suggestedControl ?control .
+      ?riskPattern pair:suggestedControl ?control .
       OPTIONAL { ?control skos:prefLabel ?controlLabel . }
     }
     OPTIONAL {
-      ?interpretation pair:hasInterpretationCondition ?condition .
+      ?riskPattern pair:hasApplicabilityCondition ?condition .
       OPTIONAL { ?condition rdfs:label ?conditionLabel . }
     }
     OPTIONAL {
-      ?interpretation pair:implementedBy ?interpretationImplementation .
-      OPTIONAL { ?interpretationImplementation rdfs:label ?interpretationImplementationLabel . }
-      OPTIONAL { ?interpretationImplementation pair:implementationPath ?interpretationImplementationPath . }
-      OPTIONAL { ?interpretationImplementation pair:producesOutputType ?interpretationOutputType . }
+      ?riskPattern pair:implementedBy ?riskPatternImplementation .
+      OPTIONAL { ?riskPatternImplementation rdfs:label ?riskPatternImplementationLabel . }
+      OPTIONAL { ?riskPatternImplementation pair:implementationPath ?riskPatternImplementationPath . }
+      OPTIONAL { ?riskPatternImplementation pair:producesOutputType ?riskPatternOutputType . }
     }
   }
 }

@@ -260,7 +260,7 @@ def print_assessment_summary(result: AssessmentResult) -> None:
 
     for finding in sorted(result.risk_findings.subjects(RDF.type, PAIR.RiskFinding), key=str):
         print(f"- {_label(result.risk_findings, finding)}")
-        evidence = sorted(result.risk_findings.objects(finding, PAIR.hasEvidenceElement), key=str)
+        evidence = sorted(result.risk_findings.objects(finding, PAIR.hasEvidence), key=str)
         for element in evidence:
             print(f"  evidence: {_label(result.combined_graph, element)}")
 

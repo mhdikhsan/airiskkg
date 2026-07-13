@@ -7,11 +7,11 @@ CONSTRUCT {
            rdfs:label ?findingLabel ;
            pair:generatedFromMatch ?match ;
            pair:generatedByMotif ?motif ;
-           pair:hasInterpretedMechanism ?mechanism ;
+           pair:hasDerivedMechanism ?mechanism ;
            pair:hasCandidateRiskTaxonomyEntry ?risk ;
            pair:hasSuggestedControl ?control ;
            pair:hasSatisfiedCondition ?condition ;
-           pair:hasEvidenceElement ?evidence .
+           pair:hasEvidence ?evidence .
 
   ?match a pair:MotifMatch ;
          rdfs:label ?matchLabel ;
@@ -57,7 +57,7 @@ WHERE {
   }
 
   OPTIONAL {
-    ?finding pair:hasInterpretedMechanism ?mechanism .
+    ?finding pair:hasDerivedMechanism ?mechanism .
     OPTIONAL { ?mechanism rdfs:label ?mechanismLabel . }
   }
 
@@ -78,7 +78,7 @@ WHERE {
   }
 
   OPTIONAL {
-    ?finding pair:hasEvidenceElement ?evidence .
+    ?finding pair:hasEvidence ?evidence .
     OPTIONAL { ?evidence rdfs:label ?evidenceLabel . }
   }
 }

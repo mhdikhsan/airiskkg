@@ -20,52 +20,62 @@
                 <http://w3id.org/beam/risk#> .
 
 # Classes
+# Terminology follows docs/reference/PAIR-AI_glossary_v1.1.md (locked).
 
 pair:PatternRole a owl:Class ;
     rdfs:subClassOf skos:Concept ;
-    rdfs:label "Pattern Role"@en .
+    rdfs:label "Pattern Role"@en ;
+    rdfs:comment "An abstract functional role (e.g. VectorStore, RetrievalStep, GenerativeModel) assigned to a concrete architecture element via pair:playsRole; modeled as a SKOS concept. A role labels one element's function; a motif is a structure over several roles. Roles are the semantic bridge that makes motifs reusable across heterogeneous systems."@en .
 
 pair:DataCategory a owl:Class ;
     rdfs:subClassOf skos:Concept ;
-    rdfs:label "Data Category"@en .
+    rdfs:label "Data Category"@en ;
+    rdfs:comment "A characterization facet classifying data content (e.g. sensitive, personal, untrusted, generated content). SKOS concept, never instantiated as graph structure; evaluated by applicability conditions, never matched by motifs."@en .
 
 pair:GraphMotif a owl:Class ;
-    rdfs:label "Graph Motif"@en .
+    rdfs:label "Graph Motif"@en ;
+    rdfs:comment "A reusable, descriptive graph pattern over pattern roles and flow relations that captures a recurring system configuration (e.g. vector-based retrieval, retrieval-augmented generation). A motif is risk-neutral by itself; risk semantics are added only by an AI risk pattern (pair:RiskPattern)."@en .
 
 pair:PatternNode a owl:Class ;
-    rdfs:label "Pattern Node"@en .
+    rdfs:label "Pattern Node"@en ;
+    rdfs:comment "An abstract node of a graph motif, constrained by an expected BEAM class and/or an expected pattern role."@en .
 
 pair:PatternEdge a owl:Class ;
-    rdfs:label "Pattern Edge"@en .
+    rdfs:label "Pattern Edge"@en ;
+    rdfs:comment "An abstract edge of a graph motif connecting two pattern nodes via a BEAM flow predicate."@en .
 
-pair:GraphCondition a owl:Class ;
-    rdfs:label "Graph Condition"@en .
+pair:ApplicabilityCondition a owl:Class ;
+    rdfs:label "Applicability Condition"@en ;
+    rdfs:comment "A risk-relevant condition over a motif match: facet values, data categories, structural properties, or the absence of represented controls via closed-world query constructs (FILTER NOT EXISTS over the submitted graph only). Applicability conditions are constituents of an AI risk pattern, not external inputs. Formerly named pair:GraphCondition (\"interpretation condition\")."@en .
 
 pair:PropertyPathCondition a owl:Class ;
-    rdfs:subClassOf pair:GraphCondition ;
-    rdfs:label "Property Path Condition"@en .
+    rdfs:subClassOf pair:ApplicabilityCondition ;
+    rdfs:label "Property Path Condition"@en ;
+    rdfs:comment "An applicability condition evaluated via a SPARQL property path (e.g. reachability of untrusted content to a generation step)."@en .
 
-pair:AIRiskPattern a owl:Class ;
-    rdfs:label "AI Risk Pattern"@en .
-
-pair:MotifInterpretation a owl:Class ;
-    rdfs:subClassOf pair:AIRiskPattern ;
-    rdfs:label "Motif Interpretation"@en .
+pair:RiskPattern a owl:Class ;
+    rdfs:label "AI Risk Pattern"@en ;
+    rdfs:comment "An architectural motif extended with risk semantics: Risk Pattern = Motif + Applicability Conditions + Mechanism + Taxonomy Links + Controls. A risk pattern is reusable knowledge, not a risk; when a motif match satisfies its applicability conditions, a candidate risk finding is emitted. Formerly named pair:MotifInterpretation."@en .
 
 pair:RiskMechanism a owl:Class ;
-    rdfs:label "Risk Mechanism"@en .
+    rdfs:label "Risk Mechanism"@en ;
+    rdfs:comment "A curated explanation of how or why a matched configuration under the observed conditions can lead to a risk. Mechanisms are defined in the AI-RKG as parts of risk patterns and selected at assessment time, never invented during assessment."@en .
 
 pair:PatternImplementation a owl:Class ;
-    rdfs:label "Pattern Implementation"@en .
+    rdfs:label "Pattern Implementation"@en ;
+    rdfs:comment "The executable SPARQL query that detects a motif or evaluates a risk pattern against an architecture graph (the OQP to the motif's ODP). One motif may have multiple implementations; an implementation is an implementation of the motif, not the pattern itself."@en .
 
 pair:MotifMatch a owl:Class ;
-    rdfs:label "Motif Match"@en .
+    rdfs:label "Motif Match"@en ;
+    rdfs:comment "Internal technical entity: the set of node bindings from abstract pattern nodes to concrete architecture elements produced by a motif implementation. Candidate risk findings reference matches."@en .
 
 pair:NodeBinding a owl:Class ;
-    rdfs:label "Node Binding"@en .
+    rdfs:label "Node Binding"@en ;
+    rdfs:comment "A single binding from an abstract pattern node to a concrete architecture element within a motif match."@en .
 
 pair:RiskFinding a owl:Class ;
-    rdfs:label "Risk Finding"@en .
+    rdfs:label "Candidate Risk Finding"@en ;
+    rdfs:comment "A system-specific candidate risk generated when a motif match satisfies the applicability conditions of an AI risk pattern. A candidate risk is a structural disposition toward harm identified at design time; it is not a confirmed failure, an observed incident, or a prediction that harm will occur. Not a subclass of beamr:Risk; it links to the candidate risk via pair:identifiesCandidateRisk."@en .
 
 pair:DataCategoryPropagation a owl:Class ;
     rdfs:label "Data Category Propagation"@en ;
@@ -128,46 +138,61 @@ pair:expectedRole a owl:ObjectProperty ;
     rdfs:domain pair:PatternNode ;
     rdfs:range pair:PatternRole .
 
-pair:hasInterpretation a owl:ObjectProperty ;
-    rdfs:label "has interpretation"@en ;
+pair:hasRiskPattern a owl:ObjectProperty ;
+    rdfs:label "has risk pattern"@en ;
+    rdfs:comment "Links a risk-neutral graph motif to an AI risk pattern that extends it with risk semantics. Formerly pair:hasInterpretation."@en ;
     rdfs:domain pair:GraphMotif ;
-    rdfs:range pair:MotifInterpretation .
+    rdfs:range pair:RiskPattern ;
+    owl:inverseOf pair:hasMotif .
 
-pair:interpretsMotif a owl:ObjectProperty ;
-    rdfs:label "interprets motif"@en ;
-    rdfs:domain pair:MotifInterpretation ;
+pair:hasMotif a owl:ObjectProperty ;
+    rdfs:label "has motif"@en ;
+    rdfs:comment "Links an AI risk pattern to the structural motif that must be present for it to apply. Formerly pair:interpretsMotif."@en ;
+    rdfs:domain pair:RiskPattern ;
     rdfs:range pair:GraphMotif .
 
-pair:hasInterpretationCondition a owl:ObjectProperty ;
-    rdfs:label "has interpretation condition"@en ;
-    rdfs:domain pair:MotifInterpretation ;
-    rdfs:range pair:GraphCondition .
+pair:hasApplicabilityCondition a owl:ObjectProperty ;
+    rdfs:label "has applicability condition"@en ;
+    rdfs:comment "Links an AI risk pattern to a risk-relevant applicability condition that a motif match must satisfy before a candidate risk finding is emitted. Formerly pair:hasInterpretationCondition."@en ;
+    rdfs:domain pair:RiskPattern ;
+    rdfs:range pair:ApplicabilityCondition .
 
-pair:interpretedAsMechanism a owl:ObjectProperty ;
-    rdfs:label "interpreted as mechanism"@en ;
-    rdfs:domain pair:MotifInterpretation ;
+pair:hasMechanism a owl:ObjectProperty ;
+    rdfs:label "has mechanism"@en ;
+    rdfs:comment "Links an AI risk pattern to its curated risk mechanism: the causal account of how or why the configuration is disposed toward harm. Formerly pair:interpretedAsMechanism."@en ;
+    rdfs:domain pair:RiskPattern ;
     rdfs:range pair:RiskMechanism .
 
 pair:mayIndicateRisk a owl:ObjectProperty ;
     rdfs:label "may indicate risk"@en ;
-    rdfs:domain pair:MotifInterpretation ;
+    rdfs:comment "Links an AI risk pattern to external taxonomy entries (IBM AI Risk Atlas, OWASP LLM Top 10, MIT AI Risk Repository) the candidate risk anchors to. 'May indicate' preserves candidate framing."@en ;
+    rdfs:domain pair:RiskPattern ;
     rdfs:range skos:Concept .
 
 pair:suggestedControl a owl:ObjectProperty ;
     rdfs:label "suggested control"@en ;
-    rdfs:domain pair:MotifInterpretation ;
+    rdfs:domain pair:RiskPattern ;
     rdfs:range beamr:RiskControl .
 
 pair:operationalizesRiskCondition a owl:ObjectProperty ;
     rdfs:label "operationalizes risk condition"@en ;
-    rdfs:domain pair:GraphCondition ;
+    rdfs:comment "Links an applicability condition to the external taxonomy risk-condition entry it operationalizes."@en ;
+    rdfs:domain pair:ApplicabilityCondition ;
     rdfs:range rdfs:Resource .
+
+pair:derivedFrom a owl:ObjectProperty ;
+    rdfs:label "derived from"@en ;
+    rdfs:comment "Derivation provenance for curated pattern knowledge: links a graph motif or AI risk pattern to the resource it was derived from (e.g. a Boxology elementary pattern, a taxonomy entry such as an OWASP LLM Top 10 item, or a documented design-pattern source). Complemented by dct:source annotations."@en ;
+    rdfs:domain [
+        a owl:Class ;
+        owl:unionOf (pair:GraphMotif pair:RiskPattern)
+    ] .
 
 pair:implementedBy a owl:ObjectProperty ;
     rdfs:label "implemented by"@en ;
     rdfs:domain [
         a owl:Class ;
-        owl:unionOf (pair:GraphMotif pair:MotifInterpretation)
+        owl:unionOf (pair:GraphMotif pair:RiskPattern)
     ] ;
     rdfs:range pair:PatternImplementation .
 
@@ -176,10 +201,11 @@ pair:implementsMotif a owl:ObjectProperty ;
     rdfs:domain pair:PatternImplementation ;
     rdfs:range pair:GraphMotif .
 
-pair:implementsInterpretation a owl:ObjectProperty ;
-    rdfs:label "implements interpretation"@en ;
+pair:implementsRiskPattern a owl:ObjectProperty ;
+    rdfs:label "implements risk pattern"@en ;
+    rdfs:comment "Links an executable SPARQL implementation to the AI risk pattern it evaluates. Formerly pair:implementsInterpretation."@en ;
     rdfs:domain pair:PatternImplementation ;
-    rdfs:range pair:MotifInterpretation .
+    rdfs:range pair:RiskPattern .
 
 pair:producesOutputType a owl:ObjectProperty ;
     rdfs:label "produces output type"@en ;
@@ -216,15 +242,23 @@ pair:generatedByMotif a owl:ObjectProperty ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range pair:GraphMotif .
 
-pair:hasEvidenceElement a owl:ObjectProperty ;
-    rdfs:label "has evidence element"@en ;
+pair:hasEvidence a owl:ObjectProperty ;
+    rdfs:label "has evidence"@en ;
+    rdfs:comment "Attaches the evidence of a candidate risk finding: the elements of the matched subgraph that triggered the finding. Evidence is retained for durable traceability (PROV spirit). DESIGN DECISION: evidence is represented as the set of matched architecture elements (one pair:hasEvidence triple per element), matching how findings were already materialized; a named-graph representation was rejected as more disruptive. Replaces the former pair:EvidenceSubgraph class design and the pair:hasEvidenceElement property."@en ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range rdfs:Resource .
 
-pair:hasInterpretedMechanism a owl:ObjectProperty ;
-    rdfs:label "has interpreted mechanism"@en ;
+pair:hasDerivedMechanism a owl:ObjectProperty ;
+    rdfs:label "has derived mechanism"@en ;
+    rdfs:comment "Links a candidate risk finding to the risk mechanism selected from the satisfied AI risk pattern. Mechanisms are selected at assessment time, never invented. Formerly pair:hasInterpretedMechanism."@en ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range pair:RiskMechanism .
+
+pair:identifiesCandidateRisk a owl:ObjectProperty ;
+    rdfs:label "identifies candidate risk"@en ;
+    rdfs:comment "Links a candidate risk finding to the risk it identifies as a candidate. pair:RiskFinding is deliberately not a subclass of beamr:Risk: a finding is assessment output about a possible risk, not the risk itself."@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range beamr:Risk .
 
 pair:hasCandidateRiskTaxonomyEntry a owl:ObjectProperty ;
     rdfs:label "has candidate risk taxonomy entry"@en ;
@@ -263,7 +297,62 @@ pair:implementationPath a owl:DatatypeProperty ;
 pair:findingStatus a owl:DatatypeProperty ;
     rdfs:label "finding status"@en ;
     rdfs:domain pair:RiskFinding ;
-    rdfs:range xsd:string . 
+    rdfs:range xsd:string .
+
+# Deprecated aliases (glossary v1.1 renames, kept for one release)
+
+pair:MotifInterpretation a owl:Class ;
+    owl:deprecated true ;
+    dct:isReplacedBy pair:RiskPattern ;
+    rdfs:label "Motif Interpretation (deprecated)"@en ;
+    rdfs:comment "Deprecated: renamed to pair:RiskPattern (glossary v1.1)."@en .
+
+pair:AIRiskPattern a owl:Class ;
+    owl:deprecated true ;
+    dct:isReplacedBy pair:RiskPattern ;
+    rdfs:label "AI Risk Pattern (deprecated duplicate)"@en ;
+    rdfs:comment "Deprecated: this abstract parent class duplicated the AI risk pattern concept; pair:RiskPattern is now the single class."@en .
+
+pair:GraphCondition a owl:Class ;
+    owl:deprecated true ;
+    dct:isReplacedBy pair:ApplicabilityCondition ;
+    rdfs:label "Graph Condition (deprecated)"@en ;
+    rdfs:comment "Deprecated: renamed to pair:ApplicabilityCondition (glossary v1.1)."@en .
+
+pair:hasInterpretation a owl:ObjectProperty ;
+    owl:deprecated true ;
+    dct:isReplacedBy pair:hasRiskPattern ;
+    rdfs:label "has interpretation (deprecated)"@en .
+
+pair:interpretsMotif a owl:ObjectProperty ;
+    owl:deprecated true ;
+    dct:isReplacedBy pair:hasMotif ;
+    rdfs:label "interprets motif (deprecated)"@en .
+
+pair:hasInterpretationCondition a owl:ObjectProperty ;
+    owl:deprecated true ;
+    dct:isReplacedBy pair:hasApplicabilityCondition ;
+    rdfs:label "has interpretation condition (deprecated)"@en .
+
+pair:interpretedAsMechanism a owl:ObjectProperty ;
+    owl:deprecated true ;
+    dct:isReplacedBy pair:hasMechanism ;
+    rdfs:label "interpreted as mechanism (deprecated)"@en .
+
+pair:implementsInterpretation a owl:ObjectProperty ;
+    owl:deprecated true ;
+    dct:isReplacedBy pair:implementsRiskPattern ;
+    rdfs:label "implements interpretation (deprecated)"@en .
+
+pair:hasInterpretedMechanism a owl:ObjectProperty ;
+    owl:deprecated true ;
+    dct:isReplacedBy pair:hasDerivedMechanism ;
+    rdfs:label "has interpreted mechanism (deprecated)"@en .
+
+pair:hasEvidenceElement a owl:ObjectProperty ;
+    owl:deprecated true ;
+    dct:isReplacedBy pair:hasEvidence ;
+    rdfs:label "has evidence element (deprecated)"@en .
 
 # Annotation vocabulary: roles
 pair:UserInput a pair:PatternRole ;
