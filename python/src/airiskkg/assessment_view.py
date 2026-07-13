@@ -60,7 +60,7 @@ def _motif_ref(graph: Graph, motif: URIRef | None) -> dict | None:
 
 def _finding_view(graph: Graph, finding: URIRef) -> dict:
     motif = graph.value(finding, PAIR.generatedByMotif)
-    mechanism = graph.value(finding, PAIR.hasInterpretedMechanism)
+    mechanism = graph.value(finding, PAIR.hasDerivedMechanism)
     status = graph.value(finding, PAIR.findingStatus)
     description = graph.value(finding, DCTERMS.description)
 
@@ -68,7 +68,7 @@ def _finding_view(graph: Graph, finding: URIRef) -> dict:
         graph.objects(finding, PAIR.hasCandidateRiskTaxonomyEntry), key=str
     )
     suggested_controls = sorted(graph.objects(finding, PAIR.hasSuggestedControl), key=str)
-    evidence = sorted(graph.objects(finding, PAIR.hasEvidenceElement), key=str)
+    evidence = sorted(graph.objects(finding, PAIR.hasEvidence), key=str)
 
     return {
         "id": str(finding),

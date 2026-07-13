@@ -57,11 +57,11 @@ def test_vector_ir_match_binds_expected_pattern_nodes() -> None:
     assert PAT.VectorIR_RetrievedResultNode in bound_pattern_nodes
 
 
-def test_sensitive_data_interpretation_produces_risk_finding() -> None:
+def test_sensitive_data_risk_pattern_produces_risk_finding() -> None:
     result = run_assessment(UC6_PATH, write_outputs=False)
     sensitive_findings = set(
         result.risk_findings.subjects(
-            PAIR.hasInterpretedMechanism,
+            PAIR.hasDerivedMechanism,
             OWASP["mechanism-sensitive-data-propagation"],
         )
     )
@@ -72,7 +72,7 @@ def test_sensitive_data_finding_includes_cross_taxonomy_alignment() -> None:
     result = run_assessment(UC6_PATH, write_outputs=False)
     finding = next(
         result.risk_findings.subjects(
-            PAIR.hasInterpretedMechanism,
+            PAIR.hasDerivedMechanism,
             OWASP["mechanism-sensitive-data-propagation"],
         )
     )
@@ -91,7 +91,7 @@ def test_verba_external_model_produces_supply_chain_finding() -> None:
     result = run_assessment(EXAMPLE_DIR / "verba_goldenverba.ttl", write_outputs=False)
     supply_chain_findings = set(
         result.risk_findings.subjects(
-            PAIR.hasInterpretedMechanism,
+            PAIR.hasDerivedMechanism,
             OWASP["mechanism-supply-chain-compromise"],
         )
     )
@@ -109,8 +109,8 @@ def test_every_risk_finding_has_required_fields() -> None:
         DCTERMS.description,
         PAIR.generatedFromMatch,
         PAIR.generatedByMotif,
-        PAIR.hasInterpretedMechanism,
-        PAIR.hasEvidenceElement,
+        PAIR.hasDerivedMechanism,
+        PAIR.hasEvidence,
         PAIR.findingStatus,
     }
     for finding in findings:

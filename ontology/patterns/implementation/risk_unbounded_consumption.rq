@@ -13,8 +13,8 @@ CONSTRUCT {
         pair:findingStatus "candidate" ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
-        pair:hasInterpretedMechanism ?mechanism ;
-        pair:hasEvidenceElement ?loopSource ,
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?loopSource ,
             ?loopTarget ;
         pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
         pair:hasSuggestedControl ?suggestedControl ;
@@ -22,9 +22,9 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
-    pat:UnboundedConsumptionInterpretation
-        pair:interpretedAsMechanism ?mechanism ;
-        pair:hasInterpretationCondition ?satisfiedCondition ;
+    pat:UnboundedConsumptionRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
         pair:mayIndicateRisk ?riskTaxonomyEntry ;
         pair:suggestedControl ?suggestedControl .
 
@@ -72,7 +72,7 @@ WHERE {
         }
     }
     FILTER NOT EXISTS {
-        pat:UnboundedConsumptionInterpretation pair:suggestedControl ?implementedControl .
+        pat:UnboundedConsumptionRiskPattern pair:suggestedControl ?implementedControl .
         ?implementedControl beamr:associatedTo ?loopSource .
     }
 

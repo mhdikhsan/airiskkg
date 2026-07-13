@@ -13,8 +13,8 @@ CONSTRUCT {
         pair:findingStatus "candidate" ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
-        pair:hasInterpretedMechanism ?mechanism ;
-        pair:hasEvidenceElement ?generationStep ,
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?generationStep ,
             ?llm ,
             ?userFacingOutput ;
         pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
@@ -23,9 +23,9 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
-    pat:ImproperOutputHandlingInterpretation
-        pair:interpretedAsMechanism ?mechanism ;
-        pair:hasInterpretationCondition ?satisfiedCondition ;
+    pat:ImproperOutputHandlingRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
         pair:mayIndicateRisk ?riskTaxonomyEntry ;
         pair:suggestedControl ?suggestedControl .
 
@@ -59,7 +59,7 @@ WHERE {
         }
     }
     FILTER NOT EXISTS {
-        pat:ImproperOutputHandlingInterpretation pair:suggestedControl ?implementedControl .
+        pat:ImproperOutputHandlingRiskPattern pair:suggestedControl ?implementedControl .
         ?implementedControl beamr:associatedTo ?userFacingOutput .
     }
 

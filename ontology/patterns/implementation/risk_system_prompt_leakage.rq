@@ -13,8 +13,8 @@ CONSTRUCT {
         pair:findingStatus "candidate" ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
-        pair:hasInterpretedMechanism ?mechanism ;
-        pair:hasEvidenceElement ?systemPrompt ,
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?systemPrompt ,
             ?generationStep ,
             ?userFacingOutput ;
         pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
@@ -23,9 +23,9 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
-    pat:SystemPromptLeakageInterpretation
-        pair:interpretedAsMechanism ?mechanism ;
-        pair:hasInterpretationCondition ?satisfiedCondition ;
+    pat:SystemPromptLeakageRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
         pair:mayIndicateRisk ?riskTaxonomyEntry ;
         pair:suggestedControl ?suggestedControl .
 
@@ -47,7 +47,7 @@ WHERE {
     FILTER(?matchedElement IN (?systemPrompt, ?generationStep, ?userFacingOutput))
 
     FILTER NOT EXISTS {
-        pat:SystemPromptLeakageInterpretation pair:suggestedControl ?implementedControl .
+        pat:SystemPromptLeakageRiskPattern pair:suggestedControl ?implementedControl .
         ?implementedControl beamr:associatedTo ?systemPrompt .
     }
 

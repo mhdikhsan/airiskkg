@@ -9,7 +9,7 @@
 
 <http://w3id.org/airiskkg/patterns/motif-library#>
     a owl:Ontology ;
-    dct:title "Architecuture Motif's Library"@en ;
+    dct:title "Architecture Motif Library"@en ;
     dct:description """
     Reusable architecture motifs for PAIR-AI assessment.
     """@en ;
@@ -21,68 +21,69 @@
 
 
 # Motif 1: Vector-based Information Retrieval
-# pat:VectorBasedInformationRetrievalMotif
-#     a pair:GraphMotif ;
-#     rdfs:label "Vector-based Information Retrieval Motif"@en ;
-#     dct:description """
-#     Architectural motif in which a retrieval process uses a vector store or
-#     knowledge source and produces a retrieved result or retrieved context.
-#     """@en ;
-#     pair:hasPatternNode
-#         pat:VectorIR_QueryNode ,
-#         pat:VectorIR_VectorStoreNode ,
-#         pat:VectorIR_RetrievalStepNode ,
-#         pat:VectorIR_RetrievedResultNode ;
-#     pair:hasPatternEdge
-#         pat:VectorIR_RetrievalUsesQueryEdge ,
-#         pat:VectorIR_RetrievalUsesVectorStoreEdge ,
-#         pat:VectorIR_RetrievalProducesResultEdge ;
-#     pair:implementedBy pat:VectorIR_MatchingOQP .
+pat:VectorBasedInformationRetrievalMotif
+    a pair:GraphMotif ;
+    rdfs:label "Vector-based Information Retrieval Motif"@en ;
+    dct:description """
+    Architectural motif in which a retrieval process uses a vector store or
+    knowledge source and produces a retrieved result or retrieved context.
+    """@en ;
+    dct:source "expert curation" ;
+    pair:hasPatternNode
+        pat:VectorIR_QueryNode ,
+        pat:VectorIR_VectorStoreNode ,
+        pat:VectorIR_RetrievalStepNode ,
+        pat:VectorIR_RetrievedResultNode ;
+    pair:hasPatternEdge
+        pat:VectorIR_RetrievalUsesQueryEdge ,
+        pat:VectorIR_RetrievalUsesVectorStoreEdge ,
+        pat:VectorIR_RetrievalProducesResultEdge ;
+    pair:implementedBy pat:VectorIR_MatchingOQP .
 
-# pat:VectorIR_QueryNode
-#     a pair:PatternNode ;
-#     rdfs:label "Query node"@en ;
-#     pair:expectedClass beam:Data ;
-#     pair:expectedRole pair:UserInput .
+pat:VectorIR_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "Query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
 
-# pat:VectorIR_VectorStoreNode
-#     a pair:PatternNode ;
-#     rdfs:label "Vector store node"@en ;
-#     pair:expectedClass beam:Data ;
-#     pair:expectedRole pair:VectorStore .
+pat:VectorIR_VectorStoreNode
+    a pair:PatternNode ;
+    rdfs:label "Vector store node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:VectorStore .
 
-# pat:VectorIR_RetrievalStepNode
-#     a pair:PatternNode ;
-#     rdfs:label "Vector-based retrieval step node"@en ;
-#     pair:expectedClass beam:Process ;
-#     pair:expectedRole pair:RetrievalStep .
+pat:VectorIR_RetrievalStepNode
+    a pair:PatternNode ;
+    rdfs:label "Vector-based retrieval step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalStep .
 
-# pat:VectorIR_RetrievedResultNode
-#     a pair:PatternNode ;
-#     rdfs:label "Retrieved result node"@en ;
-#     pair:expectedClass beam:Data ;
-#     pair:expectedRole pair:RetrievedContext .
+pat:VectorIR_RetrievedResultNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieved result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
 
-# pat:VectorIR_RetrievalUsesQueryEdge
-#     a pair:PatternEdge ;
-#     rdfs:label "retrieval uses query"@en ;
-#     pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-#     pair:patternPredicate beam:use ;
-#     pair:targetPatternNode pat:VectorIR_QueryNode .
+pat:VectorIR_RetrievalUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses query"@en ;
+    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:VectorIR_QueryNode .
 
-# pat:VectorIR_RetrievalUsesVectorStoreEdge
-#     a pair:PatternEdge ;
-#     rdfs:label "retrieval uses vector store"@en ;
-#     pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-#     pair:patternPredicate beam:use ;
-#     pair:targetPatternNode pat:VectorIR_VectorStoreNode .
+pat:VectorIR_RetrievalUsesVectorStoreEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses vector store"@en ;
+    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:VectorIR_VectorStoreNode .
 
-# pat:VectorIR_RetrievalProducesResultEdge
-#     a pair:PatternEdge ;
-#     rdfs:label "retrieval produces retrieved result"@en ;
-#     pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-#     pair:patternPredicate beam:produce ;
-#     pair:targetPatternNode pat:VectorIR_RetrievedResultNode .
+pat:VectorIR_RetrievalProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval produces retrieved result"@en ;
+    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:VectorIR_RetrievedResultNode .
 
 # ML system design motifs: serving patterns
 
@@ -91,6 +92,7 @@ pat:SynchronousPredictionMotif
     rdfs:label "Synchronous Prediction Motif"@en ;
     dct:description "Architectural motif in which a prediction step runs inline with a request workflow and produces a result before the workflow proceeds."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:SyncPred_RequestNode ,
         pat:SyncPred_ModelNode ,
@@ -165,6 +167,7 @@ pat:AsynchronousPredictionMotif
     rdfs:label "Asynchronous Prediction Motif"@en ;
     dct:description "Architectural motif in which prediction requests are decoupled from prediction execution through a queue, cache, or similar intermediary resource."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:AsyncPred_RequestNode ,
         pat:AsyncPred_EnqueueStepNode ,
@@ -239,6 +242,7 @@ pat:BatchPredictionMotif
     rdfs:label "Batch Prediction Motif"@en ;
     dct:description "Architectural motif in which a scheduled job runs prediction over a batch dataset and stores batch prediction results."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:BatchPred_SchedulerNode ,
         pat:BatchPred_DatasetNode ,
@@ -314,6 +318,7 @@ pat:PreprocessPredictionMotif
     rdfs:label "Prep-Pred / Preprocess-Prediction Motif"@en ;
     dct:description "Architectural motif in which preprocessing and prediction are represented as separate steps connected by preprocessed data."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:PrepPred_InputNode ,
         pat:PrepPred_PreprocessStepNode ,
@@ -412,6 +417,7 @@ pat:MultiStagePredictionMotif
     rdfs:label "Multi-stage Prediction Motif"@en ;
     dct:description "Architectural motif in which one prediction path returns a quick result while another prediction path produces a slower or richer result."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:MultiStage_RequestNode ,
         pat:MultiStage_FastModelNode ,
@@ -528,6 +534,7 @@ pat:BatchTrainingMotif
     rdfs:label "Batch Training Motif"@en ;
     dct:description "Architectural motif in which a scheduled training job prepares data, trains a model, evaluates it, and records the resulting model artifact and evaluation result."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:BatchTrain_SchedulerNode ,
         pat:BatchTrain_DatasetNode ,
@@ -664,6 +671,7 @@ pat:PipelineTrainingMotif
     rdfs:label "Pipeline Training Motif"@en ;
     dct:description "Architectural motif in which training is decomposed into independently executable pipeline jobs connected by intermediate data and workflow dependencies."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Pipeline-training-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Pipeline-training-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:PipeTrain_SourceDataNode ,
         pat:PipeTrain_PreprocessJobNode ,
@@ -788,6 +796,7 @@ pat:TrainThenServeMotif
     rdfs:label "Train-Then-Serve Motif"@en ;
     dct:description "Lifecycle motif in which training and serving are separated by evaluation, approval, and a release step before the model is used for production prediction."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:TrainServe_TrainingStepNode ,
         pat:TrainServe_CandidateModelNode ,
@@ -917,6 +926,7 @@ pat:TrainingToServingMotif
     rdfs:label "Training-to-Serving Motif"@en ;
     dct:description "Lifecycle motif in which a training pipeline automatically produces a model artifact that is built or deployed into a serving prediction path."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:TrainToServe_TrainingPipelineNode ,
         pat:TrainToServe_ModelArtifactNode ,
@@ -1010,6 +1020,7 @@ pat:PredictionLoggingMotif
     rdfs:label "Prediction Logging Motif"@en ;
     dct:description "Operational motif in which prediction inputs, results, latency, or related events are collected into prediction logs for analysis and service improvement."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:PredLog_RequestNode ,
         pat:PredLog_ResultNode ,
@@ -1101,6 +1112,7 @@ pat:PredictionMonitoringMotif
     rdfs:label "Prediction Monitoring Motif"@en ;
     dct:description "Operational motif in which prediction logs or prediction result trends are monitored against expected behavior and may produce alerts."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:PredMon_LogNode ,
         pat:PredMon_BaselineNode ,
@@ -1161,6 +1173,7 @@ pat:ModelLoadMotif
     rdfs:label "Model Load Motif"@en ;
     dct:description "Operational motif in which a prediction server image and model artifact are managed separately, and the model is loaded by the server before prediction."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:ModelLoad_ServerImageNode ,
         pat:ModelLoad_ModelArtifactNode ,
@@ -1244,6 +1257,7 @@ pat:ModelInImageMotif
     rdfs:label "Model-in-Image Motif"@en ;
     dct:description "Operational motif in which a trained model artifact is packaged into a serving image that is deployed as the prediction service runtime."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:ModelImage_TrainingStepNode ,
         pat:ModelImage_ModelArtifactNode ,
@@ -1347,6 +1361,7 @@ pat:DirectPromptingMotif
     generative model step and produces a user-facing answer. 
     """@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:DP_QueryNode ,
         pat:DP_ModelNode ,
@@ -1408,6 +1423,7 @@ pat:EvalsMotif
     rdfs:label "Evals Motif"@en ;
     dct:description "GenAI motif in which model input, generated output, expected output, and optional retrieval context are scored or judged to produce evaluation results for a task."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:Evals_InputNode ,
         pat:Evals_ModelOutputNode ,
@@ -1513,6 +1529,7 @@ pat:EmbeddingsMotif
     rdfs:label "Embeddings Motif"@en ;
     dct:description "GenAI motif in which source documents or data blocks are chunked and transformed by an embedding model into vectors stored in a vector index."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:Embedding_SourceDocumentNode ,
         pat:Embedding_ChunkingStepNode ,
@@ -1619,6 +1636,7 @@ pat:RetrievalAugmentedGenerationMotif
     rdfs:label "Retrieval Augmented Generation (RAG) Motif"@en ;
     dct:description "GenAI motif in which a user query is embedded, used to retrieve relevant context from a vector index, combined with a prompt template, and sent to an LLM to produce an answer."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:RAG_QueryNode ,
         pat:RAG_EmbeddingModelNode ,
@@ -1823,6 +1841,7 @@ pat:HybridRetrieverMotif
     rdfs:label "Hybrid Retriever Motif"@en ;
     dct:description "GenAI motif in which vector search and keyword or structured search are combined and aggregated to produce a candidate context set."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:Hybrid_QueryNode ,
         pat:Hybrid_VectorIndexNode ,
@@ -1936,6 +1955,7 @@ pat:QueryRewritingMotif
     rdfs:label "Query Rewriting Motif"@en ;
     dct:description "GenAI motif in which an LLM reformulates a user query into alternative queries that are then used for retrieval."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:QueryRewrite_OriginalQueryNode ,
         pat:QueryRewrite_LLMNode ,
@@ -2035,6 +2055,7 @@ pat:RerankerMotif
     rdfs:label "Reranker Motif"@en ;
     dct:description "GenAI motif in which a candidate set of retrieved fragments is ranked against the input query so that the most useful context is passed to the LLM."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:Reranker_QueryNode ,
         pat:Reranker_CandidateSetNode ,
@@ -2111,6 +2132,7 @@ pat:GuardrailsMotif
     rdfs:label "Guardrails Motif"@en ;
     dct:description "GenAI motif in which input and output guardrail steps screen or sanitize user prompts and generated responses around the primary LLM generation step."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:Guardrails_UserPromptNode ,
         pat:Guardrails_InputGuardrailStepNode ,
@@ -2247,6 +2269,7 @@ pat:FineTuningMotif
     rdfs:label "Fine Tuning Motif"@en ;
     dct:description "GenAI motif in which a pre-trained LLM is further trained with a task- or domain-specific dataset to produce a fine-tuned model."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:FineTune_BaseModelNode ,
         pat:FineTune_DatasetNode ,
