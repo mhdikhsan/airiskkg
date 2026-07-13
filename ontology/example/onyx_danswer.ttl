@@ -1,0 +1,310 @@
+@prefix onyx: <http://w3id.org/airiskkg/example/onyx-danswer#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+
+<http://w3id.org/airiskkg/example/onyx-danswer#> a owl:Ontology ;
+    dct:title "Onyx (formerly Danswer) Enterprise RAG Use Case"@en ;
+    dct:description """
+    Architecture graph for Onyx (formerly Danswer), an open-source (MIT)
+    enterprise question-answering platform. Modeled workflow: connectors
+    ingest workspace documents (Google Drive, Slack, Confluence, ...);
+    documents are chunked, embedded with a locally served bi-encoder, and
+    indexed into a hybrid vector + keyword index; at query time the chat
+    question is rephrased by the generator LLM, embedded, matched against the
+    hybrid index, reranked with a cross-encoder, and the top sections are
+    assembled into a prompt for the LLM, which produces a cited answer in the
+    chat UI. Reranking sits between retrieval and prompt construction, so the
+    strict RAG motif chain is intentionally interrupted; the vector-IR, query
+    rewriting, reranker, embeddings, and direct prompting motifs apply.
+    """@en ;
+    dct:source <https://github.com/onyx-dot-app/onyx> ;
+    dct:source <https://docs.onyx.app/> ;
+    vann:preferredNamespacePrefix "onyx" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/example/onyx-danswer#" ;
+    owl:imports <http://w3id.org/beam/core#> ,
+        <http://w3id.org/airiskkg/pair-ai#> .
+
+# Use-case-specific data categories (annotated base facts, Rule R8)
+
+onyx:ConnectedWorkspaceContent
+    a pair:DataCategory ;
+    rdfs:label "Connected workspace content"@en ;
+    pair:subDataCategoryOf pair:Information .
+
+onyx:ConnectedSensitiveWorkspaceContent
+    a pair:DataCategory ;
+    rdfs:label "Connected sensitive workspace content"@en ;
+    pair:subDataCategoryOf onyx:ConnectedWorkspaceContent ;
+    pair:subDataCategoryOf pair:SensitiveInformation .
+
+onyx:LLMProviderCredential
+    a pair:DataCategory ;
+    rdfs:label "LLM provider credential"@en ;
+    pair:subDataCategoryOf pair:ConfidentialInformation .
+
+# System
+
+onyx:OnyxSystem
+    a beam:System ;
+    rdfs:label "Onyx enterprise RAG assistant"@en ;
+    beam:context "Open-source enterprise Q&A platform: 50+ connectors ingest workspace documents into a hybrid vector + keyword index; chat questions are LLM-rephrased, embedded, hybrid-searched, cross-encoder reranked, and answered by a configurable LLM provider with citations."@en ;
+    beam:hasResource
+        onyx:ConnectedSourceDocuments ,
+        onyx:DocumentChunks ,
+        onyx:ChunkEmbeddings ,
+        onyx:EmbeddingModel ,
+        onyx:VespaHybridIndex ,
+        onyx:UserQuery ,
+        onyx:RephrasedQuery ,
+        onyx:QueryEmbedding ,
+        onyx:RetrievedSections ,
+        onyx:RerankerModel ,
+        onyx:RerankedSections ,
+        onyx:AnswerPrompt ,
+        onyx:GeneratorLLM ,
+        onyx:ProviderCredentials ,
+        onyx:CitedAnswer ;
+    beam:hasProcess
+        onyx:ChunkDocuments ,
+        onyx:EmbedChunks ,
+        onyx:IndexInVespa ,
+        onyx:RephraseQuery ,
+        onyx:EmbedQuery ,
+        onyx:HybridSearch ,
+        onyx:RerankSections ,
+        onyx:BuildPrompt ,
+        onyx:GenerateAnswer .
+
+# Resources — ingestion side
+
+onyx:ConnectedSourceDocuments
+    a beam:Data ;
+    rdfs:label "Connector-ingested workspace documents"@en ;
+    pair:playsRole pair:SourceDocument ;
+    pair:containsDataCategory onyx:ConnectedWorkspaceContent ;
+    pair:containsDataCategory onyx:ConnectedSensitiveWorkspaceContent ;
+    pair:containsDataCategory pair:UntrustedContent ;
+    beam:usedBy onyx:ChunkDocuments .
+
+onyx:DocumentChunks
+    a beam:Data ;
+    rdfs:label "Document chunks"@en ;
+    pair:playsRole pair:DocumentChunk ;
+    pair:containsDataCategory onyx:ConnectedWorkspaceContent ;
+    pair:containsDataCategory onyx:ConnectedSensitiveWorkspaceContent ;
+    pair:containsDataCategory pair:UntrustedContent ;
+    beam:usedBy onyx:EmbedChunks ,
+        onyx:IndexInVespa .
+
+onyx:ChunkEmbeddings
+    a beam:Data ;
+    rdfs:label "Chunk embeddings"@en ;
+    pair:playsRole pair:EmbeddingVector ;
+    pair:containsDataCategory onyx:ConnectedWorkspaceContent ;
+    beam:usedBy onyx:IndexInVespa .
+
+onyx:EmbeddingModel
+    a beam:StatisticalModel ;
+    rdfs:label "Bi-encoder embedding model (locally served, pretrained Hugging Face weights)"@en ;
+    pair:playsRole pair:EmbeddingModel ;
+    pair:playsRole pair:PretrainedModel ;
+    beam:usedBy onyx:EmbedChunks ,
+        onyx:EmbedQuery .
+
+onyx:VespaHybridIndex
+    a beam:Data ;
+    rdfs:label "Hybrid vector + keyword index"@en ;
+    pair:playsRole pair:VectorStore ;
+    pair:playsRole pair:VectorIndex ;
+    pair:playsRole pair:KeywordIndex ;
+    pair:containsDataCategory onyx:ConnectedWorkspaceContent ;
+    pair:containsDataCategory onyx:ConnectedSensitiveWorkspaceContent ;
+    pair:containsDataCategory pair:UntrustedContent ;
+    beam:usedBy onyx:HybridSearch .
+
+# Resources — query side
+
+onyx:UserQuery
+    a beam:Data ;
+    rdfs:label "Employee chat question"@en ;
+    pair:playsRole pair:UserInput ;
+    pair:containsDataCategory pair:ExternalUserContent ;
+    beam:usedBy onyx:RephraseQuery ,
+        onyx:BuildPrompt .
+
+onyx:RephrasedQuery
+    a beam:Data ;
+    rdfs:label "LLM-rephrased search query"@en ;
+    pair:playsRole pair:RewrittenQuery ;
+    pair:playsRole pair:UserInput ;
+    pair:containsDataCategory pair:ExternalUserContent ;
+    pair:containsDataCategory pair:GeneratedContent ;
+    beam:usedBy onyx:EmbedQuery ,
+        onyx:HybridSearch ,
+        onyx:BuildPrompt ,
+        onyx:GenerateAnswer .
+
+onyx:QueryEmbedding
+    a beam:Data ;
+    rdfs:label "Query embedding"@en ;
+    pair:playsRole pair:EmbeddingVector ;
+    pair:containsDataCategory pair:ExternalUserContent ;
+    beam:usedBy onyx:HybridSearch .
+
+onyx:RetrievedSections
+    a beam:Data ;
+    rdfs:label "Retrieved candidate sections"@en ;
+    pair:playsRole pair:RetrievedResult ;
+    pair:playsRole pair:RetrievedCandidateSet ;
+    pair:containsDataCategory onyx:ConnectedWorkspaceContent ;
+    pair:containsDataCategory onyx:ConnectedSensitiveWorkspaceContent ;
+    pair:containsDataCategory pair:UntrustedContent ;
+    beam:usedBy onyx:RerankSections .
+
+onyx:RerankerModel
+    a beam:StatisticalModel ;
+    rdfs:label "Cross-encoder reranker model (locally served, pretrained Hugging Face weights)"@en ;
+    pair:playsRole pair:RerankerModel ;
+    pair:playsRole pair:PretrainedModel ;
+    beam:usedBy onyx:RerankSections .
+
+onyx:RerankedSections
+    a beam:Data ;
+    rdfs:label "Reranked top sections"@en ;
+    pair:playsRole pair:RerankedContext ;
+    pair:playsRole pair:RetrievedContext ;
+    pair:containsDataCategory onyx:ConnectedWorkspaceContent ;
+    pair:containsDataCategory onyx:ConnectedSensitiveWorkspaceContent ;
+    pair:containsDataCategory pair:UntrustedContent ;
+    beam:usedBy onyx:BuildPrompt ,
+        onyx:GenerateAnswer .
+
+onyx:AnswerPrompt
+    a beam:Data ;
+    rdfs:label "Answer prompt with citations context"@en ;
+    pair:playsRole pair:PromptTemplate ;
+    pair:containsDataCategory pair:PromptInstruction ;
+    pair:containsDataCategory pair:ExternalUserContent ;
+    pair:containsDataCategory onyx:ConnectedWorkspaceContent ;
+    pair:containsDataCategory onyx:ConnectedSensitiveWorkspaceContent ;
+    pair:containsDataCategory pair:UntrustedContent ;
+    beam:usedBy onyx:GenerateAnswer .
+
+onyx:GeneratorLLM
+    a beam:StatisticalModel ;
+    rdfs:label "Configured generator LLM (external provider or self-hosted)"@en ;
+    pair:playsRole pair:FoundationLLM ;
+    pair:playsRole pair:GenerativeModel ;
+    pair:playsRole pair:ExternalModel ;
+    pair:playsRole pair:PretrainedModel ;
+    beam:usedBy onyx:RephraseQuery ,
+        onyx:GenerateAnswer .
+
+onyx:ProviderCredentials
+    a beam:Data ;
+    rdfs:label "LLM provider API credentials"@en ;
+    pair:playsRole pair:ExternalProviderCredential ;
+    pair:containsDataCategory onyx:LLMProviderCredential ;
+    beam:usedBy onyx:RephraseQuery ,
+        onyx:GenerateAnswer .
+
+onyx:CitedAnswer
+    a beam:Data ;
+    rdfs:label "Cited chat answer"@en ;
+    pair:playsRole pair:LLMResponse ;
+    pair:playsRole pair:UserFacingOutput ;
+    pair:containsDataCategory pair:GeneratedContent ;
+    pair:containsDataCategory onyx:ConnectedWorkspaceContent .
+
+# Processes — ingestion side
+
+onyx:ChunkDocuments
+    a beam:Transform ;
+    rdfs:label "Chunk connected documents"@en ;
+    pair:playsRole pair:ChunkingStep ;
+    beam:use onyx:ConnectedSourceDocuments ;
+    beam:produce onyx:DocumentChunks ;
+    beam:inform onyx:EmbedChunks .
+
+onyx:EmbedChunks
+    a beam:Transform ;
+    rdfs:label "Embed document chunks"@en ;
+    pair:playsRole pair:EmbeddingStep ;
+    beam:use onyx:DocumentChunks ,
+        onyx:EmbeddingModel ;
+    beam:produce onyx:ChunkEmbeddings ;
+    beam:inform onyx:IndexInVespa .
+
+onyx:IndexInVespa
+    a beam:Transform ;
+    rdfs:label "Index chunks and embeddings into hybrid index"@en ;
+    beam:use onyx:DocumentChunks ,
+        onyx:ChunkEmbeddings ;
+    beam:produce onyx:VespaHybridIndex .
+
+# Processes — query side
+
+onyx:RephraseQuery
+    a beam:Transform ;
+    rdfs:label "Rephrase chat question with LLM"@en ;
+    pair:playsRole pair:QueryReformulationStep ;
+    beam:use onyx:UserQuery ,
+        onyx:GeneratorLLM ,
+        onyx:ProviderCredentials ;
+    beam:produce onyx:RephrasedQuery ;
+    beam:inform onyx:EmbedQuery .
+
+onyx:EmbedQuery
+    a beam:Transform ;
+    rdfs:label "Embed rephrased query"@en ;
+    pair:playsRole pair:EmbeddingStep ;
+    beam:use onyx:RephrasedQuery ,
+        onyx:EmbeddingModel ;
+    beam:produce onyx:QueryEmbedding ;
+    beam:inform onyx:HybridSearch .
+
+onyx:HybridSearch
+    a beam:Infer ;
+    rdfs:label "Hybrid vector + keyword search"@en ;
+    pair:playsRole pair:RetrievalStep ;
+    pair:playsRole pair:VectorSearchStep ;
+    pair:playsRole pair:KeywordSearchStep ;
+    beam:use onyx:QueryEmbedding ,
+        onyx:RephrasedQuery ,
+        onyx:VespaHybridIndex ;
+    beam:produce onyx:RetrievedSections ;
+    beam:inform onyx:RerankSections .
+
+onyx:RerankSections
+    a beam:Infer ;
+    rdfs:label "Rerank candidate sections with cross-encoder"@en ;
+    pair:playsRole pair:RerankingStep ;
+    beam:use onyx:RetrievedSections ,
+        onyx:RerankerModel ;
+    beam:produce onyx:RerankedSections ;
+    beam:inform onyx:BuildPrompt .
+
+onyx:BuildPrompt
+    a beam:Transform ;
+    rdfs:label "Assemble answer prompt with top sections"@en ;
+    pair:playsRole pair:PromptConstructionStep ;
+    beam:use onyx:UserQuery ,
+        onyx:RephrasedQuery ,
+        onyx:RerankedSections ;
+    beam:produce onyx:AnswerPrompt ;
+    beam:inform onyx:GenerateAnswer .
+
+onyx:GenerateAnswer
+    a beam:Infer ;
+    rdfs:label "Generate cited answer"@en ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use onyx:AnswerPrompt ,
+        onyx:RephrasedQuery ,
+        onyx:RerankedSections ,
+        onyx:GeneratorLLM ,
+        onyx:ProviderCredentials ;
+    beam:produce onyx:CitedAnswer .

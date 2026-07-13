@@ -169,6 +169,21 @@ No new object properties (R5); no new Model subclasses.
   6 findings — unchanged.
 - Tests: 14 pass, 1 pre-existing failure (below).
 
+## Post-Task 7 addition — third example use case
+
+`ontology/example/onyx_danswer.ttl` — Onyx (formerly Danswer), open-source
+(MIT) enterprise RAG platform (`https://github.com/onyx-dot-app/onyx`).
+Modeled: connector ingestion → chunking → bi-encoder embedding → hybrid
+vector + keyword index → LLM query rephrasing → hybrid search → cross-encoder
+reranking → prompt assembly → cited answer. Fires 5 motifs including three
+with no prior example coverage (QueryRewriting, Reranker, DirectPrompting)
+and 12 candidate findings across 6 risk patterns — including the
+supply-chain pattern (its external models are match-bound, unlike verba's).
+SHACL: 0 violations / 13 warnings. Tests: `python/tests/test_onyx_assessment.py`.
+Note: the strict RAG motif intentionally does not fire — reranking sits
+between retrieval and prompt construction, breaking the direct
+retrieval-to-prompt chain the motif requires.
+
 ## Open TODOs / known debt
 
 1. **Pre-existing test failure** (predates this work):
