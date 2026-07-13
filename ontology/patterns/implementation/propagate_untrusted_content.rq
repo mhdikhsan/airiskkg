@@ -1,0 +1,29 @@
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+
+CONSTRUCT {
+    ?downstream pair:containsDataCategory pair:UntrustedContent .
+}
+WHERE {
+    {
+        ?upstream pair:playsRole ?upstreamRole .
+        ?upstreamRole pair:subRoleOf* ?rootRole .
+        VALUES ?rootRole { pair:PublicUserInput pair:RetrievedContext }
+    }
+    UNION
+    {
+        ?upstream pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
+    }
+
+    FILTER NOT EXISTS { ?upstream pair:containsDataCategory pair:TrustedContent . }
+
+    ?step beam:use ?upstream ;
+          beam:produce ?downstream .
+
+    FILTER NOT EXISTS {
+        ?step pair:playsRole ?stepRole .
+        ?stepRole pair:subRoleOf* pair:GuardrailStep .
+    }
+
+    FILTER NOT EXISTS { ?downstream pair:containsDataCategory pair:TrustedContent . }
+}

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PAIR-AI Risk Assessment</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>PAIR-AI Risk Assessment</h1>
+    <p class="desc">Build or paste an architecture graph, then run the PAIR pattern-matching assessment.</p>
+  </header>
+
+  <main class="app-main">
+    <section class="panel">
+      <div class="grid">
+        <label class="field"><span>System name</span><input type="text" id="system-name" placeholder="System" /></label>
+        <label class="field"><span>System label</span><input type="text" id="system-label" placeholder="RAG-based Chatbot System" /></label>
+      </div>
+
+      <nav class="tabs">
+        <button type="button" class="tab active" data-tab="builder">Visual builder</button>
+        <button type="button" class="tab" data-tab="source">Turtle source</button>
+      </nav>
+
+      <div class="tab-body" data-tab-body="builder">
+        <h3>Resources</h3>
+        <div id="resources"></div>
+        <button type="button" class="btn" id="add-resource">+ Add resource</button>
+
+        <h3>Processes</h3>
+        <div id="processes"></div>
+        <button type="button" class="btn" id="add-process">+ Add process</button>
+
+        <div class="actions">
+          <button type="button" class="btn" id="load-example-into-builder">Load starter example</button>
+          <button type="button" class="btn primary" id="generate-ttl">Generate Turtle &rarr;</button>
+        </div>
+      </div>
+
+      <div class="tab-body hidden" data-tab-body="source">
+        <label class="field full">
+          <span>Load a bundled example</span>
+          <select id="example-select">
+            <option value="">-- select an example --</option>
+          </select>
+        </label>
+        <label class="field full">
+          <span>...or upload a Turtle file</span>
+          <input type="file" id="file-input" accept=".ttl" />
+        </label>
+        <label class="field full">
+          <span>Architecture graph (Turtle)</span>
+          <textarea id="ttl-source" rows="16" placeholder="@prefix ..."></textarea>
+        </label>
+        <div id="input-error" class="error hidden"></div>
+        <div class="actions">
+          <button type="button" class="btn primary" id="run-assessment">Run assessment</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Results</h3>
+      <p id="results-empty" class="desc">Run an assessment to see candidate risk findings here.</p>
+      <div id="results" class="hidden"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

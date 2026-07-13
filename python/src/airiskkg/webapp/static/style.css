@@ -1,0 +1,132 @@
+:root {
+  color-scheme: light;
+  --border: #d8dce2;
+  --bg-muted: #f5f6f8;
+  --primary: #2f5fce;
+  --text-muted: #5a6270;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #1b1f24;
+  background: #fff;
+}
+
+.app-header {
+  padding: 1.25rem 1.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-header h1 { margin: 0 0 0.25rem; font-size: 1.4rem; }
+
+.app-main {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .app-main { grid-template-columns: 1fr; }
+}
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.hidden { display: none !important; }
+
+.desc { color: var(--text-muted); font-size: 0.9rem; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+
+.field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; }
+.field.full { grid-column: 1 / -1; }
+.field span { color: var(--text-muted); }
+.field input, .field select, .field textarea {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.tabs { display: flex; gap: 0.5rem; margin: 1rem 0 0.75rem; border-bottom: 1px solid var(--border); }
+.tab {
+  border: none;
+  background: none;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+}
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+.btn {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+.btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn.small { padding: 0.15rem 0.4rem; font-size: 0.8rem; }
+.btn.icon { line-height: 1; }
+
+.actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+
+.element-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.6rem;
+  background: var(--bg-muted);
+}
+.element-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+
+textarea#ttl-source { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
+
+.error { color: #b3261e; font-size: 0.85rem; margin: 0.5rem 0; }
+
+.summary { display: flex; gap: 1.5rem; margin-bottom: 1rem; }
+.stat .num { font-size: 1.6rem; font-weight: 700; }
+.stat .lbl { color: var(--text-muted); font-size: 0.8rem; }
+
+.owasp-breakdown { margin-bottom: 1rem; }
+.bar-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.2rem 0; font-size: 0.8rem; }
+.bar-track { flex: 1; background: var(--bg-muted); border-radius: 4px; height: 8px; overflow: hidden; }
+.bar { background: var(--primary); height: 100%; }
+
+.finding {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+.finding h3 { margin: 0 0 0.25rem; font-size: 1rem; }
+.meta { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.chip {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+}
+.finding-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.finding-block.full { grid-column: 1 / -1; }
+.finding-block h5 { margin: 0 0 0.25rem; font-size: 0.8rem; color: var(--text-muted); }
+.ref-list { margin: 0; padding-left: 1.1rem; font-size: 0.85rem; }
+.tax-source { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-top: 0.3rem; }
+
+.collapsible summary { cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.match { border-top: 1px solid var(--border); padding: 0.4rem 0; font-size: 0.85rem; }
+.bindings { color: var(--text-muted); font-size: 0.78rem; }
+
+.spinner { color: var(--text-muted); font-size: 0.9rem; }

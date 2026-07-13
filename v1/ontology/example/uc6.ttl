@@ -1,0 +1,164 @@
+@prefix uc6:   <http://w3id.org/airiskkg/example/uc6#> .
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix pair:    <http://w3id.org/airiskkg/pair-ai#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix vann:  <http://purl.org/vocab/vann/> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+
+<http://w3id.org/airiskkg/example/uc6#> a owl:Ontology ;
+    dct:title "UC6 LLM-based IR Workflow"@en ;
+    vann:preferredNamespacePrefix "uc6" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/example/uc6#" ;
+    owl:imports <http://w3id.org/beam/core#> ,
+        <http://w3id.org/airiskkg/pair-ai#> .
+
+uc6:UC6_System
+    a beam:System ;
+    rdfs:label "RAG-based Chatbot System"@en ;
+    beam:hasResource
+        uc6:QuestionsAboutProduct ,
+        uc6:EmbeddedQuestion ,
+        uc6:ProductInformationVectorDB ,
+        uc6:QueryTemplate ,
+        uc6:EmbeddedProductInfo ,
+        uc6:ScoringAndQueryReformulationPrompt ,
+        uc6:ReformulatedQuery ,
+        uc6:EmbeddedProductInfoEnhanced ,
+        uc6:SystemPromptTemplate ,
+        uc6:LLM ,
+        uc6:EventSummary ;
+    beam:hasProcess
+        uc6:Embedding ,
+        uc6:ProductInformationRetrieval ,
+        uc6:LlatrievalScoringAndQueryReformulation ,
+        uc6:LLMPrompting .
+
+uc6:PrivateProductInformation
+    a pair:DataCategory ;
+    rdfs:label "Private Product Information"@en ;
+    pair:subDataCategoryOf pair:ProductInformation ;
+    pair:subDataCategoryOf pair:SensitiveInformation .
+
+uc6:QuestionsAboutProduct
+    a beam:Data ;
+    rdfs:label "Questions about product"@en ;
+    pair:playsRole pair:PublicUserInput ;
+    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory pair:ExternalUserContent ;
+    beam:usedBy uc6:Embedding .
+
+uc6:EmbeddedQuestion
+    a beam:Data ;
+    rdfs:label "Embedded question"@en ;
+    pair:containsDataCategory pair:ProductInformation ;
+    beam:usedBy uc6:ProductInformationRetrieval .
+
+uc6:ProductInformationVectorDB
+    a beam:Data ;
+    rdfs:label "Product information vector DB"@en ;
+    pair:playsRole pair:VectorStore ;
+    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory uc6:PrivateProductInformation ;
+    beam:usedBy uc6:ProductInformationRetrieval .
+
+uc6:QueryTemplate
+    a beam:Data ;
+    rdfs:label "Query template"@en ;
+    pair:playsRole pair:PromptTemplate ;
+    beam:usedBy uc6:ProductInformationRetrieval .
+
+uc6:EmbeddedProductInfo
+    a beam:Data ;
+    rdfs:label "Embedded product info"@en ;
+    pair:playsRole pair:RetrievedResult ;
+    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory uc6:PrivateProductInformation ;
+    pair:containsDataCategory pair:UntrustedContent ;
+    beam:usedBy uc6:LlatrievalScoringAndQueryReformulation .
+
+uc6:ScoringAndQueryReformulationPrompt
+    a beam:Data ;
+    rdfs:label "Scoring and query reformulation prompt"@en ;
+    pair:playsRole pair:PromptTemplate ;
+    pair:containsDataCategory pair:PromptInstruction ;
+    beam:usedBy uc6:LlatrievalScoringAndQueryReformulation .
+
+uc6:ReformulatedQuery
+    a beam:Data ;
+    rdfs:label "Reformulated query"@en ;
+    pair:playsRole pair:PublicUserInput ;
+    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory pair:ExternalUserContent ;
+    beam:usedBy uc6:ProductInformationRetrieval .
+
+uc6:EmbeddedProductInfoEnhanced
+    a beam:Data ;
+    rdfs:label "Embedded product info enhanced"@en ;
+    pair:playsRole pair:RetrievedResult ;
+    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory uc6:PrivateProductInformation ;
+    pair:containsDataCategory pair:UntrustedContent ;
+    beam:usedBy uc6:LLMPrompting .
+
+uc6:LLM
+    a beam:StatisticalModel ;
+    rdfs:label "LLM"@en ;
+    pair:playsRole pair:GenerativeModel ;
+    beam:usedBy uc6:LlatrievalScoringAndQueryReformulation ;
+    beam:usedBy uc6:LLMPrompting .
+
+uc6:SystemPromptTemplate
+    a beam:Data ;
+    rdfs:label "System prompt template"@en ;
+    pair:playsRole pair:SystemPrompt ;
+    pair:containsDataCategory pair:PromptInstruction ;
+    beam:usedBy uc6:LLMPrompting .
+
+uc6:EventSummary
+    a beam:Data ;
+    rdfs:label "Event summary"@en ;
+    pair:playsRole pair:PublicUserFacingOutput ;
+    pair:containsDataCategory pair:ProductInformation .
+
+uc6:Embedding
+    a beam:Transform ;
+    rdfs:label "Embedding"@en ;
+    pair:playsRole pair:EmbeddingStep ;
+    beam:use uc6:QuestionsAboutProduct ;
+    beam:produce uc6:EmbeddedQuestion ;
+    beam:inform uc6:ProductInformationRetrieval .
+
+uc6:ProductInformationRetrieval
+    a beam:Infer ;
+    rdfs:label "Product information retrieval"@en ;
+    pair:playsRole pair:RetrievalStep ;
+    beam:use uc6:EmbeddedQuestion ;
+    beam:use uc6:ProductInformationVectorDB ;
+    beam:use uc6:QueryTemplate ;
+    beam:use uc6:ReformulatedQuery ;
+    beam:produce uc6:EmbeddedProductInfo ;
+    beam:inform uc6:LlatrievalScoringAndQueryReformulation .
+
+uc6:LlatrievalScoringAndQueryReformulation
+    a beam:Transform ;
+    rdfs:label "Llatrieval scoring and query reformulation"@en ;
+    pair:playsRole pair:RerankingStep ;
+    pair:playsRole pair:QueryReformulationStep ;
+    beam:use uc6:EmbeddedProductInfo ;
+    beam:use uc6:ScoringAndQueryReformulationPrompt ;
+    beam:use uc6:LLM ;
+    beam:produce uc6:ReformulatedQuery ;
+    beam:produce uc6:EmbeddedProductInfoEnhanced ;
+    beam:inform uc6:ProductInformationRetrieval ;
+    beam:inform uc6:LLMPrompting .
+
+uc6:LLMPrompting
+    a beam:Transform ;
+    rdfs:label "LLM prompting"@en ;
+    pair:playsRole pair:PromptConstructionStep ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use uc6:EmbeddedProductInfoEnhanced ;
+    beam:use uc6:SystemPromptTemplate ;
+    beam:use uc6:LLM ;
+    beam:produce uc6:EventSummary .

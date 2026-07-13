@@ -1,0 +1,357 @@
+================================================================================
+PAIR-AI RISK ASSESSMENT — PRACTICAL GUIDELINES
+================================================================================
+Scope: how to model a system and run a PAIR-AI (Pattern-based AI Risk)
+assessment against it using this repository's ontology, SPARQL queries, CLI,
+and web UI.
+
+
+--------------------------------------------------------------------------------
+1. WHAT PAIR-AI ACTUALLY DOES
+--------------------------------------------------------------------------------
+PAIR-AI works in two conceptually separate layers:
+
+  MOTIF (structure)
+    A small, recurring, named subgraph shape — nodes + edges + expected
+    roles. Purely structural: "does this shape exist in the architecture?"
+    Defined in: ontology/patterns/motif.ttl (class pair:GraphMotif)
+    Detected by: ontology/patterns/implementation/match_*.rq
+
+  RISK PATTERN / MOTIF INTERPRETATION (semantics)
+    What a matched motif MEANS, risk-wise: which mechanism it implies, which
+    taxonomy entries it maps to, which controls are suggested.
+    Defined in: ontology/patterns/risk_pattern_library.ttl
+      (classes pair:AIRiskPattern / pair:MotifInterpretation)
+    Detected by: ontology/patterns/implementation/risk_*.rq
+
+A motif carries no risk judgment by itself. A risk pattern/interpretation is
+what turns "this shape exists" into "this is risky, here is why, here is what
+to do about it." "PAIR" (Pattern-based AI Risk) is the umbrella name for the
+whole two-layer methodology.
+
+
+--------------------------------------------------------------------------------
+2. KEY VOCABULARY YOU WILL USE WHEN MODELING A SYSTEM
+--------------------------------------------------------------------------------
+Everything lives under two namespaces:
+  beam: <http://w3id.org/beam/core#>       -- generic system/resource/process vocabulary
+  pair: <http://w3id.org/airiskkg/pair-ai#> -- PAIR-AI roles, data categories, assessment vocabulary
+
+2.1 System structure (beam:)
+  beam:System        the system under assessment
+  beam:hasResource / beam:hasProcess   links the system to its parts
+  beam:Data, beam:StatisticalModel, beam:Symbol      resource classes
+  beam:Transform, beam:Infer, beam:Train, beam:Generate, beam:Process   process classes
+  beam:use            process -> resource it consumes
+  beam:produce        process -> resource it creates
+  beam:inform         process -> process (workflow ordering, not data flow)
+
+2.2 Roles (pair:playsRole, range pair:PatternRole)
+  Roles are what motif/risk queries actually match against — NOT the raw
+  beam: class. A role is a reusable, motif-agnostic tag; the same role
+  vocabulary is shared across every motif and risk query. Full hierarchy:
+  ontology/core/pair_ai_pattern.ttl (search "Annotation vocabulary: roles" /
+  "CONSOLIDATED ROLE VOCABULARY"). Roles form a hierarchy via pair:subRoleOf
+  (transitive) — queries usually check `pair:playsRole/pair:subRoleOf*
+  pair:SomeRole`, so tagging a more specific subrole (e.g. PublicUserInput)
+  still satisfies a query looking for the general parent (UserInput).
+
+  Commonly used roles:
+    pair:UserInput / pair:PublicUserInput      user-supplied input
+    pair:VectorStore, pair:KnowledgeSource      retrieval sources
+    pair:RetrievalStep                          a retrieval process step
+    pair:RetrievedContext / pair:RetrievedResult  content coming back from retrieval
+    pair:GenerativeModel, pair:PretrainedModel, pair:FoundationLLM   model roles
+    pair:GenerationStep, pair:PromptConstructionStep   LLM-calling steps
+    pair:SystemPrompt, pair:PromptTemplate       prompt-shaping data
+    pair:UserFacingOutput / pair:PublicUserFacingOutput   final output
+    pair:GuardrailStep / pair:InputGuardrailStep / pair:OutputGuardrailStep
+                                                  validation/sanitization steps
+    pair:EmbeddingStep, pair:RerankingStep, pair:QueryReformulationStep
+                                                  RAG pipeline steps
+    pair:ExternalModel, pair:ExternalProviderCredential, pair:ThirdPartyPackage
+                                                  supply-chain-relevant roles
+
+2.3 Data categories (pair:containsDataCategory, range pair:DataCategory,
+    domain beam:Data)
+  Tags on DATA specifically (not processes/models), forming their own
+  hierarchy via pair:subDataCategoryOf (transitive).
+    pair:UntrustedContent   content that may carry adversarial/injected instructions
+    pair:TrustedContent     explicit override that clears untrusted-content taint
+    pair:SensitiveInformation, pair:PromptInstruction, pair:ExternalUserContent,
+    pair:ProductInformation, pair:GeneratedContent   (used ad hoc across examples;
+      not all of these are formally declared as pair:DataCategory individuals yet
+      -- see section 6, Known Limitations)
+
+  IMPORTANT: you usually do NOT need to hand-tag pair:UntrustedContent
+  yourself anymore. See section 4 (data-category propagation) -- it is
+  inferred automatically from roles and data flow. You still need to tag
+  pair:SensitiveInformation, pair:PromptInstruction, and similar categories
+  manually, since propagation only exists for untrusted-content taint so far.
+
+
+--------------------------------------------------------------------------------
+3. STEP-BY-STEP: MODELING AN ARCHITECTURE GRAPH
+--------------------------------------------------------------------------------
+Use ontology/example/uc6.ttl as the reference template. Minimal skeleton:
+
+  @prefix ex:   <http://w3id.org/airiskkg/example/my-system#> .
+  @prefix beam: <http://w3id.org/beam/core#> .
+  @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+
+  ex:MySystem a beam:System ;
+      rdfs:label "My System"@en ;
+      beam:hasResource ex:UserQuestion, ex:VectorDB, ex:Answer ;
+      beam:hasProcess  ex:Retrieve, ex:Generate .
+
+  ex:UserQuestion a beam:Data ;
+      rdfs:label "User question"@en ;
+      pair:playsRole pair:PublicUserInput .
+
+  ex:VectorDB a beam:Data ;
+      rdfs:label "Knowledge vector store"@en ;
+      pair:playsRole pair:VectorStore ;
+      pair:containsDataCategory pair:SensitiveInformation .
+
+  ex:Retrieve a beam:Infer ;
+      rdfs:label "Vector retrieval"@en ;
+      pair:playsRole pair:RetrievalStep ;
+      beam:use ex:UserQuestion, ex:VectorDB ;
+      beam:produce ex:RetrievedContext ;
+      beam:inform ex:Generate .
+
+  ... (continue for every resource and process in the pipeline)
+
+Steps:
+  1. List every resource (data, model, symbol) and process (transform,
+     infer, train, generate) in your pipeline.
+  2. Give each one exactly the beam: class that matches what it is.
+  3. Tag every element with pair:playsRole from the vocabulary in section 2.2
+     -- this is what motif/risk queries actually key off, not the beam: class
+     alone.
+  4. Wire elements together with beam:use / beam:produce (data flow) and
+     beam:inform (process ordering).
+  5. Tag data-bearing resources with pair:containsDataCategory where relevant
+     (sensitive info, prompt instructions, etc.) -- skip UntrustedContent,
+     it is inferred (section 4).
+  6. If you have a validation/sanitization/guardrail step, tag it with
+     pair:GuardrailStep (or a subrole) -- this is what stops untrusted-content
+     propagation from flowing past it.
+
+You can build this graph by hand in Turtle, or use the web UI's visual
+builder (see section 5.2), which generates the Turtle for you from a form.
+
+
+--------------------------------------------------------------------------------
+4. DATA-CATEGORY PROPAGATION (read this before hand-tagging UntrustedContent)
+--------------------------------------------------------------------------------
+Implementation: ontology/patterns/implementation/propagate_untrusted_content.rq
+Registered as: pat:UntrustedContentPropagationOQP in risk_pattern_library.ttl
+Run by: airiskkg._propagate_data_categories() -- first stage of every assessment
+
+Rules:
+  - ROOTS (untrusted by default, no tag needed): anything playing a role
+    subRoleOf* pair:PublicUserInput or subRoleOf* pair:RetrievedContext.
+  - PROPAGATION: taint flows along beam:use/beam:produce edges -- whatever a
+    step produces from untrusted input is untrusted too.
+  - TRUST-CLEARING: propagation stops at a step playing a role
+    subRoleOf* pair:GuardrailStep, or at an element explicitly tagged
+    pair:containsDataCategory pair:TrustedContent.
+  - Runs to a FIXED POINT (repeats until nothing new is inferred, capped at
+    20 iterations) so multi-hop pipelines are covered, not just one hop.
+
+Why this exists: risk queries like risk_prompt_injection.rq only fire for
+elements tagged pair:containsDataCategory pair:UntrustedContent. Requiring
+every architect to manually re-tag every derived element downstream is
+fragile -- forget one tag three hops down the pipeline and the finding
+silently never fires. Propagation removes that failure mode for anything
+that is structurally derivable from roles + data flow.
+
+What it does NOT cover: risk that is only visible from a label/description
+(e.g. a plain beam:Data node named "internal HR records" with no distinctive
+role) still needs a human, or an LLM-assisted authoring step, to tag it.
+Propagation is not a substitute for that -- it only prevents the mechanical
+"I forgot to re-tag a downstream node" failure mode.
+
+
+--------------------------------------------------------------------------------
+5. RUNNING THE ASSESSMENT
+--------------------------------------------------------------------------------
+5.1 CLI (python/src/airiskkg/cli.py)
+  Setup:
+    python -m venv .venv
+    .venv/Scripts/python.exe -m pip install -e "python[dev]"
+
+  Run (architecture graph argument is required, no default):
+    .venv/Scripts/airiskkg.exe assess ontology/example/uc6.ttl
+    .venv/Scripts/airiskkg.exe assess ontology/example/uc6.ttl --output-dir outputs/my_run
+    .venv/Scripts/airiskkg.exe assess file1.ttl file2.ttl        (assess multiple at once)
+
+  Each run writes to an auto-numbered subdirectory so repeated runs never
+  clobber each other: outputs/output_1/, outputs/output_2/, ...
+
+5.2 Web UI (python/src/airiskkg/webapp/)
+  Setup:
+    .venv/Scripts/python.exe -m pip install -e "python[web]"
+  Run:
+    .venv/Scripts/airiskkg.exe serve
+    -> open http://127.0.0.1:5000/
+
+  Two ways to get an architecture graph: the visual builder (add
+  resources/processes, assign roles/categories from a live vocabulary
+  dropdown, wire them with use/produce/inform, then "Generate Turtle"), or
+  paste/upload/select-a-bundled-example Turtle directly. "Run assessment"
+  calls the same pipeline as the CLI, in-memory, and renders results grouped
+  by OWASP LLM category.
+
+Full setup detail: docs/running_assessment_runner.md, docs/running_the_webapp.md
+
+
+--------------------------------------------------------------------------------
+6. THE PIPELINE (what actually executes, in order)
+--------------------------------------------------------------------------------
+  0. LOAD
+     load_assessment_graph() merges: core ontology (beam_core.ttl,
+     beam_core_risk.ttl, imports.ttl, pair_ai_pattern.ttl) + pattern library
+     (motif.ttl, risk_pattern_library.ttl) + all of ontology/taxonomy/*.ttl +
+     your input architecture file(s), into one working graph.
+
+  1. PROPAGATE (pair:DataCategoryPropagation output type)
+     Runs registered propagation queries to a fixed point. See section 4.
+
+  2. MATCH MOTIFS (pair:MotifMatch output type, single pass)
+     Every pair:PatternImplementation registered with producesOutputType
+     pair:MotifMatch is discovered dynamically (via pair:implementationPath)
+     and executed as a SPARQL CONSTRUCT against the working graph. Query
+     WHERE clauses resolve role ambiguity (e.g. "which beam:use object is the
+     query vs. the vector store") purely through role constraints -- SPARQL
+     tries every combination and keeps only the one where every element's
+     tagged role satisfies what that slot requires. Results (pair:MotifMatch
+     + pair:NodeBinding individuals) are merged back into the working graph.
+
+  3. INTERPRET RISK (pair:RiskFinding output type, single pass)
+     Same discovery mechanism, for risk_*.rq queries. These can require an
+     element to already be part of an existing pair:MotifMatch (via
+     pair:hasNodeBinding/pair:matchedElement), so they run after step 2.
+
+  4. COMBINE + WRITE OUTPUT
+     inferred_annotations.ttl, motif_matches.ttl, risk_findings.ttl,
+     combined_assessment_graph.ttl written to the numbered output directory.
+
+Nothing here is hardcoded in Python -- adding a new motif or risk query means
+writing a new .rq file and registering it with pair:producesOutputType /
+pair:implementationPath in risk_pattern_library.ttl. The motif's node/edge
+definitions in motif.ttl (pair:PatternNode, pair:expectedRole,
+pair:expectedClass, pair:PatternEdge) are DECLARATIVE ONLY -- nothing compiles
+them into SPARQL automatically. The matching .rq file is a separately
+hand-written query that must independently encode the same constraints, and
+the pattern-node names it CONSTRUCTs must match what any downstream risk
+query expects. Keep these in sync manually when adding new motifs -- this is
+the single most common source of silent-zero-results bugs (see section 7).
+
+
+--------------------------------------------------------------------------------
+7. READING THE OUTPUT
+--------------------------------------------------------------------------------
+  inferred_annotations.ttl       what propagation inferred (not asserted by you)
+  motif_matches.ttl              pair:MotifMatch + pair:NodeBinding individuals
+  risk_findings.ttl               pair:RiskFinding individuals
+  combined_assessment_graph.ttl   everything merged (ontology + input + generated)
+
+Every finding has:
+  rdfs:label / dct:description       human-readable summary
+  pair:findingStatus "candidate"     NOT a final verdict -- a human should
+                                      review and confirm or dismiss it
+  pair:generatedFromMatch            which pair:MotifMatch triggered it
+  pair:generatedByMotif              which motif matched
+  pair:hasInterpretedMechanism       the underlying risk mechanism (owasp:mechanism-*)
+  pair:hasEvidenceElement            the concrete graph nodes that caused this
+                                      finding -- trace these back to your input
+                                      graph to judge whether it is a real concern
+  pair:hasCandidateRiskTaxonomyEntry  cross-referenced OWASP/IBM/MIT taxonomy entries
+  pair:hasSuggestedControl           candidate mitigations (pattern-level and/or
+                                      MIT AI Risk Control entries)
+
+A finding with no evidence you recognize, or evidence that's actually
+protected by a control you already have (but didn't model), is a false
+positive to dismiss, not a bug -- this is a "candidate" assessment tool, not
+an oracle.
+
+
+--------------------------------------------------------------------------------
+8. KNOWN LIMITATIONS (as of this writing)
+--------------------------------------------------------------------------------
+  - Motif coverage is partial. match_direct_prompting.rq is the only
+    "generation" motif implemented; it requires a raw UserInput feeding
+    directly into a beam:Infer step. A RAG-style generation step (retrieved
+    context + system prompt -> beam:Transform -> output) does not match it,
+    so risk_system_prompt_leakage.rq / risk_improper_output_handling.rq can
+    stay at 0 findings for RAG architectures even when relevant -- not a bug,
+    a motif that has not been authored yet.
+  - pair:DataCategory individuals are mostly undeclared in the core ontology
+    (pair:UntrustedContent, pair:SensitiveInformation, etc. are used but not
+    formally declared `a pair:DataCategory` anywhere central) -- this also
+    means the web UI's data-category dropdown is sparsely populated.
+  - Propagation (section 4) only covers taint derivable from roles + data
+    flow. Semantic risk visible only from a label (not the graph shape)
+    needs manual or LLM-assisted tagging -- not yet implemented.
+  - ontology/example/verba_goldenverba.ttl has an unrelated role-modeling gap:
+    test_verba_external_model_produces_supply_chain_finding fails.
+
+
+--------------------------------------------------------------------------------
+9. DEBUGGING A "0 FINDINGS" RESULT
+--------------------------------------------------------------------------------
+When a finding you expect doesn't show up, check in this order:
+  1. Does the role you tagged actually chain up (via pair:subRoleOf*) to what
+     the query requires? Check ontology/core/pair_ai_pattern.ttl for the role's
+     parent chain.
+  2. Does the element have the exact beam: class the query's pattern node
+     expects (pair:expectedClass in motif.ttl)? e.g. beam:Infer vs beam:Transform
+     matters -- they are not interchangeable.
+  3. For risk queries that depend on an existing motif match: did the motif
+     actually match first? Run the motif-matching query in isolation to check.
+  4. Do the pair:bindsPatternNode names a risk query looks for actually match
+     what the corresponding match_*.rq CONSTRUCTs? These are two independently
+     hand-written files and can drift (this has happened twice in this
+     codebase already).
+  5. For data-category-dependent queries: did propagation run, and did it
+     reach the element you expected? Check inferred_annotations.ttl.
+
+
+================================================================================
+REFERENCES
+================================================================================
+
+Internal (this repository)
+  ontology/core/pair_ai_pattern.ttl            core classes, roles, data categories
+  ontology/patterns/motif.ttl                   architecture motif library
+  ontology/patterns/risk_pattern_library.ttl    risk pattern / interpretation library
+  ontology/patterns/implementation/*.rq         executable motif-match / risk /
+                                                 propagation SPARQL queries
+  ontology/example/uc6.ttl                      reference architecture example (RAG chatbot)
+  ontology/example/verba_goldenverba.ttl        reference architecture example (Verba/Weaviate RAG)
+  ontology/queries/visualization/*.rq           graph visualization queries
+  python/src/airiskkg/assessment_runner.py      assessment pipeline implementation
+  python/src/airiskkg/architecture_builder.py   builder-model -> Turtle compiler
+  python/src/airiskkg/assessment_view.py        result -> JSON view for the web UI
+  python/src/airiskkg/webapp/                   Flask web UI
+  docs/running_assessment_runner.md             CLI setup and usage detail
+  docs/running_the_webapp.md                    Web UI setup and usage detail
+  docs/pattern_examples.md                      worked motif/risk-pattern examples
+
+External sources cited by the ontology (dct:source)
+  OWASP Top 10 for LLM Applications (2025)
+    https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/
+    https://owasp.org/www-project-top-10-for-large-language-model-applications/assets/PDF/OWASP-Top-10-for-LLMs-v2025.pdf
+  IBM AI Risk Atlas / Nexus knowledge graph
+    https://github.com/IBM/ai-atlas-nexus/tree/main/src/ai_atlas_nexus/data/knowledge_graph
+  MIT AI Risk Repository (via IBM Nexus data)
+    https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_repository_data.yaml
+  MIT AI Risk mitigation / control data (via IBM Nexus data)
+    https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_mitigation_data.yaml
+  Mercari ML System Design Pattern (classic ML serving/training/lifecycle motifs)
+    https://mercari.github.io/ml-system-design-pattern/
+  Martin Fowler, "Patterns for Building LLM-based Systems & Products" (RAG /
+  generation motifs: Direct Prompting, RAG, Query Rewriting, Reranker, etc.)
+    https://martinfowler.com/articles/gen-ai-patterns/

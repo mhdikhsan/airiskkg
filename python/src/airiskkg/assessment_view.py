@@ -1,0 +1,139 @@
+"""Turn an AssessmentResult into JSON-friendly data for the web UI."""
+
+from __future__ import annotations
+
+from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, URIRef
+
+from airiskkg.assessment_runner import PAIR, AssessmentResult
+
+_SOURCE_PREFIXES = {
+    "http://w3id.org/airiskkg/taxonomy/owasp-llm#": "OWASP LLM Top 10",
+    "http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#": "IBM Risk Atlas",
+    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#": "MIT AI Risk Repository",
+    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#": "MIT AI Risk Control",
+    "http://w3id.org/airiskkg/patterns#": "PAIR-AI Pattern Library",
+}
+
+
+def _local_name(uri: URIRef) -> str:
+    text = str(uri)
+    return text.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
+
+
+def _label(graph: Graph, resource: URIRef) -> str:
+    value = graph.value(resource, SKOS.prefLabel) or graph.value(resource, RDFS.label)
+    return str(value) if value else _local_name(resource)
+
+
+def _definition(graph: Graph, resource: URIRef) -> str | None:
+    value = (
+        graph.value(resource, SKOS.definition)
+        or graph.value(resource, DCTERMS.description)
+    )
+    return str(value) if value else None
+
+
+def _source(uri: URIRef) -> str:
+    text = str(uri)
+    for prefix, label in _SOURCE_PREFIXES.items():
+        if text.startswith(prefix):
+            return label
+    return "Other"
+
+
+def _ref(graph: Graph, resource: URIRef) -> dict:
+    return {
+        "id": str(resource),
+        "label": _label(graph, resource),
+        "definition": _definition(graph, resource),
+        "source": _source(resource),
+    }
+
+
+def _element_ref(graph: Graph, resource: URIRef) -> dict:
+    return {"id": str(resource), "label": _label(graph, resource)}
+
+
+def _motif_ref(graph: Graph, motif: URIRef | None) -> dict | None:
+    return _element_ref(graph, motif) if motif is not None else None
+
+
+def _finding_view(graph: Graph, finding: URIRef) -> dict:
+    motif = graph.value(finding, PAIR.generatedByMotif)
+    mechanism = graph.value(finding, PAIR.hasInterpretedMechanism)
+    status = graph.value(finding, PAIR.findingStatus)
+    description = graph.value(finding, DCTERMS.description)
+
+    taxonomy_entries = sorted(
+        graph.objects(finding, PAIR.hasCandidateRiskTaxonomyEntry), key=str
+    )
+    suggested_controls = sorted(graph.objects(finding, PAIR.hasSuggestedControl), key=str)
+    evidence = sorted(graph.objects(finding, PAIR.hasEvidenceElement), key=str)
+
+    return {
+        "id": str(finding),
+        "label": _label(graph, finding),
+        "description": str(description) if description else None,
+        "motif": _motif_ref(graph, motif),
+        "mechanism": _element_ref(graph, mechanism) if mechanism is not None else None,
+        "status": str(status) if status else None,
+        "taxonomyEntries": [_ref(graph, entry) for entry in taxonomy_entries],
+        "suggestedControls": [_ref(graph, control) for control in suggested_controls],
+        "evidence": [_element_ref(graph, element) for element in evidence],
+    }
+
+
+def _motif_match_view(graph: Graph, match: URIRef) -> dict:
+    motif = graph.value(match, PAIR.matchesMotif)
+    bindings = sorted(graph.objects(match, PAIR.hasNodeBinding), key=str)
+
+    bound_elements = []
+    for binding in bindings:
+        pattern_node = graph.value(binding, PAIR.bindsPatternNode)
+        matched_element = graph.value(binding, PAIR.matchedElement)
+        if pattern_node is None or matched_element is None:
+            continue
+        bound_elements.append(
+            {
+                "patternNode": _local_name(pattern_node),
+                "element": _label(graph, matched_element),
+            }
+        )
+
+    return {
+        "id": str(match),
+        "motif": _motif_ref(graph, motif),
+        "boundElements": bound_elements,
+    }
+
+
+def _findings_by_owasp_category(graph: Graph, findings: list[URIRef]) -> list[dict]:
+    counts: dict[URIRef, int] = {}
+    for finding in findings:
+        categories = {
+            entry
+            for entry in graph.objects(finding, PAIR.hasCandidateRiskTaxonomyEntry)
+            if _source(entry) == "OWASP LLM Top 10"
+        }
+        for category in categories:
+            counts[category] = counts.get(category, 0) + 1
+
+    return [
+        {"id": str(category), "label": _label(graph, category), "count": count}
+        for category, count in sorted(counts.items(), key=lambda item: (-item[1], str(item[0])))
+    ]
+
+
+def summarize_result(result: AssessmentResult) -> dict:
+    findings = sorted(result.risk_findings.subjects(RDF.type, PAIR.RiskFinding), key=str)
+    matches = sorted(result.motif_matches.subjects(RDF.type, PAIR.MotifMatch), key=str)
+
+    return {
+        "summary": {
+            "riskFindingCount": len(findings),
+            "motifMatchCount": len(matches),
+            "findingsByOwaspCategory": _findings_by_owasp_category(result.combined_graph, findings),
+        },
+        "findings": [_finding_view(result.combined_graph, finding) for finding in findings],
+        "motifMatches": [_motif_match_view(result.combined_graph, match) for match in matches],
+    }

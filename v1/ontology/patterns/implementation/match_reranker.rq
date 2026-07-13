@@ -1,0 +1,62 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Reranker motif match"@en ;
+        pair:matchesMotif pat:RerankerMotif ;
+        pair:hasNodeBinding ?candidateSetBinding ,
+            ?rerankerModelBinding ,
+            ?rerankingStepBinding ,
+            ?rerankedContextBinding .
+
+    ?candidateSetBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:Reranker_CandidateSetNode ;
+        pair:matchedElement ?candidateSet .
+
+    ?rerankerModelBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:Reranker_ModelNode ;
+        pair:matchedElement ?rerankerModel .
+
+    ?rerankingStepBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:Reranker_RerankingStepNode ;
+        pair:matchedElement ?rerankingStep .
+
+    ?rerankedContextBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:Reranker_RankedContextNode ;
+        pair:matchedElement ?rerankedContext .
+}
+WHERE {
+    ?rerankingStep
+        beam:use ?candidateSet ;
+        beam:use ?rerankerModel ;
+        beam:produce ?rerankedContext ;
+        pair:playsRole ?rerankingRole .
+    ?rerankingRole pair:subRoleOf* pair:RerankingStep .
+
+    ?candidateSet pair:playsRole ?candidateSetRole .
+    ?candidateSetRole pair:subRoleOf* pair:RetrievedContext .
+
+    ?rerankerModel pair:playsRole ?modelRole .
+    ?modelRole pair:subRoleOf* pair:Model .
+
+    ?rerankedContext pair:playsRole ?rerankedRole .
+    ?rerankedRole pair:subRoleOf* pair:RetrievedContext .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/",
+        ENCODE_FOR_URI(STR(?rerankingStep)),
+        "/reranker/",
+        ENCODE_FOR_URI(STR(?candidateSet)),
+        "/",
+        ENCODE_FOR_URI(STR(?rerankedContext))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/candidate-set")) AS ?candidateSetBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/reranker-model")) AS ?rerankerModelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/reranking-step")) AS ?rerankingStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/reranked-context")) AS ?rerankedContextBinding)
+}

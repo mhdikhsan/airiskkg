@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 
 from airiskkg.paths import (
     CORE_DIR,
-    EXAMPLE_DIR,
     OUTPUTS_DIR,
     PATTERNS_DIR,
     TAXONOMY_DIR,
@@ -38,10 +38,6 @@ PATTERN_FILES = [
     PATTERNS_DIR / "risk_pattern_library.ttl",
 ]
 
-DEFAULT_ARCHITECTURE_FILES = [
-    EXAMPLE_DIR / "uc6.ttl",
-]
-
 
 @dataclass(frozen=True)
 class AssessmentResult:
@@ -49,6 +45,8 @@ class AssessmentResult:
     motif_matches: Graph
     risk_findings: Graph
     combined_graph: Graph
+    output_dir: Path | None = None
+    inferred_annotations: Graph = field(default_factory=Graph)
 
     @property
     def motif_match_count(self) -> int:
@@ -81,7 +79,7 @@ def _load_turtle(graph: Graph, path: Path) -> None:
 
 def _as_path_list(paths: Path | str | Iterable[Path | str] | None) -> list[Path]:
     if paths is None:
-        return list(DEFAULT_ARCHITECTURE_FILES)
+        raise ValueError("At least one architecture graph file must be provided.")
     if isinstance(paths, (str, Path)):
         paths = [paths]
 
@@ -93,6 +91,8 @@ def _as_path_list(paths: Path | str | Iterable[Path | str] | None) -> list[Path]
         if not path.is_file():
             raise FileNotFoundError(f"Architecture graph not found: {path}")
         resolved_paths.append(path)
+    if not resolved_paths:
+        raise ValueError("At least one architecture graph file must be provided.")
     return resolved_paths
 
 
@@ -103,7 +103,22 @@ def _resolve_output_dir(output_dir: Path | str) -> Path:
     return path
 
 
-def load_assessment_graph(architecture_paths: Path | str | Iterable[Path | str] | None = None) -> Graph:
+_OUTPUT_RUN_DIR_RE = re.compile(r"^output_(\d+)$")
+
+
+def _next_output_run_dir(base_dir: Path) -> Path:
+    """Pick the next output_<n> subdirectory so each run gets its own folder."""
+    base_dir.mkdir(parents=True, exist_ok=True)
+    existing_runs = [
+        int(match.group(1))
+        for entry in base_dir.iterdir()
+        if entry.is_dir() and (match := _OUTPUT_RUN_DIR_RE.match(entry.name))
+    ]
+    next_run = max(existing_runs, default=0) + 1
+    return base_dir / f"output_{next_run}"
+
+
+def load_base_graph() -> Graph:
     graph = _bind_prefixes(Graph())
     for path in CORE_FILES:
         _load_turtle(graph, path)
@@ -111,13 +126,14 @@ def load_assessment_graph(architecture_paths: Path | str | Iterable[Path | str] 
         _load_turtle(graph, path)
     for path in sorted(TAXONOMY_DIR.glob("*.ttl")):
         _load_turtle(graph, path)
-    for path in _as_path_list(architecture_paths):
-        _load_turtle(graph, path)
     return graph
 
 
-def load_uc6_graph() -> Graph:
-    return load_assessment_graph(DEFAULT_ARCHITECTURE_FILES)
+def load_assessment_graph(architecture_paths: Path | str | Iterable[Path | str] | None = None) -> Graph:
+    graph = load_base_graph()
+    for path in _as_path_list(architecture_paths):
+        _load_turtle(graph, path)
+    return graph
 
 
 def run_construct_query(graph: Graph, query_path: Path) -> Graph:
@@ -144,13 +160,42 @@ def _merge(target: Graph, source: Graph) -> None:
         target.add(triple)
 
 
-def run_assessment(
-    architecture_paths: Path | str | Iterable[Path | str] | None = None,
+_MAX_PROPAGATION_ITERATIONS = 20
+
+
+def _propagate_data_categories(working_graph: Graph) -> Graph:
+    """Infer pair:containsDataCategory facts (e.g. untrusted-content taint) from
+    roles and data flow, so architects don't have to hand-tag every element
+    derived from an untrusted source. Runs registered propagation queries to a
+    fixed point: each pass can surface new elements that satisfy the next
+    pass's conditions, so this repeats until nothing new is inferred."""
+    inferred = _bind_prefixes(Graph())
+    propagation_paths = implementation_paths_for_output_type(working_graph, PAIR.DataCategoryPropagation)
+    if not propagation_paths:
+        return inferred
+
+    for _ in range(_MAX_PROPAGATION_ITERATIONS):
+        new_triples = _bind_prefixes(Graph())
+        for query_path in propagation_paths:
+            for triple in run_construct_query(working_graph, query_path):
+                if triple not in working_graph:
+                    new_triples.add(triple)
+        if len(new_triples) == 0:
+            break
+        _merge(working_graph, new_triples)
+        _merge(inferred, new_triples)
+
+    return inferred
+
+
+def _run_assessment_on_graph(
+    working_graph: Graph,
     *,
-    write_outputs: bool = True,
-    output_dir: Path | str = OUTPUTS_DIR,
+    write_outputs: bool,
+    output_dir: Path | str,
 ) -> AssessmentResult:
-    working_graph = load_assessment_graph(architecture_paths)
+    inferred_annotations = _propagate_data_categories(working_graph)
+
     motif_matches = _bind_prefixes(Graph())
     risk_findings = _bind_prefixes(Graph())
 
@@ -167,25 +212,39 @@ def run_assessment(
     combined_graph = _bind_prefixes(Graph())
     _merge(combined_graph, working_graph)
 
-    result = AssessmentResult(
+    run_output_dir: Path | None = None
+    if write_outputs:
+        run_output_dir = _next_output_run_dir(_resolve_output_dir(output_dir))
+        run_output_dir.mkdir(parents=True, exist_ok=True)
+        inferred_annotations.serialize(run_output_dir / "inferred_annotations.ttl", format="turtle")
+        motif_matches.serialize(run_output_dir / "motif_matches.ttl", format="turtle")
+        risk_findings.serialize(run_output_dir / "risk_findings.ttl", format="turtle")
+        combined_graph.serialize(run_output_dir / "combined_assessment_graph.ttl", format="turtle")
+
+    return AssessmentResult(
         working_graph=working_graph,
         motif_matches=motif_matches,
         risk_findings=risk_findings,
         combined_graph=combined_graph,
+        output_dir=run_output_dir,
+        inferred_annotations=inferred_annotations,
     )
 
-    if write_outputs:
-        output_path = _resolve_output_dir(output_dir)
-        output_path.mkdir(parents=True, exist_ok=True)
-        motif_matches.serialize(output_path / "motif_matches.ttl", format="turtle")
-        risk_findings.serialize(output_path / "risk_findings.ttl", format="turtle")
-        combined_graph.serialize(output_path / "combined_assessment_graph.ttl", format="turtle")
 
-    return result
+def run_assessment(
+    architecture_paths: Path | str | Iterable[Path | str] | None = None,
+    *,
+    write_outputs: bool = True,
+    output_dir: Path | str = OUTPUTS_DIR,
+) -> AssessmentResult:
+    working_graph = load_assessment_graph(architecture_paths)
+    return _run_assessment_on_graph(working_graph, write_outputs=write_outputs, output_dir=output_dir)
 
 
-def run_uc6_assessment(write_outputs: bool = True) -> AssessmentResult:
-    return run_assessment(DEFAULT_ARCHITECTURE_FILES, write_outputs=write_outputs)
+def run_assessment_from_text(ttl_text: str) -> AssessmentResult:
+    working_graph = load_base_graph()
+    working_graph.parse(data=ttl_text, format="turtle")
+    return _run_assessment_on_graph(working_graph, write_outputs=False, output_dir=OUTPUTS_DIR)
 
 
 def _label(graph: Graph, resource: URIRef) -> str:
@@ -194,6 +253,8 @@ def _label(graph: Graph, resource: URIRef) -> str:
 
 
 def print_assessment_summary(result: AssessmentResult) -> None:
+    if len(result.inferred_annotations) > 0:
+        print(f"Inferred data-category annotations: {len(result.inferred_annotations)}")
     print(f"Motif matches: {result.motif_match_count}")
     print(f"Risk findings: {result.risk_finding_count}")
 
@@ -203,11 +264,5 @@ def print_assessment_summary(result: AssessmentResult) -> None:
         for element in evidence:
             print(f"  evidence: {_label(result.combined_graph, element)}")
 
-
-def main() -> None:
-    result = run_assessment(write_outputs=True)
-    print_assessment_summary(result)
-
-
-if __name__ == "__main__":
-    main()
+    if result.output_dir is not None:
+        print(f"Output written to: {result.output_dir}")
