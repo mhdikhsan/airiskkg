@@ -9,6 +9,7 @@ from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 
 from airiskkg.paths import (
     CORE_DIR,
+    FACETS_DIR,
     OUTPUTS_DIR,
     PATTERNS_DIR,
     TAXONOMY_DIR,
@@ -123,6 +124,8 @@ def load_base_graph() -> Graph:
     for path in CORE_FILES:
         _load_turtle(graph, path)
     for path in PATTERN_FILES:
+        _load_turtle(graph, path)
+    for path in sorted(FACETS_DIR.glob("*.ttl")):
         _load_turtle(graph, path)
     for path in sorted(TAXONOMY_DIR.glob("*.ttl")):
         _load_turtle(graph, path)

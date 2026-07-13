@@ -1,0 +1,59 @@
+@prefix aut:  <http://w3id.org/airiskkg/facets/autonomy#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+
+<http://w3id.org/airiskkg/facets/autonomy>
+    a owl:Ontology ;
+    dct:title "PAIR-AI Characterization Facet: Autonomy Level"@en ;
+    dct:description "SKOS concept scheme classifying the action autonomy of an AI system (Rule R1: facet values are SKOS concepts, never OWL classes to instantiate). Assigned to a beam:System via facet:hasAutonomyLevel; read by applicability conditions, never matched by motifs (Rule R2)."@en ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. OECD Digital Economy Papers, No. 323. https://doi.org/10.1787/cb6d9eca-en" ;
+    vann:preferredNamespacePrefix "aut" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/facets/autonomy#" .
+
+aut:AutonomyLevel
+    a skos:ConceptScheme ;
+    skos:prefLabel "Autonomy Level"@en ;
+    skos:definition "Degree of action autonomy of an AI system: how much the system can act on its outputs without a human in the decision path."@en ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+
+aut:NoActionAutonomy
+    a skos:Concept ;
+    skos:inScheme aut:AutonomyLevel ;
+    skos:topConceptOf aut:AutonomyLevel ;
+    skos:prefLabel "No Action Autonomy"@en ;
+    skos:definition "The system produces outputs (predictions, recommendations, content) but takes no actions itself; all actions are performed by humans."@en ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    # TODO: skos:exactMatch <OECD concept URI> once the OECD publishes resolvable URIs for autonomy levels.
+
+aut:LowActionAutonomy
+    a skos:Concept ;
+    skos:inScheme aut:AutonomyLevel ;
+    skos:topConceptOf aut:AutonomyLevel ;
+    skos:prefLabel "Low Action Autonomy (human-in-the-loop)"@en ;
+    skos:altLabel "HITL"@en ;
+    skos:definition "The system can propose or initiate actions, but each action requires explicit human approval before it takes effect (human-in-the-loop)."@en ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    # TODO: skos:exactMatch <OECD concept URI> once available.
+
+aut:MediumActionAutonomy
+    a skos:Concept ;
+    skos:inScheme aut:AutonomyLevel ;
+    skos:topConceptOf aut:AutonomyLevel ;
+    skos:prefLabel "Medium Action Autonomy (human-on-the-loop)"@en ;
+    skos:altLabel "HOTL"@en ;
+    skos:definition "The system executes actions autonomously while a human supervises and can intervene or override in near real time (human-on-the-loop)."@en ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    # TODO: skos:exactMatch <OECD concept URI> once available.
+
+aut:HighActionAutonomy
+    a skos:Concept ;
+    skos:inScheme aut:AutonomyLevel ;
+    skos:topConceptOf aut:AutonomyLevel ;
+    skos:prefLabel "High Action Autonomy (human-out-of-the-loop)"@en ;
+    skos:altLabel "HOOTL"@en ;
+    skos:definition "The system executes actions autonomously without human supervision of individual actions (human-out-of-the-loop)."@en ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    # TODO: skos:exactMatch <OECD concept URI> once available.
