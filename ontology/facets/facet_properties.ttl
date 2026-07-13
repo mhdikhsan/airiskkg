@@ -32,6 +32,13 @@ facet:hasDataDynamism a owl:ObjectProperty ;
     rdfs:domain beam:Data ;
     rdfs:range skos:Concept .
 
+facet:hasIdentifiabilityLevel a owl:ObjectProperty ;
+    rdfs:label "has identifiability level"@en ;
+    rdfs:comment "Degree of identifiability of the data with respect to natural persons. Intended values are DPV concepts reused directly (Rule R3: reference DPV URIs, never copy definitions locally). Verified against DPV v2.3 (https://w3id.org/dpv#, 2026-07-13): dpv:IdentifyingPersonalData (explicitly identifies a person by itself), dpv:PseudonymisedData, dpv:AnonymisedData, dpv:ContextuallyAnonymisedData. Note: DPV defines no concept named 'IdentifiedData'; dpv:IdentifyingPersonalData is the closest verified equivalent."@en ;
+    rdfs:domain beam:Data ;
+    rdfs:range skos:Concept ;
+    dct:source <https://w3id.org/dpv> .
+
 facet:hasDataRights a owl:ObjectProperty ;
     rdfs:label "has data rights"@en ;
     rdfs:comment "Intended values: concepts of the dataf:DataRights scheme (ontology/facets/data_facets.ttl)."@en ;
