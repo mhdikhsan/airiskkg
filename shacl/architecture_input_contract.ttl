@@ -1,0 +1,115 @@
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix aic:  <http://w3id.org/airiskkg/shacl/architecture-input-contract#> .
+
+<http://w3id.org/airiskkg/shacl/architecture-input-contract>
+    a owl:Ontology ;
+    dct:title "PAIR-AI Architecture Graph Input Contract"@en ;
+    dct:description """
+    SHACL shapes defining the minimal valid architecture graph accepted by the
+    PAIR-AI assessment pipeline. This operationalizes Rule R4: under the Open
+    World Assumption a missing triple means unknown, not false; FILTER NOT
+    EXISTS in applicability conditions is a closed-world claim about the
+    submitted graph only. The input contract makes explicit what the submitted
+    graph must (Violation) and should (Warning) represent for candidate risk
+    findings to be meaningful.
+    Validate with the beam_core class hierarchy available (e.g. pyshacl
+    ont_graph), since leaf-type and subclass checks traverse rdfs:subClassOf.
+    """@en .
+
+# 1. Every architecture graph must contain at least one beam:System.
+#    (Graph-level constraint, expressed as a SPARQL constraint on a fixed
+#    anchor node so it fires exactly once per validation run.)
+
+aic:GraphHasSystemShape
+    a sh:NodeShape ;
+    sh:targetNode aic:ArchitectureGraphContract ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Architecture graph must contain at least one beam:System." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/architecture-input-contract> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            SELECT $this
+            WHERE {
+                FILTER NOT EXISTS { ?system a beam:System . }
+            }
+        """ ;
+    ] .
+
+# 2. Every beam:Process must have at least one beam:use or beam:produce.
+
+aic:ProcessFlowShape
+    a sh:NodeShape ;
+    sh:targetClass beam:Process ;
+    sh:severity sh:Violation ;
+    sh:message "Every beam:Process must use or produce at least one resource (beam:use or beam:produce)." ;
+    sh:or (
+        [ sh:path beam:use ;     sh:minCount 1 ]
+        [ sh:path beam:produce ; sh:minCount 1 ]
+    ) .
+
+# 3. Every beam:Resource should be typed to a leaf class (a proper subtype of
+#    Data, Symbol, or Model) - Warning, not Violation.
+
+aic:ResourceLeafTypeShape
+    a sh:NodeShape ;
+    sh:targetClass beam:Resource ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Resource should be typed to a leaf class (a subtype of beam:Data, beam:Symbol, or beam:Model), not only to a top-level resource class." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/architecture-input-contract> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT $this
+            WHERE {
+                FILTER NOT EXISTS {
+                    $this rdf:type ?leaf .
+                    ?leaf rdfs:subClassOf+ ?top .
+                    FILTER(?top IN (beam:Data, beam:Symbol, beam:Model))
+                }
+            }
+        """ ;
+    ] .
+
+# 4. Every element intended for motif matching (processes and resources)
+#    should carry at least one pair:playsRole - Warning.
+
+aic:ProcessRoleShape
+    a sh:NodeShape ;
+    sh:targetClass beam:Process ;
+    sh:severity sh:Warning ;
+    sh:property [
+        sh:path pair:playsRole ;
+        sh:minCount 1 ;
+        sh:severity sh:Warning ;
+        sh:message "Process has no pair:playsRole; motifs match on roles, so this element cannot participate in motif matching." ;
+    ] .
+
+aic:ResourceRoleShape
+    a sh:NodeShape ;
+    sh:targetClass beam:Resource ;
+    sh:severity sh:Warning ;
+    sh:property [
+        sh:path pair:playsRole ;
+        sh:minCount 1 ;
+        sh:severity sh:Warning ;
+        sh:message "Resource has no pair:playsRole; motifs match on roles, so this element cannot participate in motif matching." ;
+    ] .
+
+# Shared prefix declarations for the SPARQL constraints above.
+
+<http://w3id.org/airiskkg/shacl/architecture-input-contract>
+    sh:declare [ sh:prefix "beam" ; sh:namespace "http://w3id.org/beam/core#"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "rdf"  ; sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "rdfs" ; sh:namespace "http://www.w3.org/2000/01/rdf-schema#"^^xsd:anyURI ] .
