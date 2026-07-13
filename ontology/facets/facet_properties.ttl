@@ -1,0 +1,63 @@
+@prefix facet: <http://w3id.org/airiskkg/facets#> .
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix vann:  <http://purl.org/vocab/vann/> .
+
+<http://w3id.org/airiskkg/facets>
+    a owl:Ontology ;
+    dct:title "PAIR-AI Characterization Facet Attachment Properties"@en ;
+    dct:description "Object properties attaching characterization facet values (SKOS concepts) to BEAM architecture elements. Facet assignments are annotated base facts supplied by the modeler (Rule R8); they characterize elements and are read by applicability conditions, never traversed by motifs (Rule R2). Ranges are deliberately kept at skos:Concept: the intended scheme is stated in the comment, not enforced with OWL axioms (lightweight by design)."@en ;
+    vann:preferredNamespacePrefix "facet" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/facets#" ;
+    owl:imports <http://w3id.org/beam/core#> .
+
+facet:hasAutonomyLevel a owl:ObjectProperty ;
+    rdfs:label "has autonomy level"@en ;
+    rdfs:comment "Intended values: concepts of the aut:AutonomyLevel scheme (ontology/facets/autonomy.ttl)."@en ;
+    rdfs:domain beam:System ;
+    rdfs:range skos:Concept .
+
+facet:hasDataProvenance a owl:ObjectProperty ;
+    rdfs:label "has data provenance"@en ;
+    rdfs:comment "Intended values: concepts of the dataf:DataProvenance scheme (ontology/facets/data_facets.ttl)."@en ;
+    rdfs:domain beam:Data ;
+    rdfs:range skos:Concept .
+
+facet:hasDataDynamism a owl:ObjectProperty ;
+    rdfs:label "has data dynamism"@en ;
+    rdfs:comment "Intended values: concepts of the dataf:DataDynamism scheme (ontology/facets/data_facets.ttl)."@en ;
+    rdfs:domain beam:Data ;
+    rdfs:range skos:Concept .
+
+facet:hasDataRights a owl:ObjectProperty ;
+    rdfs:label "has data rights"@en ;
+    rdfs:comment "Intended values: concepts of the dataf:DataRights scheme (ontology/facets/data_facets.ttl)."@en ;
+    rdfs:domain beam:Data ;
+    rdfs:range skos:Concept .
+
+facet:hasTaskCategory a owl:ObjectProperty ;
+    rdfs:label "has task category"@en ;
+    rdfs:comment "Intended values: concepts of the task:AITask scheme (ontology/facets/task.ttl). Rule R7: task is a separate axis from capability and application type."@en ;
+    rdfs:domain beam:Task ;
+    rdfs:range skos:Concept .
+
+facet:hasDomain a owl:ObjectProperty ;
+    rdfs:label "has domain"@en ;
+    rdfs:comment "Intended values: concepts of the ctx:Domain scheme (ontology/facets/context.ttl) or referenced external sector vocabularies."@en ;
+    rdfs:domain beam:System ;
+    rdfs:range skos:Concept .
+
+facet:hasPurpose a owl:ObjectProperty ;
+    rdfs:label "has purpose"@en ;
+    rdfs:comment "Intended values: DPV purpose concepts (dpv:Purpose and narrower; Rule R3) or concepts of the ctx:Purpose scheme (ontology/facets/context.ttl)."@en ;
+    rdfs:domain beam:System ;
+    rdfs:range skos:Concept .
+
+facet:hasDeploymentSetting a owl:ObjectProperty ;
+    rdfs:label "has deployment setting"@en ;
+    rdfs:comment "Intended values: concepts of the ctx:DeploymentSetting scheme (ontology/facets/context.ttl)."@en ;
+    rdfs:domain beam:System ;
+    rdfs:range skos:Concept .
