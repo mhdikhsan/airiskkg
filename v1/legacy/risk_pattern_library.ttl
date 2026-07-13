@@ -219,7 +219,7 @@ pat:DirectPromptingMotif
     executable OQP to be satisfied during assessment.
     """@en .
 
-pat:RetrievalAugmentedGenerationMotif
+pat:VectorBasedInformationRetrievalMotif
     pair:hasInterpretation
         pat:PromptInjectionInterpretation ,
         pat:SensitiveDataRetrievalExposureInterpretation ,
@@ -234,7 +234,7 @@ pat:RetrievalAugmentedGenerationMotif
         pat:MisinformationFromWeakGroundingInterpretation ,
         pat:UnboundedConsumptionInterpretation .
 
-pat:EmbeddingMotif
+pat:EmbeddingsMotif
     pair:hasInterpretation
         pat:DataAndModelPoisoningInterpretation ,
         pat:VectorAndEmbeddingWeaknessInterpretation .
@@ -296,7 +296,7 @@ pat:PromptInjectionInterpretation
 pat:SensitiveDataRetrievalExposureInterpretation
     a pair:MotifInterpretation ;
     rdfs:label "Sensitive data retrieval exposure interpretation"@en ;
-    pair:interpretsMotif pat:RetrievalAugmentedGenerationMotif ;
+    pair:interpretsMotif pat:VectorBasedInformationRetrievalMotif ;
     pair:interpretedAsMechanism owasp:mechanism-sensitive-data-propagation ;
     pair:hasInterpretationCondition
         pat:SensitiveInfo_SensitiveContextCondition ,
@@ -538,7 +538,7 @@ pat:UnboundedConsumptionInterpretation
 pat:VectorIR_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Vector information retrieval motif matching OQP"@en ;
-    pair:implementsMotif pat:RetrievalAugmentedGenerationMotif ;
+    pair:implementsMotif pat:VectorBasedInformationRetrievalMotif ;
     pair:implementationPath "ontology/patterns/implementation/match_vector_ir.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
@@ -584,7 +584,7 @@ pat:DirectLLMAnsweringWithoutGroundingOQP
 pat:Embeddings_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Embeddings motif matching OQP"@en ;
-    pair:implementsMotif pat:EmbeddingMotif ;
+    pair:implementsMotif pat:EmbeddingsMotif ;
     pair:implementationPath "ontology/patterns/implementation/match_embeddings.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
@@ -664,10 +664,3 @@ pat:UnboundedConsumptionOQP
     pair:implementsInterpretation pat:UnboundedConsumptionInterpretation ;
     pair:implementationPath "ontology/patterns/implementation/risk_unbounded_consumption.rq" ;
     pair:producesOutputType pair:RiskFinding .
-
-pat:UntrustedContentPropagationOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Untrusted content propagation OQP"@en ;
-    dct:description "Infers pair:containsDataCategory pair:UntrustedContent from public-input/retrieved-context roles and propagates it along beam:use/beam:produce edges, so risk interpretations don't depend on every element being hand-tagged."@en ;
-    pair:implementationPath "ontology/patterns/implementation/propagate_untrusted_content.rq" ;
-    pair:producesOutputType pair:DataCategoryPropagation .

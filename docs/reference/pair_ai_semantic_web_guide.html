@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PAIR-AI Semantic Web Guide</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202a;
+      --muted: #5d6d7e;
+      --line: #d7dde5;
+      --panel: #f7f9fb;
+      --accent: #1f6feb;
+      --accent-soft: #eaf2ff;
+      --code: #0f172a;
+      --code-bg: #f3f6fa;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font: 16px/1.58 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #ffffff;
+    }
+
+    main {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.2;
+      margin: 0 0 12px;
+    }
+
+    h1 {
+      font-size: 34px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin-top: 36px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      font-size: 24px;
+    }
+
+    h3 {
+      margin-top: 24px;
+      font-size: 19px;
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    code {
+      color: var(--code);
+      background: var(--code-bg);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 14px 0 20px;
+      padding: 16px;
+      overflow-x: auto;
+      color: var(--code);
+      background: var(--code-bg);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+
+    pre code {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font-size: 0.9em;
+    }
+
+    ul, ol {
+      margin-top: 8px;
+      margin-bottom: 16px;
+    }
+
+    li {
+      margin-bottom: 7px;
+    }
+
+    .lead {
+      margin-top: 14px;
+      max-width: 850px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .note {
+      margin: 18px 0;
+      padding: 14px 16px;
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      border-radius: 4px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .box {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      padding: 15px;
+    }
+
+    .box h3 {
+      margin-top: 0;
+      font-size: 17px;
+    }
+
+    .flow {
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      background: #fbfcfe;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 16px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 22px;
+      font-size: 15px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: var(--panel);
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>PAIR-AI Semantic Web Guide</h1>
+  <p class="lead">
+    Panduan ini menjelaskan ontology dan knowledge graph di AI-RKG, lalu
+    menunjukkan bagaimana sebuah use case menjadi input untuk metode PAIR-AI:
+    dari architecture graph, motif matching, risk interpretation, sampai output
+    candidate risk graph.
+  </p>
+
+  <section>
+    <h2>1. Ontology vs Knowledge Graph</h2>
+    <p>
+      Untuk pemula semantic web, bedakan dua hal ini dulu:
+    </p>
+    <div class="grid">
+      <div class="box">
+        <h3>Ontology</h3>
+        <p>
+          Ontology adalah vocabulary atau schema. Ia mendefinisikan class,
+          property, dan hubungan konseptual yang boleh dipakai.
+        </p>
+        <p>
+          Contoh: <code>beam:System</code>, <code>beam:Data</code>,
+          <code>pair:GraphMotif</code>, <code>pair:RiskFinding</code>,
+          <code>pair:playsRole</code>.
+        </p>
+      </div>
+      <div class="box">
+        <h3>Knowledge Graph</h3>
+        <p>
+          Knowledge graph adalah kumpulan triple RDF aktual. Ia berisi instance
+          dan fakta yang memakai vocabulary dari ontology.
+        </p>
+        <p>
+          Contoh: <code>uc6:LLMPrompting a beam:Transform</code>,
+          <code>uc6:LLMPrompting pair:playsRole pair:GenerationStep</code>,
+          atau sebuah generated finding bertipe <code>pair:RiskFinding</code>.
+        </p>
+      </div>
+    </div>
+    <div class="note">
+      Di repo ini, ontology adalah file schema/vocabulary seperti
+      <code>ontology/core/*.ttl</code>. Knowledge graph adalah graph yang
+      dibangun dari gabungan ontology, taxonomy, motif library, risk pattern,
+      use-case architecture graph, dan hasil generated output.
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Ontology Di AI-RKG</h2>
+    <p>
+      AI-RKG kamu sekarang bisa dibaca sebagai tiga modul konseptual: architecture
+      module, risk module, dan PAIR-AI pattern module. Di luar itu ada library
+      motif, interpretation layer, taxonomy KB, dan output assessment.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Bagian</th>
+          <th>File utama</th>
+          <th>Fungsi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Architecture module</td>
+          <td><code>ontology/core/beam_core.ttl</code></td>
+          <td>
+            Vocabulary untuk menggambar struktur sistem AI: system, data,
+            model, process, agent, dan flow seperti <code>beam:use</code>,
+            <code>beam:produce</code>, <code>beam:inform</code>.
+          </td>
+        </tr>
+        <tr>
+          <td>Risk module</td>
+          <td><code>ontology/core/beam_core_risk.ttl</code></td>
+          <td>
+            Vocabulary risiko umum: <code>beamr:Risk</code>,
+            <code>beamr:RiskControl</code>, consequence, impact, dan relasi
+            risk-control.
+          </td>
+        </tr>
+        <tr>
+          <td>PAIR-AI pattern module</td>
+          <td><code>ontology/core/pair_ai_pattern.ttl</code></td>
+          <td>
+            Vocabulary metode PAIR-AI untuk role annotation, graph motif,
+            motif match, risk interpretation, executable OQP, dan generated
+            risk finding.
+          </td>
+        </tr>
+        <tr>
+          <td>Motif library</td>
+          <td><code>ontology/patterns/motif.ttl</code></td>
+          <td>
+            Library motif arsitektur reusable. Contoh:
+            <code>pat:VectorBasedInformationRetrievalMotif</code>.
+          </td>
+        </tr>
+        <tr>
+          <td>Risk interpretation library</td>
+          <td><code>ontology/patterns/risk_pattern_library.ttl</code></td>
+          <td>
+            Library AI risk pattern: bridge dari motif ke risk knowledge: condition, mechanism,
+            candidate taxonomy entries, suggested controls, dan query
+            implementation.
+          </td>
+        </tr>
+        <tr>
+          <td>Taxonomy KB</td>
+          <td><code>ontology/taxonomy/*.ttl</code></td>
+          <td>
+            Knowledge dari OWASP LLM, MIT AI Risk, IBM Risk Atlas, MIT controls,
+            dan mapping antar taxonomy.
+          </td>
+        </tr>
+        <tr>
+          <td>Use-case graph</td>
+          <td><code>ontology/example/uc6_onlim.ttl</code></td>
+          <td>
+            Instance graph untuk sistem yang mau di-assess. Ini input utama
+            PAIR-AI untuk satu use case.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Yang Mana Knowledge Graph-nya?</h3>
+    <p>
+      Ada beberapa level graph:
+    </p>
+    <ul>
+      <li>
+        <strong>Reusable AI-RKG</strong>: gabungan core ontology, taxonomy KB,
+        motif library, dan risk pattern library.
+      </li>
+      <li>
+        <strong>Architecture graph</strong>: use-case-specific graph, misalnya
+        <code>uc6_onlim.ttl</code>.
+      </li>
+      <li>
+        <strong>Working graph</strong>: graph runtime yang diload oleh runner:
+        reusable AI-RKG + architecture graph + generated motif matches.
+      </li>
+      <li>
+        <strong>Candidate risk graph</strong>: output assessment, yaitu
+        <code>pair:RiskFinding</code> dan relasinya ke evidence, mechanism,
+        taxonomy entry, condition, dan controls.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. Proses Besar: Jangan Dicampur</h2>
+    <div class="grid">
+      <div class="box">
+        <h3>AI-RKG Construction</h3>
+        <p>
+          Ini proses membangun reusable knowledge sebelum assessment dijalankan.
+          Output-nya adalah ontology, taxonomy KB, motif library, risk pattern,
+          dan SPARQL OQP template.
+        </p>
+        <ul>
+          <li>Ekstraksi risk content dari OWASP, MIT, IBM.</li>
+          <li>Alignment taxonomy dengan SKOS mapping.</li>
+          <li>Curation motif arsitektur.</li>
+          <li>Curation risk interpretation.</li>
+          <li>Encoding query SPARQL CONSTRUCT.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h3>PAIR-AI Assessment</h3>
+        <p>
+          Ini proses memakai reusable AI-RKG untuk menilai satu architecture
+          graph tertentu.
+        </p>
+        <ul>
+          <li>Load architecture graph use case.</li>
+          <li>Match motif arsitektur.</li>
+          <li>Apply risk interpretation condition.</li>
+          <li>Derive risk mechanism.</li>
+          <li>Construct candidate risk graph.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Alur PAIR-AI Di Repo</h2>
+    <div class="flow">Architecture graph
+  -> role/data annotation
+  -> motif matching query
+  -> pair:MotifMatch
+  -> risk interpretation query
+  -> pair:RiskFinding
+  -> candidate risk graph</div>
+
+    <p>
+      Implementasi runtime-nya ada di <code>python/src/airiskkg/assessment_runner.py</code>.
+      Intinya:
+    </p>
+    <pre><code>load core ontology
+load pattern library
+load taxonomy KB
+load use-case architecture graph
+
+for each implementation producing pair:MotifMatch:
+    run SPARQL CONSTRUCT
+    merge motif matches into working graph
+
+for each implementation producing pair:RiskFinding:
+    run SPARQL CONSTRUCT
+    merge risk findings into working graph
+
+write outputs</code></pre>
+  </section>
+
+  <section>
+    <h2>5. Membuat Architecture Graph Sebagai Input</h2>
+    <p>
+      Untuk membangun use case baru, buat file TTL berisi instance sistem.
+      Minimalnya, graph harus punya:
+    </p>
+    <ol>
+      <li>System instance: <code>a beam:System</code>.</li>
+      <li>Resource: data, model, prompt, output.</li>
+      <li>Process: retrieval, embedding, generation, transform, infer.</li>
+      <li>Flow: <code>beam:use</code>, <code>beam:produce</code>, <code>beam:inform</code>.</li>
+      <li>Role annotation: <code>pair:playsRole</code>.</li>
+      <li>Data category annotation: <code>pair:containsDataCategory</code>.</li>
+      <li>Optional represented control: control dengan <code>beamr:associatedTo</code>.</li>
+    </ol>
+
+    <p>
+      Contoh minimal:
+    </p>
+    <pre><code>@prefix ex:    &lt;http://w3id.org/airiskkg/example/my-use-case#&gt; .
+@prefix beam:  &lt;http://w3id.org/beam/core#&gt; .
+@prefix pair:  &lt;http://w3id.org/airiskkg/pair-ai#&gt; .
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+
+ex:MySystem
+    a beam:System ;
+    rdfs:label "My AI system"@en ;
+    beam:hasResource ex:UserQuestion, ex:VectorDB, ex:RetrievedContext, ex:LLM, ex:Answer ;
+    beam:hasProcess ex:RetrievalStep, ex:GenerationStep .
+
+ex:UserQuestion
+    a beam:Data ;
+    pair:playsRole pair:PublicUserInput ;
+    pair:containsDataCategory pair:ExternalUserContent ;
+    beam:usedBy ex:RetrievalStep .
+
+ex:VectorDB
+    a beam:Data ;
+    pair:playsRole pair:VectorStore ;
+    pair:containsDataCategory pair:SensitiveInformation ;
+    beam:usedBy ex:RetrievalStep .
+
+ex:RetrievedContext
+    a beam:Data ;
+    pair:playsRole pair:RetrievedContext ;
+    pair:containsDataCategory pair:SensitiveInformation ;
+    beam:usedBy ex:GenerationStep .
+
+ex:LLM
+    a beam:StatisticalModel ;
+    pair:playsRole pair:GenerativeModel ;
+    beam:usedBy ex:GenerationStep .
+
+ex:Answer
+    a beam:Data ;
+    pair:playsRole pair:PublicUserFacingOutput .
+
+ex:RetrievalStep
+    a beam:Infer ;
+    pair:playsRole pair:RetrievalStep ;
+    beam:use ex:UserQuestion, ex:VectorDB ;
+    beam:produce ex:RetrievedContext ;
+    beam:inform ex:GenerationStep .
+
+ex:GenerationStep
+    a beam:Transform ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use ex:RetrievedContext, ex:LLM ;
+    beam:produce ex:Answer .</code></pre>
+
+    <div class="note">
+      Di paper, role annotation bisa dibantu LLM. Di repo sekarang, annotation
+      seperti <code>pair:playsRole pair:VectorStore</code> dan
+      <code>pair:containsDataCategory pair:SensitiveInformation</code> ditulis
+      langsung di TTL. Jadi prototype ini mengasumsikan architecture graph
+      sudah role-annotated.
+    </div>
+  </section>
+
+  <section>
+    <h2>6. Bagaimana Motif Library Dipanggil?</h2>
+    <p>
+      Motif library mendefinisikan motif secara konseptual. Contoh di
+      <code>ontology/patterns/motif.ttl</code>:
+    </p>
+    <pre><code>pat:VectorBasedInformationRetrievalMotif
+    a pair:GraphMotif ;
+    pair:hasPatternNode
+        pat:VectorIR_QueryNode,
+        pat:VectorIR_VectorStoreNode,
+        pat:VectorIR_RetrievalStepNode,
+        pat:VectorIR_RetrievedResultNode ;
+    pair:hasPatternEdge
+        pat:VectorIR_RetrievalUsesQueryEdge,
+        pat:VectorIR_RetrievalUsesVectorStoreEdge,
+        pat:VectorIR_RetrievalProducesResultEdge ;
+    pair:implementedBy pat:VectorIR_MatchingOQP .</code></pre>
+
+    <p>
+      Lalu <code>risk_pattern_library.ttl</code> mencatat file query executable:
+    </p>
+    <pre><code>pat:VectorIR_MatchingOQP
+    a pair:PatternImplementation ;
+    pair:implementsMotif pat:VectorBasedInformationRetrievalMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_vector_ir.rq" ;
+    pair:producesOutputType pair:MotifMatch .</code></pre>
+
+    <p>
+      Runner mencari semua <code>pair:PatternImplementation</code> yang
+      <code>pair:producesOutputType pair:MotifMatch</code>, membaca
+      <code>pair:implementationPath</code>, lalu menjalankan query tersebut.
+      Jadi motif library tidak dipanggil manual satu-satu; ia dipanggil lewat
+      metadata RDF.
+    </p>
+  </section>
+
+  <section>
+    <h2>7. Query CONSTRUCT Untuk Motif Match</h2>
+    <p>
+      Query motif matching berada di
+      <code>ontology/patterns/implementation/match_vector_ir.rq</code>.
+      Bentuk sederhananya:
+    </p>
+    <pre><code>CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        pair:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
+        pair:hasNodeBinding ?queryBinding, ?retrievalBinding, ?vectorStoreBinding, ?resultBinding .
+
+    ?queryBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:VectorIR_QueryNode ;
+        pair:matchedElement ?query .
+}
+WHERE {
+    ?retrievalStep
+        beam:use ?query ;
+        beam:use ?vectorStore ;
+        beam:produce ?retrievedResult ;
+        pair:playsRole/pair:subRoleOf* pair:RetrievalStep .
+
+    ?query pair:playsRole/pair:subRoleOf* pair:UserInput .
+    ?vectorStore pair:playsRole/pair:subRoleOf* pair:VectorStore .
+    ?retrievedResult pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
+}</code></pre>
+
+    <p>
+      Bagian <code>WHERE</code> mencari struktur di architecture graph. Bagian
+      <code>CONSTRUCT</code> membuat graph baru berisi <code>pair:MotifMatch</code>
+      dan <code>pair:NodeBinding</code>.
+    </p>
+
+    <p>
+      Output tahap ini ditulis ke:
+    </p>
+    <pre><code>outputs/motif_matches.ttl</code></pre>
+  </section>
+
+  <section>
+    <h2>8. Memasukkan Condition Untuk Derive Risk Mechanism</h2>
+    <p>
+      Motif tidak otomatis berarti risk. Motif baru menjadi risk-relevant jika
+      condition tertentu terpenuhi.
+    </p>
+
+    <p>
+      Condition dan interpretation didefinisikan di
+      <code>ontology/patterns/risk_pattern_library.ttl</code>:
+    </p>
+    <pre><code>pat:SensitiveDataRetrievalExposureInterpretation
+    a pair:MotifInterpretation ;
+    pair:interpretsMotif pat:VectorBasedInformationRetrievalMotif ;
+    pair:interpretedAsMechanism owasp:mechanism-sensitive-data-propagation ;
+    pair:hasInterpretationCondition
+        pat:VectorIR_SensitiveRetrievedContextCondition,
+        pat:VectorIR_ContextEntersLLMGenerationCondition,
+        pat:VectorIR_NoRepresentedDisclosureControlCondition ;
+    pair:mayIndicateRisk
+        owasp:llm02-sensitive-information-disclosure,
+        atlas:exposing-personal-information,
+        mit:subdomain-2-1 ;
+    pair:suggestedControl
+        mitctrl:privacy-control-for-user-data,
+        mitctrl:redaction,
+        mitctrl:input-output-filtering ;
+    pair:implementedBy pat:SensitiveDataRetrievalExposureOQP .</code></pre>
+
+    <p>
+      Risk mechanism di sini bukan dibuat saat assessment. Mechanism sudah
+      ada di knowledge base, misalnya:
+    </p>
+    <pre><code>owasp:mechanism-sensitive-data-propagation</code></pre>
+
+    <p>
+      Saat assessment, query hanya memilih mechanism itu karena motif match dan
+      condition-nya terpenuhi.
+    </p>
+  </section>
+
+  <section>
+    <h2>9. Risk Interpretation Juga Lewat Query</h2>
+    <p>
+      Ya, risk interpretation juga dieksekusi lewat SPARQL CONSTRUCT. Contohnya
+      ada di <code>ontology/patterns/implementation/risk_sensitive_retrieval.rq</code>.
+    </p>
+
+    <p>
+      Query ini melakukan tiga hal:
+    </p>
+    <ol>
+      <li>Membaca <code>pair:MotifMatch</code> yang sudah dibuat.</li>
+      <li>Mengecek condition tambahan di architecture graph.</li>
+      <li>Membuat <code>pair:RiskFinding</code>.</li>
+    </ol>
+
+    <pre><code>WHERE {
+    ?match
+        a pair:MotifMatch ;
+        pair:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
+        pair:hasNodeBinding ?queryBinding, ?retrievalBinding, ?vectorStoreBinding, ?resultBinding .
+
+    ?retrievedResult pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
+
+    ?generationStep
+        beam:use ?retrievedResult ;
+        beam:use ?llm ;
+        beam:produce ?userFacingOutput ;
+        pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+
+    FILTER NOT EXISTS {
+        pat:SensitiveDataRetrievalExposureInterpretation
+            pair:suggestedControl ?implementedDisclosureControl .
+        ?implementedDisclosureControl beamr:associatedTo ?controlledElement .
+    }
+}</code></pre>
+
+    <p>
+      Bagian <code>FILTER NOT EXISTS</code> dipakai untuk mendeteksi bahwa
+      control yang disarankan belum direpresentasikan pada elemen evidence.
+      Ini bukan bukti bahwa control benar-benar tidak ada di dunia nyata; ini
+      hanya berarti control tidak terlihat di architecture graph yang diberikan.
+    </p>
+  </section>
+
+  <section>
+    <h2>10. Output Assessment</h2>
+    <p>
+      Output utama PAIR-AI adalah candidate risk graph. Di repo ini output-nya:
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Isi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>outputs/motif_matches.ttl</code></td>
+          <td>Hasil motif matching: <code>pair:MotifMatch</code> dan <code>pair:NodeBinding</code>.</td>
+        </tr>
+        <tr>
+          <td><code>outputs/risk_findings.ttl</code></td>
+          <td>Candidate risk graph: <code>pair:RiskFinding</code> beserta evidence, mechanism, taxonomy, condition, dan suggested controls.</td>
+        </tr>
+        <tr>
+          <td><code>outputs/combined_assessment_graph.ttl</code></td>
+          <td>Working graph lengkap setelah core, patterns, taxonomy, architecture graph, motif matches, dan risk findings digabung.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      Contoh struktur finding:
+    </p>
+    <pre><code>?riskFinding
+    a pair:RiskFinding ;
+    pair:generatedFromMatch ?match ;
+    pair:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
+    pair:hasInterpretedMechanism owasp:mechanism-sensitive-data-propagation ;
+    pair:hasEvidenceElement ?retrievalStep, ?vectorStore, ?retrievedResult, ?llm, ?userFacingOutput ;
+    pair:hasCandidateRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
+    pair:hasSuggestedControl mitctrl:redaction ;
+    pair:hasSatisfiedCondition pat:VectorIR_SensitiveRetrievedContextCondition ;
+    pair:findingStatus "candidate" .</code></pre>
+  </section>
+
+  <section>
+    <h2>11. Checklist Membuat Use Case Baru</h2>
+    <ol>
+      <li>Buat file baru di <code>ontology/example/</code>, misalnya <code>my_system.ttl</code>.</li>
+      <li>Definisikan system, resources, processes, model, input, output.</li>
+      <li>Hubungkan flow dengan <code>beam:use</code>, <code>beam:produce</code>, dan <code>beam:inform</code>.</li>
+      <li>Tambahkan role annotation dengan <code>pair:playsRole</code>.</li>
+      <li>Tambahkan data category dengan <code>pair:containsDataCategory</code>.</li>
+      <li>Jika ada represented control, tambahkan control dan hubungkan dengan <code>beamr:associatedTo</code>.</li>
+      <li>Pastikan motif query yang ada bisa match. Kalau belum, tambah motif dan query baru.</li>
+      <li>Tambahkan interpretation jika motif baru punya risk mechanism/condition baru.</li>
+      <li>Jalankan assessment runner dan cek <code>outputs/*.ttl</code>.</li>
+    </ol>
+
+    <div class="note">
+      Runner sekarang bisa menerima satu atau beberapa file architecture graph
+      dari CLI. Jika tidak diberi path, default-nya tetap memakai contoh
+      <code>ontology/example/uc6_onlim.ttl</code>.
+    </div>
+  </section>
+
+  <section>
+    <h2>12. Ringkasan Mental Model</h2>
+    <div class="flow">Ontology
+  = vocabulary/schema:
+    beam, beamr, pair, nexus, taxonomy classes
+
+Reusable AI-RKG
+  = ontology + taxonomy KB + motif library + risk pattern library
+
+Architecture graph
+  = instance graph dari sistem yang mau dinilai
+
+Motif matching
+  = SPARQL CONSTRUCT membuat pair:MotifMatch
+
+Risk interpretation
+  = SPARQL CONSTRUCT mengecek condition dan membuat pair:RiskFinding
+
+Candidate risk graph
+  = output system-specific yang menjelaskan risk, evidence, mechanism, taxonomy, controls</div>
+  </section>
+
+  <p class="small">
+    Generated for the AI-RKG / PAIR-AI repository. This document describes the
+    current implementation shape, where role annotation is represented explicitly
+    in TTL and may later be produced manually or with LLM assistance.
+  </p>
+</main>
+</body>
+</html>

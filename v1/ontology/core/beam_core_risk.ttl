@@ -1,0 +1,93 @@
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix beam: <http://w3id.org/beam/core#>.
+@prefix beamr: <http://w3id.org/beam/risk#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix terms: <http://purl.org/dc/terms/> .
+@prefix airo: <https://w3id.org/airo> .
+
+<http://w3id.org/beam/risk#> rdf:type owl:Ontology ;
+    <http://purl.org/dc/terms/description> """  A beam extension to describe the risk components of AI systems based on existing concepts defined in the AI Risk Ontology (AIRO)."""@en ;
+    <http://purl.org/dc/terms/license> <https://creativecommons.org/licenses/by/4.0> ;
+    <http://purl.org/dc/terms/modified> "2025-03-05" ;
+    <http://purl.org/dc/terms/title> "The BEAM Risk extension"@en ;
+    <http://purl.org/vocab/vann/preferredNamespacePrefix> "beamr" ;
+    <http://purl.org/vocab/vann/preferredNamespaceUri> "http://w3id.org/beam/risk#" ;
+    owl:imports <https://w3id.org/airo> ;
+    owl:imports <https://w3id.org/beam/core#> ;
+    owl:versionInfo "0.1.0" .
+
+### classes
+
+beamr:RiskConcept a owl:Class ;
+    rdfs:label "Risk Concept" ;
+    rdfs:subClassOf airo:RiskConcept .
+
+    beamr:RiskSource a owl:Class ;
+        rdfs:label "Risk Source" ;
+        rdfs:subClassOf airo:RiskSource ;
+        rdfs:subClassOf beamr:RiskConcept .
+
+    beamr:Risk a owl:Class ;
+        rdfs:label "Risk" ;
+        rdfs:subClassOf airo:Risk ;
+        rdfs:subClassOf beamr:RiskConcept .
+
+    beamr:Consequence a owl:Class ;
+        rdfs:label "Consequence" ;
+        rdfs:subClassOf airo:Consequence ;
+        rdfs:subClassOf beamr:RiskConcept .
+
+        beamr:Impact a owl:Class ;
+            rdfs:label "Impact" ;
+            rdfs:subClassOf airo:Impact ;
+            rdfs:subClassOf beamr:Consequence .
+
+beamr:RiskControl a owl:Class ;
+    rdfs:label "Risk Control" ;
+    rdfs:subClassOf airo:RiskControl .
+
+### object properties
+
+beamr:hasRisk a owl:ObjectProperty ;
+    rdfs:label "has risk" ;
+    rdfs:domain [
+        a owl:Class ;
+        owl:unionOf (beam:Element beam:Task) 
+    ] ;
+    rdfs:range beamr:Risk .
+
+beamr:originatedFrom a owl:ObjectProperty ;
+    rdfs:label "originated from" ;
+    rdfs:domain beamr:RiskSource ;
+    rdfs:range beam:Element .
+
+beamr:isRiskSourceFor a owl:ObjectProperty ;
+    rdfs:label "is risk source for" ;
+    rdfs:subPropertyOf airo:isRiskSourceFor ;
+    rdfs:domain beamr:RiskSource ;
+    rdfs:range beamr:Risk .
+
+beamr:hasConsequence a owl:ObjectProperty ;
+    rdfs:label "has consequence" ;
+    rdfs:subPropertyOf airo:hasConsequence ;
+    rdfs:domain beamr:Risk ;
+    rdfs:range beamr:Consequence .
+
+beamr:hasImpact a owl:ObjectProperty ;
+    rdfs:label "has impact" ;
+    rdfs:subPropertyOf airo:hasImpact ;
+    rdfs:domain beamr:Consequence ;
+    rdfs:range beamr:Impact .
+
+beamr:modifiesRiskConcept a owl:ObjectProperty ;
+    rdfs:label "modifies risk concept" ;
+    rdfs:subPropertyOf airo:modifiesRiskConcept ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range beamr:RiskConcept .
+
+beamr:associatedTo a owl:ObjectProperty ;
+    rdfs:label "associated to" ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range beam:Element .

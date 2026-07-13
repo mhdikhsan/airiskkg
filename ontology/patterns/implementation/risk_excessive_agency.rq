@@ -1,0 +1,61 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX beamr: <http://w3id.org/beam/risk#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate excessive agency exposure"@en ;
+        dct:description "An LLM generation step can inform a tool invocation or state-changing process."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasInterpretedMechanism ?mechanism ;
+        pair:hasEvidenceElement ?generationStep ,
+            ?toolOrActionStep ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    pat:ExcessiveAgencyInterpretation
+        pair:interpretedAsMechanism ?mechanism ;
+        pair:hasInterpretationCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    ?match
+        a pair:MotifMatch ;
+        pair:matchesMotif ?motif ;
+        pair:hasNodeBinding/pair:matchedElement ?generationStep .
+
+    ?generationStep pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+    ?toolOrActionStep pair:playsRole ?actionRole .
+    {
+        ?actionRole pair:subRoleOf* pair:ToolInvocationStep .
+    }
+    UNION
+    {
+        ?actionRole pair:subRoleOf* pair:StateChangingStep .
+    }
+    ?generationStep beam:inform+ ?toolOrActionStep .
+
+    FILTER NOT EXISTS {
+        pat:ExcessiveAgencyInterpretation pair:suggestedControl ?implementedControl .
+        ?implementedControl beamr:associatedTo ?toolOrActionStep .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/excessive-agency"
+    )) AS ?riskFinding)
+}
