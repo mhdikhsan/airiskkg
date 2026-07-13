@@ -1,0 +1,100 @@
+@prefix t4b:  <http://tool4boxology.org/> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+
+<http://w3id.org/airiskkg/alignments/tool4boxology>
+    a owl:Ontology ;
+    dct:title "Tool4Boxology to BEAM Alignment Adapter"@en ;
+    dct:description """
+    Alignment adapter normalizing Tool4Boxology architecture exports into BEAM,
+    the canonical internal model of PAIR-AI. Per Rule R5, external vocabularies
+    enter only via rdfs:subPropertyOf / rdfs:subClassOf alignments here plus
+    CONSTRUCT normalization in python/scripts/normalize_t4b.py; nothing
+    tool-specific enters beam_core.ttl. This adapter is the template for future
+    vocabularies (e.g. AgentO).
+
+    Both vocabularies anchor to easy-ai (https://kastle-lab.org/easy-ai2/),
+    which BEAM already references (beam:Instance/Model/Process/Agent are
+    subclasses of easy-ai Artifact/Model/Process/Actor).
+
+    KNOWN UPSTREAM QUIRKS (report upstream; defensively handled in the
+    normalizer):
+    - The ontology declares t4b:patternProcess, but the export uses
+      t4b:hasProcess. This adapter targets the EXPORT URIs.
+    - The export types instances with lowercase class URIs (t4b:data,
+      t4b:transform, t4b:training, ...) while the ontology declares
+      t4b:Data, t4b:Transform, t4b:Train, ... The normalizer case-normalizes
+      before these alignments apply.
+    - Export uses t4b:StatisticModel / t4b:Time%20Series where the ontology
+      declares t4b:StatisticalModel / t4b:TimeSeries.
+    """@en ;
+    dct:source <https://github.com/SDM-TIB/Tool4Boxology> ;
+    rdfs:seeAlso <https://doi.org/10.1007/978-3-032-25159-6_11> ;
+    vann:preferredNamespacePrefix "t4b" ;
+    owl:imports <http://w3id.org/beam/core#> .
+
+# --- Property alignments (verified export edge directions) -----------------
+# InputArtifact --inputRoleParticipatesInProcess--> Process
+# Process --outputRoleParticipatesInProcess--> OutputArtifact
+
+t4b:inputRoleParticipatesInProcess
+    rdfs:subPropertyOf beam:usedBy ;
+    rdfs:comment "An input artifact participates in (is used by) a process. Verified direction: artifact -> process, matching beam:usedBy (Resource -> Process)."@en .
+
+t4b:outputRoleParticipatesInProcess
+    rdfs:subPropertyOf beam:produce ;
+    rdfs:comment "A process produces an output artifact. Verified direction: process -> artifact, matching beam:produce (Process -> Resource)."@en .
+
+# --- Class alignments (toward BEAM) -----------------------------------------
+
+t4b:Data rdfs:subClassOf beam:Data ;
+    rdfs:comment "Tool4Boxology data artifact aligned to BEAM Data."@en .
+
+t4b:Symbol rdfs:subClassOf beam:Symbol ;
+    rdfs:comment "Tool4Boxology symbol artifact aligned to BEAM Symbol."@en .
+
+t4b:Model rdfs:subClassOf beam:Model ;
+    rdfs:comment "Tool4Boxology model aligned to BEAM Model."@en .
+
+t4b:SemanticModel rdfs:subClassOf beam:SemanticModel ;
+    rdfs:comment "Tool4Boxology semantic model aligned to BEAM SemanticModel."@en .
+
+t4b:Actor rdfs:subClassOf beam:Agent ;
+    rdfs:comment "Tool4Boxology actor aligned to BEAM Agent (both anchor to easy-ai Actor)."@en .
+
+t4b:Train rdfs:subClassOf beam:Train ;
+    rdfs:comment "Tool4Boxology training process aligned to BEAM Train."@en .
+
+t4b:Transform rdfs:subClassOf beam:Transform ;
+    rdfs:comment "Tool4Boxology transform process aligned to BEAM Transform."@en .
+
+t4b:Infer rdfs:subClassOf beam:Infer ;
+    rdfs:comment "Tool4Boxology inference process aligned to BEAM Infer."@en .
+
+t4b:Generate rdfs:subClassOf beam:Generate ;
+    rdfs:comment "Tool4Boxology generation process aligned to BEAM Generate."@en .
+
+# --- DESIGN DECISIONS flagged for review ------------------------------------
+
+t4b:Deduce rdfs:subClassOf beam:Infer ;
+    rdfs:comment "DESIGN DECISION (review): t4b:Deduce has no direct BEAM equivalent; mapped to beam:Infer as the closest process type (deduction is symbolic inference)."@en .
+
+t4b:Embed rdfs:subClassOf beam:Transform ;
+    rdfs:comment "DESIGN DECISION (review): t4b:Embed has no direct BEAM equivalent; mapped to beam:Transform (embedding transforms data into a vector representation)."@en .
+
+t4b:StatisticalModel rdfs:subClassOf beam:StatisticalModel ;
+    rdfs:comment "DESIGN DECISION (review): not in the originally agreed alignment list, but a verified t4b ontology class with an exact BEAM counterpart; added so statistical models normalize to a BEAM leaf type. The export's misspelled t4b:StatisticModel is case/spelling-normalized to this class first."@en .
+
+# t4b:ReasoningAssumption (OWA/CWA) is deliberately left unmapped for now:
+# BEAM has no assumption concept, and reasoning assumptions are pattern-level
+# metadata rather than architecture elements. Revisit when applicability
+# conditions need to read them.
+
+# NOTE (normalizer, not an OWL axiom here): t4b:Boxology instances represent
+# one exported architecture each. The normalizer types them beam:System so the
+# SHACL input contract (>=1 beam:System) is satisfied - DESIGN DECISION
+# (review): alternative would be a t4b:Boxology rdfs:subClassOf beam:System
+# axiom in this file.
