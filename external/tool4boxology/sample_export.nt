@@ -1,0 +1,138 @@
+<http://tool4boxology.org/DesignPattern/group_1761577919168> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_1761577797210> .
+<http://tool4boxology.org/DesignPattern/group_1761643679506> <http://www.w3.org/2000/01/rdf-schema#label> "2a Possible Diagnosis (per case)" .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/group_1761577992184> .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/node_141762445165352> .
+<http://tool4boxology.org/Component/node_1761578024234> <http://www.w3.org/2000/01/rdf-schema#label> "Text Feature Vectors Symptoms" .
+<http://tool4boxology.org/DesignPattern/group_1761577919168> <http://www.w3.org/2000/01/rdf-schema#label> "1d Extract Relevant Information" .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://www.w3.org/2000/01/rdf-schema#label> "T4B-1" .
+<http://tool4boxology.org/Component/node_1761578823589> <http://www.w3.org/2000/01/rdf-schema#label> "Deduce" .
+<http://tool4boxology.org/DesignPattern/group_1761643679506> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern> .
+<http://tool4boxology.org/Component/node_1761578995769> <http://www.w3.org/2000/01/rdf-schema#label> "Deduce" .
+<http://tool4boxology.org/DesignPattern/group_1761578439989> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/node_1761578300915> .
+<http://tool4boxology.org/DesignPattern/node_141762445165352> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/node_1761578523147> .
+<http://tool4boxology.org/Component/node_161762445165352> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578523147> .
+<http://tool4boxology.org/Component/node_1761577848218> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Text> .
+<http://tool4boxology.org/DesignPattern/group_1761579945199> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern> .
+<http://tool4boxology.org/Component/node_1761577839141> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761577848218> .
+<http://tool4boxology.org/DesignPattern/group_1761577992184> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_1761577848218> .
+<http://tool4boxology.org/DesignPattern/group_1761578885454> <http://www.w3.org/2000/01/rdf-schema#label> "1a Fuzzy Rules" .
+<http://tool4boxology.org/Component/node_1761578688300> <http://www.w3.org/2000/01/rdf-schema#label> "Text Fuzzy Rules" .
+<http://tool4boxology.org/DesignPattern/group_1761578140314> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern> .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Boxology> .
+<http://tool4boxology.org/Component/node_1761577938926> <http://www.w3.org/2000/01/rdf-schema#label> "Text Tokens" .
+<http://tool4boxology.org/Component/node_161762445165352> <http://www.w3.org/2000/01/rdf-schema#label> "Embed" .
+<http://tool4boxology.org/Component/node_1761578295027> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_1761578823589> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_1761578740121> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578823589> .
+<http://tool4boxology.org/Component/node_1761577932578> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/transform> .
+<http://tool4boxology.org/Component/node_1761578891105> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578995769> .
+<http://tool4boxology.org/Component/node_1761578018325> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/embed> .
+<http://tool4boxology.org/Component/node_1761577932578> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761577938926> .
+<http://tool4boxology.org/DesignPattern/group_1761578140314> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/node_1761578024234> .
+<http://tool4boxology.org/Component/node_1761577797210> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761577839141> .
+<http://tool4boxology.org/Component/node_1761578740121> <http://www.w3.org/2000/01/rdf-schema#label> "Semantic Fuzzy Rules with weights" .
+<http://tool4boxology.org/Component/node_151762445165352> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_1761579893067> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/group_1761578439989> .
+<http://tool4boxology.org/DesignPattern/group_1761578439989> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_1761578024234> .
+<http://tool4boxology.org/DesignPattern/group_1761577919168> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern> .
+<http://tool4boxology.org/DesignPattern/group_1761577992184> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/node_1761577932578> .
+<http://tool4boxology.org/Component/node_1761577839141> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_1761577848218> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761577932578> .
+<http://tool4boxology.org/DesignPattern/group_1761578885454> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/node_1761578712780> .
+<http://tool4boxology.org/Component/node_1761578523147> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578527556> .
+<http://tool4boxology.org/DesignPattern/group_1761578439989> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/node_1761578295027> .
+<http://tool4boxology.org/DesignPattern/group_1761577919168> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/node_1761577848218> .
+<http://tool4boxology.org/DesignPattern/node_141762445165352> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/node_161762445165352> .
+<http://tool4boxology.org/Component/node_1761577932578> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/DesignPattern/group_1761578620707> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_1761578523147> .
+<http://tool4boxology.org/Component/node_1761578295027> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578300915> .
+<http://tool4boxology.org/DesignPattern/group_1761579945199> <http://www.w3.org/2000/01/rdf-schema#label> "2a Classification" .
+<http://tool4boxology.org/DesignPattern/node_141762445165352> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_151762445165352> .
+<http://tool4boxology.org/Component/node_1761578688300> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Text> .
+<http://tool4boxology.org/Component/node_1761578712780> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/training> .
+<http://tool4boxology.org/Component/node_1761577797210> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Text> .
+<http://tool4boxology.org/Component/node_1761578995769> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761579893067> .
+<http://tool4boxology.org/Component/node_1761578024234> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_1761578018325> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_1761577848218> <http://www.w3.org/2000/01/rdf-schema#label> "Text Symptoms Cleaned" .
+<http://tool4boxology.org/DesignPattern/group_1761643679506> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/node_1761578891105> .
+<http://tool4boxology.org/Component/node_1761577938926> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578018325> .
+<http://tool4boxology.org/Component/node_1761578018325> <http://www.w3.org/2000/01/rdf-schema#label> "Embed" .
+<http://tool4boxology.org/DesignPattern/group_1761578885454> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern> .
+<http://tool4boxology.org/Component/node_1761578995769> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/deduce> .
+<http://tool4boxology.org/Component/node_1761577848218> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/group_1761578140314> .
+<http://tool4boxology.org/Component/node_1761578300915> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578995769> .
+<http://tool4boxology.org/Component/node_1761578712780> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578740121> .
+<http://tool4boxology.org/Component/node_1761577839141> <http://www.w3.org/2000/01/rdf-schema#label> "Transform" .
+<http://tool4boxology.org/DesignPattern/group_1761578620707> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/node_1761578688300> .
+<http://tool4boxology.org/Component/node_1761578018325> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578024234> .
+<http://tool4boxology.org/Component/node_1761578300915> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/DesignPattern/group_1761577992184> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/node_1761577938926> .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/group_1761643679506> .
+<http://tool4boxology.org/DesignPattern/group_1761578885454> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/node_1761578740121> .
+<http://tool4boxology.org/DesignPattern/group_1761578140314> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_1761577938926> .
+<http://tool4boxology.org/DesignPattern/group_1761643679506> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_1761578740121> .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/group_1761578885454> .
+<http://tool4boxology.org/DesignPattern/node_141762445165352> <http://www.w3.org/2000/01/rdf-schema#label> "1d Structure Medical Knowledge" .
+<http://tool4boxology.org/DesignPattern/group_1761578439989> <http://www.w3.org/2000/01/rdf-schema#label> "2a Possible Diagnosis (per case)" .
+<http://tool4boxology.org/Component/node_1761578823589> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578891105> .
+<http://tool4boxology.org/DesignPattern/group_1761578885454> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_1761578688300> .
+<http://tool4boxology.org/Component/node_1761578300915> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/SemanticModel> .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/group_1761578620707> .
+<http://tool4boxology.org/Component/node_1761578024234> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/data> .
+<http://tool4boxology.org/DesignPattern/group_1761577992184> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern> .
+<http://tool4boxology.org/Component/node_1761578523147> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Text> .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/group_1761577919168> .
+<http://tool4boxology.org/DesignPattern/group_1761578439989> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern> .
+<http://tool4boxology.org/DesignPattern/group_1761578140314> <http://www.w3.org/2000/01/rdf-schema#label> "1d Transform to Feature Vectors" .
+<http://tool4boxology.org/Component/node_1761578527556> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/embed> .
+<http://tool4boxology.org/DesignPattern/group_1761577919168> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/node_1761577839141> .
+<http://tool4boxology.org/DesignPattern/group_1761578620707> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/node_1761578527556> .
+<http://tool4boxology.org/Component/node_1761577938926> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/data> .
+<http://tool4boxology.org/Component/node_161762445165352> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/embed> .
+<http://tool4boxology.org/DesignPattern/group_1761577992184> <http://www.w3.org/2000/01/rdf-schema#label> "1d Tokenize" .
+<http://tool4boxology.org/Component/node_1761578527556> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578688300> .
+<http://tool4boxology.org/Component/node_1761578300915> <http://www.w3.org/2000/01/rdf-schema#label> "Semantic Support Vector Machine" .
+<http://tool4boxology.org/Component/node_1761578523147> <http://www.w3.org/2000/01/rdf-schema#label> "Text Structures Representation" .
+<http://tool4boxology.org/Component/node_1761578688300> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578712780> .
+<http://tool4boxology.org/Component/node_1761578740121> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/DesignPattern/group_1761579945199> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/node_1761578995769> .
+<http://tool4boxology.org/DesignPattern/group_1761578140314> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/node_1761578018325> .
+<http://tool4boxology.org/Component/node_1761578823589> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/deduce> .
+<http://tool4boxology.org/Component/node_1761578712780> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/DesignPattern/group_1761579945199> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_1761578891105> .
+<http://tool4boxology.org/Component/node_1761577938926> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_1761578740121> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/SemanticModel> .
+<http://tool4boxology.org/Component/node_1761578712780> <http://www.w3.org/2000/01/rdf-schema#label> "Train" .
+<http://tool4boxology.org/DesignPattern/group_1761579945199> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_1761578300915> .
+<http://tool4boxology.org/Component/node_1761578688300> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/DesignPattern/group_1761579945199> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/node_1761579893067> .
+<http://tool4boxology.org/Component/node_1761577797210> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_1761578024234> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578295027> .
+<http://tool4boxology.org/Component/node_1761577932578> <http://www.w3.org/2000/01/rdf-schema#label> "Transform" .
+<http://tool4boxology.org/Component/node_1761578295027> <http://www.w3.org/2000/01/rdf-schema#label> "Training" .
+<http://tool4boxology.org/Component/node_1761578891105> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/data> .
+<http://tool4boxology.org/DesignPattern/node_141762445165352> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern> .
+<http://tool4boxology.org/Component/node_1761577797210> <http://www.w3.org/2000/01/rdf-schema#label> "Text Symptoms" .
+<http://tool4boxology.org/Component/node_1761578527556> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_1761578295027> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/training> .
+<http://tool4boxology.org/Component/node_1761578527556> <http://www.w3.org/2000/01/rdf-schema#label> "Embed" .
+<http://tool4boxology.org/Component/node_1761578891105> <http://www.w3.org/2000/01/rdf-schema#label> "Possible Diagnosis with Likelihood" .
+<http://tool4boxology.org/Component/node_151762445165352> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Text> .
+<http://tool4boxology.org/Component/node_161762445165352> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/DesignPattern/group_1761578620707> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern> .
+<http://tool4boxology.org/DesignPattern/group_1761643679506> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/node_1761578823589> .
+<http://tool4boxology.org/Component/node_1761577839141> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/transform> .
+<http://tool4boxology.org/DesignPattern/group_1761643679506> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/node_1761578024234> .
+<http://tool4boxology.org/Component/node_1761578024234> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_1761578823589> .
+<http://tool4boxology.org/Component/node_151762445165352> <http://www.w3.org/2000/01/rdf-schema#label> "Text Medical Knowledge" .
+<http://tool4boxology.org/Component/node_1761579893067> <http://www.w3.org/2000/01/rdf-schema#label> "Text Possible Diagnosis ranked by Likelihood" .
+<http://tool4boxology.org/Component/node_151762445165352> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/node_161762445165352> .
+<http://tool4boxology.org/Component/node_1761578891105> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Boxology/25041b90-4507-43a0-88d4-74a774b2132d> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/group_1761579945199> .
+<http://tool4boxology.org/Component/node_1761579893067> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/symbol> .
+<http://tool4boxology.org/DesignPattern/group_1761578620707> <http://www.w3.org/2000/01/rdf-schema#label> "1d Fuzzy Rules without Weights" .
+<http://tool4boxology.org/Component/node_1761578995769> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_1761578523147> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
