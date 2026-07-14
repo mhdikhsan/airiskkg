@@ -158,24 +158,28 @@ def graph_view(ttl_text: str) -> dict:
     systems = []
     nodes = []
     for node in sorted(node_ids, key=str):
-        kind, type_label = _kind_and_type(typed.get(node, set()))
-        roles = sorted(
-            _label(graph, ontology, r)
-            for r in graph.objects(node, PAIR.playsRole)
-            if isinstance(r, URIRef)
+        node_types = typed.get(node, set())
+        kind, type_label = _kind_and_type(node_types)
+        type_uri = next(
+            (str(t) for t in sorted(node_types, key=str) if _local_name(t) == type_label),
+            None,
         )
-        categories = sorted(
-            _label(graph, ontology, c)
-            for c in graph.objects(node, PAIR.containsDataCategory)
-            if isinstance(c, URIRef)
+        role_ids = sorted(
+            str(r) for r in graph.objects(node, PAIR.playsRole) if isinstance(r, URIRef)
+        )
+        category_ids = sorted(
+            str(c) for c in graph.objects(node, PAIR.containsDataCategory) if isinstance(c, URIRef)
         )
         entry = {
             "id": str(node),
             "label": _label(graph, ontology, node),
             "kind": kind,
             "typeLabel": type_label,
-            "roles": roles,
-            "categories": categories,
+            "typeUri": type_uri,
+            "roles": [_label(graph, ontology, URIRef(r)) for r in role_ids],
+            "roleIds": role_ids,
+            "categories": [_label(graph, ontology, URIRef(c)) for c in category_ids],
+            "categoryIds": category_ids,
         }
         if kind == "system":
             systems.append(entry)

@@ -316,5 +316,11 @@
     window.addEventListener("resize", () => { if (contentBox) fit(); });
   }
 
-  window.GraphView = { init, render, clear, setHighlight, fit };
+  /** Run the layered layout standalone (used by Draw mode's "From code"). */
+  function layoutPositions(nodes, edges) {
+    layout(nodes, edges);
+    return new Map(positions);
+  }
+
+  window.GraphView = { init, render, clear, setHighlight, fit, layoutPositions };
 })();
