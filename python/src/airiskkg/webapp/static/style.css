@@ -162,10 +162,118 @@ label.btn { display: inline-flex; align-items: center; }
 .status-dot.busy { background: var(--warn); animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: 0.3; } }
 
+/* ---- mode bar (Preview / Draw) ---- */
+.mode-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  background: #eceef3;
+  border-bottom: 1px solid #d8dde6;
+}
+.mode-toggle { display: inline-flex; border: 1px solid #c6ccd8; border-radius: 6px; overflow: hidden; }
+.mode-btn {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 5px 14px;
+  border: none;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+}
+.mode-btn.active { background: var(--accent); color: #fff; }
+.draw-actions { display: flex; gap: 6px; }
+.btn.small { padding: 4px 10px; font-size: 12px; }
+.btn.danger { background: #4a2328; border-color: #7c3b42; color: #ffb4b4; margin-top: 10px; }
+.btn.danger:hover { background: #5d2b31; }
+.draw-actions .btn { background: #fff; color: #333; border-color: #c6ccd8; }
+.draw-actions .btn:hover { background: #eef2fa; }
+.draw-actions .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+
 /* ---- canvas ---- */
 .canvas-wrap { flex: 1 1 auto; position: relative; min-height: 0; overflow: hidden; touch-action: none; }
 #canvas { width: 100%; height: 100%; display: block; cursor: grab; }
 #canvas:active { cursor: grabbing; }
+
+/* ---- draw mode ---- */
+#draw-layer { position: absolute; inset: 0; }
+#draw-canvas { width: 100%; height: 100%; display: block; }
+.palette {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: rgba(255,255,255,0.94);
+  border: 1px solid #c6ccd8;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  max-height: calc(100% - 20px);
+  overflow: auto;
+}
+.palette-item {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1.5px solid var(--node-other-border);
+  background: var(--node-other);
+  color: #2a2f38;
+  cursor: grab;
+  user-select: none;
+  text-align: center;
+}
+.palette-item:active { cursor: grabbing; }
+.palette-item.data { background: var(--node-data); border-color: var(--node-data-border); border-radius: 14px; }
+.palette-item.symbol { background: var(--node-symbol); border-color: var(--node-symbol-border); border-radius: 14px; }
+.palette-item.model { background: var(--node-model); border-color: var(--node-model-border); }
+.palette-item.process { background: var(--node-process); border-color: var(--node-process-border); }
+
+.draw-panel {
+  position: absolute;
+  top: 10px;
+  right: 52px;
+  width: 250px;
+  max-height: calc(100% - 20px);
+  overflow: auto;
+  background: rgba(255,255,255,0.97);
+  border: 1px solid #c6ccd8;
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #2a2f38;
+  font-size: 12.5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.draw-panel h4 { margin: 0 0 8px; font-size: 13.5px; }
+.pfield { display: block; margin: 8px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #8a93a5; }
+.pfield input, .pfield select {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  font: inherit;
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #2a2f38;
+  border: 1px solid #c6ccd8;
+  border-radius: 5px;
+  padding: 5px 7px;
+  background: #fff;
+}
+.phint { color: #8a93a5; font-size: 12px; line-height: 1.5; }
+
+.dnode { cursor: move; }
+.dnode.selected .shape { stroke-width: 3; stroke: var(--accent); }
+.port { fill: #fff; stroke: #7c8698; stroke-width: 1.5; opacity: 0; cursor: crosshair; }
+.dnode:hover .port, .dnode.selected .port { opacity: 1; }
+.port:hover { fill: var(--accent); }
+.edge.temp { stroke: var(--accent); stroke-dasharray: 5 4; stroke-width: 1.8; }
+.edge.selected { stroke: var(--accent); stroke-width: 2.6; }
+.edge-hit { stroke: transparent; stroke-width: 14; cursor: pointer; }
+.mode-hidden { display: none !important; }
 
 .canvas-controls {
   position: absolute;

@@ -257,11 +257,95 @@ ex:Generate a beam:Transform ;
     beam:produce ex:Answer .
 `;
 
+  // ---- mode toggle (Preview / Draw) -------------------------------------------
+  let mode = "preview";
+
+  function setMode(next) {
+    mode = next;
+    $$(".mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === next));
+    $("#draw-actions").classList.toggle("hidden", next !== "draw");
+    $("#canvas").classList.toggle("hidden", next !== "preview");
+    $("#system-badge").classList.toggle("mode-hidden", next !== "preview");
+    $("#canvas-empty").classList.add("hidden");
+    $$(".canvas-controls .ctl").forEach((c) => c.classList.toggle("hidden", next !== "preview"));
+    if (next === "draw") {
+      DrawMode.show();
+      if (DrawMode.isEmpty() && Editor.getValue().trim()) drawFromCode();
+    } else {
+      DrawMode.hide();
+      refreshPreview(Editor.getValue());
+    }
+  }
+
+  async function drawFromCode() {
+    const ttl = Editor.getValue().trim();
+    if (!ttl) { setStatus("error", "The editor is empty - nothing to load onto the canvas."); return; }
+    try {
+      const data = await postJson("/api/graph", { ttl });
+      DrawMode.loadFromGraph(data);
+    } catch (error) {
+      setStatus("error", "Cannot load diagram: " + error.message.split("\n")[0]);
+    }
+  }
+
+  async function drawGenerate(model) {
+    try {
+      const { ttl } = await postJson("/api/build", model);
+      Editor.setValue(ttl, { silent: true });
+      refreshPreview(ttl);
+      setStatus("ok", "Turtle generated from the diagram", `${model.resources.length + model.processes.length} elements`);
+    } catch (error) {
+      setStatus("error", error.message);
+    }
+  }
+
+  function renderImportWarnings(warnings) {
+    if (!warnings.length) return;
+    renderValidation({
+      conforms: true,
+      violations: [],
+      warnings: warnings.map((message) => ({ message, focusNode: null })),
+    });
+    openDrawer("validation");
+  }
+
   // ---- init ------------------------------------------------------------------
   async function init() {
     GraphView.init();
     Editor.init({ onChange: refreshPreview });
     initDivider();
+
+    let vocabulary = { roles: [], dataCategories: [] };
+    try {
+      vocabulary = await api("/api/vocabulary");
+    } catch (_) { /* draw mode will just have empty pick lists */ }
+    DrawMode.init({
+      vocabulary,
+      onStatus: setStatus,
+      onFromCode: drawFromCode,
+      onGenerate: drawGenerate,
+    });
+
+    $$(".mode-btn").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+
+    $("#xml-input").addEventListener("change", (ev) => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        setStatus("busy", `Importing ${file.name}…`);
+        try {
+          const { ttl, warnings } = await postJson("/api/import/drawio", { xml: String(reader.result) });
+          Editor.setValue(ttl);
+          renderImportWarnings(warnings || []);
+          setStatus("ok", `Imported ${file.name} - review the guessed element types`, `${(warnings || []).length} import notes`);
+        } catch (error) {
+          setStatus("error", `Import failed: ${error.message}`);
+        }
+      };
+      reader.readAsText(file);
+      ev.target.value = "";
+    });
 
     try {
       const examples = await api("/api/examples");
