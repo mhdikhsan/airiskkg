@@ -45,6 +45,12 @@ facet:hasDataRights a owl:ObjectProperty ;
     rdfs:domain beam:Data ;
     rdfs:range skos:Concept .
 
+facet:hasImplementationType a owl:ObjectProperty ;
+    rdfs:label "has implementation type"@en ;
+    rdfs:comment "Intended values: concepts of the impl:ImplementationType scheme (ontology/facets/implementation_type.ttl). Facet counterpart to the deliberate absence of beam:Model implementation subclasses."@en ;
+    rdfs:domain beam:Model ;
+    rdfs:range skos:Concept .
+
 facet:hasTaskCategory a owl:ObjectProperty ;
     rdfs:label "has task category"@en ;
     rdfs:comment "Intended values: concepts of the task:AITask scheme (ontology/facets/task.ttl). Rule R7: task is a separate axis from capability and application type."@en ;

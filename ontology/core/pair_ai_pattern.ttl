@@ -30,7 +30,7 @@ pair:PatternRole a owl:Class ;
 pair:DataCategory a owl:Class ;
     rdfs:subClassOf skos:Concept ;
     rdfs:label "Data Category"@en ;
-    rdfs:comment "A characterization facet classifying data content (e.g. sensitive, personal, untrusted, generated content). SKOS concept, never instantiated as graph structure; evaluated by applicability conditions, never matched by motifs."@en .
+    rdfs:comment "A characterization facet classifying data content (e.g. sensitive, personal, untrusted, generated content); glossary v1.1 Section A.3 classifies Data Category as one of the characterization facets alongside the schemes in ontology/facets/. It stays in the pattern module (rather than ontology/facets/) because it is the one facet with derived values (Rule R8): pair:containsDataCategory facts are both annotated by the modeler and propagated along data flow by registered propagation queries, and applicability conditions traverse the category hierarchy via pair:subDataCategoryOf. Values are SKOS concepts in pair:DataCategoryScheme, never instantiated as graph structure, and never matched by motifs (Rule R2)."@en .
 
 pair:GraphMotif a owl:Class ;
     rdfs:label "Graph Motif"@en ;
@@ -748,7 +748,76 @@ pair:OutputGuardrailStep a pair:PatternRole ;
     pair:subRoleOf pair:GuardrailStep ;
     skos:definition "A guardrail step screening model output before release."@en .
 
-# Data category vocabulary
+# Data category vocabulary (the Data Category characterization facet)
+#
+# Curated scheme of content classification values. Assignment is an annotated
+# base fact (Rule R8) via pair:containsDataCategory; untrusted-content taint
+# is additionally DERIVED by propagation queries along beam:use/beam:produce.
+# Hierarchy note: applicability-condition queries traverse
+# pair:subDataCategoryOf* toward pair:UntrustedContent,
+# pair:SensitiveInformation, and pair:PromptInstruction - adding a
+# subDataCategoryOf edge INTO one of those three roots widens query results
+# and needs explicit sign-off. Edges into pair:Information are neutral.
+
+pair:DataCategoryScheme a skos:ConceptScheme ;
+    skos:prefLabel "Data Category"@en ;
+    skos:definition "Characterization facet classifying the content of data resources (glossary v1.1 A.3). Read by applicability conditions only; aligned to DPV data concepts where equivalents exist (Rule R3: referenced, never copied)."@en ;
+    dct:source "PAIR-AI glossary v1.1, Section A.3; DPV v2.3 (https://w3id.org/dpv#, verified 2026-07-13)" .
+
+pair:Information a pair:DataCategory ;
+    skos:prefLabel "Information"@en ;
+    skos:inScheme pair:DataCategoryScheme ;
+    skos:topConceptOf pair:DataCategoryScheme ;
+    skos:definition "Root category for content-kind classification: informational content handled by the system. Use-case graphs subclass this for domain content (e.g. connected workspace content)."@en ;
+    dct:source "expert curation" .
+
+pair:SensitiveInformation a pair:DataCategory ;
+    skos:prefLabel "Sensitive Information"@en ;
+    skos:inScheme pair:DataCategoryScheme ;
+    pair:subDataCategoryOf pair:Information ;
+    skos:definition "Content whose exposure can harm individuals or organizations (personal, medical, financial, or otherwise protection-worthy information). Root category traversed by sensitive-data applicability conditions."@en ;
+    skos:relatedMatch <https://w3id.org/dpv#SensitivePersonalData> ;
+    dct:source "expert curation; DPV v2.3 dpv:SensitivePersonalData (verified 2026-07-13)" .
+
+pair:ConfidentialInformation a pair:DataCategory ;
+    skos:prefLabel "Confidential Information"@en ;
+    skos:inScheme pair:DataCategoryScheme ;
+    pair:subDataCategoryOf pair:Information ;
+    skos:definition "Content that must be kept secret for operational or business reasons (credentials, keys, internal configuration). Deliberately NOT a subcategory of SensitiveInformation: sensitive-data conditions target personal/organizational harm, not secrets management."@en ;
+    skos:relatedMatch <https://w3id.org/dpv#ConfidentialData> ;
+    dct:source "expert curation; DPV v2.3 dpv:ConfidentialData (verified 2026-07-13)" .
+
+pair:ExternalUserContent a pair:DataCategory ;
+    skos:prefLabel "External User Content"@en ;
+    skos:inScheme pair:DataCategoryScheme ;
+    pair:subDataCategoryOf pair:Information ;
+    skos:definition "Content originating from a user outside the system boundary (queries, uploads, chat messages). Deliberately NOT a subcategory of UntrustedContent: untrusted-content taint is derived from roles and flow by the propagation queries, not implied by this category."@en ;
+    dct:source "expert curation" .
+
+pair:GeneratedContent a pair:DataCategory ;
+    skos:prefLabel "Generated Content"@en ;
+    skos:inScheme pair:DataCategoryScheme ;
+    pair:subDataCategoryOf pair:Information ;
+    skos:definition "Content produced by a generative model rather than authored or retrieved."@en ;
+    skos:relatedMatch <https://w3id.org/dpv#GeneratedData> ;
+    dct:source "expert curation; DPV v2.3 dpv:GeneratedData (verified 2026-07-13)" .
+
+pair:PromptInstruction a pair:DataCategory ;
+    skos:prefLabel "Prompt Instruction"@en ;
+    skos:inScheme pair:DataCategoryScheme ;
+    skos:topConceptOf pair:DataCategoryScheme ;
+    skos:definition "Instructional content steering model behavior (system prompts, prompt templates, operational configuration). Root category traversed by system-prompt-leakage and embeddings-related conditions."@en ;
+    dct:source "expert curation" .
+
+pair:UntrustedContent a pair:DataCategory ;
+    skos:prefLabel "Untrusted Content"@en ;
+    skos:inScheme pair:DataCategoryScheme ;
+    skos:topConceptOf pair:DataCategoryScheme ;
+    skos:definition "Content whose integrity the system cannot vouch for within the submitted graph (public input, externally sourced documents, retrieved context). Root category traversed by prompt-injection and poisoning applicability conditions; also derived along data flow by the untrusted-content propagation query. Absence of this category means unknown, not trusted (Open World Assumption, Rule R4)."@en ;
+    dct:source "expert curation" .
+
 pair:TrustedContent a pair:DataCategory ;
     skos:prefLabel "TrustedContent"@en ;
+    skos:inScheme pair:DataCategoryScheme ;
+    skos:topConceptOf pair:DataCategoryScheme ;
     skos:definition "Explicit override marking content as trusted, clearing any untrusted-content taint that would otherwise propagate to it from an upstream public-input or retrieved-context source."@en .

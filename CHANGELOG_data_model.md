@@ -184,6 +184,39 @@ Note: the strict RAG motif intentionally does not fire — reranking sits
 between retrieval and prompt construction, breaking the direct
 retrieval-to-prompt chain the motif requires.
 
+## Post-Task 7 addition — Data Category formalized as a facet (in place)
+
+Glossary v1.1 A.3 classifies Data Category as a characterization facet; it was
+modeled inside the pattern module before the facet layer existed. Decision:
+**formalize in place, no URI migration** — `pair:containsDataCategory` values
+are propagated along data flow (Rule R8 derived facts) and traversed via
+`pair:subDataCategoryOf*` by ten applicability-condition queries, so moving
+the namespace buys nothing and touches everything.
+
+- `pair:DataCategoryScheme` (skos:ConceptScheme) declared; the 7 category
+  values that were used but never declared now have definitions, scheme
+  membership, `dct:source`, and verified DPV `skos:relatedMatch` links
+  (`dpv:SensitivePersonalData`, `dpv:ConfidentialData`, `dpv:GeneratedData` —
+  DPV v2.3, verified 2026-07-13): Information, SensitiveInformation,
+  ConfidentialInformation, ExternalUserContent, GeneratedContent,
+  PromptInstruction, UntrustedContent (TrustedContent already existed).
+- Hierarchy edges added only INTO `pair:Information` (no query targets it);
+  a header comment warns that edges into the three query-traversed roots
+  (UntrustedContent, SensitiveInformation, PromptInstruction) widen results
+  and need sign-off. ConfidentialInformation and ExternalUserContent are
+  deliberately NOT under SensitiveInformation / UntrustedContent.
+- `ontology/facets/implementation_type.ttl`: Implementation Type facet stub
+  (extension point) + `facet:hasImplementationType` (domain `beam:Model`) —
+  the facet counterpart to Task 4's "no Model implementation subclasses".
+- Cross-references added in `data_facets.ttl` and the `pair:DataCategory`
+  class comment; imports aggregator updated.
+- Verified: assessment findings on uc6 / verba / onyx byte-identical
+  (0 triples added or removed); all tests unchanged.
+
+BEAM structural classes (Model, Process, Data, ...) stay OWL classes — R1:
+they are instantiated, query-traversed structure; only their classification
+values (implementation type, task, autonomy, data categories) are facets.
+
 ## Open TODOs / known debt
 
 1. **Pre-existing test failure** (predates this work):
@@ -192,20 +225,24 @@ retrieval-to-prompt chain the motif requires.
    by any motif match, and `risk_supply_chain.rq` only fires for match-bound
    elements. Fixing requires a semantic change to a motif or risk query —
    needs sign-off.
-2. `risk_supply_chain.rq` references undefined roles `pat:ModelArtifactRole` /
+2. **R2 leak in a motif query**: `match_embeddings.rq` reads
+   `pair:containsDataCategory` (`FILTER NOT EXISTS ... pair:PromptInstruction`)
+   — a facet read inside structural motif matching. Moving it into an
+   applicability condition changes that query's semantics — needs sign-off.
+3. `risk_supply_chain.rq` references undefined roles `pat:ModelArtifactRole` /
    `pat:ServingImageRole` (defined roles are `pair:ModelArtifact` /
    `pair:ServingImage`) and undeclared roles `pair:ExternalDependency`,
    `pair:ExternalModel`, `pair:ThirdPartyPackage`,
    `pair:ExternalProviderCredential` (used in example graphs but not declared
    in `pair_ai_pattern.ttl`). Fixing changes query semantics — needs sign-off.
-3. OECD `skos:exactMatch` URIs for autonomy/data facets: TODO markers (no
+4. OECD `skos:exactMatch` URIs for autonomy/data facets: TODO markers (no
    resolvable OECD concept URIs found).
-4. `task.ttl` second-level concepts are curated placeholders — reconcile with
+5. `task.ttl` second-level concepts are curated placeholders — reconcile with
    the paper's authoritative unified task taxonomy table before freeze.
-5. `pat:VectorBasedInformationRetrievalMotif` provenance is the
+6. `pat:VectorBasedInformationRetrievalMotif` provenance is the
    "expert curation" placeholder (origin unknown — please supply).
-6. `docs/notes/*.md` still describe the pre-rename (v1) vocabulary; the
+7. `docs/notes/*.md` still describe the pre-rename (v1) vocabulary; the
    glossary is authoritative, notes not yet rewritten.
-7. TÜV AI.ST mappings still on hold (license unverified).
-8. SSSOM export for the taxonomy mappings not yet generated (R6 mentions it;
+8. TÜV AI.ST mappings still on hold (license unverified).
+9. SSSOM export for the taxonomy mappings not yet generated (R6 mentions it;
    not in scope of Tasks 1–7).
