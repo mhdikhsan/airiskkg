@@ -18,4 +18,5 @@
         <http://w3id.org/airiskkg/facets/autonomy> ,
         <http://w3id.org/airiskkg/facets/data> ,
         <http://w3id.org/airiskkg/facets/task> ,
-        <http://w3id.org/airiskkg/facets/context> .
+        <http://w3id.org/airiskkg/facets/context> ,
+        <http://w3id.org/airiskkg/facets/implementation-type> .

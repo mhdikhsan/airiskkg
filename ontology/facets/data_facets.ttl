@@ -8,7 +8,7 @@
 <http://w3id.org/airiskkg/facets/data>
     a owl:Ontology ;
     dct:title "PAIR-AI Characterization Facets: Data Provenance, Dynamism, Rights"@en ;
-    dct:description "SKOS concept schemes classifying data resources of an AI system (Rule R1). Assigned to beam:Data via facet:hasDataProvenance / hasDataDynamism / hasDataRights; read by applicability conditions, never matched by motifs (Rule R2). Data identifiability is deliberately NOT defined here: DPV concepts are reused directly (Rule R3, see facet_properties.ttl)."@en ;
+    dct:description "SKOS concept schemes classifying data resources of an AI system (Rule R1). Assigned to beam:Data via facet:hasDataProvenance / hasDataDynamism / hasDataRights; read by applicability conditions, never matched by motifs (Rule R2). Data identifiability is deliberately NOT defined here: DPV concepts are reused directly (Rule R3, see facet_properties.ttl). The Data Category facet (glossary A.3) is also NOT defined here: it lives in the pattern module (pair:DataCategoryScheme, assigned via pair:containsDataCategory) because its values are propagated along data flow by registered queries (Rule R8, derived facts) - see ontology/core/pair_ai_pattern.ttl."@en ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. OECD Digital Economy Papers, No. 323. https://doi.org/10.1787/cb6d9eca-en" ;
     vann:preferredNamespacePrefix "dataf" ;
     vann:preferredNamespaceUri "http://w3id.org/airiskkg/facets/data#" .
