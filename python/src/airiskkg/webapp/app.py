@@ -9,6 +9,7 @@ Endpoints
 ``POST /api/graph``        Architecture Turtle -> nodes/edges for the live preview.
 ``POST /api/validate``     Architecture Turtle -> SHACL input-contract report.
 ``POST /api/import/drawio`` draw.io / diagrams.net XML -> architecture Turtle + warnings.
+``POST /api/import/t4b``    Tool4Boxology export (N-Triples/Turtle) -> architecture Turtle + notes.
 ``POST /api/build``        Builder model (JSON) -> architecture Turtle (legacy).
 ``POST /api/assess``       Architecture Turtle -> structured risk findings (JSON).
 """
@@ -22,6 +23,7 @@ from rdflib import RDF, RDFS, SKOS, Graph, URIRef
 
 from airiskkg.architecture_builder import BuilderError, build_ttl
 from airiskkg.drawio_import import DrawioImportError, drawio_to_ttl
+from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.assessment_runner import (
     BEAM,
     PAIR,
@@ -196,6 +198,19 @@ def create_app() -> Flask:
         try:
             ttl, warnings = drawio_to_ttl(xml)
         except (DrawioImportError, BuilderError) as error:
+            return jsonify({"error": str(error)}), 400
+        return jsonify({"ttl": ttl, "warnings": warnings})
+
+    @app.post("/api/import/t4b")
+    def import_t4b() -> object:
+        payload = request.get_json(silent=True) or {}
+        data = (payload.get("data") or "").strip()
+        fmt = "turtle" if payload.get("format") == "turtle" else "nt"
+        if not data:
+            return jsonify({"error": "Provide a Tool4Boxology export (N-Triples or Turtle) to import."}), 400
+        try:
+            ttl, warnings = t4b_to_ttl(data, fmt=fmt)
+        except (T4bImportError, BuilderError) as error:
             return jsonify({"error": str(error)}), 400
         return jsonify({"ttl": ttl, "warnings": warnings})
 

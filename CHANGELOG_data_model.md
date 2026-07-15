@@ -333,6 +333,37 @@ reasoning runs during motif matching) and not in the pipeline's load path
 (`CORE_FILES` / `imports.ttl`) — confirmed zero-diff on TTL parsing and
 the full test suite.
 
+## Post-Task 7 addition — "Import Tool4Boxology" in the workbench
+
+Previously `normalize_t4b.py` was CLI-only (`python python/scripts/
+normalize_t4b.py export.nt`); bringing in a Tool4Boxology export required
+leaving the workbench. Wired the same normalization into the UI, mirroring
+the existing "Import XML" (draw.io) flow:
+
+- New `python/src/airiskkg/t4b_import.py`: the normalization logic (case
+  URI fixes, BEAM materialization via the alignment adapter, DesignPattern
+  provenance) moved out of the CLI script into the installed package, so
+  both the CLI and the webapp share one implementation — same pattern as
+  `drawio_import.py`. Adds `normalize_text()` / `t4b_to_ttl()` for
+  in-memory (no temp file) use; `normalize(export_path)` kept identical
+  for `test_t4b_roundtrip.py`, which still imports it unchanged.
+  `python/scripts/normalize_t4b.py` is now a thin CLI wrapper.
+- New `POST /api/import/t4b` endpoint (`webapp/app.py`): N-Triples or
+  Turtle text in, BEAM Turtle + human-readable import notes out (counts
+  of case-normalized / materialized / provenance triples, plus the same
+  "no roles/data categories yet - use Draw mode" hint the draw.io importer
+  gives).
+- New **"Import T4B"** toolbar button next to "Import XML"
+  (`index.html`/`app.js`): picks N-Triples vs. Turtle by file extension,
+  loads the normalized result into the editor, shows the import notes in
+  the validation drawer - exact same UX shape as the XML importer.
+- Tests: 3 new endpoint tests (`test_webapp_endpoints.py`) covering the
+  vendored sample export, empty input, and malformed input. Full suite:
+  32 passed (up from 29) + the one pre-existing unrelated failure.
+- Verified end-to-end over a live server: import → live preview (20
+  nodes/20 edges) → SHACL validate (0 violations, 29 warnings) on the
+  vendored `sample_export.nt`.
+
 ## Open TODOs / known debt
 
 1. **Pre-existing test failure** (predates this work):

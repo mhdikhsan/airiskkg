@@ -347,6 +347,26 @@ ex:Generate a beam:Transform ;
       ev.target.value = "";
     });
 
+    $("#t4b-input").addEventListener("change", (ev) => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const format = /\.(ttl|turtle)$/i.test(file.name) ? "turtle" : "nt";
+      const reader = new FileReader();
+      reader.onload = async () => {
+        setStatus("busy", `Importing ${file.name}…`);
+        try {
+          const { ttl, warnings } = await postJson("/api/import/t4b", { data: String(reader.result), format });
+          Editor.setValue(ttl);
+          renderImportWarnings(warnings || []);
+          setStatus("ok", `Imported ${file.name} - review the import notes`, `${(warnings || []).length} import notes`);
+        } catch (error) {
+          setStatus("error", `Import failed: ${error.message}`);
+        }
+      };
+      reader.readAsText(file);
+      ev.target.value = "";
+    });
+
     try {
       const examples = await api("/api/examples");
       const select = $("#example-select");

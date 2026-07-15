@@ -4,7 +4,7 @@ import pytest
 
 flask = pytest.importorskip("flask")
 
-from airiskkg.paths import EXAMPLE_DIR  # noqa: E402
+from airiskkg.paths import EXAMPLE_DIR, REPO_ROOT  # noqa: E402
 from airiskkg.webapp.app import create_app  # noqa: E402
 
 
@@ -80,3 +80,24 @@ def test_assess_endpoint_still_works(client) -> None:
     assert response.status_code == 200
     data = response.get_json()
     assert data["summary"]["riskFindingCount"] > 0
+
+
+def test_import_t4b_endpoint_normalizes_sample_export(client) -> None:
+    sample = (REPO_ROOT / "external" / "tool4boxology" / "sample_export.nt").read_text(encoding="utf-8")
+    response = client.post("/api/import/t4b", json={"data": sample, "format": "nt"})
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "beam:System" in data["ttl"]
+    assert "beam:use" in data["ttl"] or "beam:produce" in data["ttl"]
+    assert data["warnings"]
+
+
+def test_import_t4b_endpoint_rejects_empty_input(client) -> None:
+    response = client.post("/api/import/t4b", json={"data": "  "})
+    assert response.status_code == 400
+
+
+def test_import_t4b_endpoint_reports_bad_input(client) -> None:
+    response = client.post("/api/import/t4b", json={"data": "not a triple at all", "format": "nt"})
+    assert response.status_code == 400
+    assert "error" in response.get_json()
