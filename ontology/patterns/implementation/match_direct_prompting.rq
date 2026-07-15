@@ -1,0 +1,52 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Direct Prompting motif match"@en ;
+        pair:matchesMotif pat:DirectPromptingMotif ;
+        pair:hasNodeBinding ?queryBinding , ?stepBinding , ?modelBinding , ?answerBinding .
+
+    ?queryBinding  a pair:NodeBinding ;
+        pair:bindsPatternNode pat:DP_QueryNode ;          pair:matchedElement ?query .
+    ?stepBinding   a pair:NodeBinding ;
+        pair:bindsPatternNode pat:DP_GenerationStepNode ; pair:matchedElement ?step .
+    ?modelBinding  a pair:NodeBinding ;
+        pair:bindsPatternNode pat:DP_ModelNode ;          pair:matchedElement ?llm .
+    ?answerBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:DP_AnswerNode ;         pair:matchedElement ?answer .
+}
+WHERE {
+    ?step a beam:Infer ;
+          pair:playsRole/pair:subRoleOf* pair:GenerationStep ;
+          beam:use ?query ;
+          beam:use ?llm ;
+          beam:produce ?answer .
+
+    ?query  a beam:Data ;
+            pair:playsRole/pair:subRoleOf* pair:UserInput .
+
+    ?llm    a beam:StatisticalModel ;
+            pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+
+    ?answer a beam:Data ;
+            pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+
+    FILTER(?query != ?llm && ?query != ?answer && ?llm != ?answer)
+
+    # deterministic match + binding IRIs
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/direct-prompting/",
+        ENCODE_FOR_URI(STR(?step)), "/",
+        ENCODE_FOR_URI(STR(?query)), "/",
+        ENCODE_FOR_URI(STR(?answer))
+    )) AS ?match)
+    BIND(IRI(CONCAT(STR(?match), "/binding/query"))    AS ?queryBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/llm-step")) AS ?stepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/llm"))      AS ?modelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/answer"))   AS ?answerBinding)
+}

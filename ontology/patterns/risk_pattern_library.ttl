@@ -202,14 +202,24 @@ pat:UnboundedConsumption_UnboundedUseCondition
 
 # OWASP motif interpretations
 
-pat:DirectLLMAnsweringMotif
+pat:DirectPromptingMotif
     pair:hasInterpretation
         pat:PromptInjectionInterpretation ,
-        pat:DirectLLMAnsweringWithoutGroundingInterpretation ,
+        pat:DirectPromptingWithoutGroundingInterpretation ,
         pat:ImproperOutputHandlingInterpretation ,
-        pat:UnboundedConsumptionInterpretation .
+        pat:UnboundedConsumptionInterpretation ;
+    skos:scopeNote """
+    Direct Prompting is linked to these candidate interpretations because the
+    motif represents user input flowing directly into a generative model and
+    producing user-facing output without an explicit retrieval or grounding
+    step. This makes prompt-context manipulation, unsupported generation,
+    unvalidated generated output, and unbounded model use relevant conditions
+    to test. The mapping does not assert that every Direct Prompting instance
+    is risky; each interpretation still requires its graph condition and
+    executable OQP to be satisfied during assessment.
+    """@en .
 
-pat:VectorBasedInformationRetrievalMotif
+pat:RetrievalAugmentedGenerationMotif
     pair:hasInterpretation
         pat:PromptInjectionInterpretation ,
         pat:SensitiveDataRetrievalExposureInterpretation ,
@@ -224,7 +234,7 @@ pat:RetrievalAugmentedGenerationMotif
         pat:MisinformationFromWeakGroundingInterpretation ,
         pat:UnboundedConsumptionInterpretation .
 
-pat:EmbeddingsMotif
+pat:EmbeddingMotif
     pair:hasInterpretation
         pat:DataAndModelPoisoningInterpretation ,
         pat:VectorAndEmbeddingWeaknessInterpretation .
@@ -261,6 +271,11 @@ pat:TrainingToServingMotif
 pat:PromptInjectionInterpretation
     a pair:MotifInterpretation ;
     rdfs:label "Prompt injection interpretation"@en ;
+    dct:description """
+    Applies to motifs where untrusted user, retrieved, or tool-supplied
+    content can enter a prompt or generation context and potentially override
+    or conflict with intended instructions.
+    """@en ;
     pair:interpretedAsMechanism owasp:mechanism-instruction-override ;
     pair:hasInterpretationCondition pat:PromptInjection_UntrustedPromptContextCondition ;
     pair:mayIndicateRisk
@@ -281,7 +296,7 @@ pat:PromptInjectionInterpretation
 pat:SensitiveDataRetrievalExposureInterpretation
     a pair:MotifInterpretation ;
     rdfs:label "Sensitive data retrieval exposure interpretation"@en ;
-    pair:interpretsMotif pat:VectorBasedInformationRetrievalMotif ;
+    pair:interpretsMotif pat:RetrievalAugmentedGenerationMotif ;
     pair:interpretedAsMechanism owasp:mechanism-sensitive-data-propagation ;
     pair:hasInterpretationCondition
         pat:SensitiveInfo_SensitiveContextCondition ,
@@ -351,6 +366,11 @@ pat:DataAndModelPoisoningInterpretation
 pat:ImproperOutputHandlingInterpretation
     a pair:MotifInterpretation ;
     rdfs:label "Improper output handling interpretation"@en ;
+    dct:description """
+    Applies to motifs where generated LLM output reaches a user or downstream
+    component without a represented validation, sanitization, review, or
+    guardrail step.
+    """@en ;
     pair:interpretedAsMechanism owasp:mechanism-unsafe-output-propagation ;
     pair:hasInterpretationCondition pat:ImproperOutputHandling_UnvalidatedOutputCondition ;
     pair:mayIndicateRisk
@@ -438,10 +458,16 @@ pat:VectorAndEmbeddingWeaknessInterpretation
         mitctrl:threat-modelling ;
     pair:implementedBy pat:VectorAndEmbeddingWeaknessOQP .
 
-pat:DirectLLMAnsweringWithoutGroundingInterpretation
+pat:DirectPromptingWithoutGroundingInterpretation
     a pair:MotifInterpretation ;
-    rdfs:label "Direct LLM answering without grounding interpretation"@en ;
-    pair:interpretsMotif pat:DirectLLMAnsweringMotif ;
+    rdfs:label "Direct Prompting without grounding interpretation"@en ;
+    skos:altLabel "Direct LLM answering without grounding interpretation"@en ;
+    dct:description """
+    Applies when a Direct Prompting motif produces a user-facing answer without
+    an explicit knowledge source, retrieved context, or represented verification
+    step in the architecture graph.
+    """@en ;
+    pair:interpretsMotif pat:DirectPromptingMotif ;
     pair:interpretedAsMechanism owasp:mechanism-unsupported-generation ;
     pair:hasInterpretationCondition pat:Misinformation_UngroundedGenerationCondition ;
     pair:mayIndicateRisk
@@ -458,7 +484,7 @@ pat:DirectLLMAnsweringWithoutGroundingInterpretation
         mitctrl:red-teaming ,
         mitctrl:input-output-filtering ,
         mitctrl:human-oversight-protocol ;
-    pair:implementedBy pat:DirectLLMAnsweringWithoutGroundingOQP .
+    pair:implementedBy pat:DirectPromptingWithoutGroundingOQP .
 
 pat:MisinformationFromWeakGroundingInterpretation
     a pair:MotifInterpretation ;
@@ -483,6 +509,11 @@ pat:MisinformationFromWeakGroundingInterpretation
 pat:UnboundedConsumptionInterpretation
     a pair:MotifInterpretation ;
     rdfs:label "Unbounded consumption interpretation"@en ;
+    dct:description """
+    Applies to motifs where model calls, retrieval breadth, prompt expansion,
+    tool use, or feedback loops can consume cost, latency, or availability
+    budget without represented rate, budget, or loop controls.
+    """@en ;
     pair:interpretedAsMechanism owasp:mechanism-unbounded-resource-consumption ;
     pair:hasInterpretationCondition pat:UnboundedConsumption_UnboundedUseCondition ;
     pair:mayIndicateRisk
@@ -507,15 +538,16 @@ pat:UnboundedConsumptionInterpretation
 pat:VectorIR_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Vector information retrieval motif matching OQP"@en ;
-    pair:implementsMotif pat:VectorBasedInformationRetrievalMotif ;
+    pair:implementsMotif pat:RetrievalAugmentedGenerationMotif ;
     pair:implementationPath "ontology/patterns/implementation/match_vector_ir.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:DirectLLM_MatchingOQP
+pat:DirectPrompting_MatchingOQP
     a pair:PatternImplementation ;
-    rdfs:label "Direct LLM answering motif matching OQP"@en ;
-    pair:implementsMotif pat:DirectLLMAnsweringMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_direct_llm_answering.rq" ;
+    rdfs:label "Direct Prompting motif matching OQP"@en ;
+    skos:altLabel "Direct LLM answering motif matching OQP"@en ;
+    pair:implementsMotif pat:DirectPromptingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_direct_prompting.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:SensitiveDataRetrievalExposureOQP
@@ -525,17 +557,34 @@ pat:SensitiveDataRetrievalExposureOQP
     pair:implementationPath "ontology/patterns/implementation/risk_sensitive_retrieval.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
-pat:DirectLLMAnsweringWithoutGroundingOQP
+pat:DirectPromptingWithoutGroundingOQP
     a pair:PatternImplementation ;
-    rdfs:label "Direct LLM answering without grounding interpretation OQP"@en ;
-    pair:implementsInterpretation pat:DirectLLMAnsweringWithoutGroundingInterpretation ;
-    pair:implementationPath "ontology/patterns/implementation/risk_ungrounded_llm.rq" ;
+    rdfs:label "Direct Prompting without grounding interpretation OQP"@en ;
+    skos:altLabel "Direct LLM answering without grounding interpretation OQP"@en ;
+    pair:implementsInterpretation pat:DirectPromptingWithoutGroundingInterpretation ;
+    pair:implementationPath "ontology/patterns/implementation/risk_direct_prompting_without_grounding.rq" ;
     pair:producesOutputType pair:RiskFinding .
+
+pat:DirectLLMAnsweringWithoutGroundingInterpretation
+    owl:deprecated true ;
+    owl:sameAs pat:DirectPromptingWithoutGroundingInterpretation ;
+    rdfs:label "Direct LLM answering without grounding interpretation"@en ;
+    skos:exactMatch pat:DirectPromptingWithoutGroundingInterpretation .
+
+pat:DirectLLM_MatchingOQP
+    owl:deprecated true ;
+    owl:sameAs pat:DirectPrompting_MatchingOQP ;
+    rdfs:label "Direct LLM answering motif matching OQP"@en .
+
+pat:DirectLLMAnsweringWithoutGroundingOQP
+    owl:deprecated true ;
+    owl:sameAs pat:DirectPromptingWithoutGroundingOQP ;
+    rdfs:label "Direct LLM answering without grounding interpretation OQP"@en .
 
 pat:Embeddings_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Embeddings motif matching OQP"@en ;
-    pair:implementsMotif pat:EmbeddingsMotif ;
+    pair:implementsMotif pat:EmbeddingMotif ;
     pair:implementationPath "ontology/patterns/implementation/match_embeddings.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
