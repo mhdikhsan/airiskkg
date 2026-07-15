@@ -242,6 +242,63 @@ reuses it fully (Rule R3, URIs only, nothing copied):
 - Verified: all TTL parse; motif matches / findings on onyx (107/318),
   uc6 (61/189), verba (46/172) unchanged — metadata-only change.
 
+## Post-Task 7 addition — DPV/DPV-AI reuse across all facets
+
+Previously most facets carried only a `dct:source` citation string toward
+DPV/OECD — informative for humans, not machine-actionable, and weak on FAIR
+interoperability (no resolvable link a tool could follow). Added real
+`skos:*Match` links wherever a verified DPV or DPV AI-extension counterpart
+exists, checked against the live spec (`https://w3c-cg.github.io/dpv/2.3/`,
+2026-07-15). Nothing is copied — only URIs and mapping edges (Rule R3):
+
+- `aut:AutonomyLevel` (`autonomy.ttl`) mapped to DPV's `dpv:AutomationLevel`
+  (ISO/IEC 22989:2022 levels 0-6) and `dpv:HumanInvolvement`: scheme-level
+  `skos:relatedMatch`; `NoActionAutonomy`→`AssistiveAutomation`
+  (relatedMatch, no clean level-0/1 correspondence); `LowActionAutonomy`
+  `closeMatch` `PartialAutomation` + `relatedMatch`
+  `HumanInvolvementForDecision`; `MediumActionAutonomy` `closeMatch`
+  `ConditionalAutomation` + `relatedMatch` oversight/intervention; the top
+  `HighActionAutonomy` `narrowMatch`es the three finer DPV levels
+  (`HighAutomation`, `FullAutomation`, `Autonomous`) since it spans all three.
+- `ctx:Domain` (`context.ttl`) `relatedMatch`es `dpv:Sector`, with
+  `rdfs:seeAlso` the DPV sector-extension index
+  (`https://w3id.org/dpv/sector`) and named health/finance/education/
+  infrastructure/law/public-services extensions in the definition, replacing
+  the vague "DPV sector extensions" citation. Checked `dpv:Context`/location
+  concepts for a Deployment Setting counterpart — none exists, left
+  unmapped, documented rather than silently absent.
+- `task:AITask` (`task.ttl`) scheme-level `relatedMatch` to the DPV AI
+  extension's `ai:Capability` (`https://w3id.org/dpv/ai#`, a neighboring
+  axis per Rule R7, mapped not merged). Per-leaf mappings added where a
+  verified Capability exists: `ImageClassification`, `ObjectDetection`,
+  `SpeechRecognition`, `NamedEntityRecognition`, `TextGeneration`
+  (→`NaturalLanguageGeneration`), `Summarization`
+  (→`AutomaticSummarisation`), `Translation` (→`MachineTranslation`),
+  `ImageGeneration`, `ConversationalAssistance` (→`ChatbotCapability`),
+  `UserProfiling` (→`Profiling`) via `closeMatch`;
+  `QuestionAnsweringOverKnowledge` `broadMatch`es the more general
+  `ai:QuestionAnswering`; `RetrievalAndRanking`, `InteractionAndDialogue`,
+  `PersonalizationAndProfiling`, `GenerationAndTransformation`
+  `relatedMatch` their broader DPV counterparts. Checked and confirmed
+  **no** DPV AI capability exists for: Recommendation, Forecasting/
+  Regression, Anomaly/Drift/Fraud Detection, Decision/Optimization/Control,
+  Code Generation, Embedding Computation, Deductive Reasoning, Knowledge
+  Graph Completion, Agent Tool Use — left unmapped rather than forced.
+- `impl:ImplementationType` (`implementation_type.ttl`, still a stub)
+  `relatedMatch`es `ai:Technique`; TODO comment now names verified DPV AI
+  technique concepts to reuse once the taxonomy is populated (
+  `MachineLearning`, `DeepLearning`, `NeuralNetwork`,
+  `ConvolutionalNeuralNetwork`, `RecurrentNeuralNetwork`, the five learning
+  paradigms, `RuleBasedTechnique`, `SymbolicReasoning`, `BayesianNetwork`,
+  `SupportVectorMachine`, `DecisionTree`, and `ai:LLM` — DPV has no
+  "Transformer" architecture concept yet).
+- All mapping URIs verified to actually resolve as `rdfs:Class`/
+  `skos:Concept` in the downloaded DPV core (`dpv.ttl`) and AI extension
+  (`ai.ttl`) Turtle, not just skimmed from HTML.
+
+Metadata-only: all TTL parses; motif matches / findings on onyx (107/318),
+uc6 (61/189), verba (46/172) unchanged.
+
 ## Open TODOs / known debt
 
 1. **Pre-existing test failure** (predates this work):

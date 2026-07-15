@@ -118,18 +118,23 @@ task:GenerationAndTransformation
     skos:prefLabel "Generation and Transformation"@en ;
     skos:definition "Producing new content or transforming content between forms (text, code, images, audio, translations, summaries)."@en ;
     dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:relatedMatch ai:ContentGeneration ;
     skos:narrower task:TextGeneration , task:Summarization , task:Translation , task:CodeGeneration , task:ImageGeneration , task:EmbeddingComputation .
 
 task:TextGeneration a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:GenerationAndTransformation ;
-    skos:prefLabel "Text Generation"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
+    skos:prefLabel "Text Generation"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:closeMatch ai:NaturalLanguageGeneration .
 task:Summarization a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:GenerationAndTransformation ;
-    skos:prefLabel "Summarization"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
+    skos:prefLabel "Summarization"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:closeMatch ai:AutomaticSummarisation .
 task:Translation a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:GenerationAndTransformation ;
-    skos:prefLabel "Translation"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
+    skos:prefLabel "Translation"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:closeMatch ai:MachineTranslation .
 task:CodeGeneration a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:GenerationAndTransformation ;
     skos:prefLabel "Code Generation"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
 task:ImageGeneration a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:GenerationAndTransformation ;
-    skos:prefLabel "Image Generation"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
+    skos:prefLabel "Image Generation"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:closeMatch ai:ImageGeneration .
 task:EmbeddingComputation a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:GenerationAndTransformation ;
     skos:prefLabel "Embedding Computation"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
 
@@ -165,7 +170,8 @@ task:DeductiveReasoning a skos:Concept ; skos:inScheme task:AITask ; skos:broade
 task:KnowledgeGraphCompletion a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:ReasoningOverKnowledge ;
     skos:prefLabel "Knowledge Graph Completion"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
 task:QuestionAnsweringOverKnowledge a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:ReasoningOverKnowledge ;
-    skos:prefLabel "Question Answering over Knowledge"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
+    skos:prefLabel "Question Answering over Knowledge"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:broadMatch ai:QuestionAnswering .
 
 task:InteractionAndDialogue
     a skos:Concept ;
@@ -174,11 +180,13 @@ task:InteractionAndDialogue
     skos:prefLabel "Interaction and Dialogue"@en ;
     skos:definition "Conducting multi-turn interaction with users or other agents in natural language or other modalities."@en ;
     dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:relatedMatch ai:DialogueManagement ;
     skos:narrower task:ConversationalAssistance , task:TaskOrientedDialogue , task:AgentToolUse .
     # TODO: skos:broadMatch toward OECD "Interaction support" task category.
 
 task:ConversationalAssistance a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:InteractionAndDialogue ;
-    skos:prefLabel "Conversational Assistance"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
+    skos:prefLabel "Conversational Assistance"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:closeMatch ai:ChatbotCapability .
 task:TaskOrientedDialogue a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:InteractionAndDialogue ;
     skos:prefLabel "Task-Oriented Dialogue"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
 task:AgentToolUse a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:InteractionAndDialogue ;
@@ -191,12 +199,14 @@ task:PersonalizationAndProfiling
     skos:prefLabel "Personalization and Profiling"@en ;
     skos:definition "Adapting outputs to individuals or groups based on inferred characteristics, preferences, or behavior."@en ;
     dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:relatedMatch ai:Profiling ;
     skos:narrower task:Recommendation , task:UserProfiling , task:ContentPersonalization .
     # TODO: skos:broadMatch toward OECD "Personalisation" task category.
 
 task:Recommendation a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:PersonalizationAndProfiling ;
     skos:prefLabel "Recommendation"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
 task:UserProfiling a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:PersonalizationAndProfiling ;
+    skos:closeMatch ai:Profiling ;
     skos:prefLabel "User Profiling"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
 task:ContentPersonalization a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:PersonalizationAndProfiling ;
     skos:prefLabel "Content Personalization"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
