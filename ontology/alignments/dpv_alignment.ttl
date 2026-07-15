@@ -1,5 +1,4 @@
 @prefix dpv:  <https://w3id.org/dpv#> .
-@prefix ai:   <https://w3id.org/dpv/ai#> .
 @prefix beam: <http://w3id.org/beam/core#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
@@ -8,51 +7,39 @@
 
 <http://w3id.org/airiskkg/alignments/dpv>
     a owl:Ontology ;
-    dct:title "DPV / DPV-AI to BEAM Structural Alignment"@en ;
+    dct:title "DPV to BEAM Entity Alignment"@en ;
     dct:description """
-    Alignment anchoring BEAM's structural (query-traversed) classes to their
-    DPV / DPV-AI extension counterparts via rdfs:subClassOf, mirroring the
-    established Tool4Boxology adapter pattern (see
-    ontology/alignments/tool4boxology_alignment.ttl) and the existing easy-ai
-    anchoring already declared in beam_core.ttl (beam:Instance/Model/Process/
-    Agent subClassOf easy-ai Artifact/Model/Process/Actor).
+    Alignment anchoring beam:Agent to DPV's entity vocabulary via
+    rdfs:subClassOf. Scope is deliberately narrow (agreed 2026-07-15):
+    DPV reuse in this project covers (a) data categories, handled entirely
+    in the facet layer (ontology/facets/, hasPersonalDataCategory /
+    hasIdentifiabilityLevel / data_facets closeMatches - see
+    CHANGELOG_data_model.md), and (b) entities such as human and agent
+    actors, handled here. DPV is NOT aligned to BEAM's Data/Model/Process/
+    System classes - Tool4Boxology (ontology/alignments/
+    tool4boxology_alignment.ttl) is the adapter for BEAM's general
+    structural classes; it is a closer fit (same architecture-diagram
+    domain) and is not duplicated here.
 
-    Purely additive and machine-checkable interoperability (FAIR): these
-    axioms are not consumed by motif SPARQL queries (no OWL reasoning runs
-    during motif matching, confirmed by the Tool4Boxology adapter design),
-    so they cannot change any existing finding. They let a reasoner or a
-    federated query recognize a beam:Data/Model/Process/Agent/System
-    instance as also being an ai:Data/Model/AIProcess/AIAgent/AISystem (and
-    transitively dpv:Data/Process) instance.
+    Purely additive and machine-checkable interoperability (FAIR): this
+    axiom is not consumed by motif SPARQL queries (no OWL reasoning runs
+    during motif matching), so it cannot change any existing finding.
     """@en ;
-    dct:source <https://w3id.org/dpv> , <https://w3id.org/dpv/ai> ;
+    dct:source <https://w3id.org/dpv> ;
     rdfs:seeAlso <https://w3c-cg.github.io/dpv/2.3/dpv/> ;
     vann:preferredNamespacePrefix "dpv" ;
     owl:imports <http://w3id.org/beam/core#> .
 
-# --- Class alignments (verified against DPV v2.3 / DPV-AI, 2026-07-15) -----
+# --- Class alignment (verified against DPV v2.3, 2026-07-15) ---------------
 
-beam:Data rdfs:subClassOf ai:Data ;
-    rdfs:comment "BEAM Data aligned to the DPV AI extension's Data class (itself rdfs:subClassOf dpv:Data in DPV core), so a beam:Data instance is transitively recognized as dpv:Data."@en .
+beam:Agent rdfs:subClassOf dpv:Entity ;
+    rdfs:comment "BEAM Agent aligned to DPV's Entity class ('a human or non-human thing that constitutes as an entity') - the correct breadth, since beam:Agent instances represent human actors (e.g. a human reviewer) as well as AI/software agents. Deliberately NOT aligned to the narrower dpv:Agent ('acting on behalf of another Entity, authorised to do so' - a delegated-authority relation, not what beam:Agent means) or to the AI extension's ai:AIAgent (would wrongly imply every beam:Agent, including human actors, is an AI agent)."@en .
 
-beam:Model rdfs:subClassOf ai:Model ;
-    rdfs:comment "BEAM Model aligned to the DPV AI extension's Model class (subClassOf ai:AI and tech:Model)."@en .
-
-beam:Process rdfs:subClassOf ai:AIProcess ;
-    rdfs:comment "BEAM Process aligned to the DPV AI extension's AIProcess class (subClassOf dpv:Process; scope note: 'a convenient method to indicate AI is involved (somewhere) within the Process')."@en .
-
-beam:Agent rdfs:subClassOf ai:AIAgent ;
-    rdfs:comment "BEAM Agent aligned to the DPV AI extension's AIAgent class ('a software agent that utilises AI technologies', subClassOf tech:SoftwareAgent) - complements the existing t4b:Actor alignment."@en .
-
-beam:System rdfs:subClassOf ai:AISystem ;
-    rdfs:comment "BEAM System aligned to the DPV AI extension's AISystem class ('engineered system using AI technologies', ISO/IEC 22989:2022 / OECD.AI)."@en .
-
-# --- Checked, not aligned --------------------------------------------------
+# --- Checked, not aligned ----------------------------------------------------
 #
-# beam:Symbol: no DPV or DPV-AI class corresponds to BEAM's symbolic-artifact
-# resource type (databases, knowledge graphs, labels, traces, rules as data).
-# DPV-AI's nearest neighbours (ai:KnowledgeRepresentation,
-# ai:SymbolicReasoning, ai:RuleBasedTechnique) are Technique concepts - HOW a
-# system processes symbols, not WHAT the symbolic resource is - so aligning
-# them to beam:Symbol (a Resource) would be a category error. Left
-# unmapped; revisit if DPV adds a symbolic-data class.
+# If BEAM ever splits beam:Agent into human vs. AI/software subtypes, the
+# natural DPV anchors are already verified: dpv:NaturalPerson ("a human")
+# for a human-actor subtype, and the DPV AI extension's ai:AIAgent ("a
+# software agent that utilises AI technologies") for an AI-actor subtype.
+# Not added now because no such BEAM subtypes exist yet (Rule R5: no
+# speculative structure).
