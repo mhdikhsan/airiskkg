@@ -103,7 +103,9 @@ def _resolve_output_dir(output_dir: Path | str) -> Path:
     return path
 
 
-def load_assessment_graph(architecture_paths: Path | str | Iterable[Path | str] | None = None) -> Graph:
+def load_base_graph() -> Graph:
+    """Load the reusable knowledge base (core, patterns, taxonomies) without any
+    architecture graph. This is the shared starting point for every assessment."""
     graph = _bind_prefixes(Graph())
     for path in CORE_FILES:
         _load_turtle(graph, path)
@@ -111,8 +113,20 @@ def load_assessment_graph(architecture_paths: Path | str | Iterable[Path | str] 
         _load_turtle(graph, path)
     for path in sorted(TAXONOMY_DIR.glob("*.ttl")):
         _load_turtle(graph, path)
+    return graph
+
+
+def load_assessment_graph(architecture_paths: Path | str | Iterable[Path | str] | None = None) -> Graph:
+    graph = load_base_graph()
     for path in _as_path_list(architecture_paths):
         _load_turtle(graph, path)
+    return graph
+
+
+def load_assessment_graph_from_text(architecture_ttl: str) -> Graph:
+    """Build an assessment graph from an in-memory Turtle architecture description."""
+    graph = load_base_graph()
+    graph.parse(data=architecture_ttl, format="turtle")
     return graph
 
 
@@ -144,13 +158,13 @@ def _merge(target: Graph, source: Graph) -> None:
         target.add(triple)
 
 
-def run_assessment(
-    architecture_paths: Path | str | Iterable[Path | str] | None = None,
-    *,
-    write_outputs: bool = True,
-    output_dir: Path | str = OUTPUTS_DIR,
-) -> AssessmentResult:
-    working_graph = load_assessment_graph(architecture_paths)
+def run_assessment_on_graph(working_graph: Graph) -> AssessmentResult:
+    """Run the two-step assessment pipeline against an already-loaded graph.
+
+    Step 1 materializes motif matches; step 2 applies interpretation conditions to
+    produce risk findings. Both sets of constructed triples are merged back into the
+    working graph so later queries can build on earlier results.
+    """
     motif_matches = _bind_prefixes(Graph())
     risk_findings = _bind_prefixes(Graph())
 
@@ -167,20 +181,50 @@ def run_assessment(
     combined_graph = _bind_prefixes(Graph())
     _merge(combined_graph, working_graph)
 
-    result = AssessmentResult(
+    return AssessmentResult(
         working_graph=working_graph,
         motif_matches=motif_matches,
         risk_findings=risk_findings,
         combined_graph=combined_graph,
     )
 
-    if write_outputs:
-        output_path = _resolve_output_dir(output_dir)
-        output_path.mkdir(parents=True, exist_ok=True)
-        motif_matches.serialize(output_path / "motif_matches.ttl", format="turtle")
-        risk_findings.serialize(output_path / "risk_findings.ttl", format="turtle")
-        combined_graph.serialize(output_path / "combined_assessment_graph.ttl", format="turtle")
 
+def _write_outputs(result: AssessmentResult, output_dir: Path | str) -> None:
+    output_path = _resolve_output_dir(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    result.motif_matches.serialize(output_path / "motif_matches.ttl", format="turtle")
+    result.risk_findings.serialize(output_path / "risk_findings.ttl", format="turtle")
+    result.combined_graph.serialize(output_path / "combined_assessment_graph.ttl", format="turtle")
+
+
+def run_assessment(
+    architecture_paths: Path | str | Iterable[Path | str] | None = None,
+    *,
+    write_outputs: bool = True,
+    output_dir: Path | str = OUTPUTS_DIR,
+) -> AssessmentResult:
+    working_graph = load_assessment_graph(architecture_paths)
+    result = run_assessment_on_graph(working_graph)
+    if write_outputs:
+        _write_outputs(result, output_dir)
+    return result
+
+
+def run_assessment_from_text(
+    architecture_ttl: str,
+    *,
+    write_outputs: bool = False,
+    output_dir: Path | str = OUTPUTS_DIR,
+) -> AssessmentResult:
+    """Run an assessment against an architecture graph supplied as Turtle text.
+
+    This powers the web UI, where the developer's architecture is submitted as raw
+    Turtle rather than a file on disk.
+    """
+    working_graph = load_assessment_graph_from_text(architecture_ttl)
+    result = run_assessment_on_graph(working_graph)
+    if write_outputs:
+        _write_outputs(result, output_dir)
     return result
 
 
