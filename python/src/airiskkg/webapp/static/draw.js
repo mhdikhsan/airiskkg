@@ -206,7 +206,10 @@
         x: node.x + NODE_W / 2, y: node.y + NODE_H / 2 + 13, class: "node-type", "text-anchor": "middle",
       }, group);
       const typeName = node.classUri.split("#").pop();
-      sub.textContent = typeName + (node.roles.length ? ` · ${node.roles.length} role${node.roles.length > 1 ? "s" : ""}` : "");
+      const badges = [];
+      if (node.roles.length) badges.push(`${node.roles.length} role${node.roles.length > 1 ? "s" : ""}`);
+      if (node.categories.length) badges.push(`${node.categories.length} categor${node.categories.length > 1 ? "ies" : "y"}`);
+      sub.textContent = typeName + (badges.length ? ` · ${badges.join(" · ")}` : "");
       // connect port
       const port = svgEl("circle", {
         cx: node.x + NODE_W, cy: node.y + NODE_H / 2, r: 7, class: "port", "data-port": node.id,
@@ -262,15 +265,69 @@
   }
 
   // ---- property panel ----------------------------------------------------------
-  function multiSelect(items, chosen, onchange) {
-    const select = htmlEl("select", { multiple: "multiple", size: String(Math.min(6, Math.max(3, items.length))) });
-    for (const item of items) {
-      select.appendChild(htmlEl("option", {
-        value: item.id, selected: chosen.includes(item.id) ? "selected" : null,
-      }, item.label));
+  // Checkbox list with a filter box and removable chips for the current
+  // selection. Deliberately not a native <select multiple>: that requires
+  // ctrl/cmd-click to add to a selection (a single plain click replaces it),
+  // which reads as "broken" for a list of 80 pattern roles. Also deliberately
+  // NOT wrapped in a <label>: labels forward clicks on any non-control area
+  // to their first control, which would silently toggle/remove the wrong
+  // checkbox or chip when clicking elsewhere in the widget.
+  function checkList(items, chosenIds, onchange, emptyHint) {
+    const wrap = htmlEl("div", { class: "checklist" });
+    const chosen = new Set(chosenIds);
+    const chips = htmlEl("div", { class: "chips" });
+    const box = htmlEl("div", { class: "checklist-box" });
+    const search = htmlEl("input", {
+      type: "text", class: "checklist-search",
+      placeholder: items.length > 8 ? `Filter ${items.length} options…` : "Filter…",
+    });
+    const labelFor = (id) => (items.find((it) => it.id === id) || {}).label || id;
+
+    function renderChips() {
+      chips.innerHTML = "";
+      if (!chosen.size) {
+        chips.appendChild(htmlEl("span", { class: "chips-empty" }, emptyHint || "None selected"));
+        return;
+      }
+      for (const id of chosen) {
+        const removeBtn = htmlEl("button", { type: "button", class: "chip-x", title: "Remove" }, "×");
+        removeBtn.addEventListener("click", () => {
+          chosen.delete(id);
+          onchange(Array.from(chosen));
+          renderChips();
+          renderRows(search.value);
+        });
+        chips.appendChild(htmlEl("span", { class: "chip" }, [labelFor(id), removeBtn]));
+      }
     }
-    select.addEventListener("change", () => onchange(Array.from(select.selectedOptions).map((o) => o.value)));
-    return select;
+
+    function renderRows(filter) {
+      box.innerHTML = "";
+      const q = (filter || "").toLowerCase().trim();
+      const filtered = q ? items.filter((it) => it.label.toLowerCase().includes(q)) : items;
+      if (!filtered.length) {
+        box.appendChild(htmlEl("p", { class: "checklist-empty" }, "No matches."));
+        return;
+      }
+      for (const item of filtered) {
+        const cb = htmlEl("input", { type: "checkbox" });
+        cb.checked = chosen.has(item.id);
+        cb.addEventListener("change", () => {
+          if (cb.checked) chosen.add(item.id); else chosen.delete(item.id);
+          onchange(Array.from(chosen));
+          renderChips();
+        });
+        box.appendChild(htmlEl("label", { class: "checklist-row" }, [cb, htmlEl("span", {}, item.label)]));
+      }
+    }
+
+    search.addEventListener("input", () => renderRows(search.value));
+    renderChips();
+    renderRows("");
+    wrap.appendChild(chips);
+    if (items.length > 8) wrap.appendChild(search);
+    wrap.appendChild(box);
+    return wrap;
   }
 
   function renderPanel() {
@@ -294,7 +351,7 @@
       const s = nodeById(edge.source), t = nodeById(edge.target);
       panel.appendChild(htmlEl("h4", {}, `Edge: ${edge.kind}`));
       panel.appendChild(htmlEl("p", { class: "phint" }, `${s ? s.label : "?"} → ${t ? t.label : "?"}`));
-      panel.appendChild(htmlEl("button", { class: "btn danger", onclick: deleteSelection }, "Delete edge"));
+      panel.appendChild(htmlEl("button", { type: "button", class: "btn danger", onclick: deleteSelection }, "Delete edge"));
       return;
     }
 
@@ -321,13 +378,20 @@
     });
     panel.appendChild(htmlEl("label", { class: "pfield" }, ["BEAM class", classSelect]));
 
-    panel.appendChild(htmlEl("label", { class: "pfield" }, ["Pattern roles",
-      multiSelect(vocab.roles, node.roles, (v) => { node.roles = v; render(); })]));
+    // Not <label>-wrapped on purpose (see checkList's comment) - these
+    // widgets contain many controls, and a wrapping <label> would forward
+    // clicks on empty space to the first checkbox/chip inside it.
+    panel.appendChild(htmlEl("div", { class: "pfield" }, [
+      htmlEl("span", { class: "pfield-title" }, "Pattern roles"),
+      checkList(vocab.roles, node.roles, (v) => { node.roles = v; render(); }, "No roles assigned"),
+    ]));
     if (!isProcess(node)) {
-      panel.appendChild(htmlEl("label", { class: "pfield" }, ["Data categories",
-        multiSelect(vocab.dataCategories, node.categories, (v) => { node.categories = v; })]));
+      panel.appendChild(htmlEl("div", { class: "pfield" }, [
+        htmlEl("span", { class: "pfield-title" }, "Data categories"),
+        checkList(vocab.dataCategories, node.categories, (v) => { node.categories = v; render(); }, "No categories assigned"),
+      ]));
     }
-    panel.appendChild(htmlEl("button", { class: "btn danger", onclick: deleteSelection }, "Delete node"));
+    panel.appendChild(htmlEl("button", { type: "button", class: "btn danger", onclick: deleteSelection }, node.kind === "process" ? "Delete process" : "Delete resource"));
   }
 
   // ---- scene <-> builder model ---------------------------------------------------

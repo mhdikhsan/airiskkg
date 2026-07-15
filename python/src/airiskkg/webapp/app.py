@@ -8,7 +8,6 @@ Endpoints
 ``GET  /api/examples/<n>`` Raw Turtle for one bundled example.
 ``POST /api/graph``        Architecture Turtle -> nodes/edges for the live preview.
 ``POST /api/validate``     Architecture Turtle -> SHACL input-contract report.
-``POST /api/import/drawio`` draw.io / diagrams.net XML -> architecture Turtle + warnings.
 ``POST /api/import/t4b``    Tool4Boxology export (N-Triples/Turtle) -> architecture Turtle + notes.
 ``POST /api/build``        Builder model (JSON) -> architecture Turtle (legacy).
 ``POST /api/assess``       Architecture Turtle -> structured risk findings (JSON).
@@ -22,7 +21,6 @@ from flask import Flask, jsonify, request, send_from_directory
 from rdflib import RDF, RDFS, SKOS, Graph, URIRef
 
 from airiskkg.architecture_builder import BuilderError, build_ttl
-from airiskkg.drawio_import import DrawioImportError, drawio_to_ttl
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.assessment_runner import (
     BEAM,
@@ -188,18 +186,6 @@ def create_app() -> Flask:
         except Exception as error:  # noqa: BLE001 - surface parse errors to the UI
             return jsonify({"error": f"Could not validate: {error}"}), 400
         return jsonify(report)
-
-    @app.post("/api/import/drawio")
-    def import_drawio() -> object:
-        payload = request.get_json(silent=True) or {}
-        xml = (payload.get("xml") or "").strip()
-        if not xml:
-            return jsonify({"error": "Provide draw.io XML to import."}), 400
-        try:
-            ttl, warnings = drawio_to_ttl(xml)
-        except (DrawioImportError, BuilderError) as error:
-            return jsonify({"error": str(error)}), 400
-        return jsonify({"ttl": ttl, "warnings": warnings})
 
     @app.post("/api/import/t4b")
     def import_t4b() -> object:
