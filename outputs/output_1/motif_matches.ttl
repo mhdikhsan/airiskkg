@@ -1,0 +1,139 @@
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix pat: <http://w3id.org/airiskkg/patterns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/generated/motif-match/direct-prompting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23GenerateAnswer/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23CitedAnswer> a pair:MotifMatch ;
+    rdfs:label "Direct Prompting motif match"@en ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/direct-prompting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23GenerateAnswer/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23CitedAnswer/binding/answer>,
+        <http://w3id.org/airiskkg/generated/motif-match/direct-prompting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23GenerateAnswer/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23CitedAnswer/binding/llm>,
+        <http://w3id.org/airiskkg/generated/motif-match/direct-prompting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23GenerateAnswer/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23CitedAnswer/binding/llm-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/direct-prompting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23GenerateAnswer/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23CitedAnswer/binding/query> ;
+    pair:matchesMotif pat:DirectPromptingMotif .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex> a pair:MotifMatch ;
+    rdfs:label "Embeddings motif match"@en ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/chunking-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/document-chunk>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/embedding-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/embedding-vector>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/source-document>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/vector-index> ;
+    pair:matchesMotif pat:EmbeddingsMotif .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23HybridSearch/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections> a pair:MotifMatch ;
+    rdfs:label "Vector-based information retrieval motif match"@en ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23HybridSearch/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/query>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23HybridSearch/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/retrieval-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23HybridSearch/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/retrieved-result>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23HybridSearch/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/vector-store> ;
+    pair:matchesMotif pat:VectorBasedInformationRetrievalMotif .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections> a pair:MotifMatch ;
+    rdfs:label "Query rewriting motif match"@en ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/llm>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/retrieval-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/retrieved-context>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/rewrite-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/rewritten-query> ;
+    pair:matchesMotif pat:QueryRewritingMotif .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankSections/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankedSections> a pair:MotifMatch ;
+    rdfs:label "Reranker motif match"@en ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankSections/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankedSections/binding/candidate-set>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankSections/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankedSections/binding/reranked-context>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankSections/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankedSections/binding/reranker-model>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankSections/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankedSections/binding/reranking-step> ;
+    pair:matchesMotif pat:RerankerMotif .
+
+<http://w3id.org/airiskkg/generated/motif-match/direct-prompting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23GenerateAnswer/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23CitedAnswer/binding/answer> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:DP_AnswerNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#CitedAnswer> .
+
+<http://w3id.org/airiskkg/generated/motif-match/direct-prompting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23GenerateAnswer/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23CitedAnswer/binding/llm> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:DP_ModelNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#GeneratorLLM> .
+
+<http://w3id.org/airiskkg/generated/motif-match/direct-prompting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23GenerateAnswer/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23CitedAnswer/binding/llm-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:DP_GenerationStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#GenerateAnswer> .
+
+<http://w3id.org/airiskkg/generated/motif-match/direct-prompting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23GenerateAnswer/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23CitedAnswer/binding/query> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:DP_QueryNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#RephrasedQuery> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/chunking-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_ChunkingStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#ChunkDocuments> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/document-chunk> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_DocumentChunkNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#DocumentChunks> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/embedding-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_GenerationStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#EmbedChunks> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/embedding-vector> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_VectorNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#ChunkEmbeddings> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/source-document> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_SourceDocumentNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#ConnectedSourceDocuments> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23ConnectedSourceDocuments/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23VespaHybridIndex/binding/vector-index> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_VectorIndexNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#VespaHybridIndex> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23HybridSearch/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/query> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_QueryNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#RephrasedQuery> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23HybridSearch/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/retrieval-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#HybridSearch> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23HybridSearch/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/retrieved-result> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#RetrievedSections> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23HybridSearch/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/vector-store> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#VespaHybridIndex> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/llm> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:QueryRewrite_LLMNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#GeneratorLLM> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/retrieval-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:QueryRewrite_RetrievalStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#HybridSearch> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/retrieved-context> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:QueryRewrite_RetrievedContextNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#RetrievedSections> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/rewrite-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:QueryRewrite_RewriteStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#RephraseQuery> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephraseQuery/query-rewriting/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RephrasedQuery/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/binding/rewritten-query> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:QueryRewrite_RewrittenQueryNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#RephrasedQuery> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankSections/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankedSections/binding/candidate-set> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Reranker_CandidateSetNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#RetrievedSections> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankSections/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankedSections/binding/reranked-context> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Reranker_RankedContextNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#RerankedSections> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankSections/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankedSections/binding/reranker-model> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Reranker_ModelNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#RerankerModel> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankSections/reranker/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RetrievedSections/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fonyx-danswer%23RerankedSections/binding/reranking-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Reranker_RerankingStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/onyx-danswer#RerankSections> .
+

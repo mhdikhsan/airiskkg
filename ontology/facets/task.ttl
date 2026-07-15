@@ -1,4 +1,5 @@
 @prefix task: <http://w3id.org/airiskkg/facets/task#> .
+@prefix ai:   <https://w3id.org/dpv/ai#> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:  <http://purl.org/dc/terms/> .
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
@@ -10,13 +11,15 @@
     dct:title "PAIR-AI Characterization Facet: AI Task"@en ;
     dct:description "SKOS concept scheme implementing the PAIR-AI unified task taxonomy: the functional input-to-output relation performed by a functional unit (Rule R1). Assigned via facet:hasTaskCategory. Rule R7: Task, Capability (VAIR), and Application Type (OECD) are three separate axes, SKOS-mapped, never merged. NOTE: no mapping to the TUEV AI.ST taxonomy is included; its license/citability is unverified (on hold)."@en ;
     dct:source "PAIR-AI unified task taxonomy (expert curation); OECD (2022). OECD Framework for the Classification of AI Systems (Task & Output dimension)." ;
+    dct:source <https://w3id.org/dpv/ai> ;
     vann:preferredNamespacePrefix "task" ;
     vann:preferredNamespaceUri "http://w3id.org/airiskkg/facets/task#" .
 
 task:AITask
     a skos:ConceptScheme ;
     skos:prefLabel "AI Task"@en ;
-    skos:definition "Unified taxonomy of AI tasks: the functional input-to-output relation of a functional unit within the system (compositional; distinct from capability and application type, Rule R7)."@en ;
+    skos:definition "Unified taxonomy of AI tasks: the functional input-to-output relation of a functional unit within the system (compositional; distinct from capability and application type, Rule R7). Concepts are SKOS-mapped to DPV AI extension Capability concepts (https://w3id.org/dpv/ai#, verified against DPV v2.3, 2026-07-15) where a counterpart exists - mapped, never merged (Rule R7: DPV ai:Capability is a neighboring axis, the mappings are interoperability links, not identity)."@en ;
+    skos:relatedMatch ai:Capability ;
     dct:source "PAIR-AI unified task taxonomy (expert curation)." .
 
 # --- Top level ------------------------------------------------------------
@@ -27,6 +30,9 @@ task:AITask
 # (recognition, event detection, forecasting, personalisation, interaction
 # support, goal-driven optimisation, reasoning with knowledge structures)
 # once resolvable OECD URIs exist.
+# DPV AI extension mappings added where verified (2026-07-15). No DPV AI
+# counterpart exists for: Recommendation, Forecasting, Anomaly Detection,
+# Code Generation, Embedding Computation - left unmapped, do not force.
 
 task:PerceptionAndRecognition
     a skos:Concept ;
@@ -35,17 +41,22 @@ task:PerceptionAndRecognition
     skos:prefLabel "Perception and Recognition"@en ;
     skos:definition "Recognizing patterns, objects, or structure in unstructured input signals (images, audio, text, sensor data)."@en ;
     dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:relatedMatch ai:PatternRecognition ;
     skos:narrower task:ImageClassification , task:ObjectDetection , task:SpeechRecognition , task:NamedEntityRecognition .
     # TODO: skos:broadMatch toward OECD "Recognition" task category.
 
 task:ImageClassification a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:PerceptionAndRecognition ;
-    skos:prefLabel "Image Classification"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
+    skos:prefLabel "Image Classification"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:closeMatch ai:ImageClassification .
 task:ObjectDetection a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:PerceptionAndRecognition ;
-    skos:prefLabel "Object Detection"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
+    skos:prefLabel "Object Detection"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:closeMatch ai:ObjectDetection .
 task:SpeechRecognition a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:PerceptionAndRecognition ;
-    skos:prefLabel "Speech Recognition"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
+    skos:prefLabel "Speech Recognition"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:closeMatch ai:SpeechRecognition .
 task:NamedEntityRecognition a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:PerceptionAndRecognition ;
-    skos:prefLabel "Named Entity Recognition"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
+    skos:prefLabel "Named Entity Recognition"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:closeMatch ai:NamedEntityRecognition .
 
 task:RetrievalAndRanking
     a skos:Concept ;
@@ -54,6 +65,7 @@ task:RetrievalAndRanking
     skos:prefLabel "Retrieval and Ranking"@en ;
     skos:definition "Finding and ordering relevant items from a collection given an information need (search, retrieval, reranking)."@en ;
     dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    skos:closeMatch ai:InformationRetrieval ;
     skos:narrower task:DocumentRetrieval , task:VectorSimilaritySearch , task:Reranking , task:QueryReformulation .
 
 task:DocumentRetrieval a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:RetrievalAndRanking ;

@@ -19,17 +19,6 @@
     Both vocabularies anchor to easy-ai (https://kastle-lab.org/easy-ai2/),
     which BEAM already references (beam:Instance/Model/Process/Agent are
     subclasses of easy-ai Artifact/Model/Process/Actor).
-
-    KNOWN UPSTREAM QUIRKS (report upstream; defensively handled in the
-    normalizer):
-    - The ontology declares t4b:patternProcess, but the export uses
-      t4b:hasProcess. This adapter targets the EXPORT URIs.
-    - The export types instances with lowercase class URIs (t4b:data,
-      t4b:transform, t4b:training, ...) while the ontology declares
-      t4b:Data, t4b:Transform, t4b:Train, ... The normalizer case-normalizes
-      before these alignments apply.
-    - Export uses t4b:StatisticModel / t4b:Time%20Series where the ontology
-      declares t4b:StatisticalModel / t4b:TimeSeries.
     """@en ;
     dct:source <https://github.com/SDM-TIB/Tool4Boxology> ;
     rdfs:seeAlso <https://doi.org/10.1007/978-3-032-25159-6_11> ;
@@ -48,7 +37,7 @@ t4b:outputRoleParticipatesInProcess
     rdfs:subPropertyOf beam:produce ;
     rdfs:comment "A process produces an output artifact. Verified direction: process -> artifact, matching beam:produce (Process -> Resource)."@en .
 
-# --- Class alignments (toward BEAM) -----------------------------------------
+# --- Class alignments -----------------------------------------
 
 t4b:Data rdfs:subClassOf beam:Data ;
     rdfs:comment "Tool4Boxology data artifact aligned to BEAM Data."@en .
@@ -88,13 +77,3 @@ t4b:Embed rdfs:subClassOf beam:Transform ;
 t4b:StatisticalModel rdfs:subClassOf beam:StatisticalModel ;
     rdfs:comment "DESIGN DECISION (review): not in the originally agreed alignment list, but a verified t4b ontology class with an exact BEAM counterpart; added so statistical models normalize to a BEAM leaf type. The export's misspelled t4b:StatisticModel is case/spelling-normalized to this class first."@en .
 
-# t4b:ReasoningAssumption (OWA/CWA) is deliberately left unmapped for now:
-# BEAM has no assumption concept, and reasoning assumptions are pattern-level
-# metadata rather than architecture elements. Revisit when applicability
-# conditions need to read them.
-
-# NOTE (normalizer, not an OWL axiom here): t4b:Boxology instances represent
-# one exported architecture each. The normalizer types them beam:System so the
-# SHACL input contract (>=1 beam:System) is satisfied - DESIGN DECISION
-# (review): alternative would be a t4b:Boxology rdfs:subClassOf beam:System
-# axiom in this file.

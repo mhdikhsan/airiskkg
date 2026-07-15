@@ -19,8 +19,10 @@
 ctx:Domain
     a skos:ConceptScheme ;
     skos:prefLabel "Domain"@en ;
-    skos:definition "Application domain / economic sector in which the AI system operates (e.g. healthcare, finance, education). Extension point: concrete domain concepts are added per use case; prefer referencing DPV sector extensions (e.g. dpv-sector) or NACE codes rather than redefining."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Economic Context dimension); DPV sector extensions, https://w3id.org/dpv/sector" .
+    skos:definition "Application domain / economic sector in which the AI system operates (e.g. healthcare, finance, education). Extension point: concrete domain concepts are added per use case; prefer reusing DPV sector-extension concepts (https://w3id.org/dpv/sector/health, .../finance, .../education, .../infrastructure, .../law, .../public-services) or NACE codes directly (Rule R3) rather than redefining."@en ;
+    skos:relatedMatch dpv:Sector ;
+    rdfs:seeAlso <https://w3id.org/dpv/sector> ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Economic Context dimension); dpv:Sector verified against DPV v2.3, 2026-07-15." .
 
 # Scheme 2: Purpose (extension point, anchored to DPV)
 
@@ -38,7 +40,10 @@ ctx:DeploymentSetting
     skos:prefLabel "Deployment Setting"@en ;
     skos:definition "Operational setting in which the system is deployed (e.g. internal tool, public-facing service, safety-critical environment, regulated environment). Extension point: concrete settings are added per use case."@en ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Context dimension)." .
-    # TODO: consider skos:relatedMatch toward dpv:Context / dpv-loc concepts once the needed granularity is settled.
+    # Checked against DPV v2.3 (2026-07-15): the DPV context module covers
+    # statuses, durations, frequencies, and locations - it has no
+    # deployment-setting counterpart, so the starter concepts below remain
+    # expert curation without DPV mappings.
 
 # Starter concepts (minimal, so the schemes are usable immediately)
 
