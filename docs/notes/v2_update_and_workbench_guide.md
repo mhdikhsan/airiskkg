@@ -4,26 +4,10 @@ Branch: `feature/characterization-layer` · Status: 2026-07-15
 · Authority: `docs/reference/PAIR-AI_glossary_v1.1.md` (locked)
 · Detailed change record: `CHANGELOG_data_model.md`
 
-This document has two parts: **Part 1** explains the v2 knowledge-graph
-update (what changed, what is new, what is integrated, what is still open,
-and what comes next). **Part 2** explains the new web workbench (how it
-works, how to use it, and how candidate risk findings are pointed out
-directly in the architecture diagram).
-
----
-
 ## Part 1 — The AI-RKG v2 data model update
 
-### 1.1 Why v2
 
-The v1 generation of the ontology (frozen, untouched, under `v1/`) predates
-the glossary v1.1 decisions. Its vocabulary still spoke of "motif
-interpretations" and "graph conditions", mixed structural and classification
-concerns, had no characterization layer, no executable input contract, and
-no boundary for external tool vocabularies. v2 realigns the RDF vocabulary
-with the locked terminology and operationalizes the modeling rules R1–R8.
-
-### 1.2 What was updated (renames and fixes)
+### 1.1 What was updated (renames and fixes)
 
 Every rename keeps the old URI as a deprecated alias
 (`owl:deprecated true` + `dct:isReplacedBy`) for one release. The namespace
@@ -52,7 +36,7 @@ Vector-based Information Retrieval motif that was *commented out* while its
 matching query was still running — restored and re-linked. All 23 motifs and
 11 risk patterns now carry `dct:source` + `pair:derivedFrom`.
 
-### 1.3 What is new
+### 1.2 What is new
 
 **Characterization layer (`ontology/facets/`)** — the central v2 addition.
 All facet values are SKOS concepts (R1), assigned by dedicated properties,
@@ -105,7 +89,7 @@ coverage for the QueryRewriting, Reranker, and DirectPrompting motifs, and
 the first example where the supply-chain risk pattern fires (its external
 models are bound inside motif matches). 5 matches, 12 candidate findings.
 
-### 1.4 What is now integrated
+### 1.3 What is now integrated
 
 - The assessment pipeline (`assessment_runner.py`) loads core + patterns +
   **facets** + taxonomies; `imports.ttl` aggregates all facet ontologies.
@@ -117,7 +101,7 @@ models are bound inside motif matches). 5 matches, 12 candidate findings.
 - The webapp exposes the whole loop: edit/draw → live preview → contract
   validation → candidate findings with evidence highlighting.
 
-### 1.5 What is NOT improved yet (open debt)
+### 1.4 What is NOT improved yet (open debt)
 
 1. **Facets are declared but not yet consumed.** No applicability condition
    reads `facet:hasAutonomyLevel`, provenance, identifiability, or context
