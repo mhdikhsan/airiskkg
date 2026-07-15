@@ -1,4 +1,5 @@
 @prefix dataf: <http://w3id.org/airiskkg/facets/data#> .
+@prefix dpv:   <https://w3id.org/dpv#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
@@ -36,7 +37,8 @@ dataf:ProvidedData
     skos:topConceptOf dataf:DataProvenance ;
     skos:prefLabel "Provided Data"@en ;
     skos:definition "Data deliberately provided by data subjects or users (e.g. form input, uploads, user prompts)."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
+    skos:closeMatch dpv:ProvidedData .
 
 dataf:ObservedData
     a skos:Concept ;
@@ -44,7 +46,8 @@ dataf:ObservedData
     skos:topConceptOf dataf:DataProvenance ;
     skos:prefLabel "Observed Data"@en ;
     skos:definition "Data captured by observing behavior or the environment (e.g. logs, sensor readings, click streams), not deliberately provided."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
+    skos:closeMatch dpv:ObservedData .
 
 dataf:SyntheticData
     a skos:Concept ;
@@ -52,7 +55,8 @@ dataf:SyntheticData
     skos:topConceptOf dataf:DataProvenance ;
     skos:prefLabel "Synthetic Data"@en ;
     skos:definition "Artificially generated data (e.g. simulation output, generative-model output used as data)."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
+    skos:closeMatch dpv:SyntheticData .
 
 dataf:DerivedData
     a skos:Concept ;
@@ -60,7 +64,8 @@ dataf:DerivedData
     skos:topConceptOf dataf:DataProvenance ;
     skos:prefLabel "Derived Data"@en ;
     skos:definition "Data produced from other data by processing, aggregation, or inference (e.g. embeddings, features, profiles)."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
+    skos:closeMatch dpv:DerivedData .
 
 # Scheme 2: Data Dynamism
 
@@ -123,6 +128,6 @@ dataf:Personal
     skos:inScheme dataf:DataRights ;
     skos:topConceptOf dataf:DataRights ;
     skos:prefLabel "Personal"@en ;
-    skos:definition "Data relating to identified or identifiable natural persons, subject to data-protection law. For the degree of identifiability use DPV concepts via facet:hasIdentifiabilityLevel (Rule R3), not this scheme."@en ;
+    skos:definition "Data relating to identified or identifiable natural persons, subject to data-protection law. This concept only flags the rights status; for the kind of personal data use DPV concepts directly via facet:hasPersonalDataCategory, and for the degree of identifiability via facet:hasIdentifiabilityLevel (Rule R3), not this scheme."@en ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
-    skos:relatedMatch <https://w3id.org/dpv#PersonalData> .
+    skos:relatedMatch dpv:PersonalData .

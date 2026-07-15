@@ -217,6 +217,31 @@ BEAM structural classes (Model, Process, Data, ...) stay OWL classes — R1:
 they are instantiated, query-traversed structure; only their classification
 values (implementation type, task, autonomy, data categories) are facets.
 
+## Post-Task 7 addition — DPV personal_data module reuse widened
+
+The DPV alignment was limited to identifiability. The DPV **personal_data
+module** (`https://w3id.org/dpv/2.3/modules/personal_data`, verified
+2026-07-15) defines the whole `dpv:Data` hierarchy, so the facet layer now
+reuses it fully (Rule R3, URIs only, nothing copied):
+
+- New `facet:hasPersonalDataCategory` (domain `beam:Data`): intended values
+  are `dpv:PersonalData` and narrower (`dpv:SensitivePersonalData`,
+  `dpv:SpecialCategoryPersonalData`, `dpv:IdentifyingPersonalData`,
+  `dpv:CollectedPersonalData`, `dpv:DerivedPersonalData`,
+  `dpv:InferredPersonalData`, `dpv:GeneratedPersonalData`) plus
+  `dpv:NonPersonalData` / `dpv:AnonymisedData`; fine-grained categories via
+  the DPV-PD extension (`https://w3id.org/dpv/pd#`).
+- `facet:hasIdentifiabilityLevel` is now `rdfs:subPropertyOf` it (the
+  identifiability axis of the same module); `dct:source` on both points at
+  the module URL.
+- OECD provenance concepts gained verified `skos:closeMatch` links to their
+  DPV counterparts: `dataf:ProvidedData`→`dpv:ProvidedData`,
+  `dataf:ObservedData`→`dpv:ObservedData`, `dataf:DerivedData`→
+  `dpv:DerivedData`, `dataf:SyntheticData`→`dpv:SyntheticData`
+  (`dataf:ExpertInput` has no DPV counterpart, left unmapped).
+- Verified: all TTL parse; motif matches / findings on onyx (107/318),
+  uc6 (61/189), verba (46/172) unchanged — metadata-only change.
+
 ## Open TODOs / known debt
 
 1. **Pre-existing test failure** (predates this work):
