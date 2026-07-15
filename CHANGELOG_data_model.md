@@ -364,6 +364,39 @@ the existing "Import XML" (draw.io) flow:
   nodes/20 edges) → SHACL validate (0 violations, 29 warnings) on the
   vendored `sample_export.nt`.
 
+## Post-Task 7 addition — Draw mode UI fixes, "Import XML" removed
+
+- **Removed "Import XML" (draw.io/diagrams.net import)** entirely: UI button,
+  `POST /api/import/drawio`, `drawio_import.py`, and its dedicated test file.
+  Unlike Tool4Boxology, it had no real mapping logic behind it - just regex
+  guessing of element kind from shape style/label text - and gave a false
+  impression of being an adapter on the same footing as Tool4Boxology.
+  "Import T4B" (real alignment-backed) is unaffected.
+- **Draw mode property panel reworked**: pattern roles / data categories were
+  native `<select multiple>` widgets, wrapped in a `<label>`. Two compounding
+  problems: (a) a plain click on an option in a native multi-select *replaces*
+  the whole selection rather than adding to it (ctrl/cmd-click required, not
+  discoverable) - unusable for a list of 80 pattern roles; (b) wrapping
+  multi-control widgets in a `<label>` is an HTML footgun - clicking any
+  non-control area inside a label forwards the click to the label's *first*
+  control, so clicks elsewhere in the widget could silently toggle the wrong
+  checkbox. Replaced with a purpose-built checkbox list (`checkList()` in
+  `draw.js`): a filter box for the 80-role list, removable chips showing the
+  current selection by label (not just a count), and the widget's own
+  container is a `<div>`, never a `<label>`. Delete node/edge buttons given
+  explicit `type="button"`.
+- Node labels on the Draw canvas now show both role *and* category counts
+  (previously only roles), so annotation state is visible without opening
+  the panel.
+- No backend change was needed: `architecture_builder.build_ttl()` already
+  emitted `pair:playsRole` / `pair:containsDataCategory` correctly from
+  `resources[].roles` / `resources[].dataCategories` - the gap was entirely
+  in the frontend's ability to reliably *set* those arrays. Verified via
+  `POST /api/build` with a roles/categories-bearing model: both predicates
+  appear in the output Turtle.
+- Full suite: 28 passed (32 minus 4 removed drawio tests) + the one
+  pre-existing unrelated failure.
+
 ## Open TODOs / known debt
 
 1. **Pre-existing test failure** (predates this work):

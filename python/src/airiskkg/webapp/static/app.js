@@ -328,25 +328,6 @@ ex:Generate a beam:Transform ;
 
     $$(".mode-btn").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
 
-    $("#xml-input").addEventListener("change", (ev) => {
-      const file = ev.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async () => {
-        setStatus("busy", `Importing ${file.name}…`);
-        try {
-          const { ttl, warnings } = await postJson("/api/import/drawio", { xml: String(reader.result) });
-          Editor.setValue(ttl);
-          renderImportWarnings(warnings || []);
-          setStatus("ok", `Imported ${file.name} - review the guessed element types`, `${(warnings || []).length} import notes`);
-        } catch (error) {
-          setStatus("error", `Import failed: ${error.message}`);
-        }
-      };
-      reader.readAsText(file);
-      ev.target.value = "";
-    });
-
     $("#t4b-input").addEventListener("change", (ev) => {
       const file = ev.target.files[0];
       if (!file) return;

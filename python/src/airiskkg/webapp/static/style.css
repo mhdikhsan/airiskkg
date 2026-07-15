@@ -236,7 +236,7 @@ label.btn { display: inline-flex; align-items: center; }
   position: absolute;
   top: 10px;
   right: 52px;
-  width: 250px;
+  width: 280px;
   max-height: calc(100% - 20px);
   overflow: auto;
   background: rgba(255,255,255,0.97);
@@ -264,6 +264,62 @@ label.btn { display: inline-flex; align-items: center; }
   background: #fff;
 }
 .phint { color: #8a93a5; font-size: 12px; line-height: 1.5; }
+
+/* checkbox picker for pattern roles / data categories (Draw mode panel) */
+.pfield-title { display: block; }
+.checklist {
+  display: block;
+  margin-top: 3px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12.5px;
+  color: #2a2f38;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 5px; min-height: 20px; }
+.chips-empty { color: #a7adb9; font-size: 11.5px; font-style: italic; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--node-process, #dbe7ff);
+  color: #1f3a63;
+  border-radius: 12px;
+  padding: 2px 4px 2px 9px;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+.chip-x {
+  border: none;
+  background: transparent;
+  color: #1f3a63;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 50%;
+}
+.chip-x:hover { background: rgba(0,0,0,0.12); }
+.checklist-search { margin-bottom: 4px; }
+.checklist-box {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #c6ccd8;
+  border-radius: 5px;
+  background: #fff;
+}
+.checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px;
+  cursor: pointer;
+  border-bottom: 1px solid #eef0f4;
+}
+.checklist-row:last-child { border-bottom: none; }
+.checklist-row:hover { background: #f4f6fa; }
+.checklist-row input[type="checkbox"] { margin: 0; flex-shrink: 0; }
+.checklist-row span { flex: 1; }
+.checklist-empty { padding: 8px; color: #a7adb9; font-size: 11.5px; margin: 0; }
 
 .dnode { cursor: move; }
 .dnode.selected .shape { stroke-width: 3; stroke: var(--accent); }
