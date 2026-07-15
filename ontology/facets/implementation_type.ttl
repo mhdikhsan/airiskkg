@@ -1,4 +1,5 @@
 @prefix impl: <http://w3id.org/airiskkg/facets/implementation-type#> .
+@prefix ai:   <https://w3id.org/dpv/ai#> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:  <http://purl.org/dc/terms/> .
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
@@ -16,11 +17,19 @@
 impl:ImplementationType
     a skos:ConceptScheme ;
     skos:prefLabel "Implementation Type"@en ;
-    skos:definition "Classification of a model's implementation: architecture family, technique, or hosting form. Extension point: concrete values are added per use case or when the paper's implementation-type taxonomy is settled."@en ;
+    skos:definition "Classification of a model's implementation: architecture family, technique, or hosting form. Extension point: concrete values are added per use case or when the paper's implementation-type taxonomy is settled. When populated, prefer reusing DPV AI extension ai:Technique concepts directly (https://w3id.org/dpv/ai#, Rule R3) over redefining architecture families locally."@en ;
+    skos:relatedMatch ai:Technique ;
     dct:source "PAIR-AI glossary v1.1, Section A.3" .
-    # TODO: populate with the agreed implementation-type taxonomy (e.g.
-    # architecture families such as transformer/diffusion/rule-based, or
-    # hosting forms such as provider-hosted/self-hosted) once decided.
-    # Candidate external anchors: Tool4Boxology model subclasses
+    # TODO: populate with the agreed implementation-type taxonomy. Candidate
+    # DPV AI extension anchors verified against DPV v2.3 (2026-07-15):
+    # ai:MachineLearning, ai:DeepLearning, ai:NeuralNetwork,
+    # ai:ConvolutionalNeuralNetwork, ai:RecurrentNeuralNetwork,
+    # ai:SupervisedLearning / UnsupervisedLearning / SelfSupervisedLearning /
+    # ReinforcementLearning / TransferLearning, ai:RuleBasedTechnique,
+    # ai:SymbolicReasoning, ai:BayesianNetwork, ai:SupportVectorMachine,
+    # ai:DecisionTree, ai:LLM (subClassOf ai:Model, added DPV 2025-12-17).
+    # DPV has no explicit "Transformer" architecture concept yet - do not
+    # invent one; leave as a gap until DPV adds it.
+    # Candidate secondary anchors: Tool4Boxology model subclasses
     # (t4b:NeuralNetwork, t4b:Transformer, ...) via skos:exactMatch - do not
     # copy them as BEAM classes (Rule R5 / Task 4 decision).
