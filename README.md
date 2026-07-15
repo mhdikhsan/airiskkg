@@ -43,6 +43,7 @@ and curated motif interpretations. Assessment runs in two executable steps:
 The SPARQL CONSTRUCT files in `ontology/patterns/implementation/` are executable
 implementations of motifs or motif interpretations. 
 
+
 ## Web UI
 
 A Flask-based web UI makes it easier for developers to run an assessment without
