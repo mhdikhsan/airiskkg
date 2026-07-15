@@ -299,6 +299,42 @@ exists, checked against the live spec (`https://w3c-cg.github.io/dpv/2.3/`,
 Metadata-only: all TTL parses; motif matches / findings on onyx (107/318),
 uc6 (61/189), verba (46/172) unchanged.
 
+## Post-Task 7 addition — DPV / DPV-AI structural alignment adapter
+
+The prior two additions reused DPV for facet *values* (SKOS, classification
+axis). This one is different in kind: it anchors BEAM's structural
+(query-traversed) classes — Data, Model, Process, Agent, System — into DPV
+via `rdfs:subClassOf`, mirroring the existing Tool4Boxology adapter pattern
+and the easy-ai anchoring already in `beam_core.ttl`.
+
+New `ontology/alignments/dpv_alignment.ttl`:
+
+- `beam:Data rdfs:subClassOf ai:Data` (DPV AI extension; itself
+  `rdfs:subClassOf dpv:Data` in DPV core, so a `beam:Data` instance is
+  transitively recognized as `dpv:Data`).
+- `beam:Model rdfs:subClassOf ai:Model`, `beam:Process rdfs:subClassOf
+  ai:AIProcess`, `beam:Agent rdfs:subClassOf ai:AIAgent`, `beam:System
+  rdfs:subClassOf ai:AISystem` — all verified to exist as real classes in
+  the downloaded DPV-AI Turtle (`https://w3id.org/dpv/ai#`, 2026-07-15),
+  not just skimmed from HTML.
+- **`beam:Symbol` deliberately left unaligned**, with a comment explaining
+  why: DPV-AI's nearest neighbours (`ai:KnowledgeRepresentation`,
+  `ai:SymbolicReasoning`, `ai:RuleBasedTechnique`) are Technique concepts
+  (HOW a system reasons), not a symbolic-*resource* class (WHAT
+  `beam:Symbol` is) — aligning them would be a category error.
+
+Same non-negotiable placement rule as Tool4Boxology: nothing external
+enters `beam_core.ttl` itself; the axioms live in the alignments adapter.
+Purely additive and inert for assessment: like the Tool4Boxology property
+alignments, these `rdfs:subClassOf` triples are not consumed by motif
+SPARQL (no OWL reasoning runs during motif matching) and this file is not
+in the pipeline's load path (`CORE_FILES` / `imports.ttl`), so it changes
+no finding — confirmed zero-diff on all TTL parsing, the full test suite,
+and onyx/uc6/verba assessment output. Its purpose is FAIR interoperability:
+a reasoner or federated query over the combined graph can now recognize a
+`beam:Data`/`Model`/`Process`/`Agent`/`System` instance as its DPV/DPV-AI
+counterpart.
+
 ## Open TODOs / known debt
 
 1. **Pre-existing test failure** (predates this work):
