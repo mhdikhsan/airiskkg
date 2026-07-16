@@ -73,6 +73,7 @@ verba:UploadedDocument
 verba:ParsedDocument
     a beam:Data ;
     rdfs:label "Parsed document"@en ;
+    pair:playsRole pair:SourceDocument ;
     pair:containsDataCategory verba:UploadedKnowledgeBaseContent ;
     pair:containsDataCategory verba:UploadedSensitiveKnowledgeBaseContent ;
     pair:containsDataCategory pair:UntrustedContent ;
@@ -186,6 +187,7 @@ verba:ReadDocument
 verba:ChunkDocument
     a beam:Transform ;
     rdfs:label "Chunk document"@en ;
+    pair:playsRole pair:ChunkingStep ;
     beam:use verba:ParsedDocument ,
         verba:RAGConfiguration ;
     beam:produce verba:DocumentChunks ;
