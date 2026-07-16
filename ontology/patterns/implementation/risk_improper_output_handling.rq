@@ -55,7 +55,7 @@ WHERE {
         }
         UNION
         {
-            ?outputControlRole pair:subRoleOf* pat:OutputGuardrailStepRole .
+            ?outputControlRole pair:subRoleOf* pair:OutputGuardrailStep .
         }
     }
     FILTER NOT EXISTS {

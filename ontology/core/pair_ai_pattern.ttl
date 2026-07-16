@@ -605,6 +605,41 @@ pair:ReleaseApproval a pair:PatternRole ;
     pair:subRoleOf pair:ResourceRole ;
     skos:definition "An approval artifact gating a release."@en .
 
+### External-dependency roles (parent: pair:ExternalDependency)
+# Declared 2026-07-16 (engine consistency cleanup, Phase 1): these URIs were
+# already used by risk_supply_chain.rq and the onyx/verba example graphs but
+# never declared, making them invisible to the workbench role picker.
+
+pair:ExternalDependency a pair:PatternRole ;
+    skos:prefLabel "ExternalDependency"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "A resource sourced from outside the modeled organization's control (model, package, credential, or service) whose provenance and integrity the submitted graph cannot vouch for."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM03 Supply Chain" .
+
+pair:ExternalModel a pair:PatternRole ;
+    skos:prefLabel "ExternalModel"@en ;
+    pair:subRoleOf pair:ExternalDependency , pair:Model ;
+    skos:definition "A model obtained from an external provider or model hub (API-served or downloaded weights)."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM03 Supply Chain" .
+
+pair:ThirdPartyPackage a pair:PatternRole ;
+    skos:prefLabel "ThirdPartyPackage"@en ;
+    pair:subRoleOf pair:ExternalDependency ;
+    skos:definition "A third-party software package, library, or plugin the system depends on."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM03 Supply Chain" .
+
+pair:ExternalProviderCredential a pair:PatternRole ;
+    skos:prefLabel "ExternalProviderCredential"@en ;
+    pair:subRoleOf pair:ExternalDependency ;
+    skos:definition "A credential (API key, token) granting access to an external provider on behalf of the system."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM03 Supply Chain" .
+
+pair:SystemPrompt a pair:PatternRole ;
+    skos:prefLabel "SystemPrompt"@en ;
+    pair:subRoleOf pair:PromptTemplate ;
+    skos:definition "A hidden system prompt or instruction template steering model behavior, not authored by the end user. Declared 2026-07-16: previously used by risk_system_prompt_leakage.rq and uc6 without a declaration."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM07 System Prompt Leakage" .
+
 ### Processing-step roles (parent: pair:ProcessingStep)
 pair:GenerationStep a pair:PatternRole ;
     skos:prefLabel "GenerationStep"@en ;
@@ -747,6 +782,36 @@ pair:OutputGuardrailStep a pair:PatternRole ;
     skos:prefLabel "OutputGuardrailStep"@en ;
     pair:subRoleOf pair:GuardrailStep ;
     skos:definition "A guardrail step screening model output before release."@en .
+
+# Control/action roles declared 2026-07-16 (engine consistency cleanup,
+# Phase 1). The two control steps below were referenced in FILTER NOT EXISTS
+# control checks while undeclared, which made those "control is absent"
+# checks unfalsifiable: no modeler could represent the control in a way the
+# query (or the workbench role picker) recognized.
+
+pair:OutputValidationStep a pair:PatternRole ;
+    skos:prefLabel "OutputValidationStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that validates, encodes, or sanitizes model output before it is used by users, tools, or downstream systems."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM05 Improper Output Handling" .
+
+pair:RateLimitControlStep a pair:PatternRole ;
+    skos:prefLabel "RateLimitControlStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that enforces rate, budget, quota, or loop bounds on model calls, retrieval breadth, or tool use."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM10 Unbounded Consumption" .
+
+pair:ToolInvocationStep a pair:PatternRole ;
+    skos:prefLabel "ToolInvocationStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step that invokes an external tool, plugin, or API on behalf of the system (agentic tool use). Declared 2026-07-16: previously required by risk_excessive_agency.rq while undeclared, so that rule could never fire."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM06 Excessive Agency" .
+
+pair:StateChangingStep a pair:PatternRole ;
+    skos:prefLabel "StateChangingStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step that changes external state: writes, transactions, or other actions with side effects outside the system boundary."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM06 Excessive Agency" .
 
 # Data category vocabulary (the Data Category characterization facet)
 #
