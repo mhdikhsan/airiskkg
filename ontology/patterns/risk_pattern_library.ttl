@@ -527,6 +527,12 @@ pat:MisinformationFromWeakGroundingRiskPattern
     pair:derivedFrom owasp:llm09-misinformation ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Misinformation from weak grounding risk pattern"@en ;
+    # DECISION D2 (2026-07-16): kept as a declared-but-unimplemented pattern
+    # rather than merged into DirectPromptingWithoutGroundingRiskPattern.
+    # Same OWASP LLM09 anchor, but this one targets RAG pipelines whose
+    # grounding is WEAK (e.g. retrieved context reaches generation without
+    # verification) rather than absent. Awaiting its own OQP now that the
+    # RAG motif matches real pipelines (D1).
     pair:hasMotif pat:RetrievalAugmentedGenerationMotif ;
     pair:hasMechanism owasp:mechanism-unsupported-generation ;
     pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;

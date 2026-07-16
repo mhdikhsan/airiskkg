@@ -416,7 +416,8 @@ pair:RerankerModel a pair:PatternRole ;
 pair:GuardrailModel a pair:PatternRole ;
     skos:prefLabel "Guardrail Model"@en ;
     pair:subRoleOf pair:Model ;
-    skos:definition "A model dedicated to screening input or output in a guardrail step."@en .
+    skos:definition "A model dedicated to screening input or output in a guardrail step."@en ;
+    rdfs:comment "Currently referenced by no query or example (decision D4, 2026-07-16: kept for the GuardrailsMotif OQP when implemented)."@en .
 
 pair:LoadedModel a pair:PatternRole ;
     skos:prefLabel "Loaded Model"@en ;
@@ -473,7 +474,8 @@ pair:PromptTemplate a pair:PatternRole ;
 pair:VectorRepresentation a pair:PatternRole ;
     skos:prefLabel "VectorRepresentation"@en ;
     pair:subRoleOf pair:ResourceRole ;
-    skos:definition "A numeric vector embedding of source data."@en .
+    skos:definition "A numeric vector embedding of source data."@en ;
+    rdfs:comment "Currently referenced by no query or example (decision D4, 2026-07-16: kept as a generalization of pair:EmbeddingVector; consider merging on next vocabulary review)."@en .
 
 pair:EmbeddingVector a pair:PatternRole ;
     skos:prefLabel "EmbeddingVector"@en ;
@@ -483,7 +485,8 @@ pair:EmbeddingVector a pair:PatternRole ;
 pair:EvaluatedOutput a pair:PatternRole ;
     skos:prefLabel "EvaluatedOutput"@en ;
     pair:subRoleOf pair:ResourceRole ;
-    skos:definition "A model output that is the subject of evaluation."@en .
+    skos:definition "A model output that is the subject of evaluation."@en ;
+    rdfs:comment "Currently referenced by no query or example (decision D4, 2026-07-16: kept for the EvalsMotif OQP when implemented)."@en .
 
 pair:ExpectedOutput a pair:PatternRole ;
     skos:prefLabel "ExpectedOutput"@en ;
@@ -578,7 +581,8 @@ pair:BatchDataset a pair:PatternRole ;
 pair:EvalDataset a pair:PatternRole ;
     skos:prefLabel "EvalDataset"@en ;
     pair:subRoleOf pair:ResourceRole ;
-    skos:definition "A dataset used for evaluation."@en .
+    skos:definition "A dataset used for evaluation."@en ;
+    rdfs:comment "Currently referenced by no query or example (decision D4, 2026-07-16: kept for the EvalsMotif OQP when implemented)."@en .
 
 pair:PreprocessedData a pair:PatternRole ;
     skos:prefLabel "PreprocessedData"@en ;
