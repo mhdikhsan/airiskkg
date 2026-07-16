@@ -1621,18 +1621,17 @@ pat:Embedding_VectorIndexUsesVectorEdge
 pat:RetrievalAugmentedGenerationMotif
     a pair:GraphMotif ;
     rdfs:label "Retrieval Augmented Generation (RAG) Motif"@en ;
-    dct:description "GenAI motif in which a user query is embedded, used to retrieve relevant context from a vector index, combined with a prompt template, and sent to an LLM to produce an answer."@en ;
+    dct:description "GenAI motif in which a user query is used to retrieve relevant context from a vector index (optionally via a query-embedding step), combined with the query into a prompt, and sent to an LLM to produce an answer."@en ;
+    rdfs:comment "Relaxed 2026-07-16 (decision D1): the query-embedding leg (RAG_QueryEmbeddingStepNode/RAG_QueryVectorNode + their edges) is OPTIONAL in the OQP, and retrieved context may pass through intermediate steps (reranking, aggregation) between the retrieval step and prompt construction - RAG_PromptConstructionUsesContextEdge is path-tolerant, requiring only that the consumed context plays a role under pair:RetrievedContext. The earlier declaration also included an embedding-model node and a phantom prompt-template INPUT node the OQP never bound - removed (the PromptTemplate role belongs to the produced prompt, pat:RAG_PromptNode)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:RAG_QueryNode ,
-        pat:RAG_EmbeddingModelNode ,
         pat:RAG_QueryEmbeddingStepNode ,
         pat:RAG_QueryVectorNode ,
         pat:RAG_VectorIndexNode ,
         pat:RAG_RetrievalStepNode ,
         pat:RAG_RetrievedContextNode ,
-        pat:RAG_PromptTemplateNode ,
         pat:RAG_PromptConstructionStepNode ,
         pat:RAG_PromptNode ,
         pat:RAG_LLMNode ,
@@ -1640,14 +1639,11 @@ pat:RetrievalAugmentedGenerationMotif
         pat:RAG_ResponseNode ;
     pair:hasPatternEdge
         pat:RAG_QueryEmbeddingUsesQueryEdge ,
-        pat:RAG_QueryEmbeddingUsesModelEdge ,
         pat:RAG_QueryEmbeddingProducesVectorEdge ,
-        pat:RAG_RetrievalUsesQueryVectorEdge ,
         pat:RAG_RetrievalUsesVectorIndexEdge ,
         pat:RAG_RetrievalProducesContextEdge ,
         pat:RAG_PromptConstructionUsesQueryEdge ,
         pat:RAG_PromptConstructionUsesContextEdge ,
-        pat:RAG_PromptConstructionUsesTemplateEdge ,
         pat:RAG_PromptConstructionProducesPromptEdge ,
         pat:RAG_GenerationUsesPromptEdge ,
         pat:RAG_GenerationUsesLLMEdge ,
@@ -1659,12 +1655,6 @@ pat:RAG_QueryNode
     rdfs:label "RAG query node"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
-
-pat:RAG_EmbeddingModelNode
-    a pair:PatternNode ;
-    rdfs:label "RAG embedding model node"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:EmbeddingModel .
 
 pat:RAG_QueryEmbeddingStepNode
     a pair:PatternNode ;
@@ -1695,12 +1685,6 @@ pat:RAG_RetrievedContextNode
     rdfs:label "RAG retrieved context node"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
-
-pat:RAG_PromptTemplateNode
-    a pair:PatternNode ;
-    rdfs:label "RAG prompt template node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PromptTemplate .
 
 pat:RAG_PromptConstructionStepNode
     a pair:PatternNode ;
@@ -1739,25 +1723,11 @@ pat:RAG_QueryEmbeddingUsesQueryEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:RAG_QueryNode .
 
-pat:RAG_QueryEmbeddingUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "RAG query embedding uses model"@en ;
-    pair:sourcePatternNode pat:RAG_QueryEmbeddingStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RAG_EmbeddingModelNode .
-
 pat:RAG_QueryEmbeddingProducesVectorEdge
     a pair:PatternEdge ;
     rdfs:label "RAG query embedding produces vector"@en ;
     pair:sourcePatternNode pat:RAG_QueryEmbeddingStepNode ;
     pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:RAG_QueryVectorNode .
-
-pat:RAG_RetrievalUsesQueryVectorEdge
-    a pair:PatternEdge ;
-    rdfs:label "RAG retrieval uses query vector"@en ;
-    pair:sourcePatternNode pat:RAG_RetrievalStepNode ;
-    pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:RAG_QueryVectorNode .
 
 pat:RAG_RetrievalUsesVectorIndexEdge
@@ -1787,13 +1757,6 @@ pat:RAG_PromptConstructionUsesContextEdge
     pair:sourcePatternNode pat:RAG_PromptConstructionStepNode ;
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:RAG_RetrievedContextNode .
-
-pat:RAG_PromptConstructionUsesTemplateEdge
-    a pair:PatternEdge ;
-    rdfs:label "RAG prompt construction uses template"@en ;
-    pair:sourcePatternNode pat:RAG_PromptConstructionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RAG_PromptTemplateNode .
 
 pat:RAG_PromptConstructionProducesPromptEdge
     a pair:PatternEdge ;
