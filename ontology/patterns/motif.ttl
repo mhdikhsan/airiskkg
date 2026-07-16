@@ -2362,3 +2362,44 @@ pat:FineTune_EvaluationProducesScoreEdge
     pair:sourcePatternNode pat:FineTune_EvaluationStepNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:FineTune_EvaluationScoreNode .
+
+# ---------------------------------------------------------------------------
+# External Dependency motif (added 2026-07-16, engine consistency cleanup
+# Phase 3). Risk-neutral structure: a supply-chain-relevant resource - an
+# external dependency (external model, third-party package, provider
+# credential), a pre-trained model, a persisted model artifact, or a serving
+# image - is used by a process step. Gives SupplyChainCompromiseRiskPattern a
+# real, implemented motif anchor: previously its query free-rode on matches
+# of unrelated motifs, so external resources bound by no other motif (e.g.
+# verba's generator model) produced no finding.
+
+pat:ExternalDependencyMotif
+    a pair:GraphMotif ;
+    rdfs:label "External Dependency Motif"@en ;
+    dct:description "A supply-chain-relevant resource (external dependency, pre-trained model, model artifact, or serving image) is used by a process step. Risk-neutral: using external components is normal engineering; risk semantics are added only by the supply chain compromise risk pattern."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM03 Supply Chain (scope of supply-chain-relevant resources)" ;
+    pair:derivedFrom <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    pair:hasPatternNode
+        pat:ExtDep_ExternalResourceNode ,
+        pat:ExtDep_UsingStepNode ;
+    pair:hasPatternEdge
+        pat:ExtDep_StepUsesResourceEdge ;
+    pair:implementedBy pat:ExternalDependency_MatchingOQP .
+
+pat:ExtDep_ExternalResourceNode
+    a pair:PatternNode ;
+    rdfs:label "External resource node"@en ;
+    rdfs:comment "Expected role is a disjunction the ODP vocabulary cannot express: subRoleOf* of pair:ExternalDependency, pair:PretrainedModel, pair:ModelArtifact, or pair:ServingImage (see match_external_dependency.rq)."@en ;
+    pair:expectedRole pair:ExternalDependency .
+
+pat:ExtDep_UsingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Using step node"@en ;
+    pair:expectedClass beam:Process .
+
+pat:ExtDep_StepUsesResourceEdge
+    a pair:PatternEdge ;
+    rdfs:label "step uses external resource"@en ;
+    pair:sourcePatternNode pat:ExtDep_UsingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ExtDep_ExternalResourceNode .
