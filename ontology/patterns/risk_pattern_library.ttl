@@ -271,6 +271,9 @@ pat:PromptInjectionRiskPattern
     content can enter a prompt or generation context and potentially override
     or conflict with intended instructions.
     """@en ;
+    pair:hasMotif pat:DirectPromptingMotif ,
+        pat:RetrievalAugmentedGenerationMotif ,
+        pat:QueryRewritingMotif ;
     pair:hasMechanism owasp:mechanism-instruction-override ;
     pair:hasApplicabilityCondition pat:PromptInjection_UntrustedPromptContextCondition ;
     pair:mayIndicateRisk
@@ -322,6 +325,10 @@ pat:SupplyChainCompromiseRiskPattern
     pair:derivedFrom owasp:llm03-supply-chain ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Supply chain compromise risk pattern"@en ;
+    pair:hasMotif pat:FineTuningMotif ,
+        pat:ModelLoadMotif ,
+        pat:ModelInImageMotif ,
+        pat:TrainingToServingMotif ;
     pair:hasMechanism owasp:mechanism-supply-chain-compromise ;
     pair:hasApplicabilityCondition pat:SupplyChain_ExternalDependencyCondition ;
     pair:mayIndicateRisk
@@ -345,6 +352,9 @@ pat:DataAndModelPoisoningRiskPattern
     pair:derivedFrom owasp:llm04-data-and-model-poisoning ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Data and model poisoning risk pattern"@en ;
+    pair:hasMotif pat:EmbeddingsMotif ,
+        pat:FineTuningMotif ,
+        pat:TrainingToServingMotif ;
     pair:hasMechanism owasp:mechanism-data-or-model-poisoning ;
     pair:hasApplicabilityCondition pat:Poisoning_UntrustedTrainingOrIndexingDataCondition ;
     pair:mayIndicateRisk
@@ -374,6 +384,8 @@ pat:ImproperOutputHandlingRiskPattern
     component without a represented validation, sanitization, review, or
     guardrail step.
     """@en ;
+    pair:hasMotif pat:DirectPromptingMotif ,
+        pat:GuardrailsMotif ;
     pair:hasMechanism owasp:mechanism-unsafe-output-propagation ;
     pair:hasApplicabilityCondition pat:ImproperOutputHandling_UnvalidatedOutputCondition ;
     pair:mayIndicateRisk
@@ -397,6 +409,11 @@ pat:ExcessiveAgencyRiskPattern
     pair:derivedFrom owasp:llm06-excessive-agency ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Excessive agency risk pattern"@en ;
+    # NOTE (2026-07-16 consistency cleanup): deliberately no pair:hasMotif -
+    # this pattern is anchored on roles (GenerationStep informing a
+    # ToolInvocationStep/StateChangingStep) across any motif match; no
+    # motif-side hasRiskPattern lists it either. Revisit when an agentic
+    # tool-use motif is added to the motif library.
     pair:hasMechanism owasp:mechanism-excessive-agency-action-execution ;
     pair:hasApplicabilityCondition pat:ExcessiveAgency_ToolOrStateChangeCondition ;
     pair:mayIndicateRisk
@@ -422,6 +439,7 @@ pat:SystemPromptLeakageRiskPattern
     pair:derivedFrom owasp:llm07-system-prompt-leakage ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "System prompt leakage risk pattern"@en ;
+    pair:hasMotif pat:GuardrailsMotif ;
     pair:hasMechanism owasp:mechanism-system-prompt-exposure ;
     pair:hasApplicabilityCondition
         pat:SystemPromptLeakage_HiddenInstructionCondition ,
@@ -449,6 +467,9 @@ pat:VectorAndEmbeddingWeaknessRiskPattern
     pair:derivedFrom owasp:llm08-vector-and-embedding-weaknesses ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Vector and embedding weakness risk pattern"@en ;
+    pair:hasMotif pat:RetrievalAugmentedGenerationMotif ,
+        pat:EmbeddingsMotif ,
+        pat:RerankerMotif ;
     pair:hasMechanism owasp:mechanism-vector-embedding-retrieval-weakness ;
     pair:hasApplicabilityCondition pat:VectorEmbeddingWeakness_RetrievalCondition ;
     pair:mayIndicateRisk
@@ -502,6 +523,7 @@ pat:MisinformationFromWeakGroundingRiskPattern
     pair:derivedFrom owasp:llm09-misinformation ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Misinformation from weak grounding risk pattern"@en ;
+    pair:hasMotif pat:RetrievalAugmentedGenerationMotif ;
     pair:hasMechanism owasp:mechanism-unsupported-generation ;
     pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;
     pair:mayIndicateRisk
@@ -529,6 +551,9 @@ pat:UnboundedConsumptionRiskPattern
     tool use, or feedback loops can consume cost, latency, or availability
     budget without represented rate, budget, or loop controls.
     """@en ;
+    pair:hasMotif pat:DirectPromptingMotif ,
+        pat:RetrievalAugmentedGenerationMotif ,
+        pat:QueryRewritingMotif ;
     pair:hasMechanism owasp:mechanism-unbounded-resource-consumption ;
     pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ;
     pair:mayIndicateRisk

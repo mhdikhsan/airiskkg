@@ -38,8 +38,8 @@ WHERE {
         pair:PretrainedModel
         pair:ThirdPartyPackage
         pair:ExternalProviderCredential
-        pat:ModelArtifactRole
-        pat:ServingImageRole
+        pair:ModelArtifact
+        pair:ServingImage
     }
 
     ?match

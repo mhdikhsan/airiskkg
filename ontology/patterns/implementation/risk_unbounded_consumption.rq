@@ -55,15 +55,18 @@ WHERE {
     }
     UNION
     {
-        FILTER(?motif = pat:DirectPromptingMotif)
+        # VALUES, not FILTER(?motif = ...): a FILTER here would reference
+        # ?motif from outside its own group, which is unbound at filter
+        # evaluation time (SPARQL group scoping) and silently kills the branch.
+        VALUES ?motif { pat:DirectPromptingMotif }
         ?match
             pair:hasNodeBinding ?stepBinding ,
                 ?answerBinding .
         ?stepBinding
-            pair:bindsPatternNode pat:DirectPrompting_GenerationStepNode ;
+            pair:bindsPatternNode pat:DP_GenerationStepNode ;
             pair:matchedElement ?loopSource .
         ?answerBinding
-            pair:bindsPatternNode pat:DirectPrompting_AnswerNode ;
+            pair:bindsPatternNode pat:DP_AnswerNode ;
             pair:matchedElement ?loopTarget .
 
         FILTER NOT EXISTS {
