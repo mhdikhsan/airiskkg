@@ -253,6 +253,9 @@ pat:FineTuningMotif
 pat:ModelLoadMotif
     pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
 
+pat:ExternalDependencyMotif
+    pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
+
 pat:ModelInImageMotif
     pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
 
@@ -325,7 +328,8 @@ pat:SupplyChainCompromiseRiskPattern
     pair:derivedFrom owasp:llm03-supply-chain ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Supply chain compromise risk pattern"@en ;
-    pair:hasMotif pat:FineTuningMotif ,
+    pair:hasMotif pat:ExternalDependencyMotif ,
+        pat:FineTuningMotif ,
         pat:ModelLoadMotif ,
         pat:ModelInImageMotif ,
         pat:TrainingToServingMotif ;
@@ -647,6 +651,13 @@ pat:Reranker_MatchingOQP
     rdfs:label "Reranker motif matching OQP"@en ;
     pair:implementsMotif pat:RerankerMotif ;
     pair:implementationPath "ontology/patterns/implementation/match_reranker.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:ExternalDependency_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "External dependency motif matching OQP"@en ;
+    pair:implementsMotif pat:ExternalDependencyMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_external_dependency.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:PromptInjectionOQP

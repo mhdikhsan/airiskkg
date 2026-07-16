@@ -32,23 +32,24 @@ WHERE {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
 
-    VALUES ?externalRootRole {
-        pair:ExternalDependency
-        pair:ExternalModel
-        pair:PretrainedModel
-        pair:ThirdPartyPackage
-        pair:ExternalProviderCredential
-        pair:ModelArtifact
-        pair:ServingImage
-    }
-
+    # Anchored to the External Dependency motif's own matches (2026-07-16
+    # redesign): previously this query free-rode on matches of ANY motif, so
+    # an external resource bound by no other motif produced no finding (the
+    # verba generator-model gap), and the role selection duplicated here what
+    # the motif should express. The role disjunction now lives in
+    # match_external_dependency.rq.
     ?match
         a pair:MotifMatch ;
         pair:matchesMotif ?motif ;
-        pair:hasNodeBinding/pair:matchedElement ?externalResource .
-    ?externalResource pair:playsRole ?externalRole .
-    ?externalRole pair:subRoleOf* ?externalRootRole .
-    ?usingStep beam:use ?externalResource .
+        pair:hasNodeBinding ?resourceBinding , ?stepBinding .
+    VALUES ?motif { pat:ExternalDependencyMotif }
+
+    ?resourceBinding
+        pair:bindsPatternNode pat:ExtDep_ExternalResourceNode ;
+        pair:matchedElement ?externalResource .
+    ?stepBinding
+        pair:bindsPatternNode pat:ExtDep_UsingStepNode ;
+        pair:matchedElement ?usingStep .
 
     FILTER NOT EXISTS {
         pat:SupplyChainCompromiseRiskPattern pair:suggestedControl ?implementedControl .

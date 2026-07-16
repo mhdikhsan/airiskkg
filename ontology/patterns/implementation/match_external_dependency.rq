@@ -1,0 +1,43 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "External Dependency motif match"@en ;
+        pair:matchesMotif pat:ExternalDependencyMotif ;
+        pair:hasNodeBinding ?resourceBinding , ?stepBinding .
+
+    ?resourceBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:ExtDep_ExternalResourceNode ;
+        pair:matchedElement ?externalResource .
+
+    ?stepBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:ExtDep_UsingStepNode ;
+        pair:matchedElement ?usingStep .
+}
+WHERE {
+    # Supply-chain-relevant resource roles (see pat:ExtDep_ExternalResourceNode
+    # comment: a disjunction of role subtrees).
+    VALUES ?externalRootRole {
+        pair:ExternalDependency
+        pair:PretrainedModel
+        pair:ModelArtifact
+        pair:ServingImage
+    }
+    ?externalResource pair:playsRole ?externalRole .
+    ?externalRole pair:subRoleOf* ?externalRootRole .
+    ?usingStep beam:use ?externalResource .
+
+    # Deterministic match IRI keyed on the using step + resource, so an
+    # element carrying several external-ish roles yields ONE match.
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/external-dependency/",
+        ENCODE_FOR_URI(STR(?usingStep)), "/",
+        ENCODE_FOR_URI(STR(?externalResource))
+    )) AS ?match)
+    BIND(IRI(CONCAT(STR(?match), "/binding/external-resource")) AS ?resourceBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/using-step")) AS ?stepBinding)
+}
