@@ -1527,14 +1527,14 @@ pat:Evals_ScorerProducesScoreEdge
 pat:EmbeddingsMotif
     a pair:GraphMotif ;
     rdfs:label "Embeddings Motif"@en ;
-    dct:description "GenAI motif in which source documents or data blocks are chunked and transformed by an embedding model into vectors stored in a vector index."@en ;
+    dct:description "GenAI motif in which source documents or data blocks are chunked and transformed into vectors stored in a vector index."@en ;
+    rdfs:comment "ODP reconciled to OQP behavior 2026-07-16: the earlier declaration included an embedding-model node (pat:Embedding_ModelNode) the OQP never bound - removed. The OQP additionally matches an indexing step (uses chunk + vector, produces the index) that it does not bind as a node."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:Embedding_SourceDocumentNode ,
         pat:Embedding_ChunkingStepNode ,
         pat:Embedding_DocumentChunkNode ,
-        pat:Embedding_ModelNode ,
         pat:Embedding_GenerationStepNode ,
         pat:Embedding_VectorNode ,
         pat:Embedding_VectorIndexNode ;
@@ -1542,7 +1542,6 @@ pat:EmbeddingsMotif
         pat:Embedding_ChunkingUsesSourceEdge ,
         pat:Embedding_ChunkingProducesChunkEdge ,
         pat:Embedding_GenerationUsesChunkEdge ,
-        pat:Embedding_GenerationUsesModelEdge ,
         pat:Embedding_GenerationProducesVectorEdge ,
         pat:Embedding_VectorIndexUsesVectorEdge ;
     pair:implementedBy pat:Embeddings_MatchingOQP .
@@ -1562,14 +1561,8 @@ pat:Embedding_ChunkingStepNode
 pat:Embedding_DocumentChunkNode
     a pair:PatternNode ;
     rdfs:label "Document chunk node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:DocumentChunk .
-
-pat:Embedding_ModelNode
-    a pair:PatternNode ;
-    rdfs:label "Embedding model node"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:EmbeddingModel .
+    rdfs:comment "The OQP identifies the chunk positionally (produced by the chunking step, used by the embedding step) without checking a role; pair:DocumentChunk is the typical annotation."@en ;
+    pair:expectedClass beam:Data .
 
 pat:Embedding_GenerationStepNode
     a pair:PatternNode ;
@@ -1580,14 +1573,15 @@ pat:Embedding_GenerationStepNode
 pat:Embedding_VectorNode
     a pair:PatternNode ;
     rdfs:label "Embedding vector node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:EmbeddingVector .
+    rdfs:comment "The OQP identifies the vector positionally (produced by the embedding step, used by the indexing step) without checking a role; pair:EmbeddingVector is the typical annotation."@en ;
+    pair:expectedClass beam:Data .
 
 pat:Embedding_VectorIndexNode
     a pair:PatternNode ;
     rdfs:label "Vector index node"@en ;
+    rdfs:comment "The OQP accepts a role under pair:VectorStore OR pair:VectorIndex (a disjunction the ODP vocabulary cannot express)."@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:VectorIndex .
+    pair:expectedRole pair:VectorStore .
 
 pat:Embedding_ChunkingUsesSourceEdge
     a pair:PatternEdge ;
@@ -1609,13 +1603,6 @@ pat:Embedding_GenerationUsesChunkEdge
     pair:sourcePatternNode pat:Embedding_GenerationStepNode ;
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:Embedding_DocumentChunkNode .
-
-pat:Embedding_GenerationUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "embedding generation uses embedding model"@en ;
-    pair:sourcePatternNode pat:Embedding_GenerationStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:Embedding_ModelNode .
 
 pat:Embedding_GenerationProducesVectorEdge
     a pair:PatternEdge ;
@@ -1954,35 +1941,27 @@ pat:QueryRewritingMotif
     a pair:GraphMotif ;
     rdfs:label "Query Rewriting Motif"@en ;
     dct:description "GenAI motif in which an LLM reformulates a user query into alternative queries that are then used for retrieval."@en ;
+    rdfs:comment "ODP reconciled to OQP behavior 2026-07-16: the earlier declaration included an original-query node and a rewrite-informs-retrieval edge the OQP never bound or checked - removed; the LLM node expected pair:FoundationLLM while the OQP accepts any pair:GenerativeModel."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
-        pat:QueryRewrite_OriginalQueryNode ,
         pat:QueryRewrite_LLMNode ,
         pat:QueryRewrite_RewriteStepNode ,
         pat:QueryRewrite_RewrittenQueryNode ,
         pat:QueryRewrite_RetrievalStepNode ,
         pat:QueryRewrite_RetrievedContextNode ;
     pair:hasPatternEdge
-        pat:QueryRewrite_RewriteUsesQueryEdge ,
         pat:QueryRewrite_RewriteUsesLLMEdge ,
         pat:QueryRewrite_RewriteProducesQueryEdge ,
-        pat:QueryRewrite_RewriteInformsRetrievalEdge ,
         pat:QueryRewrite_RetrievalUsesRewrittenQueryEdge ,
         pat:QueryRewrite_RetrievalProducesContextEdge ;
     pair:implementedBy pat:QueryRewriting_MatchingOQP .
-
-pat:QueryRewrite_OriginalQueryNode
-    a pair:PatternNode ;
-    rdfs:label "Original query node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
 
 pat:QueryRewrite_LLMNode
     a pair:PatternNode ;
     rdfs:label "Query rewriting LLM node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:FoundationLLM .
+    pair:expectedRole pair:GenerativeModel .
 
 pat:QueryRewrite_RewriteStepNode
     a pair:PatternNode ;
@@ -1993,8 +1972,9 @@ pat:QueryRewrite_RewriteStepNode
 pat:QueryRewrite_RewrittenQueryNode
     a pair:PatternNode ;
     rdfs:label "Rewritten query node"@en ;
+    rdfs:comment "The OQP checks a role under pair:UserInput (the rewritten query re-enters retrieval as a query); modelers typically ALSO tag pair:RewrittenQuery (onyx does both)."@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:RewrittenQuery .
+    pair:expectedRole pair:UserInput .
 
 pat:QueryRewrite_RetrievalStepNode
     a pair:PatternNode ;
@@ -2007,13 +1987,6 @@ pat:QueryRewrite_RetrievedContextNode
     rdfs:label "Retrieved context from rewritten query node"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
-
-pat:QueryRewrite_RewriteUsesQueryEdge
-    a pair:PatternEdge ;
-    rdfs:label "query rewrite uses original query"@en ;
-    pair:sourcePatternNode pat:QueryRewrite_RewriteStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:QueryRewrite_OriginalQueryNode .
 
 pat:QueryRewrite_RewriteUsesLLMEdge
     a pair:PatternEdge ;
@@ -2028,13 +2001,6 @@ pat:QueryRewrite_RewriteProducesQueryEdge
     pair:sourcePatternNode pat:QueryRewrite_RewriteStepNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:QueryRewrite_RewrittenQueryNode .
-
-pat:QueryRewrite_RewriteInformsRetrievalEdge
-    a pair:PatternEdge ;
-    rdfs:label "query rewrite informs retrieval"@en ;
-    pair:sourcePatternNode pat:QueryRewrite_RewriteStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:QueryRewrite_RetrievalStepNode .
 
 pat:QueryRewrite_RetrievalUsesRewrittenQueryEdge
     a pair:PatternEdge ;
@@ -2053,33 +2019,26 @@ pat:QueryRewrite_RetrievalProducesContextEdge
 pat:RerankerMotif
     a pair:GraphMotif ;
     rdfs:label "Reranker Motif"@en ;
-    dct:description "GenAI motif in which a candidate set of retrieved fragments is ranked against the input query so that the most useful context is passed to the LLM."@en ;
+    dct:description "GenAI motif in which a candidate set of retrieved fragments is reranked by a model so that the most useful context is passed on for generation."@en ;
+    rdfs:comment "ODP reconciled to OQP behavior 2026-07-16: the earlier declaration included a query node the OQP never bound (removed) and expected pair:RetrievedCandidateSet / pair:RerankedContext where the OQP checks pair:RetrievedContext for both candidate set and output (modelers typically ALSO tag the specific roles; onyx does both)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
-        pat:Reranker_QueryNode ,
         pat:Reranker_CandidateSetNode ,
         pat:Reranker_ModelNode ,
         pat:Reranker_RerankingStepNode ,
         pat:Reranker_RankedContextNode ;
     pair:hasPatternEdge
-        pat:Reranker_RerankingUsesQueryEdge ,
         pat:Reranker_RerankingUsesCandidateSetEdge ,
         pat:Reranker_RerankingUsesModelEdge ,
         pat:Reranker_RerankingProducesContextEdge ;
     pair:implementedBy pat:Reranker_MatchingOQP .
 
-pat:Reranker_QueryNode
-    a pair:PatternNode ;
-    rdfs:label "Reranker query node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
-
 pat:Reranker_CandidateSetNode
     a pair:PatternNode ;
     rdfs:label "Reranker candidate context set node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:RetrievedCandidateSet .
+    pair:expectedRole pair:RetrievedContext .
 
 pat:Reranker_ModelNode
     a pair:PatternNode ;
@@ -2097,14 +2056,7 @@ pat:Reranker_RankedContextNode
     a pair:PatternNode ;
     rdfs:label "Reranked context node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:RerankedContext .
-
-pat:Reranker_RerankingUsesQueryEdge
-    a pair:PatternEdge ;
-    rdfs:label "reranking uses query"@en ;
-    pair:sourcePatternNode pat:Reranker_RerankingStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:Reranker_QueryNode .
+    pair:expectedRole pair:RetrievedContext .
 
 pat:Reranker_RerankingUsesCandidateSetEdge
     a pair:PatternEdge ;
