@@ -397,24 +397,57 @@ the existing "Import XML" (draw.io) flow:
 - Full suite: 28 passed (32 minus 4 removed drawio tests) + the one
   pre-existing unrelated failure.
 
+## Engine consistency cleanup (2026-07-16, commits 0db7293..e094830)
+
+Executed the plan in `docs/claude/engine_consistency_cleanup_plan.md`
+(analysis of LLM-curation drift across vocabulary / motif library / risk
+pattern library / queries / examples). Six commits, one per phase:
+
+- **Phase 1** (`0db7293`): declared 9 roles that queries/examples already
+  used (ExternalDependency family, SystemPrompt, OutputValidationStep,
+  RateLimitControlStep, ToolInvocationStep, StateChangingStep); fixed 4
+  wrong-namespace URIs; fixed the doubly-dead DirectPrompting branch of
+  risk_unbounded_consumption.rq (drifted pattern-node names AND a SPARQL
+  group-scoping bug in `FILTER(?motif = ...)`); asserted both directions
+  of all motif↔risk-pattern links; re-minted `uc6:ProductInformation`.
+  Delta: onyx +1 unbounded-consumption (documented behavior firing for
+  the first time); all else identical.
+- **Phase 0** (`d6e5023`): `python/tests/test_library_consistency.py` —
+  9 mechanical cross-reference checks; a hallucinated URI is now a test
+  failure, not a silently dead rule.
+- **Phase 2** (`3de5dce`): removed the R2 leak from match_embeddings.rq by
+  restoring the query to its own declared ODP (ChunkingStep +
+  SourceDocument role constraints replace the facet read); annotated
+  verba's chunking step/source doc with the roles they genuinely play.
+  Zero diff.
+- **Phase 3** (`506dd4c`): new `pat:ExternalDependencyMotif` + match query;
+  risk_supply_chain.rq consumes its own motif's matches instead of
+  free-riding on arbitrary ones. Verba supply-chain 0→4 —
+  **the long-failing verba test now passes**; onyx 3→7 (one finding per
+  actual external-usage site). Side effect flagged: improper-output-
+  handling rose (onyx 1→3, verba 0→2) because generation steps are now
+  match-bound; substantively correct for verba, duplicated per match
+  (see D5 below).
+- **Phase 4** (`9473eaa`): ODP declarations reconciled to OQP behavior for
+  Embeddings/QueryRewriting/Reranker (phantom nodes removed, expected
+  roles corrected, intent kept as comments). Declarative only, zero diff.
+- **Phase 5** (`e094830`): **D1** — RAG motif relaxed (optional
+  query-embedding leg; path-tolerant retrieval→prompt context via
+  `(^beam:use/beam:produce)*` with the consumed context still role-checked)
+  — the flagship motif now matches onyx (+1 match; +1 each
+  prompt-injection / improper-output-handling / vector-embedding-weakness
+  on onyx only). **D2** — MisinformationFromWeakGrounding kept, documented
+  as awaiting its own OQP. **D4** — 4 unreferenced roles kept + annotated.
+
+End state: full suite **38 passed, 0 failed** (verba test green for the
+first time); SHACL 0 violations on all examples; consistency net green.
+
 ## Open TODOs / known debt
 
-1. **Pre-existing test failure** (predates this work):
-   `test_verba_external_model_produces_supply_chain_finding`. Root cause:
-   `verba:GeneratorModel` (roles ExternalModel/PretrainedModel) is never bound
-   by any motif match, and `risk_supply_chain.rq` only fires for match-bound
-   elements. Fixing requires a semantic change to a motif or risk query —
-   needs sign-off.
-2. **R2 leak in a motif query**: `match_embeddings.rq` reads
-   `pair:containsDataCategory` (`FILTER NOT EXISTS ... pair:PromptInstruction`)
-   — a facet read inside structural motif matching. Moving it into an
-   applicability condition changes that query's semantics — needs sign-off.
-3. `risk_supply_chain.rq` references undefined roles `pat:ModelArtifactRole` /
-   `pat:ServingImageRole` (defined roles are `pair:ModelArtifact` /
-   `pair:ServingImage`) and undeclared roles `pair:ExternalDependency`,
-   `pair:ExternalModel`, `pair:ThirdPartyPackage`,
-   `pair:ExternalProviderCredential` (used in example graphs but not declared
-   in `pair_ai_pattern.ttl`). Fixing changes query semantics — needs sign-off.
+1. ~~Pre-existing verba supply-chain test failure~~ — **fixed** (Phase 3).
+2. ~~R2 leak in match_embeddings.rq~~ — **fixed** (Phase 2).
+3. ~~Undeclared/wrong-namespace roles in risk_supply_chain.rq~~ —
+   **fixed** (Phases 1+3).
 4. OECD `skos:exactMatch` URIs for autonomy/data facets: TODO markers (no
    resolvable OECD concept URIs found).
 5. `task.ttl` second-level concepts are curated placeholders — reconcile with
@@ -426,3 +459,18 @@ the existing "Import XML" (draw.io) flow:
 8. TÜV AI.ST mappings still on hold (license unverified).
 9. SSSOM export for the taxonomy mappings not yet generated (R6 mentions it;
    not in scope of Tasks 1–7).
+10. **D5 (new)**: finding-identity dedup — risk findings are keyed per motif
+    match, so one generation step bound by several matches yields several
+    near-identical improper-output-handling findings. Decide whether finding
+    IRIs should key on the evidence elements instead (semantic change to all
+    risk queries' BIND clauses — needs sign-off).
+11. **D3 (decided: keep strict match-anchoring)**: generation-path risk
+    patterns (system-prompt-leakage, improper-output-handling) only fire when
+    the generation path is match-bound. uc6's SystemPrompt annotation still
+    yields no leakage finding because uc6's generation step is bound by no
+    motif; uc6 would need either a DirectPrompting/RAG-shaped generation leg
+    or a future annotation pass.
+12. Unimplemented motifs (17 MLOps/Boxology motifs, GuardrailsMotif) and
+    `MisinformationFromWeakGroundingRiskPattern` still have no OQPs —
+    declared knowledge awaiting implementation, guarded by the consistency
+    net.
