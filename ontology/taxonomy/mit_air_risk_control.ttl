@@ -17,6 +17,14 @@
     A selected RDF subset of the MIT Draft AI Risk Mitigation Taxonomy and related
     risk controls, adapted from AI Atlas Nexus. This file provides a control
     grounding layer for graph-pattern-based AI risk assessment.
+
+    Provenance (2026-07-17 audit): the RiskControlGroup layer (4 categories +
+    subcategories) reproduces the MIT draft taxonomy verbatim, verified against
+    the upstream Nexus data. The concrete RiskControl layer at the end of this
+    file is PAIR-AI curation: it names controls found as individual mitigations
+    in the MIT mitigation database (cited per concept) or distilled from OWASP
+    LLM Top 10 prevention guidance; these are NOT entries of the MIT taxonomy
+    itself and therefore do not carry nexus:isDefinedByTaxonomy.
     """ ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_mitigation_data.yaml> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_repository_data_controls.yaml> .
@@ -327,7 +335,11 @@ mitctrl:user-rights-recourse
     nexus:lifecyclePhase "post-deployment" .
 
 #################################################################
-# Concrete control/action examples
+# Concrete controls (PAIR-AI curated layer — not MIT taxonomy entries)
+# Each concept cites its evidence: a mitigation in the MIT AI Risk
+# Mitigation Database (via mit_ai_risk_mitigation_mappings.tsv) and/or
+# OWASP LLM Top 10 2025 prevention guidance; skos:broader anchors it
+# to the verbatim MIT subcategory it specializes.
 #################################################################
 
 mitctrl:risk-register
@@ -336,7 +348,7 @@ mitctrl:risk-register
     skos:definition "A structured repository of risks, their prioritization, owners, and mitigation plans." ;
     skos:broader mitctrl:risk-management ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database: 'Risk Register' mitigation, categorized under Risk Management (mit_ai_risk_mitigation_mappings.tsv, verified 2026-07-17)" ;
     nexus:controlType "governance" ;
     nexus:lifecyclePhase "design-time" .
 
@@ -347,7 +359,7 @@ mitctrl:pre-deployment-risk-assessment
     skos:broader mitctrl:risk-management ;
     skos:broader mitctrl:staged-deployment ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database: pre-deployment and independent risk assessment mitigations, categorized under Risk Management (verified 2026-07-17)" ;
     nexus:controlType "governance" ;
     nexus:lifecyclePhase "deployment" .
 
@@ -358,7 +370,7 @@ mitctrl:threat-modelling
     skos:broader mitctrl:testing-auditing ;
     skos:broader mitctrl:model-infrastructure-security ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database: 'Threat Modelling' mitigation, categorized under Risk Management / Model Safety Engineering (verified 2026-07-17)" ;
     nexus:controlType "detective" ;
     nexus:lifecyclePhase "design-time" .
 
@@ -369,7 +381,7 @@ mitctrl:red-teaming
     skos:broader mitctrl:testing-auditing ;
     skos:broader mitctrl:model-safety-engineering ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database: 'Red Teaming' mitigations, categorized under Testing & Auditing (verified 2026-07-17)" ;
     nexus:controlType "detective" ;
     nexus:lifecyclePhase "development" ;
     nexus:lifecyclePhase "deployment" .
@@ -381,7 +393,7 @@ mitctrl:input-output-filtering
     skos:broader mitctrl:model-safety-engineering ;
     skos:broader mitctrl:content-safety-controls ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "expert curation (PAIR-AI); OWASP Top 10 for LLM Applications 2025, LLM01/LLM05 prevention guidance; no verbatim MIT counterpart" ;
     nexus:controlType "technical" ;
     nexus:lifecyclePhase "deployment" ;
     nexus:lifecyclePhase "operation" .
@@ -389,11 +401,12 @@ mitctrl:input-output-filtering
 mitctrl:redaction
     a nexus:RiskControl ;
     skos:prefLabel "Redaction" ;
+    skos:relatedMatch <https://w3id.org/dpv#DataRedaction> ;
     skos:definition "Removing, masking, or transforming sensitive information before it enters model context, generated output, logs, or downstream flows." ;
     skos:broader mitctrl:data-governance ;
     skos:broader mitctrl:model-safety-engineering ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "expert curation (PAIR-AI); OWASP LLM02 prevention guidance (data sanitization); DPV dpv:DataRedaction (verified 2026-07-17)" ;
     nexus:controlType "technical" ;
     nexus:lifecyclePhase "design-time" ;
     nexus:lifecyclePhase "deployment" ;
@@ -406,7 +419,7 @@ mitctrl:data-minimization
     skos:broader mitctrl:data-governance ;
     skos:broader mitctrl:access-management ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "expert curation (PAIR-AI); data minimisation principle (GDPR Art. 5(1)(c)); OWASP LLM02 prevention guidance" ;
     nexus:controlType "preventive" ;
     nexus:lifecyclePhase "design-time" ;
     nexus:lifecyclePhase "development" ;
@@ -418,7 +431,7 @@ mitctrl:data-curation-process
     skos:definition "Processes for selecting, cleaning, filtering, documenting, and governing data used by AI systems." ;
     skos:broader mitctrl:data-governance ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database: 'Training Data Curation' mitigation, categorized under Data Governance (verified 2026-07-17)" ;
     nexus:controlType "operational" ;
     nexus:lifecyclePhase "development" .
 
@@ -429,7 +442,7 @@ mitctrl:privacy-control-for-user-data
     skos:broader mitctrl:data-governance ;
     skos:broader mitctrl:access-management ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database: privacy risk mitigations, categorized under Data Governance (verified 2026-07-17)" ;
     nexus:controlType "preventive" ;
     nexus:lifecyclePhase "design-time" ;
     nexus:lifecyclePhase "deployment" .
@@ -441,7 +454,7 @@ mitctrl:retrieval-source-filtering
     skos:broader mitctrl:data-governance ;
     skos:broader mitctrl:model-safety-engineering ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "expert curation (PAIR-AI); OWASP LLM08 prevention guidance (source validation and filtering); no MIT counterpart" ;
     nexus:controlType "technical" ;
     nexus:lifecyclePhase "design-time" ;
     nexus:lifecyclePhase "deployment" .
@@ -453,7 +466,7 @@ mitctrl:retrieval-quality-evaluation
     skos:broader mitctrl:testing-auditing ;
     skos:broader mitctrl:data-governance ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "expert curation (PAIR-AI); OWASP LLM08/LLM09 prevention guidance (retrieval and grounding evaluation); no MIT counterpart" ;
     nexus:controlType "detective" ;
     nexus:lifecyclePhase "development" ;
     nexus:lifecyclePhase "deployment" .
@@ -465,7 +478,7 @@ mitctrl:prompt-context-limiting
     skos:broader mitctrl:model-safety-engineering ;
     skos:broader mitctrl:operational-process-controls ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "expert curation (PAIR-AI); OWASP LLM01/LLM10 prevention guidance (constrain model behavior; bound context, rate, and cost)" ;
     nexus:controlType "technical" ;
     nexus:lifecyclePhase "design-time" ;
     nexus:lifecyclePhase "deployment" .
@@ -477,7 +490,7 @@ mitctrl:human-oversight-protocol
     skos:broader mitctrl:governance-oversight-controls ;
     skos:broader mitctrl:user-rights-recourse ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database: human oversight mitigations, categorized under Board Structure & Oversight (verified 2026-07-17)" ;
     nexus:controlType "governance" ;
     nexus:lifecyclePhase "deployment" ;
     nexus:lifecyclePhase "operation" .
@@ -488,7 +501,7 @@ mitctrl:system-architecture-documentation
     skos:definition "Documentation of the system architecture, components, data flows, model use, limitations, and intended use." ;
     skos:broader mitctrl:system-documentation ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "expert curation (PAIR-AI); specialization of MIT 'System Documentation' (subcategory 4.1)" ;
     nexus:controlType "transparency-accountability" ;
     nexus:lifecyclePhase "design-time" .
 
@@ -498,7 +511,7 @@ mitctrl:post-deployment-behavior-monitoring
     skos:definition "Ongoing monitoring of AI system behavior, outputs, user interactions, failures, and misuse signals after deployment." ;
     skos:broader mitctrl:post-deployment-monitoring ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database: behavior/security monitoring mitigations, categorized under Post-deployment Monitoring (verified 2026-07-17)" ;
     nexus:controlType "detective" ;
     nexus:lifecyclePhase "post-deployment" .
 
@@ -509,6 +522,6 @@ mitctrl:incident-response-plan
     skos:broader mitctrl:incident-response-recovery ;
     skos:broader mitctrl:incident-reporting ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database: incident response mitigations, categorized under Incident Response & Recovery (verified 2026-07-17)" ;
     nexus:controlType "corrective" ;
     nexus:lifecyclePhase "post-deployment" .
