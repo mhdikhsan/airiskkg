@@ -621,39 +621,109 @@ Same audit method applied to `ontology/facets/` (6 files):
   curated placeholder pending the paper's authoritative unified task
   taxonomy table, now marked "user input required".
 
-## Open TODOs / known debt
+## Provenance & consistency audit — consolidated summary (2026-07-16/17)
 
-1. ~~Pre-existing verba supply-chain test failure~~ — **fixed** (Phase 3).
-2. ~~R2 leak in match_embeddings.rq~~ — **fixed** (Phase 2).
-3. ~~Undeclared/wrong-namespace roles in risk_supply_chain.rq~~ —
-   **fixed** (Phases 1+3).
-4. ~~OECD `skos:exactMatch` URIs for autonomy/data facets~~ — **resolved as
-   documented decision** (2026-07-17 facet audit): verified the OECD
-   publishes no resolvable concept URIs (report/PDF only); OECD anchoring
-   is citation-level (`dct:source` with DOI + named dimension/task type),
-   speculative TODO markers removed.
-5. `task.ttl` second-level concepts are curated placeholders — reconcile with
-   the paper's authoritative unified task taxonomy table before freeze.
-6. ~~`pat:VectorBasedInformationRetrievalMotif` provenance placeholder~~ —
-   **fixed** (2026-07-17 motif audit): grounded as the retrieval stage of
-   the RAG/Retriever pattern (martinfowler.com) + OWASP LLM08 scope.
-7. `docs/notes/*.md` still describe the pre-rename (v1) vocabulary; the
-   glossary is authoritative, notes not yet rewritten.
-8. TÜV AI.ST mappings still on hold (license unverified).
-9. SSSOM export for the taxonomy mappings not yet generated (R6 mentions it;
-   not in scope of Tasks 1–7).
-10. **D5 (new)**: finding-identity dedup — risk findings are keyed per motif
-    match, so one generation step bound by several matches yields several
-    near-identical improper-output-handling findings. Decide whether finding
-    IRIs should key on the evidence elements instead (semantic change to all
-    risk queries' BIND clauses — needs sign-off).
-11. **D3 (decided: keep strict match-anchoring)**: generation-path risk
-    patterns (system-prompt-leakage, improper-output-handling) only fire when
-    the generation path is match-bound. uc6's SystemPrompt annotation still
-    yields no leakage finding because uc6's generation step is bound by no
-    motif; uc6 would need either a DirectPrompting/RAG-shaped generation leg
-    or a future annotation pass.
-12. Unimplemented motifs (17 MLOps/Boxology motifs, GuardrailsMotif) and
-    `MisinformationFromWeakGroundingRiskPattern` still have no OQPs —
-    declared knowledge awaiting implementation, guarded by the consistency
-    net.
+End-to-end audit of the LLM-curated knowledge stack for hallucinated,
+fabricated, or unevidenced content. This section is the one-stop record;
+the per-layer sections above hold the details.
+
+**Method** (applied uniformly to every layer):
+
+1. Download the claimed source (never cite from memory): Tool4Boxology
+   vendored ontology, DPV v2.3 + AI extension, AIRO, the IBM AI Atlas
+   Nexus YAMLs and SSSOM mapping sets, all 13 Mercari pattern pages, the
+   martinfowler.com GenAI patterns article, OECD publications.
+2. Mechanically cross-reference every URI, mapping, tag, and citation
+   against the downloaded evidence (scripts over RDFLib + YAML/TSV).
+3. Classify each item: upstream-verified / evidence-corrected /
+   honestly-curated (rationale stated in-file) / fabricated (removed).
+4. Gate every change on the firing matrix (must be explainable; it stayed
+   byte-identical through the whole audit) and the pytest consistency net,
+   which was extended so recurrence becomes a test failure.
+
+**Results by layer** (one commit each):
+
+| Layer | Commit | Verdict | Key fixes |
+| --- | --- | --- | --- |
+| Role vocabulary (`pair_ai_pattern.ttl`) | `e8a08ef` | Distilled from real catalogs, not free-invented | Every role sourced + SKOS-mapped (T4B/DPV-AI/AIRO/DPV); 10 deprecated aliases + 4 dead roles removed; Boxology wording |
+| Taxonomies + mappings (`ontology/taxonomy/`) | `881c027` | Concepts real; **cross-taxonomy links were the fabrication hotspot** | Mapping file split into upstream-SSSOM vs curated tiers; contradicted links removed; `atlas:data-poisoning` added; 9/10 wrong `nexus:tag` ids fixed; 16 pseudo-MIT controls re-provenanced; 14 deprecated aliases removed; SensitiveData `hasMotif` drift fixed |
+| Motif library (`motif.ttl`) | `329f487` | Clean — all 24 motifs trace to verified published patterns | VectorIR motif grounded (was the one unattributed motif); provenance policy in header |
+| Facet layer (`ontology/facets/`) | `92d426b` | Clean — all 35 SKOS targets verify | Nonexistent OECD "Context dimension" citation corrected; speculative OECD-URI TODOs → documented citation-level decision |
+| Consistency net (`python/tests/`) | `d6e5023` + `881c027` | — | 9 → 13 checks; anchor-alignment now enforced (mechanism, conditions, controls, taxonomy entries must align with each pattern's OWASP anchor) |
+
+End state: suite **42 passed / 0 failed**; firing matrix unchanged
+throughout (onyx 13 matches / 22 findings, uc6 3/7, verba 6/12); every
+remaining `"expert curation"` label is deliberate and carries a rationale.
+
+**What the audit deliberately did NOT cover**: the example graphs
+(`onyx_danswer.ttl`, `verba_goldenverba.ttl`, `uc6.ttl`) are project-
+authored models of real systems — their fidelity to the actual codebases
+(which store really holds confidential data, which step really reranks)
+was not audited and is a modeling responsibility, not a vocabulary one.
+Likewise `nexus_taxonomy_core.ttl` is a project-defined meta-vocabulary
+(adapted from the Nexus data model), not an external standard — say so if
+published.
+
+## Open items
+
+### Needs user decision or input
+
+1. `task.ttl` second-level concepts are curated placeholders — reconcile
+   with the paper's authoritative unified task taxonomy table before
+   freeze (table not in repository; marked "user input required" in-file).
+2. **D5 finding-identity dedup**: findings are keyed per motif match, so
+   one generation step bound by several matches yields near-duplicate
+   improper-output-handling findings. Re-keying on evidence elements is a
+   semantic change to all risk queries' BIND clauses — needs sign-off.
+3. Role-hierarchy question: `pair:FoundationLLM` is a sub-role of `Model`
+   but not of `GenerativeModel`; making it one is cleaner but widens every
+   query that targets GenerativeModel — needs sign-off.
+4. `pair:ThirdPartyPackage` is declared (OWASP LLM03-sourced, part of the
+   guided ExternalDependency picker family) but used by no query or
+   example — keep for guidance or drop.
+5. Curated mapping rows (Section 2 of `taxonomy_mapping.ttl`, esp. the
+   owasp↔MIT links — no upstream OWASP↔MIT mapping set exists anywhere)
+   are the project's own contribution; decide whether to present them as
+   such in the paper (and/or propose them upstream to AI Atlas Nexus).
+6. TÜV AI.ST mappings still on hold (license unverified).
+
+### Engineering debt (no user input needed, not yet done)
+
+1. **Facet operationalization** (user is implementing): only Data Category
+   is read by conditions today; autonomy/context/data facets have no
+   consuming applicability condition, the workbench has no system-level
+   facet annotation panel, and the SHACL shapes don't validate facet
+   values against their schemes.
+2. **D3 consequence**: uc6's SystemPrompt yields no leakage finding
+   because uc6's generation step is bound by no motif (strict
+   match-anchoring kept by decision); uc6 needs a DirectPrompting/
+   RAG-shaped generation leg or an annotation pass.
+3. Unimplemented OQPs: 17 MLOps/Boxology motifs, GuardrailsMotif,
+   EvalsMotif, and `MisinformationFromWeakGroundingRiskPattern` are
+   declared knowledge without executable queries (guarded by the
+   consistency net; ExcessiveAgency additionally has no motif at all —
+   an agentic tool-use motif is missing from the library).
+4. Upstream-fidelity regression: the audit verified against downloaded
+   upstream data manually; the consistency net only checks *internal*
+   coherence. Vendoring the upstream Nexus YAML/SSSOM snapshots (e.g.
+   under `external/`) would let a test re-verify upstream fidelity
+   offline and detect upstream drift.
+5. SSSOM export of our own mappings not yet generated (R6) — now more
+   pointed, since we verified *against* SSSOM; exporting Section 1/2 of
+   `taxonomy_mapping.ttl` as SSSOM (with `mapping_justification` =
+   curation tier) closes the loop and strengthens the FAIR story.
+6. Pattern roles have no `skos:ConceptScheme` / `skos:inScheme` (the
+   Data Category facet has one) — FAIR polish for publication.
+7. `ontology/alignments/` should be re-checked against the 2026-07-16
+   direction decision (BEAM specializes the published Tool4Boxology, not
+   vice versa) — axioms and comments must state that direction.
+8. `docs/notes/*.md` still describe the pre-rename (v1) vocabulary.
+
+### Fixed (audit trail)
+
+- ~~verba supply-chain test failure~~ (Phase 3) · ~~R2 leak in
+  match_embeddings~~ (Phase 2) · ~~undeclared/wrong-namespace roles~~
+  (Phases 1+3) · ~~OECD URI TODOs~~ (facet audit, documented decision) ·
+  ~~VectorIR motif provenance~~ (motif audit) · ~~deprecated aliases,
+  dead roles, fabricated taxonomy links, pseudo-MIT control provenance,
+  wrong OWASP tags~~ (vocabulary + taxonomy audits).
