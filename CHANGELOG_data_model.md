@@ -442,6 +442,64 @@ pattern library / queries / examples). Six commits, one per phase:
 End state: full suite **38 passed, 0 failed** (verba test green for the
 first time); SHACL 0 violations on all examples; consistency net green.
 
+## Vocabulary provenance audit — pair_ai_pattern.ttl (2026-07-17)
+
+User-requested audit of the pattern-role vocabulary for LLM-fabricated or
+ambiguous concepts, with reuse of established vocabularies as the goal
+(publication argument: every term is either reused or traceably curated).
+
+**Provenance grounding (main change).** Every remaining role now carries a
+`dct:source` and, where a verified counterpart exists, a SKOS mapping.
+All mapping targets were checked against downloaded copies of the
+vocabularies (never cited from memory):
+
+- **Tool4Boxology** (`t4b:`, vendored): `Model` (closeMatch), `Process`→
+  ProcessingStep (closeMatch), `Embed`→EmbeddingStep (closeMatch),
+  `Infer`→Generation/PredictionStep, `Transform`→Chunking/PromptConstruction/
+  QueryReformulation/Preprocessing, `Artifact`→ResourceRole, `KG`/`DB`→
+  KnowledgeSource/stores, `Tensor`→EmbeddingVector,
+  `SelfSupervisedEmbeddingModel`→EmbeddingModel, `Train`→TrainingStep.
+- **DPV-AI** (`ai:`, verified 2026-07-16): `LLM`→FoundationLLM (closeMatch),
+  `FineTunedModel` (closeMatch), `TrainedModel`→PretrainedModel (broadMatch) /
+  ModelArtifact, `GPAIModel` (EU AI Act)→Pretrained/FoundationLLM,
+  `GenAI`→GenerativeModel, `InformationRetrieval`→Retrieval/search steps,
+  `NaturalLanguageGeneration`→GenerationStep, `ModelTraining`/`ModelFineTuning`
+  (closeMatch)→Training/FineTuningStep, `DataPreparation`→PreprocessingStep,
+  `Benchmarking`→EvaluationStep, `DeploymentStage`→DeploymentStep,
+  `TrainingData` (closeMatch)→TrainingDataset.
+- **AIRO** (`airo:`, verified 2026-07-16): `RiskControl` (ISO/IEC 31073,
+  3.3.33)→ControlStep, `Input`→UserInput, `Output`→UserFacingOutput,
+  `AIModel`→Model. DPV core: `RiskMitigationMeasure`→ControlStep,
+  `ProvidedData`→UserInput.
+- **Pattern-catalog roles** now cite the catalog page that introduced them
+  (same URLs as the motifs that use them): Mercari ML system design patterns
+  (all MLOps serving/training/operation roles) and martinfowler.com GenAI
+  patterns (all RAG/GenAI roles). Derived mechanically from each motif's
+  `dct:source` — the role vocabulary was distilled from these published
+  catalogs, not free-invented.
+- Remaining `"expert curation"` labels are now honest and few
+  (PublicUserInput, PublicUserFacingOutput, Information,
+  ExternalUserContent, PromptInstruction, UntrustedContent, TrustedContent).
+
+**Removed (unused + unsourced):** the 10 deprecated v1.1 aliases
+(`MotifInterpretation`, `AIRiskPattern`, `GraphCondition`,
+`hasInterpretation`, `interpretsMotif`, `hasInterpretationCondition`,
+`interpretedAsMechanism`, `implementsInterpretation`,
+`hasInterpretedMechanism`, `hasEvidenceElement` — one release elapsed,
+zero references outside generated outputs) and 4 roles referenced by no
+query, motif, or example (`GuardrailModel`, `VectorRepresentation`,
+`EvaluatedOutput`, `EvalDataset` — supersedes the D4 "keep" decision;
+re-add with the Guardrails/Evals OQPs if needed). "Formerly named …"
+migration comments removed with them.
+
+**Boxology wording:** comments now say "Boxology class/flow predicate
+(beam: namespace)" instead of "BEAM" — direction memo: BEAM specializes
+the published Tool4Boxology, not vice versa (applies to future alignment
+work too).
+
+Verification: TTL parses (744 triples); suite 38/38; firing matrix
+identical (onyx 13/22, uc6 3/7, verba 6/12) — all removals were dead URIs.
+
 ## Open TODOs / known debt
 
 1. ~~Pre-existing verba supply-chain test failure~~ — **fixed** (Phase 3).
