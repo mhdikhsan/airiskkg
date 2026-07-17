@@ -10,7 +10,7 @@
     a owl:Ontology ;
     dct:title "PAIR-AI Characterization Facet: AI Task"@en ;
     dct:description "SKOS concept scheme implementing the PAIR-AI unified task taxonomy: the functional input-to-output relation performed by a functional unit (Rule R1). Assigned via facet:hasTaskCategory. Rule R7: Task, Capability (VAIR), and Application Type (OECD) are three separate axes, SKOS-mapped, never merged. NOTE: no mapping to the TUEV AI.ST taxonomy is included; its license/citability is unverified (on hold)."@en ;
-    dct:source "PAIR-AI unified task taxonomy (expert curation); OECD (2022). OECD Framework for the Classification of AI Systems (Task & Output dimension)." ;
+    dct:source "PAIR-AI unified task taxonomy (expert curation); OECD (2022). OECD Framework for the Classification of AI Systems, Task & Output dimension. https://doi.org/10.1787/cb6d9eca-en" ;
     dct:source <https://w3id.org/dpv/ai> ;
     vann:preferredNamespacePrefix "task" ;
     vann:preferredNamespaceUri "http://w3id.org/airiskkg/facets/task#" .
@@ -25,14 +25,21 @@ task:AITask
 # --- Top level ------------------------------------------------------------
 # Second-level concepts below are curated placeholders: the authoritative
 # second level of the unified task taxonomy is not yet in this repository.
-# TODO: reconcile with the paper's task taxonomy table before freeze.
-# TODO: skos:broadMatch / skos:relatedMatch toward OECD task categories
-# (recognition, event detection, forecasting, personalisation, interaction
-# support, goal-driven optimisation, reasoning with knowledge structures)
-# once resolvable OECD URIs exist.
-# DPV AI extension mappings added where verified (2026-07-15). No DPV AI
-# counterpart exists for: Recommendation, Forecasting, Anomaly Detection,
-# Code Generation, Embedding Computation - left unmapped, do not force.
+# TODO (user input required): reconcile with the paper's task taxonomy
+# table before freeze.
+# DECISION (2026-07-17 facet audit): the OECD publishes no resolvable
+# concept URIs for its Task & Output task types (report/PDF only, verified
+# via oecd.ai) - so OECD anchoring is citation-level: each top-level
+# concept names its OECD task-type correspondence in dct:source instead of
+# carrying a speculative SKOS mapping. RetrievalAndRanking and
+# GenerationAndTransformation have NO OECD counterpart (the 2022 task
+# typology predates GenAI-era retrieval/generation tasks) - stated
+# explicitly rather than force-fitted.
+# DPV AI extension mappings verified against the downloaded DPV v2.3 +
+# AI extension (2026-07-15; re-verified 2026-07-17, all 17 targets
+# resolve). No DPV AI counterpart exists for: Recommendation, Forecasting,
+# Anomaly Detection, Code Generation, Embedding Computation - left
+# unmapped, do not force.
 
 task:PerceptionAndRecognition
     a skos:Concept ;
@@ -40,10 +47,9 @@ task:PerceptionAndRecognition
     skos:topConceptOf task:AITask ;
     skos:prefLabel "Perception and Recognition"@en ;
     skos:definition "Recognizing patterns, objects, or structure in unstructured input signals (images, audio, text, sensor data)."@en ;
-    dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    dct:source "PAIR-AI unified task taxonomy (expert curation); corresponds to OECD Task & Output task type \'Recognition\' (citation-level, no resolvable OECD URI)." ;
     skos:relatedMatch ai:PatternRecognition ;
     skos:narrower task:ImageClassification , task:ObjectDetection , task:SpeechRecognition , task:NamedEntityRecognition .
-    # TODO: skos:broadMatch toward OECD "Recognition" task category.
 
 task:ImageClassification a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:PerceptionAndRecognition ;
     skos:prefLabel "Image Classification"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
@@ -64,7 +70,7 @@ task:RetrievalAndRanking
     skos:topConceptOf task:AITask ;
     skos:prefLabel "Retrieval and Ranking"@en ;
     skos:definition "Finding and ordering relevant items from a collection given an information need (search, retrieval, reranking)."@en ;
-    dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    dct:source "PAIR-AI unified task taxonomy (expert curation); no OECD Task & Output counterpart (2022 typology predates GenAI-era tasks)." ;
     skos:closeMatch ai:InformationRetrieval ;
     skos:narrower task:DocumentRetrieval , task:VectorSimilaritySearch , task:Reranking , task:QueryReformulation .
 
@@ -83,9 +89,8 @@ task:PredictionAndForecasting
     skos:topConceptOf task:AITask ;
     skos:prefLabel "Prediction and Forecasting"@en ;
     skos:definition "Estimating unknown values or future states from historical or contextual data."@en ;
-    dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    dct:source "PAIR-AI unified task taxonomy (expert curation); corresponds to OECD Task & Output task type \'Forecasting\' (citation-level, no resolvable OECD URI)." ;
     skos:narrower task:Regression , task:Classification , task:TimeSeriesForecasting .
-    # TODO: skos:broadMatch toward OECD "Forecasting" task category.
 
 task:Regression a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:PredictionAndForecasting ;
     skos:prefLabel "Regression"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
@@ -100,9 +105,8 @@ task:AnomalyAndEventDetection
     skos:topConceptOf task:AITask ;
     skos:prefLabel "Anomaly and Event Detection"@en ;
     skos:definition "Detecting deviations, events, or state changes in data streams or collections."@en ;
-    dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    dct:source "PAIR-AI unified task taxonomy (expert curation); corresponds to OECD Task & Output task type \'Event detection\' (citation-level, no resolvable OECD URI)." ;
     skos:narrower task:OutlierDetection , task:DriftDetection , task:FraudDetection .
-    # TODO: skos:broadMatch toward OECD "Event detection" task category.
 
 task:OutlierDetection a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:AnomalyAndEventDetection ;
     skos:prefLabel "Outlier Detection"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
@@ -117,7 +121,7 @@ task:GenerationAndTransformation
     skos:topConceptOf task:AITask ;
     skos:prefLabel "Generation and Transformation"@en ;
     skos:definition "Producing new content or transforming content between forms (text, code, images, audio, translations, summaries)."@en ;
-    dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    dct:source "PAIR-AI unified task taxonomy (expert curation); no OECD Task & Output counterpart (2022 typology predates GenAI-era tasks)." ;
     skos:relatedMatch ai:ContentGeneration ;
     skos:narrower task:TextGeneration , task:Summarization , task:Translation , task:CodeGeneration , task:ImageGeneration , task:EmbeddingComputation .
 
@@ -144,9 +148,8 @@ task:DecisionOptimizationControl
     skos:topConceptOf task:AITask ;
     skos:prefLabel "Decision, Optimization, and Control"@en ;
     skos:definition "Selecting actions, allocating resources, or controlling processes toward goals under constraints."@en ;
-    dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    dct:source "PAIR-AI unified task taxonomy (expert curation); corresponds to OECD Task & Output task type \'Goal-driven optimisation\' (citation-level, no resolvable OECD URI)." ;
     skos:narrower task:DecisionSupport , task:ResourceOptimization , task:ProcessControl .
-    # TODO: skos:broadMatch toward OECD "Goal-driven optimisation" task category.
 
 task:DecisionSupport a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:DecisionOptimizationControl ;
     skos:prefLabel "Decision Support"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
@@ -161,9 +164,8 @@ task:ReasoningOverKnowledge
     skos:topConceptOf task:AITask ;
     skos:prefLabel "Reasoning over Knowledge"@en ;
     skos:definition "Deriving conclusions from structured knowledge (ontologies, knowledge graphs, rules) or combining knowledge with learned models."@en ;
-    dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    dct:source "PAIR-AI unified task taxonomy (expert curation); corresponds to OECD Task & Output task type \'Reasoning with knowledge structures\' (citation-level, no resolvable OECD URI)." ;
     skos:narrower task:DeductiveReasoning , task:KnowledgeGraphCompletion , task:QuestionAnsweringOverKnowledge .
-    # TODO: skos:broadMatch toward OECD "Reasoning with knowledge structures" task category.
 
 task:DeductiveReasoning a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:ReasoningOverKnowledge ;
     skos:prefLabel "Deductive Reasoning"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .
@@ -179,10 +181,9 @@ task:InteractionAndDialogue
     skos:topConceptOf task:AITask ;
     skos:prefLabel "Interaction and Dialogue"@en ;
     skos:definition "Conducting multi-turn interaction with users or other agents in natural language or other modalities."@en ;
-    dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    dct:source "PAIR-AI unified task taxonomy (expert curation); corresponds to OECD Task & Output task type \'Interaction support\' (citation-level, no resolvable OECD URI)." ;
     skos:relatedMatch ai:DialogueManagement ;
     skos:narrower task:ConversationalAssistance , task:TaskOrientedDialogue , task:AgentToolUse .
-    # TODO: skos:broadMatch toward OECD "Interaction support" task category.
 
 task:ConversationalAssistance a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:InteractionAndDialogue ;
     skos:prefLabel "Conversational Assistance"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
@@ -198,10 +199,9 @@ task:PersonalizationAndProfiling
     skos:topConceptOf task:AITask ;
     skos:prefLabel "Personalization and Profiling"@en ;
     skos:definition "Adapting outputs to individuals or groups based on inferred characteristics, preferences, or behavior."@en ;
-    dct:source "PAIR-AI unified task taxonomy (expert curation)." ;
+    dct:source "PAIR-AI unified task taxonomy (expert curation); corresponds to OECD Task & Output task type \'Personalisation\' (citation-level, no resolvable OECD URI)." ;
     skos:relatedMatch ai:Profiling ;
     skos:narrower task:Recommendation , task:UserProfiling , task:ContentPersonalization .
-    # TODO: skos:broadMatch toward OECD "Personalisation" task category.
 
 task:Recommendation a skos:Concept ; skos:inScheme task:AITask ; skos:broader task:PersonalizationAndProfiling ;
     skos:prefLabel "Recommendation"@en ; dct:source "PAIR-AI unified task taxonomy (expert curation)." .

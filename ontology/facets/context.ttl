@@ -39,7 +39,7 @@ ctx:DeploymentSetting
     a skos:ConceptScheme ;
     skos:prefLabel "Deployment Setting"@en ;
     skos:definition "Operational setting in which the system is deployed (e.g. internal tool, public-facing service, safety-critical environment, regulated environment). Extension point: concrete settings are added per use case."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Context dimension)." .
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems, Economic Context dimension (criticality of function, breadth of deployment). https://doi.org/10.1787/cb6d9eca-en. Corrected 2026-07-17: previously cited a nonexistent 'Context dimension'; the framework's five dimensions are People & Planet, Economic Context, Data & Input, AI Model, Task & Output." .
     # Checked against DPV v2.3 (2026-07-15): the DPV context module covers
     # statuses, durations, frequencies, and locations - it has no
     # deployment-setting counterpart, so the starter concepts below remain
