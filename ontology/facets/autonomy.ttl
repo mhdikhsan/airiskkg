@@ -20,7 +20,14 @@ aut:AutonomyLevel
     skos:prefLabel "Autonomy Level"@en ;
     skos:definition "Degree of action autonomy of an AI system: how much the system can act on its outputs without a human in the decision path. SKOS-mapped to the DPV automation levels (dpv:AutomationLevel, aligned to ISO/IEC 22989:2022) and human-involvement concepts; the four PAIR-AI levels are coarser than the seven ISO levels, so mappings are close/narrow/related, never exact (verified against DPV v2.3, 2026-07-15)."@en ;
     skos:relatedMatch dpv:AutomationLevel , dpv:HumanInvolvement ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. https://doi.org/10.1787/cb6d9eca-en" .
+
+# DECISION (2026-07-17 facet audit): the OECD framework is published as a
+# report only - the OECD provides no resolvable concept URIs for its
+# classification values (verified via oecd.ai / OECD publications). The
+# OECD anchoring is therefore the dct:source citation above, not a SKOS
+# mapping; the former "exactMatch once URIs exist" TODO markers were
+# speculative and have been removed.
 
 aut:NoActionAutonomy
     a skos:Concept ;
@@ -30,7 +37,6 @@ aut:NoActionAutonomy
     skos:definition "The system produces outputs (predictions, recommendations, content) but takes no actions itself; all actions are performed by humans."@en ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
     skos:relatedMatch dpv:AssistiveAutomation .
-    # TODO: skos:exactMatch <OECD concept URI> once the OECD publishes resolvable URIs for autonomy levels.
 
 aut:LowActionAutonomy
     a skos:Concept ;
@@ -42,7 +48,6 @@ aut:LowActionAutonomy
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
     skos:closeMatch dpv:PartialAutomation ;
     skos:relatedMatch dpv:HumanInvolvementForDecision .
-    # TODO: skos:exactMatch <OECD concept URI> once available.
 
 aut:MediumActionAutonomy
     a skos:Concept ;
@@ -54,7 +59,6 @@ aut:MediumActionAutonomy
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
     skos:closeMatch dpv:ConditionalAutomation ;
     skos:relatedMatch dpv:HumanInvolvementForOversight , dpv:HumanInvolvementForIntervention .
-    # TODO: skos:exactMatch <OECD concept URI> once available.
 
 aut:HighActionAutonomy
     a skos:Concept ;
@@ -66,4 +70,3 @@ aut:HighActionAutonomy
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
     skos:narrowMatch dpv:HighAutomation , dpv:FullAutomation , dpv:Autonomous ;
     skos:relatedMatch dpv:HumanNotInvolved .
-    # TODO: skos:exactMatch <OECD concept URI> once available.

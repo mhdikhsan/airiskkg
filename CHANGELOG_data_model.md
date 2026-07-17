@@ -593,14 +593,45 @@ Same audit method applied to `motif.ttl` (24 motifs, 139 nodes, 134 edges):
   risk-side scope. Ontology header now states the provenance policy
   (motifs are cited distillations, verified 2026-07-17).
 
+## Facet layer audit (2026-07-17)
+
+Same audit method applied to `ontology/facets/` (6 files):
+
+- **All 35 SKOS mapping targets verified**: every `skos:*Match` in
+  autonomy/context/data_facets/implementation_type/task resolves in the
+  downloaded DPV v2.3 / DPV-AI vocabularies (autonomy's automation levels,
+  the 17 task↔ai: mappings, data provenance closeMatches, `dpv:Purpose`,
+  `ai:Technique`, …). Zero hallucinated URIs.
+- **OECD decision (closes debt item 4)**: verified via oecd.ai that the
+  OECD Framework for the Classification of AI Systems exists only as a
+  report — no resolvable concept URIs. All "exactMatch once OECD publishes
+  URIs" TODO markers replaced by a documented decision: OECD anchoring is
+  citation-level. Each task top-level concept now names its OECD Task &
+  Output task type in `dct:source` (Recognition, Event detection,
+  Forecasting, Personalisation, Interaction support, Goal-driven
+  optimisation, Reasoning with knowledge structures);
+  RetrievalAndRanking and GenerationAndTransformation explicitly state
+  they have NO OECD counterpart (2022 typology predates GenAI-era tasks)
+  rather than force-fitting one.
+- **Fabricated citation fixed**: `ctx:DeploymentSetting` cited a
+  nonexistent OECD "Context dimension" — corrected to the Economic
+  Context dimension (criticality of function, breadth of deployment),
+  with the framework's five real dimensions named in the correction note.
+- **Still user-blocked (debt item 5)**: task.ttl's second level remains a
+  curated placeholder pending the paper's authoritative unified task
+  taxonomy table, now marked "user input required".
+
 ## Open TODOs / known debt
 
 1. ~~Pre-existing verba supply-chain test failure~~ — **fixed** (Phase 3).
 2. ~~R2 leak in match_embeddings.rq~~ — **fixed** (Phase 2).
 3. ~~Undeclared/wrong-namespace roles in risk_supply_chain.rq~~ —
    **fixed** (Phases 1+3).
-4. OECD `skos:exactMatch` URIs for autonomy/data facets: TODO markers (no
-   resolvable OECD concept URIs found).
+4. ~~OECD `skos:exactMatch` URIs for autonomy/data facets~~ — **resolved as
+   documented decision** (2026-07-17 facet audit): verified the OECD
+   publishes no resolvable concept URIs (report/PDF only); OECD anchoring
+   is citation-level (`dct:source` with DOI + named dimension/task type),
+   speculative TODO markers removed.
 5. `task.ttl` second-level concepts are curated placeholders — reconcile with
    the paper's authoritative unified task taxonomy table before freeze.
 6. ~~`pat:VectorBasedInformationRetrievalMotif` provenance placeholder~~ —

@@ -29,7 +29,9 @@ dataf:ExpertInput
     skos:prefLabel "Expert Input"@en ;
     skos:definition "Data encoding human expert knowledge (e.g. rules, labels, curated knowledge) provided by domain experts."@en ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
-    # TODO: skos:exactMatch <OECD concept URI> once available.
+    # DECISION (2026-07-17 facet audit): the OECD publishes no resolvable
+    # concept URIs (report/PDF only, verified via oecd.ai); OECD anchoring
+    # throughout this file is the citation, not a SKOS mapping.
 
 dataf:ProvidedData
     a skos:Concept ;
