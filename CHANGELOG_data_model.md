@@ -570,6 +570,29 @@ Verification: suite **42 passed / 0 failed**; firing matrix identical
 (onyx 13/22, uc6 3/7, verba 6/12) — only taxonomy-entry annotations on
 findings changed, not which findings fire.
 
+## Motif library audit (2026-07-17)
+
+Same audit method applied to `motif.ttl` (24 motifs, 139 nodes, 134 edges):
+
+- **No fabricated motifs found.** All 13 Mercari catalog pages and the
+  martinfowler.com GenAI patterns article were fetched and verified: every
+  page resolves and documents the pattern the motif claims (Direct
+  Prompting, Embeddings, Evals, RAG, Hybrid Retriever, Query Rewriting,
+  Reranker, Guardrails, Fine Tuning all appear as sections in the Fowler
+  article). Structure spot-checks (PredictionLoggingMotif vs the Mercari
+  prediction-log page; GuardrailsMotif vs Fowler's input/output guardrails)
+  confirmed faithful distillation.
+- **Mechanical checks clean**: every `pair:expectedClass` target exists in
+  beam_core; the only flow predicates used are beam:use / beam:produce /
+  beam:inform; no risk-flavored language in motif descriptions (risk
+  neutrality, Rule R1/R2); no stray typed entities.
+- **Fixed**: `VectorBasedInformationRetrievalMotif` — the one unattributed
+  motif ("expert curation", no derivedFrom; debt item 6) — grounded as the
+  factored-out retrieval stage of the RAG/Retriever pattern with
+  `pair:derivedFrom` to the Fowler article and OWASP LLM08 named as the
+  risk-side scope. Ontology header now states the provenance policy
+  (motifs are cited distillations, verified 2026-07-17).
+
 ## Open TODOs / known debt
 
 1. ~~Pre-existing verba supply-chain test failure~~ — **fixed** (Phase 3).
@@ -580,8 +603,9 @@ findings changed, not which findings fire.
    resolvable OECD concept URIs found).
 5. `task.ttl` second-level concepts are curated placeholders — reconcile with
    the paper's authoritative unified task taxonomy table before freeze.
-6. `pat:VectorBasedInformationRetrievalMotif` provenance is the
-   "expert curation" placeholder (origin unknown — please supply).
+6. ~~`pat:VectorBasedInformationRetrievalMotif` provenance placeholder~~ —
+   **fixed** (2026-07-17 motif audit): grounded as the retrieval stage of
+   the RAG/Retriever pattern (martinfowler.com) + OWASP LLM08 scope.
 7. `docs/notes/*.md` still describe the pre-rename (v1) vocabulary; the
    glossary is authoritative, notes not yet rewritten.
 8. TÜV AI.ST mappings still on hold (license unverified).

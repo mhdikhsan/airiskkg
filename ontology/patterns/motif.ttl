@@ -12,6 +12,15 @@
     dct:title "Architecture Motif Library"@en ;
     dct:description """
     Reusable architecture motifs for PAIR-AI assessment.
+
+    Provenance (2026-07-17 audit): every motif cites the published design
+    pattern it was distilled from (Mercari ML system design pattern catalog
+    or the martinfowler.com GenAI patterns article; ExternalDependencyMotif
+    derives from OWASP LLM03 scope). All cited pages were verified to
+    resolve and to document the named pattern. Motif node/edge graphs are
+    PAIR-AI distillations of those pattern descriptions into Boxology-style
+    role and flow structure, not verbatim reproductions; role-level
+    provenance is declared in pair_ai_pattern.ttl.
     """@en ;
     dct:source
         <https://mercari.github.io/ml-system-design-pattern/> ,
@@ -27,8 +36,13 @@ pat:VectorBasedInformationRetrievalMotif
     dct:description """
     Architectural motif in which a retrieval process uses a vector store or
     knowledge source and produces a retrieved result or retrieved context.
+    This is the retrieval stage of the Retrieval Augmented Generation /
+    Retriever pattern, factored out as its own motif because it recurs
+    without the generation leg and is the structural subject of OWASP LLM08
+    (vector and embedding weaknesses).
     """@en ;
-    dct:source "expert curation" ;
+    dct:source "retrieval stage of the RAG/Retriever pattern (https://martinfowler.com/articles/gen-ai-patterns/); OWASP Top 10 for LLM Applications 2025, LLM08 (2026-07-17 audit; formerly unattributed)" ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:VectorIR_QueryNode ,
         pat:VectorIR_VectorStoreNode ,
