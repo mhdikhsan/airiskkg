@@ -240,6 +240,17 @@ atlas:data-curation a nexus:Risk ;
     nexus:riskType "training-data" ;
     nexus:descriptor "traditional risk of AI" .
 
+atlas:data-poisoning a nexus:Risk ;
+    skos:prefLabel "Data poisoning" ;
+    skos:definition "An adversary or malicious insider injects intentionally corrupted, false, misleading, or incorrect samples into the training or fine-tuning datasets." ;
+    skos:broader atlas:robustness ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:robustness ;
+    nexus:tag "data-poisoning" ;
+    nexus:riskType "training-data" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/data-poisoning.html> .
+
 atlas:data-usage-restrictions a nexus:Risk ;
     skos:prefLabel "Data usage restrictions" ;
     skos:definition "Legal or policy restrictions may limit whether certain data can be used for an AI use case." ;

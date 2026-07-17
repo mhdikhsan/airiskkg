@@ -222,10 +222,15 @@ pat:DirectPromptingMotif
 pat:RetrievalAugmentedGenerationMotif
     pair:hasRiskPattern
         pat:PromptInjectionRiskPattern ,
-        pat:SensitiveDataRetrievalExposureRiskPattern ,
         pat:VectorAndEmbeddingWeaknessRiskPattern ,
         pat:MisinformationFromWeakGroundingRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
+
+# 2026-07-17 audit: SensitiveDataRetrievalExposure re-anchored here — its OQP
+# (risk_sensitive_retrieval.rq) consumes VectorBasedInformationRetrievalMotif
+# matches, not RAG matches; the declaration now matches the implementation.
+pat:VectorBasedInformationRetrievalMotif
+    pair:hasRiskPattern pat:SensitiveDataRetrievalExposureRiskPattern .
 
 pat:EmbeddingsMotif
     pair:hasRiskPattern
@@ -282,8 +287,7 @@ pat:PromptInjectionRiskPattern
     pair:mayIndicateRisk
         owasp:llm01-prompt-injection ,
         atlas:prompt-injection ,
-        mit:subdomain-2-2 ,
-        mit:subdomain-4-3 ;
+        mit:subdomain-2-2 ;
     pair:suggestedControl
         pat:Control_InputValidationAndPromptIsolation ,
         pat:Control_Guardrails ,
@@ -299,8 +303,14 @@ pat:SensitiveDataRetrievalExposureRiskPattern
     pair:derivedFrom owasp:llm02-sensitive-information-disclosure ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Sensitive data retrieval exposure risk pattern"@en ;
-    pair:hasMotif pat:RetrievalAugmentedGenerationMotif ;
+    pair:hasMotif pat:VectorBasedInformationRetrievalMotif ;
     pair:hasMechanism owasp:mechanism-sensitive-data-propagation ;
+    # The retrieval condition below operationalizes LLM08-defined risk
+    # conditions although this pattern anchors to LLM02: the OQP genuinely
+    # gates on vector-store retrieval reaching generation, which is the
+    # retrieval-specific route to sensitive-information disclosure.
+    # Conditions are reusable constituents; this cross-anchor reuse is
+    # deliberate and allowed as a documented exception in the consistency net.
     pair:hasApplicabilityCondition
         pat:SensitiveInfo_SensitiveContextCondition ,
         pat:SensitiveInfo_OutputExposureCondition ,
@@ -337,6 +347,7 @@ pat:SupplyChainCompromiseRiskPattern
     pair:hasApplicabilityCondition pat:SupplyChain_ExternalDependencyCondition ;
     pair:mayIndicateRisk
         owasp:llm03-supply-chain ,
+        atlas:data-curation ,
         mit:subdomain-2-2 ,
         mit:subdomain-7-3 ,
         mit:subdomain-7-4 ;
@@ -361,9 +372,12 @@ pat:DataAndModelPoisoningRiskPattern
         pat:TrainingToServingMotif ;
     pair:hasMechanism owasp:mechanism-data-or-model-poisoning ;
     pair:hasApplicabilityCondition pat:Poisoning_UntrustedTrainingOrIndexingDataCondition ;
+    # 2026-07-17 audit: atlas:data-curation moved to the supply-chain pattern
+    # (upstream Nexus maps it to llm03); atlas:data-poisoning is the
+    # upstream-verified llm04 anchor (broadMatch, ibm2owasp.tsv).
     pair:mayIndicateRisk
         owasp:llm04-data-and-model-poisoning ,
-        atlas:data-curation ,
+        atlas:data-poisoning ,
         mit:subdomain-2-2 ,
         mit:subdomain-7-3 ,
         mit:subdomain-1-3 ;
@@ -392,12 +406,13 @@ pat:ImproperOutputHandlingRiskPattern
         pat:GuardrailsMotif ;
     pair:hasMechanism owasp:mechanism-unsafe-output-propagation ;
     pair:hasApplicabilityCondition pat:ImproperOutputHandling_UnvalidatedOutputCondition ;
+    # 2026-07-17 audit: atlas:evasion-attack removed (upstream Nexus mapping
+    # ties evasion attacks to model-input perturbation, not output handling)
+    # and mit:subdomain-7-3 removed (no defensible basis).
     pair:mayIndicateRisk
         owasp:llm05-improper-output-handling ,
-        atlas:evasion-attack ,
         mit:subdomain-2-2 ,
-        mit:subdomain-1-2 ,
-        mit:subdomain-7-3 ;
+        mit:subdomain-1-2 ;
     pair:suggestedControl
         pat:Control_OutputValidationAndSanitization ,
         pat:Control_Guardrails ,
@@ -424,8 +439,7 @@ pat:ExcessiveAgencyRiskPattern
         owasp:llm06-excessive-agency ,
         atlas:redundant-actions-agentic ,
         mit:subdomain-2-2 ,
-        mit:subdomain-5-2 ,
-        mit:subdomain-7-4 ;
+        mit:subdomain-5-2 ;
     pair:suggestedControl
         pat:Control_ToolPermissionBoundaries ,
         pat:Control_RateLimitBudgetAndLoopControl ,
@@ -453,8 +467,7 @@ pat:SystemPromptLeakageRiskPattern
         atlas:prompt-leaking ,
         atlas:confidential-data-in-prompt ,
         mit:subdomain-2-1 ,
-        mit:subdomain-2-2 ,
-        mit:subdomain-7-4 ;
+        mit:subdomain-2-2 ;
     pair:suggestedControl
         pat:Control_SystemPromptSecrecy ,
         pat:Control_OutputValidationAndSanitization ,
@@ -476,10 +489,11 @@ pat:VectorAndEmbeddingWeaknessRiskPattern
         pat:RerankerMotif ;
     pair:hasMechanism owasp:mechanism-vector-embedding-retrieval-weakness ;
     pair:hasApplicabilityCondition pat:VectorEmbeddingWeakness_RetrievalCondition ;
+    # 2026-07-17 audit: atlas:poor-model-accuracy removed (upstream Nexus
+    # maps it to subdomain-7-3 only; no llm08 link).
     pair:mayIndicateRisk
         owasp:llm08-vector-and-embedding-weaknesses ,
         atlas:prompt-injection ,
-        atlas:poor-model-accuracy ,
         mit:subdomain-2-2 ,
         mit:subdomain-7-3 ;
     pair:suggestedControl
@@ -566,10 +580,13 @@ pat:UnboundedConsumptionRiskPattern
         pat:QueryRewritingMotif ;
     pair:hasMechanism owasp:mechanism-unbounded-resource-consumption ;
     pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ;
+    # 2026-07-17 audit: atlas:impact-on-the-environment removed (upstream
+    # Nexus explicitly records noMatch to OWASP: "Social implications of AI
+    # are not specifically addressed by OWASP"); the environmental angle
+    # stays via mit:subdomain-6-6.
     pair:mayIndicateRisk
         owasp:llm10-unbounded-consumption ,
         atlas:redundant-actions-agentic ,
-        atlas:impact-on-the-environment ,
         mit:subdomain-2-2 ,
         mit:subdomain-6-6 ,
         mit:subdomain-7-3 ;
@@ -614,22 +631,6 @@ pat:DirectPromptingWithoutGroundingOQP
     pair:implementsRiskPattern pat:DirectPromptingWithoutGroundingRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_direct_prompting_without_grounding.rq" ;
     pair:producesOutputType pair:RiskFinding .
-
-pat:DirectLLMAnsweringWithoutGroundingInterpretation
-    owl:deprecated true ;
-    owl:sameAs pat:DirectPromptingWithoutGroundingRiskPattern ;
-    rdfs:label "Direct LLM answering without grounding risk pattern"@en ;
-    skos:exactMatch pat:DirectPromptingWithoutGroundingRiskPattern .
-
-pat:DirectLLM_MatchingOQP
-    owl:deprecated true ;
-    owl:sameAs pat:DirectPrompting_MatchingOQP ;
-    rdfs:label "Direct LLM answering motif matching OQP"@en .
-
-pat:DirectLLMAnsweringWithoutGroundingOQP
-    owl:deprecated true ;
-    owl:sameAs pat:DirectPromptingWithoutGroundingOQP ;
-    rdfs:label "Direct LLM answering without grounding risk pattern OQP"@en .
 
 pat:Embeddings_MatchingOQP
     a pair:PatternImplementation ;
@@ -730,59 +731,3 @@ pat:UntrustedContentPropagationOQP
     pair:producesOutputType pair:DataCategoryPropagation .
 
 
-# Deprecated instance aliases (glossary v1.1 renames, kept for one release)
-
-pat:PromptInjectionInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:PromptInjectionRiskPattern ;
-    rdfs:label "Prompt injection interpretation (deprecated)"@en .
-
-pat:SensitiveDataRetrievalExposureInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:SensitiveDataRetrievalExposureRiskPattern ;
-    rdfs:label "Sensitive data retrieval exposure interpretation (deprecated)"@en .
-
-pat:SupplyChainCompromiseInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:SupplyChainCompromiseRiskPattern ;
-    rdfs:label "Supply chain compromise interpretation (deprecated)"@en .
-
-pat:DataAndModelPoisoningInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:DataAndModelPoisoningRiskPattern ;
-    rdfs:label "Data and model poisoning interpretation (deprecated)"@en .
-
-pat:ImproperOutputHandlingInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:ImproperOutputHandlingRiskPattern ;
-    rdfs:label "Improper output handling interpretation (deprecated)"@en .
-
-pat:ExcessiveAgencyInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:ExcessiveAgencyRiskPattern ;
-    rdfs:label "Excessive agency interpretation (deprecated)"@en .
-
-pat:SystemPromptLeakageInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:SystemPromptLeakageRiskPattern ;
-    rdfs:label "System prompt leakage interpretation (deprecated)"@en .
-
-pat:VectorAndEmbeddingWeaknessInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:VectorAndEmbeddingWeaknessRiskPattern ;
-    rdfs:label "Vector and embedding weakness interpretation (deprecated)"@en .
-
-pat:DirectPromptingWithoutGroundingInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:DirectPromptingWithoutGroundingRiskPattern ;
-    rdfs:label "Direct Prompting without grounding interpretation (deprecated)"@en .
-
-pat:MisinformationFromWeakGroundingInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:MisinformationFromWeakGroundingRiskPattern ;
-    rdfs:label "Misinformation from weak grounding interpretation (deprecated)"@en .
-
-pat:UnboundedConsumptionInterpretation
-    owl:deprecated true ;
-    dct:isReplacedBy pat:UnboundedConsumptionRiskPattern ;
-    rdfs:label "Unbounded consumption interpretation (deprecated)"@en .

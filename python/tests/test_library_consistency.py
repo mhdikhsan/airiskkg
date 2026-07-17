@@ -206,3 +206,107 @@ def test_risk_patterns_have_condition_mechanism_and_taxonomy_anchor(libraries) -
         if libraries.value(rp, PAIR.mayIndicateRisk) is None:
             offenders.append(f"{rp} has no taxonomy anchor")
     assert not offenders, "\n".join(sorted(offenders))
+
+
+# --- Anchor-alignment checks (2026-07-17 taxonomy audit) -------------------
+#
+# Every risk pattern anchors to one OWASP entry via pair:derivedFrom. Its
+# mechanism, applicability conditions, direct mitctrl suggestions, and
+# taxonomy links must all be reachable from that anchor through the curated
+# taxonomy/mapping layer - otherwise the pattern free-rides on links that
+# nothing in the aligned knowledge supports (the LLM-fabrication failure
+# mode this audit removed).
+
+NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
+SKOS_NS = Namespace("http://www.w3.org/2004/02/skos/core#")
+
+# Documented exception: the sensitive-retrieval pattern (LLM02 anchor)
+# deliberately reuses the LLM08-defined retrieval conditions because its OQP
+# gates on vector-store retrieval; see the comment in risk_pattern_library.ttl.
+CONDITION_EXCEPTIONS = {
+    (PAT.SensitiveDataRetrievalExposureRiskPattern,
+     PAT.VectorEmbeddingWeakness_RetrievalCondition),
+}
+
+
+@pytest.fixture(scope="module")
+def aligned(libraries, taxonomies) -> Graph:
+    g = Graph()
+    for other in (libraries, taxonomies):
+        for t in other:
+            g.add(t)
+    return g
+
+
+def _anchor(g: Graph, rp) -> URIRef:
+    return g.value(rp, PAIR.derivedFrom)
+
+
+def test_pattern_mechanism_belongs_to_its_anchor(aligned) -> None:
+    offenders = []
+    for rp in aligned.subjects(RDF.type, PAIR.RiskPattern):
+        anchor = _anchor(aligned, rp)
+        mech = aligned.value(rp, PAIR.hasMechanism)
+        if anchor is None or mech is None:
+            continue
+        if (anchor, NEXUS.hasRiskMechanism, mech) not in aligned:
+            offenders.append(f"{rp}: mechanism {mech} is not the mechanism of anchor {anchor}")
+    assert not offenders, "\n".join(sorted(offenders))
+
+
+def test_pattern_conditions_operationalize_anchor_conditions(aligned) -> None:
+    offenders = []
+    for rp in aligned.subjects(RDF.type, PAIR.RiskPattern):
+        anchor = _anchor(aligned, rp)
+        if anchor is None:
+            continue
+        anchor_conditions = set(aligned.objects(anchor, NEXUS.hasRiskCondition))
+        for cond in aligned.objects(rp, PAIR.hasApplicabilityCondition):
+            if (rp, cond) in CONDITION_EXCEPTIONS:
+                continue
+            sources = set(aligned.objects(cond, PAIR.operationalizesRiskCondition))
+            if sources and not (sources & anchor_conditions):
+                offenders.append(
+                    f"{rp}: condition {cond} operationalizes none of its anchor's risk conditions"
+                )
+    assert not offenders, "\n".join(sorted(offenders))
+
+
+def test_direct_mitctrl_suggestions_are_anchor_related_controls(aligned) -> None:
+    """Every mitctrl:* control suggested directly by a pattern must be a
+    nexus:hasRelatedControl of the pattern's OWASP anchor in the mapping
+    layer (pat:Control_* aggregates are exempt - they are project controls)."""
+    mitctrl_ns = str(NAMESPACES["mitctrl"])
+    offenders = []
+    for rp in aligned.subjects(RDF.type, PAIR.RiskPattern):
+        anchor = _anchor(aligned, rp)
+        if anchor is None:
+            continue
+        related = set(aligned.objects(anchor, NEXUS.hasRelatedControl))
+        for ctrl in aligned.objects(rp, PAIR.suggestedControl):
+            if str(ctrl).startswith(mitctrl_ns) and ctrl not in related:
+                offenders.append(f"{rp}: {ctrl} is not a related control of anchor {anchor}")
+    assert not offenders, "\n".join(sorted(offenders))
+
+
+def test_may_indicate_risk_entries_are_mapped_to_anchor(aligned) -> None:
+    """Every non-anchor mayIndicateRisk entry must be connected to the
+    pattern's anchor by a SKOS mapping triple (either direction) in the
+    taxonomy/mapping layer."""
+    mapping_preds = [SKOS_NS.exactMatch, SKOS_NS.closeMatch, SKOS_NS.broadMatch,
+                     SKOS_NS.narrowMatch, SKOS_NS.relatedMatch]
+    offenders = []
+    for rp in aligned.subjects(RDF.type, PAIR.RiskPattern):
+        anchor = _anchor(aligned, rp)
+        if anchor is None:
+            continue
+        for entry in aligned.objects(rp, PAIR.mayIndicateRisk):
+            if entry == anchor:
+                continue
+            linked = any(
+                (entry, p, anchor) in aligned or (anchor, p, entry) in aligned
+                for p in mapping_preds
+            )
+            if not linked:
+                offenders.append(f"{rp}: {entry} has no SKOS mapping to anchor {anchor}")
+    assert not offenders, "\n".join(sorted(offenders))

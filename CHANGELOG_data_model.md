@@ -500,6 +500,76 @@ work too).
 Verification: TTL parses (744 triples); suite 38/38; firing matrix
 identical (onyx 13/22, uc6 3/7, verba 6/12) — all removals were dead URIs.
 
+## Risk pattern library + taxonomy audit (2026-07-17)
+
+User-requested audit of `risk_pattern_library.ttl` for fabricated (non-
+evidence-based) content, plus a consistency check of the whole aligned-
+knowledge layer against its claimed upstream sources. Method: downloaded the
+actual IBM AI Atlas Nexus data (`risk_atlas_data.yaml`, `owasp_llm_2.0_data.
+yaml`, `mit_ai_risk_repository_data.yaml`, `mit_ai_risk_mitigation_data.
+yaml`) and SSSOM mapping sets (`ibm2owasp.tsv`, `mit-ai-risk-repository_
+ibm-risk-atlas.tsv`, `mit_ai_risk_mitigation_mappings.tsv`) and compared
+mechanically. Note: the cited repo `IBM/ai-atlas-nexus` is real (renamed
+from `risk-atlas-nexus`); all cited paths resolve.
+
+**Verified sound (no fabrication found):**
+
+- All 11 risk patterns anchor to real OWASP LLM Top 10 2025 entries with
+  faithful names/definitions; conditions/mechanisms are declared
+  operationalizations attached to the right anchors.
+- All Atlas risk concepts and MIT subdomains used exist upstream (matched
+  by id/name against the Nexus data).
+- All suggested-control lists mirror the mapping layer exactly.
+
+**Fabrications / inconsistencies fixed:**
+
+- `taxonomy_mapping.ttl` rewritten into two evidence tiers: Section 1 =
+  upstream SSSOM rows with predicates exactly as curated upstream
+  (prompt-injection↔llm01 is exactMatch, the llm02 privacy cluster is
+  relatedMatch, atlas↔MIT rows are uniformly relatedMatch, etc.);
+  Section 2 = project-curated rows, each with a stated rationale.
+  Removed as contradicted or baseless: evasion-attack↔llm05,
+  poor-model-accuracy↔llm08/llm09, impact-on-the-environment↔llm10
+  (upstream: explicit noMatch, "not addressed by OWASP"),
+  data-curation↔llm04 (upstream: llm03), prompt-injection/llm01↔
+  subdomain-4-3, llm05↔7-3, llm06↔7-4, llm07↔7-4, and 7 more
+  atlas↔MIT rows upstream maps elsewhere (full list in the file header).
+- `risk_pattern_library.ttl`: mayIndicateRisk updated accordingly
+  (ImproperOutputHandling −evasion-attack −7-3; VectorWeakness
+  −poor-model-accuracy; Unbounded −impact-on-the-environment;
+  PromptInjection −4-3; SystemPromptLeakage/ExcessiveAgency −7-4;
+  Poisoning: data-curation → **atlas:data-poisoning** (the upstream-
+  verified llm04 anchor, newly declared in `ibm_risk_atlas.ttl`);
+  SupplyChain +data-curation). 14 deprecated alias blocks removed
+  (`*Interpretation`, `DirectLLM*`) — referenced nowhere.
+- **Declaration drift fixed**: `SensitiveDataRetrievalExposureRiskPattern`
+  declared `hasMotif` RAG while its OQP consumes
+  `VectorBasedInformationRetrievalMotif` matches — re-anchored to match the
+  implementation; its deliberate reuse of the LLM08 retrieval condition is
+  now documented in-file and as a named exception in the consistency net.
+- `mit_air_risk_control.ttl`: the 16 concrete controls that are NOT MIT
+  taxonomy subcategories (red-teaming, threat-modelling, input-output-
+  filtering, retrieval-source-filtering, …) no longer claim
+  `nexus:isDefinedByTaxonomy` MIT; each now cites its real evidence —
+  a named mitigation in the MIT mitigation database (Risk Register, Red
+  Teaming, Threat Modelling, Training Data Curation, …) or OWASP
+  prevention guidance / DPV (`dpv:DataRedaction`), with `skos:broader`
+  anchoring to the verbatim MIT subcategory. The subcategory layer itself
+  verified verbatim against upstream.
+- `owasp_llm.ttl`: `nexus:tag` values corrected to the actual upstream
+  Nexus ids (`llm022025-…` style — 9 of 10 were wrong) and per-entry
+  `rdfs:seeAlso` links to the official genai.owasp.org pages added.
+
+**Regression net extended** (`test_library_consistency.py`, 9 → 13 checks):
+pattern mechanism must belong to its anchor; conditions must operationalize
+the anchor's risk conditions (documented exception list); directly suggested
+mitctrl controls must be the anchor's related controls; every non-anchor
+mayIndicateRisk entry must have a SKOS mapping path to the anchor.
+
+Verification: suite **42 passed / 0 failed**; firing matrix identical
+(onyx 13/22, uc6 3/7, verba 6/12) — only taxonomy-entry annotations on
+findings changed, not which findings fire.
+
 ## Open TODOs / known debt
 
 1. ~~Pre-existing verba supply-chain test failure~~ — **fixed** (Phase 3).
