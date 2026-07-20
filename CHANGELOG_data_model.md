@@ -664,6 +664,63 @@ Likewise `nexus_taxonomy_core.ttl` is a project-defined meta-vocabulary
 (adapted from the Nexus data model), not an external standard — say so if
 published.
 
+## Risk Mechanism: kept, clarified, instance-grounded (2026-07-17)
+
+Reviewer-style question: "is the risk mechanism just text, or does it do
+work in the matching?" Investigated by comparing every mechanism's text
+against its pattern's applicability-condition labels.
+
+**Decision: keep — not redundant with applicability conditions.** The two
+play distinct roles, now stated explicitly in the ontology
+(`pair:RiskMechanism` comment): the applicability condition is the
+machine-checkable **gate** (the observable "what" — a `FILTER`/graph
+clause that decides whether a finding fires); the mechanism is the curated
+causal **explanation** (the "why it's a risk"). The data confirms they are
+not restatements — e.g. supply-chain's condition ("an external dependency
+is used") is risk-neutral on its own; the mechanism ("...is compromised,
+unverifiable, or insufficiently governed") supplies the harm account. The
+mechanism is deliberately **not** part of detection logic: encoding it as a
+second graph condition would duplicate the applicability condition and
+reintroduce the declarative/executable (ODP/OQP) drift this project spent
+the prior sessions auditing out.
+
+**Improvement: instance grounding via `pair:mechanismNarrative`.** The
+weakness was real — the finding attached only an opaque mechanism IRI, and
+the same generic sentence appeared on every finding of a pattern. Each
+finding now also carries a rendered narrative: the pattern's canonical
+curated causal text (reused **verbatim** from the mechanism individual —
+single source, no paraphrase, so no drift surface) followed by an instance
+frame naming the concrete matched elements. The reusable
+`pair:hasDerivedMechanism` IRI pointer is kept for traceability; the
+narrative complements it, it does not replace it.
+
+Design points that make it clean:
+
+- **Exactly one narrative per finding.** The frame is keyed only on
+  match-stable elements (the generation step, output, external resource,
+  etc.), never on fan-out sets. Two structurally-different queries
+  (`risk_vector_embedding_weakness`, `risk_data_model_poisoning`) that bind
+  every matched element are anchored at the motif level instead of
+  enumerating elements — otherwise vector-weakness alone emitted up to 12
+  trivial "element X participates" sentences per finding.
+- **Presentation only.** The added `OPTIONAL`+`BIND` introduce no `FILTER`
+  and no new join constraint; the firing matrix is byte-identical (onyx
+  13/22, uc6 3/7, verba 6/12). All element references are `COALESCE`-guarded
+  so an unbound var never blanks a narrative (0 missing across all
+  examples).
+- Local names use `STRAFTER`/`IF`, not SPARQL `REPLACE` (the latter makes
+  rdflib pass `count` positionally to `re.sub`, emitting a
+  `DeprecationWarning` per row — ~13k in one run; avoided).
+
+Note: the narrative makes the **D5** duplication visible (several
+near-identical prompt-injection findings on one system now read as
+several identical narratives) — this is honest surfacing of the existing
+per-match keying, not a new defect; D5 remains the open re-keying decision.
+
+Verification: suite **42 passed / 0 failed**; consistency net accepts the
+newly-declared `pair:mechanismNarrative`; firing matrix unchanged; warning
+count back to baseline.
+
 ## Open items
 
 ### Needs user decision or input

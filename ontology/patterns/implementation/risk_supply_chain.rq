@@ -14,6 +14,7 @@ CONSTRUCT {
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
+        pair:mechanismNarrative ?mechanismNarrative ;
         pair:hasEvidence ?externalResource ,
             ?usingStep ;
         pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
@@ -48,6 +49,17 @@ WHERE {
         pat:SupplyChainCompromiseRiskPattern pair:suggestedControl ?implementedControl .
         ?implementedControl beamr:associatedTo ?externalResource .
     }
+
+    # Instance-grounded mechanism narrative (presentation only; adds no
+    # filter, changes no finding count). The pattern's canonical curated
+    # causal text is reused verbatim from the mechanism (single source);
+    # only an instance frame naming match-stable elements is appended, so
+    # exactly one narrative is produced per finding.
+    OPTIONAL { ?mechanism dct:description ?mechanismText . }
+    BIND(CONCAT(
+        COALESCE(?mechanismText, ""),
+        " Here external resource ", IF(CONTAINS(STR(COALESCE(?externalResource, "")), "#"), STRAFTER(STR(COALESCE(?externalResource, "")), "#"), STR(COALESCE(?externalResource, ""))), " is used by step ", IF(CONTAINS(STR(COALESCE(?usingStep, "")), "#"), STRAFTER(STR(COALESCE(?usingStep, "")), "#"), STR(COALESCE(?usingStep, ""))), " with no represented provenance or governance control."
+    ) AS ?mechanismNarrative)
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",
