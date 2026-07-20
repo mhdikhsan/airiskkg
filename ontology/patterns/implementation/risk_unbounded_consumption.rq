@@ -55,9 +55,7 @@ WHERE {
     }
     UNION
     {
-        # VALUES, not FILTER(?motif = ...): a FILTER here would reference
-        # ?motif from outside its own group, which is unbound at filter
-        # evaluation time (SPARQL group scoping) and silently kills the branch.
+     
         VALUES ?motif { pat:DirectPromptingMotif }
         ?match
             pair:hasNodeBinding ?stepBinding ,

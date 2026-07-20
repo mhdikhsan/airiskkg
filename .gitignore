@@ -11,7 +11,7 @@ pytest-cache-files-*/
 *.egg-info/
 build/
 dist/
-
+docs/
 
 # Keep folder structure, but avoid committing generated research outputs by default.
 outputs/*.ttl
