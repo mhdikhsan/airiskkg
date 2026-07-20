@@ -61,7 +61,7 @@ pair:RiskPattern a owl:Class ;
 
 pair:RiskMechanism a owl:Class ;
     rdfs:label "Risk Mechanism"@en ;
-    rdfs:comment "A curated explanation of how or why a matched configuration under the observed conditions can lead to a risk. Mechanisms are defined in the AI-RKG as parts of risk patterns and selected at assessment time."@en .
+    rdfs:comment "The curated causal account of how or why a matched configuration under the observed conditions can lead to harm: the risk-pattern's 'why', as opposed to its applicability conditions, which are the machine-checkable 'what' (the detection gate). A mechanism is deliberately NOT part of the detection logic - it is never evaluated or filtered on during matching (encoding the causal account as a second graph condition would duplicate the applicability condition and reintroduce declarative/executable drift). It is inert, reusable text attached by reference to every finding of its pattern, guaranteeing the same explanation is reproduced (never regenerated or paraphrased) across systems and runs. Grounded in the source taxonomy (e.g. an OWASP LLM Top 10 risk's mechanism). Per-finding instance grounding - naming the concrete risk-bearing elements - is added at assessment time via pair:mechanismNarrative, which frames this canonical text against the matched elements without altering it."@en .
 
 pair:PatternImplementation a owl:Class ;
     rdfs:label "Pattern Implementation"@en ;
@@ -287,6 +287,12 @@ pair:implementationPath a owl:DatatypeProperty ;
 
 pair:findingStatus a owl:DatatypeProperty ;
     rdfs:label "finding status"@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range xsd:string .
+
+pair:mechanismNarrative a owl:DatatypeProperty ;
+    rdfs:label "mechanism narrative"@en ;
+    rdfs:comment "An instance-grounded rendering of a candidate risk finding's mechanism: the pattern's canonical curated causal text (pair:hasDerivedMechanism / pair:RiskMechanism) framed against the concrete architecture elements that triggered this specific finding. Materialized at assessment time by the risk query. The canonical causal wording is reused verbatim from the mechanism individual (single source, no paraphrase), with only an instance frame naming the matched elements appended - so this presentation string introduces no new curated claim and cannot drift from the mechanism. Complements pair:hasDerivedMechanism (the reusable IRI pointer, kept for traceability) rather than replacing it."@en ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range xsd:string .
 
