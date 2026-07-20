@@ -3,17 +3,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-# Relaxed 2026-07-16 (engine consistency cleanup, decision D1). The previous
-# query required (a) a mandatory query-embedding leg wired into the retrieval
-# step and (b) the retrieval step's DIRECT output to feed prompt construction.
-# Real pipelines insert steps (onyx rerank between retrieval and prompt
-# construction) and may pass the query to retrieval without a separate
-# embedding data node - so the flagship RAG motif matched none of the three
-# example systems. Now:
-#   - the query-embedding leg is OPTIONAL (bound as evidence when present);
-#   - retrieved context may reach prompt construction through intermediate
-#     steps: (^beam:use/beam:produce)* closure, with the consumed context
-#     still required to play a role under pair:RetrievedContext.
 
 CONSTRUCT {
     ?match
@@ -40,7 +29,7 @@ CONSTRUCT {
 WHERE {
     ?query a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
 
-    # Optional query-embedding leg (evidence when represented).
+   
     OPTIONAL {
         ?embedStep a beam:Transform ;
                    pair:playsRole/pair:subRoleOf* pair:EmbeddingStep ;
@@ -55,9 +44,6 @@ WHERE {
     ?vectorIndex  a beam:Data ; pair:playsRole/pair:subRoleOf* pair:VectorIndex .
     ?retrievedCtx a beam:Data ; pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
 
-    # The retrieved context may pass through intermediate steps (reranking,
-    # aggregation) before prompt construction; whatever prompt construction
-    # consumes must still play a RetrievedContext role.
     ?retrievedCtx (^beam:use/beam:produce)* ?ctxForPrompt .
     ?ctxForPrompt pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
 
@@ -76,7 +62,6 @@ WHERE {
     ?llm      a beam:StatisticalModel ; pair:playsRole/pair:subRoleOf* pair:FoundationLLM .
     ?response a beam:Data ; pair:playsRole/pair:subRoleOf* pair:LLMResponse .
 
-    # deterministic match IRI keyed on the generation + retrieval steps
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/rag/",
         ENCODE_FOR_URI(STR(?genStep)), "/",

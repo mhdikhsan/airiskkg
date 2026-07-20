@@ -31,13 +31,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-
-    # Anchored to the External Dependency motif's own matches (2026-07-16
-    # redesign): previously this query free-rode on matches of ANY motif, so
-    # an external resource bound by no other motif produced no finding (the
-    # verba generator-model gap), and the role selection duplicated here what
-    # the motif should express. The role disjunction now lives in
-    # match_external_dependency.rq.
     ?match
         a pair:MotifMatch ;
         pair:matchesMotif ?motif ;

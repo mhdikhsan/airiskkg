@@ -19,8 +19,6 @@ CONSTRUCT {
         pair:matchedElement ?usingStep .
 }
 WHERE {
-    # Supply-chain-relevant resource roles (see pat:ExtDep_ExternalResourceNode
-    # comment: a disjunction of role subtrees).
     VALUES ?externalRootRole {
         pair:ExternalDependency
         pair:PretrainedModel
@@ -31,8 +29,6 @@ WHERE {
     ?externalRole pair:subRoleOf* ?externalRootRole .
     ?usingStep beam:use ?externalResource .
 
-    # Deterministic match IRI keyed on the using step + resource, so an
-    # element carrying several external-ish roles yields ONE match.
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/external-dependency/",
         ENCODE_FOR_URI(STR(?usingStep)), "/",

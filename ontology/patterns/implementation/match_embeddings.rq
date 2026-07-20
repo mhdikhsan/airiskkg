@@ -40,13 +40,6 @@ CONSTRUCT {
         pair:matchedElement ?vectorIndex .
 }
 WHERE {
-    # Structure + roles only (Rule R2), matching the declared ODP
-    # (pat:Embedding_ChunkingStepNode expects ChunkingStep,
-    # pat:Embedding_SourceDocumentNode expects SourceDocument). A facet read
-    # (FILTER NOT EXISTS on containsDataCategory PromptInstruction) previously
-    # stood in for these missing role constraints - removed 2026-07-16; the
-    # role constraints now exclude non-source inputs (e.g. configuration
-    # resources) structurally instead of by data category.
     ?chunkingStep
         pair:playsRole/pair:subRoleOf* pair:ChunkingStep ;
         beam:use ?sourceDocument ;
