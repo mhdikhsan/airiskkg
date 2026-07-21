@@ -88,6 +88,14 @@ mitctrl:post-deployment-behavior-monitoring
     pair:controlNature pair:TechnicalControl ;
     pair:realizedByMotif pat:PredictionMonitoringMotif .
 
+mitctrl:post-deployment-monitoring
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:PredictionMonitoringMotif .
+
+mitctrl:model-safety-engineering
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:GuardrailsMotif .
+
 mitctrl:retrieval-quality-evaluation
     pair:controlNature pair:TechnicalControl ;
     pair:realizedByMotif pat:RerankerMotif ,
@@ -125,3 +133,14 @@ mitctrl:risk-register                     pair:controlNature pair:NonTechnicalCo
 mitctrl:system-architecture-documentation pair:controlNature pair:NonTechnicalControl .
 mitctrl:testing-auditing                  pair:controlNature pair:NonTechnicalControl .
 mitctrl:threat-modelling                  pair:controlNature pair:NonTechnicalControl .
+# Control-taxonomy groups newly referenced after the 2026-07-17 CSV
+# regrounding of pair:suggestedControl (all governance / process / disclosure
+# families with no direct architectural footprint).
+mitctrl:incident-reporting                pair:controlNature pair:NonTechnicalControl .
+mitctrl:incident-response-recovery        pair:controlNature pair:NonTechnicalControl .
+mitctrl:risk-disclosure                   pair:controlNature pair:NonTechnicalControl .
+mitctrl:risk-management                   pair:controlNature pair:NonTechnicalControl .
+mitctrl:safety-decision-frameworks        pair:controlNature pair:NonTechnicalControl .
+mitctrl:societal-impact-assessment        pair:controlNature pair:NonTechnicalControl .
+mitctrl:system-documentation              pair:controlNature pair:NonTechnicalControl .
+mitctrl:user-rights-recourse              pair:controlNature pair:NonTechnicalControl .

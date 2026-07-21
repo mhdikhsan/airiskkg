@@ -292,10 +292,11 @@ pat:PromptInjectionRiskPattern
         pat:Control_InputValidationAndPromptIsolation ,
         pat:Control_Guardrails ,
         pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:threat-modelling ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:retrieval-source-filtering ;
+        mitctrl:data-governance ,
+        mitctrl:incident-reporting ,
+        mitctrl:model-safety-engineering ,
+        mitctrl:risk-disclosure ,
+        mitctrl:testing-auditing ;
     pair:implementedBy pat:PromptInjectionOQP .
 
 pat:SensitiveDataRetrievalExposureRiskPattern
@@ -324,13 +325,14 @@ pat:SensitiveDataRetrievalExposureRiskPattern
         pat:Control_RetrievalAccessControl ,
         pat:Control_OutputValidationAndSanitization ,
         pat:Control_Guardrails ,
-        mitctrl:privacy-control-for-user-data ,
         mitctrl:access-management ,
-        mitctrl:retrieval-source-filtering ,
-        mitctrl:redaction ,
-        mitctrl:input-output-filtering ,
-        mitctrl:data-minimization ,
-        mitctrl:data-governance ;
+        mitctrl:content-safety-controls ,
+        mitctrl:data-governance ,
+        mitctrl:model-safety-engineering ,
+        mitctrl:risk-disclosure ,
+        mitctrl:risk-management ,
+        mitctrl:societal-impact-assessment ,
+        mitctrl:testing-auditing ;
     pair:implementedBy pat:SensitiveDataRetrievalExposureOQP .
 
 pat:SupplyChainCompromiseRiskPattern
@@ -354,12 +356,11 @@ pat:SupplyChainCompromiseRiskPattern
     pair:suggestedControl
         pat:Control_ModelAndDependencyProvenance ,
         pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:threat-modelling ,
-        mitctrl:model-infrastructure-security ,
-        mitctrl:system-architecture-documentation ,
-        mitctrl:risk-register ,
-        mitctrl:pre-deployment-risk-assessment ,
-        mitctrl:data-governance ;
+        mitctrl:access-management ,
+        mitctrl:data-governance ,
+        mitctrl:risk-disclosure ,
+        mitctrl:system-documentation ,
+        mitctrl:testing-auditing ;
     pair:implementedBy pat:SupplyChainCompromiseOQP .
 
 pat:DataAndModelPoisoningRiskPattern
@@ -386,10 +387,7 @@ pat:DataAndModelPoisoningRiskPattern
         pat:Control_ModelAndDependencyProvenance ,
         pat:Control_LoggingMonitoringAndEvals ,
         mitctrl:data-governance ,
-        mitctrl:data-curation-process ,
-        mitctrl:threat-modelling ,
-        mitctrl:model-infrastructure-security ,
-        mitctrl:testing-auditing ;
+        mitctrl:incident-response-recovery ;
     pair:implementedBy pat:DataAndModelPoisoningOQP .
 
 pat:ImproperOutputHandlingRiskPattern
@@ -416,11 +414,9 @@ pat:ImproperOutputHandlingRiskPattern
     pair:suggestedControl
         pat:Control_OutputValidationAndSanitization ,
         pat:Control_Guardrails ,
-        mitctrl:input-output-filtering ,
-        mitctrl:content-safety-controls ,
-        mitctrl:testing-auditing ,
-        mitctrl:incident-response-plan ,
-        mitctrl:human-oversight-protocol ;
+        mitctrl:safety-decision-frameworks ,
+        mitctrl:system-documentation ,
+        mitctrl:user-rights-recourse ;
     pair:implementedBy pat:ImproperOutputHandlingOQP .
 
 pat:ExcessiveAgencyRiskPattern
@@ -444,12 +440,9 @@ pat:ExcessiveAgencyRiskPattern
         pat:Control_ToolPermissionBoundaries ,
         pat:Control_RateLimitBudgetAndLoopControl ,
         pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:access-management ,
-        mitctrl:human-oversight-protocol ,
-        mitctrl:post-deployment-behavior-monitoring ,
-        mitctrl:threat-modelling ,
-        mitctrl:prompt-context-limiting ,
-        mitctrl:risk-register ;
+        mitctrl:safety-decision-frameworks ,
+        mitctrl:system-documentation ,
+        mitctrl:user-rights-recourse ;
     pair:implementedBy pat:ExcessiveAgencyOQP .
 
 pat:SystemPromptLeakageRiskPattern
@@ -530,10 +523,12 @@ pat:DirectPromptingWithoutGroundingRiskPattern
     pair:suggestedControl
         pat:Control_GroundingAndVerification ,
         pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:retrieval-quality-evaluation ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:human-oversight-protocol ;
+        mitctrl:content-safety-controls ,
+        mitctrl:data-governance ,
+        mitctrl:model-safety-engineering ,
+        mitctrl:post-deployment-monitoring ,
+        mitctrl:risk-disclosure ,
+        mitctrl:testing-auditing ;
     pair:implementedBy pat:DirectPromptingWithoutGroundingOQP .
 
 pat:MisinformationFromWeakGroundingRiskPattern
@@ -560,10 +555,12 @@ pat:MisinformationFromWeakGroundingRiskPattern
     pair:suggestedControl
         pat:Control_GroundingAndVerification ,
         pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:retrieval-quality-evaluation ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:human-oversight-protocol .
+        mitctrl:content-safety-controls ,
+        mitctrl:data-governance ,
+        mitctrl:model-safety-engineering ,
+        mitctrl:post-deployment-monitoring ,
+        mitctrl:risk-disclosure ,
+        mitctrl:testing-auditing .
 
 pat:UnboundedConsumptionRiskPattern
     a pair:RiskPattern ;

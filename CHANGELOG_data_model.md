@@ -819,6 +819,43 @@ output is unchanged (firing matrix identical: onyx 13/22, uc6 3/7, verba
 6/12). Follow-on option if desired: reground `pair:suggestedControl` from
 the same evidence so findings and mapping fully agree. Suite 44/44.
 
+## Follow-on: regrounded pair:suggestedControl to match the mapping (2026-07-17)
+
+Completed the follow-on flagged above: the risk patterns' `mitctrl:*`
+`pair:suggestedControl` are now regrounded from the same CSV evidence, so
+findings and the taxonomy mapping fully agree. For each LLM01-06/09 pattern,
+its `mitctrl:*` suggestions were replaced with its OWASP anchor's
+(CSV-grounded) `nexus:hasRelatedControl` set; LLM07/08/10 already matched.
+The `pat:Control_*` layer (PAIR-AI's own actionable controls, with the
+technical/non-technical classification and `realizedByMotif` links) was left
+untouched on every pattern.
+
+- 10 newly-referenced control groups classified in
+  `control_mitigation_layer.ttl` (model-safety-engineering and
+  post-deployment-monitoring technical + motif; the 8 governance/disclosure
+  groups non-technical).
+- The relaxed anchor test was **restored and strengthened**:
+  `test_direct_mitctrl_suggestions_agree_with_anchor_mapping` now enforces
+  that every suggested `mitctrl:*` control is a `hasRelatedControl` of the
+  pattern's anchor - the finding↔mapping agreement is guarded going forward.
+- Finding counts unchanged (suggestedControl doesn't gate firing); only the
+  controls each finding carries changed. Suite 44/44.
+
+**Lossiness to be aware of (flagged).** Because the CSV rollup is coarser
+and embedding-matched, regrounding *dropped* some intuitively-relevant
+`mitctrl:*` anchors in favour of governance-heavy groups - e.g. the
+sensitive-information finding lost `mitctrl:privacy-control-for-user-data`
+and `mitctrl:retrieval-source-filtering`, gaining `risk-management`,
+`societal-impact-assessment`, etc. The actionable equivalents survive in the
+`pat:Control_*` layer (Control_DataMinimizationAndRedaction,
+Control_RetrievalAccessControl), so findings still recommend the right
+concrete actions - but the MIT taxonomy anchors are now coarser. Thinly-
+covered risks are worst: llm04 → {data-governance, incident-response-
+recovery}; llm05/06 → {safety-decision-frameworks, system-documentation,
+user-rights-recourse} only. If this is too lossy, the alternatives are to
+keep the union (curated ∪ CSV) or revert this step; the mapping itself
+stays CSV-grounded either way.
+
 ## Open items
 
 ### Needs user decision or input
