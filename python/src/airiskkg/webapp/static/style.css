@@ -533,6 +533,25 @@ label.btn { display: inline-flex; align-items: center; }
 .ref-list li { margin: 2px 0; }
 .evidence-note { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
+/* Control mitigation tiers */
+.ctrl-group { margin: 6px 0; }
+.ctrl-group-head {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  border-left: 3px solid #39415a;
+  padding-left: 6px;
+  margin: 6px 0 2px;
+}
+.ctrl-group.technical .ctrl-group-head { border-left-color: #4f7cc7; color: #9ec2f0; }
+.ctrl-group.non-technical .ctrl-group-head { border-left-color: #8a7f5a; color: #d3c79a; }
+.ctrl-label { color: var(--text); }
+.ctrl-motifs { margin: 2px 0 4px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.ctrl-motifs-lead { font-size: 11px; color: var(--text-dim); font-style: italic; }
+.chip.motif-suggest { background: #1f3348; color: #86c8ef; border-color: #2f5170; cursor: default; }
+
 .validation-row {
   display: flex;
   align-items: baseline;

@@ -101,6 +101,44 @@
   // ---- findings --------------------------------------------------------------
   let selectedFinding = null;
 
+  // One control as a list item, with any motif-realization suggestions beneath it.
+  function controlItem(control) {
+    const motifs = control.realizedByMotifs || [];
+    const children = [el("span", { class: "ctrl-label" }, control.label)];
+    if (motifs.length) {
+      children.push(
+        el("div", { class: "ctrl-motifs" }, [
+          el("span", { class: "ctrl-motifs-lead" }, "realize by adding motif: "),
+          ...motifs.map((m) =>
+            el("span", { class: "chip motif-suggest", title: "Candidate structural mitigation: insert this motif" }, m.label)
+          ),
+        ])
+      );
+    }
+    return el("li", { title: control.definition || "" }, children);
+  }
+
+  // Group suggested controls into technical / non-technical tiers.
+  function controlSections(controls) {
+    const technical = controls.filter((c) => c.nature === "technical");
+    const nonTechnical = controls.filter((c) => c.nature === "non-technical");
+    const other = controls.filter((c) => c.nature !== "technical" && c.nature !== "non-technical");
+    const sections = [];
+    const group = (title, list, cls) => {
+      if (!list.length) return;
+      sections.push(
+        el("div", { class: `ctrl-group ${cls}` }, [
+          el("div", { class: "ctrl-group-head" }, `${title} (${list.length})`),
+          el("ul", { class: "ref-list" }, list.map(controlItem)),
+        ])
+      );
+    };
+    group("Technical mitigations", technical, "technical");
+    group("Non-technical mitigations", nonTechnical, "non-technical");
+    group("Other", other, "other");
+    return sections;
+  }
+
   function findingCard(finding) {
     const evidenceIds = finding.evidence.map((e) => e.id);
     const card = el("div", { class: "finding-card", tabindex: "0" }, [
@@ -116,7 +154,7 @@
       ]),
       el("details", {}, [
         el("summary", {}, `Suggested controls (${finding.suggestedControls.length}) · evidence (${finding.evidence.length})`),
-        el("ul", { class: "ref-list" }, finding.suggestedControls.map((c) => el("li", { title: c.definition || "" }, c.label))),
+        ...controlSections(finding.suggestedControls),
         el("div", { class: "evidence-note" }, "Evidence: " + finding.evidence.map((e) => e.label).join(", ")),
       ]),
     ]);

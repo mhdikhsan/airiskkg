@@ -37,6 +37,7 @@ CORE_FILES = [
 PATTERN_FILES = [
     PATTERNS_DIR / "motif.ttl",
     PATTERNS_DIR / "risk_pattern_library.ttl",
+    PATTERNS_DIR / "control_mitigation_layer.ttl",
 ]
 
 

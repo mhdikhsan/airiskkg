@@ -1,0 +1,127 @@
+@prefix pat:     <http://w3id.org/airiskkg/patterns#> .
+@prefix pair:    <http://w3id.org/airiskkg/pair-ai#> .
+@prefix mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:     <http://purl.org/dc/terms/> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+
+<http://w3id.org/airiskkg/patterns/control-mitigation-layer#>
+    a owl:Ontology ;
+    dct:title "PAIR-AI Control Mitigation Layer"@en ;
+    dct:description """
+    Classifies every suggested control in the risk pattern library as technical
+    or non-technical (pair:controlNature), and links the architecturally
+    detectable technical controls to the motif(s) that can structurally realize
+    them (pair:realizedByMotif). This turns a mitigation from a bare label into a
+    two-tier output: motif-expressible controls become situated 'insert this
+    motif' suggestions, non-technical controls remain taxonomy-level
+    recommendations with no architectural footprint.
+
+    Classification rule (stated, because neither source taxonomy carries this
+    axis - the MIT grouping is functional, not technical/non-technical):
+      * Technical    - a control with a footprint in the technical architecture
+                       (model, data pipeline, infrastructure, runtime), whether
+                       or not the motif library yet contains a pattern for it.
+      * Non-technical - a control realized through organisation, human process,
+                        governance, documentation, or disclosure, with no direct
+                        architectural footprint.
+    pair:realizedByMotif is attached to a control only where the motif library
+    genuinely contains a structure that implements the control's intent; its
+    presence marks the control as architecturally detectable / motif-expressible.
+
+    All links are CANDIDATE associations (candidate framing, project-wide): a
+    control is a suggestion, and 'realized by motif X' is an assumed structural
+    mitigation to tackle the risk, not a proof that inserting X removes it.
+
+    Provenance: the technical/non-technical criterion and the coverage framing
+    are from the PAIR-AI risk-to-mitigation connection analysis. Assignments are
+    PAIR-AI expert curation (a first pass, meant to be reviewed).
+    """@en ;
+    dct:source "PAIR-AI risk-to-mitigation connection reference (technical vs non-technical criterion; architectural-detectability axis)." ;
+    owl:imports <http://w3id.org/airiskkg/pair-ai#> ,
+                <http://w3id.org/airiskkg/patterns/motif-library#> ,
+                <http://w3id.org/airiskkg/patterns/risk-pattern-library#> ,
+                <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> .
+
+
+#################################################################
+# Technical controls
+#################################################################
+
+# --- with a motif that structurally realizes them (situated suggestions) ---
+
+pat:Control_GroundingAndVerification
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:RetrievalAugmentedGenerationMotif ,
+                         pat:VectorBasedInformationRetrievalMotif ,
+                         pat:HybridRetrieverMotif ,
+                         pat:RerankerMotif .
+
+pat:Control_Guardrails
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:GuardrailsMotif .
+
+pat:Control_InputValidationAndPromptIsolation
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:GuardrailsMotif .
+
+pat:Control_OutputValidationAndSanitization
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:GuardrailsMotif .
+
+pat:Control_LoggingMonitoringAndEvals
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:PredictionLoggingMotif ,
+                         pat:PredictionMonitoringMotif ,
+                         pat:EvalsMotif .
+
+mitctrl:content-safety-controls
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:GuardrailsMotif .
+
+mitctrl:input-output-filtering
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:GuardrailsMotif .
+
+mitctrl:post-deployment-behavior-monitoring
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:PredictionMonitoringMotif .
+
+mitctrl:retrieval-quality-evaluation
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:RerankerMotif ,
+                         pat:HybridRetrieverMotif .
+
+# --- technical (architectural footprint) but no motif in the library yet ---
+
+pat:Control_DataMinimizationAndRedaction  pair:controlNature pair:TechnicalControl .
+pat:Control_RetrievalAccessControl        pair:controlNature pair:TechnicalControl .
+pat:Control_ToolPermissionBoundaries      pair:controlNature pair:TechnicalControl .
+pat:Control_SystemPromptSecrecy           pair:controlNature pair:TechnicalControl .
+pat:Control_RateLimitBudgetAndLoopControl pair:controlNature pair:TechnicalControl .
+mitctrl:access-management                 pair:controlNature pair:TechnicalControl .
+mitctrl:data-minimization                 pair:controlNature pair:TechnicalControl .
+mitctrl:model-infrastructure-security     pair:controlNature pair:TechnicalControl .
+mitctrl:prompt-context-limiting           pair:controlNature pair:TechnicalControl .
+mitctrl:redaction                         pair:controlNature pair:TechnicalControl .
+mitctrl:retrieval-source-filtering        pair:controlNature pair:TechnicalControl .
+
+
+#################################################################
+# Non-technical controls (governance / process / documentation / disclosure)
+#################################################################
+
+pat:Control_ModelAndDependencyProvenance  pair:controlNature pair:NonTechnicalControl .
+pat:Control_TrustedTrainingAndIndexingData pair:controlNature pair:NonTechnicalControl .
+mitctrl:data-curation-process             pair:controlNature pair:NonTechnicalControl .
+mitctrl:data-governance                   pair:controlNature pair:NonTechnicalControl .
+mitctrl:human-oversight-protocol          pair:controlNature pair:NonTechnicalControl .
+mitctrl:incident-response-plan            pair:controlNature pair:NonTechnicalControl .
+mitctrl:pre-deployment-risk-assessment    pair:controlNature pair:NonTechnicalControl .
+mitctrl:privacy-control-for-user-data     pair:controlNature pair:NonTechnicalControl .
+mitctrl:red-teaming                       pair:controlNature pair:NonTechnicalControl .
+mitctrl:risk-register                     pair:controlNature pair:NonTechnicalControl .
+mitctrl:system-architecture-documentation pair:controlNature pair:NonTechnicalControl .
+mitctrl:testing-auditing                  pair:controlNature pair:NonTechnicalControl .
+mitctrl:threat-modelling                  pair:controlNature pair:NonTechnicalControl .

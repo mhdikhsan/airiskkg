@@ -176,6 +176,45 @@ pair:suggestedControl a owl:ObjectProperty ;
     rdfs:domain pair:RiskPattern ;
     rdfs:range beamr:RiskControl .
 
+# Control classification layer (PAIR-AI interpretation).
+# The suggested controls span two families - PAIR-AI's own coarse controls
+# (pat:Control_*) and reused MIT AI Risk Mitigation entries (mitctrl:*). Neither
+# carries a technical/non-technical axis at source: the MIT top-level grouping is
+# functional (governance / technical / process / transparency), not a
+# technical/non-technical cut, so classifying controls that way requires a stated
+# rule (see ontology/patterns/control_mitigation_layer.ttl). Read by the workbench
+# to present mitigations in two tiers (Rule: candidate framing preserved - a
+# control is a suggestion, its motif realization a candidate structural mitigation).
+
+pair:controlNature a owl:ObjectProperty ;
+    rdfs:label "control nature"@en ;
+    rdfs:comment "Classifies a risk control as technical or non-technical by how it is realized. PAIR-AI interpretation over the reused/curated controls, not an axis asserted by the source taxonomies."@en ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range skos:Concept .
+
+pair:realizedByMotif a owl:ObjectProperty ;
+    rdfs:label "realized by motif"@en ;
+    rdfs:comment "Links a technical, architecturally-detectable risk control to an architectural motif that can structurally realize it: a CANDIDATE structural mitigation - inserting the motif into the architecture graph is one way to implement the control. It does not replace the control (the mitigation plan); it operationalizes it structurally, giving an insertion site rather than only a label. Example: a grounding/verification control realized by adding a retrieval-augmented-generation or vector-retrieval motif to tackle ungrounded generation. The link is an assumed mitigation relation (like the rest of the library, curated and candidate), not a proof the motif removes the risk."@en ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range pair:GraphMotif .
+
+pair:ControlNatureScheme a skos:ConceptScheme ;
+    skos:prefLabel "Control Nature"@en ;
+    skos:definition "Whether a risk control is realized in the technical architecture or through organisational process. PAIR-AI interpretation; the stated rule and per-control assignments live in ontology/patterns/control_mitigation_layer.ttl."@en ;
+    dct:source "PAIR-AI supporting analysis: risk-to-mitigation connection reference (technical vs non-technical criterion)." .
+
+pair:TechnicalControl a skos:Concept ;
+    skos:inScheme pair:ControlNatureScheme ;
+    skos:topConceptOf pair:ControlNatureScheme ;
+    skos:prefLabel "Technical control"@en ;
+    skos:definition "A control realized in the AI system's technical stack (model, data pipeline, infrastructure, or runtime), with an actual or possible footprint in the system architecture. A technical control may additionally be architecturally detectable, in which case a motif can realize it (pair:realizedByMotif)."@en .
+
+pair:NonTechnicalControl a skos:Concept ;
+    skos:inScheme pair:ControlNatureScheme ;
+    skos:topConceptOf pair:ControlNatureScheme ;
+    skos:prefLabel "Non-technical control"@en ;
+    skos:definition "A control realized through organisational structure, human process, governance, documentation, or disclosure, with no direct footprint in the technical architecture. It is surfaced as a taxonomy-level recommendation, not a situated structural suggestion."@en .
+
 pair:operationalizesRiskCondition a owl:ObjectProperty ;
     rdfs:label "operationalizes risk condition"@en ;
     rdfs:comment "Links an applicability condition to the external taxonomy risk-condition entry it operationalizes."@en ;

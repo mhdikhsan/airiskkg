@@ -721,6 +721,59 @@ Verification: suite **42 passed / 0 failed**; consistency net accepts the
 newly-declared `pair:mechanismNarrative`; firing matrix unchanged; warning
 count back to baseline.
 
+## Control mitigation layer: technical/non-technical + motif realization (2026-07-17)
+
+New feature (data model + backend + workbench UI) driven by the
+risk-to-mitigation connection analysis: present a finding's suggested
+controls in two tiers, and for the architecturally-detectable technical
+controls, suggest the motif(s) that can structurally realize them.
+
+**Data model.** Two new properties in `pair_ai_pattern.ttl`:
+`pair:controlNature` (→ `pair:TechnicalControl` / `pair:NonTechnicalControl`,
+a small `pair:ControlNatureScheme`) and `pair:realizedByMotif`
+(control → motif). New file `ontology/patterns/control_mitigation_layer.ttl`
+classifies all 33 suggested controls (12 `pat:Control_*` + 21 `mitctrl:*`)
+and adds motif-realization links for the 10 motif-expressible ones. The
+classification rule is stated in-file (the MIT grouping is functional, not
+a technical/non-technical axis — so the cut is a stated PAIR-AI
+interpretation, kept out of the pristine taxonomy files). All links are
+candidate associations; "realized by motif X" is an *assumed* structural
+mitigation, not a proof the motif removes the risk.
+
+Motif-realization links (the situated-suggestion tier):
+
+- Grounding/verification (and retrieval-quality) → RAG, Vector-based IR,
+  Hybrid Retriever, Reranker — this makes the headline scenario work: a
+  Direct-Prompting-without-grounding (LLM09 misinformation) finding now
+  suggests "realize by adding: RAG / Vector-based Information Retrieval …".
+- Guardrail / input-output / content-safety controls → Guardrails motif.
+- Logging/monitoring/evals, post-deployment monitoring → Prediction
+  Logging / Prediction Monitoring / Evals motifs.
+
+**Backend.** `assessment_view._control_ref` adds `nature`
+("technical"/"non-technical"/null) and `realizedByMotifs` to every
+suggested control in the assessment JSON.
+
+**UI.** `app.js` renders suggested controls in two labeled tiers
+(Technical / Non-technical mitigations); each technical control with a
+realizing motif shows a "realize by adding motif: …" chip row. `style.css`
+adds the tier headings and motif-suggestion chip.
+
+**Wiring & tests.** New file added to the runner's `PATTERN_FILES` and the
+consistency net's `libraries` fixture. Two new checks (suite 42 → **44**):
+every suggested control has a `controlNature`; every `realizedByMotif`
+target is a declared motif. Firing matrix unchanged (onyx 13/22, uc6 3/7,
+verba 6/12).
+
+Flagged for review (first-pass curation, adjust as needed): the
+technical/non-technical call on borderline controls (e.g. access-management
+and data-minimization classed technical by architectural-footprint;
+privacy-control and provenance classed non-technical by governance-weight),
+and the retrieval-quality→Reranker/Hybrid links (improvement, not strict
+"evaluation"). Also relevant: open item #3 (FoundationLLM not under
+GenerativeModel) — a bare Direct-Prompting graph only fires the grounding
+finding when its model plays `pair:GenerativeModel`, not `pair:FoundationLLM`.
+
 ## Open items
 
 ### Needs user decision or input
