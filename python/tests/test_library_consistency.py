@@ -58,6 +58,7 @@ def libraries() -> Graph:
         CORE / "beam_core_risk.ttl",
         PATTERNS / "motif.ttl",
         PATTERNS / "risk_pattern_library.ttl",
+        PATTERNS / "control_mitigation_layer.ttl",
     ):
         g.parse(path, format="turtle")
     return g
@@ -309,4 +310,28 @@ def test_may_indicate_risk_entries_are_mapped_to_anchor(aligned) -> None:
             )
             if not linked:
                 offenders.append(f"{rp}: {entry} has no SKOS mapping to anchor {anchor}")
+    assert not offenders, "\n".join(sorted(offenders))
+
+
+# --- Control mitigation layer (2026-07-17) --------------------------------
+
+def test_every_suggested_control_has_a_nature(libraries) -> None:
+    """Every control a risk pattern suggests must be classified
+    technical/non-technical, so the workbench never shows an unclassified
+    mitigation."""
+    offenders = []
+    for control in set(libraries.objects(None, PAIR.suggestedControl)):
+        if libraries.value(control, PAIR.controlNature) is None:
+            offenders.append(f"{control} is suggested but has no pair:controlNature")
+    assert not offenders, "\n".join(sorted(offenders))
+
+
+def test_realized_by_motif_targets_are_declared_motifs(libraries) -> None:
+    """A control's structural-mitigation link must point at a real motif."""
+    motifs = set(libraries.subjects(RDF.type, PAIR.GraphMotif))
+    offenders = [
+        f"{control} pair:realizedByMotif {motif} - not a declared pair:GraphMotif"
+        for control, motif in libraries.subject_objects(PAIR.realizedByMotif)
+        if motif not in motifs
+    ]
     assert not offenders, "\n".join(sorted(offenders))

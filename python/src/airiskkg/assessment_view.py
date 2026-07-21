@@ -54,6 +54,33 @@ def _element_ref(graph: Graph, resource: URIRef) -> dict:
     return {"id": str(resource), "label": _label(graph, resource)}
 
 
+_TECHNICAL = URIRef("http://w3id.org/airiskkg/pair-ai#TechnicalControl")
+_NON_TECHNICAL = URIRef("http://w3id.org/airiskkg/pair-ai#NonTechnicalControl")
+
+
+def _control_nature(graph: Graph, control: URIRef) -> str | None:
+    """'technical' / 'non-technical' from pair:controlNature, or None if the
+    control carries no classification (surfaced as 'unclassified' by the UI)."""
+    nature = graph.value(control, PAIR.controlNature)
+    if nature == _TECHNICAL:
+        return "technical"
+    if nature == _NON_TECHNICAL:
+        return "non-technical"
+    return None
+
+
+def _control_ref(graph: Graph, control: URIRef) -> dict:
+    """A suggested control, extended with its technical/non-technical nature and
+    the motif(s) that can structurally realize it (candidate structural
+    mitigations - the control stays the mitigation plan; the motif is how to
+    realize it in the architecture)."""
+    ref = _ref(graph, control)
+    ref["nature"] = _control_nature(graph, control)
+    realizing_motifs = sorted(graph.objects(control, PAIR.realizedByMotif), key=str)
+    ref["realizedByMotifs"] = [_element_ref(graph, motif) for motif in realizing_motifs]
+    return ref
+
+
 def _motif_ref(graph: Graph, motif: URIRef | None) -> dict | None:
     return _element_ref(graph, motif) if motif is not None else None
 
@@ -78,7 +105,7 @@ def _finding_view(graph: Graph, finding: URIRef) -> dict:
         "mechanism": _element_ref(graph, mechanism) if mechanism is not None else None,
         "status": str(status) if status else None,
         "taxonomyEntries": [_ref(graph, entry) for entry in taxonomy_entries],
-        "suggestedControls": [_ref(graph, control) for control in suggested_controls],
+        "suggestedControls": [_control_ref(graph, control) for control in suggested_controls],
         "evidence": [_element_ref(graph, element) for element in evidence],
     }
 
