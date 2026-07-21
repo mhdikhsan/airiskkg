@@ -774,6 +774,51 @@ and the retrieval-quality→Reranker/Hybrid links (improvement, not strict
 GenerativeModel) — a bare Direct-Prompting graph only fires the grounding
 finding when its model plays `pair:GenerativeModel`, not `pair:FoundationLLM`.
 
+## Taxonomy mapping: recheck + CSV-regrounded control links (2026-07-17)
+
+Prompted by a "this looks suspicious" review of `taxonomy_mapping.ttl`
+against the PAIR-AI risk-to-mitigation CSV (`Final_Mapped_Taxonomy_Table_
+Output`, the OWASP→IBM→MIT-action embedding mapping).
+
+**Recheck result — the upper mapping is sound.** Every OWASP↔IBM skos edge
+where our mapping and the CSV overlap agrees **10/10, zero disagreements**
+(both trace to IBM's data). So Sections 1–2 were not the problem. The CSV
+also confirmed real limits: it covers only LLM01–06 + 09 (no rows for
+LLM07/08/10), references 19 IBM risks we don't declare, and carries the
+caveats its own reference doc states (embedding-matched, cosine top-3,
+unvalidated) plus one internal rollup error (action A0973 filed under
+sub-category 2.3 but tagged Category 3) and capitalization drift.
+
+**What was actually weak — the control-grounding layer (Section 3).** The
+`owasp:* nexus:hasRelatedControl mitctrl:*` links were hand-curated, not
+evidence-based. Regrounded (bounded to Section 3, user-approved) from the
+CSV's action→sub-category rollup: for each of LLM01–06 + 09, the risk's
+mapped mitigation actions are rolled up to their MIT sub-categories and
+mapped 1:1 to our `mitctrl:*` group concepts. LLM07/08/10 keep their prior
+curated links (absent from the CSV). Reverse `mitigatesRiskTaxonomyEntry`
+links regenerated as the exact inverse so the file stays consistent.
+Sub-category approximations where we omit a concept, noted in-file: 2.2
+Model Alignment→model-safety-engineering, 4.4 Governance Disclosure→
+risk-disclosure, 4.5 Third-Party System Access→access-management. Mapping
+by sub-category number sidesteps the A0973 category-rollup error. These are
+labeled CANDIDATE (embedding-derived baseline pending human adjudication).
+
+**Consequence — a deliberate decoupling.** The regrounded
+`hasRelatedControl` (taxonomy evidence baseline) now diverges from the risk
+patterns' curated `pair:suggestedControl` (what findings show). These are
+now distinct provenance layers by design: the curated recommendation is the
+more trustworthy and more actionable of the two. The anchor-alignment check
+`test_direct_mitctrl_suggestions_are_anchor_related_controls` was relaxed to
+`…_are_declared_controls` — it still guards against a hallucinated control
+URI (existence), but no longer requires the curated suggestion to be a
+subset of the (unvalidated) CSV rollup, which would be backwards.
+
+Not done (bounded choice): no new IBM risks, no MIT-action layer, and
+`pair:suggestedControl` in the risk patterns is unchanged — so the workbench
+output is unchanged (firing matrix identical: onyx 13/22, uc6 3/7, verba
+6/12). Follow-on option if desired: reground `pair:suggestedControl` from
+the same evidence so findings and mapping fully agree. Suite 44/44.
+
 ## Open items
 
 ### Needs user decision or input

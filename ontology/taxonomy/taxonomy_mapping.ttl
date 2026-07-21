@@ -193,215 +193,222 @@ owasp:llm10-unbounded-consumption
     skos:relatedMatch mit:subdomain-7-3 .
 
 
-#################################################################
-# Section 3 — Risk-to-control grounding (project curation over the
-# MIT mitigation layer; control concepts and their MIT provenance are
-# declared in mit_air_risk_control.ttl)
+# Section 3 - Risk-to-control grounding
+#
+# OWASP-risk -> control-group links (nexus:hasRelatedControl) for
+# LLM01-06 and LLM09 are REGROUNDED (2026-07-17) from the PAIR-AI
+# risk-to-mitigation connection CSV: each risk's IBM-mapped mitigation
+# actions are rolled up to their MIT sub-categories, mapped 1:1 to our
+# mitctrl:* group concepts. These are CANDIDATE associations - the
+# underlying risk->action edges are embedding-matched (cosine top-3,
+# unvalidated), so treat as a semantic baseline pending human review.
+# Sub-category approximations where we omit a concept: 2.2 Model
+# Alignment -> model-safety-engineering; 4.4 Governance Disclosure ->
+# risk-disclosure; 4.5 Third-Party System Access -> access-management.
+# LLM07/08/10 are absent from the CSV and keep their prior curated
+# links. Atlas and MIT-subdomain links, and all reverse links, are
+# unchanged / regenerated as the exact inverse.
 #################################################################
 
-atlas:exposing-personal-information
-    nexus:hasRelatedControl mitctrl:privacy-control-for-user-data ,
-        mitctrl:access-management ,
+## OWASP risk -> control (LLM01-06, 09: CSV-regrounded; 07/08/10: curated)
+owasp:llm01-prompt-injection  # CSV-regrounded
+    nexus:hasRelatedControl mitctrl:data-governance ,
+        mitctrl:incident-reporting ,
+        mitctrl:model-safety-engineering ,
+        mitctrl:risk-disclosure ,
+        mitctrl:testing-auditing .
+
+owasp:llm02-sensitive-information-disclosure  # CSV-regrounded
+    nexus:hasRelatedControl mitctrl:access-management ,
+        mitctrl:content-safety-controls ,
+        mitctrl:data-governance ,
+        mitctrl:model-safety-engineering ,
+        mitctrl:risk-disclosure ,
+        mitctrl:risk-management ,
+        mitctrl:societal-impact-assessment ,
+        mitctrl:testing-auditing .
+
+owasp:llm03-supply-chain  # CSV-regrounded
+    nexus:hasRelatedControl mitctrl:access-management ,
+        mitctrl:data-governance ,
+        mitctrl:risk-disclosure ,
+        mitctrl:system-documentation ,
+        mitctrl:testing-auditing .
+
+owasp:llm04-data-and-model-poisoning  # CSV-regrounded
+    nexus:hasRelatedControl mitctrl:data-governance ,
+        mitctrl:incident-response-recovery .
+
+owasp:llm05-improper-output-handling  # CSV-regrounded
+    nexus:hasRelatedControl mitctrl:safety-decision-frameworks ,
+        mitctrl:system-documentation ,
+        mitctrl:user-rights-recourse .
+
+owasp:llm06-excessive-agency  # CSV-regrounded
+    nexus:hasRelatedControl mitctrl:safety-decision-frameworks ,
+        mitctrl:system-documentation ,
+        mitctrl:user-rights-recourse .
+
+owasp:llm07-system-prompt-leakage  # curated (not in CSV)
+    nexus:hasRelatedControl mitctrl:input-output-filtering ,
+        mitctrl:privacy-control-for-user-data ,
+        mitctrl:prompt-context-limiting ,
+        mitctrl:red-teaming ,
+        mitctrl:system-architecture-documentation .
+
+owasp:llm08-vector-and-embedding-weaknesses  # curated (not in CSV)
+    nexus:hasRelatedControl mitctrl:data-governance ,
+        mitctrl:retrieval-quality-evaluation ,
         mitctrl:retrieval-source-filtering ,
-        mitctrl:redaction ,
-        mitctrl:input-output-filtering ,
-        mitctrl:data-minimization ,
-        mitctrl:data-governance .
+        mitctrl:threat-modelling .
 
-atlas:personal-information-in-prompt
-    nexus:hasRelatedControl mitctrl:privacy-control-for-user-data ,
-        mitctrl:input-output-filtering ,
+owasp:llm09-misinformation  # CSV-regrounded
+    nexus:hasRelatedControl mitctrl:content-safety-controls ,
+        mitctrl:data-governance ,
+        mitctrl:model-safety-engineering ,
+        mitctrl:post-deployment-monitoring ,
+        mitctrl:risk-disclosure ,
+        mitctrl:testing-auditing .
+
+owasp:llm10-unbounded-consumption  # curated (not in CSV)
+    nexus:hasRelatedControl mitctrl:access-management ,
+        mitctrl:incident-response-plan ,
+        mitctrl:post-deployment-behavior-monitoring ,
         mitctrl:prompt-context-limiting .
 
-atlas:personal-information-in-data
-    nexus:hasRelatedControl mitctrl:data-governance ,
-        mitctrl:data-curation-process ,
-        mitctrl:privacy-control-for-user-data .
-
+## IBM Atlas risk -> control (unchanged)
 atlas:confidential-data-in-prompt
     nexus:hasRelatedControl mitctrl:input-output-filtering ,
         mitctrl:prompt-context-limiting ,
+        mitctrl:system-architecture-documentation .
+
+atlas:data-curation
+    nexus:hasRelatedControl mitctrl:data-curation-process ,
+        mitctrl:data-governance ,
+        mitctrl:testing-auditing .
+
+atlas:data-poisoning
+    nexus:hasRelatedControl mitctrl:data-curation-process ,
+        mitctrl:data-governance ,
+        mitctrl:model-infrastructure-security ,
+        mitctrl:testing-auditing .
+
+atlas:data-usage-restrictions
+    nexus:hasRelatedControl mitctrl:data-governance ,
+        mitctrl:risk-disclosure ,
+        mitctrl:system-documentation .
+
+atlas:decision-bias
+    nexus:hasRelatedControl mitctrl:data-curation-process ,
+        mitctrl:data-governance ,
+        mitctrl:societal-impact-assessment ,
+        mitctrl:testing-auditing .
+
+atlas:evasion-attack
+    nexus:hasRelatedControl mitctrl:model-safety-engineering ,
+        mitctrl:red-teaming ,
+        mitctrl:threat-modelling .
+
+atlas:exposing-personal-information
+    nexus:hasRelatedControl mitctrl:access-management ,
+        mitctrl:data-governance ,
+        mitctrl:data-minimization ,
+        mitctrl:input-output-filtering ,
+        mitctrl:privacy-control-for-user-data ,
+        mitctrl:redaction ,
+        mitctrl:retrieval-source-filtering .
+
+atlas:hallucination
+    nexus:hasRelatedControl mitctrl:input-output-filtering ,
+        mitctrl:red-teaming ,
+        mitctrl:retrieval-quality-evaluation ,
+        mitctrl:system-architecture-documentation .
+
+atlas:impact-on-the-environment
+    nexus:hasRelatedControl mitctrl:risk-disclosure ,
+        mitctrl:societal-impact-assessment .
+
+atlas:incomplete-advice
+    nexus:hasRelatedControl mitctrl:human-oversight-protocol ,
+        mitctrl:retrieval-quality-evaluation ,
+        mitctrl:system-documentation .
+
+atlas:legal-accountability
+    nexus:hasRelatedControl mitctrl:risk-disclosure ,
+        mitctrl:risk-management ,
+        mitctrl:risk-register ,
+        mitctrl:system-documentation .
+
+atlas:personal-information-in-data
+    nexus:hasRelatedControl mitctrl:data-curation-process ,
+        mitctrl:data-governance ,
+        mitctrl:privacy-control-for-user-data .
+
+atlas:personal-information-in-prompt
+    nexus:hasRelatedControl mitctrl:input-output-filtering ,
+        mitctrl:privacy-control-for-user-data ,
+        mitctrl:prompt-context-limiting .
+
+atlas:poor-model-accuracy
+    nexus:hasRelatedControl mitctrl:red-teaming ,
+        mitctrl:retrieval-quality-evaluation ,
+        mitctrl:testing-auditing .
+
+atlas:prompt-injection
+    nexus:hasRelatedControl mitctrl:input-output-filtering ,
+        mitctrl:model-safety-engineering ,
+        mitctrl:red-teaming ,
+        mitctrl:retrieval-source-filtering ,
+        mitctrl:threat-modelling .
+
+atlas:prompt-leaking
+    nexus:hasRelatedControl mitctrl:input-output-filtering ,
+        mitctrl:red-teaming ,
         mitctrl:system-architecture-documentation .
 
 atlas:reidentification
     nexus:hasRelatedControl mitctrl:data-governance ,
         mitctrl:privacy-control-for-user-data .
 
-atlas:prompt-injection
-    nexus:hasRelatedControl mitctrl:threat-modelling ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:retrieval-source-filtering ,
-        mitctrl:model-safety-engineering .
-
-atlas:prompt-leaking
-    nexus:hasRelatedControl mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:system-architecture-documentation .
-
-atlas:evasion-attack
-    nexus:hasRelatedControl mitctrl:threat-modelling ,
-        mitctrl:red-teaming ,
-        mitctrl:model-safety-engineering .
-
-atlas:data-poisoning
-    nexus:hasRelatedControl mitctrl:data-governance ,
-        mitctrl:data-curation-process ,
-        mitctrl:model-infrastructure-security ,
-        mitctrl:testing-auditing .
-
-atlas:hallucination
-    nexus:hasRelatedControl mitctrl:retrieval-quality-evaluation ,
-        mitctrl:input-output-filtering ,
-        mitctrl:red-teaming ,
-        mitctrl:system-architecture-documentation .
-
-atlas:incomplete-advice
-    nexus:hasRelatedControl mitctrl:retrieval-quality-evaluation ,
-        mitctrl:human-oversight-protocol ,
-        mitctrl:system-documentation .
-
-atlas:data-curation
-    nexus:hasRelatedControl mitctrl:data-governance ,
-        mitctrl:data-curation-process ,
-        mitctrl:testing-auditing .
-
-atlas:poor-model-accuracy
-    nexus:hasRelatedControl mitctrl:testing-auditing ,
-        mitctrl:red-teaming ,
-        mitctrl:retrieval-quality-evaluation .
-
-atlas:decision-bias
-    nexus:hasRelatedControl mitctrl:data-governance ,
-        mitctrl:data-curation-process ,
-        mitctrl:testing-auditing ,
-        mitctrl:societal-impact-assessment .
-
-atlas:data-usage-restrictions
-    nexus:hasRelatedControl mitctrl:data-governance ,
-        mitctrl:system-documentation ,
-        mitctrl:risk-disclosure .
-
-atlas:legal-accountability
-    nexus:hasRelatedControl mitctrl:risk-management ,
-        mitctrl:risk-register ,
-        mitctrl:system-documentation ,
-        mitctrl:risk-disclosure .
-
-atlas:impact-on-the-environment
-    nexus:hasRelatedControl mitctrl:societal-impact-assessment ,
-        mitctrl:risk-disclosure .
-
-owasp:llm01-prompt-injection
-    nexus:hasRelatedControl mitctrl:threat-modelling ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:retrieval-source-filtering .
-
-owasp:llm02-sensitive-information-disclosure
-    nexus:hasRelatedControl mitctrl:privacy-control-for-user-data ,
-        mitctrl:access-management ,
-        mitctrl:retrieval-source-filtering ,
-        mitctrl:redaction ,
-        mitctrl:input-output-filtering ,
-        mitctrl:data-minimization ,
-        mitctrl:data-governance .
-
-owasp:llm03-supply-chain
-    nexus:hasRelatedControl mitctrl:threat-modelling ,
-        mitctrl:model-infrastructure-security ,
-        mitctrl:system-architecture-documentation ,
-        mitctrl:risk-register ,
-        mitctrl:pre-deployment-risk-assessment ,
-        mitctrl:data-governance .
-
-owasp:llm04-data-and-model-poisoning
-    nexus:hasRelatedControl mitctrl:data-governance ,
-        mitctrl:data-curation-process ,
-        mitctrl:threat-modelling ,
-        mitctrl:model-infrastructure-security ,
-        mitctrl:testing-auditing .
-
-owasp:llm05-improper-output-handling
-    nexus:hasRelatedControl mitctrl:input-output-filtering ,
-        mitctrl:content-safety-controls ,
-        mitctrl:testing-auditing ,
-        mitctrl:incident-response-plan ,
-        mitctrl:human-oversight-protocol .
-
-owasp:llm06-excessive-agency
-    nexus:hasRelatedControl mitctrl:access-management ,
-        mitctrl:human-oversight-protocol ,
-        mitctrl:post-deployment-behavior-monitoring ,
-        mitctrl:threat-modelling ,
-        mitctrl:prompt-context-limiting ,
-        mitctrl:risk-register .
-
-owasp:llm07-system-prompt-leakage
-    nexus:hasRelatedControl mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:prompt-context-limiting ,
-        mitctrl:system-architecture-documentation ,
-        mitctrl:privacy-control-for-user-data .
-
-owasp:llm08-vector-and-embedding-weaknesses
-    nexus:hasRelatedControl mitctrl:retrieval-quality-evaluation ,
-        mitctrl:retrieval-source-filtering ,
-        mitctrl:data-governance ,
-        mitctrl:threat-modelling .
-
-owasp:llm09-misinformation
-    nexus:hasRelatedControl mitctrl:retrieval-quality-evaluation ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:human-oversight-protocol .
-
-owasp:llm10-unbounded-consumption
-    nexus:hasRelatedControl mitctrl:prompt-context-limiting ,
-        mitctrl:post-deployment-behavior-monitoring ,
-        mitctrl:access-management ,
-        mitctrl:incident-response-plan .
-
-## MIT AI Risk Repository subdomain-to-control grounding
-
+## MIT subdomain -> control (unchanged)
 mit:subdomain-1-2
     nexus:hasRelatedControl mitctrl:content-safety-controls ,
         mitctrl:input-output-filtering ,
         mitctrl:red-teaming .
 
 mit:subdomain-1-3
-    nexus:hasRelatedControl mitctrl:data-governance ,
-        mitctrl:data-curation-process ,
+    nexus:hasRelatedControl mitctrl:data-curation-process ,
+        mitctrl:data-governance ,
         mitctrl:testing-auditing .
 
 mit:subdomain-2-1
-    nexus:hasRelatedControl mitctrl:privacy-control-for-user-data ,
-        mitctrl:access-management ,
+    nexus:hasRelatedControl mitctrl:access-management ,
         mitctrl:data-governance ,
-        mitctrl:retrieval-source-filtering ,
-        mitctrl:redaction ,
         mitctrl:data-minimization ,
-        mitctrl:input-output-filtering .
+        mitctrl:input-output-filtering ,
+        mitctrl:privacy-control-for-user-data ,
+        mitctrl:redaction ,
+        mitctrl:retrieval-source-filtering .
 
 mit:subdomain-2-2
-    nexus:hasRelatedControl mitctrl:threat-modelling ,
-        mitctrl:red-teaming ,
-        mitctrl:model-infrastructure-security ,
+    nexus:hasRelatedControl mitctrl:access-management ,
+        mitctrl:incident-response-plan ,
         mitctrl:input-output-filtering ,
-        mitctrl:access-management ,
-        mitctrl:incident-response-plan .
+        mitctrl:model-infrastructure-security ,
+        mitctrl:red-teaming ,
+        mitctrl:threat-modelling .
 
 mit:subdomain-3-1
-    nexus:hasRelatedControl mitctrl:retrieval-quality-evaluation ,
+    nexus:hasRelatedControl mitctrl:human-oversight-protocol ,
         mitctrl:input-output-filtering ,
         mitctrl:red-teaming ,
-        mitctrl:human-oversight-protocol .
+        mitctrl:retrieval-quality-evaluation .
 
 mit:subdomain-4-3
-    nexus:hasRelatedControl mitctrl:threat-modelling ,
+    nexus:hasRelatedControl mitctrl:content-safety-controls ,
+        mitctrl:incident-response-plan ,
         mitctrl:red-teaming ,
-        mitctrl:content-safety-controls ,
-        mitctrl:incident-response-plan .
+        mitctrl:threat-modelling .
 
 mit:subdomain-5-1
     nexus:hasRelatedControl mitctrl:human-oversight-protocol ,
@@ -409,158 +416,233 @@ mit:subdomain-5-1
         mitctrl:system-documentation .
 
 mit:subdomain-5-2
-    nexus:hasRelatedControl mitctrl:human-oversight-protocol ,
-        mitctrl:access-management ,
+    nexus:hasRelatedControl mitctrl:access-management ,
+        mitctrl:human-oversight-protocol ,
         mitctrl:risk-register .
 
 mit:subdomain-6-6
-    nexus:hasRelatedControl mitctrl:prompt-context-limiting ,
-        mitctrl:post-deployment-behavior-monitoring ,
-        mitctrl:societal-impact-assessment ,
-        mitctrl:risk-disclosure .
+    nexus:hasRelatedControl mitctrl:post-deployment-behavior-monitoring ,
+        mitctrl:prompt-context-limiting ,
+        mitctrl:risk-disclosure ,
+        mitctrl:societal-impact-assessment .
 
 mit:subdomain-7-3
-    nexus:hasRelatedControl mitctrl:retrieval-quality-evaluation ,
-        mitctrl:testing-auditing ,
-        mitctrl:data-governance ,
-        mitctrl:red-teaming .
+    nexus:hasRelatedControl mitctrl:data-governance ,
+        mitctrl:red-teaming ,
+        mitctrl:retrieval-quality-evaluation ,
+        mitctrl:testing-auditing .
 
 mit:subdomain-7-4
-    nexus:hasRelatedControl mitctrl:system-documentation ,
+    nexus:hasRelatedControl mitctrl:risk-disclosure ,
         mitctrl:system-architecture-documentation ,
-        mitctrl:risk-disclosure .
+        mitctrl:system-documentation .
 
-## Reverse control-to-risk links
-
-mitctrl:privacy-control-for-user-data
-    nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-prompt ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-data ;
+## Reverse control-to-risk links (exact inverse of the above)
+mitctrl:access-management
     nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
-    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 .
-
-mitctrl:retrieval-source-filtering
-    nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-injection ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm01-prompt-injection ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm08-vector-and-embedding-weaknesses .
-
-mitctrl:retrieval-quality-evaluation
-    nexus:mitigatesRiskTaxonomyEntry atlas:hallucination ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:incomplete-advice ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm08-vector-and-embedding-weaknesses ;
-    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-3-1 ;
-    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-7-3 .
-
-mitctrl:input-output-filtering
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm01-prompt-injection ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-injection ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:hallucination .
-
-mitctrl:redaction
-    nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-prompt ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:confidential-data-in-prompt ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
-    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 .
-
-mitctrl:data-minimization
-    nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-data ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
-    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 .
-
-mitctrl:prompt-context-limiting
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm10-unbounded-consumption ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:confidential-data-in-prompt ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-prompt .
+    nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-2 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-5-2 .
 
-mitctrl:data-governance
-    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-data ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:data-curation ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:data-poisoning ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:data-usage-restrictions ;
+mitctrl:content-safety-controls
     nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm04-data-and-model-poisoning ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm08-vector-and-embedding-weaknesses ;
-    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 .
-
-mitctrl:red-teaming
-    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-injection ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:hallucination ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm01-prompt-injection ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation .
-
-mitctrl:system-architecture-documentation
-    nexus:mitigatesRiskTaxonomyEntry atlas:legal-accountability ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
-    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-7-4 .
-
-mitctrl:post-deployment-behavior-monitoring
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm10-unbounded-consumption ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:redundant-actions-agentic .
-
-mitctrl:threat-modelling
-    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-injection ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:evasion-attack ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm01-prompt-injection ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm04-data-and-model-poisoning ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm08-vector-and-embedding-weaknesses .
-
-mitctrl:model-infrastructure-security
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm04-data-and-model-poisoning .
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-1-2 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-4-3 .
 
 mitctrl:data-curation-process
     nexus:mitigatesRiskTaxonomyEntry atlas:data-curation ;
     nexus:mitigatesRiskTaxonomyEntry atlas:data-poisoning ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm04-data-and-model-poisoning .
+    nexus:mitigatesRiskTaxonomyEntry atlas:decision-bias ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-data ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-1-3 .
 
-mitctrl:testing-auditing
-    nexus:mitigatesRiskTaxonomyEntry atlas:data-curation ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:poor-model-accuracy ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm04-data-and-model-poisoning ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling .
-
-mitctrl:content-safety-controls
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling .
-
-mitctrl:incident-response-plan
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm10-unbounded-consumption .
-
-mitctrl:human-oversight-protocol
-    nexus:mitigatesRiskTaxonomyEntry atlas:incomplete-advice ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation .
-
-mitctrl:access-management
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency ;
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm10-unbounded-consumption ;
+mitctrl:data-governance
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm01-prompt-injection ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm04-data-and-model-poisoning ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm08-vector-and-embedding-weaknesses ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-curation ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-poisoning ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-usage-restrictions ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:decision-bias ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-data ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:reidentification ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-1-3 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-7-3 .
+
+mitctrl:data-minimization
     nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
     nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 .
 
-mitctrl:risk-register
+mitctrl:human-oversight-protocol
+    nexus:mitigatesRiskTaxonomyEntry atlas:incomplete-advice ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-3-1 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-5-1 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-5-2 .
+
+mitctrl:incident-reporting
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm01-prompt-injection .
+
+mitctrl:incident-response-plan
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm10-unbounded-consumption ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-2 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-4-3 .
+
+mitctrl:incident-response-recovery
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm04-data-and-model-poisoning .
+
+mitctrl:input-output-filtering
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:confidential-data-in-prompt ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:hallucination ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-prompt ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-injection ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-leaking ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-1-2 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-2 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-3-1 .
+
+mitctrl:model-infrastructure-security
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-poisoning ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-2 .
+
+mitctrl:model-safety-engineering
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm01-prompt-injection ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:evasion-attack ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-injection .
+
+mitctrl:post-deployment-behavior-monitoring
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm10-unbounded-consumption ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-6-6 .
+
+mitctrl:post-deployment-monitoring
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation .
+
+mitctrl:privacy-control-for-user-data
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-data ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-prompt ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:reidentification ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 .
+
+mitctrl:prompt-context-limiting
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm10-unbounded-consumption ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:confidential-data-in-prompt ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-prompt ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-6-6 .
+
+mitctrl:red-teaming
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:evasion-attack ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:hallucination ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:poor-model-accuracy ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-injection ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-leaking ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-1-2 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-2 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-3-1 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-4-3 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-7-3 .
+
+mitctrl:redaction
+    nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 .
+
+mitctrl:retrieval-quality-evaluation
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm08-vector-and-embedding-weaknesses ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:hallucination ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:incomplete-advice ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:poor-model-accuracy ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-3-1 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-7-3 .
+
+mitctrl:retrieval-source-filtering
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm08-vector-and-embedding-weaknesses ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-injection ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-1 .
+
+mitctrl:risk-disclosure
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm01-prompt-injection ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-usage-restrictions ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:impact-on-the-environment ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:legal-accountability ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-5-1 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-6-6 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-7-4 .
+
+mitctrl:risk-management
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:legal-accountability .
+
+mitctrl:risk-register
+    nexus:mitigatesRiskTaxonomyEntry atlas:legal-accountability ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-5-2 .
+
+mitctrl:safety-decision-frameworks
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency .
 
-mitctrl:pre-deployment-risk-assessment
-    nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain .
+mitctrl:societal-impact-assessment
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:decision-bias ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:impact-on-the-environment ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-6-6 .
+
+mitctrl:system-architecture-documentation
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm07-system-prompt-leakage ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:confidential-data-in-prompt ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:hallucination ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-leaking ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-7-4 .
+
+mitctrl:system-documentation
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-usage-restrictions ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:incomplete-advice ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:legal-accountability ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-5-1 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-7-4 .
+
+mitctrl:testing-auditing
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm01-prompt-injection ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-curation ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-poisoning ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:decision-bias ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:poor-model-accuracy ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-1-3 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-7-3 .
+
+mitctrl:threat-modelling
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm08-vector-and-embedding-weaknesses ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:evasion-attack ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:prompt-injection ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-2-2 ;
+    nexus:mitigatesRiskTaxonomyEntry mit:subdomain-4-3 .
+
+mitctrl:user-rights-recourse
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling ;
+    nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency .
+
