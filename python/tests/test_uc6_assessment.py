@@ -83,8 +83,16 @@ def test_sensitive_data_finding_includes_cross_taxonomy_alignment() -> None:
     assert OWASP["llm02-sensitive-information-disclosure"] in risks
     assert ATLAS["exposing-personal-information"] in risks
     assert MIT["subdomain-2-1"] in risks
-    assert MITCTRL["privacy-control-for-user-data"] in controls
-    assert MITCTRL["retrieval-source-filtering"] in controls
+    # CSV-grounded MIT control anchors (2026-07-17 regrounding): the llm02
+    # action rollup lands on these governance/data groups.
+    assert MITCTRL["data-governance"] in controls
+    assert MITCTRL["access-management"] in controls
+    # The actionable privacy + retrieval controls survive in PAIR-AI's own
+    # control layer (pat:Control_*), which the regrounding left untouched -
+    # the specific mitctrl:privacy-control-for-user-data / retrieval-source-
+    # filtering anchors were replaced by the coarser CSV-grounded set.
+    assert PAT["Control_DataMinimizationAndRedaction"] in controls
+    assert PAT["Control_RetrievalAccessControl"] in controls
 
 
 def test_verba_external_model_produces_supply_chain_finding() -> None:
