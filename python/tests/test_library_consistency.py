@@ -273,20 +273,30 @@ def test_pattern_conditions_operationalize_anchor_conditions(aligned) -> None:
     assert not offenders, "\n".join(sorted(offenders))
 
 
-def test_direct_mitctrl_suggestions_are_anchor_related_controls(aligned) -> None:
+def test_direct_mitctrl_suggestions_are_declared_controls(aligned) -> None:
     """Every mitctrl:* control suggested directly by a pattern must be a
-    nexus:hasRelatedControl of the pattern's OWASP anchor in the mapping
-    layer (pat:Control_* aggregates are exempt - they are project controls)."""
+    declared control concept in the MIT control taxonomy (existence guard
+    against a hallucinated control URI).
+
+    NOTE (2026-07-17): this deliberately no longer requires the suggested
+    control to be a nexus:hasRelatedControl of the pattern's OWASP anchor.
+    That invariant held while both the curated pair:suggestedControl links
+    and the taxonomy's owasp->hasRelatedControl links were hand-curated in
+    step. Section 3 of taxonomy_mapping.ttl was then regrounded from the
+    risk-to-mitigation CSV (embedding-matched action->subcategory rollup),
+    deliberately decoupling the two into distinct provenance layers:
+    hasRelatedControl is now a candidate evidence baseline, while
+    pair:suggestedControl is the curated, more-actionable recommendation
+    (and is the more trustworthy of the two - requiring it to be a subset of
+    an unvalidated embedding rollup would be backwards)."""
     mitctrl_ns = str(NAMESPACES["mitctrl"])
+    declared = {s for s in aligned.subjects(SKOS_NS.prefLabel)
+                if str(s).startswith(mitctrl_ns)}
     offenders = []
     for rp in aligned.subjects(RDF.type, PAIR.RiskPattern):
-        anchor = _anchor(aligned, rp)
-        if anchor is None:
-            continue
-        related = set(aligned.objects(anchor, NEXUS.hasRelatedControl))
         for ctrl in aligned.objects(rp, PAIR.suggestedControl):
-            if str(ctrl).startswith(mitctrl_ns) and ctrl not in related:
-                offenders.append(f"{rp}: {ctrl} is not a related control of anchor {anchor}")
+            if str(ctrl).startswith(mitctrl_ns) and ctrl not in declared:
+                offenders.append(f"{rp}: {ctrl} is not a declared mitctrl control")
     assert not offenders, "\n".join(sorted(offenders))
 
 
