@@ -1,0 +1,88 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:BatchTrainingMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Batch Training Motif match"@en ;
+        pair:matchesMotif pat:BatchTrainingMotif ;
+        pair:hasNodeBinding ?datasetBinding ,
+            ?evaluationResultBinding ,
+            ?evaluationStepBinding ,
+            ?modelArtifactBinding ,
+            ?preprocessStepBinding ,
+            ?schedulerBinding ,
+            ?trainingDataBinding ,
+            ?trainingStepBinding .
+
+    ?datasetBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_DatasetNode ; pair:matchedElement ?dataset .
+    ?evaluationResultBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_EvaluationResultNode ; pair:matchedElement ?evaluationResult .
+    ?evaluationStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_EvaluationStepNode ; pair:matchedElement ?evaluationStep .
+    ?modelArtifactBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_ModelArtifactNode ; pair:matchedElement ?modelArtifact .
+    ?preprocessStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_PreprocessStepNode ; pair:matchedElement ?preprocessStep .
+    ?schedulerBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_SchedulerNode ; pair:matchedElement ?scheduler .
+    ?trainingDataBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_TrainingDataNode ; pair:matchedElement ?trainingData .
+    ?trainingStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_TrainingStepNode ; pair:matchedElement ?trainingStep .
+}
+WHERE {
+    ?dataset a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:TrainingDataset .
+    ?evaluationResult a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:EvaluationResult .
+    ?evaluationStep a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:EvaluationStep .
+    ?modelArtifact a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:ModelArtifact .
+    ?preprocessStep a beam:Transform ;
+           pair:playsRole/pair:subRoleOf* pair:PreprocessingStep .
+    ?scheduler a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:JobScheduler .
+    ?trainingData a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PreprocessedData .
+    ?trainingStep a beam:Train ;
+           pair:playsRole/pair:subRoleOf* pair:TrainingStep .
+
+    ?scheduler beam:inform ?preprocessStep .
+    ?preprocessStep beam:use ?dataset .
+    ?preprocessStep beam:produce ?trainingData .
+    ?preprocessStep beam:inform ?trainingStep .
+    ?trainingStep beam:use ?trainingData .
+    ?trainingStep beam:produce ?modelArtifact .
+    ?trainingStep beam:inform ?evaluationStep .
+    ?evaluationStep beam:use ?modelArtifact .
+    ?evaluationStep beam:produce ?evaluationResult .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/batch-training/",
+        ENCODE_FOR_URI(STR(?dataset)),
+        "/",
+        ENCODE_FOR_URI(STR(?evaluationResult)),
+        "/",
+        ENCODE_FOR_URI(STR(?evaluationStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?modelArtifact)),
+        "/",
+        ENCODE_FOR_URI(STR(?preprocessStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?scheduler)),
+        "/",
+        ENCODE_FOR_URI(STR(?trainingData)),
+        "/",
+        ENCODE_FOR_URI(STR(?trainingStep))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/dataset")) AS ?datasetBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/evaluation-result")) AS ?evaluationResultBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/evaluation-step")) AS ?evaluationStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/model-artifact")) AS ?modelArtifactBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/preprocess-step")) AS ?preprocessStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/scheduler")) AS ?schedulerBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/training-data")) AS ?trainingDataBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/training-step")) AS ?trainingStepBinding)
+}

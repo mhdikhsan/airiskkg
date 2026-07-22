@@ -1,0 +1,64 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:TrainingToServingMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Training-to-Serving Motif match"@en ;
+        pair:matchesMotif pat:TrainingToServingMotif ;
+        pair:hasNodeBinding ?autoDeploymentBinding ,
+            ?deployedModelBinding ,
+            ?modelArtifactBinding ,
+            ?predictionStepBinding ,
+            ?trainingPipelineBinding .
+
+    ?autoDeploymentBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainToServe_AutoDeploymentNode ; pair:matchedElement ?autoDeployment .
+    ?deployedModelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainToServe_DeployedModelNode ; pair:matchedElement ?deployedModel .
+    ?modelArtifactBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainToServe_ModelArtifactNode ; pair:matchedElement ?modelArtifact .
+    ?predictionStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainToServe_PredictionStepNode ; pair:matchedElement ?predictionStep .
+    ?trainingPipelineBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainToServe_TrainingPipelineNode ; pair:matchedElement ?trainingPipeline .
+}
+WHERE {
+    ?autoDeployment a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:DeploymentStep .
+    ?deployedModel a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:LoadedModel .
+    ?modelArtifact a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:ModelArtifact .
+    ?predictionStep a beam:Infer ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionStep .
+    ?trainingPipeline a beam:Train ;
+           pair:playsRole/pair:subRoleOf* pair:TrainingPipeline .
+
+    ?trainingPipeline beam:produce ?modelArtifact .
+    ?trainingPipeline beam:inform ?autoDeployment .
+    ?autoDeployment beam:use ?modelArtifact .
+    ?autoDeployment beam:produce ?deployedModel .
+    ?autoDeployment beam:inform ?predictionStep .
+    ?predictionStep beam:use ?deployedModel .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/training-to-serving/",
+        ENCODE_FOR_URI(STR(?autoDeployment)),
+        "/",
+        ENCODE_FOR_URI(STR(?deployedModel)),
+        "/",
+        ENCODE_FOR_URI(STR(?modelArtifact)),
+        "/",
+        ENCODE_FOR_URI(STR(?predictionStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?trainingPipeline))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/auto-deployment")) AS ?autoDeploymentBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/deployed-model")) AS ?deployedModelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/model-artifact")) AS ?modelArtifactBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/prediction-step")) AS ?predictionStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/training-pipeline")) AS ?trainingPipelineBinding)
+}

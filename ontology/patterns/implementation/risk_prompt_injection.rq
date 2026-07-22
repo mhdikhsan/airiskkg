@@ -65,11 +65,7 @@ WHERE {
         ?implementedControl beamr:associatedTo ?generationStep .
     }
 
-    # Instance-grounded mechanism narrative (presentation only; adds no
-    # filter, changes no finding count). The pattern's canonical curated
-    # causal text is reused verbatim from the mechanism (single source);
-    # only an instance frame naming match-stable elements is appended, so
-    # exactly one narrative is produced per finding.
+
     OPTIONAL { ?mechanism dct:description ?mechanismText . }
     BIND(CONCAT(
         COALESCE(?mechanismText, ""),
