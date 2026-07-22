@@ -1,0 +1,79 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:HybridRetrieverMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Hybrid Retriever Motif match"@en ;
+        pair:matchesMotif pat:HybridRetrieverMotif ;
+        pair:hasNodeBinding ?aggregationBinding ,
+            ?candidateSetBinding ,
+            ?keywordIndexBinding ,
+            ?keywordSearchBinding ,
+            ?queryBinding ,
+            ?vectorIndexBinding ,
+            ?vectorSearchBinding .
+
+    ?aggregationBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_AggregationNode ; pair:matchedElement ?aggregation .
+    ?candidateSetBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_CandidateSetNode ; pair:matchedElement ?candidateSet .
+    ?keywordIndexBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_KeywordIndexNode ; pair:matchedElement ?keywordIndex .
+    ?keywordSearchBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_KeywordSearchNode ; pair:matchedElement ?keywordSearch .
+    ?queryBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_QueryNode ; pair:matchedElement ?query .
+    ?vectorIndexBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_VectorIndexNode ; pair:matchedElement ?vectorIndex .
+    ?vectorSearchBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_VectorSearchNode ; pair:matchedElement ?vectorSearch .
+}
+WHERE {
+    ?aggregation a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:AggregationStep .
+    ?candidateSet a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:RetrievedCandidateSet .
+    ?keywordIndex a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:KeywordIndex .
+    ?keywordSearch a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:KeywordSearchStep .
+    ?query a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:UserInput .
+    ?vectorIndex a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:VectorIndex .
+    ?vectorSearch a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:VectorSearchStep .
+
+    ?vectorSearch beam:use ?query .
+    ?vectorSearch beam:use ?vectorIndex .
+    ?keywordSearch beam:use ?query .
+    ?keywordSearch beam:use ?keywordIndex .
+    ?vectorSearch beam:inform ?aggregation .
+    ?keywordSearch beam:inform ?aggregation .
+    ?aggregation beam:produce ?candidateSet .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/hybrid-retriever/",
+        ENCODE_FOR_URI(STR(?aggregation)),
+        "/",
+        ENCODE_FOR_URI(STR(?candidateSet)),
+        "/",
+        ENCODE_FOR_URI(STR(?keywordIndex)),
+        "/",
+        ENCODE_FOR_URI(STR(?keywordSearch)),
+        "/",
+        ENCODE_FOR_URI(STR(?query)),
+        "/",
+        ENCODE_FOR_URI(STR(?vectorIndex)),
+        "/",
+        ENCODE_FOR_URI(STR(?vectorSearch))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/aggregation")) AS ?aggregationBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/candidate-set")) AS ?candidateSetBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/keyword-index")) AS ?keywordIndexBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/keyword-search")) AS ?keywordSearchBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/query")) AS ?queryBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/vector-index")) AS ?vectorIndexBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/vector-search")) AS ?vectorSearchBinding)
+}

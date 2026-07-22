@@ -1,0 +1,63 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:ModelLoadMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Model Load Motif match"@en ;
+        pair:matchesMotif pat:ModelLoadMotif ;
+        pair:hasNodeBinding ?loadStepBinding ,
+            ?loadedModelBinding ,
+            ?modelArtifactBinding ,
+            ?predictionStepBinding ,
+            ?serverImageBinding .
+
+    ?loadStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelLoad_LoadStepNode ; pair:matchedElement ?loadStep .
+    ?loadedModelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelLoad_LoadedModelNode ; pair:matchedElement ?loadedModel .
+    ?modelArtifactBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelLoad_ModelArtifactNode ; pair:matchedElement ?modelArtifact .
+    ?predictionStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelLoad_PredictionStepNode ; pair:matchedElement ?predictionStep .
+    ?serverImageBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelLoad_ServerImageNode ; pair:matchedElement ?serverImage .
+}
+WHERE {
+    ?loadStep a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:ModelLoadStep .
+    ?loadedModel a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:LoadedModel .
+    ?modelArtifact a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:ModelArtifact .
+    ?predictionStep a beam:Infer ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionStep .
+    ?serverImage a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:ServingImage .
+
+    ?loadStep beam:use ?serverImage .
+    ?loadStep beam:use ?modelArtifact .
+    ?loadStep beam:produce ?loadedModel .
+    ?loadStep beam:inform ?predictionStep .
+    ?predictionStep beam:use ?loadedModel .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/model-load/",
+        ENCODE_FOR_URI(STR(?loadStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?loadedModel)),
+        "/",
+        ENCODE_FOR_URI(STR(?modelArtifact)),
+        "/",
+        ENCODE_FOR_URI(STR(?predictionStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?serverImage))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/load-step")) AS ?loadStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/loaded-model")) AS ?loadedModelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/model-artifact")) AS ?modelArtifactBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/prediction-step")) AS ?predictionStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/server-image")) AS ?serverImageBinding)
+}

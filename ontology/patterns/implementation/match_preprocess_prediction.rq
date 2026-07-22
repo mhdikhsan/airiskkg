@@ -1,0 +1,71 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:PreprocessPredictionMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Prep-Pred / Preprocess-Prediction Motif match"@en ;
+        pair:matchesMotif pat:PreprocessPredictionMotif ;
+        pair:hasNodeBinding ?inputBinding ,
+            ?modelBinding ,
+            ?predictionStepBinding ,
+            ?preprocessStepBinding ,
+            ?preprocessedDataBinding ,
+            ?resultBinding .
+
+    ?inputBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PrepPred_InputNode ; pair:matchedElement ?input .
+    ?modelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PrepPred_ModelNode ; pair:matchedElement ?model .
+    ?predictionStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PrepPred_PredictionStepNode ; pair:matchedElement ?predictionStep .
+    ?preprocessStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PrepPred_PreprocessStepNode ; pair:matchedElement ?preprocessStep .
+    ?preprocessedDataBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PrepPred_PreprocessedDataNode ; pair:matchedElement ?preprocessedData .
+    ?resultBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PrepPred_ResultNode ; pair:matchedElement ?result .
+}
+WHERE {
+    ?input a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionRequest .
+    ?model a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:Model .
+    ?predictionStep a beam:Infer ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionStep .
+    ?preprocessStep a beam:Transform ;
+           pair:playsRole/pair:subRoleOf* pair:PreprocessingStep .
+    ?preprocessedData a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PreprocessedData .
+    ?result a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionResult .
+
+    ?preprocessStep beam:use ?input .
+    ?preprocessStep beam:produce ?preprocessedData .
+    ?preprocessStep beam:inform ?predictionStep .
+    ?predictionStep beam:use ?preprocessedData .
+    ?predictionStep beam:use ?model .
+    ?predictionStep beam:produce ?result .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/preprocess-prediction/",
+        ENCODE_FOR_URI(STR(?input)),
+        "/",
+        ENCODE_FOR_URI(STR(?model)),
+        "/",
+        ENCODE_FOR_URI(STR(?predictionStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?preprocessStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?preprocessedData)),
+        "/",
+        ENCODE_FOR_URI(STR(?result))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/input")) AS ?inputBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/model")) AS ?modelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/prediction-step")) AS ?predictionStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/preprocess-step")) AS ?preprocessStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/preprocessed-data")) AS ?preprocessedDataBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/result")) AS ?resultBinding)
+}

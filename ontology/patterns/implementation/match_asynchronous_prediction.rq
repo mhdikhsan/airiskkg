@@ -1,0 +1,61 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:AsynchronousPredictionMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Asynchronous Prediction Motif match"@en ;
+        pair:matchesMotif pat:AsynchronousPredictionMotif ;
+        pair:hasNodeBinding ?enqueueStepBinding ,
+            ?predictionStepBinding ,
+            ?queueBinding ,
+            ?requestBinding ,
+            ?resultBinding .
+
+    ?enqueueStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:AsyncPred_EnqueueStepNode ; pair:matchedElement ?enqueueStep .
+    ?predictionStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:AsyncPred_PredictionStepNode ; pair:matchedElement ?predictionStep .
+    ?queueBinding a pair:NodeBinding ; pair:bindsPatternNode pat:AsyncPred_QueueNode ; pair:matchedElement ?queue .
+    ?requestBinding a pair:NodeBinding ; pair:bindsPatternNode pat:AsyncPred_RequestNode ; pair:matchedElement ?request .
+    ?resultBinding a pair:NodeBinding ; pair:bindsPatternNode pat:AsyncPred_ResultNode ; pair:matchedElement ?result .
+}
+WHERE {
+    ?enqueueStep a beam:Process .
+    ?predictionStep a beam:Infer ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionStep .
+    ?queue a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionQueue .
+    ?request a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionRequest .
+    ?result a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionResult .
+
+    ?enqueueStep beam:use ?request .
+    ?enqueueStep beam:produce ?queue .
+    ?predictionStep beam:use ?queue .
+    ?predictionStep beam:produce ?result .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/asynchronous-prediction/",
+        ENCODE_FOR_URI(STR(?enqueueStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?predictionStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?queue)),
+        "/",
+        ENCODE_FOR_URI(STR(?request)),
+        "/",
+        ENCODE_FOR_URI(STR(?result))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/enqueue-step")) AS ?enqueueStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/prediction-step")) AS ?predictionStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/queue")) AS ?queueBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/request")) AS ?requestBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/result")) AS ?resultBinding)
+}

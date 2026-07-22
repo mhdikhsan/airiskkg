@@ -1,0 +1,103 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX beamr: <http://w3id.org/beam/risk#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+# Misinformation from WEAK grounding (OWASP LLM09), the RAG counterpart of
+# risk_direct_prompting_without_grounding.rq. A RAG match already guarantees
+# grounding is PRESENT (retrieved context reaches generation through the motif
+# structure); this pattern fires when that grounded generation reaches a
+# response with NO represented verification of the output (no evaluation or
+# scoring step consuming the response). Grounded but unverified => candidate
+# misinformation. Candidate framing: absence of a verification step in the
+# submitted graph is closed-world over that graph only (OWA).
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate misinformation from weak grounding"@en ;
+        dct:description "A retrieval-augmented generation step produces a response from retrieved context, but no verification, evaluation, or scoring step over the response is represented in the architecture graph."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif pat:RetrievalAugmentedGenerationMotif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:mechanismNarrative ?mechanismNarrative ;
+        pair:hasEvidence ?query ,
+            ?retrievedCtx ,
+            ?genStep ,
+            ?llm ,
+            ?response ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    pat:MisinformationFromWeakGroundingRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    ?match
+        a pair:MotifMatch ;
+        pair:matchesMotif pat:RetrievalAugmentedGenerationMotif ;
+        pair:hasNodeBinding ?queryBinding ,
+            ?retrievedCtxBinding ,
+            ?genStepBinding ,
+            ?llmBinding ,
+            ?responseBinding .
+
+    ?queryBinding
+        pair:bindsPatternNode pat:RAG_QueryNode ;
+        pair:matchedElement ?query .
+    ?retrievedCtxBinding
+        pair:bindsPatternNode pat:RAG_RetrievedContextNode ;
+        pair:matchedElement ?retrievedCtx .
+    ?genStepBinding
+        pair:bindsPatternNode pat:RAG_GenerationStepNode ;
+        pair:matchedElement ?genStep .
+    ?llmBinding
+        pair:bindsPatternNode pat:RAG_LLMNode ;
+        pair:matchedElement ?llm .
+    ?responseBinding
+        pair:bindsPatternNode pat:RAG_ResponseNode ;
+        pair:matchedElement ?response .
+
+    # Weak grounding: no represented verification of the generated response.
+    FILTER NOT EXISTS {
+        ?verificationStep beam:use ?response .
+        { ?verificationStep pair:playsRole/pair:subRoleOf* pair:EvaluationStep }
+        UNION
+        { ?verificationStep pair:playsRole/pair:subRoleOf* pair:ScoringStep }
+    }
+
+    # A represented grounding/verification control on the response also exempts
+    # the pipeline (mirrors the control-presence guard in the other risk OQPs).
+    FILTER NOT EXISTS {
+        pat:MisinformationFromWeakGroundingRiskPattern pair:suggestedControl ?implementedControl .
+        ?implementedControl beamr:associatedTo ?genStep .
+    }
+
+    # Instance-grounded mechanism narrative (presentation only; adds no filter,
+    # changes no finding count). The pattern's canonical curated causal text is
+    # reused verbatim from the mechanism; only an instance frame naming
+    # match-stable elements is appended, so exactly one narrative per finding.
+    OPTIONAL { ?mechanism dct:description ?mechanismText . }
+    BIND(CONCAT(
+        COALESCE(?mechanismText, ""),
+        " Here generation step ", IF(CONTAINS(STR(COALESCE(?genStep, "")), "#"), STRAFTER(STR(COALESCE(?genStep, "")), "#"), STR(COALESCE(?genStep, ""))), " produces response ", IF(CONTAINS(STR(COALESCE(?response, "")), "#"), STRAFTER(STR(COALESCE(?response, "")), "#"), STR(COALESCE(?response, ""))), " from retrieved context ", IF(CONTAINS(STR(COALESCE(?retrievedCtx, "")), "#"), STRAFTER(STR(COALESCE(?retrievedCtx, "")), "#"), STR(COALESCE(?retrievedCtx, ""))), " with no represented verification, evaluation, or scoring step."
+    ) AS ?mechanismNarrative)
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/misinformation-weak-grounding"
+    )) AS ?riskFinding)
+}

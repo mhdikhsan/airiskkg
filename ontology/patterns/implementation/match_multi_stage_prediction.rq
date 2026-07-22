@@ -1,0 +1,79 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:MultiStagePredictionMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Multi-stage Prediction Motif match"@en ;
+        pair:matchesMotif pat:MultiStagePredictionMotif ;
+        pair:hasNodeBinding ?fastModelBinding ,
+            ?fastPredictionStepBinding ,
+            ?improvedResultBinding ,
+            ?quickResultBinding ,
+            ?requestBinding ,
+            ?slowModelBinding ,
+            ?slowPredictionStepBinding .
+
+    ?fastModelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:MultiStage_FastModelNode ; pair:matchedElement ?fastModel .
+    ?fastPredictionStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:MultiStage_FastPredictionStepNode ; pair:matchedElement ?fastPredictionStep .
+    ?improvedResultBinding a pair:NodeBinding ; pair:bindsPatternNode pat:MultiStage_ImprovedResultNode ; pair:matchedElement ?improvedResult .
+    ?quickResultBinding a pair:NodeBinding ; pair:bindsPatternNode pat:MultiStage_QuickResultNode ; pair:matchedElement ?quickResult .
+    ?requestBinding a pair:NodeBinding ; pair:bindsPatternNode pat:MultiStage_RequestNode ; pair:matchedElement ?request .
+    ?slowModelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:MultiStage_SlowModelNode ; pair:matchedElement ?slowModel .
+    ?slowPredictionStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:MultiStage_SlowPredictionStepNode ; pair:matchedElement ?slowPredictionStep .
+}
+WHERE {
+    ?fastModel a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:Model .
+    ?fastPredictionStep a beam:Infer ;
+           pair:playsRole/pair:subRoleOf* pair:FastPredictionStep .
+    ?improvedResult a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionResult .
+    ?quickResult a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionResult .
+    ?request a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionRequest .
+    ?slowModel a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:Model .
+    ?slowPredictionStep a beam:Infer ;
+           pair:playsRole/pair:subRoleOf* pair:SlowPredictionStep .
+
+    ?fastPredictionStep beam:use ?request .
+    ?fastPredictionStep beam:use ?fastModel .
+    ?fastPredictionStep beam:produce ?quickResult .
+    ?fastPredictionStep beam:inform ?slowPredictionStep .
+    ?slowPredictionStep beam:use ?request .
+    ?slowPredictionStep beam:use ?slowModel .
+    ?slowPredictionStep beam:produce ?improvedResult .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/multi-stage-prediction/",
+        ENCODE_FOR_URI(STR(?fastModel)),
+        "/",
+        ENCODE_FOR_URI(STR(?fastPredictionStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?improvedResult)),
+        "/",
+        ENCODE_FOR_URI(STR(?quickResult)),
+        "/",
+        ENCODE_FOR_URI(STR(?request)),
+        "/",
+        ENCODE_FOR_URI(STR(?slowModel)),
+        "/",
+        ENCODE_FOR_URI(STR(?slowPredictionStep))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/fast-model")) AS ?fastModelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/fast-prediction-step")) AS ?fastPredictionStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/improved-result")) AS ?improvedResultBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/quick-result")) AS ?quickResultBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/request")) AS ?requestBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/slow-model")) AS ?slowModelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/slow-prediction-step")) AS ?slowPredictionStepBinding)
+}
