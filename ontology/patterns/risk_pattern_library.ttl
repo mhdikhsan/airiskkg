@@ -38,7 +38,21 @@
                 <http://w3id.org/airiskkg/taxonomy/mappings#> .
 
 
-# OWASP-inspired suggested controls
+# PAIR-AI actionable control catalogue (single suggested-control vocabulary)
+#
+# These 12 pat:Control_* individuals are the ONLY vocabulary that appears in
+# pair:suggestedControl (2026-07-21 single-vocabulary refactor). They are
+# PAIR-AI's own architecture-facing controls: each is classified
+# technical/non-technical and, where applicable, linked to a realizing motif in
+# control_mitigation_layer.ttl.
+#
+# The skos:relatedMatch links below to mitctrl:* are an INDICATIVE bridge
+# (which MIT mitigation family each control corresponds to), not audited SSSOM
+# mappings - they are PAIR-AI curation and carry no upstream provenance. The
+# evidence-grounded risk -> MIT-control-family links live separately in
+# taxonomy_mapping.ttl (owasp:* nexus:hasRelatedControl mitctrl:*, CSV-grounded)
+# and are surfaced by a finding as an evidence layer via its taxonomy entries -
+# they are no longer mirrored into pair:suggestedControl.
 
 pat:Control_InputValidationAndPromptIsolation
     a beamr:RiskControl ;
@@ -128,8 +142,8 @@ pat:Control_LoggingMonitoringAndEvals
 
 pat:Control_Guardrails
     a beamr:RiskControl ;
-    skos:prefLabel "Input and output guardrails"@en ;
-    dct:description "Use input and output guardrails to block, route, or sanitize unsafe prompts and generated responses."@en ;
+    skos:prefLabel "Input and output filtering"@en ;
+    dct:description "Use input and output filtering to block, route, or sanitize unsafe prompts and generated responses."@en ;
     skos:relatedMatch mitctrl:content-safety-controls ,
                       mitctrl:input-output-filtering ,
                       mitctrl:model-safety-engineering .
@@ -291,12 +305,7 @@ pat:PromptInjectionRiskPattern
     pair:suggestedControl
         pat:Control_InputValidationAndPromptIsolation ,
         pat:Control_Guardrails ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:data-governance ,
-        mitctrl:incident-reporting ,
-        mitctrl:model-safety-engineering ,
-        mitctrl:risk-disclosure ,
-        mitctrl:testing-auditing ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:PromptInjectionOQP .
 
 pat:SensitiveDataRetrievalExposureRiskPattern
@@ -324,15 +333,7 @@ pat:SensitiveDataRetrievalExposureRiskPattern
         pat:Control_DataMinimizationAndRedaction ,
         pat:Control_RetrievalAccessControl ,
         pat:Control_OutputValidationAndSanitization ,
-        pat:Control_Guardrails ,
-        mitctrl:access-management ,
-        mitctrl:content-safety-controls ,
-        mitctrl:data-governance ,
-        mitctrl:model-safety-engineering ,
-        mitctrl:risk-disclosure ,
-        mitctrl:risk-management ,
-        mitctrl:societal-impact-assessment ,
-        mitctrl:testing-auditing ;
+        pat:Control_Guardrails ;
     pair:implementedBy pat:SensitiveDataRetrievalExposureOQP .
 
 pat:SupplyChainCompromiseRiskPattern
@@ -355,12 +356,7 @@ pat:SupplyChainCompromiseRiskPattern
         mit:subdomain-7-4 ;
     pair:suggestedControl
         pat:Control_ModelAndDependencyProvenance ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:access-management ,
-        mitctrl:data-governance ,
-        mitctrl:risk-disclosure ,
-        mitctrl:system-documentation ,
-        mitctrl:testing-auditing ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:SupplyChainCompromiseOQP .
 
 pat:DataAndModelPoisoningRiskPattern
@@ -385,9 +381,7 @@ pat:DataAndModelPoisoningRiskPattern
     pair:suggestedControl
         pat:Control_TrustedTrainingAndIndexingData ,
         pat:Control_ModelAndDependencyProvenance ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:data-governance ,
-        mitctrl:incident-response-recovery ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:DataAndModelPoisoningOQP .
 
 pat:ImproperOutputHandlingRiskPattern
@@ -413,10 +407,7 @@ pat:ImproperOutputHandlingRiskPattern
         mit:subdomain-1-2 ;
     pair:suggestedControl
         pat:Control_OutputValidationAndSanitization ,
-        pat:Control_Guardrails ,
-        mitctrl:safety-decision-frameworks ,
-        mitctrl:system-documentation ,
-        mitctrl:user-rights-recourse ;
+        pat:Control_Guardrails ;
     pair:implementedBy pat:ImproperOutputHandlingOQP .
 
 pat:ExcessiveAgencyRiskPattern
@@ -439,10 +430,7 @@ pat:ExcessiveAgencyRiskPattern
     pair:suggestedControl
         pat:Control_ToolPermissionBoundaries ,
         pat:Control_RateLimitBudgetAndLoopControl ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:safety-decision-frameworks ,
-        mitctrl:system-documentation ,
-        mitctrl:user-rights-recourse ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:ExcessiveAgencyOQP .
 
 pat:SystemPromptLeakageRiskPattern
@@ -464,12 +452,7 @@ pat:SystemPromptLeakageRiskPattern
     pair:suggestedControl
         pat:Control_SystemPromptSecrecy ,
         pat:Control_OutputValidationAndSanitization ,
-        pat:Control_Guardrails ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:prompt-context-limiting ,
-        mitctrl:system-architecture-documentation ,
-        mitctrl:privacy-control-for-user-data ;
+        pat:Control_Guardrails ;
     pair:implementedBy pat:SystemPromptLeakageOQP .
 
 pat:VectorAndEmbeddingWeaknessRiskPattern
@@ -492,11 +475,7 @@ pat:VectorAndEmbeddingWeaknessRiskPattern
     pair:suggestedControl
         pat:Control_RetrievalAccessControl ,
         pat:Control_TrustedTrainingAndIndexingData ,
-        pat:Control_GroundingAndVerification ,
-        mitctrl:retrieval-quality-evaluation ,
-        mitctrl:retrieval-source-filtering ,
-        mitctrl:data-governance ,
-        mitctrl:threat-modelling ;
+        pat:Control_GroundingAndVerification ;
     pair:implementedBy pat:VectorAndEmbeddingWeaknessOQP .
 
 pat:DirectPromptingWithoutGroundingRiskPattern
@@ -522,13 +501,7 @@ pat:DirectPromptingWithoutGroundingRiskPattern
         mit:subdomain-7-3 ;
     pair:suggestedControl
         pat:Control_GroundingAndVerification ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:content-safety-controls ,
-        mitctrl:data-governance ,
-        mitctrl:model-safety-engineering ,
-        mitctrl:post-deployment-monitoring ,
-        mitctrl:risk-disclosure ,
-        mitctrl:testing-auditing ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:DirectPromptingWithoutGroundingOQP .
 
 pat:MisinformationFromWeakGroundingRiskPattern
@@ -540,8 +513,9 @@ pat:MisinformationFromWeakGroundingRiskPattern
     # rather than merged into DirectPromptingWithoutGroundingRiskPattern.
     # Same OWASP LLM09 anchor, but this one targets RAG pipelines whose
     # grounding is WEAK (e.g. retrieved context reaches generation without
-    # verification) rather than absent. Awaiting its own OQP now that the
-    # RAG motif matches real pipelines (D1).
+    # verification) rather than absent. Implemented 2026-07-21
+    # (risk_misinformation_weak_grounding.rq): fires on a RAG match whose
+    # response has no represented verification/evaluation/scoring step.
     pair:hasMotif pat:RetrievalAugmentedGenerationMotif ;
     pair:hasMechanism owasp:mechanism-unsupported-generation ;
     pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;
@@ -554,13 +528,8 @@ pat:MisinformationFromWeakGroundingRiskPattern
         mit:subdomain-7-3 ;
     pair:suggestedControl
         pat:Control_GroundingAndVerification ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:content-safety-controls ,
-        mitctrl:data-governance ,
-        mitctrl:model-safety-engineering ,
-        mitctrl:post-deployment-monitoring ,
-        mitctrl:risk-disclosure ,
-        mitctrl:testing-auditing .
+        pat:Control_LoggingMonitoringAndEvals ;
+    pair:implementedBy pat:MisinformationFromWeakGroundingOQP .
 
 pat:UnboundedConsumptionRiskPattern
     a pair:RiskPattern ;
@@ -589,11 +558,7 @@ pat:UnboundedConsumptionRiskPattern
         mit:subdomain-7-3 ;
     pair:suggestedControl
         pat:Control_RateLimitBudgetAndLoopControl ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:prompt-context-limiting ,
-        mitctrl:post-deployment-behavior-monitoring ,
-        mitctrl:access-management ,
-        mitctrl:incident-response-plan ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:UnboundedConsumptionOQP .
 
 
@@ -726,5 +691,147 @@ pat:UntrustedContentPropagationOQP
     dct:description "Infers pair:containsDataCategory pair:UntrustedContent from public-input/retrieved-context roles and propagates it along beam:use/beam:produce edges, so risk patterns don't depend on every element being hand-tagged."@en ;
     pair:implementationPath "ontology/patterns/implementation/propagate_untrusted_content.rq" ;
     pair:producesOutputType pair:DataCategoryPropagation .
+
+
+# --- Risk-pattern OQP completing the risk pattern library (2026-07-21) ---
+# MisinformationFromWeakGroundingRiskPattern is the RAG counterpart of the
+# direct-prompting-without-grounding pattern (both OWASP LLM09); its OQP fires
+# on RAG matches whose response has no represented verification step.
+
+pat:MisinformationFromWeakGroundingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Misinformation from weak grounding risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk_misinformation_weak_grounding.rq" ;
+    pair:producesOutputType pair:RiskFinding .
+
+
+# --- Motif-matching OQPs completing the motif library (2026-07-21) ---
+# One matching OQP per previously-unimplemented motif (faithful structural
+# projections of each motif's declared PatternNode/PatternEdge blueprint).
+# These produce pair:MotifMatch outputs; risk semantics stay in the risk OQPs.
+# GenAI motifs (Guardrails, Hybrid Retriever, Evals, Fine Tuning) are consumed
+# by match-anchored risk patterns; the Mercari MLOps motifs (prediction /
+# training / lifecycle / operation patterns) are detected for completeness and
+# workbench reporting even where no risk pattern yet consumes them.
+
+pat:SyncPred_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Synchronous Prediction Motif matching OQP"@en ;
+    pair:implementsMotif pat:SynchronousPredictionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_synchronous_prediction.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:AsyncPred_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Asynchronous Prediction Motif matching OQP"@en ;
+    pair:implementsMotif pat:AsynchronousPredictionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_asynchronous_prediction.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:BatchPred_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Batch Prediction Motif matching OQP"@en ;
+    pair:implementsMotif pat:BatchPredictionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_batch_prediction.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:PrepPred_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Preprocess-Prediction Motif matching OQP"@en ;
+    pair:implementsMotif pat:PreprocessPredictionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_preprocess_prediction.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:MultiStage_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Multi-stage Prediction Motif matching OQP"@en ;
+    pair:implementsMotif pat:MultiStagePredictionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_multi_stage_prediction.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:BatchTrain_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Batch Training Motif matching OQP"@en ;
+    pair:implementsMotif pat:BatchTrainingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_batch_training.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:PipeTrain_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Pipeline Training Motif matching OQP"@en ;
+    pair:implementsMotif pat:PipelineTrainingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_pipeline_training.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:TrainServe_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Train-Then-Serve Motif matching OQP"@en ;
+    pair:implementsMotif pat:TrainThenServeMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_train_then_serve.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:TrainToServe_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Training-to-Serving Motif matching OQP"@en ;
+    pair:implementsMotif pat:TrainingToServingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_training_to_serving.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:PredLog_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Prediction Logging Motif matching OQP"@en ;
+    pair:implementsMotif pat:PredictionLoggingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_prediction_logging.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:PredMon_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Prediction Monitoring Motif matching OQP"@en ;
+    pair:implementsMotif pat:PredictionMonitoringMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_prediction_monitoring.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:ModelLoad_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Model Load Motif matching OQP"@en ;
+    pair:implementsMotif pat:ModelLoadMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_model_load.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:ModelImage_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Model-in-Image Motif matching OQP"@en ;
+    pair:implementsMotif pat:ModelInImageMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_model_in_image.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:FineTune_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Fine Tuning Motif matching OQP"@en ;
+    pair:implementsMotif pat:FineTuningMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_fine_tuning.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:Guardrails_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Guardrails Motif matching OQP"@en ;
+    pair:implementsMotif pat:GuardrailsMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_guardrails.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:Hybrid_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Hybrid Retriever Motif matching OQP"@en ;
+    pair:implementsMotif pat:HybridRetrieverMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_hybrid_retriever.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:Evals_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Evals Motif matching OQP"@en ;
+    pair:implementsMotif pat:EvalsMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_evals.rq" ;
+    pair:producesOutputType pair:MotifMatch .
 
 
