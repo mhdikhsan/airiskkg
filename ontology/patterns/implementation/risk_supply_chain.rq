@@ -1,0 +1,69 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX beamr: <http://w3id.org/beam/risk#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate external model or dependency supply chain exposure"@en ;
+        dct:description "The architecture uses an external model, provider credential, package, artifact, or dependency in an LLM application path."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:mechanismNarrative ?mechanismNarrative ;
+        pair:hasEvidence ?externalResource ,
+            ?usingStep ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    pat:SupplyChainCompromiseRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+    ?match
+        a pair:MotifMatch ;
+        pair:matchesMotif ?motif ;
+        pair:hasNodeBinding ?resourceBinding , ?stepBinding .
+    VALUES ?motif { pat:ExternalDependencyMotif }
+
+    ?resourceBinding
+        pair:bindsPatternNode pat:ExtDep_ExternalResourceNode ;
+        pair:matchedElement ?externalResource .
+    ?stepBinding
+        pair:bindsPatternNode pat:ExtDep_UsingStepNode ;
+        pair:matchedElement ?usingStep .
+
+    FILTER NOT EXISTS {
+        pat:SupplyChainCompromiseRiskPattern pair:suggestedControl ?implementedControl .
+        ?implementedControl beamr:associatedTo ?externalResource .
+    }
+
+    # Instance-grounded mechanism narrative (presentation only; adds no
+    # filter, changes no finding count). The pattern's canonical curated
+    # causal text is reused verbatim from the mechanism (single source);
+    # only an instance frame naming match-stable elements is appended, so
+    # exactly one narrative is produced per finding.
+    OPTIONAL { ?mechanism dct:description ?mechanismText . }
+    BIND(CONCAT(
+        COALESCE(?mechanismText, ""),
+        " Here external resource ", IF(CONTAINS(STR(COALESCE(?externalResource, "")), "#"), STRAFTER(STR(COALESCE(?externalResource, "")), "#"), STR(COALESCE(?externalResource, ""))), " is used by step ", IF(CONTAINS(STR(COALESCE(?usingStep, "")), "#"), STRAFTER(STR(COALESCE(?usingStep, "")), "#"), STR(COALESCE(?usingStep, ""))), " with no represented provenance or governance control."
+    ) AS ?mechanismNarrative)
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/supply-chain"
+    )) AS ?riskFinding)
+}

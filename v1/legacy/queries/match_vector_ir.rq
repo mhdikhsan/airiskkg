@@ -1,0 +1,66 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:   <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Vector-based information retrieval motif match"@en ;
+        pair:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
+        pair:hasNodeBinding ?queryBinding ,
+            ?retrievalBinding ,
+            ?vectorStoreBinding ,
+            ?resultBinding .
+
+    ?queryBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:VectorIR_QueryNode ;
+        pair:matchedElement ?query .
+
+    ?retrievalBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+        pair:matchedElement ?retrievalStep .
+
+    ?vectorStoreBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+        pair:matchedElement ?vectorStore .
+
+    ?resultBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+        pair:matchedElement ?retrievedResult .
+}
+WHERE {
+    ?retrievalStep
+        beam:use ?query ;
+        beam:use ?vectorStore ;
+        beam:produce ?retrievedResult ;
+        pair:playsRole ?retrievalRole .
+    ?retrievalRole pair:subRoleOf* pair:RetrievalStep .
+
+    ?query pair:playsRole ?queryRole .
+    ?queryRole pair:subRoleOf* pair:UserInput .
+
+    ?vectorStore pair:playsRole ?vectorStoreRole .
+    ?vectorStoreRole pair:subRoleOf* pair:VectorStore .
+
+    ?retrievedResult pair:playsRole ?retrievedRole .
+    ?retrievedRole pair:subRoleOf* pair:RetrievedContext .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/",
+        ENCODE_FOR_URI(STR(?retrievalStep)),
+        "/vector-ir/",
+        ENCODE_FOR_URI(STR(?query)),
+        "/",
+        ENCODE_FOR_URI(STR(?retrievedResult))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/query")) AS ?queryBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/retrieval-step")) AS ?retrievalBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/vector-store")) AS ?vectorStoreBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/retrieved-result")) AS ?resultBinding)
+}

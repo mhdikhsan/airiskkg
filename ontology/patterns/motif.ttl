@@ -9,9 +9,18 @@
 
 <http://w3id.org/airiskkg/patterns/motif-library#>
     a owl:Ontology ;
-    dct:title "Architecuture Motif's Library"@en ;
+    dct:title "Architecture Motif Library"@en ;
     dct:description """
     Reusable architecture motifs for PAIR-AI assessment.
+
+    Provenance (2026-07-17 audit): every motif cites the published design
+    pattern it was distilled from (Mercari ML system design pattern catalog
+    or the martinfowler.com GenAI patterns article; ExternalDependencyMotif
+    derives from OWASP LLM03 scope). All cited pages were verified to
+    resolve and to document the named pattern. Motif node/edge graphs are
+    PAIR-AI distillations of those pattern descriptions into Boxology-style
+    role and flow structure, not verbatim reproductions; role-level
+    provenance is declared in pair_ai_pattern.ttl.
     """@en ;
     dct:source
         <https://mercari.github.io/ml-system-design-pattern/> ,
@@ -21,68 +30,74 @@
 
 
 # Motif 1: Vector-based Information Retrieval
-# pat:VectorBasedInformationRetrievalMotif
-#     a pair:GraphMotif ;
-#     rdfs:label "Vector-based Information Retrieval Motif"@en ;
-#     dct:description """
-#     Architectural motif in which a retrieval process uses a vector store or
-#     knowledge source and produces a retrieved result or retrieved context.
-#     """@en ;
-#     pair:hasPatternNode
-#         pat:VectorIR_QueryNode ,
-#         pat:VectorIR_VectorStoreNode ,
-#         pat:VectorIR_RetrievalStepNode ,
-#         pat:VectorIR_RetrievedResultNode ;
-#     pair:hasPatternEdge
-#         pat:VectorIR_RetrievalUsesQueryEdge ,
-#         pat:VectorIR_RetrievalUsesVectorStoreEdge ,
-#         pat:VectorIR_RetrievalProducesResultEdge ;
-#     pair:implementedBy pat:VectorIR_MatchingOQP .
+pat:VectorBasedInformationRetrievalMotif
+    a pair:GraphMotif ;
+    rdfs:label "Vector-based Information Retrieval Motif"@en ;
+    dct:description """
+    Architectural motif in which a retrieval process uses a vector store or
+    knowledge source and produces a retrieved result or retrieved context.
+    This is the retrieval stage of the Retrieval Augmented Generation /
+    Retriever pattern, factored out as its own motif because it recurs
+    without the generation leg and is the structural subject of OWASP LLM08
+    (vector and embedding weaknesses).
+    """@en ;
+    dct:source "retrieval stage of the RAG/Retriever pattern (https://martinfowler.com/articles/gen-ai-patterns/); OWASP Top 10 for LLM Applications 2025, LLM08 (2026-07-17 audit; formerly unattributed)" ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:VectorIR_QueryNode ,
+        pat:VectorIR_VectorStoreNode ,
+        pat:VectorIR_RetrievalStepNode ,
+        pat:VectorIR_RetrievedResultNode ;
+    pair:hasPatternEdge
+        pat:VectorIR_RetrievalUsesQueryEdge ,
+        pat:VectorIR_RetrievalUsesVectorStoreEdge ,
+        pat:VectorIR_RetrievalProducesResultEdge ;
+    pair:implementedBy pat:VectorIR_MatchingOQP .
 
-# pat:VectorIR_QueryNode
-#     a pair:PatternNode ;
-#     rdfs:label "Query node"@en ;
-#     pair:expectedClass beam:Data ;
-#     pair:expectedRole pair:UserInput .
+pat:VectorIR_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "Query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
 
-# pat:VectorIR_VectorStoreNode
-#     a pair:PatternNode ;
-#     rdfs:label "Vector store node"@en ;
-#     pair:expectedClass beam:Data ;
-#     pair:expectedRole pair:VectorStore .
+pat:VectorIR_VectorStoreNode
+    a pair:PatternNode ;
+    rdfs:label "Vector store node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:VectorStore .
 
-# pat:VectorIR_RetrievalStepNode
-#     a pair:PatternNode ;
-#     rdfs:label "Vector-based retrieval step node"@en ;
-#     pair:expectedClass beam:Process ;
-#     pair:expectedRole pair:RetrievalStep .
+pat:VectorIR_RetrievalStepNode
+    a pair:PatternNode ;
+    rdfs:label "Vector-based retrieval step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalStep .
 
-# pat:VectorIR_RetrievedResultNode
-#     a pair:PatternNode ;
-#     rdfs:label "Retrieved result node"@en ;
-#     pair:expectedClass beam:Data ;
-#     pair:expectedRole pair:RetrievedContext .
+pat:VectorIR_RetrievedResultNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieved result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
 
-# pat:VectorIR_RetrievalUsesQueryEdge
-#     a pair:PatternEdge ;
-#     rdfs:label "retrieval uses query"@en ;
-#     pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-#     pair:patternPredicate beam:use ;
-#     pair:targetPatternNode pat:VectorIR_QueryNode .
+pat:VectorIR_RetrievalUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses query"@en ;
+    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:VectorIR_QueryNode .
 
-# pat:VectorIR_RetrievalUsesVectorStoreEdge
-#     a pair:PatternEdge ;
-#     rdfs:label "retrieval uses vector store"@en ;
-#     pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-#     pair:patternPredicate beam:use ;
-#     pair:targetPatternNode pat:VectorIR_VectorStoreNode .
+pat:VectorIR_RetrievalUsesVectorStoreEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses vector store"@en ;
+    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:VectorIR_VectorStoreNode .
 
-# pat:VectorIR_RetrievalProducesResultEdge
-#     a pair:PatternEdge ;
-#     rdfs:label "retrieval produces retrieved result"@en ;
-#     pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
-#     pair:patternPredicate beam:produce ;
-#     pair:targetPatternNode pat:VectorIR_RetrievedResultNode .
+pat:VectorIR_RetrievalProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval produces retrieved result"@en ;
+    pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:VectorIR_RetrievedResultNode .
 
 # ML system design motifs: serving patterns
 
@@ -91,6 +106,7 @@ pat:SynchronousPredictionMotif
     rdfs:label "Synchronous Prediction Motif"@en ;
     dct:description "Architectural motif in which a prediction step runs inline with a request workflow and produces a result before the workflow proceeds."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:SyncPred_RequestNode ,
         pat:SyncPred_ModelNode ,
@@ -165,6 +181,7 @@ pat:AsynchronousPredictionMotif
     rdfs:label "Asynchronous Prediction Motif"@en ;
     dct:description "Architectural motif in which prediction requests are decoupled from prediction execution through a queue, cache, or similar intermediary resource."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:AsyncPred_RequestNode ,
         pat:AsyncPred_EnqueueStepNode ,
@@ -239,6 +256,7 @@ pat:BatchPredictionMotif
     rdfs:label "Batch Prediction Motif"@en ;
     dct:description "Architectural motif in which a scheduled job runs prediction over a batch dataset and stores batch prediction results."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:BatchPred_SchedulerNode ,
         pat:BatchPred_DatasetNode ,
@@ -314,6 +332,7 @@ pat:PreprocessPredictionMotif
     rdfs:label "Prep-Pred / Preprocess-Prediction Motif"@en ;
     dct:description "Architectural motif in which preprocessing and prediction are represented as separate steps connected by preprocessed data."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:PrepPred_InputNode ,
         pat:PrepPred_PreprocessStepNode ,
@@ -412,6 +431,7 @@ pat:MultiStagePredictionMotif
     rdfs:label "Multi-stage Prediction Motif"@en ;
     dct:description "Architectural motif in which one prediction path returns a quick result while another prediction path produces a slower or richer result."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:MultiStage_RequestNode ,
         pat:MultiStage_FastModelNode ,
@@ -528,6 +548,7 @@ pat:BatchTrainingMotif
     rdfs:label "Batch Training Motif"@en ;
     dct:description "Architectural motif in which a scheduled training job prepares data, trains a model, evaluates it, and records the resulting model artifact and evaluation result."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:BatchTrain_SchedulerNode ,
         pat:BatchTrain_DatasetNode ,
@@ -664,6 +685,7 @@ pat:PipelineTrainingMotif
     rdfs:label "Pipeline Training Motif"@en ;
     dct:description "Architectural motif in which training is decomposed into independently executable pipeline jobs connected by intermediate data and workflow dependencies."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Pipeline-training-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Pipeline-training-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:PipeTrain_SourceDataNode ,
         pat:PipeTrain_PreprocessJobNode ,
@@ -788,6 +810,7 @@ pat:TrainThenServeMotif
     rdfs:label "Train-Then-Serve Motif"@en ;
     dct:description "Lifecycle motif in which training and serving are separated by evaluation, approval, and a release step before the model is used for production prediction."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:TrainServe_TrainingStepNode ,
         pat:TrainServe_CandidateModelNode ,
@@ -917,6 +940,7 @@ pat:TrainingToServingMotif
     rdfs:label "Training-to-Serving Motif"@en ;
     dct:description "Lifecycle motif in which a training pipeline automatically produces a model artifact that is built or deployed into a serving prediction path."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:TrainToServe_TrainingPipelineNode ,
         pat:TrainToServe_ModelArtifactNode ,
@@ -1010,6 +1034,7 @@ pat:PredictionLoggingMotif
     rdfs:label "Prediction Logging Motif"@en ;
     dct:description "Operational motif in which prediction inputs, results, latency, or related events are collected into prediction logs for analysis and service improvement."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:PredLog_RequestNode ,
         pat:PredLog_ResultNode ,
@@ -1101,6 +1126,7 @@ pat:PredictionMonitoringMotif
     rdfs:label "Prediction Monitoring Motif"@en ;
     dct:description "Operational motif in which prediction logs or prediction result trends are monitored against expected behavior and may produce alerts."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:PredMon_LogNode ,
         pat:PredMon_BaselineNode ,
@@ -1161,6 +1187,7 @@ pat:ModelLoadMotif
     rdfs:label "Model Load Motif"@en ;
     dct:description "Operational motif in which a prediction server image and model artifact are managed separately, and the model is loaded by the server before prediction."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:ModelLoad_ServerImageNode ,
         pat:ModelLoad_ModelArtifactNode ,
@@ -1244,6 +1271,7 @@ pat:ModelInImageMotif
     rdfs:label "Model-in-Image Motif"@en ;
     dct:description "Operational motif in which a trained model artifact is packaged into a serving image that is deployed as the prediction service runtime."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> ;
+    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> ;
     pair:hasPatternNode
         pat:ModelImage_TrainingStepNode ,
         pat:ModelImage_ModelArtifactNode ,
@@ -1347,6 +1375,7 @@ pat:DirectPromptingMotif
     generative model step and produces a user-facing answer. 
     """@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:DP_QueryNode ,
         pat:DP_ModelNode ,
@@ -1408,6 +1437,7 @@ pat:EvalsMotif
     rdfs:label "Evals Motif"@en ;
     dct:description "GenAI motif in which model input, generated output, expected output, and optional retrieval context are scored or judged to produce evaluation results for a task."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:Evals_InputNode ,
         pat:Evals_ModelOutputNode ,
@@ -1511,13 +1541,14 @@ pat:Evals_ScorerProducesScoreEdge
 pat:EmbeddingsMotif
     a pair:GraphMotif ;
     rdfs:label "Embeddings Motif"@en ;
-    dct:description "GenAI motif in which source documents or data blocks are chunked and transformed by an embedding model into vectors stored in a vector index."@en ;
+    dct:description "GenAI motif in which source documents or data blocks are chunked and transformed into vectors stored in a vector index."@en ;
+    rdfs:comment "ODP reconciled to OQP behavior 2026-07-16: the earlier declaration included an embedding-model node (pat:Embedding_ModelNode) the OQP never bound - removed. The OQP additionally matches an indexing step (uses chunk + vector, produces the index) that it does not bind as a node."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:Embedding_SourceDocumentNode ,
         pat:Embedding_ChunkingStepNode ,
         pat:Embedding_DocumentChunkNode ,
-        pat:Embedding_ModelNode ,
         pat:Embedding_GenerationStepNode ,
         pat:Embedding_VectorNode ,
         pat:Embedding_VectorIndexNode ;
@@ -1525,7 +1556,6 @@ pat:EmbeddingsMotif
         pat:Embedding_ChunkingUsesSourceEdge ,
         pat:Embedding_ChunkingProducesChunkEdge ,
         pat:Embedding_GenerationUsesChunkEdge ,
-        pat:Embedding_GenerationUsesModelEdge ,
         pat:Embedding_GenerationProducesVectorEdge ,
         pat:Embedding_VectorIndexUsesVectorEdge ;
     pair:implementedBy pat:Embeddings_MatchingOQP .
@@ -1545,14 +1575,8 @@ pat:Embedding_ChunkingStepNode
 pat:Embedding_DocumentChunkNode
     a pair:PatternNode ;
     rdfs:label "Document chunk node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:DocumentChunk .
-
-pat:Embedding_ModelNode
-    a pair:PatternNode ;
-    rdfs:label "Embedding model node"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:EmbeddingModel .
+    rdfs:comment "The OQP identifies the chunk positionally (produced by the chunking step, used by the embedding step) without checking a role; pair:DocumentChunk is the typical annotation."@en ;
+    pair:expectedClass beam:Data .
 
 pat:Embedding_GenerationStepNode
     a pair:PatternNode ;
@@ -1563,14 +1587,15 @@ pat:Embedding_GenerationStepNode
 pat:Embedding_VectorNode
     a pair:PatternNode ;
     rdfs:label "Embedding vector node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:EmbeddingVector .
+    rdfs:comment "The OQP identifies the vector positionally (produced by the embedding step, used by the indexing step) without checking a role; pair:EmbeddingVector is the typical annotation."@en ;
+    pair:expectedClass beam:Data .
 
 pat:Embedding_VectorIndexNode
     a pair:PatternNode ;
     rdfs:label "Vector index node"@en ;
+    rdfs:comment "The OQP accepts a role under pair:VectorStore OR pair:VectorIndex (a disjunction the ODP vocabulary cannot express)."@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:VectorIndex .
+    pair:expectedRole pair:VectorStore .
 
 pat:Embedding_ChunkingUsesSourceEdge
     a pair:PatternEdge ;
@@ -1593,13 +1618,6 @@ pat:Embedding_GenerationUsesChunkEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:Embedding_DocumentChunkNode .
 
-pat:Embedding_GenerationUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "embedding generation uses embedding model"@en ;
-    pair:sourcePatternNode pat:Embedding_GenerationStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:Embedding_ModelNode .
-
 pat:Embedding_GenerationProducesVectorEdge
     a pair:PatternEdge ;
     rdfs:label "embedding generation produces vector"@en ;
@@ -1617,17 +1635,17 @@ pat:Embedding_VectorIndexUsesVectorEdge
 pat:RetrievalAugmentedGenerationMotif
     a pair:GraphMotif ;
     rdfs:label "Retrieval Augmented Generation (RAG) Motif"@en ;
-    dct:description "GenAI motif in which a user query is embedded, used to retrieve relevant context from a vector index, combined with a prompt template, and sent to an LLM to produce an answer."@en ;
+    dct:description "GenAI motif in which a user query is used to retrieve relevant context from a vector index (optionally via a query-embedding step), combined with the query into a prompt, and sent to an LLM to produce an answer."@en ;
+    rdfs:comment "Relaxed 2026-07-16 (decision D1): the query-embedding leg (RAG_QueryEmbeddingStepNode/RAG_QueryVectorNode + their edges) is OPTIONAL in the OQP, and retrieved context may pass through intermediate steps (reranking, aggregation) between the retrieval step and prompt construction - RAG_PromptConstructionUsesContextEdge is path-tolerant, requiring only that the consumed context plays a role under pair:RetrievedContext. The earlier declaration also included an embedding-model node and a phantom prompt-template INPUT node the OQP never bound - removed (the PromptTemplate role belongs to the produced prompt, pat:RAG_PromptNode)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:RAG_QueryNode ,
-        pat:RAG_EmbeddingModelNode ,
         pat:RAG_QueryEmbeddingStepNode ,
         pat:RAG_QueryVectorNode ,
         pat:RAG_VectorIndexNode ,
         pat:RAG_RetrievalStepNode ,
         pat:RAG_RetrievedContextNode ,
-        pat:RAG_PromptTemplateNode ,
         pat:RAG_PromptConstructionStepNode ,
         pat:RAG_PromptNode ,
         pat:RAG_LLMNode ,
@@ -1635,14 +1653,11 @@ pat:RetrievalAugmentedGenerationMotif
         pat:RAG_ResponseNode ;
     pair:hasPatternEdge
         pat:RAG_QueryEmbeddingUsesQueryEdge ,
-        pat:RAG_QueryEmbeddingUsesModelEdge ,
         pat:RAG_QueryEmbeddingProducesVectorEdge ,
-        pat:RAG_RetrievalUsesQueryVectorEdge ,
         pat:RAG_RetrievalUsesVectorIndexEdge ,
         pat:RAG_RetrievalProducesContextEdge ,
         pat:RAG_PromptConstructionUsesQueryEdge ,
         pat:RAG_PromptConstructionUsesContextEdge ,
-        pat:RAG_PromptConstructionUsesTemplateEdge ,
         pat:RAG_PromptConstructionProducesPromptEdge ,
         pat:RAG_GenerationUsesPromptEdge ,
         pat:RAG_GenerationUsesLLMEdge ,
@@ -1654,12 +1669,6 @@ pat:RAG_QueryNode
     rdfs:label "RAG query node"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
-
-pat:RAG_EmbeddingModelNode
-    a pair:PatternNode ;
-    rdfs:label "RAG embedding model node"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:EmbeddingModel .
 
 pat:RAG_QueryEmbeddingStepNode
     a pair:PatternNode ;
@@ -1690,12 +1699,6 @@ pat:RAG_RetrievedContextNode
     rdfs:label "RAG retrieved context node"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
-
-pat:RAG_PromptTemplateNode
-    a pair:PatternNode ;
-    rdfs:label "RAG prompt template node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PromptTemplate .
 
 pat:RAG_PromptConstructionStepNode
     a pair:PatternNode ;
@@ -1734,25 +1737,11 @@ pat:RAG_QueryEmbeddingUsesQueryEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:RAG_QueryNode .
 
-pat:RAG_QueryEmbeddingUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "RAG query embedding uses model"@en ;
-    pair:sourcePatternNode pat:RAG_QueryEmbeddingStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RAG_EmbeddingModelNode .
-
 pat:RAG_QueryEmbeddingProducesVectorEdge
     a pair:PatternEdge ;
     rdfs:label "RAG query embedding produces vector"@en ;
     pair:sourcePatternNode pat:RAG_QueryEmbeddingStepNode ;
     pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:RAG_QueryVectorNode .
-
-pat:RAG_RetrievalUsesQueryVectorEdge
-    a pair:PatternEdge ;
-    rdfs:label "RAG retrieval uses query vector"@en ;
-    pair:sourcePatternNode pat:RAG_RetrievalStepNode ;
-    pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:RAG_QueryVectorNode .
 
 pat:RAG_RetrievalUsesVectorIndexEdge
@@ -1782,13 +1771,6 @@ pat:RAG_PromptConstructionUsesContextEdge
     pair:sourcePatternNode pat:RAG_PromptConstructionStepNode ;
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:RAG_RetrievedContextNode .
-
-pat:RAG_PromptConstructionUsesTemplateEdge
-    a pair:PatternEdge ;
-    rdfs:label "RAG prompt construction uses template"@en ;
-    pair:sourcePatternNode pat:RAG_PromptConstructionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RAG_PromptTemplateNode .
 
 pat:RAG_PromptConstructionProducesPromptEdge
     a pair:PatternEdge ;
@@ -1823,6 +1805,7 @@ pat:HybridRetrieverMotif
     rdfs:label "Hybrid Retriever Motif"@en ;
     dct:description "GenAI motif in which vector search and keyword or structured search are combined and aggregated to produce a candidate context set."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:Hybrid_QueryNode ,
         pat:Hybrid_VectorIndexNode ,
@@ -1935,34 +1918,27 @@ pat:QueryRewritingMotif
     a pair:GraphMotif ;
     rdfs:label "Query Rewriting Motif"@en ;
     dct:description "GenAI motif in which an LLM reformulates a user query into alternative queries that are then used for retrieval."@en ;
+    rdfs:comment "ODP reconciled to OQP behavior 2026-07-16: the earlier declaration included an original-query node and a rewrite-informs-retrieval edge the OQP never bound or checked - removed; the LLM node expected pair:FoundationLLM while the OQP accepts any pair:GenerativeModel."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
-        pat:QueryRewrite_OriginalQueryNode ,
         pat:QueryRewrite_LLMNode ,
         pat:QueryRewrite_RewriteStepNode ,
         pat:QueryRewrite_RewrittenQueryNode ,
         pat:QueryRewrite_RetrievalStepNode ,
         pat:QueryRewrite_RetrievedContextNode ;
     pair:hasPatternEdge
-        pat:QueryRewrite_RewriteUsesQueryEdge ,
         pat:QueryRewrite_RewriteUsesLLMEdge ,
         pat:QueryRewrite_RewriteProducesQueryEdge ,
-        pat:QueryRewrite_RewriteInformsRetrievalEdge ,
         pat:QueryRewrite_RetrievalUsesRewrittenQueryEdge ,
         pat:QueryRewrite_RetrievalProducesContextEdge ;
     pair:implementedBy pat:QueryRewriting_MatchingOQP .
-
-pat:QueryRewrite_OriginalQueryNode
-    a pair:PatternNode ;
-    rdfs:label "Original query node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
 
 pat:QueryRewrite_LLMNode
     a pair:PatternNode ;
     rdfs:label "Query rewriting LLM node"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:FoundationLLM .
+    pair:expectedRole pair:GenerativeModel .
 
 pat:QueryRewrite_RewriteStepNode
     a pair:PatternNode ;
@@ -1973,8 +1949,9 @@ pat:QueryRewrite_RewriteStepNode
 pat:QueryRewrite_RewrittenQueryNode
     a pair:PatternNode ;
     rdfs:label "Rewritten query node"@en ;
+    rdfs:comment "The OQP checks a role under pair:UserInput (the rewritten query re-enters retrieval as a query); modelers typically ALSO tag pair:RewrittenQuery (onyx does both)."@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:RewrittenQuery .
+    pair:expectedRole pair:UserInput .
 
 pat:QueryRewrite_RetrievalStepNode
     a pair:PatternNode ;
@@ -1987,13 +1964,6 @@ pat:QueryRewrite_RetrievedContextNode
     rdfs:label "Retrieved context from rewritten query node"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
-
-pat:QueryRewrite_RewriteUsesQueryEdge
-    a pair:PatternEdge ;
-    rdfs:label "query rewrite uses original query"@en ;
-    pair:sourcePatternNode pat:QueryRewrite_RewriteStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:QueryRewrite_OriginalQueryNode .
 
 pat:QueryRewrite_RewriteUsesLLMEdge
     a pair:PatternEdge ;
@@ -2008,13 +1978,6 @@ pat:QueryRewrite_RewriteProducesQueryEdge
     pair:sourcePatternNode pat:QueryRewrite_RewriteStepNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:QueryRewrite_RewrittenQueryNode .
-
-pat:QueryRewrite_RewriteInformsRetrievalEdge
-    a pair:PatternEdge ;
-    rdfs:label "query rewrite informs retrieval"@en ;
-    pair:sourcePatternNode pat:QueryRewrite_RewriteStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:QueryRewrite_RetrievalStepNode .
 
 pat:QueryRewrite_RetrievalUsesRewrittenQueryEdge
     a pair:PatternEdge ;
@@ -2033,32 +1996,26 @@ pat:QueryRewrite_RetrievalProducesContextEdge
 pat:RerankerMotif
     a pair:GraphMotif ;
     rdfs:label "Reranker Motif"@en ;
-    dct:description "GenAI motif in which a candidate set of retrieved fragments is ranked against the input query so that the most useful context is passed to the LLM."@en ;
+    dct:description "GenAI motif in which a candidate set of retrieved fragments is reranked by a model so that the most useful context is passed on for generation."@en ;
+    rdfs:comment "ODP reconciled to OQP behavior 2026-07-16: the earlier declaration included a query node the OQP never bound (removed) and expected pair:RetrievedCandidateSet / pair:RerankedContext where the OQP checks pair:RetrievedContext for both candidate set and output (modelers typically ALSO tag the specific roles; onyx does both)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
-        pat:Reranker_QueryNode ,
         pat:Reranker_CandidateSetNode ,
         pat:Reranker_ModelNode ,
         pat:Reranker_RerankingStepNode ,
         pat:Reranker_RankedContextNode ;
     pair:hasPatternEdge
-        pat:Reranker_RerankingUsesQueryEdge ,
         pat:Reranker_RerankingUsesCandidateSetEdge ,
         pat:Reranker_RerankingUsesModelEdge ,
         pat:Reranker_RerankingProducesContextEdge ;
     pair:implementedBy pat:Reranker_MatchingOQP .
 
-pat:Reranker_QueryNode
-    a pair:PatternNode ;
-    rdfs:label "Reranker query node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
-
 pat:Reranker_CandidateSetNode
     a pair:PatternNode ;
     rdfs:label "Reranker candidate context set node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:RetrievedCandidateSet .
+    pair:expectedRole pair:RetrievedContext .
 
 pat:Reranker_ModelNode
     a pair:PatternNode ;
@@ -2076,14 +2033,7 @@ pat:Reranker_RankedContextNode
     a pair:PatternNode ;
     rdfs:label "Reranked context node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:RerankedContext .
-
-pat:Reranker_RerankingUsesQueryEdge
-    a pair:PatternEdge ;
-    rdfs:label "reranking uses query"@en ;
-    pair:sourcePatternNode pat:Reranker_RerankingStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:Reranker_QueryNode .
+    pair:expectedRole pair:RetrievedContext .
 
 pat:Reranker_RerankingUsesCandidateSetEdge
     a pair:PatternEdge ;
@@ -2111,6 +2061,7 @@ pat:GuardrailsMotif
     rdfs:label "Guardrails Motif"@en ;
     dct:description "GenAI motif in which input and output guardrail steps screen or sanitize user prompts and generated responses around the primary LLM generation step."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:Guardrails_UserPromptNode ,
         pat:Guardrails_InputGuardrailStepNode ,
@@ -2247,6 +2198,7 @@ pat:FineTuningMotif
     rdfs:label "Fine Tuning Motif"@en ;
     dct:description "GenAI motif in which a pre-trained LLM is further trained with a task- or domain-specific dataset to produce a fine-tuned model."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:FineTune_BaseModelNode ,
         pat:FineTune_DatasetNode ,
@@ -2339,3 +2291,44 @@ pat:FineTune_EvaluationProducesScoreEdge
     pair:sourcePatternNode pat:FineTune_EvaluationStepNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:FineTune_EvaluationScoreNode .
+
+# ---------------------------------------------------------------------------
+# External Dependency motif (added 2026-07-16, engine consistency cleanup
+# Phase 3). Risk-neutral structure: a supply-chain-relevant resource - an
+# external dependency (external model, third-party package, provider
+# credential), a pre-trained model, a persisted model artifact, or a serving
+# image - is used by a process step. Gives SupplyChainCompromiseRiskPattern a
+# real, implemented motif anchor: previously its query free-rode on matches
+# of unrelated motifs, so external resources bound by no other motif (e.g.
+# verba's generator model) produced no finding.
+
+pat:ExternalDependencyMotif
+    a pair:GraphMotif ;
+    rdfs:label "External Dependency Motif"@en ;
+    dct:description "A supply-chain-relevant resource (external dependency, pre-trained model, model artifact, or serving image) is used by a process step. Risk-neutral: using external components is normal engineering; risk semantics are added only by the supply chain compromise risk pattern."@en ;
+    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM03 Supply Chain (scope of supply-chain-relevant resources)" ;
+    pair:derivedFrom <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    pair:hasPatternNode
+        pat:ExtDep_ExternalResourceNode ,
+        pat:ExtDep_UsingStepNode ;
+    pair:hasPatternEdge
+        pat:ExtDep_StepUsesResourceEdge ;
+    pair:implementedBy pat:ExternalDependency_MatchingOQP .
+
+pat:ExtDep_ExternalResourceNode
+    a pair:PatternNode ;
+    rdfs:label "External resource node"@en ;
+    rdfs:comment "Expected role is a disjunction the ODP vocabulary cannot express: subRoleOf* of pair:ExternalDependency, pair:PretrainedModel, pair:ModelArtifact, or pair:ServingImage (see match_external_dependency.rq)."@en ;
+    pair:expectedRole pair:ExternalDependency .
+
+pat:ExtDep_UsingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Using step node"@en ;
+    pair:expectedClass beam:Process .
+
+pat:ExtDep_StepUsesResourceEdge
+    a pair:PatternEdge ;
+    rdfs:label "step uses external resource"@en ;
+    pair:sourcePatternNode pat:ExtDep_UsingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ExtDep_ExternalResourceNode .

@@ -7,9 +7,16 @@
     dct:title "AI Risk KG Ontology Imports" ;
     dct:description """
     Aggregator ontology for loading the BEAM core ontology, BEAM risk extension,
-    and the PAIR-AI pattern module ontology together.
+    the PAIR-AI pattern module ontology, and the characterization facet schemes
+    together.
     """ ;
     owl:imports
         <http://w3id.org/beam/core#> ,
         <http://w3id.org/beam/risk#> ,
-        <http://w3id.org/airiskkg/pair-ai#> .
+        <http://w3id.org/airiskkg/pair-ai#> ,
+        <http://w3id.org/airiskkg/facets> ,
+        <http://w3id.org/airiskkg/facets/autonomy> ,
+        <http://w3id.org/airiskkg/facets/data> ,
+        <http://w3id.org/airiskkg/facets/task> ,
+        <http://w3id.org/airiskkg/facets/context> ,
+        <http://w3id.org/airiskkg/facets/implementation-type> .

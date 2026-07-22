@@ -1,0 +1,80 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:PipelineTrainingMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Pipeline Training Motif match"@en ;
+        pair:matchesMotif pat:PipelineTrainingMotif ;
+        pair:hasNodeBinding ?evaluationJobBinding ,
+            ?evaluationResultBinding ,
+            ?intermediateDataBinding ,
+            ?modelArtifactBinding ,
+            ?preprocessJobBinding ,
+            ?sourceDataBinding ,
+            ?trainingJobBinding .
+
+    ?evaluationJobBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PipeTrain_EvaluationJobNode ; pair:matchedElement ?evaluationJob .
+    ?evaluationResultBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PipeTrain_EvaluationResultNode ; pair:matchedElement ?evaluationResult .
+    ?intermediateDataBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PipeTrain_IntermediateDataNode ; pair:matchedElement ?intermediateData .
+    ?modelArtifactBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PipeTrain_ModelArtifactNode ; pair:matchedElement ?modelArtifact .
+    ?preprocessJobBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PipeTrain_PreprocessJobNode ; pair:matchedElement ?preprocessJob .
+    ?sourceDataBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PipeTrain_SourceDataNode ; pair:matchedElement ?sourceData .
+    ?trainingJobBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PipeTrain_TrainingJobNode ; pair:matchedElement ?trainingJob .
+}
+WHERE {
+    ?evaluationJob a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:EvaluationStep .
+    ?evaluationResult a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:EvaluationResult .
+    ?intermediateData a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PreprocessedData .
+    ?modelArtifact a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:ModelArtifact .
+    ?preprocessJob a beam:Transform ;
+           pair:playsRole/pair:subRoleOf* pair:PreprocessingStep .
+    ?sourceData a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:TrainingDataset .
+    ?trainingJob a beam:Train ;
+           pair:playsRole/pair:subRoleOf* pair:TrainingStep .
+
+    ?preprocessJob beam:use ?sourceData .
+    ?preprocessJob beam:produce ?intermediateData .
+    ?preprocessJob beam:inform ?trainingJob .
+    ?trainingJob beam:use ?intermediateData .
+    ?trainingJob beam:produce ?modelArtifact .
+    ?trainingJob beam:inform ?evaluationJob .
+    ?evaluationJob beam:use ?modelArtifact .
+    ?evaluationJob beam:produce ?evaluationResult .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/pipeline-training/",
+        ENCODE_FOR_URI(STR(?evaluationJob)),
+        "/",
+        ENCODE_FOR_URI(STR(?evaluationResult)),
+        "/",
+        ENCODE_FOR_URI(STR(?intermediateData)),
+        "/",
+        ENCODE_FOR_URI(STR(?modelArtifact)),
+        "/",
+        ENCODE_FOR_URI(STR(?preprocessJob)),
+        "/",
+        ENCODE_FOR_URI(STR(?sourceData)),
+        "/",
+        ENCODE_FOR_URI(STR(?trainingJob))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/evaluation-job")) AS ?evaluationJobBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/evaluation-result")) AS ?evaluationResultBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/intermediate-data")) AS ?intermediateDataBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/model-artifact")) AS ?modelArtifactBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/preprocess-job")) AS ?preprocessJobBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/source-data")) AS ?sourceDataBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/training-job")) AS ?trainingJobBinding)
+}

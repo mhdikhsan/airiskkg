@@ -1,0 +1,294 @@
+@prefix atlas: <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#> .
+@prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+#################################################################
+# Ontology declaration
+#################################################################
+
+<http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#> a owl:Ontology ;
+    rdfs:label "IBM AI Risk Atlas Subset for AI Risk KG" ;
+    dct:title "IBM AI Risk Atlas Subset for AI Risk KG" ;
+    dct:description """
+    A selected RDF subset of IBM AI Risk Atlas concepts adapted from AI Atlas Nexus.
+    This subset contains only the groups and risk entries needed for the current
+    graph-pattern-based AI risk assessment examples.
+    """ ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/risk_atlas_data.yaml> .
+
+#################################################################
+# Taxonomy
+#################################################################
+
+atlas:IBM_AI_Risk_Atlas a nexus:RiskTaxonomy, skos:ConceptScheme ;
+    skos:prefLabel "IBM AI Risk Atlas" ;
+    dct:description "A taxonomy of risks associated with AI systems, including traditional AI, generative AI, synthetic data, and agentic AI risks." .
+
+#################################################################
+# Risk groups
+#################################################################
+
+atlas:accuracy a nexus:RiskGroup ;
+    skos:prefLabel "Accuracy" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:computational-inefficiency a nexus:RiskGroup ;
+    skos:prefLabel "Computational inefficiency" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:data-laws a nexus:RiskGroup ;
+    skos:prefLabel "Data laws" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:fairness a nexus:RiskGroup ;
+    skos:prefLabel "Fairness" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:governance a nexus:RiskGroup ;
+    skos:prefLabel "Governance" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:intellectual-property a nexus:RiskGroup ;
+    skos:prefLabel "Intellectual property" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:privacy a nexus:RiskGroup ;
+    skos:prefLabel "Privacy" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:robustness a nexus:RiskGroup ;
+    skos:prefLabel "Robustness" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:robustness-prompt-attacks a nexus:RiskGroup ;
+    skos:prefLabel "Robustness: prompt attacks" ;
+    skos:broader atlas:robustness ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:robustness-model-behavior-manipulation a nexus:RiskGroup ;
+    skos:prefLabel "Robustness: model behavior manipulation" ;
+    skos:broader atlas:robustness ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:societal-impact a nexus:RiskGroup ;
+    skos:prefLabel "Societal impact" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:value-alignment a nexus:RiskGroup ;
+    skos:prefLabel "Value alignment" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+#################################################################
+# Risk entries
+#################################################################
+
+atlas:confidential-data-in-prompt a nexus:Risk ;
+    skos:prefLabel "Confidential data in prompt" ;
+    skos:definition "Confidential information may be included in prompts and exposed through model interaction or output." ;
+    skos:broader atlas:intellectual-property ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:intellectual-property ;
+    nexus:tag "confidential-data-in-prompt" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "specific to generative AI" .
+
+atlas:personal-information-in-prompt a nexus:Risk ;
+    skos:prefLabel "Personal information in prompt" ;
+    skos:definition "Personal or sensitive personal information may be included in prompts and become exposed through model outputs." ;
+    skos:broader atlas:privacy ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:privacy ;
+    nexus:tag "personal-information-in-prompt" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "specific to generative AI" .
+
+atlas:exposing-personal-information a nexus:Risk ;
+    skos:prefLabel "Exposing personal information" ;
+    skos:definition "Personal information used in data, prompts, or generation processes may be revealed in outputs." ;
+    skos:broader atlas:privacy ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:privacy ;
+    nexus:tag "exposing-personal-information" ;
+    nexus:riskType "output" ;
+    nexus:descriptor "amplified by generative AI" .
+
+atlas:personal-information-in-data a nexus:Risk ;
+    skos:prefLabel "Personal information in data" ;
+    skos:definition "Personal or sensitive information in training, tuning, or retrieval data can increase unwanted disclosure risks." ;
+    skos:broader atlas:privacy ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:privacy ;
+    nexus:tag "personal-information-in-data" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "traditional risk of AI" .
+
+atlas:reidentification a nexus:Risk ;
+    skos:prefLabel "Reidentification" ;
+    skos:definition "Individuals may be identified from data that was intended to be anonymized or de-identified." ;
+    skos:broader atlas:privacy ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:privacy ;
+    nexus:tag "reidentification" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "traditional risk of AI" ;
+    nexus:descriptor "amplified by synthetic data" .
+
+atlas:prompt-injection a nexus:Risk ;
+    skos:prefLabel "Prompt injection attack" ;
+    skos:definition "Manipulated instructions or content in prompts may force a generative model to produce unintended outputs." ;
+    skos:broader atlas:robustness-prompt-attacks ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:robustness-prompt-attacks ;
+    nexus:tag "prompt-injection" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "specific to generative AI" .
+
+atlas:prompt-leaking a nexus:Risk ;
+    skos:prefLabel "Prompt leaking" ;
+    skos:definition "An attacker may attempt to extract system prompts or hidden instructions from a model." ;
+    skos:broader atlas:robustness-prompt-attacks ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:robustness-prompt-attacks ;
+    nexus:tag "prompt-leaking" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "specific to generative AI" .
+
+atlas:evasion-attack a nexus:Risk ;
+    skos:prefLabel "Evasion attack" ;
+    skos:definition "Inputs may be modified to cause a trained model to produce incorrect results." ;
+    skos:broader atlas:robustness-model-behavior-manipulation ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:robustness-model-behavior-manipulation ;
+    nexus:tag "evasion-attack" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "traditional risk of AI" .
+
+atlas:hallucination a nexus:Risk ;
+    skos:prefLabel "Hallucination" ;
+    skos:definition "A model may produce inaccurate, unsupported, or untruthful content that appears plausible." ;
+    skos:broader atlas:robustness ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:robustness ;
+    nexus:tag "hallucination" ;
+    nexus:riskType "output" ;
+    nexus:descriptor "specific to generative AI" .
+
+atlas:incomplete-advice a nexus:Risk ;
+    skos:prefLabel "Incomplete advice" ;
+    skos:definition "Generated advice or recommendation may omit important context and lead users to act on incomplete information." ;
+    skos:broader atlas:value-alignment ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:value-alignment ;
+    nexus:tag "incomplete-advice" ;
+    nexus:riskType "output" ;
+    nexus:descriptor "specific to generative AI" .
+
+atlas:decision-bias a nexus:Risk ;
+    skos:prefLabel "Decision bias" ;
+    skos:definition "Model decisions may systematically advantage one group over another." ;
+    skos:broader atlas:fairness ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:fairness ;
+    nexus:tag "decision-bias" ;
+    nexus:riskType "output" ;
+    nexus:descriptor "traditional risk of AI" .
+
+atlas:data-curation a nexus:Risk ;
+    skos:prefLabel "Improper data curation" ;
+    skos:definition "Improper collection, preparation, labeling, or generation of data may degrade model behavior." ;
+    skos:broader atlas:value-alignment ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:value-alignment ;
+    nexus:tag "data-curation" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "traditional risk of AI" .
+
+atlas:data-usage-restrictions a nexus:Risk ;
+    skos:prefLabel "Data usage restrictions" ;
+    skos:definition "Legal or policy restrictions may limit whether certain data can be used for an AI use case." ;
+    skos:broader atlas:data-laws ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:data-laws ;
+    nexus:tag "data-usage-restrictions" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "traditional risk of AI" .
+
+atlas:legal-accountability a nexus:Risk ;
+    skos:prefLabel "Legal accountability" ;
+    skos:definition "Weak documentation or governance may make responsibility for AI system outcomes unclear." ;
+    skos:broader atlas:governance ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:governance ;
+    nexus:tag "legal-accountability" ;
+    nexus:riskType "non-technical" .
+
+atlas:poor-model-accuracy a nexus:Risk ;
+    skos:prefLabel "Poor model accuracy" ;
+    skos:definition "A model may perform insufficiently for the intended task or context." ;
+    skos:broader atlas:accuracy ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:accuracy ;
+    nexus:tag "poor-model-accuracy" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "traditional risk of AI" .
+
+atlas:redundant-actions-agentic a nexus:Risk ;
+    skos:prefLabel "Redundant actions" ;
+    skos:definition "Unnecessary or repeated actions may waste computation, increase cost, and reduce system efficiency." ;
+    skos:broader atlas:computational-inefficiency ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:computational-inefficiency ;
+    nexus:tag "redundant-actions-agentic" ;
+    nexus:riskType "agentic" ;
+    nexus:descriptor "specific to agentic AI" .
+
+atlas:impact-on-the-environment a nexus:Risk ;
+    skos:prefLabel "Impact on the environment" ;
+    skos:definition "Training or operating AI systems may increase energy use, water use, or carbon emissions." ;
+    skos:broader atlas:societal-impact ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:societal-impact ;
+    nexus:tag "impact-on-the-environment" ;
+    nexus:riskType "non-technical" .

@@ -1,0 +1,78 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:EvalsMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Evals Motif match"@en ;
+        pair:matchesMotif pat:EvalsMotif ;
+        pair:hasNodeBinding ?contextBinding ,
+            ?expectedOutputBinding ,
+            ?inputBinding ,
+            ?judgeModelBinding ,
+            ?modelOutputBinding ,
+            ?scoreBinding ,
+            ?scorerBinding .
+
+    ?contextBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Evals_ContextNode ; pair:matchedElement ?context .
+    ?expectedOutputBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Evals_ExpectedOutputNode ; pair:matchedElement ?expectedOutput .
+    ?inputBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Evals_InputNode ; pair:matchedElement ?input .
+    ?judgeModelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Evals_JudgeModelNode ; pair:matchedElement ?judgeModel .
+    ?modelOutputBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Evals_ModelOutputNode ; pair:matchedElement ?modelOutput .
+    ?scoreBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Evals_ScoreNode ; pair:matchedElement ?score .
+    ?scorerBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Evals_ScorerNode ; pair:matchedElement ?scorer .
+}
+WHERE {
+    ?context a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
+    ?expectedOutput a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:ExpectedOutput .
+    ?input a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:UserInput .
+    ?judgeModel a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:JudgeModel .
+    ?modelOutput a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:LLMResponse .
+    ?score a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:EvaluationScore .
+    ?scorer a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:ScoringStep .
+
+    ?scorer beam:use ?input .
+    ?scorer beam:use ?modelOutput .
+    ?scorer beam:use ?expectedOutput .
+    ?scorer beam:use ?context .
+    ?scorer beam:use ?judgeModel .
+    ?scorer beam:produce ?score .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/evals/",
+        ENCODE_FOR_URI(STR(?context)),
+        "/",
+        ENCODE_FOR_URI(STR(?expectedOutput)),
+        "/",
+        ENCODE_FOR_URI(STR(?input)),
+        "/",
+        ENCODE_FOR_URI(STR(?judgeModel)),
+        "/",
+        ENCODE_FOR_URI(STR(?modelOutput)),
+        "/",
+        ENCODE_FOR_URI(STR(?score)),
+        "/",
+        ENCODE_FOR_URI(STR(?scorer))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/context")) AS ?contextBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/expected-output")) AS ?expectedOutputBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/input")) AS ?inputBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/judge-model")) AS ?judgeModelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/model-output")) AS ?modelOutputBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/score")) AS ?scoreBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/scorer")) AS ?scorerBinding)
+}

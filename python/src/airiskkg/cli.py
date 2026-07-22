@@ -1,6 +1,6 @@
 import argparse
 
-from airiskkg.assessment_runner import print_assessment_summary, run_assessment, run_uc6_assessment
+from airiskkg.assessment_runner import print_assessment_summary, run_assessment
 from airiskkg.paths import (
     DOCS_REFERENCE_DIR,
     EXAMPLE_DIR,
@@ -22,26 +22,22 @@ def main() -> None:
     assess_parser = subparsers.add_parser("assess", help="Run PAIR-AI assessment for architecture graph TTL files.")
     assess_parser.add_argument(
         "architecture_graph",
-        nargs="*",
-        help="Architecture graph TTL file(s). Defaults to ontology/example/uc6.ttl.",
+        nargs="+",
+        help="Architecture graph TTL file(s) to assess.",
     )
     assess_parser.add_argument(
         "--output-dir",
         default=OUTPUTS_DIR,
-        help="Directory for motif_matches.ttl, risk_findings.ttl, and combined_assessment_graph.ttl.",
+        help="Base directory for run output. Each run writes into an auto-numbered "
+        "subdirectory (output_1, output_2, ...) containing motif_matches.ttl, "
+        "risk_findings.ttl, and combined_assessment_graph.ttl.",
     )
 
-    subparsers.add_parser("assess-uc6", help="Run the UC6 example assessment.")
-    
     serve_parser = subparsers.add_parser("serve", help="Launch the web UI for risk assessment.")
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host to bind (default 127.0.0.1).")
     serve_parser.add_argument("--port", type=int, default=5000, help="Port to bind (default 5000).")
     serve_parser.add_argument("--debug", action="store_true", help="Enable Flask debug mode.")
 
-    args = parser.parse_args()
-
-    
-    
     args = parser.parse_args()
 
     if args.command == "info":
@@ -57,13 +53,10 @@ def main() -> None:
         print(f"docs reference: {DOCS_REFERENCE_DIR}")
     elif args.command == "assess":
         result = run_assessment(
-            args.architecture_graph or None,
+            args.architecture_graph,
             write_outputs=True,
             output_dir=args.output_dir,
         )
-        print_assessment_summary(result)
-    elif args.command == "assess-uc6":
-        result = run_uc6_assessment(write_outputs=True)
         print_assessment_summary(result)
     elif args.command == "serve":
         from airiskkg.webapp import create_app

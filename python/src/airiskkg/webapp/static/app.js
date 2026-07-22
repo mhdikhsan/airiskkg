@@ -1,368 +1,540 @@
 "use strict";
 
-// ---- small DOM helpers -----------------------------------------------------
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+/* Workbench wiring: editor <-> live preview <-> assessment.
+ * Requires editor.js (window.Editor) and graph.js (window.GraphView).
+ */
+(function () {
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-function el(tag, attrs = {}, children = []) {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === "class") node.className = v;
-    else if (k === "html") node.innerHTML = v;
-    else if (k === "text") node.textContent = v;
-    else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
-    else if (v !== null && v !== undefined) node.setAttribute(k, v);
+  function el(tag, attrs = {}, children = []) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === "class") node.className = v;
+      else if (k === "text") node.textContent = v;
+      else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
+      else if (v !== null && v !== undefined) node.setAttribute(k, v);
+    }
+    for (const child of [].concat(children)) {
+      if (child == null) continue;
+      node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
+    }
+    return node;
   }
-  for (const child of [].concat(children)) {
-    if (child == null) continue;
-    node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
+
+  async function api(url, options) {
+    const res = await fetch(url, options);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    return data;
   }
-  return node;
-}
 
-async function api(url, options) {
-  const res = await fetch(url, options);
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
-  return data;
-}
+  function postJson(url, body) {
+    return api(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  }
 
-// ---- global vocabulary -----------------------------------------------------
-let VOCAB = { roles: [], dataCategories: [], resourceClasses: [], processClasses: [], edgeKinds: [] };
+  // ---- status bar ------------------------------------------------------------
+  function setStatus(state, message, stats) {
+    const dot = $("#status-dot");
+    dot.className = `status-dot ${state}`;
+    $("#status-text").textContent = message;
+    $("#status-stats").textContent = stats || "";
+  }
 
-function optionsFrom(items, selected = []) {
-  return items.map((it) =>
-    el("option", { value: it.id, selected: selected.includes(it.id) ? "selected" : null }, it.label)
-  );
-}
+  function parseErrorLine(message) {
+    const match = /line (\d+)/i.exec(message);
+    return match ? Number(match[1]) : null;
+  }
 
-// ---- builder ---------------------------------------------------------------
-function multiSelect(items, selected) {
-  return el("select", { multiple: "multiple", size: Math.min(5, Math.max(3, items.length)) }, optionsFrom(items, selected));
-}
+  // ---- live preview ----------------------------------------------------------
+  let previewSeq = 0;
 
-function elementNames() {
-  return $$("#resources .element-card, #processes .element-card")
-    .map((card) => $(".el-name", card).value.trim())
-    .filter(Boolean);
-}
+  async function refreshPreview(ttl) {
+    const seq = ++previewSeq;
+    if (!ttl.trim()) {
+      GraphView.clear();
+      $("#system-badge").classList.add("hidden");
+      setStatus("ok", "Ready");
+      return;
+    }
+    try {
+      const data = await postJson("/api/graph", { ttl });
+      if (seq !== previewSeq) return; // a newer edit is already in flight
+      GraphView.render(data);
+      Editor.markErrorLine(null);
+      const badge = $("#system-badge");
+      if (data.systems.length) {
+        badge.textContent = data.systems.map((s) => s.label).join(" · ");
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+      setStatus("ok", "Graph parsed", `${data.stats.nodes} nodes · ${data.stats.edges} edges`);
+    } catch (error) {
+      if (seq !== previewSeq) return;
+      const line = parseErrorLine(error.message);
+      Editor.markErrorLine(line);
+      const firstLine = error.message.split("\n").find((l) => l.trim()) || "Parse error";
+      setStatus("error", line ? `Line ${line}: ${firstLine}` : firstLine);
+      // keep the last good graph on screen while the user is mid-edit
+    }
+  }
 
-function refreshEdgeOptions() {
-  const resourceNames = $$("#resources .element-card").map((c) => $(".el-name", c).value.trim()).filter(Boolean);
-  const processNames = $$("#processes .element-card").map((c) => $(".el-name", c).value.trim()).filter(Boolean);
-  $$("#processes .element-card").forEach((card) => {
-    $$("select.edge", card).forEach((sel) => {
-      const target = sel.dataset.target;
-      const pool = target === "process" ? processNames : resourceNames;
-      const chosen = Array.from(sel.selectedOptions).map((o) => o.value);
-      sel.innerHTML = "";
-      pool.forEach((name) =>
-        sel.appendChild(el("option", { value: name, selected: chosen.includes(name) ? "selected" : null }, name))
-      );
-    });
-  });
-}
+  // ---- drawer ----------------------------------------------------------------
+  function openDrawer(tab) {
+    $("#drawer").classList.remove("collapsed");
+    $("#drawer-toggle").innerHTML = "&#9660;";
+    if (tab) switchDrawerTab(tab);
+  }
 
-function resourceCard(data = {}) {
-  const card = el("div", { class: "element-card" });
-  card.appendChild(
-    el("div", { class: "element-card-head" }, [
-      el("strong", {}, "Resource"),
-      el("button", { class: "btn small icon", title: "Remove", onclick: () => { card.remove(); refreshEdgeOptions(); } }, "✕"),
-    ])
-  );
-  const name = el("input", { type: "text", class: "el-name", placeholder: "UserQuestion", value: data.name || "" });
-  name.addEventListener("input", refreshEdgeOptions);
-  const grid = el("div", { class: "grid" }, [
-    el("label", { class: "field" }, [el("span", {}, "Name"), name]),
-    el("label", { class: "field" }, [el("span", {}, "Label"), el("input", { type: "text", class: "el-label", placeholder: "Question about product", value: data.label || "" })]),
-    el("label", { class: "field full" }, [el("span", {}, "Class"), el("select", { class: "el-class" }, optionsFrom(VOCAB.resourceClasses, [data.class || VOCAB.resourceClasses[0]?.id]))]),
-    el("label", { class: "field" }, [el("span", {}, "Roles"), multiSelect(VOCAB.roles, data.roles || [])]),
-    el("label", { class: "field" }, [el("span", {}, "Data categories"), multiSelect(VOCAB.dataCategories, data.dataCategories || [])]),
-  ]);
-  // mark the two multi-selects for collection
-  const selects = $$("select", grid).filter((s) => s.multiple);
-  selects[0].classList.add("el-roles");
-  selects[1].classList.add("el-categories");
-  card.appendChild(grid);
-  return card;
-}
+  function toggleDrawer() {
+    const drawer = $("#drawer");
+    drawer.classList.toggle("collapsed");
+    $("#drawer-toggle").innerHTML = drawer.classList.contains("collapsed") ? "&#9650;" : "&#9660;";
+  }
 
-function processCard(data = {}) {
-  const card = el("div", { class: "element-card" });
-  card.appendChild(
-    el("div", { class: "element-card-head" }, [
-      el("strong", {}, "Process"),
-      el("button", { class: "btn small icon", title: "Remove", onclick: () => { card.remove(); refreshEdgeOptions(); } }, "✕"),
-    ])
-  );
-  const name = el("input", { type: "text", class: "el-name", placeholder: "Retrieval", value: data.name || "" });
-  name.addEventListener("input", refreshEdgeOptions);
+  function switchDrawerTab(name) {
+    $$(".drawer-tab").forEach((t) => t.classList.toggle("active", t.dataset.drawerTab === name));
+    $$(".drawer-panel").forEach((p) => p.classList.toggle("hidden", p.dataset.drawerPanel !== name));
+  }
 
-  const edgeFields = VOCAB.edgeKinds.map((kind) => {
-    const sel = el("select", { multiple: "multiple", size: "3", class: "edge", "data-kind": kind.id, "data-target": kind.target });
-    return el("label", { class: "field" }, [el("span", {}, kind.label), sel]);
-  });
+  // ---- findings --------------------------------------------------------------
+  let selectedFinding = null;
 
-  const grid = el("div", { class: "grid" }, [
-    el("label", { class: "field" }, [el("span", {}, "Name"), name]),
-    el("label", { class: "field" }, [el("span", {}, "Label"), el("input", { type: "text", class: "el-label", placeholder: "Product retrieval", value: data.label || "" })]),
-    el("label", { class: "field full" }, [el("span", {}, "Class"), el("select", { class: "el-class" }, optionsFrom(VOCAB.processClasses, [data.class || VOCAB.processClasses[0]?.id]))]),
-    el("label", { class: "field full" }, [el("span", {}, "Roles"), (() => { const s = multiSelect(VOCAB.roles, data.roles || []); s.classList.add("el-roles"); return s; })()]),
-    ...edgeFields,
-  ]);
-  card.appendChild(grid);
-  return card;
-}
-
-function collectModel() {
-  const resources = $$("#resources .element-card").map((card) => ({
-    name: $(".el-name", card).value.trim(),
-    label: $(".el-label", card).value.trim(),
-    class: $(".el-class", card).value,
-    roles: Array.from($(".el-roles", card).selectedOptions).map((o) => o.value),
-    dataCategories: Array.from($(".el-categories", card).selectedOptions).map((o) => o.value),
-  }));
-  const processes = $$("#processes .element-card").map((card) => {
-    const proc = {
-      name: $(".el-name", card).value.trim(),
-      label: $(".el-label", card).value.trim(),
-      class: $(".el-class", card).value,
-      roles: Array.from($(".el-roles", card).selectedOptions).map((o) => o.value),
-    };
-    $$("select.edge", card).forEach((sel) => {
-      proc[sel.dataset.kind] = Array.from(sel.selectedOptions).map((o) => o.value);
-    });
-    return proc;
-  });
-  return {
-    systemName: $("#system-name").value.trim() || "System",
-    systemLabel: $("#system-label").value.trim(),
-    resources,
-    processes,
-  };
-}
-
-// A small starter pipeline so users see the shape of a model.
-const STARTER = {
-  resources: [
-    { name: "UserQuestion", label: "User question", class: "http://w3id.org/beam/core#Data",
-      roles: ["http://w3id.org/airiskkg/pair-ai#PublicUserInput"],
-      dataCategories: ["http://w3id.org/airiskkg/pair-ai#ExternalUserContent"] },
-    { name: "VectorDB", label: "Knowledge vector store", class: "http://w3id.org/beam/core#Data",
-      roles: ["http://w3id.org/airiskkg/pair-ai#VectorStore"],
-      dataCategories: ["http://w3id.org/airiskkg/pair-ai#SensitiveInformation"] },
-    { name: "RetrievedContext", label: "Retrieved context", class: "http://w3id.org/beam/core#Data",
-      roles: ["http://w3id.org/airiskkg/pair-ai#RetrievedResult"],
-      dataCategories: ["http://w3id.org/airiskkg/pair-ai#UntrustedContent"] },
-    { name: "LLM", label: "Generative model", class: "http://w3id.org/beam/core#StatisticalModel",
-      roles: ["http://w3id.org/airiskkg/pair-ai#GenerativeModel"], dataCategories: [] },
-    { name: "Answer", label: "User-facing answer", class: "http://w3id.org/beam/core#Data",
-      roles: ["http://w3id.org/airiskkg/pair-ai#PublicUserFacingOutput"], dataCategories: [] },
-  ],
-  processes: [
-    { name: "Retrieval", label: "Vector retrieval", class: "http://w3id.org/beam/core#Infer",
-      roles: ["http://w3id.org/airiskkg/pair-ai#RetrievalStep"],
-      use: ["UserQuestion", "VectorDB"], produce: ["RetrievedContext"], inform: ["Generation"] },
-    { name: "Generation", label: "LLM generation", class: "http://w3id.org/beam/core#Transform",
-      roles: ["http://w3id.org/airiskkg/pair-ai#GenerationStep", "http://w3id.org/airiskkg/pair-ai#PromptConstructionStep"],
-      use: ["RetrievedContext", "LLM"], produce: ["Answer"], inform: [] },
-  ],
-};
-
-function loadModelIntoBuilder(model) {
-  $("#resources").innerHTML = "";
-  $("#processes").innerHTML = "";
-  (model.resources || []).forEach((r) => $("#resources").appendChild(resourceCard(r)));
-  (model.processes || []).forEach((p) => $("#processes").appendChild(processCard(p)));
-  refreshEdgeOptions();
-  // edges depend on names existing first; set selections after refresh
-  $$("#processes .element-card").forEach((card, i) => {
-    const p = (model.processes || [])[i] || {};
-    $$("select.edge", card).forEach((sel) => {
-      const want = p[sel.dataset.kind] || [];
-      Array.from(sel.options).forEach((o) => { o.selected = want.includes(o.value); });
-    });
-  });
-}
-
-// ---- results rendering -----------------------------------------------------
-function renderRefList(refs, extraClass = "") {
-  return el("ul", { class: `ref-list ${extraClass}` },
-    refs.map((r) => el("li", { title: r.definition || "" }, r.label)));
-}
-
-function groupBySource(refs) {
-  const groups = {};
-  refs.forEach((r) => { (groups[r.source] = groups[r.source] || []).push(r); });
-  return groups;
-}
-
-function renderTaxonomy(entries) {
-  const groups = groupBySource(entries);
-  const blocks = Object.keys(groups).map((source) =>
-    el("div", {}, [el("div", { class: "tax-source" }, source), renderRefList(groups[source])]));
-  return el("div", {}, blocks);
-}
-
-function findingCard(f) {
-  const meta = el("div", { class: "meta" }, [
-    f.motif ? el("span", { class: "chip motif", title: f.motif.id }, `motif: ${f.motif.label}`) : null,
-    f.mechanism ? el("span", { class: "chip mech", title: f.mechanism.id }, `mechanism: ${f.mechanism.label}`) : null,
-    f.status ? el("span", { class: "chip status" }, f.status) : null,
-  ]);
-
-  const grid = el("div", { class: "finding-grid" }, [
-    el("div", { class: "finding-block full", style: "grid-column:1/-1" }, [
-      el("h5", {}, "Candidate risk taxonomy entries"),
-      renderTaxonomy(f.taxonomyEntries),
-    ]),
-    el("div", { class: "finding-block" }, [
-      el("h5", {}, "Suggested controls"),
-      renderRefList(f.suggestedControls, "controls"),
-    ]),
-    el("div", { class: "finding-block" }, [
-      el("h5", {}, "Evidence elements"),
-      renderRefList(f.evidence, "evidence"),
-    ]),
-  ]);
-
-  return el("div", { class: "finding" }, [
-    el("h3", {}, f.label),
-    f.description ? el("p", { class: "desc" }, f.description) : null,
-    meta,
-    grid,
-  ]);
-}
-
-function renderResults(data) {
-  const root = $("#results");
-  root.innerHTML = "";
-  $("#results-empty").classList.add("hidden");
-  root.classList.remove("hidden");
-
-  root.appendChild(el("div", { class: "summary" }, [
-    el("div", { class: "stat" }, [el("div", { class: "num" }, String(data.summary.riskFindingCount)), el("div", { class: "lbl" }, "Risk findings")]),
-    el("div", { class: "stat" }, [el("div", { class: "num" }, String(data.summary.motifMatchCount)), el("div", { class: "lbl" }, "Motif matches")]),
-  ]));
-
-  const owasp = data.summary.findingsByOwaspCategory || [];
-  if (owasp.length) {
-    const max = Math.max(...owasp.map((o) => o.count));
-    root.appendChild(el("div", { class: "owasp-breakdown" }, [
-      el("h4", {}, "Findings by OWASP LLM category"),
-      ...owasp.map((o) =>
-        el("div", { class: "bar-row" }, [
-          el("div", { class: "bar-track" }, [el("div", { class: "bar", style: `width:${(o.count / max) * 100}%` })]),
-          el("span", {}, `${o.label} · ${o.count}`),
+  // One mitigation as a list item, with any suggested motif beneath it.
+  function controlItem(control) {
+    const motifs = control.realizedByMotifs || [];
+    const children = [el("span", { class: "ctrl-label" }, control.label)];
+    if (motifs.length) {
+      children.push(
+        el("div", { class: "ctrl-motifs" }, [
+          el("span", { class: "ctrl-motifs-lead" }, "suggested mitigation: "),
+          ...motifs.map((m) =>
+            el("span", { class: "chip motif-suggest", title: "Candidate structural mitigation: insert this motif" }, m.label)
+          ),
         ])
-      ),
-    ]));
+      );
+    }
+    return el("li", { title: control.definition || "" }, children);
   }
 
-  if (!data.findings.length) {
-    root.appendChild(el("p", { class: "desc" }, "No candidate risk findings were produced for this architecture."));
-  }
-  data.findings.forEach((f) => root.appendChild(findingCard(f)));
-
-  if (data.motifMatches.length) {
-    const details = el("details", { class: "collapsible" }, [
-      el("summary", {}, `Matched architecture motifs (${data.motifMatches.length})`),
+  // MIT taxonomy-grounded mitigations for this finding's risks.
+  function groundedFamiliesSection(families) {
+    if (!families || !families.length) return null;
+    return el("div", { class: "ctrl-group evidence" }, [
+      el("div", { class: "ctrl-group-head" }, `MIT mitigations (${families.length})`),
+      el("ul", { class: "ref-list grounded-list" },
+        families.map((f) => el("li", { title: f.definition || "" }, el("span", { class: "chip tax-ground" }, f.label)))),
     ]);
-    data.motifMatches.forEach((m) => {
-      const bindings = m.boundElements.map((b) => `${b.patternNode} = ${b.element}`).join(" · ");
-      details.appendChild(el("div", { class: "match" }, [
-        el("strong", {}, m.motif ? m.motif.label : "Motif"),
-        el("div", { class: "bindings" }, bindings),
-      ]));
+  }
+
+  // All suggested controls under one "Mitigations" list.
+  function controlSections(controls) {
+    if (!controls.length) return [];
+    return [
+      el("div", { class: "ctrl-group" }, [
+        el("div", { class: "ctrl-group-head" }, `Mitigations (${controls.length})`),
+        el("ul", { class: "ref-list" }, controls.map(controlItem)),
+      ]),
+    ];
+  }
+
+  function findingCard(finding) {
+    const evidenceIds = finding.evidence.map((e) => e.id);
+    const card = el("div", { class: "finding-card", tabindex: "0" }, [
+      el("div", { class: "finding-head" }, [
+        el("strong", {}, finding.label),
+        finding.motif ? el("span", { class: "chip" }, finding.motif.label) : null,
+      ]),
+      finding.description ? el("p", { class: "finding-desc" }, finding.description) : null,
+      el("div", { class: "finding-meta" }, [
+        finding.mechanism ? el("span", { class: "chip mech", title: finding.mechanism.id }, finding.mechanism.label) : null,
+        ...finding.taxonomyEntries.slice(0, 4).map((t) => el("span", { class: "chip tax", title: t.definition || t.id }, t.label)),
+        finding.taxonomyEntries.length > 4 ? el("span", { class: "chip tax" }, `+${finding.taxonomyEntries.length - 4}`) : null,
+      ]),
+      el("details", {}, [
+        el("summary", {}, `Suggested controls (${finding.suggestedControls.length}) · evidence (${finding.evidence.length})`),
+        ...controlSections(finding.suggestedControls),
+        groundedFamiliesSection(finding.groundedControlFamilies),
+        el("div", { class: "evidence-note" }, "Evidence: " + finding.evidence.map((e) => e.label).join(", ")),
+      ]),
+    ]);
+    card.addEventListener("click", () => {
+      if (selectedFinding === card) {
+        selectedFinding = null;
+        card.classList.remove("selected");
+        GraphView.setHighlight([]);
+        return;
+      }
+      $$(".finding-card.selected").forEach((c) => c.classList.remove("selected"));
+      selectedFinding = card;
+      card.classList.add("selected");
+      GraphView.setHighlight(evidenceIds);
     });
-    root.appendChild(details);
-  }
-  root.scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
-
-// ---- wiring ----------------------------------------------------------------
-function showError(msg) {
-  const box = $("#input-error");
-  box.textContent = msg;
-  box.classList.toggle("hidden", !msg);
-}
-
-function switchTab(name) {
-  $$(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
-  $$(".tab-body").forEach((b) => b.classList.toggle("hidden", b.dataset.tabBody !== name));
-}
-
-async function init() {
-  try {
-    VOCAB = await api("/api/vocabulary");
-  } catch (e) {
-    showError("Failed to load vocabulary: " + e.message);
-    return;
+    return card;
   }
 
-  loadModelIntoBuilder(STARTER);
+  function renderFindings(data) {
+    $("#findings-empty").classList.add("hidden");
+    const summary = $("#findings-summary");
+    summary.innerHTML = "";
+    summary.appendChild(el("div", { class: "summary-row" }, [
+      el("span", { class: "stat" }, `${data.summary.riskFindingCount} candidate findings`),
+      el("span", { class: "stat" }, `${data.summary.motifMatchCount} motif matches`),
+      el("span", { class: "hint" }, "Click a finding to highlight its evidence in the graph."),
+    ]));
 
-  // examples dropdown
-  try {
-    const examples = await api("/api/examples");
-    const select = $("#example-select");
-    examples.forEach((ex) => select.appendChild(el("option", { value: ex.name }, ex.name)));
-  } catch (_) { /* non-fatal */ }
-
-  $$(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
-  $("#add-resource").addEventListener("click", () => { $("#resources").appendChild(resourceCard()); });
-  $("#add-process").addEventListener("click", () => { $("#processes").appendChild(processCard()); refreshEdgeOptions(); });
-  $("#load-example-into-builder").addEventListener("click", () => loadModelIntoBuilder(STARTER));
-
-  $("#generate-ttl").addEventListener("click", async () => {
-    showError("");
-    try {
-      const { ttl } = await api("/api/build", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(collectModel()) });
-      $("#ttl-source").value = ttl;
-      switchTab("source");
-    } catch (e) {
-      showError(e.message);
+    const list = $("#findings-list");
+    list.innerHTML = "";
+    selectedFinding = null;
+    GraphView.setHighlight([]);
+    if (!data.findings.length) {
+      list.appendChild(el("p", { class: "drawer-empty" }, "No candidate risk findings were produced for this architecture."));
     }
-  });
+    data.findings.forEach((f) => list.appendChild(findingCard(f)));
+    $("#findings-count").textContent = data.findings.length ? String(data.findings.length) : "";
+  }
 
-  $("#example-select").addEventListener("change", async (ev) => {
-    const name = ev.target.value;
-    if (!name) return;
-    showError("");
-    try {
-      const { ttl } = await api(`/api/examples/${encodeURIComponent(name)}`);
-      $("#ttl-source").value = ttl;
-    } catch (e) {
-      showError(e.message);
+  // ---- validation ------------------------------------------------------------
+  function validationRow(item, severity) {
+    const row = el("div", { class: `validation-row ${severity}` }, [
+      el("span", { class: "sev" }, severity === "violation" ? "Violation" : "Warning"),
+      el("span", { class: "msg" }, item.message),
+    ]);
+    if (item.focusNode) {
+      row.appendChild(el("code", { class: "focus", title: item.focusNode }, item.focusNode.split(/[#/]/).pop()));
+      row.addEventListener("click", () => GraphView.setHighlight([item.focusNode]));
     }
-  });
+    return row;
+  }
 
-  $("#file-input").addEventListener("change", (ev) => {
-    const file = ev.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => { $("#ttl-source").value = reader.result; };
-    reader.readAsText(file);
-  });
+  function renderValidation(report) {
+    $("#validation-empty").classList.add("hidden");
+    const list = $("#validation-list");
+    list.innerHTML = "";
+    const total = report.violations.length + report.warnings.length;
+    list.appendChild(el("div", { class: "summary-row" }, [
+      el("span", { class: `stat ${report.conforms ? "good" : "bad"}` },
+        report.conforms ? "Input contract satisfied" : "Input contract violated"),
+      el("span", { class: "stat" }, `${report.violations.length} violations · ${report.warnings.length} warnings`),
+      total ? el("span", { class: "hint" }, "Click a row to highlight the focus node.") : null,
+    ]));
+    report.violations.forEach((v) => list.appendChild(validationRow(v, "violation")));
+    report.warnings.forEach((w) => list.appendChild(validationRow(w, "warning")));
+    $("#validation-count").textContent = total ? String(total) : "";
+  }
 
-  $("#run-assessment").addEventListener("click", async () => {
-    showError("");
-    const ttl = $("#ttl-source").value.trim();
-    if (!ttl) { showError("Provide an architecture graph (Turtle) to assess."); return; }
-    $("#results-empty").classList.add("hidden");
-    $("#results").classList.remove("hidden");
-    $("#results").innerHTML = '<div class="spinner">Running assessment…</div>';
+  // ---- split divider ---------------------------------------------------------
+  function initDivider() {
+    const divider = $("#divider");
+    const editorPane = $("#editor-pane");
+    let dragging = false;
+    divider.addEventListener("pointerdown", (ev) => {
+      dragging = true;
+      divider.setPointerCapture(ev.pointerId);
+      document.body.classList.add("resizing");
+    });
+    divider.addEventListener("pointermove", (ev) => {
+      if (!dragging) return;
+      const main = $(".workbench");
+      const rect = main.getBoundingClientRect();
+      const ratio = Math.min(0.75, Math.max(0.2, (ev.clientX - rect.left) / rect.width));
+      editorPane.style.flex = `0 0 ${ratio * 100}%`;
+      GraphView.fit();
+    });
+    divider.addEventListener("pointerup", () => {
+      dragging = false;
+      document.body.classList.remove("resizing");
+    });
+  }
+
+  // ---- starter graph ---------------------------------------------------------
+  const STARTER_TTL = `@prefix ex:   <http://example.org/my-system#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:System a beam:System ;
+    rdfs:label "My RAG system" ;
+    beam:hasResource ex:Question, ex:VectorDB, ex:Context, ex:LLM, ex:Answer ;
+    beam:hasProcess ex:Retrieve, ex:Generate .
+
+ex:Question a beam:Data ;
+    rdfs:label "User question" ;
+    pair:playsRole pair:PublicUserInput ;
+    pair:containsDataCategory pair:ExternalUserContent .
+
+ex:VectorDB a beam:Data ;
+    rdfs:label "Knowledge vector store" ;
+    pair:playsRole pair:VectorStore ;
+    pair:containsDataCategory pair:SensitiveInformation .
+
+ex:Context a beam:Data ;
+    rdfs:label "Retrieved context" ;
+    pair:playsRole pair:RetrievedResult ;
+    pair:containsDataCategory pair:UntrustedContent .
+
+ex:LLM a beam:StatisticalModel ;
+    rdfs:label "Generative model" ;
+    pair:playsRole pair:GenerativeModel .
+
+ex:Answer a beam:Data ;
+    rdfs:label "User-facing answer" ;
+    pair:playsRole pair:PublicUserFacingOutput .
+
+ex:Retrieve a beam:Infer ;
+    rdfs:label "Vector retrieval" ;
+    pair:playsRole pair:RetrievalStep ;
+    beam:use ex:Question, ex:VectorDB ;
+    beam:produce ex:Context ;
+    beam:inform ex:Generate .
+
+ex:Generate a beam:Transform ;
+    rdfs:label "LLM generation" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use ex:Question, ex:Context, ex:LLM ;
+    beam:produce ex:Answer .
+`;
+
+  // ---- in-canvas annotation --------------------------------------------------
+  // ---- diagram -> code edits (serialized) ------------------------------------
+  // Every structural edit runs through one queue, so rapid actions (add several
+  // components, connect, delete in a row) never race on the editor value: each
+  // reads the latest code only after the previous edit has written it back.
+  let mutating = Promise.resolve();
+  function runMutation(task) {
+    const next = mutating.then(task, task);
+    mutating = next.catch(() => {});
+    return next;
+  }
+
+  // Edit an element (label / name / type / role / category) from the popup.
+  function applyEdit(elementId, edit) {
+    return runMutation(async () => {
+      try {
+        const { ttl } = await postJson("/api/graph-edit", {
+          ttl: Editor.getValue(), op: "edit-element", element: elementId, ...edit,
+        });
+        Editor.setValue(ttl);
+        setStatus("ok", "Element updated — Run assessment to see findings");
+      } catch (error) {
+        setStatus("error", "Could not update element: " + error.message.split("\n")[0]);
+      }
+    });
+  }
+
+  // Delete an element and every edge touching it.
+  function applyDelete(elementId) {
+    return runMutation(async () => {
+      try {
+        const { ttl } = await postJson("/api/graph-edit", {
+          ttl: Editor.getValue(), op: "delete-element", element: elementId,
+        });
+        Editor.setValue(ttl);
+        setStatus("ok", "Element deleted");
+      } catch (error) {
+        setStatus("error", "Could not delete: " + error.message.split("\n")[0]);
+      }
+    });
+  }
+
+  // Add a BEAM flow edge from a canvas port-drag. use = resource→process,
+  // produce = process→resource, inform = process→process.
+  function applyConnect(triple) {
+    return runMutation(async () => {
+      try {
+        const { ttl } = await postJson("/api/graph-edit", {
+          ttl: Editor.getValue(), op: "add-edge", ...triple,
+        });
+        Editor.setValue(ttl);
+        setStatus("ok", `Connected: ${triple.predicate}`);
+      } catch (error) {
+        setStatus("error", "Could not connect: " + error.message.split("\n")[0]);
+      }
+    });
+  }
+
+  // Palette of BEAM symbols; click one to add it, or drag it onto the canvas.
+  const BEAM_NS = "http://w3id.org/beam/core#";
+  const PALETTE = [
+    { label: "Data", cls: "Data", kind: "data", cat: "resource" },
+    { label: "Symbol", cls: "Symbol", kind: "symbol", cat: "resource" },
+    { label: "Model", cls: "StatisticalModel", kind: "model", cat: "resource" },
+    { label: "Transform", cls: "Transform", kind: "process", cat: "process" },
+    { label: "Infer", cls: "Infer", kind: "process", cat: "process" },
+    { label: "Train", cls: "Train", kind: "process", cat: "process" },
+    { label: "Generate", cls: "Generate", kind: "process", cat: "process" },
+  ];
+
+  function addPaletteElement(item, clientX, clientY) {
+    return runMutation(async () => {
+      try {
+        const { ttl, newId } = await postJson("/api/graph-edit", {
+          ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
+          op: "add-element", classUri: BEAM_NS + item.cls, category: item.cat, label: item.label,
+        });
+        if (newId && clientX != null) GraphView.placeNodeAt(newId, clientX, clientY);
+        Editor.setValue(ttl);
+        setStatus("ok", `Added ${item.label} — click it to edit, drag its ▸ port to connect`);
+      } catch (error) {
+        setStatus("error", "Could not add element: " + error.message.split("\n")[0]);
+      }
+    });
+  }
+
+  function initPalette() {
+    const palette = $("#palette");
+    if (!palette) return;
+    const wrap = $("#canvas-wrap");
+    PALETTE.forEach((item) => {
+      const chip = el("div",
+        { class: `palette-item ${item.kind}`, title: `Click to add, or drag onto the canvas — ${item.cls}` },
+        item.label);
+      chip.addEventListener("pointerdown", (ev) => startPaletteDrag(ev, item, chip, wrap));
+      palette.appendChild(chip);
+    });
+  }
+
+  // Click a symbol to add it (at center); or drag it onto the canvas to drop it
+  // at a point. Pointer-based (native HTML5 DnD fought the canvas pan / pointer
+  // capture). Either way the element is written to the code and redrawn live.
+  function startPaletteDrag(ev, item, chip, wrap) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const startX = ev.clientX;
+    const startY = ev.clientY;
+    const ghost = chip.cloneNode(true);
+    ghost.classList.add("palette-ghost");
+    ghost.style.left = startX + 10 + "px";
+    ghost.style.top = startY + 10 + "px";
+    let moved = false;
+    const move = (mv) => {
+      if (!moved) {
+        if (Math.hypot(mv.clientX - startX, mv.clientY - startY) < 6) return;
+        moved = true;
+        document.body.appendChild(ghost); // only show the ghost once actually dragging
+      }
+      ghost.style.left = mv.clientX + 10 + "px";
+      ghost.style.top = mv.clientY + 10 + "px";
+    };
+    const up = (uv) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      ghost.remove();
+      if (!moved) { addPaletteElement(item, null, null); return; } // click -> add at center
+      const r = wrap.getBoundingClientRect();
+      const inside = uv.clientX >= r.left && uv.clientX <= r.right && uv.clientY >= r.top && uv.clientY <= r.bottom;
+      const onPalette = uv.target && uv.target.closest && uv.target.closest(".palette");
+      addPaletteElement(item, inside && !onPalette ? uv.clientX : null, inside && !onPalette ? uv.clientY : null);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  // ---- init ------------------------------------------------------------------
+  async function init() {
+    GraphView.init();
+    Editor.init({ onChange: refreshPreview });
+    initDivider();
+
+    let vocabulary = { roles: [], dataCategories: [] };
     try {
-      const data = await api("/api/assess", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ttl }) });
-      renderResults(data);
-    } catch (e) {
-      $("#results").innerHTML = "";
-      $("#results").classList.add("hidden");
-      $("#results-empty").classList.remove("hidden");
-      showError(e.message);
-    }
-  });
-}
+      vocabulary = await api("/api/vocabulary");
+    } catch (_) { /* annotation popups will just have empty pick lists */ }
+    const classes = [...(vocabulary.resourceClasses || []), ...(vocabulary.processClasses || [])];
+    GraphView.setAnnotation({ vocabulary, classes, onEdit: applyEdit, onDelete: applyDelete, onConnect: applyConnect, onStatus: setStatus });
+    Annotate.init({ vocabulary, onStatus: setStatus });
 
-document.addEventListener("DOMContentLoaded", init);
+    initPalette();
+
+    try {
+      const examples = await api("/api/examples");
+      const select = $("#example-select");
+      examples.forEach((ex) => select.appendChild(el("option", { value: ex.name }, ex.name)));
+    } catch (_) { /* non-fatal */ }
+
+    $("#example-select").addEventListener("change", async (ev) => {
+      const name = ev.target.value;
+      if (!name) return;
+      try {
+        const { ttl } = await api(`/api/examples/${encodeURIComponent(name)}`);
+        Editor.setValue(ttl);
+        setStatus("ok", `Loaded example: ${name}`);
+      } catch (error) {
+        setStatus("error", error.message);
+      }
+    });
+
+    $("#file-input").addEventListener("change", (ev) => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        Editor.setValue(String(reader.result));
+        setStatus("ok", `Loaded file: ${file.name}`);
+      };
+      reader.readAsText(file);
+      ev.target.value = "";
+    });
+
+    $("#btn-starter").addEventListener("click", () => {
+      Editor.setValue(STARTER_TTL);
+      setStatus("ok", "Starter graph loaded");
+    });
+
+    $("#btn-clear").addEventListener("click", () => {
+      if (!Editor.getValue().trim()) return;
+      if (!window.confirm("Clear the code and the diagram? This cannot be undone.")) return;
+      Editor.setValue(""); // empty -> refreshPreview clears the canvas
+      setStatus("ok", "Cleared");
+    });
+
+    $("#btn-validate").addEventListener("click", async () => {
+      const ttl = Editor.getValue().trim();
+      if (!ttl) { setStatus("error", "Nothing to validate - the editor is empty."); return; }
+      const button = $("#btn-validate");
+      button.disabled = true;
+      setStatus("busy", "Validating against the input contract…");
+      try {
+        const report = await postJson("/api/validate", { ttl });
+        renderValidation(report);
+        openDrawer("validation");
+        setStatus(report.conforms ? "ok" : "error",
+          report.conforms ? "Input contract satisfied" : `${report.violations.length} contract violation(s)`);
+      } catch (error) {
+        setStatus("error", error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $("#btn-assess").addEventListener("click", async () => {
+      const ttl = Editor.getValue().trim();
+      if (!ttl) { setStatus("error", "Nothing to assess - the editor is empty."); return; }
+      const button = $("#btn-assess");
+      button.disabled = true;
+      setStatus("busy", "Running candidate risk assessment…");
+      try {
+        const data = await postJson("/api/assess", { ttl });
+        renderFindings(data);
+        openDrawer("findings");
+        setStatus("ok", `Assessment finished`, `${data.summary.riskFindingCount} findings · ${data.summary.motifMatchCount} matches`);
+      } catch (error) {
+        setStatus("error", error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $("#drawer-toggle").addEventListener("click", toggleDrawer);
+    $("#drawer-head").addEventListener("dblclick", toggleDrawer);
+    $$(".drawer-tab").forEach((tab) =>
+      tab.addEventListener("click", () => {
+        switchDrawerTab(tab.dataset.drawerTab);
+        openDrawer();
+        if (tab.dataset.drawerTab === "annotate") Annotate.refresh();
+      }));
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();

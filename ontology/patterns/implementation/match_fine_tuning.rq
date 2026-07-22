@@ -1,0 +1,71 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:FineTuningMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Fine Tuning Motif match"@en ;
+        pair:matchesMotif pat:FineTuningMotif ;
+        pair:hasNodeBinding ?baseModelBinding ,
+            ?datasetBinding ,
+            ?evaluationScoreBinding ,
+            ?evaluationStepBinding ,
+            ?fineTunedModelBinding ,
+            ?trainingStepBinding .
+
+    ?baseModelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:FineTune_BaseModelNode ; pair:matchedElement ?baseModel .
+    ?datasetBinding a pair:NodeBinding ; pair:bindsPatternNode pat:FineTune_DatasetNode ; pair:matchedElement ?dataset .
+    ?evaluationScoreBinding a pair:NodeBinding ; pair:bindsPatternNode pat:FineTune_EvaluationScoreNode ; pair:matchedElement ?evaluationScore .
+    ?evaluationStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:FineTune_EvaluationStepNode ; pair:matchedElement ?evaluationStep .
+    ?fineTunedModelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:FineTune_FineTunedModelNode ; pair:matchedElement ?fineTunedModel .
+    ?trainingStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:FineTune_TrainingStepNode ; pair:matchedElement ?trainingStep .
+}
+WHERE {
+    ?baseModel a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:FoundationLLM .
+    ?dataset a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:FineTuningDataset .
+    ?evaluationScore a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:EvaluationScore .
+    ?evaluationStep a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:EvaluationStep .
+    ?fineTunedModel a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:FineTunedModel .
+    ?trainingStep a beam:Train ;
+           pair:playsRole/pair:subRoleOf* pair:FineTuningStep .
+
+    ?trainingStep beam:use ?baseModel .
+    ?trainingStep beam:use ?dataset .
+    ?trainingStep beam:produce ?fineTunedModel .
+    ?trainingStep beam:inform ?evaluationStep .
+    ?evaluationStep beam:use ?fineTunedModel .
+    ?evaluationStep beam:produce ?evaluationScore .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/fine-tuning/",
+        ENCODE_FOR_URI(STR(?baseModel)),
+        "/",
+        ENCODE_FOR_URI(STR(?dataset)),
+        "/",
+        ENCODE_FOR_URI(STR(?evaluationScore)),
+        "/",
+        ENCODE_FOR_URI(STR(?evaluationStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?fineTunedModel)),
+        "/",
+        ENCODE_FOR_URI(STR(?trainingStep))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/base-model")) AS ?baseModelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/dataset")) AS ?datasetBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/evaluation-score")) AS ?evaluationScoreBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/evaluation-step")) AS ?evaluationStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/fine-tuned-model")) AS ?fineTunedModelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/training-step")) AS ?trainingStepBinding)
+}

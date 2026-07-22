@@ -1,0 +1,64 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:PredictionLoggingMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Prediction Logging Motif match"@en ;
+        pair:matchesMotif pat:PredictionLoggingMotif ;
+        pair:hasNodeBinding ?logRecordBinding ,
+            ?loggingStepBinding ,
+            ?predictionStepBinding ,
+            ?requestBinding ,
+            ?resultBinding .
+
+    ?logRecordBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PredLog_LogRecordNode ; pair:matchedElement ?logRecord .
+    ?loggingStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PredLog_LoggingStepNode ; pair:matchedElement ?loggingStep .
+    ?predictionStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PredLog_PredictionStepNode ; pair:matchedElement ?predictionStep .
+    ?requestBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PredLog_RequestNode ; pair:matchedElement ?request .
+    ?resultBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PredLog_ResultNode ; pair:matchedElement ?result .
+}
+WHERE {
+    ?logRecord a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionLog .
+    ?loggingStep a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:LoggingStep .
+    ?predictionStep a beam:Infer ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionStep .
+    ?request a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionRequest .
+    ?result a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionResult .
+
+    ?predictionStep beam:use ?request .
+    ?predictionStep beam:produce ?result .
+    ?predictionStep beam:inform ?loggingStep .
+    ?loggingStep beam:use ?request .
+    ?loggingStep beam:use ?result .
+    ?loggingStep beam:produce ?logRecord .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/prediction-logging/",
+        ENCODE_FOR_URI(STR(?logRecord)),
+        "/",
+        ENCODE_FOR_URI(STR(?loggingStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?predictionStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?request)),
+        "/",
+        ENCODE_FOR_URI(STR(?result))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/log-record")) AS ?logRecordBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/logging-step")) AS ?loggingStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/prediction-step")) AS ?predictionStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/request")) AS ?requestBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/result")) AS ?resultBinding)
+}

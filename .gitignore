@@ -12,8 +12,9 @@ pytest-cache-files-*/
 build/
 dist/
 docs/
-old/
 
+# Personal local notes (kept on disk, not shared)
+CHANGELOG_data_model.md
 
 # Keep folder structure, but avoid committing generated research outputs by default.
 outputs/*.ttl
