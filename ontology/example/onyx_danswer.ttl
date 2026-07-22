@@ -28,7 +28,6 @@
     owl:imports <http://w3id.org/beam/core#> ,
         <http://w3id.org/airiskkg/pair-ai#> .
 
-# Use-case-specific data categories (annotated base facts, Rule R8)
 
 onyx:ConnectedWorkspaceContent
     a pair:DataCategory ;

@@ -34,9 +34,6 @@ uc6:UC6_System
         uc6:LlatrievalScoringAndQueryReformulation ,
         uc6:LLMPrompting .
 
-# Use-case-local data categories (2026-07-16 consistency cleanup: ProductInformation
-# was previously minted in the core pair: namespace without a declaration; use-case
-# graphs subclass pair:Information in their own namespace instead).
 uc6:ProductInformation
     a pair:DataCategory ;
     rdfs:label "Product Information"@en ;
