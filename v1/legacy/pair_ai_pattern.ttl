@@ -1,0 +1,321 @@
+@prefix pair:     <http://w3id.org/airiskkg/pair-ai#> .
+@prefix beam:   <http://w3id.org/beam/core#> .
+@prefix beamr:  <http://w3id.org/beam/risk#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix vann:   <http://purl.org/vocab/vann/> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+# Ontology
+
+<http://w3id.org/airiskkg/pair-ai#> a owl:Ontology ;
+    dct:title "PAIR-AI Pattern Module Ontology"@en ;
+    dct:description "Pattern-level vocabulary for constructing the PAIR-AI AI Risk Knowledge Graph. The PAIR-AI assessment method consumes this module; the method workflow itself is represented outside this ontology."@en ;
+    vann:preferredNamespacePrefix "pair" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/pair-ai#" ;
+    owl:imports <http://w3id.org/beam/core#> ,
+                <http://w3id.org/beam/risk#> .
+
+# Classes
+
+pair:PatternRole a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Pattern Role"@en .
+
+pair:DataCategory a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Data Category"@en .
+
+pair:GraphMotif a owl:Class ;
+    rdfs:label "Graph Motif"@en .
+
+pair:PatternNode a owl:Class ;
+    rdfs:label "Pattern Node"@en .
+
+pair:PatternEdge a owl:Class ;
+    rdfs:label "Pattern Edge"@en .
+
+pair:GraphCondition a owl:Class ;
+    rdfs:label "Graph Condition"@en .
+
+pair:PropertyPathCondition a owl:Class ;
+    rdfs:subClassOf pair:GraphCondition ;
+    rdfs:label "Property Path Condition"@en .
+
+pair:AIRiskPattern a owl:Class ;
+    rdfs:label "AI Risk Pattern"@en .
+
+pair:MotifInterpretation a owl:Class ;
+    rdfs:subClassOf pair:AIRiskPattern ;
+    rdfs:label "Motif Interpretation"@en .
+
+pair:RiskMechanism a owl:Class ;
+    rdfs:label "Risk Mechanism"@en .
+
+pair:PatternImplementation a owl:Class ;
+    rdfs:label "Pattern Implementation"@en .
+
+pair:MotifMatch a owl:Class ;
+    rdfs:label "Motif Match"@en .
+
+pair:NodeBinding a owl:Class ;
+    rdfs:label "Node Binding"@en .
+
+pair:RiskFinding a owl:Class ;
+    rdfs:subClassOf beamr:Risk ;
+    rdfs:label "Risk Finding"@en .
+
+# Object properties
+
+pair:playsRole a owl:ObjectProperty ;
+    rdfs:label "plays role"@en ;
+    rdfs:domain rdfs:Resource ;
+    rdfs:range pair:PatternRole .
+
+pair:subRoleOf a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:label "sub-role of"@en ;
+    rdfs:domain pair:PatternRole ;
+    rdfs:range pair:PatternRole .
+
+pair:containsDataCategory a owl:ObjectProperty ;
+    rdfs:label "contains data category"@en ;
+    rdfs:domain beam:Data ;
+    rdfs:range pair:DataCategory .
+
+pair:subDataCategoryOf a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:label "sub-data-category of"@en ;
+    rdfs:domain pair:DataCategory ;
+    rdfs:range pair:DataCategory .
+
+pair:hasPatternNode a owl:ObjectProperty ;
+    rdfs:label "has pattern node"@en ;
+    rdfs:domain pair:GraphMotif ;
+    rdfs:range pair:PatternNode .
+
+pair:hasPatternEdge a owl:ObjectProperty ;
+    rdfs:label "has pattern edge"@en ;
+    rdfs:domain pair:GraphMotif ;
+    rdfs:range pair:PatternEdge .
+
+pair:sourcePatternNode a owl:ObjectProperty ;
+    rdfs:label "source pattern node"@en ;
+    rdfs:domain pair:PatternEdge ;
+    rdfs:range pair:PatternNode .
+
+pair:targetPatternNode a owl:ObjectProperty ;
+    rdfs:label "target pattern node"@en ;
+    rdfs:domain pair:PatternEdge ;
+    rdfs:range pair:PatternNode .
+
+pair:patternPredicate a owl:ObjectProperty ;
+    rdfs:label "pattern predicate"@en ;
+    rdfs:domain pair:PatternEdge ;
+    rdfs:range rdf:Property .
+
+pair:expectedClass a owl:ObjectProperty ;
+    rdfs:label "expected class"@en ;
+    rdfs:domain pair:PatternNode ;
+    rdfs:range rdfs:Class .
+
+pair:expectedRole a owl:ObjectProperty ;
+    rdfs:label "expected role"@en ;
+    rdfs:domain pair:PatternNode ;
+    rdfs:range pair:PatternRole .
+
+pair:hasInterpretation a owl:ObjectProperty ;
+    rdfs:label "has interpretation"@en ;
+    rdfs:domain pair:GraphMotif ;
+    rdfs:range pair:MotifInterpretation .
+
+pair:interpretsMotif a owl:ObjectProperty ;
+    rdfs:label "interprets motif"@en ;
+    rdfs:domain pair:MotifInterpretation ;
+    rdfs:range pair:GraphMotif .
+
+pair:hasInterpretationCondition a owl:ObjectProperty ;
+    rdfs:label "has interpretation condition"@en ;
+    rdfs:domain pair:MotifInterpretation ;
+    rdfs:range pair:GraphCondition .
+
+pair:interpretedAsMechanism a owl:ObjectProperty ;
+    rdfs:label "interpreted as mechanism"@en ;
+    rdfs:domain pair:MotifInterpretation ;
+    rdfs:range pair:RiskMechanism .
+
+pair:mayIndicateRisk a owl:ObjectProperty ;
+    rdfs:label "may indicate risk"@en ;
+    rdfs:domain pair:MotifInterpretation ;
+    rdfs:range skos:Concept .
+
+pair:suggestedControl a owl:ObjectProperty ;
+    rdfs:label "suggested control"@en ;
+    rdfs:domain pair:MotifInterpretation ;
+    rdfs:range beamr:RiskControl .
+
+pair:operationalizesRiskCondition a owl:ObjectProperty ;
+    rdfs:label "operationalizes risk condition"@en ;
+    rdfs:domain pair:GraphCondition ;
+    rdfs:range rdfs:Resource .
+
+pair:implementedBy a owl:ObjectProperty ;
+    rdfs:label "implemented by"@en ;
+    rdfs:domain [
+        a owl:Class ;
+        owl:unionOf (pair:GraphMotif pair:MotifInterpretation)
+    ] ;
+    rdfs:range pair:PatternImplementation .
+
+pair:implementsMotif a owl:ObjectProperty ;
+    rdfs:label "implements motif"@en ;
+    rdfs:domain pair:PatternImplementation ;
+    rdfs:range pair:GraphMotif .
+
+pair:implementsInterpretation a owl:ObjectProperty ;
+    rdfs:label "implements interpretation"@en ;
+    rdfs:domain pair:PatternImplementation ;
+    rdfs:range pair:MotifInterpretation .
+
+pair:producesOutputType a owl:ObjectProperty ;
+    rdfs:label "produces output type"@en ;
+    rdfs:domain pair:PatternImplementation ;
+    rdfs:range rdfs:Class .
+
+pair:matchesMotif a owl:ObjectProperty ;
+    rdfs:label "matches motif"@en ;
+    rdfs:domain pair:MotifMatch ;
+    rdfs:range pair:GraphMotif .
+
+pair:hasNodeBinding a owl:ObjectProperty ;
+    rdfs:label "has node binding"@en ;
+    rdfs:domain pair:MotifMatch ;
+    rdfs:range pair:NodeBinding .
+
+pair:bindsPatternNode a owl:ObjectProperty ;
+    rdfs:label "binds pattern node"@en ;
+    rdfs:domain pair:NodeBinding ;
+    rdfs:range pair:PatternNode .
+
+pair:matchedElement a owl:ObjectProperty ;
+    rdfs:label "matched element"@en ;
+    rdfs:domain pair:NodeBinding ;
+    rdfs:range rdfs:Resource .
+
+pair:generatedFromMatch a owl:ObjectProperty ;
+    rdfs:label "generated from match"@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range pair:MotifMatch .
+
+pair:generatedByMotif a owl:ObjectProperty ;
+    rdfs:label "generated by motif"@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range pair:GraphMotif .
+
+pair:hasEvidenceElement a owl:ObjectProperty ;
+    rdfs:label "has evidence element"@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range rdfs:Resource .
+
+pair:hasInterpretedMechanism a owl:ObjectProperty ;
+    rdfs:label "has interpreted mechanism"@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range pair:RiskMechanism .
+
+pair:hasCandidateRiskTaxonomyEntry a owl:ObjectProperty ;
+    rdfs:label "has candidate risk taxonomy entry"@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range skos:Concept .
+
+pair:hasSuggestedControl a owl:ObjectProperty ;
+    rdfs:label "has suggested control"@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range beamr:RiskControl .
+
+pair:hasSatisfiedCondition a owl:ObjectProperty ;
+    rdfs:label "has satisfied condition"@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range rdfs:Resource .
+
+pair:ProcessingStep a pair:PatternRole ;
+    skos:prefLabel "Processing Step"@en ;
+    skos:definition "A step in the processing or decision-making workflow of an AI system, such as data preprocessing, model training, inference, or post-processing."@en .
+
+pair:ControlStep a pair:PatternRole ;
+    skos:prefLabel "Control Step"@en ;
+    skos:definition "A step in the workflow of an AI system that is specifically designed to implement a risk control or mitigation strategy, such as a fairness check, anomaly detection, or human review."@en .
+
+pair:ResourceRole a pair:PatternRole ;
+    skos:prefLabel "Resource Role"@en ;
+    skos:definition "A role played by a resource that an AI system interacts with, such as a data source, external API, or knowledge graph."@en .
+
+# Data properties
+
+pair:implementationPath a owl:DatatypeProperty ;
+    rdfs:label "implementation path"@en ;
+    rdfs:domain pair:PatternImplementation ;
+    rdfs:range xsd:string .
+
+pair:findingStatus a owl:DatatypeProperty ;
+    rdfs:label "finding status"@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range xsd:string .
+
+# Annotation vocabulary: roles
+pair:UserInput a pair:PatternRole ;
+    skos:prefLabel "User Input"@en ;
+    skos:definition "Information provided directly by a user, such as through a user interface or API input."@en ;
+
+pair:PublicUserInput a pair:PatternRole ;
+    skos:prefLabel "Public User Input"@en ;
+    skos:definition "Information provided by users that is publicly accessible, such as social media posts or public forum contributions."@en ;
+
+pair:KnowledgeSource a pair:PatternRole ;
+    skos:prefLabel "Knowledge Source"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "A source of information that an AI system can access, such as a database, knowledge graph, or external API."@en ;
+
+pair:VectorStore a pair:PatternRole ;
+    skos:prefLabel "Vector Store"@en ;
+    pair:subRoleOf pair:KnowledgeSource ;
+    skos:definition "A specialized data store designed for efficient storage and retrieval of vector embeddings, often used in AI systems for tasks like similarity search or semantic retrieval."@en .
+
+pair:RetrievedContext a pair:PatternRole ;
+    skos:prefLabel "Retrieved Context"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "Information retrieved from a knowledge source or vector store that is used as context for an AI system's processing, such as during inference or decision-making."@en .
+
+
+# ============================================================
+# RISK SITUATION LAYER
+#
+# Purpose: give "context" a first-class place between a structural
+# motif match and a risk interpretation. A RiskSituation reifies a
+# MotifMatch together with the set of GraphConditions that hold for it
+# (data categories present, sink reachability, control presence/absence,
+# actor/deployment context). The same motif can ground several
+# situations; each situation activates only the interpretations whose
+# required conditions it satisfies.
+#
+# This is the layer that lets one neutral motif branch into different
+# candidate risks WITHOUT making the library use-case specific:
+#   - general (library):  motif, interpretation, hasInterpretationCondition
+#   - use-case (instance): a RiskSituation built from a concrete system's
+#                          annotations (playsRole, containsDataCategory)
+#
+# Activation rule (intended SPARQL/OQP semantics, stated informally):
+#   a RiskFinding is generated for interpretation I from situation S iff
+#     S pair:groundedInMatch M  AND  M pair:matchesMotif Mo
+#     AND  Mo pair:hasInterpretation I
+#     AND  the conditions of I (pair:hasInterpretationCondition) are met by
+#          the conditions satisfied in S (pair:satisfiesCondition),
+#          combined according to I's pair:conditionLogic ("all" => every
+#          listed condition must hold; "any" => at least one must hold).
+#
+# NOTE: there is a SINGLE condition property, pair:hasInterpretationCondition.
+# An earlier draft also had pair:requiresCondition; it was removed because in
+# this method a condition either gates activation or has no function, so the
+# two were redundant. The genuine distinction (conjunction vs disjunction) is
+# captured by pair:conditionLogic below, not by a second property.
+# ============================================================

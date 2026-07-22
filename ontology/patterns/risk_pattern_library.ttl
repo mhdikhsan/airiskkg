@@ -38,7 +38,21 @@
                 <http://w3id.org/airiskkg/taxonomy/mappings#> .
 
 
-# OWASP-inspired suggested controls
+# PAIR-AI actionable control catalogue (single suggested-control vocabulary)
+#
+# These 12 pat:Control_* individuals are the ONLY vocabulary that appears in
+# pair:suggestedControl (2026-07-21 single-vocabulary refactor). They are
+# PAIR-AI's own architecture-facing controls: each is classified
+# technical/non-technical and, where applicable, linked to a realizing motif in
+# control_mitigation_layer.ttl.
+#
+# The skos:relatedMatch links below to mitctrl:* are an INDICATIVE bridge
+# (which MIT mitigation family each control corresponds to), not audited SSSOM
+# mappings - they are PAIR-AI curation and carry no upstream provenance. The
+# evidence-grounded risk -> MIT-control-family links live separately in
+# taxonomy_mapping.ttl (owasp:* nexus:hasRelatedControl mitctrl:*, CSV-grounded)
+# and are surfaced by a finding as an evidence layer via its taxonomy entries -
+# they are no longer mirrored into pair:suggestedControl.
 
 pat:Control_InputValidationAndPromptIsolation
     a beamr:RiskControl ;
@@ -128,17 +142,17 @@ pat:Control_LoggingMonitoringAndEvals
 
 pat:Control_Guardrails
     a beamr:RiskControl ;
-    skos:prefLabel "Input and output guardrails"@en ;
-    dct:description "Use input and output guardrails to block, route, or sanitize unsafe prompts and generated responses."@en ;
+    skos:prefLabel "Input and output filtering"@en ;
+    dct:description "Use input and output filtering to block, route, or sanitize unsafe prompts and generated responses."@en ;
     skos:relatedMatch mitctrl:content-safety-controls ,
                       mitctrl:input-output-filtering ,
                       mitctrl:model-safety-engineering .
 
 
-# OWASP interpretation conditions
+# OWASP applicability conditions
 
 pat:PromptInjection_UntrustedPromptContextCondition
-    a pair:GraphCondition ;
+    a pair:ApplicabilityCondition ;
     rdfs:label "Untrusted content enters prompt context"@en ;
     pair:operationalizesRiskCondition
         owasp:condition-untrusted-input-enters-prompt-context ,
@@ -150,37 +164,37 @@ pat:SensitiveInfo_SensitiveContextCondition
     pair:operationalizesRiskCondition owasp:condition-sensitive-data-in-context .
 
 pat:SensitiveInfo_OutputExposureCondition
-    a pair:GraphCondition ;
+    a pair:ApplicabilityCondition ;
     rdfs:label "Generated output can expose sensitive information"@en ;
     pair:operationalizesRiskCondition owasp:condition-generated-output-exposed-to-user .
 
 pat:SupplyChain_ExternalDependencyCondition
-    a pair:GraphCondition ;
+    a pair:ApplicabilityCondition ;
     rdfs:label "External model, data, dependency, provider, or artifact is used"@en ;
     pair:operationalizesRiskCondition owasp:condition-externally-sourced-model-data-or-dependency .
 
 pat:Poisoning_UntrustedTrainingOrIndexingDataCondition
-    a pair:GraphCondition ;
+    a pair:ApplicabilityCondition ;
     rdfs:label "Untrusted data enters training, fine-tuning, evaluation, or indexing"@en ;
     pair:operationalizesRiskCondition owasp:condition-untrusted-data-enters-training-finetuning-or-indexing .
 
 pat:ImproperOutputHandling_UnvalidatedOutputCondition
-    a pair:GraphCondition ;
+    a pair:ApplicabilityCondition ;
     rdfs:label "LLM output is used without validation or sanitization"@en ;
     pair:operationalizesRiskCondition owasp:condition-llm-output-used-without-validation .
 
 pat:ExcessiveAgency_ToolOrStateChangeCondition
-    a pair:GraphCondition ;
+    a pair:ApplicabilityCondition ;
     rdfs:label "LLM can trigger tools, permissions, transactions, or state changes"@en ;
     pair:operationalizesRiskCondition owasp:condition-llm-can-trigger-tools-or-state-changes .
 
 pat:SystemPromptLeakage_HiddenInstructionCondition
-    a pair:GraphCondition ;
+    a pair:ApplicabilityCondition ;
     rdfs:label "Hidden instructions or system configuration are present in prompt context"@en ;
     pair:operationalizesRiskCondition owasp:condition-hidden-instructions-in-prompt-context .
 
 pat:VectorEmbeddingWeakness_RetrievalCondition
-    a pair:GraphCondition ;
+    a pair:ApplicabilityCondition ;
     rdfs:label "Vector retrieval or embedding index is used for generation context"@en ;
     pair:operationalizesRiskCondition
         owasp:condition-vector-store-used-for-retrieval ,
@@ -188,117 +202,126 @@ pat:VectorEmbeddingWeakness_RetrievalCondition
         owasp:condition-retrieval-filtering-or-ranking-is-risk-relevant .
 
 pat:Misinformation_UngroundedGenerationCondition
-    a pair:GraphCondition ;
+    a pair:ApplicabilityCondition ;
     rdfs:label "Generation occurs without sufficient grounding or verification"@en ;
     pair:operationalizesRiskCondition
         owasp:condition-generation-without-grounding-or-verification ,
         owasp:condition-generated-output-exposed-to-user .
 
 pat:UnboundedConsumption_UnboundedUseCondition
-    a pair:GraphCondition ;
+    a pair:ApplicabilityCondition ;
     rdfs:label "Prompt, retrieval, tool, or model use is not bounded"@en ;
     pair:operationalizesRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
 
 
-# OWASP motif interpretations
+# OWASP risk patterns
 
 pat:DirectPromptingMotif
-    pair:hasInterpretation
-        pat:PromptInjectionInterpretation ,
-        pat:DirectPromptingWithoutGroundingInterpretation ,
-        pat:ImproperOutputHandlingInterpretation ,
-        pat:UnboundedConsumptionInterpretation ;
+    pair:hasRiskPattern
+        pat:PromptInjectionRiskPattern ,
+        pat:DirectPromptingWithoutGroundingRiskPattern ,
+        pat:ImproperOutputHandlingRiskPattern ,
+        pat:UnboundedConsumptionRiskPattern ;
     skos:scopeNote """
-    Direct Prompting is linked to these candidate interpretations because the
+    Direct Prompting is linked to these risk patterns because the
     motif represents user input flowing directly into a generative model and
     producing user-facing output without an explicit retrieval or grounding
     step. This makes prompt-context manipulation, unsupported generation,
     unvalidated generated output, and unbounded model use relevant conditions
     to test. The mapping does not assert that every Direct Prompting instance
-    is risky; each interpretation still requires its graph condition and
+    is risky; each risk pattern still requires its applicability condition and
     executable OQP to be satisfied during assessment.
     """@en .
 
 pat:RetrievalAugmentedGenerationMotif
-    pair:hasInterpretation
-        pat:PromptInjectionInterpretation ,
-        pat:SensitiveDataRetrievalExposureInterpretation ,
-        pat:VectorAndEmbeddingWeaknessInterpretation ,
-        pat:UnboundedConsumptionInterpretation .
+    pair:hasRiskPattern
+        pat:PromptInjectionRiskPattern ,
+        pat:VectorAndEmbeddingWeaknessRiskPattern ,
+        pat:MisinformationFromWeakGroundingRiskPattern ,
+        pat:UnboundedConsumptionRiskPattern .
 
-pat:RetrievalAugmentedGenerationMotif
-    pair:hasInterpretation
-        pat:PromptInjectionInterpretation ,
-        pat:SensitiveDataRetrievalExposureInterpretation ,
-        pat:VectorAndEmbeddingWeaknessInterpretation ,
-        pat:MisinformationFromWeakGroundingInterpretation ,
-        pat:UnboundedConsumptionInterpretation .
+# 2026-07-17 audit: SensitiveDataRetrievalExposure re-anchored here — its OQP
+# (risk_sensitive_retrieval.rq) consumes VectorBasedInformationRetrievalMotif
+# matches, not RAG matches; the declaration now matches the implementation.
+pat:VectorBasedInformationRetrievalMotif
+    pair:hasRiskPattern pat:SensitiveDataRetrievalExposureRiskPattern .
 
-pat:EmbeddingMotif
-    pair:hasInterpretation
-        pat:DataAndModelPoisoningInterpretation ,
-        pat:VectorAndEmbeddingWeaknessInterpretation .
+pat:EmbeddingsMotif
+    pair:hasRiskPattern
+        pat:DataAndModelPoisoningRiskPattern ,
+        pat:VectorAndEmbeddingWeaknessRiskPattern .
 
 pat:QueryRewritingMotif
-    pair:hasInterpretation
-        pat:PromptInjectionInterpretation ,
-        pat:UnboundedConsumptionInterpretation .
+    pair:hasRiskPattern
+        pat:PromptInjectionRiskPattern ,
+        pat:UnboundedConsumptionRiskPattern .
 
 pat:RerankerMotif
-    pair:hasInterpretation pat:VectorAndEmbeddingWeaknessInterpretation .
+    pair:hasRiskPattern pat:VectorAndEmbeddingWeaknessRiskPattern .
 
 pat:GuardrailsMotif
-    pair:hasInterpretation
-        pat:ImproperOutputHandlingInterpretation ,
-        pat:SystemPromptLeakageInterpretation .
+    pair:hasRiskPattern
+        pat:ImproperOutputHandlingRiskPattern ,
+        pat:SystemPromptLeakageRiskPattern .
 
 pat:FineTuningMotif
-    pair:hasInterpretation
-        pat:SupplyChainCompromiseInterpretation ,
-        pat:DataAndModelPoisoningInterpretation .
+    pair:hasRiskPattern
+        pat:SupplyChainCompromiseRiskPattern ,
+        pat:DataAndModelPoisoningRiskPattern .
 
 pat:ModelLoadMotif
-    pair:hasInterpretation pat:SupplyChainCompromiseInterpretation .
+    pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
+
+pat:ExternalDependencyMotif
+    pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
 
 pat:ModelInImageMotif
-    pair:hasInterpretation pat:SupplyChainCompromiseInterpretation .
+    pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
 
 pat:TrainingToServingMotif
-    pair:hasInterpretation
-        pat:SupplyChainCompromiseInterpretation ,
-        pat:DataAndModelPoisoningInterpretation .
+    pair:hasRiskPattern
+        pat:SupplyChainCompromiseRiskPattern ,
+        pat:DataAndModelPoisoningRiskPattern .
 
-pat:PromptInjectionInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "Prompt injection interpretation"@en ;
+pat:PromptInjectionRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm01-prompt-injection ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "Prompt injection risk pattern"@en ;
     dct:description """
     Applies to motifs where untrusted user, retrieved, or tool-supplied
     content can enter a prompt or generation context and potentially override
     or conflict with intended instructions.
     """@en ;
-    pair:interpretedAsMechanism owasp:mechanism-instruction-override ;
-    pair:hasInterpretationCondition pat:PromptInjection_UntrustedPromptContextCondition ;
+    pair:hasMotif pat:DirectPromptingMotif ,
+        pat:RetrievalAugmentedGenerationMotif ,
+        pat:QueryRewritingMotif ;
+    pair:hasMechanism owasp:mechanism-instruction-override ;
+    pair:hasApplicabilityCondition pat:PromptInjection_UntrustedPromptContextCondition ;
     pair:mayIndicateRisk
         owasp:llm01-prompt-injection ,
         atlas:prompt-injection ,
-        mit:subdomain-2-2 ,
-        mit:subdomain-4-3 ;
+        mit:subdomain-2-2 ;
     pair:suggestedControl
         pat:Control_InputValidationAndPromptIsolation ,
         pat:Control_Guardrails ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:threat-modelling ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:retrieval-source-filtering ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:PromptInjectionOQP .
 
-pat:SensitiveDataRetrievalExposureInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "Sensitive data retrieval exposure interpretation"@en ;
-    pair:interpretsMotif pat:RetrievalAugmentedGenerationMotif ;
-    pair:interpretedAsMechanism owasp:mechanism-sensitive-data-propagation ;
-    pair:hasInterpretationCondition
+pat:SensitiveDataRetrievalExposureRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm02-sensitive-information-disclosure ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "Sensitive data retrieval exposure risk pattern"@en ;
+    pair:hasMotif pat:VectorBasedInformationRetrievalMotif ;
+    pair:hasMechanism owasp:mechanism-sensitive-data-propagation ;
+    # The retrieval condition below operationalizes LLM08-defined risk
+    # conditions although this pattern anchors to LLM02: the OQP genuinely
+    # gates on vector-store retrieval reaching generation, which is the
+    # retrieval-specific route to sensitive-information disclosure.
+    # Conditions are reusable constituents; this cross-anchor reuse is
+    # deliberate and allowed as a documented exception in the consistency net.
+    pair:hasApplicabilityCondition
         pat:SensitiveInfo_SensitiveContextCondition ,
         pat:SensitiveInfo_OutputExposureCondition ,
         pat:VectorEmbeddingWeakness_RetrievalCondition ;
@@ -310,113 +333,114 @@ pat:SensitiveDataRetrievalExposureInterpretation
         pat:Control_DataMinimizationAndRedaction ,
         pat:Control_RetrievalAccessControl ,
         pat:Control_OutputValidationAndSanitization ,
-        pat:Control_Guardrails ,
-        mitctrl:privacy-control-for-user-data ,
-        mitctrl:access-management ,
-        mitctrl:retrieval-source-filtering ,
-        mitctrl:redaction ,
-        mitctrl:input-output-filtering ,
-        mitctrl:data-minimization ,
-        mitctrl:data-governance ;
+        pat:Control_Guardrails ;
     pair:implementedBy pat:SensitiveDataRetrievalExposureOQP .
 
-pat:SupplyChainCompromiseInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "Supply chain compromise interpretation"@en ;
-    pair:interpretedAsMechanism owasp:mechanism-supply-chain-compromise ;
-    pair:hasInterpretationCondition pat:SupplyChain_ExternalDependencyCondition ;
+pat:SupplyChainCompromiseRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm03-supply-chain ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "Supply chain compromise risk pattern"@en ;
+    pair:hasMotif pat:ExternalDependencyMotif ,
+        pat:FineTuningMotif ,
+        pat:ModelLoadMotif ,
+        pat:ModelInImageMotif ,
+        pat:TrainingToServingMotif ;
+    pair:hasMechanism owasp:mechanism-supply-chain-compromise ;
+    pair:hasApplicabilityCondition pat:SupplyChain_ExternalDependencyCondition ;
     pair:mayIndicateRisk
         owasp:llm03-supply-chain ,
+        atlas:data-curation ,
         mit:subdomain-2-2 ,
         mit:subdomain-7-3 ,
         mit:subdomain-7-4 ;
     pair:suggestedControl
         pat:Control_ModelAndDependencyProvenance ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:threat-modelling ,
-        mitctrl:model-infrastructure-security ,
-        mitctrl:system-architecture-documentation ,
-        mitctrl:risk-register ,
-        mitctrl:pre-deployment-risk-assessment ,
-        mitctrl:data-governance ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:SupplyChainCompromiseOQP .
 
-pat:DataAndModelPoisoningInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "Data and model poisoning interpretation"@en ;
-    pair:interpretedAsMechanism owasp:mechanism-data-or-model-poisoning ;
-    pair:hasInterpretationCondition pat:Poisoning_UntrustedTrainingOrIndexingDataCondition ;
+pat:DataAndModelPoisoningRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm04-data-and-model-poisoning ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "Data and model poisoning risk pattern"@en ;
+    pair:hasMotif pat:EmbeddingsMotif ,
+        pat:FineTuningMotif ,
+        pat:TrainingToServingMotif ;
+    pair:hasMechanism owasp:mechanism-data-or-model-poisoning ;
+    pair:hasApplicabilityCondition pat:Poisoning_UntrustedTrainingOrIndexingDataCondition ;
+    # 2026-07-17 audit: atlas:data-curation moved to the supply-chain pattern
+    # (upstream Nexus maps it to llm03); atlas:data-poisoning is the
+    # upstream-verified llm04 anchor (broadMatch, ibm2owasp.tsv).
     pair:mayIndicateRisk
         owasp:llm04-data-and-model-poisoning ,
-        atlas:data-curation ,
+        atlas:data-poisoning ,
         mit:subdomain-2-2 ,
         mit:subdomain-7-3 ,
         mit:subdomain-1-3 ;
     pair:suggestedControl
         pat:Control_TrustedTrainingAndIndexingData ,
         pat:Control_ModelAndDependencyProvenance ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:data-governance ,
-        mitctrl:data-curation-process ,
-        mitctrl:threat-modelling ,
-        mitctrl:model-infrastructure-security ,
-        mitctrl:testing-auditing ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:DataAndModelPoisoningOQP .
 
-pat:ImproperOutputHandlingInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "Improper output handling interpretation"@en ;
+pat:ImproperOutputHandlingRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm05-improper-output-handling ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "Improper output handling risk pattern"@en ;
     dct:description """
     Applies to motifs where generated LLM output reaches a user or downstream
     component without a represented validation, sanitization, review, or
     guardrail step.
     """@en ;
-    pair:interpretedAsMechanism owasp:mechanism-unsafe-output-propagation ;
-    pair:hasInterpretationCondition pat:ImproperOutputHandling_UnvalidatedOutputCondition ;
+    pair:hasMotif pat:DirectPromptingMotif ,
+        pat:GuardrailsMotif ;
+    pair:hasMechanism owasp:mechanism-unsafe-output-propagation ;
+    pair:hasApplicabilityCondition pat:ImproperOutputHandling_UnvalidatedOutputCondition ;
+    # 2026-07-17 audit: atlas:evasion-attack removed (upstream Nexus mapping
+    # ties evasion attacks to model-input perturbation, not output handling)
+    # and mit:subdomain-7-3 removed (no defensible basis).
     pair:mayIndicateRisk
         owasp:llm05-improper-output-handling ,
-        atlas:evasion-attack ,
         mit:subdomain-2-2 ,
-        mit:subdomain-1-2 ,
-        mit:subdomain-7-3 ;
+        mit:subdomain-1-2 ;
     pair:suggestedControl
         pat:Control_OutputValidationAndSanitization ,
-        pat:Control_Guardrails ,
-        mitctrl:input-output-filtering ,
-        mitctrl:content-safety-controls ,
-        mitctrl:testing-auditing ,
-        mitctrl:incident-response-plan ,
-        mitctrl:human-oversight-protocol ;
+        pat:Control_Guardrails ;
     pair:implementedBy pat:ImproperOutputHandlingOQP .
 
-pat:ExcessiveAgencyInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "Excessive agency interpretation"@en ;
-    pair:interpretedAsMechanism owasp:mechanism-excessive-agency-action-execution ;
-    pair:hasInterpretationCondition pat:ExcessiveAgency_ToolOrStateChangeCondition ;
+pat:ExcessiveAgencyRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm06-excessive-agency ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "Excessive agency risk pattern"@en ;
+    # NOTE (2026-07-16 consistency cleanup): deliberately no pair:hasMotif -
+    # this pattern is anchored on roles (GenerationStep informing a
+    # ToolInvocationStep/StateChangingStep) across any motif match; no
+    # motif-side hasRiskPattern lists it either. Revisit when an agentic
+    # tool-use motif is added to the motif library.
+    pair:hasMechanism owasp:mechanism-excessive-agency-action-execution ;
+    pair:hasApplicabilityCondition pat:ExcessiveAgency_ToolOrStateChangeCondition ;
     pair:mayIndicateRisk
         owasp:llm06-excessive-agency ,
         atlas:redundant-actions-agentic ,
         mit:subdomain-2-2 ,
-        mit:subdomain-5-2 ,
-        mit:subdomain-7-4 ;
+        mit:subdomain-5-2 ;
     pair:suggestedControl
         pat:Control_ToolPermissionBoundaries ,
         pat:Control_RateLimitBudgetAndLoopControl ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:access-management ,
-        mitctrl:human-oversight-protocol ,
-        mitctrl:post-deployment-behavior-monitoring ,
-        mitctrl:threat-modelling ,
-        mitctrl:prompt-context-limiting ,
-        mitctrl:risk-register ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:ExcessiveAgencyOQP .
 
-pat:SystemPromptLeakageInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "System prompt leakage interpretation"@en ;
-    pair:interpretedAsMechanism owasp:mechanism-system-prompt-exposure ;
-    pair:hasInterpretationCondition
+pat:SystemPromptLeakageRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm07-system-prompt-leakage ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "System prompt leakage risk pattern"@en ;
+    pair:hasMotif pat:GuardrailsMotif ;
+    pair:hasMechanism owasp:mechanism-system-prompt-exposure ;
+    pair:hasApplicabilityCondition
         pat:SystemPromptLeakage_HiddenInstructionCondition ,
         pat:SensitiveInfo_OutputExposureCondition ;
     pair:mayIndicateRisk
@@ -424,52 +448,50 @@ pat:SystemPromptLeakageInterpretation
         atlas:prompt-leaking ,
         atlas:confidential-data-in-prompt ,
         mit:subdomain-2-1 ,
-        mit:subdomain-2-2 ,
-        mit:subdomain-7-4 ;
+        mit:subdomain-2-2 ;
     pair:suggestedControl
         pat:Control_SystemPromptSecrecy ,
         pat:Control_OutputValidationAndSanitization ,
-        pat:Control_Guardrails ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:prompt-context-limiting ,
-        mitctrl:system-architecture-documentation ,
-        mitctrl:privacy-control-for-user-data ;
+        pat:Control_Guardrails ;
     pair:implementedBy pat:SystemPromptLeakageOQP .
 
-pat:VectorAndEmbeddingWeaknessInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "Vector and embedding weakness interpretation"@en ;
-    pair:interpretedAsMechanism owasp:mechanism-vector-embedding-retrieval-weakness ;
-    pair:hasInterpretationCondition pat:VectorEmbeddingWeakness_RetrievalCondition ;
+pat:VectorAndEmbeddingWeaknessRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm08-vector-and-embedding-weaknesses ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "Vector and embedding weakness risk pattern"@en ;
+    pair:hasMotif pat:RetrievalAugmentedGenerationMotif ,
+        pat:EmbeddingsMotif ,
+        pat:RerankerMotif ;
+    pair:hasMechanism owasp:mechanism-vector-embedding-retrieval-weakness ;
+    pair:hasApplicabilityCondition pat:VectorEmbeddingWeakness_RetrievalCondition ;
+    # 2026-07-17 audit: atlas:poor-model-accuracy removed (upstream Nexus
+    # maps it to subdomain-7-3 only; no llm08 link).
     pair:mayIndicateRisk
         owasp:llm08-vector-and-embedding-weaknesses ,
         atlas:prompt-injection ,
-        atlas:poor-model-accuracy ,
         mit:subdomain-2-2 ,
         mit:subdomain-7-3 ;
     pair:suggestedControl
         pat:Control_RetrievalAccessControl ,
         pat:Control_TrustedTrainingAndIndexingData ,
-        pat:Control_GroundingAndVerification ,
-        mitctrl:retrieval-quality-evaluation ,
-        mitctrl:retrieval-source-filtering ,
-        mitctrl:data-governance ,
-        mitctrl:threat-modelling ;
+        pat:Control_GroundingAndVerification ;
     pair:implementedBy pat:VectorAndEmbeddingWeaknessOQP .
 
-pat:DirectPromptingWithoutGroundingInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "Direct Prompting without grounding interpretation"@en ;
-    skos:altLabel "Direct LLM answering without grounding interpretation"@en ;
+pat:DirectPromptingWithoutGroundingRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm09-misinformation ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "Direct Prompting without grounding risk pattern"@en ;
+    skos:altLabel "Direct LLM answering without grounding risk pattern"@en ;
     dct:description """
     Applies when a Direct Prompting motif produces a user-facing answer without
     an explicit knowledge source, retrieved context, or represented verification
     step in the architecture graph.
     """@en ;
-    pair:interpretsMotif pat:DirectPromptingMotif ;
-    pair:interpretedAsMechanism owasp:mechanism-unsupported-generation ;
-    pair:hasInterpretationCondition pat:Misinformation_UngroundedGenerationCondition ;
+    pair:hasMotif pat:DirectPromptingMotif ;
+    pair:hasMechanism owasp:mechanism-unsupported-generation ;
+    pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;
     pair:mayIndicateRisk
         owasp:llm09-misinformation ,
         atlas:hallucination ,
@@ -479,18 +501,24 @@ pat:DirectPromptingWithoutGroundingInterpretation
         mit:subdomain-7-3 ;
     pair:suggestedControl
         pat:Control_GroundingAndVerification ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:retrieval-quality-evaluation ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:human-oversight-protocol ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:DirectPromptingWithoutGroundingOQP .
 
-pat:MisinformationFromWeakGroundingInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "Misinformation from weak grounding interpretation"@en ;
-    pair:interpretedAsMechanism owasp:mechanism-unsupported-generation ;
-    pair:hasInterpretationCondition pat:Misinformation_UngroundedGenerationCondition ;
+pat:MisinformationFromWeakGroundingRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm09-misinformation ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "Misinformation from weak grounding risk pattern"@en ;
+    # DECISION D2 (2026-07-16): kept as a declared-but-unimplemented pattern
+    # rather than merged into DirectPromptingWithoutGroundingRiskPattern.
+    # Same OWASP LLM09 anchor, but this one targets RAG pipelines whose
+    # grounding is WEAK (e.g. retrieved context reaches generation without
+    # verification) rather than absent. Implemented 2026-07-21
+    # (risk_misinformation_weak_grounding.rq): fires on a RAG match whose
+    # response has no represented verification/evaluation/scoring step.
+    pair:hasMotif pat:RetrievalAugmentedGenerationMotif ;
+    pair:hasMechanism owasp:mechanism-unsupported-generation ;
+    pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;
     pair:mayIndicateRisk
         owasp:llm09-misinformation ,
         atlas:hallucination ,
@@ -500,36 +528,37 @@ pat:MisinformationFromWeakGroundingInterpretation
         mit:subdomain-7-3 ;
     pair:suggestedControl
         pat:Control_GroundingAndVerification ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:retrieval-quality-evaluation ,
-        mitctrl:red-teaming ,
-        mitctrl:input-output-filtering ,
-        mitctrl:human-oversight-protocol .
+        pat:Control_LoggingMonitoringAndEvals ;
+    pair:implementedBy pat:MisinformationFromWeakGroundingOQP .
 
-pat:UnboundedConsumptionInterpretation
-    a pair:MotifInterpretation ;
-    rdfs:label "Unbounded consumption interpretation"@en ;
+pat:UnboundedConsumptionRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom owasp:llm10-unbounded-consumption ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:label "Unbounded consumption risk pattern"@en ;
     dct:description """
     Applies to motifs where model calls, retrieval breadth, prompt expansion,
     tool use, or feedback loops can consume cost, latency, or availability
     budget without represented rate, budget, or loop controls.
     """@en ;
-    pair:interpretedAsMechanism owasp:mechanism-unbounded-resource-consumption ;
-    pair:hasInterpretationCondition pat:UnboundedConsumption_UnboundedUseCondition ;
+    pair:hasMotif pat:DirectPromptingMotif ,
+        pat:RetrievalAugmentedGenerationMotif ,
+        pat:QueryRewritingMotif ;
+    pair:hasMechanism owasp:mechanism-unbounded-resource-consumption ;
+    pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ;
+    # 2026-07-17 audit: atlas:impact-on-the-environment removed (upstream
+    # Nexus explicitly records noMatch to OWASP: "Social implications of AI
+    # are not specifically addressed by OWASP"); the environmental angle
+    # stays via mit:subdomain-6-6.
     pair:mayIndicateRisk
         owasp:llm10-unbounded-consumption ,
         atlas:redundant-actions-agentic ,
-        atlas:impact-on-the-environment ,
         mit:subdomain-2-2 ,
         mit:subdomain-6-6 ,
         mit:subdomain-7-3 ;
     pair:suggestedControl
         pat:Control_RateLimitBudgetAndLoopControl ,
-        pat:Control_LoggingMonitoringAndEvals ,
-        mitctrl:prompt-context-limiting ,
-        mitctrl:post-deployment-behavior-monitoring ,
-        mitctrl:access-management ,
-        mitctrl:incident-response-plan ;
+        pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:UnboundedConsumptionOQP .
 
 
@@ -538,7 +567,7 @@ pat:UnboundedConsumptionInterpretation
 pat:VectorIR_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Vector information retrieval motif matching OQP"@en ;
-    pair:implementsMotif pat:RetrievalAugmentedGenerationMotif ;
+    pair:implementsMotif pat:VectorBasedInformationRetrievalMotif ;
     pair:implementationPath "ontology/patterns/implementation/match_vector_ir.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
@@ -552,39 +581,23 @@ pat:DirectPrompting_MatchingOQP
 
 pat:SensitiveDataRetrievalExposureOQP
     a pair:PatternImplementation ;
-    rdfs:label "Sensitive data retrieval exposure interpretation OQP"@en ;
-    pair:implementsInterpretation pat:SensitiveDataRetrievalExposureInterpretation ;
+    rdfs:label "Sensitive data retrieval exposure risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:SensitiveDataRetrievalExposureRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_sensitive_retrieval.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:DirectPromptingWithoutGroundingOQP
     a pair:PatternImplementation ;
-    rdfs:label "Direct Prompting without grounding interpretation OQP"@en ;
-    skos:altLabel "Direct LLM answering without grounding interpretation OQP"@en ;
-    pair:implementsInterpretation pat:DirectPromptingWithoutGroundingInterpretation ;
+    rdfs:label "Direct Prompting without grounding risk pattern OQP"@en ;
+    skos:altLabel "Direct LLM answering without grounding risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:DirectPromptingWithoutGroundingRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_direct_prompting_without_grounding.rq" ;
     pair:producesOutputType pair:RiskFinding .
-
-pat:DirectLLMAnsweringWithoutGroundingInterpretation
-    owl:deprecated true ;
-    owl:sameAs pat:DirectPromptingWithoutGroundingInterpretation ;
-    rdfs:label "Direct LLM answering without grounding interpretation"@en ;
-    skos:exactMatch pat:DirectPromptingWithoutGroundingInterpretation .
-
-pat:DirectLLM_MatchingOQP
-    owl:deprecated true ;
-    owl:sameAs pat:DirectPrompting_MatchingOQP ;
-    rdfs:label "Direct LLM answering motif matching OQP"@en .
-
-pat:DirectLLMAnsweringWithoutGroundingOQP
-    owl:deprecated true ;
-    owl:sameAs pat:DirectPromptingWithoutGroundingOQP ;
-    rdfs:label "Direct LLM answering without grounding interpretation OQP"@en .
 
 pat:Embeddings_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Embeddings motif matching OQP"@en ;
-    pair:implementsMotif pat:EmbeddingMotif ;
+    pair:implementsMotif pat:EmbeddingsMotif ;
     pair:implementationPath "ontology/patterns/implementation/match_embeddings.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
@@ -609,58 +622,216 @@ pat:Reranker_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match_reranker.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
+pat:ExternalDependency_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "External dependency motif matching OQP"@en ;
+    pair:implementsMotif pat:ExternalDependencyMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_external_dependency.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
 pat:PromptInjectionOQP
     a pair:PatternImplementation ;
-    rdfs:label "Prompt injection interpretation OQP"@en ;
-    pair:implementsInterpretation pat:PromptInjectionInterpretation ;
+    rdfs:label "Prompt injection risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:PromptInjectionRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_prompt_injection.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:SupplyChainCompromiseOQP
     a pair:PatternImplementation ;
-    rdfs:label "Supply chain compromise interpretation OQP"@en ;
-    pair:implementsInterpretation pat:SupplyChainCompromiseInterpretation ;
+    rdfs:label "Supply chain compromise risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:SupplyChainCompromiseRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_supply_chain.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:DataAndModelPoisoningOQP
     a pair:PatternImplementation ;
-    rdfs:label "Data and model poisoning interpretation OQP"@en ;
-    pair:implementsInterpretation pat:DataAndModelPoisoningInterpretation ;
+    rdfs:label "Data and model poisoning risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:DataAndModelPoisoningRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_data_model_poisoning.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:ImproperOutputHandlingOQP
     a pair:PatternImplementation ;
-    rdfs:label "Improper output handling interpretation OQP"@en ;
-    pair:implementsInterpretation pat:ImproperOutputHandlingInterpretation ;
+    rdfs:label "Improper output handling risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:ImproperOutputHandlingRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_improper_output_handling.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:ExcessiveAgencyOQP
     a pair:PatternImplementation ;
-    rdfs:label "Excessive agency interpretation OQP"@en ;
-    pair:implementsInterpretation pat:ExcessiveAgencyInterpretation ;
+    rdfs:label "Excessive agency risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:ExcessiveAgencyRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_excessive_agency.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:SystemPromptLeakageOQP
     a pair:PatternImplementation ;
-    rdfs:label "System prompt leakage interpretation OQP"@en ;
-    pair:implementsInterpretation pat:SystemPromptLeakageInterpretation ;
+    rdfs:label "System prompt leakage risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:SystemPromptLeakageRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_system_prompt_leakage.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:VectorAndEmbeddingWeaknessOQP
     a pair:PatternImplementation ;
-    rdfs:label "Vector and embedding weakness interpretation OQP"@en ;
-    pair:implementsInterpretation pat:VectorAndEmbeddingWeaknessInterpretation ;
+    rdfs:label "Vector and embedding weakness risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:VectorAndEmbeddingWeaknessRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_vector_embedding_weakness.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:UnboundedConsumptionOQP
     a pair:PatternImplementation ;
-    rdfs:label "Unbounded consumption interpretation OQP"@en ;
-    pair:implementsInterpretation pat:UnboundedConsumptionInterpretation ;
+    rdfs:label "Unbounded consumption risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:UnboundedConsumptionRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk_unbounded_consumption.rq" ;
     pair:producesOutputType pair:RiskFinding .
+
+pat:UntrustedContentPropagationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Untrusted content propagation OQP"@en ;
+    dct:description "Infers pair:containsDataCategory pair:UntrustedContent from public-input/retrieved-context roles and propagates it along beam:use/beam:produce edges, so risk patterns don't depend on every element being hand-tagged."@en ;
+    pair:implementationPath "ontology/patterns/implementation/propagate_untrusted_content.rq" ;
+    pair:producesOutputType pair:DataCategoryPropagation .
+
+
+# --- Risk-pattern OQP completing the risk pattern library (2026-07-21) ---
+# MisinformationFromWeakGroundingRiskPattern is the RAG counterpart of the
+# direct-prompting-without-grounding pattern (both OWASP LLM09); its OQP fires
+# on RAG matches whose response has no represented verification step.
+
+pat:MisinformationFromWeakGroundingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Misinformation from weak grounding risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk_misinformation_weak_grounding.rq" ;
+    pair:producesOutputType pair:RiskFinding .
+
+
+# --- Motif-matching OQPs completing the motif library (2026-07-21) ---
+# One matching OQP per previously-unimplemented motif (faithful structural
+# projections of each motif's declared PatternNode/PatternEdge blueprint).
+# These produce pair:MotifMatch outputs; risk semantics stay in the risk OQPs.
+# GenAI motifs (Guardrails, Hybrid Retriever, Evals, Fine Tuning) are consumed
+# by match-anchored risk patterns; the Mercari MLOps motifs (prediction /
+# training / lifecycle / operation patterns) are detected for completeness and
+# workbench reporting even where no risk pattern yet consumes them.
+
+pat:SyncPred_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Synchronous Prediction Motif matching OQP"@en ;
+    pair:implementsMotif pat:SynchronousPredictionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_synchronous_prediction.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:AsyncPred_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Asynchronous Prediction Motif matching OQP"@en ;
+    pair:implementsMotif pat:AsynchronousPredictionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_asynchronous_prediction.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:BatchPred_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Batch Prediction Motif matching OQP"@en ;
+    pair:implementsMotif pat:BatchPredictionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_batch_prediction.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:PrepPred_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Preprocess-Prediction Motif matching OQP"@en ;
+    pair:implementsMotif pat:PreprocessPredictionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_preprocess_prediction.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:MultiStage_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Multi-stage Prediction Motif matching OQP"@en ;
+    pair:implementsMotif pat:MultiStagePredictionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_multi_stage_prediction.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:BatchTrain_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Batch Training Motif matching OQP"@en ;
+    pair:implementsMotif pat:BatchTrainingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_batch_training.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:PipeTrain_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Pipeline Training Motif matching OQP"@en ;
+    pair:implementsMotif pat:PipelineTrainingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_pipeline_training.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:TrainServe_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Train-Then-Serve Motif matching OQP"@en ;
+    pair:implementsMotif pat:TrainThenServeMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_train_then_serve.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:TrainToServe_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Training-to-Serving Motif matching OQP"@en ;
+    pair:implementsMotif pat:TrainingToServingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_training_to_serving.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:PredLog_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Prediction Logging Motif matching OQP"@en ;
+    pair:implementsMotif pat:PredictionLoggingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_prediction_logging.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:PredMon_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Prediction Monitoring Motif matching OQP"@en ;
+    pair:implementsMotif pat:PredictionMonitoringMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_prediction_monitoring.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:ModelLoad_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Model Load Motif matching OQP"@en ;
+    pair:implementsMotif pat:ModelLoadMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_model_load.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:ModelImage_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Model-in-Image Motif matching OQP"@en ;
+    pair:implementsMotif pat:ModelInImageMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_model_in_image.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:FineTune_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Fine Tuning Motif matching OQP"@en ;
+    pair:implementsMotif pat:FineTuningMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_fine_tuning.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:Guardrails_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Guardrails Motif matching OQP"@en ;
+    pair:implementsMotif pat:GuardrailsMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_guardrails.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:Hybrid_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Hybrid Retriever Motif matching OQP"@en ;
+    pair:implementsMotif pat:HybridRetrieverMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_hybrid_retriever.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:Evals_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Evals Motif matching OQP"@en ;
+    pair:implementsMotif pat:EvalsMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match_evals.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+

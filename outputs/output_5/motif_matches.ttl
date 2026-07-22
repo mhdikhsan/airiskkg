@@ -1,0 +1,62 @@
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix pat: <http://w3id.org/airiskkg/patterns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore> a pair:MotifMatch ;
+    rdfs:label "Embeddings motif match"@en ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/chunking-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/document-chunk>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/embedding-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/embedding-vector>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/source-document>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/vector-index> ;
+    pair:matchesMotif pat:EmbeddingsMotif .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrieveRelevantChunks/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbeddedQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrievedChunks> a pair:MotifMatch ;
+    rdfs:label "Vector-based information retrieval motif match"@en ;
+    pair:hasNodeBinding <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrieveRelevantChunks/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbeddedQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrievedChunks/binding/query>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrieveRelevantChunks/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbeddedQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrievedChunks/binding/retrieval-step>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrieveRelevantChunks/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbeddedQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrievedChunks/binding/retrieved-result>,
+        <http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrieveRelevantChunks/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbeddedQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrievedChunks/binding/vector-store> ;
+    pair:matchesMotif pat:VectorBasedInformationRetrievalMotif .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/chunking-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_ChunkingStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/verba-goldenverba#ChunkDocument> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/document-chunk> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_DocumentChunkNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/verba-goldenverba#DocumentChunks> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/embedding-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_GenerationStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/verba-goldenverba#EmbedChunks> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/embedding-vector> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_VectorNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/verba-goldenverba#ChunkEmbeddings> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/source-document> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_SourceDocumentNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/verba-goldenverba#ParsedDocument> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbedChunks/embeddings/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23ParsedDocument/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23WeaviateVectorStore/binding/vector-index> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:Embedding_VectorIndexNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/verba-goldenverba#WeaviateVectorStore> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrieveRelevantChunks/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbeddedQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrievedChunks/binding/query> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_QueryNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/verba-goldenverba#EmbeddedQuestion> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrieveRelevantChunks/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbeddedQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrievedChunks/binding/retrieval-step> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/verba-goldenverba#RetrieveRelevantChunks> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrieveRelevantChunks/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbeddedQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrievedChunks/binding/retrieved-result> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/verba-goldenverba#RetrievedChunks> .
+
+<http://w3id.org/airiskkg/generated/motif-match/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrieveRelevantChunks/vector-ir/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23EmbeddedQuestion/http%3A%2F%2Fw3id.org%2Fairiskkg%2Fexample%2Fverba-goldenverba%23RetrievedChunks/binding/vector-store> a pair:NodeBinding ;
+    pair:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+    pair:matchedElement <http://w3id.org/airiskkg/example/verba-goldenverba#WeaviateVectorStore> .
+

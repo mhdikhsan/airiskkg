@@ -1,0 +1,81 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:TrainThenServeMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Train-Then-Serve Motif match"@en ;
+        pair:matchesMotif pat:TrainThenServeMotif ;
+        pair:hasNodeBinding ?approvalBinding ,
+            ?candidateModelBinding ,
+            ?deployedModelBinding ,
+            ?evaluationStepBinding ,
+            ?predictionStepBinding ,
+            ?releaseStepBinding ,
+            ?trainingStepBinding .
+
+    ?approvalBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainServe_ApprovalNode ; pair:matchedElement ?approval .
+    ?candidateModelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainServe_CandidateModelNode ; pair:matchedElement ?candidateModel .
+    ?deployedModelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainServe_DeployedModelNode ; pair:matchedElement ?deployedModel .
+    ?evaluationStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainServe_EvaluationStepNode ; pair:matchedElement ?evaluationStep .
+    ?predictionStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainServe_PredictionStepNode ; pair:matchedElement ?predictionStep .
+    ?releaseStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainServe_ReleaseStepNode ; pair:matchedElement ?releaseStep .
+    ?trainingStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:TrainServe_TrainingStepNode ; pair:matchedElement ?trainingStep .
+}
+WHERE {
+    ?approval a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:ReleaseApproval .
+    ?candidateModel a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:ModelArtifact .
+    ?deployedModel a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:LoadedModel .
+    ?evaluationStep a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:EvaluationStep .
+    ?predictionStep a beam:Infer ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionStep .
+    ?releaseStep a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:DeploymentStep .
+    ?trainingStep a beam:Train ;
+           pair:playsRole/pair:subRoleOf* pair:TrainingStep .
+
+    ?trainingStep beam:produce ?candidateModel .
+    ?trainingStep beam:inform ?evaluationStep .
+    ?evaluationStep beam:use ?candidateModel .
+    ?evaluationStep beam:produce ?approval .
+    ?releaseStep beam:use ?approval .
+    ?releaseStep beam:use ?candidateModel .
+    ?releaseStep beam:produce ?deployedModel .
+    ?releaseStep beam:inform ?predictionStep .
+    ?predictionStep beam:use ?deployedModel .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/train-then-serve/",
+        ENCODE_FOR_URI(STR(?approval)),
+        "/",
+        ENCODE_FOR_URI(STR(?candidateModel)),
+        "/",
+        ENCODE_FOR_URI(STR(?deployedModel)),
+        "/",
+        ENCODE_FOR_URI(STR(?evaluationStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?predictionStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?releaseStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?trainingStep))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/approval")) AS ?approvalBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/candidate-model")) AS ?candidateModelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/deployed-model")) AS ?deployedModelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/evaluation-step")) AS ?evaluationStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/prediction-step")) AS ?predictionStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/release-step")) AS ?releaseStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/training-step")) AS ?trainingStepBinding)
+}

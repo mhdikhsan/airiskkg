@@ -1,0 +1,85 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Embeddings motif match"@en ;
+        pair:matchesMotif pat:EmbeddingsMotif ;
+        pair:hasNodeBinding ?sourceBinding ,
+            ?chunkingStepBinding ,
+            ?chunkBinding ,
+            ?embeddingStepBinding ,
+            ?embeddingVectorBinding ,
+            ?vectorIndexBinding .
+
+    ?sourceBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:Embedding_SourceDocumentNode ;
+        pair:matchedElement ?sourceDocument .
+
+    ?chunkingStepBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:Embedding_ChunkingStepNode ;
+        pair:matchedElement ?chunkingStep .
+
+    ?chunkBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:Embedding_DocumentChunkNode ;
+        pair:matchedElement ?documentChunk .
+
+    ?embeddingStepBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:Embedding_GenerationStepNode ;
+        pair:matchedElement ?embeddingStep .
+
+    ?embeddingVectorBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:Embedding_VectorNode ;
+        pair:matchedElement ?embeddingVector .
+
+    ?vectorIndexBinding a pair:NodeBinding ;
+        pair:bindsPatternNode pat:Embedding_VectorIndexNode ;
+        pair:matchedElement ?vectorIndex .
+}
+WHERE {
+    ?chunkingStep
+        beam:use ?sourceDocument ;
+        beam:produce ?documentChunk .
+    FILTER NOT EXISTS {
+        ?sourceDocument pair:containsDataCategory/pair:subDataCategoryOf* pair:PromptInstruction .
+    }
+
+    ?embeddingStep
+        beam:use ?documentChunk ;
+        beam:produce ?embeddingVector ;
+        pair:playsRole ?embeddingRole .
+    ?embeddingRole pair:subRoleOf* pair:EmbeddingStep .
+
+    ?indexingStep
+        beam:use ?documentChunk ;
+        beam:use ?embeddingVector ;
+        beam:produce ?vectorIndex .
+
+    ?vectorIndex pair:playsRole ?vectorIndexRole .
+    {
+        ?vectorIndexRole pair:subRoleOf* pair:VectorStore .
+    }
+    UNION
+    {
+        ?vectorIndexRole pair:subRoleOf* pat:VectorIndexRole .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/",
+        ENCODE_FOR_URI(STR(?embeddingStep)),
+        "/embeddings/",
+        ENCODE_FOR_URI(STR(?sourceDocument)),
+        "/",
+        ENCODE_FOR_URI(STR(?vectorIndex))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/source-document")) AS ?sourceBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/chunking-step")) AS ?chunkingStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/document-chunk")) AS ?chunkBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/embedding-step")) AS ?embeddingStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/embedding-vector")) AS ?embeddingVectorBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/vector-index")) AS ?vectorIndexBinding)
+}

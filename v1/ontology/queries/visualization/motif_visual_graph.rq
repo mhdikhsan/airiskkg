@@ -1,0 +1,97 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX pair:   <http://w3id.org/airiskkg/pair-ai#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+CONSTRUCT {
+  ?motif a pair:GraphMotif ;
+         rdfs:label ?motifLabel ;
+         pair:hasPatternNode ?node ;
+         pair:hasPatternEdge ?edge ;
+         pair:implementedBy ?motifImplementation ;
+         pair:hasInterpretation ?interpretation .
+
+  ?node rdfs:label ?nodeLabel ;
+        pair:expectedClass ?expectedClass ;
+        pair:expectedRole ?expectedRole .
+
+  ?edge rdfs:label ?edgeLabel ;
+        pair:sourcePatternNode ?sourceNode ;
+        pair:patternPredicate ?predicate ;
+        pair:targetPatternNode ?targetNode .
+
+  ?motifImplementation rdfs:label ?motifImplementationLabel ;
+                       pair:implementationPath ?motifImplementationPath ;
+                       pair:producesOutputType ?motifOutputType .
+
+  ?interpretation rdfs:label ?interpretationLabel ;
+                  pair:implementedBy ?interpretationImplementation ;
+                  pair:interpretedAsMechanism ?mechanism ;
+                  pair:mayIndicateRisk ?risk ;
+                  pair:suggestedControl ?control ;
+                  pair:hasInterpretationCondition ?condition .
+
+  ?interpretationImplementation rdfs:label ?interpretationImplementationLabel ;
+                                pair:implementationPath ?interpretationImplementationPath ;
+                                pair:producesOutputType ?interpretationOutputType ;
+                                pair:implementsInterpretation ?interpretation .
+
+  ?mechanism rdfs:label ?mechanismLabel .
+  ?risk skos:prefLabel ?riskLabel .
+  ?control skos:prefLabel ?controlLabel .
+  ?condition rdfs:label ?conditionLabel .
+}
+WHERE {
+  ?motif a pair:GraphMotif .
+  OPTIONAL { ?motif rdfs:label ?motifLabel . }
+
+  OPTIONAL {
+    ?motif pair:hasPatternNode ?node .
+    OPTIONAL { ?node rdfs:label ?nodeLabel . }
+    OPTIONAL { ?node pair:expectedClass ?expectedClass . }
+    OPTIONAL { ?node pair:expectedRole ?expectedRole . }
+  }
+
+  OPTIONAL {
+    ?motif pair:hasPatternEdge ?edge .
+    OPTIONAL { ?edge rdfs:label ?edgeLabel . }
+    OPTIONAL { ?edge pair:sourcePatternNode ?sourceNode . }
+    OPTIONAL { ?edge pair:patternPredicate ?predicate . }
+    OPTIONAL { ?edge pair:targetPatternNode ?targetNode . }
+  }
+
+  OPTIONAL {
+    ?motif pair:implementedBy ?motifImplementation .
+    OPTIONAL { ?motifImplementation rdfs:label ?motifImplementationLabel . }
+    OPTIONAL { ?motifImplementation pair:implementationPath ?motifImplementationPath . }
+    OPTIONAL { ?motifImplementation pair:producesOutputType ?motifOutputType . }
+  }
+
+  OPTIONAL {
+    ?motif pair:hasInterpretation ?interpretation .
+    OPTIONAL { ?interpretation rdfs:label ?interpretationLabel . }
+    OPTIONAL {
+      ?interpretation pair:interpretedAsMechanism ?mechanism .
+      OPTIONAL { ?mechanism rdfs:label ?mechanismLabel . }
+    }
+    OPTIONAL {
+      ?interpretation pair:mayIndicateRisk ?risk .
+      OPTIONAL { ?risk skos:prefLabel ?riskLabel . }
+    }
+    OPTIONAL {
+      ?interpretation pair:suggestedControl ?control .
+      OPTIONAL { ?control skos:prefLabel ?controlLabel . }
+    }
+    OPTIONAL {
+      ?interpretation pair:hasInterpretationCondition ?condition .
+      OPTIONAL { ?condition rdfs:label ?conditionLabel . }
+    }
+    OPTIONAL {
+      ?interpretation pair:implementedBy ?interpretationImplementation .
+      OPTIONAL { ?interpretationImplementation rdfs:label ?interpretationImplementationLabel . }
+      OPTIONAL { ?interpretationImplementation pair:implementationPath ?interpretationImplementationPath . }
+      OPTIONAL { ?interpretationImplementation pair:producesOutputType ?interpretationOutputType . }
+    }
+  }
+}

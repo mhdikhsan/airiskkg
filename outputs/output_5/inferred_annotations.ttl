@@ -1,0 +1,8 @@
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+
+<http://w3id.org/airiskkg/example/verba-goldenverba#Answer> pair:containsDataCategory pair:UntrustedContent .
+
+<http://w3id.org/airiskkg/example/verba-goldenverba#ChunkEmbeddings> pair:containsDataCategory pair:UntrustedContent .
+
+<http://w3id.org/airiskkg/example/verba-goldenverba#EmbeddedQuestion> pair:containsDataCategory pair:UntrustedContent .
+

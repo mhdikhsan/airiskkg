@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 license = { text = "CC-BY-4.0" }
 dependencies = [
     "rdflib",
+    "pyshacl",
 ]
 
 [project.optional-dependencies]
@@ -28,7 +29,7 @@ airiskkg = "airiskkg.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"airiskkg.webapp" = [static/*]
+"airiskkg.webapp" = ["static/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

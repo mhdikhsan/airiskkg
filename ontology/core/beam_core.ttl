@@ -3,6 +3,7 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
 @prefix owl: <http://www.w3.org/2002/07/owl#>.
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix dct: <http://purl.org/dc/terms/>.
 @prefix easy-ai: <https://kastle-lab.org/easy-ai2/>.
 @prefix agento: <http://www.w3id.org/agentic-ai/onto#>.
 
@@ -38,9 +39,77 @@ beam:Element a owl:Class ;
                 rdfs:label "Data" ;
                 rdfs:subClassOf beam:Instance .
 
+                # Boxology-derived Data subtypes (structural leaf classes;
+                # implementation types belong to the facet layer, not here)
+                beam:Number a owl:Class ;
+                    rdfs:label "Number" ;
+                    rdfs:subClassOf beam:Data ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:Dataset a owl:Class ;
+                    rdfs:label "Dataset" ;
+                    rdfs:subClassOf beam:Data ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:Tensor a owl:Class ;
+                    rdfs:label "Tensor" ;
+                    rdfs:subClassOf beam:Data ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:Text a owl:Class ;
+                    rdfs:label "Text" ;
+                    rdfs:subClassOf beam:Data ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:Image a owl:Class ;
+                    rdfs:label "Image" ;
+                    rdfs:subClassOf beam:Data ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:Audio a owl:Class ;
+                    rdfs:label "Audio" ;
+                    rdfs:subClassOf beam:Data ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:Video a owl:Class ;
+                    rdfs:label "Video" ;
+                    rdfs:subClassOf beam:Data ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:TimeSeries a owl:Class ;
+                    rdfs:label "Time Series" ;
+                    rdfs:subClassOf beam:Data ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
             beam:Symbol a owl:Class ;
                 rdfs:label "Symbol" ;
                 rdfs:subClassOf beam:Instance .
+
+                # Boxology-derived Symbol subtypes
+                beam:Database a owl:Class ;
+                    rdfs:label "Database" ;
+                    rdfs:subClassOf beam:Symbol ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:KnowledgeGraph a owl:Class ;
+                    rdfs:label "Knowledge Graph" ;
+                    rdfs:subClassOf beam:Symbol ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:Label a owl:Class ;
+                    rdfs:label "Label" ;
+                    rdfs:subClassOf beam:Symbol ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:Trace a owl:Class ;
+                    rdfs:label "Trace" ;
+                    rdfs:subClassOf beam:Symbol ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
+
+                beam:Rules a owl:Class ;
+                    rdfs:label "Rules" ;
+                    rdfs:subClassOf beam:Symbol ;
+                    dct:source <https://kastle-lab.org/easy-ai2/> .
 
         beam:Model a owl:Class ;
             rdfs:label "Model" ;

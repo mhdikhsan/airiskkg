@@ -1,98 +1,117 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PAIR-AI Risk Assessment</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <title>PAIR-AI Architecture Workbench</title>
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <header class="app-header">
-    <div>
-      <h1>PAIR-AI Risk Assessment</h1>
-      <p class="subtitle">Pattern-based, design-time AI risk assessment over a knowledge graph.</p>
+    <div class="brand">
+      <h1>PAIR-AI</h1>
+      <span class="subtitle">Architecture workbench &mdash; edit the graph on the left, preview it live on the right</span>
+    </div>
+    <div class="toolbar">
+      <select id="example-select" title="Load a bundled example">
+        <option value="">Load example…</option>
+      </select>
+      <label class="btn" for="file-input" title="Upload a Turtle file">Open .ttl
+        <input type="file" id="file-input" accept=".ttl,.turtle" hidden />
+      </label>
+      <button type="button" class="btn" id="btn-starter" title="Replace the editor content with a minimal starter graph">Starter</button>
+      <button type="button" class="btn" id="btn-clear" title="Clear the code and the diagram">Clear</button>
+      <span class="toolbar-sep"></span>
+      <button type="button" class="btn" id="btn-validate" title="Validate against the SHACL input contract">Validate</button>
+      <button type="button" class="btn primary" id="btn-assess" title="Run the PAIR-AI candidate risk assessment">Run assessment</button>
     </div>
   </header>
 
-  <main class="layout">
-    <!-- ============ INPUT ============ -->
-    <section class="panel input-panel">
-      <div class="tabs" role="tablist">
-        <button class="tab active" data-tab="builder" role="tab">Guided builder</button>
-        <button class="tab" data-tab="source" role="tab">Turtle source</button>
-      </div>
-
-      <!-- Guided builder -->
-      <div class="tab-body" data-tab-body="builder">
-        <div class="field-row">
-          <label class="field">
-            <span>System name</span>
-            <input id="system-name" type="text" placeholder="MyRagSystem" value="MyRagSystem" />
-          </label>
-          <label class="field">
-            <span>System label</span>
-            <input id="system-label" type="text" placeholder="RAG-based chatbot" value="RAG-based chatbot" />
-          </label>
-        </div>
-
-        <div class="builder-section">
-          <div class="builder-section-head">
-            <h3>Resources <span class="hint">data &amp; models</span></h3>
-            <button class="btn small" id="add-resource">+ Add resource</button>
-          </div>
-          <div id="resources"></div>
-        </div>
-
-        <div class="builder-section">
-          <div class="builder-section-head">
-            <h3>Processes <span class="hint">steps that use &amp; produce resources</span></h3>
-            <button class="btn small" id="add-process">+ Add process</button>
-          </div>
-          <div id="processes"></div>
-        </div>
-
-        <div class="builder-actions">
-          <button class="btn" id="load-example-into-builder">Load example…</button>
-          <button class="btn primary" id="generate-ttl">Generate Turtle →</button>
-        </div>
-        <p class="builder-help">
-          Tip: build the graph here, then switch to <strong>Turtle source</strong> to review and run the assessment.
-        </p>
-      </div>
-
-      <!-- Turtle source -->
-      <div class="tab-body hidden" data-tab-body="source">
-        <div class="source-toolbar">
-          <label class="field inline">
-            <span>Example</span>
-            <select id="example-select">
-              <option value="">— choose —</option>
-            </select>
-          </label>
-          <label class="btn small file-btn">
-            Upload .ttl
-            <input id="file-input" type="file" accept=".ttl,text/turtle" hidden />
-          </label>
-        </div>
-        <textarea id="ttl-source" spellcheck="false"
-          placeholder="Paste a BEAM/PAIR-AI architecture graph in Turtle, or generate one from the builder."></textarea>
-        <div class="builder-actions">
-          <button class="btn primary run" id="run-assessment">Run assessment</button>
+  <main class="workbench">
+    <!-- Left: Turtle editor -->
+    <section class="pane editor-pane" id="editor-pane">
+      <div class="editor" id="editor">
+        <div class="gutter" id="gutter"></div>
+        <div class="code-scroll" id="code-scroll">
+          <pre class="highlight" id="highlight" aria-hidden="true"><code id="highlight-code"></code></pre>
+          <textarea id="ttl-source" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder="@prefix ex:   <http://example.org/my-system#> .&#10;@prefix beam: <http://w3id.org/beam/core#> .&#10;@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .&#10;&#10;# Start typing, or load an example from the toolbar…"></textarea>
         </div>
       </div>
-
-      <div id="input-error" class="error hidden"></div>
+      <div class="statusbar" id="statusbar">
+        <span class="status-dot ok" id="status-dot"></span>
+        <span id="status-text">Ready</span>
+        <span class="status-right" id="status-stats"></span>
+      </div>
     </section>
 
-    <!-- ============ RESULTS ============ -->
-    <section class="panel results-panel">
-      <div id="results-empty" class="results-empty">
-        <p>Describe an architecture and run an assessment to see candidate risk findings.</p>
+    <div class="divider" id="divider" title="Drag to resize"></div>
+
+    <!-- Right: interactive graph canvas (preview + click-to-annotate) -->
+    <section class="pane preview-pane" id="preview-pane">
+      <div class="mode-bar">
+        <span class="canvas-hint">Drag a symbol onto the canvas to add · drag to move · click to edit · drag a node's ▸ port onto another to connect</span>
       </div>
-      <div id="results" class="hidden"></div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="palette" id="palette" title="Drag a symbol onto the canvas"></div>
+        <div class="canvas-controls">
+          <button type="button" class="ctl" id="btn-zoom-in" title="Zoom in">+</button>
+          <button type="button" class="ctl" id="btn-zoom-out" title="Zoom out">&minus;</button>
+          <button type="button" class="ctl" id="btn-fit" title="Fit graph to view">&#8862;</button>
+        </div>
+        <div class="system-badge hidden" id="system-badge"></div>
+        <div class="legend">
+          <span class="legend-item"><span class="swatch process"></span>Process</span>
+          <span class="legend-item"><span class="swatch data"></span>Data</span>
+          <span class="legend-item"><span class="swatch symbol"></span>Symbol</span>
+          <span class="legend-item"><span class="swatch model"></span>Model</span>
+          <span class="legend-item"><span class="swatch agent"></span>Agent</span>
+        </div>
+        <div class="node-detail hidden" id="node-detail"></div>
+        <div class="canvas-empty" id="canvas-empty">
+          <p>The live preview appears here.</p>
+          <p class="hint">Load an example or start editing on the left.</p>
+        </div>
+      </div>
+
+      <!-- Bottom drawer: findings / validation -->
+      <div class="drawer collapsed" id="drawer">
+        <div class="drawer-head" id="drawer-head">
+          <div class="drawer-tabs">
+            <button type="button" class="drawer-tab active" data-drawer-tab="findings">Findings <span class="count" id="findings-count"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="annotate">Annotate <span class="count" id="annotate-count" title="elements without a role"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="validation">Input contract <span class="count" id="validation-count"></span></button>
+          </div>
+          <button type="button" class="drawer-toggle" id="drawer-toggle" title="Expand / collapse">&#9650;</button>
+        </div>
+        <div class="drawer-body" id="drawer-body">
+          <div class="drawer-panel" data-drawer-panel="findings">
+            <p class="drawer-empty" id="findings-empty">Run an assessment to see candidate risk findings. Selecting a finding highlights its evidence in the graph.</p>
+            <div id="findings-summary"></div>
+            <div id="findings-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="annotate">
+            <div class="annotate-head">
+              <span class="hint">Assign a role to each element, then Apply. Roles are what let motifs and risk patterns match graphs imported from Tool4Boxology / t4b-beam (which carry structure only).</span>
+              <button type="button" class="btn small primary" id="btn-annotate-apply" title="Write the selected roles into the editor graph">Apply annotations</button>
+            </div>
+            <div id="annotate-list">
+              <p class="drawer-empty">Load or import an architecture graph, then reopen this tab to tag its elements.</p>
+            </div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="validation">
+            <p class="drawer-empty" id="validation-empty">Validate the graph against the SHACL input contract.</p>
+            <div id="validation-list"></div>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
+  <script src="/static/editor.js"></script>
+  <script src="/static/graph.js"></script>
+  <script src="/static/annotate.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,62 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:BatchPredictionMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Batch Prediction Motif match"@en ;
+        pair:matchesMotif pat:BatchPredictionMotif ;
+        pair:hasNodeBinding ?datasetBinding ,
+            ?jobBinding ,
+            ?modelBinding ,
+            ?resultBinding ,
+            ?schedulerBinding .
+
+    ?datasetBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchPred_DatasetNode ; pair:matchedElement ?dataset .
+    ?jobBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchPred_JobNode ; pair:matchedElement ?job .
+    ?modelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchPred_ModelNode ; pair:matchedElement ?model .
+    ?resultBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchPred_ResultNode ; pair:matchedElement ?result .
+    ?schedulerBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchPred_SchedulerNode ; pair:matchedElement ?scheduler .
+}
+WHERE {
+    ?dataset a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:BatchDataset .
+    ?job a beam:Infer ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionStep .
+    ?model a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:Model .
+    ?result a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionResult .
+    ?scheduler a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:JobScheduler .
+
+    ?scheduler beam:inform ?job .
+    ?job beam:use ?dataset .
+    ?job beam:use ?model .
+    ?job beam:produce ?result .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/batch-prediction/",
+        ENCODE_FOR_URI(STR(?dataset)),
+        "/",
+        ENCODE_FOR_URI(STR(?job)),
+        "/",
+        ENCODE_FOR_URI(STR(?model)),
+        "/",
+        ENCODE_FOR_URI(STR(?result)),
+        "/",
+        ENCODE_FOR_URI(STR(?scheduler))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/dataset")) AS ?datasetBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/job")) AS ?jobBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/model")) AS ?modelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/result")) AS ?resultBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/scheduler")) AS ?schedulerBinding)
+}

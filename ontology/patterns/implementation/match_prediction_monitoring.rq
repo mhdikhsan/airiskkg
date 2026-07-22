@@ -1,0 +1,54 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Auto-derived faithful projection of pat:PredictionMonitoringMotif (declared PatternNode/
+# PatternEdge structure). Matches structure only (candidate framing): each
+# declared node is bound by expectedClass + expectedRole, each declared edge
+# is required. No risk semantics here - those come from a risk pattern.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Prediction Monitoring Motif match"@en ;
+        pair:matchesMotif pat:PredictionMonitoringMotif ;
+        pair:hasNodeBinding ?alertBinding ,
+            ?baselineBinding ,
+            ?logBinding ,
+            ?monitoringStepBinding .
+
+    ?alertBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PredMon_AlertNode ; pair:matchedElement ?alert .
+    ?baselineBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PredMon_BaselineNode ; pair:matchedElement ?baseline .
+    ?logBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PredMon_LogNode ; pair:matchedElement ?log .
+    ?monitoringStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:PredMon_MonitoringStepNode ; pair:matchedElement ?monitoringStep .
+}
+WHERE {
+    ?alert a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:Alert .
+    ?baseline a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:MonitoringBaseline .
+    ?log a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:PredictionLog .
+    ?monitoringStep a beam:Process ;
+           pair:playsRole/pair:subRoleOf* pair:MonitoringStep .
+
+    ?monitoringStep beam:use ?log .
+    ?monitoringStep beam:use ?baseline .
+    ?monitoringStep beam:produce ?alert .
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/prediction-monitoring/",
+        ENCODE_FOR_URI(STR(?alert)),
+        "/",
+        ENCODE_FOR_URI(STR(?baseline)),
+        "/",
+        ENCODE_FOR_URI(STR(?log)),
+        "/",
+        ENCODE_FOR_URI(STR(?monitoringStep))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/alert")) AS ?alertBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/baseline")) AS ?baselineBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/log")) AS ?logBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/monitoring-step")) AS ?monitoringStepBinding)
+}

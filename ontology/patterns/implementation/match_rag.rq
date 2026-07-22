@@ -4,7 +4,6 @@ PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 
-
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
@@ -28,25 +27,30 @@ CONSTRUCT {
     ?responseB       a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_ResponseNode ;             pair:matchedElement ?response .
 }
 WHERE {
+    ?query a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
 
-    ?embedStep a beam:Transform ;
-               pair:playsRole/pair:subRoleOf* pair:EmbeddingStep ;
-               beam:use ?query ;
-               beam:produce ?queryVec .
-    ?query    a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
-    ?queryVec a beam:Data ; pair:playsRole/pair:subRoleOf* pair:EmbeddingVector .
+   
+    OPTIONAL {
+        ?embedStep a beam:Transform ;
+                   pair:playsRole/pair:subRoleOf* pair:EmbeddingStep ;
+                   beam:use ?query ;
+                   beam:produce ?queryVec .
+        ?queryVec a beam:Data ; pair:playsRole/pair:subRoleOf* pair:EmbeddingVector .
+    }
 
     ?retrievalStep pair:playsRole/pair:subRoleOf* pair:RetrievalStep ;
-                   beam:use ?queryVec ;
                    beam:use ?vectorIndex ;
                    beam:produce ?retrievedCtx .
     ?vectorIndex  a beam:Data ; pair:playsRole/pair:subRoleOf* pair:VectorIndex .
     ?retrievedCtx a beam:Data ; pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
 
+    ?retrievedCtx (^beam:use/beam:produce)* ?ctxForPrompt .
+    ?ctxForPrompt pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
+
     ?promptConstruct a beam:Transform ;
                      pair:playsRole/pair:subRoleOf* pair:PromptConstructionStep ;
                      beam:use ?query ;
-                     beam:use ?retrievedCtx ;
+                     beam:use ?ctxForPrompt ;
                      beam:produce ?prompt .
     ?prompt a beam:Data ; pair:playsRole/pair:subRoleOf* pair:PromptTemplate .
 
@@ -58,7 +62,6 @@ WHERE {
     ?llm      a beam:StatisticalModel ; pair:playsRole/pair:subRoleOf* pair:FoundationLLM .
     ?response a beam:Data ; pair:playsRole/pair:subRoleOf* pair:LLMResponse .
 
-    # deterministic match IRI keyed on the generation + retrieval steps
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/rag/",
         ENCODE_FOR_URI(STR(?genStep)), "/",

@@ -1,152 +1,205 @@
-"""Turn an :class:`AssessmentResult` RDF graph into plain JSON-serializable data.
-
-The assessment engine speaks RDF/Turtle. The web UI speaks JSON. This module is the
-bridge: it resolves human-readable labels, groups taxonomy references by source, and
-flattens each risk finding into a dictionary that a frontend can render directly.
-"""
+"""Turn an AssessmentResult into JSON-friendly data for the web UI."""
 
 from __future__ import annotations
 
-from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, URIRef
+from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 
-from airiskkg.assessment_runner import AssessmentResult, PAIR
+from airiskkg.assessment_runner import PAIR, AssessmentResult
 
-# Human-friendly names for the taxonomy/source namespaces a finding can reference.
-TAXONOMY_SOURCES: list[tuple[str, str]] = [
-    ("http://w3id.org/airiskkg/taxonomy/owasp-llm#", "OWASP LLM Top 10"),
-    ("http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#", "MIT AI Risk Controls"),
-    ("http://w3id.org/airiskkg/taxonomy/mit-ai-risk#", "MIT AI Risk Repository"),
-    ("http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#", "IBM Risk Atlas"),
-    ("http://w3id.org/airiskkg/taxonomy/nexus#", "AI Atlas Nexus"),
-    ("http://w3id.org/airiskkg/patterns#", "PAIR-AI Pattern Library"),
-    ("http://w3id.org/beam/risk#", "BEAM Risk"),
-]
+_NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
+_MITCTRL_PREFIX = "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#"
+# skos:*Match predicates by which a pat:Control_* points at the MIT mitigation
+# family it corresponds to (indicative bridge, not an audited SSSOM mapping).
+_MIT_MAPPING_PREDS = (
+    SKOS.relatedMatch,
+    SKOS.closeMatch,
+    SKOS.exactMatch,
+    SKOS.broadMatch,
+    SKOS.narrowMatch,
+)
+
+_SOURCE_PREFIXES = {
+    "http://w3id.org/airiskkg/taxonomy/owasp-llm#": "OWASP LLM Top 10",
+    "http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#": "IBM Risk Atlas",
+    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#": "MIT AI Risk Repository",
+    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#": "MIT AI Risk Control",
+    "http://w3id.org/airiskkg/patterns#": "PAIR-AI Pattern Library",
+}
 
 
-def _local_name(uri: str) -> str:
-    """Best-effort readable fallback when a resource has no label."""
-    fragment = uri.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
-    return fragment.replace("-", " ").replace("_", " ").strip() or uri
+def _local_name(uri: URIRef) -> str:
+    text = str(uri)
+    return text.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
 
 
 def _label(graph: Graph, resource: URIRef) -> str:
-    value = graph.value(resource, RDFS.label) or graph.value(resource, SKOS.prefLabel)
-    return str(value) if value else _local_name(str(resource))
-
-
-def _source_name(uri: str) -> str:
-    for namespace, name in TAXONOMY_SOURCES:
-        if uri.startswith(namespace):
-            return name
-    return "Other"
-
-
-def _ref(graph: Graph, resource: URIRef) -> dict[str, str]:
-    return {
-        "id": str(resource),
-        "label": _label(graph, resource),
-        "source": _source_name(str(resource)),
-    }
+    value = graph.value(resource, SKOS.prefLabel) or graph.value(resource, RDFS.label)
+    return str(value) if value else _local_name(resource)
 
 
 def _definition(graph: Graph, resource: URIRef) -> str | None:
     value = (
         graph.value(resource, SKOS.definition)
         or graph.value(resource, DCTERMS.description)
-        or graph.value(resource, RDFS.comment)
     )
     return str(value) if value else None
 
 
-def _refs(graph: Graph, finding: URIRef, predicate: URIRef) -> list[dict[str, str]]:
-    refs = [_ref(graph, obj) for obj in graph.objects(finding, predicate) if isinstance(obj, URIRef)]
-    return sorted(refs, key=lambda item: (item["source"], item["label"].lower()))
+def _source(uri: URIRef) -> str:
+    text = str(uri)
+    for prefix, label in _SOURCE_PREFIXES.items():
+        if text.startswith(prefix):
+            return label
+    return "Other"
 
 
-def summarize_finding(graph: Graph, finding: URIRef) -> dict:
-    """Flatten a single ``pair:RiskFinding`` into a render-ready dictionary."""
-    mechanism = graph.value(finding, PAIR.hasInterpretedMechanism)
+def _ref(graph: Graph, resource: URIRef) -> dict:
+    return {
+        "id": str(resource),
+        "label": _label(graph, resource),
+        "definition": _definition(graph, resource),
+        "source": _source(resource),
+    }
+
+
+def _element_ref(graph: Graph, resource: URIRef) -> dict:
+    return {"id": str(resource), "label": _label(graph, resource)}
+
+
+_TECHNICAL = URIRef("http://w3id.org/airiskkg/pair-ai#TechnicalControl")
+_NON_TECHNICAL = URIRef("http://w3id.org/airiskkg/pair-ai#NonTechnicalControl")
+
+
+def _control_nature(graph: Graph, control: URIRef) -> str | None:
+    """'technical' / 'non-technical' from pair:controlNature, or None if the
+    control carries no classification (surfaced as 'unclassified' by the UI)."""
+    nature = graph.value(control, PAIR.controlNature)
+    if nature == _TECHNICAL:
+        return "technical"
+    if nature == _NON_TECHNICAL:
+        return "non-technical"
+    return None
+
+
+def _mit_alignments(graph: Graph, control: URIRef) -> list[dict]:
+    """The MIT mitigation family(ies) this actionable control corresponds to,
+    via its skos:*Match bridge. Indicative provenance ('aligns with MIT: ...'),
+    not an audited mapping - kept on the control, not mixed into the suggestion
+    list itself."""
+    families: set[URIRef] = set()
+    for pred in _MIT_MAPPING_PREDS:
+        for target in graph.objects(control, pred):
+            if isinstance(target, URIRef) and str(target).startswith(_MITCTRL_PREFIX):
+                families.add(target)
+    return [_element_ref(graph, family) for family in sorted(families, key=str)]
+
+
+def _control_ref(graph: Graph, control: URIRef) -> dict:
+    """A suggested control, extended with its technical/non-technical nature, the
+    motif(s) that can structurally realize it (candidate structural mitigations -
+    the control stays the mitigation plan; the motif is how to realize it in the
+    architecture), and the MIT mitigation family it aligns with (provenance)."""
+    ref = _ref(graph, control)
+    ref["nature"] = _control_nature(graph, control)
+    realizing_motifs = sorted(graph.objects(control, PAIR.realizedByMotif), key=str)
+    ref["realizedByMotifs"] = [_element_ref(graph, motif) for motif in realizing_motifs]
+    ref["mitAlignments"] = _mit_alignments(graph, control)
+    return ref
+
+
+def _grounded_control_families(graph: Graph, taxonomy_entries: list[URIRef]) -> list[dict]:
+    """The MIT control families the taxonomy grounds for this finding's risks
+    (each risk taxonomy entry -> nexus:hasRelatedControl). This is the EVIDENCE
+    layer - CSV-grounded / curated in taxonomy_mapping.ttl - surfaced distinctly
+    from PAIR-AI's own actionable pat:Control_* suggestions, never mixed into
+    them."""
+    families: set[URIRef] = set()
+    for entry in taxonomy_entries:
+        families.update(graph.objects(entry, _NEXUS.hasRelatedControl))
+    return [_ref(graph, family) for family in sorted(families, key=str)]
+
+
+def _motif_ref(graph: Graph, motif: URIRef | None) -> dict | None:
+    return _element_ref(graph, motif) if motif is not None else None
+
+
+def _finding_view(graph: Graph, finding: URIRef) -> dict:
     motif = graph.value(finding, PAIR.generatedByMotif)
+    mechanism = graph.value(finding, PAIR.hasDerivedMechanism)
+    status = graph.value(finding, PAIR.findingStatus)
+    description = graph.value(finding, DCTERMS.description)
 
-    taxonomy = _refs(graph, finding, PAIR.hasCandidateRiskTaxonomyEntry)
-    # Attach a short definition to each taxonomy entry where one is available.
-    for entry in taxonomy:
-        definition = _definition(graph, URIRef(entry["id"]))
-        if definition:
-            entry["definition"] = definition
+    taxonomy_entries = sorted(
+        graph.objects(finding, PAIR.hasCandidateRiskTaxonomyEntry), key=str
+    )
+    suggested_controls = sorted(graph.objects(finding, PAIR.hasSuggestedControl), key=str)
+    evidence = sorted(graph.objects(finding, PAIR.hasEvidence), key=str)
 
     return {
         "id": str(finding),
         "label": _label(graph, finding),
-        "description": str(graph.value(finding, DCTERMS.description) or ""),
-        "status": str(graph.value(finding, PAIR.findingStatus) or ""),
-        "motif": _ref(graph, motif) if isinstance(motif, URIRef) else None,
-        "mechanism": _ref(graph, mechanism) if isinstance(mechanism, URIRef) else None,
-        "taxonomyEntries": taxonomy,
-        "evidence": _refs(graph, finding, PAIR.hasEvidenceElement),
-        "satisfiedConditions": _refs(graph, finding, PAIR.hasSatisfiedCondition),
-        "suggestedControls": _refs(graph, finding, PAIR.hasSuggestedControl),
+        "description": str(description) if description else None,
+        "motif": _motif_ref(graph, motif),
+        "mechanism": _element_ref(graph, mechanism) if mechanism is not None else None,
+        "status": str(status) if status else None,
+        "taxonomyEntries": [_ref(graph, entry) for entry in taxonomy_entries],
+        "suggestedControls": [_control_ref(graph, control) for control in suggested_controls],
+        "groundedControlFamilies": _grounded_control_families(graph, taxonomy_entries),
+        "evidence": [_element_ref(graph, element) for element in evidence],
     }
 
 
-def summarize_motif_match(graph: Graph, match: URIRef) -> dict:
+def _motif_match_view(graph: Graph, match: URIRef) -> dict:
     motif = graph.value(match, PAIR.matchesMotif)
-    bound_elements: list[dict[str, str]] = []
-    for binding in graph.objects(match, PAIR.hasNodeBinding):
-        element = graph.value(binding, PAIR.matchedElement)
+    bindings = sorted(graph.objects(match, PAIR.hasNodeBinding), key=str)
+
+    bound_elements = []
+    for binding in bindings:
         pattern_node = graph.value(binding, PAIR.bindsPatternNode)
-        if isinstance(element, URIRef):
-            bound_elements.append(
-                {
-                    "patternNode": _label(graph, pattern_node) if isinstance(pattern_node, URIRef) else "",
-                    "element": _label(graph, element),
-                    "elementId": str(element),
-                }
-            )
-    bound_elements.sort(key=lambda item: item["patternNode"].lower())
+        matched_element = graph.value(binding, PAIR.matchedElement)
+        if pattern_node is None or matched_element is None:
+            continue
+        bound_elements.append(
+            {
+                "patternNode": _local_name(pattern_node),
+                "element": _label(graph, matched_element),
+            }
+        )
+
     return {
         "id": str(match),
-        "motif": _ref(graph, motif) if isinstance(motif, URIRef) else None,
+        "motif": _motif_ref(graph, motif),
         "boundElements": bound_elements,
     }
 
 
-def summarize_result(result: AssessmentResult) -> dict:
-    """Produce the full JSON payload consumed by the web UI."""
-    findings_graph = result.risk_findings
-    # The findings graph only carries finding triples; labels for taxonomy entries,
-    # controls and evidence elements live in the combined graph.
-    combined = result.combined_graph
-
-    findings = [
-        summarize_finding(combined, finding)
-        for finding in findings_graph.subjects(RDF.type, PAIR.RiskFinding)
-    ]
-    findings.sort(key=lambda item: (item["label"].lower(), item["id"]))
-
-    matches = [
-        summarize_motif_match(combined, match)
-        for match in result.motif_matches.subjects(RDF.type, PAIR.MotifMatch)
-    ]
-    matches.sort(key=lambda item: ((item["motif"] or {}).get("label", "").lower(), item["id"]))
-
-    # Roll findings up by the OWASP-style risk category they most relate to so the UI
-    # can show a severity-free "how many findings per risk area" overview.
-    by_taxonomy: dict[str, int] = {}
+def _findings_by_owasp_category(graph: Graph, findings: list[URIRef]) -> list[dict]:
+    counts: dict[URIRef, int] = {}
     for finding in findings:
-        for entry in finding["taxonomyEntries"]:
-            if entry["source"] == "OWASP LLM Top 10":
-                by_taxonomy[entry["label"]] = by_taxonomy.get(entry["label"], 0) + 1
+        categories = {
+            entry
+            for entry in graph.objects(finding, PAIR.hasCandidateRiskTaxonomyEntry)
+            if _source(entry) == "OWASP LLM Top 10"
+        }
+        for category in categories:
+            counts[category] = counts.get(category, 0) + 1
+
+    return [
+        {"id": str(category), "label": _label(graph, category), "count": count}
+        for category, count in sorted(counts.items(), key=lambda item: (-item[1], str(item[0])))
+    ]
+
+
+def summarize_result(result: AssessmentResult) -> dict:
+    findings = sorted(result.risk_findings.subjects(RDF.type, PAIR.RiskFinding), key=str)
+    matches = sorted(result.motif_matches.subjects(RDF.type, PAIR.MotifMatch), key=str)
 
     return {
         "summary": {
-            "motifMatchCount": result.motif_match_count,
-            "riskFindingCount": result.risk_finding_count,
-            "findingsByOwaspCategory": [
-                {"label": label, "count": count}
-                for label, count in sorted(by_taxonomy.items(), key=lambda kv: (-kv[1], kv[0]))
-            ],
+            "riskFindingCount": len(findings),
+            "motifMatchCount": len(matches),
+            "findingsByOwaspCategory": _findings_by_owasp_category(result.combined_graph, findings),
         },
-        "findings": findings,
-        "motifMatches": matches,
+        "findings": [_finding_view(result.combined_graph, finding) for finding in findings],
+        "motifMatches": [_motif_match_view(result.combined_graph, match) for match in matches],
     }
