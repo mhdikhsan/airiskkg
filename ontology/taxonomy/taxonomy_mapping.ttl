@@ -195,6 +195,13 @@ owasp:llm10-unbounded-consumption
 
 # Section 3 - Risk-to-control grounding
 #
+# As of the 2026-07-21 single-vocabulary refactor these owasp:* ->
+# nexus:hasRelatedControl links are the SOLE home of risk -> MIT-control-family
+# grounding. A finding surfaces them as an EVIDENCE layer, reached through its
+# taxonomy entries (owasp/atlas/mit); they are no longer mirrored into a risk
+# pattern's pair:suggestedControl (which now carries only PAIR-AI's own
+# pat:Control_* actionable catalogue).
+#
 # OWASP-risk -> control-group links (nexus:hasRelatedControl) for
 # LLM01-06 and LLM09 are REGROUNDED (2026-07-17) from the PAIR-AI
 # risk-to-mitigation connection CSV: each risk's IBM-mapped mitigation
