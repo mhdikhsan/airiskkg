@@ -18,6 +18,10 @@
   let view = { x: 0, y: 0, w: 1000, h: 700 };
   let contentBox = null;
   let highlighted = new Set();
+  let manualPositions = new Map(); // node id -> {x,y} drag overrides (view-only)
+  let lastNodeIds = "";            // to refit only when the element set changes
+  let suppressFitOnce = false;     // set by placeNodeAt so a dropped node stays put
+  let selectedId = null;           // the element clicked for editing (Del key target)
 
   function svgEl(tag, attrs = {}, parent = null) {
     const node = document.createElementNS(SVG_NS, tag);
@@ -100,6 +104,13 @@
       }
       x += w + LAYER_GAP;
     }
+
+    // Re-apply manual drag positions on top of the computed layout, so a dragged
+    // node keeps its place across re-renders (positions are view-only state).
+    for (const [id, p] of manualPositions) {
+      const cur = positions.get(id);
+      if (cur) positions.set(id, { ...cur, x: p.x, y: p.y });
+    }
   }
 
   // ---- rendering ------------------------------------------------------------
@@ -142,18 +153,38 @@
   function render(data) {
     current = data;
     highlighted = new Set();
-    svg.innerHTML = "";
+    selectedId = null;
     detailBox.classList.add("hidden");
-
     if (!data.nodes.length) {
+      svg.innerHTML = "";
       emptyBox.classList.remove("hidden");
       contentBox = null;
+      lastNodeIds = "";
       return;
     }
     emptyBox.classList.add("hidden");
-
     layout(data.nodes, data.edges);
+    draw();
+    // Refit only when the set of elements changes (new graph, add/remove
+    // element) - not on annotate/connect/drag, so a hand-arranged view is kept.
+    const ids = data.nodes.map((n) => n.id).sort().join("|");
+    if (ids !== lastNodeIds && !suppressFitOnce) fit();
+    suppressFitOnce = false;
+    lastNodeIds = ids;
+  }
 
+  // Place a just-added element at a screen point (converted to graph coords) and
+  // skip the next auto-fit so it stays where it was dropped.
+  function placeNodeAt(id, clientX, clientY) {
+    const pt = toSvgPoint(clientX, clientY);
+    manualPositions.set(id, { x: Math.round(pt.x - 65), y: Math.round(pt.y - 22) });
+    suppressFitOnce = true;
+  }
+
+  // Rebuild the SVG from `current` + `positions` (no layout, no fit). Also used
+  // by drag, so a move repaints in place without re-running layout or refitting.
+  function draw() {
+    svg.innerHTML = "";
     const defs = svgEl("defs", {}, svg);
     for (const kind of ["use", "produce", "inform", "participatedIn"]) {
       const marker = svgEl("marker", {
@@ -179,6 +210,7 @@
 
     for (const node of current.nodes) {
       const pos = positions.get(node.id);
+      if (!pos) continue;
       const group = svgEl("g", { class: `node ${node.kind}`, "data-id": node.id }, nodeLayer);
       nodeShape(group, node, pos);
       const label = svgEl("text", {
@@ -193,34 +225,199 @@
         }, group);
         type.textContent = node.typeLabel + (node.roles.length ? ` · ${node.roles.length} role${node.roles.length > 1 ? "s" : ""}` : "");
       }
-      group.addEventListener("click", (ev) => { ev.stopPropagation(); showDetail(node, pos); });
+      // right-edge port: drag from here onto another node to connect them
+      const port = svgEl("circle", {
+        cx: pos.x + pos.w, cy: pos.y + pos.h / 2, r: 6, class: "port", "data-port": node.id,
+      }, group);
+      port.addEventListener("pointerdown", (ev) => startConnect(ev, node));
+      // node body: drag to move, or click (no drag) to open the role popup
+      group.addEventListener("pointerdown", (ev) => {
+        if (ev.target.classList.contains("port")) return;
+        ev.stopPropagation();
+        startDrag(ev, node);
+      });
     }
 
     const pad = 40;
     const xs = Array.from(positions.values());
     contentBox = {
-      x: -pad,
+      x: Math.min(...xs.map((p) => p.x)) - pad,
       y: Math.min(...xs.map((p) => p.y)) - pad,
-      w: Math.max(...xs.map((p) => p.x + p.w)) + pad * 2,
+      w: Math.max(...xs.map((p) => p.x + p.w)) - Math.min(...xs.map((p) => p.x)) + pad * 2,
       h: Math.max(...xs.map((p) => p.y + p.h)) - Math.min(...xs.map((p) => p.y)) + pad * 2,
     };
-    fit();
+    paintHighlight();
+  }
+
+  function toSvgPoint(clientX, clientY) {
+    const pt = new DOMPoint(clientX, clientY);
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+
+  // Drag a node to reposition it (view-only; never edits the graph). A
+  // pointerdown released without moving is treated as a click -> role popup.
+  function startDrag(ev, node) {
+    const startPt = toSvgPoint(ev.clientX, ev.clientY);
+    const base = positions.get(node.id);
+    const orig = { x: base.x, y: base.y };
+    let moved = false;
+    const move = (mv) => {
+      const pt = toSvgPoint(mv.clientX, mv.clientY);
+      const dx = pt.x - startPt.x;
+      const dy = pt.y - startPt.y;
+      if (!moved && Math.hypot(dx, dy) < 4) return;
+      moved = true;
+      detailBox.classList.add("hidden");
+      const cur = positions.get(node.id);
+      const next = { ...cur, x: Math.round(orig.x + dx), y: Math.round(orig.y + dy) };
+      positions.set(node.id, next);
+      manualPositions.set(node.id, { x: next.x, y: next.y });
+      draw();
+    };
+    const up = (uv) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      if (!moved) { setHighlight([node.id]); selectedId = node.id; showDetail(node, uv); }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  // BEAM flow triple for a connection dragged source -> target, or null if
+  // invalid (resource -> resource has no direct BEAM flow).
+  function edgeTriple(source, target) {
+    const sp = source.kind === "process";
+    const tp = target.kind === "process";
+    if (!sp && tp) return { subject: target.id, predicate: "use", object: source.id };
+    if (sp && !tp) return { subject: source.id, predicate: "produce", object: target.id };
+    if (sp && tp) return { subject: source.id, predicate: "inform", object: target.id };
+    return null;
+  }
+
+  function startConnect(ev, sourceNode) {
+    ev.stopPropagation();
+    const pos = positions.get(sourceNode.id);
+    const temp = svgEl("path", { class: "edge temp", fill: "none" }, viewport);
+    const sx = pos.x + pos.w;
+    const sy = pos.y + pos.h / 2;
+    const move = (mv) => {
+      const pt = toSvgPoint(mv.clientX, mv.clientY);
+      temp.setAttribute("d", `M ${sx} ${sy} L ${pt.x} ${pt.y}`);
+    };
+    const up = (uv) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      temp.remove();
+      const hit = document.elementFromPoint(uv.clientX, uv.clientY);
+      const group = hit && hit.closest ? hit.closest(".node") : null;
+      if (!group || group.dataset.id === sourceNode.id) return;
+      const target = current.nodes.find((n) => n.id === group.dataset.id);
+      if (!target) return;
+      // read the source's current kind (it may be stale after re-renders)
+      const src = current.nodes.find((n) => n.id === sourceNode.id) || sourceNode;
+      const triple = edgeTriple(src, target);
+      if (!triple) {
+        if (annotationCfg.onStatus) annotationCfg.onStatus("error", "Two resources can't connect directly — flow passes through a process.");
+        return;
+      }
+      if (annotationCfg.onConnect) annotationCfg.onConnect(triple);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  function paintHighlight() {
+    if (!viewport) return;
+    const active = highlighted.size > 0;
+    viewport.classList.toggle("has-highlight", active);
+    for (const group of viewport.querySelectorAll(".node")) {
+      group.classList.toggle("highlight", highlighted.has(group.dataset.id));
+    }
+    for (const path of viewport.querySelectorAll(".edge")) {
+      path.classList.toggle(
+        "highlight",
+        active && highlighted.has(path.dataset.source) && highlighted.has(path.dataset.target)
+      );
+    }
   }
 
   function truncate(text, max) {
     return text.length > max ? text.slice(0, Math.max(1, max - 1)) + "…" : text;
   }
 
-  // ---- detail popover -------------------------------------------------------
-  function showDetail(node) {
-    const rows = [];
-    rows.push(`<h4>${escape(node.label)}</h4>`);
-    if (node.typeLabel) rows.push(`<div class="detail-row"><span>BEAM type</span>${escape(node.typeLabel)}</div>`);
-    if (node.roles.length) rows.push(`<div class="detail-row"><span>Roles</span>${node.roles.map(escape).join(", ")}</div>`);
-    if (node.categories.length) rows.push(`<div class="detail-row"><span>Data categories</span>${node.categories.map(escape).join(", ")}</div>`);
-    rows.push(`<div class="detail-row uri"><span>URI</span>${escape(node.id)}</div>`);
-    detailBox.innerHTML = rows.join("");
+  // ---- element popover ------------------------------------------------------
+  // Click a node -> highlight it -> edit its label / name / type / role / data
+  // category here and Apply. onEdit delegates the write to the host (which calls
+  // /api/graph-edit and updates the editor); onConnect handles port-drag edges.
+  let annotationCfg = { vocabulary: { roles: [], dataCategories: [] }, classes: [], onEdit: null, onConnect: null, onDelete: null, onStatus: null };
+  function setAnnotation(cfg) { annotationCfg = { ...annotationCfg, ...cfg }; }
+  function escapeAttr(text) { return escape(text).replace(/"/g, "&quot;"); }
+
+  function optionsHtml(items, placeholder, selectedId) {
+    let html = `<option value="">${escape(placeholder)}</option>`;
+    for (const item of items || []) {
+      const selected = item.id === selectedId ? " selected" : "";
+      html += `<option value="${escape(item.id)}"${selected}>${escape(item.label)}</option>`;
+    }
+    return html;
+  }
+
+  function positionDetail(ev) {
+    if (!ev) return;
+    const rect = wrap.getBoundingClientRect();
+    const box = detailBox.getBoundingClientRect(); // popup is visible here, so real size
+    const w = box.width || 300;
+    const h = box.height || 240;
+    let x = ev.clientX - rect.left + 12;
+    let y = ev.clientY - rect.top + 12;
+    x = Math.max(8, Math.min(x, wrap.clientWidth - w - 8));
+    y = Math.max(8, Math.min(y, wrap.clientHeight - h - 8));
+    detailBox.style.left = x + "px";
+    detailBox.style.top = y + "px";
+    detailBox.style.right = "auto";
+    detailBox.style.bottom = "auto";
+  }
+
+  function showDetail(node, ev) {
+    const currentRole = node.roleIds && node.roleIds.length ? node.roleIds[0] : "";
+    const currentCat = node.categoryIds && node.categoryIds.length ? node.categoryIds[0] : "";
+    const currentClass = node.typeUri || "";
+    detailBox.innerHTML = [
+      `<h4>Element</h4>`,
+      `<label class="detail-field"><span>Label</span>`,
+      `<input id="nd-label" class="an-input" type="text" value="${escapeAttr(node.label || "")}"></label>`,
+      `<label class="detail-field"><span>Name (id)</span>`,
+      `<input id="nd-name" class="an-input" type="text" value="${escapeAttr(node.id.split(/[#/]/).pop())}"></label>`,
+      `<label class="detail-field"><span>Type</span>`,
+      `<select id="nd-type" class="an-select">${optionsHtml(annotationCfg.classes, "— type —", currentClass)}</select></label>`,
+      `<label class="detail-field"><span>Role</span>`,
+      `<select id="nd-role" class="an-select">${optionsHtml(annotationCfg.vocabulary.roles, "— role —", currentRole)}</select></label>`,
+      `<label class="detail-field"><span>Data category</span>`,
+      `<select id="nd-cat" class="an-select">${optionsHtml(annotationCfg.vocabulary.dataCategories, "— none —", currentCat)}</select></label>`,
+      `<div class="detail-actions">`,
+      `<button type="button" class="btn small primary" id="nd-apply">Apply</button>`,
+      `<button type="button" class="btn small danger" id="nd-delete" title="Delete (or press the Delete / Backspace key)">Delete</button>`,
+      `</div>`,
+    ].join("");
     detailBox.classList.remove("hidden");
+    positionDetail(ev);
+    detailBox.querySelector("#nd-apply").addEventListener("click", () => {
+      if (!annotationCfg.onEdit) return;
+      const role = detailBox.querySelector("#nd-role").value;
+      const category = detailBox.querySelector("#nd-cat").value;
+      annotationCfg.onEdit(node.id, {
+        label: detailBox.querySelector("#nd-label").value,
+        name: detailBox.querySelector("#nd-name").value,
+        classUri: detailBox.querySelector("#nd-type").value,
+        roles: role ? [role] : [],
+        categories: category ? [category] : [],
+      });
+    });
+    detailBox.querySelector("#nd-delete").addEventListener("click", () => {
+      detailBox.classList.add("hidden");
+      setHighlight([]);
+      if (annotationCfg.onDelete) annotationCfg.onDelete(node.id);
+    });
   }
 
   function escape(text) {
@@ -257,10 +454,11 @@
   function initPanZoom() {
     let dragging = null;
     wrap.addEventListener("pointerdown", (ev) => {
-      if (ev.target.closest(".node") || ev.target.closest(".canvas-controls") || ev.target.closest(".node-detail")) return;
+      if (ev.target.closest(".node") || ev.target.closest(".canvas-controls") || ev.target.closest(".node-detail") || ev.target.closest(".palette")) return;
       dragging = { x: ev.clientX, y: ev.clientY };
       wrap.setPointerCapture(ev.pointerId);
       detailBox.classList.add("hidden");
+      setHighlight([]);
     });
     wrap.addEventListener("pointermove", (ev) => {
       if (!dragging) return;
@@ -283,23 +481,28 @@
 
   // ---- evidence highlighting ------------------------------------------------
   function setHighlight(ids) {
+    selectedId = null;
     highlighted = new Set(ids || []);
-    if (!viewport) return;
-    const active = highlighted.size > 0;
-    viewport.classList.toggle("has-highlight", active);
-    for (const group of viewport.querySelectorAll(".node")) {
-      group.classList.toggle("highlight", highlighted.has(group.dataset.id));
-    }
-    for (const path of viewport.querySelectorAll(".edge")) {
-      path.classList.toggle(
-        "highlight",
-        active && highlighted.has(path.dataset.source) && highlighted.has(path.dataset.target)
-      );
-    }
+    paintHighlight();
+  }
+
+  // Delete / Backspace removes the clicked element, unless focus is in a text
+  // field (the code editor or a popup input) so typing is never hijacked.
+  function onKeyDown(ev) {
+    if (ev.key !== "Delete" && ev.key !== "Backspace") return;
+    if (!selectedId || !annotationCfg.onDelete) return;
+    const target = ev.target;
+    if (target && target.matches && target.matches("input, textarea, select")) return;
+    ev.preventDefault();
+    const id = selectedId;
+    detailBox.classList.add("hidden");
+    setHighlight([]);
+    annotationCfg.onDelete(id);
   }
 
   function clear() {
     current = { nodes: [], edges: [] };
+    manualPositions = new Map();
     svg.innerHTML = "";
     contentBox = null;
     emptyBox.classList.remove("hidden");
@@ -314,6 +517,7 @@
     initPanZoom();
     applyView();
     window.addEventListener("resize", () => { if (contentBox) fit(); });
+    document.addEventListener("keydown", onKeyDown);
   }
 
   /** Run the layered layout standalone (used by Draw mode's "From code"). */
@@ -322,5 +526,5 @@
     return new Map(positions);
   }
 
-  window.GraphView = { init, render, clear, setHighlight, fit, layoutPositions };
+  window.GraphView = { init, render, clear, setHighlight, fit, layoutPositions, setAnnotation, placeNodeAt };
 })();

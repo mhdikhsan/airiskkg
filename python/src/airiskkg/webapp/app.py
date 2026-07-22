@@ -15,10 +15,11 @@ Endpoints
 
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 
 from flask import Flask, jsonify, request, send_from_directory
-from rdflib import RDF, RDFS, SKOS, Graph, URIRef
+from rdflib import RDF, RDFS, SKOS, Graph, Literal, Namespace, URIRef
 
 from airiskkg.architecture_builder import BuilderError, build_ttl
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
@@ -59,9 +60,25 @@ def _label(graph: Graph, resource: URIRef) -> str:
     return str(resource).rsplit("#", 1)[-1].rsplit("/", 1)[-1]
 
 
+_CAMEL_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
+_ACRONYM_BOUNDARY = re.compile(r"(?<=[A-Z])(?=[A-Z][a-z])")
+
+
+def _display_label(text: str) -> str:
+    """Humanize identifier-style names so role/category labels read uniformly.
+    Labels that already contain a space are curated and kept as-is; spaceless
+    camelCase / underscore names are split ('GenerativeModel' -> 'Generative
+    Model', 'LLMResponse' -> 'LLM Response')."""
+    if " " in text:
+        return text
+    spaced = text.replace("_", " ").replace("-", " ")
+    spaced = _ACRONYM_BOUNDARY.sub(" ", _CAMEL_BOUNDARY.sub(" ", spaced))
+    return re.sub(r"\s+", " ", spaced).strip()
+
+
 def _vocab_terms(graph: Graph, rdf_class: URIRef) -> list[dict[str, str]]:
     terms = [
-        {"id": str(subject), "label": _label(graph, subject)}
+        {"id": str(subject), "label": _display_label(_label(graph, subject))}
         for subject in graph.subjects(RDF.type, rdf_class)
     ]
     return sorted(terms, key=lambda item: item["label"].lower())
@@ -208,6 +225,148 @@ def create_app() -> Flask:
         except BuilderError as error:
             return jsonify({"error": str(error)}), 400
         return jsonify({"ttl": ttl})
+
+    @app.post("/api/annotate")
+    def annotate() -> object:
+        """Apply pair:playsRole / pair:containsDataCategory annotations to the
+        elements of an architecture graph. This is the role-tagging step that
+        turns an imported, structure-only graph (e.g. from Tool4Boxology /
+        t4b-beam, which carry no pattern roles) into one motifs can match.
+
+        Body: {ttl, annotations: {elementId: {roles: [uri...], categories: [uri...]}}}.
+        Each element's existing role/category triples are replaced (idempotent),
+        so re-applying reflects exactly the current selection.
+        """
+        payload = request.get_json(silent=True) or {}
+        ttl = (payload.get("ttl") or "").strip()
+        annotations = payload.get("annotations") or {}
+        if not ttl:
+            return jsonify({"error": "Provide an architecture graph (Turtle) to annotate."}), 400
+        try:
+            data = Graph()
+            data.parse(data=ttl, format="turtle")
+        except Exception as error:  # noqa: BLE001 - surface parse errors to the UI
+            return jsonify({"error": f"Could not parse the graph: {error}"}), 400
+
+        for element_id, annotation in annotations.items():
+            element = URIRef(element_id)
+            data.remove((element, PAIR.playsRole, None))
+            data.remove((element, PAIR.containsDataCategory, None))
+            for role in annotation.get("roles") or []:
+                data.add((element, PAIR.playsRole, URIRef(role)))
+            for category in annotation.get("categories") or []:
+                data.add((element, PAIR.containsDataCategory, URIRef(category)))
+
+        data.bind("beam", BEAM)
+        data.bind("pair", PAIR)
+        return jsonify({"ttl": data.serialize(format="turtle")})
+
+    @app.post("/api/graph-edit")
+    def graph_edit() -> object:
+        """Structural edits to the architecture graph from the interactive canvas:
+        add an element, or connect two elements with a BEAM flow edge. Element
+        identity/structure lives in the graph (rdflib keeps the Turtle clean);
+        node positions are a canvas-only concern and never touch the graph.
+
+        Body: {ttl, op, ...}. op="add-element" needs {classUri, category,
+        label}; op="add-edge" needs {subject, predicate in use/produce/inform,
+        object}. Returns {ttl, newId}.
+        """
+        payload = request.get_json(silent=True) or {}
+        ttl = (payload.get("ttl") or "").strip()
+        op = payload.get("op")
+        if not ttl:
+            return jsonify({"error": "Provide a graph to edit."}), 400
+        try:
+            data = Graph()
+            data.parse(data=ttl, format="turtle")
+        except Exception as error:  # noqa: BLE001 - surface parse errors to the UI
+            return jsonify({"error": f"Could not parse the graph: {error}"}), 400
+
+        local = Namespace("http://w3id.org/airiskkg/local#")
+        new_id = None
+        if op == "add-element":
+            class_uri = payload.get("classUri")
+            if not class_uri:
+                return jsonify({"error": "add-element needs a classUri."}), 400
+            label = (payload.get("label") or "New element").strip()
+            existing = {str(s) for s in data.subjects() if str(s).startswith(str(local))}
+            index = 1
+            while str(local[f"e{index}"]) in existing:
+                index += 1
+            element = local[f"e{index}"]
+            data.add((element, RDF.type, URIRef(class_uri)))
+            data.add((element, RDFS.label, Literal(label)))
+            system = next(iter(data.subjects(RDF.type, BEAM.System)), None)
+            if system is not None:
+                predicate = BEAM.hasProcess if payload.get("category") == "process" else BEAM.hasResource
+                data.add((system, predicate, element))
+            new_id = str(element)
+        elif op == "add-edge":
+            subject = payload.get("subject")
+            predicate = payload.get("predicate")
+            obj = payload.get("object")
+            if not (subject and predicate and obj):
+                return jsonify({"error": "add-edge needs subject, predicate, object."}), 400
+            if predicate not in ("use", "produce", "inform"):
+                return jsonify({"error": "predicate must be use, produce, or inform."}), 400
+            data.add((URIRef(subject), BEAM[predicate], URIRef(obj)))
+        elif op == "edit-element":
+            element_id = payload.get("element")
+            if not element_id:
+                return jsonify({"error": "edit-element needs an element."}), 400
+            element = URIRef(element_id)
+            if "label" in payload:
+                data.remove((element, RDFS.label, None))
+                if payload.get("label"):
+                    data.add((element, RDFS.label, Literal(payload["label"])))
+            if payload.get("classUri"):
+                # replace the element's BEAM type(s) with the chosen class
+                for existing_type in list(data.objects(element, RDF.type)):
+                    if str(existing_type).startswith(str(BEAM)):
+                        data.remove((element, RDF.type, existing_type))
+                data.add((element, RDF.type, URIRef(payload["classUri"])))
+            if "roles" in payload:
+                data.remove((element, PAIR.playsRole, None))
+                for role in payload.get("roles") or []:
+                    data.add((element, PAIR.playsRole, URIRef(role)))
+            if "categories" in payload:
+                data.remove((element, PAIR.containsDataCategory, None))
+                for category in payload.get("categories") or []:
+                    data.add((element, PAIR.containsDataCategory, URIRef(category)))
+            # optional URI rename: keep the namespace, swap the local part
+            new_name = (payload.get("name") or "").strip()
+            if new_name:
+                old = str(element)
+                cut = old.rfind("#") if "#" in old else old.rfind("/")
+                base = old[: cut + 1]
+                local = "".join(ch for ch in new_name if ch.isalnum() or ch in "_.-") or "element"
+                renamed = URIRef(base + local)
+                if renamed != element:
+                    for s, p, o in list(data.triples((element, None, None))):
+                        data.remove((s, p, o))
+                        data.add((renamed, p, o))
+                    for s, p, o in list(data.triples((None, None, element))):
+                        data.remove((s, p, o))
+                        data.add((s, p, renamed))
+                    new_id = str(renamed)
+        elif op == "delete-element":
+            element_id = payload.get("element")
+            if not element_id:
+                return jsonify({"error": "delete-element needs an element."}), 400
+            element = URIRef(element_id)
+            # remove the element and every edge touching it (as subject or object)
+            for s, p, o in list(data.triples((element, None, None))):
+                data.remove((s, p, o))
+            for s, p, o in list(data.triples((None, None, element))):
+                data.remove((s, p, o))
+        else:
+            return jsonify({"error": f"Unknown edit op: {op}"}), 400
+
+        data.bind("beam", BEAM)
+        data.bind("pair", PAIR)
+        data.bind("local", local)
+        return jsonify({"ttl": data.serialize(format="turtle"), "newId": new_id})
 
     @app.post("/api/assess")
     def assess() -> object:

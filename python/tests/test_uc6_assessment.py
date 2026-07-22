@@ -14,6 +14,7 @@ OWASP = Namespace("http://w3id.org/airiskkg/taxonomy/owasp-llm#")
 ATLAS = Namespace("http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#")
 MIT = Namespace("http://w3id.org/airiskkg/taxonomy/mit-ai-risk#")
 MITCTRL = Namespace("http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#")
+NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 
 
 def test_uc6_graph_loads() -> None:
@@ -83,16 +84,22 @@ def test_sensitive_data_finding_includes_cross_taxonomy_alignment() -> None:
     assert OWASP["llm02-sensitive-information-disclosure"] in risks
     assert ATLAS["exposing-personal-information"] in risks
     assert MIT["subdomain-2-1"] in risks
-    # CSV-grounded MIT control anchors (2026-07-17 regrounding): the llm02
-    # action rollup lands on these governance/data groups.
-    assert MITCTRL["data-governance"] in controls
-    assert MITCTRL["access-management"] in controls
-    # The actionable privacy + retrieval controls survive in PAIR-AI's own
-    # control layer (pat:Control_*), which the regrounding left untouched -
-    # the specific mitctrl:privacy-control-for-user-data / retrieval-source-
-    # filtering anchors were replaced by the coarser CSV-grounded set.
+
+    # Single-vocabulary refactor (2026-07-21): pair:suggestedControl carries only
+    # PAIR-AI's own actionable catalogue (pat:Control_*); MIT families are no
+    # longer mirrored in as peer controls.
     assert PAT["Control_DataMinimizationAndRedaction"] in controls
     assert PAT["Control_RetrievalAccessControl"] in controls
+    assert all(str(control).startswith(str(PAT)) for control in controls)
+
+    # The MIT-grounded control families survive as an EVIDENCE layer, reached
+    # through the finding's taxonomy entries via nexus:hasRelatedControl (the
+    # CSV-grounded links in taxonomy_mapping.ttl), not as suggested controls.
+    grounded = set()
+    for entry in risks:
+        grounded |= set(result.combined_graph.objects(entry, NEXUS.hasRelatedControl))
+    assert MITCTRL["data-governance"] in grounded
+    assert MITCTRL["access-management"] in grounded
 
 
 def test_verba_external_model_produces_supply_chain_finding() -> None:

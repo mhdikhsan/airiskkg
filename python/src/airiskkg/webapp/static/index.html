@@ -19,10 +19,8 @@
       <label class="btn" for="file-input" title="Upload a Turtle file">Open .ttl
         <input type="file" id="file-input" accept=".ttl,.turtle" hidden />
       </label>
-      <label class="btn" for="t4b-input" title="Import a Tool4Boxology export (N-Triples or Turtle)">Import T4B
-        <input type="file" id="t4b-input" accept=".nt,.ttl,.turtle" hidden />
-      </label>
       <button type="button" class="btn" id="btn-starter" title="Replace the editor content with a minimal starter graph">Starter</button>
+      <button type="button" class="btn" id="btn-clear" title="Clear the code and the diagram">Clear</button>
       <span class="toolbar-sep"></span>
       <button type="button" class="btn" id="btn-validate" title="Validate against the SHACL input contract">Validate</button>
       <button type="button" class="btn primary" id="btn-assess" title="Run the PAIR-AI candidate risk assessment">Run assessment</button>
@@ -49,27 +47,14 @@
 
     <div class="divider" id="divider" title="Drag to resize"></div>
 
-    <!-- Right: live graph preview / draw mode -->
+    <!-- Right: interactive graph canvas (preview + click-to-annotate) -->
     <section class="pane preview-pane" id="preview-pane">
       <div class="mode-bar">
-        <div class="mode-toggle">
-          <button type="button" class="mode-btn active" data-mode="preview" title="Read-only live preview of the editor content">Preview</button>
-          <button type="button" class="mode-btn" data-mode="draw" title="Draw the architecture and generate Turtle">Draw</button>
-        </div>
-        <div class="draw-actions hidden" id="draw-actions">
-          <button type="button" class="btn small" id="btn-draw-from-code" title="Load the current editor graph onto the canvas">&#8678; From code</button>
-          <button type="button" class="btn small primary" id="btn-draw-generate" title="Generate Turtle from the diagram into the editor">Generate Turtle &#8680;</button>
-          <button type="button" class="btn small" id="btn-draw-fit" title="Fit diagram">Fit</button>
-          <button type="button" class="btn small" id="btn-draw-clear" title="Clear the canvas">Clear</button>
-        </div>
+        <span class="canvas-hint">Drag a symbol onto the canvas to add · drag to move · click to edit · drag a node's ▸ port onto another to connect</span>
       </div>
       <div class="canvas-wrap" id="canvas-wrap">
         <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
-        <div id="draw-layer" class="hidden">
-          <svg id="draw-canvas" xmlns="http://www.w3.org/2000/svg"></svg>
-          <div class="palette" id="palette"></div>
-          <div class="draw-panel" id="draw-panel"></div>
-        </div>
+        <div class="palette" id="palette" title="Drag a symbol onto the canvas"></div>
         <div class="canvas-controls">
           <button type="button" class="ctl" id="btn-zoom-in" title="Zoom in">+</button>
           <button type="button" class="ctl" id="btn-zoom-out" title="Zoom out">&minus;</button>
@@ -95,6 +80,7 @@
         <div class="drawer-head" id="drawer-head">
           <div class="drawer-tabs">
             <button type="button" class="drawer-tab active" data-drawer-tab="findings">Findings <span class="count" id="findings-count"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="annotate">Annotate <span class="count" id="annotate-count" title="elements without a role"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="validation">Input contract <span class="count" id="validation-count"></span></button>
           </div>
           <button type="button" class="drawer-toggle" id="drawer-toggle" title="Expand / collapse">&#9650;</button>
@@ -104,6 +90,15 @@
             <p class="drawer-empty" id="findings-empty">Run an assessment to see candidate risk findings. Selecting a finding highlights its evidence in the graph.</p>
             <div id="findings-summary"></div>
             <div id="findings-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="annotate">
+            <div class="annotate-head">
+              <span class="hint">Assign a role to each element, then Apply. Roles are what let motifs and risk patterns match graphs imported from Tool4Boxology / t4b-beam (which carry structure only).</span>
+              <button type="button" class="btn small primary" id="btn-annotate-apply" title="Write the selected roles into the editor graph">Apply annotations</button>
+            </div>
+            <div id="annotate-list">
+              <p class="drawer-empty">Load or import an architecture graph, then reopen this tab to tag its elements.</p>
+            </div>
           </div>
           <div class="drawer-panel hidden" data-drawer-panel="validation">
             <p class="drawer-empty" id="validation-empty">Validate the graph against the SHACL input contract.</p>
@@ -116,7 +111,7 @@
 
   <script src="/static/editor.js"></script>
   <script src="/static/graph.js"></script>
-  <script src="/static/draw.js"></script>
+  <script src="/static/annotate.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

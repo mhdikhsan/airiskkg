@@ -2,9 +2,21 @@
 
 from __future__ import annotations
 
-from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, URIRef
+from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 
 from airiskkg.assessment_runner import PAIR, AssessmentResult
+
+_NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
+_MITCTRL_PREFIX = "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#"
+# skos:*Match predicates by which a pat:Control_* points at the MIT mitigation
+# family it corresponds to (indicative bridge, not an audited SSSOM mapping).
+_MIT_MAPPING_PREDS = (
+    SKOS.relatedMatch,
+    SKOS.closeMatch,
+    SKOS.exactMatch,
+    SKOS.broadMatch,
+    SKOS.narrowMatch,
+)
 
 _SOURCE_PREFIXES = {
     "http://w3id.org/airiskkg/taxonomy/owasp-llm#": "OWASP LLM Top 10",
@@ -69,16 +81,42 @@ def _control_nature(graph: Graph, control: URIRef) -> str | None:
     return None
 
 
+def _mit_alignments(graph: Graph, control: URIRef) -> list[dict]:
+    """The MIT mitigation family(ies) this actionable control corresponds to,
+    via its skos:*Match bridge. Indicative provenance ('aligns with MIT: ...'),
+    not an audited mapping - kept on the control, not mixed into the suggestion
+    list itself."""
+    families: set[URIRef] = set()
+    for pred in _MIT_MAPPING_PREDS:
+        for target in graph.objects(control, pred):
+            if isinstance(target, URIRef) and str(target).startswith(_MITCTRL_PREFIX):
+                families.add(target)
+    return [_element_ref(graph, family) for family in sorted(families, key=str)]
+
+
 def _control_ref(graph: Graph, control: URIRef) -> dict:
-    """A suggested control, extended with its technical/non-technical nature and
-    the motif(s) that can structurally realize it (candidate structural
-    mitigations - the control stays the mitigation plan; the motif is how to
-    realize it in the architecture)."""
+    """A suggested control, extended with its technical/non-technical nature, the
+    motif(s) that can structurally realize it (candidate structural mitigations -
+    the control stays the mitigation plan; the motif is how to realize it in the
+    architecture), and the MIT mitigation family it aligns with (provenance)."""
     ref = _ref(graph, control)
     ref["nature"] = _control_nature(graph, control)
     realizing_motifs = sorted(graph.objects(control, PAIR.realizedByMotif), key=str)
     ref["realizedByMotifs"] = [_element_ref(graph, motif) for motif in realizing_motifs]
+    ref["mitAlignments"] = _mit_alignments(graph, control)
     return ref
+
+
+def _grounded_control_families(graph: Graph, taxonomy_entries: list[URIRef]) -> list[dict]:
+    """The MIT control families the taxonomy grounds for this finding's risks
+    (each risk taxonomy entry -> nexus:hasRelatedControl). This is the EVIDENCE
+    layer - CSV-grounded / curated in taxonomy_mapping.ttl - surfaced distinctly
+    from PAIR-AI's own actionable pat:Control_* suggestions, never mixed into
+    them."""
+    families: set[URIRef] = set()
+    for entry in taxonomy_entries:
+        families.update(graph.objects(entry, _NEXUS.hasRelatedControl))
+    return [_ref(graph, family) for family in sorted(families, key=str)]
 
 
 def _motif_ref(graph: Graph, motif: URIRef | None) -> dict | None:
@@ -106,6 +144,7 @@ def _finding_view(graph: Graph, finding: URIRef) -> dict:
         "status": str(status) if status else None,
         "taxonomyEntries": [_ref(graph, entry) for entry in taxonomy_entries],
         "suggestedControls": [_control_ref(graph, control) for control in suggested_controls],
+        "groundedControlFamilies": _grounded_control_families(graph, taxonomy_entries),
         "evidence": [_element_ref(graph, element) for element in evidence],
     }
 

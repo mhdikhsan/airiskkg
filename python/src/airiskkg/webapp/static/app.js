@@ -101,14 +101,14 @@
   // ---- findings --------------------------------------------------------------
   let selectedFinding = null;
 
-  // One control as a list item, with any motif-realization suggestions beneath it.
+  // One mitigation as a list item, with any suggested motif beneath it.
   function controlItem(control) {
     const motifs = control.realizedByMotifs || [];
     const children = [el("span", { class: "ctrl-label" }, control.label)];
     if (motifs.length) {
       children.push(
         el("div", { class: "ctrl-motifs" }, [
-          el("span", { class: "ctrl-motifs-lead" }, "realize by adding motif: "),
+          el("span", { class: "ctrl-motifs-lead" }, "suggested mitigation: "),
           ...motifs.map((m) =>
             el("span", { class: "chip motif-suggest", title: "Candidate structural mitigation: insert this motif" }, m.label)
           ),
@@ -118,25 +118,25 @@
     return el("li", { title: control.definition || "" }, children);
   }
 
-  // Group suggested controls into technical / non-technical tiers.
+  // MIT taxonomy-grounded mitigations for this finding's risks.
+  function groundedFamiliesSection(families) {
+    if (!families || !families.length) return null;
+    return el("div", { class: "ctrl-group evidence" }, [
+      el("div", { class: "ctrl-group-head" }, `MIT mitigations (${families.length})`),
+      el("ul", { class: "ref-list grounded-list" },
+        families.map((f) => el("li", { title: f.definition || "" }, el("span", { class: "chip tax-ground" }, f.label)))),
+    ]);
+  }
+
+  // All suggested controls under one "Mitigations" list.
   function controlSections(controls) {
-    const technical = controls.filter((c) => c.nature === "technical");
-    const nonTechnical = controls.filter((c) => c.nature === "non-technical");
-    const other = controls.filter((c) => c.nature !== "technical" && c.nature !== "non-technical");
-    const sections = [];
-    const group = (title, list, cls) => {
-      if (!list.length) return;
-      sections.push(
-        el("div", { class: `ctrl-group ${cls}` }, [
-          el("div", { class: "ctrl-group-head" }, `${title} (${list.length})`),
-          el("ul", { class: "ref-list" }, list.map(controlItem)),
-        ])
-      );
-    };
-    group("Technical mitigations", technical, "technical");
-    group("Non-technical mitigations", nonTechnical, "non-technical");
-    group("Other", other, "other");
-    return sections;
+    if (!controls.length) return [];
+    return [
+      el("div", { class: "ctrl-group" }, [
+        el("div", { class: "ctrl-group-head" }, `Mitigations (${controls.length})`),
+        el("ul", { class: "ref-list" }, controls.map(controlItem)),
+      ]),
+    ];
   }
 
   function findingCard(finding) {
@@ -155,6 +155,7 @@
       el("details", {}, [
         el("summary", {}, `Suggested controls (${finding.suggestedControls.length}) · evidence (${finding.evidence.length})`),
         ...controlSections(finding.suggestedControls),
+        groundedFamiliesSection(finding.groundedControlFamilies),
         el("div", { class: "evidence-note" }, "Evidence: " + finding.evidence.map((e) => e.label).join(", ")),
       ]),
     ]);
@@ -295,56 +296,139 @@ ex:Generate a beam:Transform ;
     beam:produce ex:Answer .
 `;
 
-  // ---- mode toggle (Preview / Draw) -------------------------------------------
-  let mode = "preview";
-
-  function setMode(next) {
-    mode = next;
-    $$(".mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === next));
-    $("#draw-actions").classList.toggle("hidden", next !== "draw");
-    $("#canvas").classList.toggle("hidden", next !== "preview");
-    $("#system-badge").classList.toggle("mode-hidden", next !== "preview");
-    $("#canvas-empty").classList.add("hidden");
-    $$(".canvas-controls .ctl").forEach((c) => c.classList.toggle("hidden", next !== "preview"));
-    if (next === "draw") {
-      DrawMode.show();
-      if (DrawMode.isEmpty() && Editor.getValue().trim()) drawFromCode();
-    } else {
-      DrawMode.hide();
-      refreshPreview(Editor.getValue());
-    }
+  // ---- in-canvas annotation --------------------------------------------------
+  // ---- diagram -> code edits (serialized) ------------------------------------
+  // Every structural edit runs through one queue, so rapid actions (add several
+  // components, connect, delete in a row) never race on the editor value: each
+  // reads the latest code only after the previous edit has written it back.
+  let mutating = Promise.resolve();
+  function runMutation(task) {
+    const next = mutating.then(task, task);
+    mutating = next.catch(() => {});
+    return next;
   }
 
-  async function drawFromCode() {
-    const ttl = Editor.getValue().trim();
-    if (!ttl) { setStatus("error", "The editor is empty - nothing to load onto the canvas."); return; }
-    try {
-      const data = await postJson("/api/graph", { ttl });
-      DrawMode.loadFromGraph(data);
-    } catch (error) {
-      setStatus("error", "Cannot load diagram: " + error.message.split("\n")[0]);
-    }
-  }
-
-  async function drawGenerate(model) {
-    try {
-      const { ttl } = await postJson("/api/build", model);
-      Editor.setValue(ttl, { silent: true });
-      refreshPreview(ttl);
-      setStatus("ok", "Turtle generated from the diagram", `${model.resources.length + model.processes.length} elements`);
-    } catch (error) {
-      setStatus("error", error.message);
-    }
-  }
-
-  function renderImportWarnings(warnings) {
-    if (!warnings.length) return;
-    renderValidation({
-      conforms: true,
-      violations: [],
-      warnings: warnings.map((message) => ({ message, focusNode: null })),
+  // Edit an element (label / name / type / role / category) from the popup.
+  function applyEdit(elementId, edit) {
+    return runMutation(async () => {
+      try {
+        const { ttl } = await postJson("/api/graph-edit", {
+          ttl: Editor.getValue(), op: "edit-element", element: elementId, ...edit,
+        });
+        Editor.setValue(ttl);
+        setStatus("ok", "Element updated — Run assessment to see findings");
+      } catch (error) {
+        setStatus("error", "Could not update element: " + error.message.split("\n")[0]);
+      }
     });
-    openDrawer("validation");
+  }
+
+  // Delete an element and every edge touching it.
+  function applyDelete(elementId) {
+    return runMutation(async () => {
+      try {
+        const { ttl } = await postJson("/api/graph-edit", {
+          ttl: Editor.getValue(), op: "delete-element", element: elementId,
+        });
+        Editor.setValue(ttl);
+        setStatus("ok", "Element deleted");
+      } catch (error) {
+        setStatus("error", "Could not delete: " + error.message.split("\n")[0]);
+      }
+    });
+  }
+
+  // Add a BEAM flow edge from a canvas port-drag. use = resource→process,
+  // produce = process→resource, inform = process→process.
+  function applyConnect(triple) {
+    return runMutation(async () => {
+      try {
+        const { ttl } = await postJson("/api/graph-edit", {
+          ttl: Editor.getValue(), op: "add-edge", ...triple,
+        });
+        Editor.setValue(ttl);
+        setStatus("ok", `Connected: ${triple.predicate}`);
+      } catch (error) {
+        setStatus("error", "Could not connect: " + error.message.split("\n")[0]);
+      }
+    });
+  }
+
+  // Palette of BEAM symbols; click one to add it, or drag it onto the canvas.
+  const BEAM_NS = "http://w3id.org/beam/core#";
+  const PALETTE = [
+    { label: "Data", cls: "Data", kind: "data", cat: "resource" },
+    { label: "Symbol", cls: "Symbol", kind: "symbol", cat: "resource" },
+    { label: "Model", cls: "StatisticalModel", kind: "model", cat: "resource" },
+    { label: "Transform", cls: "Transform", kind: "process", cat: "process" },
+    { label: "Infer", cls: "Infer", kind: "process", cat: "process" },
+    { label: "Train", cls: "Train", kind: "process", cat: "process" },
+    { label: "Generate", cls: "Generate", kind: "process", cat: "process" },
+  ];
+
+  function addPaletteElement(item, clientX, clientY) {
+    return runMutation(async () => {
+      try {
+        const { ttl, newId } = await postJson("/api/graph-edit", {
+          ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
+          op: "add-element", classUri: BEAM_NS + item.cls, category: item.cat, label: item.label,
+        });
+        if (newId && clientX != null) GraphView.placeNodeAt(newId, clientX, clientY);
+        Editor.setValue(ttl);
+        setStatus("ok", `Added ${item.label} — click it to edit, drag its ▸ port to connect`);
+      } catch (error) {
+        setStatus("error", "Could not add element: " + error.message.split("\n")[0]);
+      }
+    });
+  }
+
+  function initPalette() {
+    const palette = $("#palette");
+    if (!palette) return;
+    const wrap = $("#canvas-wrap");
+    PALETTE.forEach((item) => {
+      const chip = el("div",
+        { class: `palette-item ${item.kind}`, title: `Click to add, or drag onto the canvas — ${item.cls}` },
+        item.label);
+      chip.addEventListener("pointerdown", (ev) => startPaletteDrag(ev, item, chip, wrap));
+      palette.appendChild(chip);
+    });
+  }
+
+  // Click a symbol to add it (at center); or drag it onto the canvas to drop it
+  // at a point. Pointer-based (native HTML5 DnD fought the canvas pan / pointer
+  // capture). Either way the element is written to the code and redrawn live.
+  function startPaletteDrag(ev, item, chip, wrap) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const startX = ev.clientX;
+    const startY = ev.clientY;
+    const ghost = chip.cloneNode(true);
+    ghost.classList.add("palette-ghost");
+    ghost.style.left = startX + 10 + "px";
+    ghost.style.top = startY + 10 + "px";
+    let moved = false;
+    const move = (mv) => {
+      if (!moved) {
+        if (Math.hypot(mv.clientX - startX, mv.clientY - startY) < 6) return;
+        moved = true;
+        document.body.appendChild(ghost); // only show the ghost once actually dragging
+      }
+      ghost.style.left = mv.clientX + 10 + "px";
+      ghost.style.top = mv.clientY + 10 + "px";
+    };
+    const up = (uv) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      ghost.remove();
+      if (!moved) { addPaletteElement(item, null, null); return; } // click -> add at center
+      const r = wrap.getBoundingClientRect();
+      const inside = uv.clientX >= r.left && uv.clientX <= r.right && uv.clientY >= r.top && uv.clientY <= r.bottom;
+      const onPalette = uv.target && uv.target.closest && uv.target.closest(".palette");
+      addPaletteElement(item, inside && !onPalette ? uv.clientX : null, inside && !onPalette ? uv.clientY : null);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
   }
 
   // ---- init ------------------------------------------------------------------
@@ -356,35 +440,12 @@ ex:Generate a beam:Transform ;
     let vocabulary = { roles: [], dataCategories: [] };
     try {
       vocabulary = await api("/api/vocabulary");
-    } catch (_) { /* draw mode will just have empty pick lists */ }
-    DrawMode.init({
-      vocabulary,
-      onStatus: setStatus,
-      onFromCode: drawFromCode,
-      onGenerate: drawGenerate,
-    });
+    } catch (_) { /* annotation popups will just have empty pick lists */ }
+    const classes = [...(vocabulary.resourceClasses || []), ...(vocabulary.processClasses || [])];
+    GraphView.setAnnotation({ vocabulary, classes, onEdit: applyEdit, onDelete: applyDelete, onConnect: applyConnect, onStatus: setStatus });
+    Annotate.init({ vocabulary, onStatus: setStatus });
 
-    $$(".mode-btn").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
-
-    $("#t4b-input").addEventListener("change", (ev) => {
-      const file = ev.target.files[0];
-      if (!file) return;
-      const format = /\.(ttl|turtle)$/i.test(file.name) ? "turtle" : "nt";
-      const reader = new FileReader();
-      reader.onload = async () => {
-        setStatus("busy", `Importing ${file.name}…`);
-        try {
-          const { ttl, warnings } = await postJson("/api/import/t4b", { data: String(reader.result), format });
-          Editor.setValue(ttl);
-          renderImportWarnings(warnings || []);
-          setStatus("ok", `Imported ${file.name} - review the import notes`, `${(warnings || []).length} import notes`);
-        } catch (error) {
-          setStatus("error", `Import failed: ${error.message}`);
-        }
-      };
-      reader.readAsText(file);
-      ev.target.value = "";
-    });
+    initPalette();
 
     try {
       const examples = await api("/api/examples");
@@ -419,6 +480,13 @@ ex:Generate a beam:Transform ;
     $("#btn-starter").addEventListener("click", () => {
       Editor.setValue(STARTER_TTL);
       setStatus("ok", "Starter graph loaded");
+    });
+
+    $("#btn-clear").addEventListener("click", () => {
+      if (!Editor.getValue().trim()) return;
+      if (!window.confirm("Clear the code and the diagram? This cannot be undone.")) return;
+      Editor.setValue(""); // empty -> refreshPreview clears the canvas
+      setStatus("ok", "Cleared");
     });
 
     $("#btn-validate").addEventListener("click", async () => {
@@ -461,7 +529,11 @@ ex:Generate a beam:Transform ;
     $("#drawer-toggle").addEventListener("click", toggleDrawer);
     $("#drawer-head").addEventListener("dblclick", toggleDrawer);
     $$(".drawer-tab").forEach((tab) =>
-      tab.addEventListener("click", () => { switchDrawerTab(tab.dataset.drawerTab); openDrawer(); }));
+      tab.addEventListener("click", () => {
+        switchDrawerTab(tab.dataset.drawerTab);
+        openDrawer();
+        if (tab.dataset.drawerTab === "annotate") Annotate.refresh();
+      }));
   }
 
   document.addEventListener("DOMContentLoaded", init);
