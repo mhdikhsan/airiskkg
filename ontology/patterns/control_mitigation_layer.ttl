@@ -18,7 +18,7 @@
     motif' suggestions, non-technical controls remain governance-level
     recommendations with no architectural footprint.
 
-    Scope note (2026-07-21 single-vocabulary refactor): this layer classifies
+    Scope note: this layer classifies
     ONLY the 12 pat:Control_* controls. It no longer classifies mitctrl:*
     concepts - those are MIT taxonomy control families, reached by a finding as
     an evidence layer (via its taxonomy entries and nexus:hasRelatedControl in

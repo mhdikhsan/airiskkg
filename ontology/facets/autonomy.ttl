@@ -22,12 +22,9 @@ aut:AutonomyLevel
     skos:relatedMatch dpv:AutomationLevel , dpv:HumanInvolvement ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. https://doi.org/10.1787/cb6d9eca-en" .
 
-# DECISION (2026-07-17 facet audit): the OECD framework is published as a
-# report only - the OECD provides no resolvable concept URIs for its
-# classification values (verified via oecd.ai / OECD publications). The
-# OECD anchoring is therefore the dct:source citation above, not a SKOS
-# mapping; the former "exactMatch once URIs exist" TODO markers were
-# speculative and have been removed.
+# The OECD framework is published as a report only - the OECD provides no
+# resolvable concept URIs for its classification values. The OECD anchoring is
+# therefore the dct:source citation above, not a SKOS mapping.
 
 aut:NoActionAutonomy
     a skos:Concept ;

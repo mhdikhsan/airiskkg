@@ -13,8 +13,8 @@
     dct:description """
     Reusable architecture motifs for PAIR-AI assessment.
 
-    Provenance (2026-07-17 audit): every motif cites the published design
-    pattern it was distilled from (Mercari ML system design pattern catalog
+    Provenance: every motif cites the published design pattern it was distilled
+    from (Mercari ML system design pattern catalog
     or the martinfowler.com GenAI patterns article; ExternalDependencyMotif
     derives from OWASP LLM03 scope). All cited pages were verified to
     resolve and to document the named pattern. Motif node/edge graphs are
@@ -1542,7 +1542,7 @@ pat:EmbeddingsMotif
     a pair:GraphMotif ;
     rdfs:label "Embeddings Motif"@en ;
     dct:description "GenAI motif in which source documents or data blocks are chunked and transformed into vectors stored in a vector index."@en ;
-    rdfs:comment "ODP reconciled to OQP behavior 2026-07-16: the earlier declaration included an embedding-model node (pat:Embedding_ModelNode) the OQP never bound - removed. The OQP additionally matches an indexing step (uses chunk + vector, produces the index) that it does not bind as a node."@en ;
+    rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included an embedding-model node (pat:Embedding_ModelNode) the OQP never bound - removed. The OQP additionally matches an indexing step (uses chunk + vector, produces the index) that it does not bind as a node."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
@@ -1636,7 +1636,7 @@ pat:RetrievalAugmentedGenerationMotif
     a pair:GraphMotif ;
     rdfs:label "Retrieval Augmented Generation (RAG) Motif"@en ;
     dct:description "GenAI motif in which a user query is used to retrieve relevant context from a vector index (optionally via a query-embedding step), combined with the query into a prompt, and sent to an LLM to produce an answer."@en ;
-    rdfs:comment "Relaxed 2026-07-16 (decision D1): the query-embedding leg (RAG_QueryEmbeddingStepNode/RAG_QueryVectorNode + their edges) is OPTIONAL in the OQP, and retrieved context may pass through intermediate steps (reranking, aggregation) between the retrieval step and prompt construction - RAG_PromptConstructionUsesContextEdge is path-tolerant, requiring only that the consumed context plays a role under pair:RetrievedContext. The earlier declaration also included an embedding-model node and a phantom prompt-template INPUT node the OQP never bound - removed (the PromptTemplate role belongs to the produced prompt, pat:RAG_PromptNode)."@en ;
+    rdfs:comment "Relaxed: the query-embedding leg (RAG_QueryEmbeddingStepNode/RAG_QueryVectorNode + their edges) is OPTIONAL in the OQP, and retrieved context may pass through intermediate steps (reranking, aggregation) between the retrieval step and prompt construction - RAG_PromptConstructionUsesContextEdge is path-tolerant, requiring only that the consumed context plays a role under pair:RetrievedContext. The earlier declaration also included an embedding-model node and a phantom prompt-template INPUT node the OQP never bound - removed (the PromptTemplate role belongs to the produced prompt, pat:RAG_PromptNode)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
@@ -1918,7 +1918,7 @@ pat:QueryRewritingMotif
     a pair:GraphMotif ;
     rdfs:label "Query Rewriting Motif"@en ;
     dct:description "GenAI motif in which an LLM reformulates a user query into alternative queries that are then used for retrieval."@en ;
-    rdfs:comment "ODP reconciled to OQP behavior 2026-07-16: the earlier declaration included an original-query node and a rewrite-informs-retrieval edge the OQP never bound or checked - removed; the LLM node expected pair:FoundationLLM while the OQP accepts any pair:GenerativeModel."@en ;
+    rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included an original-query node and a rewrite-informs-retrieval edge the OQP never bound or checked - removed; the LLM node expected pair:FoundationLLM while the OQP accepts any pair:GenerativeModel."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
@@ -1997,7 +1997,7 @@ pat:RerankerMotif
     a pair:GraphMotif ;
     rdfs:label "Reranker Motif"@en ;
     dct:description "GenAI motif in which a candidate set of retrieved fragments is reranked by a model so that the most useful context is passed on for generation."@en ;
-    rdfs:comment "ODP reconciled to OQP behavior 2026-07-16: the earlier declaration included a query node the OQP never bound (removed) and expected pair:RetrievedCandidateSet / pair:RerankedContext where the OQP checks pair:RetrievedContext for both candidate set and output (modelers typically ALSO tag the specific roles; onyx does both)."@en ;
+    rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included a query node the OQP never bound (removed) and expected pair:RetrievedCandidateSet / pair:RerankedContext where the OQP checks pair:RetrievedContext for both candidate set and output (modelers typically ALSO tag the specific roles; onyx does both)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
@@ -2291,16 +2291,6 @@ pat:FineTune_EvaluationProducesScoreEdge
     pair:sourcePatternNode pat:FineTune_EvaluationStepNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:FineTune_EvaluationScoreNode .
-
-# ---------------------------------------------------------------------------
-# External Dependency motif (added 2026-07-16, engine consistency cleanup
-# Phase 3). Risk-neutral structure: a supply-chain-relevant resource - an
-# external dependency (external model, third-party package, provider
-# credential), a pre-trained model, a persisted model artifact, or a serving
-# image - is used by a process step. Gives SupplyChainCompromiseRiskPattern a
-# real, implemented motif anchor: previously its query free-rode on matches
-# of unrelated motifs, so external resources bound by no other motif (e.g.
-# verba's generator model) produced no finding.
 
 pat:ExternalDependencyMotif
     a pair:GraphMotif ;

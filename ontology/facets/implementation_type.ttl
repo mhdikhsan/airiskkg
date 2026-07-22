@@ -21,7 +21,7 @@ impl:ImplementationType
     skos:relatedMatch ai:Technique ;
     dct:source "PAIR-AI glossary v1.1, Section A.3" .
     # TODO: populate with the agreed implementation-type taxonomy. Candidate
-    # DPV AI extension anchors verified against DPV v2.3 (2026-07-15):
+    # DPV AI extension anchors verified against DPV v2.3:
     # ai:MachineLearning, ai:DeepLearning, ai:NeuralNetwork,
     # ai:ConvolutionalNeuralNetwork, ai:RecurrentNeuralNetwork,
     # ai:SupervisedLearning / UnsupervisedLearning / SelfSupervisedLearning /
