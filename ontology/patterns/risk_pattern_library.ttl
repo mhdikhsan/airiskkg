@@ -41,7 +41,7 @@
 # PAIR-AI actionable control catalogue (single suggested-control vocabulary)
 #
 # These 12 pat:Control_* individuals are the ONLY vocabulary that appears in
-# pair:suggestedControl (2026-07-21 single-vocabulary refactor). They are
+# pair:suggestedControl. They are
 # PAIR-AI's own architecture-facing controls: each is classified
 # technical/non-technical and, where applicable, linked to a realizing motif in
 # control_mitigation_layer.ttl.
@@ -240,9 +240,9 @@ pat:RetrievalAugmentedGenerationMotif
         pat:MisinformationFromWeakGroundingRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
 
-# 2026-07-17 audit: SensitiveDataRetrievalExposure re-anchored here — its OQP
+# SensitiveDataRetrievalExposure anchors here because its OQP
 # (risk_sensitive_retrieval.rq) consumes VectorBasedInformationRetrievalMotif
-# matches, not RAG matches; the declaration now matches the implementation.
+# matches, not RAG matches.
 pat:VectorBasedInformationRetrievalMotif
     pair:hasRiskPattern pat:SensitiveDataRetrievalExposureRiskPattern .
 
@@ -369,9 +369,7 @@ pat:DataAndModelPoisoningRiskPattern
         pat:TrainingToServingMotif ;
     pair:hasMechanism owasp:mechanism-data-or-model-poisoning ;
     pair:hasApplicabilityCondition pat:Poisoning_UntrustedTrainingOrIndexingDataCondition ;
-    # 2026-07-17 audit: atlas:data-curation moved to the supply-chain pattern
-    # (upstream Nexus maps it to llm03); atlas:data-poisoning is the
-    # upstream-verified llm04 anchor (broadMatch, ibm2owasp.tsv).
+    # atlas:data-poisoning is the upstream-verified llm04 anchor (ibm2owasp.tsv).
     pair:mayIndicateRisk
         owasp:llm04-data-and-model-poisoning ,
         atlas:data-poisoning ,
@@ -398,9 +396,6 @@ pat:ImproperOutputHandlingRiskPattern
         pat:GuardrailsMotif ;
     pair:hasMechanism owasp:mechanism-unsafe-output-propagation ;
     pair:hasApplicabilityCondition pat:ImproperOutputHandling_UnvalidatedOutputCondition ;
-    # 2026-07-17 audit: atlas:evasion-attack removed (upstream Nexus mapping
-    # ties evasion attacks to model-input perturbation, not output handling)
-    # and mit:subdomain-7-3 removed (no defensible basis).
     pair:mayIndicateRisk
         owasp:llm05-improper-output-handling ,
         mit:subdomain-2-2 ,
@@ -415,11 +410,10 @@ pat:ExcessiveAgencyRiskPattern
     pair:derivedFrom owasp:llm06-excessive-agency ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Excessive agency risk pattern"@en ;
-    # NOTE (2026-07-16 consistency cleanup): deliberately no pair:hasMotif -
-    # this pattern is anchored on roles (GenerationStep informing a
-    # ToolInvocationStep/StateChangingStep) across any motif match; no
-    # motif-side hasRiskPattern lists it either. Revisit when an agentic
-    # tool-use motif is added to the motif library.
+    # Deliberately no pair:hasMotif - this pattern is anchored on roles
+    # (GenerationStep informing a ToolInvocationStep/StateChangingStep) across
+    # any motif match; no motif-side hasRiskPattern lists it either. Revisit
+    # when an agentic tool-use motif is added to the motif library.
     pair:hasMechanism owasp:mechanism-excessive-agency-action-execution ;
     pair:hasApplicabilityCondition pat:ExcessiveAgency_ToolOrStateChangeCondition ;
     pair:mayIndicateRisk
@@ -465,8 +459,6 @@ pat:VectorAndEmbeddingWeaknessRiskPattern
         pat:RerankerMotif ;
     pair:hasMechanism owasp:mechanism-vector-embedding-retrieval-weakness ;
     pair:hasApplicabilityCondition pat:VectorEmbeddingWeakness_RetrievalCondition ;
-    # 2026-07-17 audit: atlas:poor-model-accuracy removed (upstream Nexus
-    # maps it to subdomain-7-3 only; no llm08 link).
     pair:mayIndicateRisk
         owasp:llm08-vector-and-embedding-weaknesses ,
         atlas:prompt-injection ,
@@ -509,13 +501,11 @@ pat:MisinformationFromWeakGroundingRiskPattern
     pair:derivedFrom owasp:llm09-misinformation ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Misinformation from weak grounding risk pattern"@en ;
-    # DECISION D2 (2026-07-16): kept as a declared-but-unimplemented pattern
-    # rather than merged into DirectPromptingWithoutGroundingRiskPattern.
-    # Same OWASP LLM09 anchor, but this one targets RAG pipelines whose
-    # grounding is WEAK (e.g. retrieved context reaches generation without
-    # verification) rather than absent. Implemented 2026-07-21
-    # (risk_misinformation_weak_grounding.rq): fires on a RAG match whose
-    # response has no represented verification/evaluation/scoring step.
+    # Distinct from DirectPromptingWithoutGroundingRiskPattern (same OWASP LLM09
+    # anchor): this targets RAG pipelines whose grounding is WEAK (retrieved
+    # context reaches generation without verification) rather than absent.
+    # Implemented by risk_misinformation_weak_grounding.rq: fires on a RAG match
+    # whose response has no represented verification/evaluation/scoring step.
     pair:hasMotif pat:RetrievalAugmentedGenerationMotif ;
     pair:hasMechanism owasp:mechanism-unsupported-generation ;
     pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;
@@ -546,10 +536,6 @@ pat:UnboundedConsumptionRiskPattern
         pat:QueryRewritingMotif ;
     pair:hasMechanism owasp:mechanism-unbounded-resource-consumption ;
     pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ;
-    # 2026-07-17 audit: atlas:impact-on-the-environment removed (upstream
-    # Nexus explicitly records noMatch to OWASP: "Social implications of AI
-    # are not specifically addressed by OWASP"); the environmental angle
-    # stays via mit:subdomain-6-6.
     pair:mayIndicateRisk
         owasp:llm10-unbounded-consumption ,
         atlas:redundant-actions-agentic ,
@@ -693,10 +679,10 @@ pat:UntrustedContentPropagationOQP
     pair:producesOutputType pair:DataCategoryPropagation .
 
 
-# --- Risk-pattern OQP completing the risk pattern library (2026-07-21) ---
-# MisinformationFromWeakGroundingRiskPattern is the RAG counterpart of the
-# direct-prompting-without-grounding pattern (both OWASP LLM09); its OQP fires
-# on RAG matches whose response has no represented verification step.
+# --- Risk-pattern OQP for MisinformationFromWeakGroundingRiskPattern ---
+# The RAG counterpart of the direct-prompting-without-grounding pattern (both
+# OWASP LLM09); its OQP fires on RAG matches whose response has no represented
+# verification step.
 
 pat:MisinformationFromWeakGroundingOQP
     a pair:PatternImplementation ;
@@ -706,14 +692,13 @@ pat:MisinformationFromWeakGroundingOQP
     pair:producesOutputType pair:RiskFinding .
 
 
-# --- Motif-matching OQPs completing the motif library (2026-07-21) ---
-# One matching OQP per previously-unimplemented motif (faithful structural
-# projections of each motif's declared PatternNode/PatternEdge blueprint).
-# These produce pair:MotifMatch outputs; risk semantics stay in the risk OQPs.
-# GenAI motifs (Guardrails, Hybrid Retriever, Evals, Fine Tuning) are consumed
-# by match-anchored risk patterns; the Mercari MLOps motifs (prediction /
-# training / lifecycle / operation patterns) are detected for completeness and
-# workbench reporting even where no risk pattern yet consumes them.
+# --- Motif-matching OQPs ---
+# One matching OQP per motif (faithful structural projections of each motif's
+# declared PatternNode/PatternEdge blueprint). These produce pair:MotifMatch
+# outputs; risk semantics stay in the risk OQPs. GenAI motifs (Guardrails,
+# Hybrid Retriever, Evals, Fine Tuning) are consumed by match-anchored risk
+# patterns; the Mercari MLOps motifs are detected for completeness and workbench
+# reporting even where no risk pattern yet consumes them.
 
 pat:SyncPred_MatchingOQP
     a pair:PatternImplementation ;

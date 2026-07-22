@@ -18,8 +18,8 @@
     dct:source <https://github.com/owasp/www-project-top-10-for-large-language-model-applications> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/owasp_llm_2.0_data.yaml> .
 
-# nexus:tag values are the upstream AI Atlas Nexus entry ids (verified
-# 2026-07-17); rdfs:seeAlso points to the official OWASP entry page.
+# nexus:tag values are the upstream AI Atlas Nexus entry ids; rdfs:seeAlso
+# points to the official OWASP entry page.
 
 owasp:OWASP_LLM_Top_10_2025 a nexus:RiskTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "OWASP Top 10 for Large Language Model Applications" ;

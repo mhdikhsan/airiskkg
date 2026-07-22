@@ -27,17 +27,15 @@ task:AITask
 # second level of the unified task taxonomy is not yet in this repository.
 # TODO (user input required): reconcile with the paper's task taxonomy
 # table before freeze.
-# DECISION (2026-07-17 facet audit): the OECD publishes no resolvable
-# concept URIs for its Task & Output task types (report/PDF only, verified
-# via oecd.ai) - so OECD anchoring is citation-level: each top-level
+# The OECD publishes no resolvable concept URIs for its Task & Output task
+# types (report/PDF only) - so OECD anchoring is citation-level: each top-level
 # concept names its OECD task-type correspondence in dct:source instead of
 # carrying a speculative SKOS mapping. RetrievalAndRanking and
-# GenerationAndTransformation have NO OECD counterpart (the 2022 task
-# typology predates GenAI-era retrieval/generation tasks) - stated
-# explicitly rather than force-fitted.
-# DPV AI extension mappings verified against the downloaded DPV v2.3 +
-# AI extension (2026-07-15; re-verified 2026-07-17, all 17 targets
-# resolve). No DPV AI counterpart exists for: Recommendation, Forecasting,
+# GenerationAndTransformation have NO OECD counterpart (the 2022 task typology
+# predates GenAI-era retrieval/generation tasks) - stated explicitly rather
+# than force-fitted.
+# DPV AI extension mappings verified against DPV v2.3 + AI extension (all 17
+# targets resolve). No DPV AI counterpart exists for: Recommendation, Forecasting,
 # Anomaly Detection, Code Generation, Embedding Computation - left
 # unmapped, do not force.
 
