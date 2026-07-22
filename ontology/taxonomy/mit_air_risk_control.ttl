@@ -18,7 +18,7 @@
     risk controls, adapted from AI Atlas Nexus. This file provides a control
     grounding layer for graph-pattern-based AI risk assessment.
 
-    Provenance (2026-07-17 audit): the RiskControlGroup layer (4 categories +
+    Provenance: the RiskControlGroup layer (4 categories +
     subcategories) reproduces the MIT draft taxonomy verbatim, verified against
     the upstream Nexus data. The concrete RiskControl layer at the end of this
     file is PAIR-AI curation: it names controls found as individual mitigations
