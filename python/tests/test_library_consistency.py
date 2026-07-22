@@ -273,27 +273,20 @@ def test_pattern_conditions_operationalize_anchor_conditions(aligned) -> None:
     assert not offenders, "\n".join(sorted(offenders))
 
 
-def test_direct_mitctrl_suggestions_agree_with_anchor_mapping(aligned) -> None:
-    """Every mitctrl:* control a pattern suggests must be a
-    nexus:hasRelatedControl of the pattern's OWASP anchor - i.e. what a
-    finding recommends agrees with the taxonomy mapping.
-
-    NOTE (2026-07-17): as of the CSV regrounding, both sides are grounded in
-    the same evidence: taxonomy_mapping.ttl's owasp->hasRelatedControl links
-    for LLM01-06/09 are derived from the risk-to-mitigation CSV rollup, and
-    the risk patterns' mitctrl:* suggestedControl were regrounded to match
-    (LLM07/08/10 kept their prior curation, which already agreed). pat:Control_*
-    aggregates are exempt - they are PAIR-AI's own actionable control layer."""
-    mitctrl_ns = str(NAMESPACES["mitctrl"])
+def test_suggested_controls_are_pat_only(aligned) -> None:
+    """Single-vocabulary invariant (2026-07-21 refactor): pair:suggestedControl
+    carries ONLY PAIR-AI's own actionable control catalogue (pat:Control_*). MIT
+    mitigation families (mitctrl:*) are no longer mirrored in as peer controls -
+    they live in taxonomy_mapping.ttl (owasp:* nexus:hasRelatedControl mitctrl:*)
+    and reach a finding as an evidence layer via its taxonomy entries. This keeps
+    one vocabulary per role and stops the altitude/redundancy muddle that mixing
+    an actionable control with a taxonomy family in one bag produced."""
+    control_prefix = str(NAMESPACES["pat"]) + "Control_"
     offenders = []
     for rp in aligned.subjects(RDF.type, PAIR.RiskPattern):
-        anchor = _anchor(aligned, rp)
-        if anchor is None:
-            continue
-        related = set(aligned.objects(anchor, NEXUS.hasRelatedControl))
         for ctrl in aligned.objects(rp, PAIR.suggestedControl):
-            if str(ctrl).startswith(mitctrl_ns) and ctrl not in related:
-                offenders.append(f"{rp}: {ctrl} is not a related control of anchor {anchor}")
+            if not str(ctrl).startswith(control_prefix):
+                offenders.append(f"{rp}: suggestedControl {ctrl} is not a pat:Control_*")
     assert not offenders, "\n".join(sorted(offenders))
 
 
@@ -342,3 +335,88 @@ def test_realized_by_motif_targets_are_declared_motifs(libraries) -> None:
         if motif not in motifs
     ]
     assert not offenders, "\n".join(sorted(offenders))
+
+
+# --- Library completeness (2026-07-21) --------------------------------------
+#
+# Every motif in the motif library must have a matching OQP, and every risk
+# pattern must have a risk OQP - otherwise a declared pattern is inert
+# knowledge the engine can never surface. The canonical-instance test also
+# guards the always-empty-query failure mode: a registered query that matches
+# nothing because its role/class constraints drifted from the motif's ODP.
+
+def test_every_motif_has_a_matching_oqp(libraries) -> None:
+    matched = set(libraries.objects(None, PAIR.implementsMotif))
+    offenders = sorted(
+        str(m) for m in libraries.subjects(RDF.type, PAIR.GraphMotif) if m not in matched
+    )
+    assert not offenders, "Motifs with no matching OQP:\n" + "\n".join(offenders)
+
+
+def test_every_risk_pattern_has_an_oqp(libraries) -> None:
+    implemented = set(libraries.objects(None, PAIR.implementsRiskPattern))
+    offenders = sorted(
+        str(r) for r in libraries.subjects(RDF.type, PAIR.RiskPattern) if r not in implemented
+    )
+    assert not offenders, "Risk patterns with no OQP:\n" + "\n".join(offenders)
+
+
+# Documented ODP/OQP divergence: EmbeddingsMotif's OQP additionally requires an
+# indexing step (uses chunk + vector, produces the index) that the motif does
+# NOT declare as a pattern node - stated in its rdfs:comment in motif.ttl. A
+# canonical instance built from the declared nodes therefore lacks that step and
+# does not match; this is a deliberate, recorded exception (not drift).
+CANONICAL_INSTANCE_EXCEPTIONS = {PAT.EmbeddingsMotif}
+
+
+def test_each_motif_query_matches_its_canonical_instance(libraries) -> None:
+    """Each motif's matching OQP must produce >=1 match on a canonical instance
+    synthesized directly from the motif's declared PatternNode/PatternEdge
+    structure (one element per node with its expectedClass + expectedRole, one
+    beam edge per declared edge). Catches queries that are registered but match
+    nothing - the ODP/OQP drift failure mode."""
+    from airiskkg.assessment_runner import load_base_graph, run_construct_query
+
+    synth = Namespace("http://example.org/synth-consistency#")
+    impl_path: dict = {}
+    for impl in libraries.subjects(RDF.type, PAIR.PatternImplementation):
+        for motif in libraries.objects(impl, PAIR.implementsMotif):
+            impl_path[motif] = str(libraries.value(impl, PAIR.implementationPath))
+
+    base = load_base_graph()
+    offenders = []
+    for motif in libraries.subjects(RDF.type, PAIR.GraphMotif):
+        if motif in CANONICAL_INSTANCE_EXCEPTIONS:
+            continue
+        path = impl_path.get(motif)
+        if path is None:
+            continue  # covered by test_every_motif_has_a_matching_oqp
+        node_element = {}
+        added = []
+        for node in libraries.objects(motif, PAIR.hasPatternNode):
+            element = URIRef(synth + str(node).split("#")[-1])
+            node_element[node] = element
+            expected_class = libraries.value(node, PAIR.expectedClass)
+            expected_role = libraries.value(node, PAIR.expectedRole)
+            if expected_class is not None:
+                added.append((element, RDF.type, expected_class))
+            if expected_role is not None:
+                added.append((element, PAIR.playsRole, expected_role))
+        for edge in libraries.objects(motif, PAIR.hasPatternEdge):
+            source = libraries.value(edge, PAIR.sourcePatternNode)
+            predicate = libraries.value(edge, PAIR.patternPredicate)
+            target = libraries.value(edge, PAIR.targetPatternNode)
+            added.append((node_element[source], predicate, node_element[target]))
+
+        for triple in added:
+            base.add(triple)
+        result = run_construct_query(base, REPO_ROOT / path)
+        if not set(result.subjects(PAIR.matchesMotif, motif)):
+            offenders.append(str(motif))
+        for triple in added:
+            base.remove(triple)
+
+    assert not offenders, (
+        "Motif queries that match none of their own canonical instance:\n"
+        + "\n".join(sorted(offenders))
+    )
