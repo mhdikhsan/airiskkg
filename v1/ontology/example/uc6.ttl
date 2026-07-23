@@ -34,31 +34,36 @@ uc6:UC6_System
         uc6:LlatrievalScoringAndQueryReformulation ,
         uc6:LLMPrompting .
 
+uc6:ProductInformation
+    a pair:DataCategory ;
+    rdfs:label "Product Information"@en ;
+    pair:subDataCategoryOf pair:Information .
+
 uc6:PrivateProductInformation
     a pair:DataCategory ;
     rdfs:label "Private Product Information"@en ;
-    pair:subDataCategoryOf pair:ProductInformation ;
+    pair:subDataCategoryOf uc6:ProductInformation ;
     pair:subDataCategoryOf pair:SensitiveInformation .
 
 uc6:QuestionsAboutProduct
     a beam:Data ;
     rdfs:label "Questions about product"@en ;
     pair:playsRole pair:PublicUserInput ;
-    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory uc6:ProductInformation ;
     pair:containsDataCategory pair:ExternalUserContent ;
     beam:usedBy uc6:Embedding .
 
 uc6:EmbeddedQuestion
     a beam:Data ;
     rdfs:label "Embedded question"@en ;
-    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory uc6:ProductInformation ;
     beam:usedBy uc6:ProductInformationRetrieval .
 
 uc6:ProductInformationVectorDB
     a beam:Data ;
     rdfs:label "Product information vector DB"@en ;
     pair:playsRole pair:VectorStore ;
-    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory uc6:ProductInformation ;
     pair:containsDataCategory uc6:PrivateProductInformation ;
     beam:usedBy uc6:ProductInformationRetrieval .
 
@@ -72,7 +77,7 @@ uc6:EmbeddedProductInfo
     a beam:Data ;
     rdfs:label "Embedded product info"@en ;
     pair:playsRole pair:RetrievedResult ;
-    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory uc6:ProductInformation ;
     pair:containsDataCategory uc6:PrivateProductInformation ;
     pair:containsDataCategory pair:UntrustedContent ;
     beam:usedBy uc6:LlatrievalScoringAndQueryReformulation .
@@ -88,7 +93,7 @@ uc6:ReformulatedQuery
     a beam:Data ;
     rdfs:label "Reformulated query"@en ;
     pair:playsRole pair:PublicUserInput ;
-    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory uc6:ProductInformation ;
     pair:containsDataCategory pair:ExternalUserContent ;
     beam:usedBy uc6:ProductInformationRetrieval .
 
@@ -96,7 +101,7 @@ uc6:EmbeddedProductInfoEnhanced
     a beam:Data ;
     rdfs:label "Embedded product info enhanced"@en ;
     pair:playsRole pair:RetrievedResult ;
-    pair:containsDataCategory pair:ProductInformation ;
+    pair:containsDataCategory uc6:ProductInformation ;
     pair:containsDataCategory uc6:PrivateProductInformation ;
     pair:containsDataCategory pair:UntrustedContent ;
     beam:usedBy uc6:LLMPrompting .
@@ -119,7 +124,7 @@ uc6:EventSummary
     a beam:Data ;
     rdfs:label "Event summary"@en ;
     pair:playsRole pair:PublicUserFacingOutput ;
-    pair:containsDataCategory pair:ProductInformation .
+    pair:containsDataCategory uc6:ProductInformation .
 
 uc6:Embedding
     a beam:Transform ;
