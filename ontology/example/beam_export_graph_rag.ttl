@@ -1,0 +1,217 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix t4b:   <http://tool4boxology.org/> .
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix beamr: <http://w3id.org/beam/risk#> .
+
+<http://tool4boxology.org/Boxology/a6e73175-b6d2-40e0-bb97-673da5c449b9> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Boxology>.
+<http://tool4boxology.org/Boxology/a6e73175-b6d2-40e0-bb97-673da5c449b9> <http://www.w3.org/2000/01/rdf-schema#label> "Diagram".
+<http://tool4boxology.org/Boxology/graphrag-example> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Boxology>.
+<http://tool4boxology.org/Boxology/graphrag-example> <http://www.w3.org/2000/01/rdf-schema#label> "GraphRAG Example".
+<http://tool4boxology.org/Boxology/graphrag-example> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/extraction>.
+<http://tool4boxology.org/Boxology/graphrag-example> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/kg_query>.
+<http://tool4boxology.org/Boxology/graphrag-example> <http://tool4boxology.org/hasPattern> <http://tool4boxology.org/DesignPattern/llm_prompt>.
+<http://tool4boxology.org/DesignPattern/extraction> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern>.
+<http://tool4boxology.org/DesignPattern/extraction> <http://www.w3.org/2000/01/rdf-schema#label> "Event ID Extraction".
+<http://tool4boxology.org/DesignPattern/extraction> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/nlq>.
+<http://tool4boxology.org/DesignPattern/extraction> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/event_id>.
+<http://tool4boxology.org/DesignPattern/extraction> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/extraction>.
+<http://tool4boxology.org/DesignPattern/kg_query> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern>.
+<http://tool4boxology.org/DesignPattern/kg_query> <http://www.w3.org/2000/01/rdf-schema#label> "KG Querying (Retrieval)".
+<http://tool4boxology.org/DesignPattern/kg_query> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/event_id>.
+<http://tool4boxology.org/DesignPattern/kg_query> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/sparql_tmpl>.
+<http://tool4boxology.org/DesignPattern/kg_query> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/event_kg>.
+<http://tool4boxology.org/DesignPattern/kg_query> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/kg_subgraph>.
+<http://tool4boxology.org/DesignPattern/kg_query> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/kg_query>.
+<http://tool4boxology.org/DesignPattern/llm_prompt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/DesignPattern>.
+<http://tool4boxology.org/DesignPattern/llm_prompt> <http://www.w3.org/2000/01/rdf-schema#label> "LLM Prompting (Generation)".
+<http://tool4boxology.org/DesignPattern/llm_prompt> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/kg_subgraph>.
+<http://tool4boxology.org/DesignPattern/llm_prompt> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/sys_prompt_tmpl>.
+<http://tool4boxology.org/DesignPattern/llm_prompt> <http://tool4boxology.org/hasInput> <http://tool4boxology.org/Component/llm>.
+<http://tool4boxology.org/DesignPattern/llm_prompt> <http://tool4boxology.org/hasOutput> <http://tool4boxology.org/Component/summary>.
+<http://tool4boxology.org/DesignPattern/llm_prompt> <http://tool4boxology.org/hasProcess> <http://tool4boxology.org/Component/llm_prompt>.
+<http://tool4boxology.org/Component/nlq> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/nlq> <http://www.w3.org/2000/01/rdf-schema#label> "Natural Language Question".
+<http://tool4boxology.org/Component/nlq> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Data>.
+<http://tool4boxology.org/Component/event_id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/event_id> <http://www.w3.org/2000/01/rdf-schema#label> "Event ID".
+<http://tool4boxology.org/Component/event_id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Data>.
+<http://tool4boxology.org/Component/sparql_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/sparql_tmpl> <http://www.w3.org/2000/01/rdf-schema#label> "SPARQL Query Template".
+<http://tool4boxology.org/Component/sparql_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Symbol>.
+<http://tool4boxology.org/Component/event_kg> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/event_kg> <http://www.w3.org/2000/01/rdf-schema#label> "Event KG".
+<http://tool4boxology.org/Component/event_kg> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/SemanticModel>.
+<http://tool4boxology.org/Component/kg_subgraph> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/kg_subgraph> <http://www.w3.org/2000/01/rdf-schema#label> "Event KG Subgraph on Event ID".
+<http://tool4boxology.org/Component/kg_subgraph> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Data>.
+<http://tool4boxology.org/Component/sys_prompt_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/sys_prompt_tmpl> <http://www.w3.org/2000/01/rdf-schema#label> "System Prompt Template".
+<http://tool4boxology.org/Component/sys_prompt_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Symbol>.
+<http://tool4boxology.org/Component/llm> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/llm> <http://www.w3.org/2000/01/rdf-schema#label> "LLM".
+<http://tool4boxology.org/Component/llm> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/StatisticalModel>.
+<http://tool4boxology.org/Component/summary> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/summary> <http://www.w3.org/2000/01/rdf-schema#label> "Event Summary".
+<http://tool4boxology.org/Component/summary> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Data>.
+<http://tool4boxology.org/Component/extraction> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/extraction> <http://www.w3.org/2000/01/rdf-schema#label> "Event ID Extraction".
+<http://tool4boxology.org/Component/extraction> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Infer>.
+<http://tool4boxology.org/Component/kg_query> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/kg_query> <http://www.w3.org/2000/01/rdf-schema#label> "KG Querying (Retrieval)".
+<http://tool4boxology.org/Component/kg_query> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Transform>.
+<http://tool4boxology.org/Component/llm_prompt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component>.
+<http://tool4boxology.org/Component/llm_prompt> <http://www.w3.org/2000/01/rdf-schema#label> "LLM Prompting (Generation)".
+<http://tool4boxology.org/Component/llm_prompt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Engineer>.
+<http://tool4boxology.org/Component/nlq> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/extraction>.
+<http://tool4boxology.org/Component/event_id> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/kg_query>.
+<http://tool4boxology.org/Component/sparql_tmpl> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/kg_query>.
+<http://tool4boxology.org/Component/event_kg> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/kg_query>.
+<http://tool4boxology.org/Component/kg_subgraph> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/llm_prompt>.
+<http://tool4boxology.org/Component/sys_prompt_tmpl> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/llm_prompt>.
+<http://tool4boxology.org/Component/llm> <http://tool4boxology.org/inputRoleParticipatesInProcess> <http://tool4boxology.org/Component/llm_prompt>.
+<http://tool4boxology.org/Component/extraction> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/event_id>.
+<http://tool4boxology.org/Component/kg_query> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/kg_subgraph>.
+<http://tool4boxology.org/Component/llm_prompt> <http://tool4boxology.org/outputRoleParticipatesInProcess> <http://tool4boxology.org/Component/summary>.
+<http://tool4boxology.org/Component/node_17846263800691> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Component> .
+<http://tool4boxology.org/Component/node_17846263800691> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://tool4boxology.org/Data> .
+<http://tool4boxology.org/Component/node_17846263800691> <http://www.w3.org/2000/01/rdf-schema#label> "id-Data" .
+<http://tool4boxology.org/Boxology/a6e73175-b6d2-40e0-bb97-673da5c449b9> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_17846263800691> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/nlq> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/extraction> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/event_id> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/kg_query> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/kg_subgraph> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/llm_prompt> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/summary> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/sparql_tmpl> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/sys_prompt_tmpl> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/event_kg> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/llm> .
+<http://tool4boxology.org/Boxology/a6e73175-b6d2-40e0-bb97-673da5c449b9> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Boxology/a6e73175-b6d2-40e0-bb97-673da5c449b9> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#System> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#System> .
+<http://tool4boxology.org/Component/event_id> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/extraction> .
+<http://tool4boxology.org/Component/event_id> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/kg_query> .
+<http://tool4boxology.org/Component/event_id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/event_id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/event_id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/event_id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/event_kg> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/kg_query> .
+<http://tool4boxology.org/Component/event_kg> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/event_kg> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Model> .
+<http://tool4boxology.org/Component/event_kg> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/event_kg> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#SemanticModel> .
+<http://tool4boxology.org/Component/extraction> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/event_id> .
+<http://tool4boxology.org/Component/extraction> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/nlq> .
+<http://tool4boxology.org/Component/extraction> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/extraction> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Infer> .
+<http://tool4boxology.org/Component/extraction> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/kg_query> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/kg_subgraph> .
+<http://tool4boxology.org/Component/kg_query> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/event_id> .
+<http://tool4boxology.org/Component/kg_query> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/event_kg> .
+<http://tool4boxology.org/Component/kg_query> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/sparql_tmpl> .
+<http://tool4boxology.org/Component/kg_query> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/kg_query> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/kg_query> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Transform> .
+<http://tool4boxology.org/Component/kg_subgraph> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/kg_query> .
+<http://tool4boxology.org/Component/kg_subgraph> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/llm_prompt> .
+<http://tool4boxology.org/Component/kg_subgraph> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/kg_subgraph> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/kg_subgraph> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/kg_subgraph> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/llm> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/llm_prompt> .
+<http://tool4boxology.org/Component/llm> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/llm> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Model> .
+<http://tool4boxology.org/Component/llm> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/llm> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#StatisticalModel> .
+<http://tool4boxology.org/Component/llm_prompt> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/summary> .
+<http://tool4boxology.org/Component/llm_prompt> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/kg_subgraph> .
+<http://tool4boxology.org/Component/llm_prompt> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/llm> .
+<http://tool4boxology.org/Component/llm_prompt> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/sys_prompt_tmpl> .
+<http://tool4boxology.org/Component/llm_prompt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/llm_prompt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Engineer> .
+<http://tool4boxology.org/Component/llm_prompt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Generate> .
+<http://tool4boxology.org/Component/llm_prompt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/nlq> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/extraction> .
+<http://tool4boxology.org/Component/nlq> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/nlq> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/nlq> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/nlq> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_17846263800691> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_17846263800691> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_17846263800691> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_17846263800691> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/sparql_tmpl> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/kg_query> .
+<http://tool4boxology.org/Component/sparql_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/sparql_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/sparql_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/sparql_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Symbol> .
+<http://tool4boxology.org/Component/summary> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/llm_prompt> .
+<http://tool4boxology.org/Component/summary> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/summary> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/summary> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/summary> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/sys_prompt_tmpl> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/llm_prompt> .
+<http://tool4boxology.org/Component/sys_prompt_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/sys_prompt_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/sys_prompt_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/sys_prompt_tmpl> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Symbol> .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#description> "The workflow describes a simplified event information chatbot based on the GraphRAG approach." .
+<http://tool4boxology.org/Boxology/graphrag-example> <http://w3id.org/beam/core#context> "The system will be used in a demonstration environment (not real-world use case) to showcase RAG systems for potential users." .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_leakage> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Risk> .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_leakage> <http://www.w3.org/2000/01/rdf-schema#label> "Risk: Information Leakage" .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_leakage> <http://w3id.org/beam/core#description> "Private information stored in the KG may be leaked out." .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_malicious> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Risk> .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_malicious> <http://www.w3.org/2000/01/rdf-schema#label> "Risk: Malicious Knowledge Injection" .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_malicious> <http://w3id.org/beam/core#description> "Malicious Knowledge Injection to produce malicious prompt." .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_context> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Risk> .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_context> <http://www.w3.org/2000/01/rdf-schema#label> "Risk: Context too long" .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_context> <http://w3id.org/beam/core#description> "The length of the prompt is above the allowed threshold." .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_halluc> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Risk> .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_halluc> <http://www.w3.org/2000/01/rdf-schema#label> "Risk: Hallucination" .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_halluc> <http://w3id.org/beam/core#description> "The answers from the chatbot deviate from the truth." .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_exclusion> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#RiskControl> .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_exclusion> <http://www.w3.org/2000/01/rdf-schema#label> "Risk Control: Exclusion of sensitive data" .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_exclusion> <http://w3id.org/beam/core#description> "Sensitive data is filtered out during the construction of the KG." .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_dqc> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#RiskControl> .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_dqc> <http://www.w3.org/2000/01/rdf-schema#label> "Risk Control: Data Quality Control" .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_dqc> <http://w3id.org/beam/core#description> "Sanitize query results." .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_warning> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#RiskControl> .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_warning> <http://www.w3.org/2000/01/rdf-schema#label> "Risk Control: Warning in Flow Editor" .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_warning> <http://w3id.org/beam/core#description> "Display a descriptive warning message in the demonstration." .
+<http://tool4boxology.org/Annotation/graphrag-example/rs_insuf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#RiskSource> .
+<http://tool4boxology.org/Annotation/graphrag-example/rs_insuf> <http://www.w3.org/2000/01/rdf-schema#label> "Risk Source: Insufficient Information for Event Summarization" .
+<http://tool4boxology.org/Annotation/graphrag-example/rs_insuf> <http://w3id.org/beam/core#description> "The resulted KG subgraph does not contain enough information." .
+<http://tool4boxology.org/Annotation/graphrag-example/consequence> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Consequence> .
+<http://tool4boxology.org/Annotation/graphrag-example/consequence> <http://www.w3.org/2000/01/rdf-schema#label> "Consequence: Offensive Behaviour" .
+<http://tool4boxology.org/Annotation/graphrag-example/consequence> <http://w3id.org/beam/core#description> "The answers from the chatbot contain offensive content." .
+<http://tool4boxology.org/Annotation/graphrag-example/impact_offended> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Impact> .
+<http://tool4boxology.org/Annotation/graphrag-example/impact_offended> <http://www.w3.org/2000/01/rdf-schema#label> "Impact: Offended Users" .
+<http://tool4boxology.org/Annotation/graphrag-example/impact_offended> <http://w3id.org/beam/core#description> "The users are offended by the chatbot's responses, causing a bad impression of the showcased system." .
+<http://tool4boxology.org/Annotation/graphrag-example/impact_cost> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Impact> .
+<http://tool4boxology.org/Annotation/graphrag-example/impact_cost> <http://www.w3.org/2000/01/rdf-schema#label> "Impact: Cost Overrun" .
+<http://tool4boxology.org/Annotation/graphrag-example/impact_cost> <http://w3id.org/beam/core#description> "The cost for running the query is higher than the ChatBot service fee." .
+<http://tool4boxology.org/Annotation/graphrag-example/impact_rep> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Impact> .
+<http://tool4boxology.org/Annotation/graphrag-example/impact_rep> <http://www.w3.org/2000/01/rdf-schema#label> "Impact: Reputational Damage" .
+<http://tool4boxology.org/Annotation/graphrag-example/impact_rep> <http://w3id.org/beam/core#description> "Reputational damage for the ChatBot provider and its clients." .
+<http://tool4boxology.org/Component/event_kg> <http://w3id.org/beam/risk#hasRisk> <http://tool4boxology.org/Annotation/graphrag-example/risk_leakage> .
+<http://tool4boxology.org/Component/kg_query> <http://w3id.org/beam/risk#hasRisk> <http://tool4boxology.org/Annotation/graphrag-example/risk_malicious> .
+<http://tool4boxology.org/Component/llm_prompt> <http://w3id.org/beam/risk#hasRisk> <http://tool4boxology.org/Annotation/graphrag-example/risk_context> .
+<http://tool4boxology.org/Component/llm_prompt> <http://w3id.org/beam/risk#hasRisk> <http://tool4boxology.org/Annotation/graphrag-example/risk_halluc> .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_exclusion> <http://w3id.org/beam/risk#modifiesRiskConcept> <http://tool4boxology.org/Annotation/graphrag-example/risk_leakage> .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_dqc> <http://w3id.org/beam/risk#modifiesRiskConcept> <http://tool4boxology.org/Annotation/graphrag-example/risk_malicious> .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_warning> <http://w3id.org/beam/risk#modifiesRiskConcept> <http://tool4boxology.org/Annotation/graphrag-example/risk_context> .
+<http://tool4boxology.org/Annotation/graphrag-example/rs_insuf> <http://w3id.org/beam/risk#isRiskSourceFor> <http://tool4boxology.org/Annotation/graphrag-example/risk_halluc> .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_exclusion> <http://w3id.org/beam/risk#associatedTo> <http://tool4boxology.org/Component/event_kg> .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_dqc> <http://w3id.org/beam/risk#associatedTo> <http://tool4boxology.org/Component/kg_subgraph> .
+<http://tool4boxology.org/Annotation/graphrag-example/rc_warning> <http://w3id.org/beam/risk#associatedTo> <http://tool4boxology.org/Component/llm_prompt> .
+<http://tool4boxology.org/Annotation/graphrag-example/rs_insuf> <http://w3id.org/beam/risk#originatedFrom> <http://tool4boxology.org/Component/kg_subgraph> .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_malicious> <http://w3id.org/beam/risk#hasConsequence> <http://tool4boxology.org/Annotation/graphrag-example/consequence> .
+<http://tool4boxology.org/Annotation/graphrag-example/consequence> <http://w3id.org/beam/risk#hasImpact> <http://tool4boxology.org/Annotation/graphrag-example/impact_offended> .
+<http://tool4boxology.org/Annotation/graphrag-example/consequence> <http://w3id.org/beam/risk#hasImpact> <http://tool4boxology.org/Annotation/graphrag-example/impact_rep> .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_context> <http://w3id.org/beam/risk#hasConsequence> <http://tool4boxology.org/Annotation/graphrag-example/impact_cost> .
+<http://tool4boxology.org/Annotation/graphrag-example/risk_halluc> <http://w3id.org/beam/risk#hasConsequence> <http://tool4boxology.org/Annotation/graphrag-example/impact_rep> .

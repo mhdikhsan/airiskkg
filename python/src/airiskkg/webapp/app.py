@@ -36,12 +36,13 @@ from airiskkg.paths import CORE_DIR, EXAMPLE_DIR, SHACL_DIR
 # Element classes the guided builder offers, paired with the BEAM class they map to.
 RESOURCE_CLASSES = [
     (BEAM.Data, "Data"),
-    (BEAM.StatisticalModel, "Statistical Model (LLM / ML model)"),
+    (BEAM.StatisticalModel, "Statistical Model"),
+    (BEAM.SemanticModel, "Semantic Model"),
     (BEAM.Symbol, "Symbol"),
 ]
 PROCESS_CLASSES = [
-    (BEAM.Transform, "Transform (preprocessing, reformulation, prompting)"),
-    (BEAM.Infer, "Infer (retrieval, prediction)"),
+    (BEAM.Transform, "Transform"),
+    (BEAM.Infer, "Infer"),
     (BEAM.Train, "Train"),
     (BEAM.Generate, "Generate"),
     (BEAM.Process, "Process (generic)"),
