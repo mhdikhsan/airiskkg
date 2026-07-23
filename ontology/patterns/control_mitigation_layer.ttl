@@ -57,17 +57,6 @@
 # Technical controls
 #################################################################
 
-# --- with a motif that structurally realizes them (situated suggestions) ---
-#
-# CAVEAT (self-defeating-suggestion; do not read realizedByMotif as risk-free):
-# some realizing motifs are themselves risk-bearing in this same library. The
-# retrieval motifs that realize Grounding & Verification (RAG, Vector IR,
-# Hybrid Retriever, Reranker) carry their own candidate risks (prompt injection,
-# vector/embedding weakness, sensitive-data retrieval); GuardrailsMotif carries
-# improper-output-handling / system-prompt-leakage. "Insert motif X to realize
-# control Y" therefore shifts the risk surface rather than proving it removed -
-# a follow-up assessment of the amended architecture is what closes the loop.
-
 pat:Control_GroundingAndVerification
     pair:controlNature pair:TechnicalControl ;
     rdfs:comment "Realizing motifs (RAG, Vector IR, Hybrid Retriever, Reranker) are themselves risk-bearing motifs in this library; adding them mitigates ungrounded generation but introduces retrieval-side candidate risks (LLM01/02/08). Re-assess the amended architecture."@en ;
