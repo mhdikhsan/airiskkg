@@ -12,7 +12,16 @@
   const LAYER_GAP = 110;
   const ROW_GAP = 34;
 
-  let svg, viewport, wrap, detailBox, emptyBox;
+  // Human-readable meaning of each BEAM flow edge, shown on hover so viewers
+  // can tell the three arrow kinds apart.
+  const EDGE_MEANINGS = {
+    use:            { title: "uses",           dir: "process → resource", body: "The process reads this resource as input." },
+    produce:        { title: "produces",       dir: "process → resource", body: "The process writes this resource as output." },
+    inform:         { title: "informs",        dir: "process → process",  body: "One step hands off to the next; data or control flows between processes." },
+    participatedIn: { title: "participates in", dir: "resource ↔ process", body: "Imported participation link between a resource and a process." },
+  };
+
+  let svg, viewport, wrap, detailBox, emptyBox, tipBox;
   let current = { nodes: [], edges: [] };
   let positions = new Map();
   let view = { x: 0, y: 0, w: 1000, h: 700 };
@@ -206,6 +215,16 @@
         "marker-end": `url(#arrow-${e.kind})`,
         "data-source": e.source, "data-target": e.target,
       }, edgeLayer);
+      // Wide transparent hit-area so the thin edge is easy to hover for its
+      // meaning tooltip. Carries a native <title> as a fallback.
+      const hit = svgEl("path", {
+        d, class: "edge-hit", fill: "none",
+        "data-source": e.source, "data-target": e.target, "data-kind": e.kind,
+      }, edgeLayer);
+      const meaning = EDGE_MEANINGS[e.kind];
+      if (meaning) {
+        svgEl("title", {}, hit).textContent = `${meaning.title} (${meaning.dir}) — ${meaning.body}`;
+      }
     }
 
     for (const node of current.nodes) {
@@ -509,11 +528,50 @@
     detailBox.classList.add("hidden");
   }
 
+  // ---- edge hover tooltip ---------------------------------------------------
+  function positionTip(ev) {
+    const pad = 14;
+    let x = ev.clientX + pad;
+    let y = ev.clientY + pad;
+    if (x + tipBox.offsetWidth > window.innerWidth - 8) x = ev.clientX - tipBox.offsetWidth - pad;
+    if (y + tipBox.offsetHeight > window.innerHeight - 8) y = ev.clientY - tipBox.offsetHeight - pad;
+    tipBox.style.left = `${Math.max(8, x)}px`;
+    tipBox.style.top = `${Math.max(8, y)}px`;
+  }
+
+  function onEdgeOver(ev) {
+    const hit = ev.target;
+    if (!hit.classList || !hit.classList.contains("edge-hit")) return;
+    const meaning = EDGE_MEANINGS[hit.getAttribute("data-kind")];
+    if (!meaning) return;
+    tipBox.innerHTML =
+      `<span class="edge-tip-head"><strong>${meaning.title}</strong>` +
+      `<span class="edge-tip-dir">${meaning.dir}</span></span>${meaning.body}`;
+    tipBox.classList.remove("hidden");
+    positionTip(ev);
+  }
+
+  function onEdgeMove(ev) {
+    if (!tipBox.classList.contains("hidden")) positionTip(ev);
+  }
+
+  function onEdgeOut(ev) {
+    if (ev.target.classList && ev.target.classList.contains("edge-hit")) {
+      tipBox.classList.add("hidden");
+    }
+  }
+
   function init() {
     svg = document.getElementById("canvas");
     wrap = document.getElementById("canvas-wrap");
     detailBox = document.getElementById("node-detail");
     emptyBox = document.getElementById("canvas-empty");
+    tipBox = document.createElement("div");
+    tipBox.className = "edge-tip hidden";
+    wrap.appendChild(tipBox);
+    svg.addEventListener("pointerover", onEdgeOver);
+    svg.addEventListener("pointermove", onEdgeMove);
+    svg.addEventListener("pointerout", onEdgeOut);
     initPanZoom();
     applyView();
     window.addEventListener("resize", () => { if (contentBox) fit(); });

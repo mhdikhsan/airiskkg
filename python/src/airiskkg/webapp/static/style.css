@@ -339,8 +339,21 @@ label.btn { display: inline-flex; align-items: center; }
 .add-tools .btn { background: #fff; color: #333; border-color: #c6ccd8; }
 .add-tools .btn:hover { border-color: var(--accent); color: var(--accent); }
 .edge.selected { stroke: var(--accent); stroke-width: 2.6; }
-.edge-hit { stroke: transparent; stroke-width: 14; cursor: pointer; }
+.edge-hit { stroke: transparent; stroke-width: 14; fill: none; cursor: help; pointer-events: stroke; }
 .mode-hidden { display: none !important; }
+
+/* Hover tooltip explaining what a flow edge (use / produce / inform) means. */
+.edge-tip {
+  position: fixed; z-index: 120; pointer-events: none;
+  max-width: 240px; padding: 7px 10px; border-radius: 8px;
+  background: #2a2f38; color: #f2f4f8;
+  font-size: 11.5px; line-height: 1.42;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.32);
+}
+.edge-tip.hidden { display: none; }
+.edge-tip-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.edge-tip-head strong { text-transform: capitalize; font-size: 12px; }
+.edge-tip-dir { color: #9aa1af; font-size: 10px; white-space: nowrap; }
 
 .canvas-controls {
   position: absolute;
