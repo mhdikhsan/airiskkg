@@ -41,17 +41,7 @@
 
   let vocab = { roles: [], dataCategories: [] };
   let onStatus = () => {};
-  let rows = []; // { id, roleSelect, categorySelect }
-
-  function pickerOptions(items, placeholder, selectedId) {
-    const opts = [el("option", { value: "" }, placeholder)];
-    for (const item of items) {
-      const attrs = { value: item.id };
-      if (item.id === selectedId) attrs.selected = "selected";
-      opts.push(el("option", attrs, item.label));
-    }
-    return opts;
-  }
+  let rows = []; // { id, rolePicker, catPicker }
 
   function setCount(n) {
     const badge = $("#annotate-count");
@@ -71,23 +61,21 @@
 
     const head = el("div", { class: "annotate-row annotate-row-head" }, [
       el("span", { class: "an-el" }, "Element"),
-      el("span", { class: "an-role" }, "Role"),
-      el("span", { class: "an-cat" }, "Data category (optional)"),
+      el("span", { class: "an-role" }, "Roles"),
+      el("span", { class: "an-cat" }, "Data categories (optional)"),
     ]);
 
     const body = [head];
     let untagged = 0;
     for (const node of nodes) {
-      const currentRole = node.roleIds && node.roleIds.length ? node.roleIds[0] : "";
-      const currentCat = node.categoryIds && node.categoryIds.length ? node.categoryIds[0] : "";
-      if (!currentRole) untagged += 1;
+      const currentRoles = node.roleIds || [];
+      const currentCats = node.categoryIds || [];
+      if (!currentRoles.length) untagged += 1;
 
-      const roleSelect = el("select", { class: "an-select" },
-        pickerOptions(vocab.roles, "— role —", currentRole));
-      const categorySelect = el("select", { class: "an-select" },
-        pickerOptions(vocab.dataCategories, "— none —", currentCat));
+      const rolePicker = MultiPicker(vocab.roles, currentRoles, { placeholder: "+ add role" });
+      const catPicker = MultiPicker(vocab.dataCategories, currentCats, { placeholder: "+ add category" });
 
-      rows.push({ id: node.id, roleSelect, categorySelect });
+      rows.push({ id: node.id, rolePicker, catPicker });
       body.push(
         el("div", {
           class: "annotate-row",
@@ -98,8 +86,8 @@
             el("span", { class: `kind-badge ${node.kind}` }, node.typeLabel || node.kind),
             el("span", { class: "an-el-label" }, node.label),
           ]),
-          el("span", { class: "an-role" }, roleSelect),
-          el("span", { class: "an-cat" }, categorySelect),
+          el("span", { class: "an-role" }, rolePicker.element),
+          el("span", { class: "an-cat" }, catPicker.element),
         ])
       );
     }
@@ -132,9 +120,7 @@
     if (!rows.length) return;
     const annotations = {};
     for (const row of rows) {
-      const roles = row.roleSelect.value ? [row.roleSelect.value] : [];
-      const categories = row.categorySelect.value ? [row.categorySelect.value] : [];
-      annotations[row.id] = { roles, categories };
+      annotations[row.id] = { roles: row.rolePicker.getValues(), categories: row.catPicker.getValues() };
     }
     const button = $("#btn-annotate-apply");
     button.disabled = true;
