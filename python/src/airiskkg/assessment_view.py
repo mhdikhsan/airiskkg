@@ -154,15 +154,18 @@ def _motif_match_view(graph: Graph, match: URIRef) -> dict:
     bindings = sorted(graph.objects(match, PAIR.hasNodeBinding), key=str)
 
     bound_elements = []
+    node_ids: list[str] = []
     for binding in bindings:
         pattern_node = graph.value(binding, PAIR.bindsPatternNode)
         matched_element = graph.value(binding, PAIR.matchedElement)
         if pattern_node is None or matched_element is None:
             continue
+        node_ids.append(str(matched_element))
         bound_elements.append(
             {
                 "patternNode": _local_name(pattern_node),
                 "element": _label(graph, matched_element),
+                "elementId": str(matched_element),
             }
         )
 
@@ -170,6 +173,7 @@ def _motif_match_view(graph: Graph, match: URIRef) -> dict:
         "id": str(match),
         "motif": _motif_ref(graph, motif),
         "boundElements": bound_elements,
+        "nodeIds": sorted(set(node_ids)),
     }
 
 
