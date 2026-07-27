@@ -227,6 +227,66 @@ label.btn { display: inline-flex; align-items: center; }
   text-align: center;
 }
 .palette-item:active { cursor: grabbing; }
+
+/* Palette + motif catalogue headers with collapse toggle */
+.tray-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: #6b7280; cursor: pointer; user-select: none;
+}
+.tray-head .tray-toggle { font-size: 11px; color: #8b93a1; }
+.tray-body { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; }
+.palette.collapsed .tray-body, .motif-palette.collapsed .tray-body { display: none; }
+.palette.collapsed, .motif-palette.collapsed { padding-bottom: 8px; }
+
+/* Motif catalogue: right-side list of draggable motif templates. */
+.motif-palette {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 176px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255,255,255,0.94);
+  border: 1px solid #c6ccd8;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  max-height: calc(100% - 20px);
+  overflow: auto;
+}
+.motif-item {
+  font-size: 12px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1.5px dashed var(--accent);
+  background: #eef3fc;
+  color: #2a2f38;
+  cursor: grab;
+  user-select: none;
+  line-height: 1.25;
+}
+.motif-item:hover { background: #e2ecfb; }
+.motif-item:active { cursor: grabbing; }
+.motif-item .motif-item-desc { display: block; font-size: 10px; color: #6b7280; margin-top: 2px; }
+
+/* Matched-motifs drawer tab (dark theme, matches the finding cards) */
+.motif-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 12px; margin-bottom: 8px; border-radius: 8px;
+  border: 1px solid var(--border); background: #202430; cursor: pointer;
+}
+.motif-row:hover { border-color: #3d4452; background: #252a38; }
+.motif-row.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.motif-row-name { font-weight: 600; font-size: 13px; color: var(--text); }
+.motif-row-count {
+  font-size: 11px; color: #aebada; background: #2a3040; border: 1px solid #39415a;
+  border-radius: 10px; padding: 1px 9px; min-width: 22px; text-align: center; white-space: nowrap;
+}
+
+/* A suggested-mitigation motif chip that can be inserted on click */
+.chip.motif-suggest.clickable { cursor: pointer; }
+.chip.motif-suggest.clickable:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 .palette-ghost {
   position: fixed; z-index: 100; pointer-events: none; opacity: 0.9;
   box-shadow: 0 4px 12px rgba(0,0,0,0.28);
@@ -357,7 +417,7 @@ label.btn { display: inline-flex; align-items: center; }
 
 .canvas-controls {
   position: absolute;
-  top: 12px;
+  bottom: 12px;
   right: 12px;
   display: flex;
   flex-direction: column;
@@ -378,7 +438,8 @@ label.btn { display: inline-flex; align-items: center; }
 .system-badge {
   position: absolute;
   top: 12px;
-  left: 12px;
+  left: 50%;
+  transform: translateX(-50%);
   background: #fff;
   color: #333;
   border: 1px solid #c6ccd8;
@@ -387,7 +448,7 @@ label.btn { display: inline-flex; align-items: center; }
   font-size: 12px;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-  max-width: 55%;
+  max-width: 40%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -642,6 +703,23 @@ label.btn { display: inline-flex; align-items: center; }
   border: 1px solid var(--border); border-radius: 4px; padding: 3px 4px; font-size: 12px;
 }
 .an-select:focus { outline: none; border-color: var(--accent); }
+
+/* Multi-value picker (roles / data categories): chips + an "add" dropdown */
+.mp { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.mp-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.mp-chip {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 11px; padding: 1px 3px 1px 8px; border-radius: 10px;
+  background: #2a3040; color: #cdd6ea; border: 1px solid #39415a;
+  max-width: 100%;
+}
+.mp-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-x { cursor: pointer; font-weight: 700; color: #9aa1af; padding: 0 4px; border-radius: 8px; line-height: 1; }
+.mp-x:hover { color: #ff9d9d; }
+/* light variant inside the (light) node popup */
+.node-detail .mp-chip { background: #eef2fa; color: #2a2f38; border-color: #c6ccd8; }
+.node-detail .mp-x { color: #8a93a5; }
+.node-detail .mp-x:hover { color: #c0392b; }
 
 .validation-row {
   display: flex;
