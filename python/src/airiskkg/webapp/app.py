@@ -16,6 +16,7 @@ Endpoints
 from __future__ import annotations
 
 import re
+import threading
 from functools import lru_cache
 
 from flask import Flask, jsonify, request, send_from_directory
@@ -26,8 +27,10 @@ from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.assessment_runner import (
     BEAM,
     PAIR,
+    implementation_paths_for_output_type,
     load_base_graph,
     run_assessment_from_text,
+    run_construct_query,
 )
 from airiskkg.assessment_view import summarize_result
 from airiskkg.graph_view import graph_view
@@ -52,6 +55,93 @@ EDGE_KINDS = [
     {"id": "produce", "label": "produces (process → resource)", "target": "resource"},
     {"id": "inform", "label": "informs (process → process)", "target": "process"},
 ]
+
+# rdflib's SPARQL parser (pyparsing) and pyshacl are not thread-safe; serialize
+# every query/validation run so concurrent requests (e.g. a debounced motif-box
+# refresh landing while an assessment runs) can't corrupt the shared parser state.
+_SPARQL_LOCK = threading.Lock()
+
+# BEAM process classes (everything else is a resource) - used to attach a
+# templated node to its system via hasProcess vs hasResource.
+_PROCESS_CLASS_NAMES = {"Transform", "Infer", "Train", "Generate", "Process"}
+
+# Motif templates are auto-generated from each pair:GraphMotif's DECLARED pattern
+# structure (expectedClass + expectedRole per node, and the pattern edges), so the
+# catalogue always covers every motif and each instantiated template matches its
+# motif exactly (the match_*.rq queries are faithful projections of this same
+# structure). Node: (key, BEAM class, label, roles). Edge: (src, use|produce|inform, dst).
+# A few motif match queries need structure beyond the declared pattern nodes
+# (documented divergences). EmbeddingsMotif's query requires a separate indexing
+# process using the chunk and the vector to produce the index, which the
+# declaration shortcuts as a resource-to-resource edge; supplement it here.
+_MOTIF_SUPPLEMENTS = {
+    "EmbeddingsMotif": {
+        "nodes": [{"key": "Embedding_IndexingStep", "cls": "Transform", "label": "Indexing", "roles": []}],
+        "edges": [
+            ["Embedding_IndexingStep", "use", "Embedding_DocumentChunkNode"],
+            ["Embedding_IndexingStep", "use", "Embedding_VectorNode"],
+            ["Embedding_IndexingStep", "produce", "Embedding_VectorIndexNode"],
+        ],
+    },
+}
+
+
+@lru_cache(maxsize=1)
+def _motif_templates() -> dict:
+    graph = load_base_graph()
+
+    def short(term: object) -> str:
+        return str(term).rsplit("#", 1)[-1].rsplit("/", 1)[-1]
+
+    templates: dict[str, dict] = {}
+    for motif in graph.subjects(RDF.type, PAIR.GraphMotif):
+        nodes = []
+        node_cls: dict[str, str] = {}
+        for pnode in graph.objects(motif, PAIR.hasPatternNode):
+            cls = graph.value(pnode, PAIR.expectedClass)
+            role = graph.value(pnode, PAIR.expectedRole)
+            cls_name = short(cls) if cls is not None else "Data"
+            key = short(pnode)
+            node_cls[key] = cls_name
+            node_label = _display_label(short(role)) if role else str(graph.value(pnode, RDFS.label) or key)
+            nodes.append({
+                "key": key,
+                "cls": cls_name,
+                "label": node_label,
+                "roles": [short(role)] if role is not None else [],
+            })
+        edges = []
+        for pedge in graph.objects(motif, PAIR.hasPatternEdge):
+            src = graph.value(pedge, PAIR.sourcePatternNode)
+            pred = graph.value(pedge, PAIR.patternPredicate)
+            dst = graph.value(pedge, PAIR.targetPatternNode)
+            if src is None or pred is None or dst is None:
+                continue
+            # BEAM flow edges (use/produce/inform) always originate at a process;
+            # drop declaration shortcuts that start at a resource node.
+            if node_cls.get(short(src)) not in _PROCESS_CLASS_NAMES:
+                continue
+            edges.append([short(src), short(pred), short(dst)])
+        motif_id = short(motif)
+        supplement = _MOTIF_SUPPLEMENTS.get(motif_id)
+        if supplement:
+            nodes.extend(supplement["nodes"])
+            edges.extend(supplement["edges"])
+        label = graph.value(motif, RDFS.label)
+        templates[motif_id] = {
+            "label": str(label) if label else _display_label(motif_id),
+            "nodes": nodes,
+            "edges": edges,
+        }
+    return templates
+
+
+def _motif_template_list() -> list[dict[str, str]]:
+    # Catalogue entries: motif name only (alphabetical), no description.
+    return sorted(
+        ({"id": key, "label": tpl["label"]} for key, tpl in _motif_templates().items()),
+        key=lambda item: item["label"].lower(),
+    )
 
 
 def _label(graph: Graph, resource: URIRef) -> str:
@@ -100,6 +190,7 @@ def _vocabulary() -> dict:
         "resourceClasses": _classes(RESOURCE_CLASSES),
         "processClasses": _classes(PROCESS_CLASSES),
         "edgeKinds": EDGE_KINDS,
+        "motifTemplates": _motif_template_list(),
     }
 
 
@@ -155,8 +246,56 @@ def _shacl_report(ttl: str) -> dict:
     }
 
 
+def _motif_matches(ttl: str) -> list[dict]:
+    """Run only the motif-matching queries (no risk, no data-category propagation)
+    over the submitted graph, and return each match's motif label + the URIs of
+    its bound elements - used to draw the dashed motif group boxes live."""
+    graph = load_base_graph()
+    graph.parse(data=ttl, format="turtle")
+    matches = Graph()
+    for query_path in implementation_paths_for_output_type(graph, PAIR.MotifMatch):
+        for triple in run_construct_query(graph, query_path):
+            matches.add(triple)
+
+    results = []
+    for match in set(matches.subjects(RDF.type, PAIR.MotifMatch)):
+        motif = matches.value(match, PAIR.matchesMotif)
+        node_ids = {
+            str(element)
+            for binding in matches.objects(match, PAIR.hasNodeBinding)
+            for element in [matches.value(binding, PAIR.matchedElement)]
+            if element is not None
+        }
+        if not node_ids:
+            continue
+        motif_short = str(motif).rsplit("#", 1)[-1] if motif is not None else "Motif"
+        label = graph.value(motif, RDFS.label) if motif is not None else None
+        results.append({
+            "matchId": str(match),
+            "motifId": motif_short,
+            "label": str(label) if label else motif_short,
+            "nodeIds": sorted(node_ids),
+        })
+    results.sort(key=lambda item: (item["label"], item["matchId"]))
+    return results
+
+
+def _warm_query_cache() -> None:
+    """Pre-compile every assessment query once at startup (in the background) so
+    the first Run assessment is as fast as the rest. Holds the SPARQL lock so it
+    can't race a request that arrives mid-warmup."""
+    try:
+        with _SPARQL_LOCK:
+            run_assessment_from_text(
+                "@prefix beam: <http://w3id.org/beam/core#> .\n<urn:warm> a beam:System .\n"
+            )
+    except Exception:  # noqa: BLE001 - warmup is best-effort; the lazy cache still works
+        pass
+
+
 def create_app() -> Flask:
     app = Flask(__name__, static_folder="static", static_url_path="/static")
+    threading.Thread(target=_warm_query_cache, daemon=True).start()
 
     @app.get("/")
     def index() -> object:
@@ -200,7 +339,8 @@ def create_app() -> Flask:
         if not ttl:
             return jsonify({"error": "Provide an architecture graph (Turtle) to validate."}), 400
         try:
-            report = _shacl_report(ttl)
+            with _SPARQL_LOCK:
+                report = _shacl_report(ttl)
         except Exception as error:  # noqa: BLE001 - surface parse errors to the UI
             return jsonify({"error": f"Could not validate: {error}"}), 400
         return jsonify(report)
@@ -351,6 +491,55 @@ def create_app() -> Flask:
                         data.remove((s, p, o))
                         data.add((s, p, renamed))
                     new_id = str(renamed)
+        elif op == "add-motif":
+            motif_id = payload.get("motif")
+            template = _motif_templates().get(motif_id)
+            if template is None:
+                return jsonify({"error": f"Unknown motif template: {motif_id}"}), 400
+            system = next(iter(data.subjects(RDF.type, BEAM.System)), None)
+            if system is None:
+                system = local["system"]
+                data.add((system, RDF.type, BEAM.System))
+                data.add((system, RDFS.label, Literal("My system")))
+            existing = {str(s) for s in data.subjects() if str(s).startswith(str(local))}
+            counter = [1]
+
+            def _fresh() -> URIRef:
+                while str(local[f"e{counter[0]}"]) in existing:
+                    counter[0] += 1
+                node = local[f"e{counter[0]}"]
+                existing.add(str(node))
+                counter[0] += 1
+                return node
+
+            key_to_uri: dict[str, URIRef] = {}
+            new_ids: list[str] = []
+            for node in template["nodes"]:
+                uri = _fresh()
+                key_to_uri[node["key"]] = uri
+                is_process = node["cls"] in _PROCESS_CLASS_NAMES
+                data.add((uri, RDF.type, BEAM[node["cls"]]))
+                # Multi-type with the BEAM parent class, as real exports do, so
+                # queries that ask for `a beam:Process` (no RDFS inference here)
+                # still bind Transform/Infer/... steps.
+                if is_process and node["cls"] != "Process":
+                    data.add((uri, RDF.type, BEAM.Process))
+                data.add((uri, RDFS.label, Literal(node["label"])))
+                for role in node.get("roles", []):
+                    data.add((uri, PAIR.playsRole, PAIR[role]))
+                for category in node.get("cats", []):
+                    data.add((uri, PAIR.containsDataCategory, PAIR[category]))
+                predicate = BEAM.hasProcess if is_process else BEAM.hasResource
+                data.add((system, predicate, uri))
+                new_ids.append(str(uri))
+            for src, edge, dst in template["edges"]:
+                data.add((key_to_uri[src], BEAM[edge], key_to_uri[dst]))
+            data.bind("beam", BEAM)
+            data.bind("pair", PAIR)
+            data.bind("local", local)
+            return jsonify(
+                {"ttl": data.serialize(format="turtle"), "newIds": new_ids, "groupLabel": template["label"]}
+            )
         elif op == "delete-element":
             element_id = payload.get("element")
             if not element_id:
@@ -361,6 +550,14 @@ def create_app() -> Flask:
                 data.remove((s, p, o))
             for s, p, o in list(data.triples((None, None, element))):
                 data.remove((s, p, o))
+        elif op == "delete-elements":
+            # batch delete (used to remove a whole motif group box's elements)
+            for element_id in payload.get("elements") or []:
+                element = URIRef(element_id)
+                for s, p, o in list(data.triples((element, None, None))):
+                    data.remove((s, p, o))
+                for s, p, o in list(data.triples((None, None, element))):
+                    data.remove((s, p, o))
         else:
             return jsonify({"error": f"Unknown edit op: {op}"}), 400
 
@@ -369,6 +566,18 @@ def create_app() -> Flask:
         data.bind("local", local)
         return jsonify({"ttl": data.serialize(format="turtle"), "newId": new_id})
 
+    @app.post("/api/motif-matches")
+    def motif_matches() -> object:
+        payload = request.get_json(silent=True) or {}
+        ttl = (payload.get("ttl") or "").strip()
+        if not ttl:
+            return jsonify({"matches": []})
+        try:
+            with _SPARQL_LOCK:
+                return jsonify({"matches": _motif_matches(ttl)})
+        except Exception:  # noqa: BLE001 - mid-edit parse errors: just draw no boxes
+            return jsonify({"matches": []})
+
     @app.post("/api/assess")
     def assess() -> object:
         payload = request.get_json(silent=True) or {}
@@ -376,7 +585,8 @@ def create_app() -> Flask:
         if not ttl:
             return jsonify({"error": "Provide an architecture graph (Turtle) to assess."}), 400
         try:
-            result = run_assessment_from_text(ttl)
+            with _SPARQL_LOCK:
+                result = run_assessment_from_text(ttl)
         except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
             return jsonify({"error": f"Could not run assessment: {error}"}), 400
         return jsonify(summarize_result(result))
