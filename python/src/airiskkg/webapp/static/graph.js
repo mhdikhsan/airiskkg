@@ -398,8 +398,6 @@
   }
 
   function showDetail(node, ev) {
-    const currentRole = node.roleIds && node.roleIds.length ? node.roleIds[0] : "";
-    const currentCat = node.categoryIds && node.categoryIds.length ? node.categoryIds[0] : "";
     const currentClass = node.typeUri || "";
     detailBox.innerHTML = [
       `<h4>Element</h4>`,
@@ -409,27 +407,28 @@
       `<input id="nd-name" class="an-input" type="text" value="${escapeAttr(node.id.split(/[#/]/).pop())}"></label>`,
       `<label class="detail-field"><span>Type</span>`,
       `<select id="nd-type" class="an-select">${optionsHtml(annotationCfg.classes, "— type —", currentClass)}</select></label>`,
-      `<label class="detail-field"><span>Role</span>`,
-      `<select id="nd-role" class="an-select">${optionsHtml(annotationCfg.vocabulary.roles, "— role —", currentRole)}</select></label>`,
-      `<label class="detail-field"><span>Data category</span>`,
-      `<select id="nd-cat" class="an-select">${optionsHtml(annotationCfg.vocabulary.dataCategories, "— none —", currentCat)}</select></label>`,
+      `<div class="detail-field"><span>Roles</span><div id="nd-role-mp"></div></div>`,
+      `<div class="detail-field"><span>Data categories</span><div id="nd-cat-mp"></div></div>`,
       `<div class="detail-actions">`,
       `<button type="button" class="btn small primary" id="nd-apply">Apply</button>`,
       `<button type="button" class="btn small danger" id="nd-delete" title="Delete (or press the Delete / Backspace key)">Delete</button>`,
       `</div>`,
     ].join("");
+    // multi-value pickers: an element may carry several roles / data categories
+    const rolePicker = MultiPicker(annotationCfg.vocabulary.roles, node.roleIds || [], { placeholder: "+ add role" });
+    const catPicker = MultiPicker(annotationCfg.vocabulary.dataCategories, node.categoryIds || [], { placeholder: "+ add data category" });
+    detailBox.querySelector("#nd-role-mp").appendChild(rolePicker.element);
+    detailBox.querySelector("#nd-cat-mp").appendChild(catPicker.element);
     detailBox.classList.remove("hidden");
     positionDetail(ev);
     detailBox.querySelector("#nd-apply").addEventListener("click", () => {
       if (!annotationCfg.onEdit) return;
-      const role = detailBox.querySelector("#nd-role").value;
-      const category = detailBox.querySelector("#nd-cat").value;
       annotationCfg.onEdit(node.id, {
         label: detailBox.querySelector("#nd-label").value,
         name: detailBox.querySelector("#nd-name").value,
         classUri: detailBox.querySelector("#nd-type").value,
-        roles: role ? [role] : [],
-        categories: category ? [category] : [],
+        roles: rolePicker.getValues(),
+        categories: catPicker.getValues(),
       });
     });
     detailBox.querySelector("#nd-delete").addEventListener("click", () => {
@@ -473,7 +472,7 @@
   function initPanZoom() {
     let dragging = null;
     wrap.addEventListener("pointerdown", (ev) => {
-      if (ev.target.closest(".node") || ev.target.closest(".canvas-controls") || ev.target.closest(".node-detail") || ev.target.closest(".palette")) return;
+      if (ev.target.closest(".node") || ev.target.closest(".canvas-controls") || ev.target.closest(".node-detail") || ev.target.closest(".palette") || ev.target.closest(".motif-palette")) return;
       dragging = { x: ev.clientX, y: ev.clientY };
       wrap.setPointerCapture(ev.pointerId);
       detailBox.classList.add("hidden");
