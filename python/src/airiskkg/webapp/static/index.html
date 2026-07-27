@@ -55,6 +55,7 @@
       <div class="canvas-wrap" id="canvas-wrap">
         <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="palette" id="palette" title="Drag a symbol onto the canvas"></div>
+        <div class="motif-palette" id="motif-palette" title="Drag a motif onto the canvas to add its elements"></div>
         <div class="canvas-controls">
           <button type="button" class="ctl" id="btn-zoom-in" title="Zoom in">+</button>
           <button type="button" class="ctl" id="btn-zoom-out" title="Zoom out">&minus;</button>
@@ -80,6 +81,7 @@
         <div class="drawer-head" id="drawer-head">
           <div class="drawer-tabs">
             <button type="button" class="drawer-tab active" data-drawer-tab="findings">Findings <span class="count" id="findings-count"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="motifs">Motifs <span class="count" id="motifs-count" title="matched motifs"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="annotate">Annotate <span class="count" id="annotate-count" title="elements without a role"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="validation">Input contract <span class="count" id="validation-count"></span></button>
           </div>
@@ -90,6 +92,10 @@
             <p class="drawer-empty" id="findings-empty">Run an assessment to see candidate risk findings. Selecting a finding highlights its evidence in the graph.</p>
             <div id="findings-summary"></div>
             <div id="findings-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="motifs">
+            <p class="drawer-empty" id="motifs-empty">Run an assessment to see which motifs matched. Selecting a motif highlights its elements in the graph.</p>
+            <div id="motifs-list"></div>
           </div>
           <div class="drawer-panel hidden" data-drawer-panel="annotate">
             <div class="annotate-head">
@@ -110,6 +116,7 @@
   </main>
 
   <script src="/static/editor.js"></script>
+  <script src="/static/multipicker.js"></script>
   <script src="/static/graph.js"></script>
   <script src="/static/annotate.js"></script>
   <script src="/static/app.js"></script>
