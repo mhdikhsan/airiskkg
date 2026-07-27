@@ -110,7 +110,11 @@
         el("div", { class: "ctrl-motifs" }, [
           el("span", { class: "ctrl-motifs-lead" }, "suggested mitigation: "),
           ...motifs.map((m) =>
-            el("span", { class: "chip motif-suggest", title: "Candidate structural mitigation: insert this motif" }, m.label)
+            el("span", {
+              class: "chip motif-suggest clickable",
+              title: "Click to add this motif to the canvas",
+              onclick: (ev) => { ev.stopPropagation(); addSuggestedMotif(m); },
+            }, m.label)
           ),
         ])
       );
@@ -193,6 +197,56 @@
     }
     data.findings.forEach((f) => list.appendChild(findingCard(f)));
     $("#findings-count").textContent = data.findings.length ? String(data.findings.length) : "";
+  }
+
+  // ---- matched motifs tab ----------------------------------------------------
+  let selectedMotifRow = null;
+
+  function renderMotifs(matches) {
+    // Collapse repeated matches of the same motif into one row (a motif can match
+    // several times with different elements — e.g. External Dependency per source).
+    const byName = new Map();
+    (matches || []).forEach((m) => {
+      const label = (m.label || (m.motif && m.motif.label) || "Motif").replace(/\s+Motif$/, "");
+      const g = byName.get(label) || { label, ids: new Set(), count: 0 };
+      (m.nodeIds || []).forEach((id) => g.ids.add(id));
+      g.count += 1;
+      byName.set(label, g);
+    });
+    const rows = [...byName.values()]
+      .map((g) => ({ label: g.label, nodeIds: [...g.ids], count: g.count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+
+    const list = $("#motifs-list");
+    const empty = $("#motifs-empty");
+    list.innerHTML = "";
+    selectedMotifRow = null;
+    if (!rows.length) {
+      empty.textContent = "No motifs matched. Add roles so motifs can bind, then Run assessment.";
+      empty.classList.remove("hidden");
+      $("#motifs-count").textContent = "";
+      return;
+    }
+    empty.classList.add("hidden");
+    rows.forEach((r) => {
+      const row = el("div", {
+        class: "motif-row", tabindex: "0",
+        title: `Matched ${r.count} time${r.count > 1 ? "s" : ""} · click to highlight ${r.nodeIds.length} elements`,
+      }, [
+        el("span", { class: "motif-row-name" }, r.label),
+        el("span", { class: "motif-row-count" }, r.count > 1 ? `×${r.count}` : "1"),
+      ]);
+      row.addEventListener("click", () => {
+        const wasSelected = selectedMotifRow === row;
+        $$(".motif-row.selected").forEach((x) => x.classList.remove("selected"));
+        if (wasSelected) { selectedMotifRow = null; GraphView.setHighlight([]); return; }
+        selectedMotifRow = row;
+        row.classList.add("selected");
+        GraphView.setHighlight(r.nodeIds);
+      });
+      list.appendChild(row);
+    });
+    $("#motifs-count").textContent = String(rows.length);
   }
 
   // ---- validation ------------------------------------------------------------
@@ -382,23 +436,41 @@ ex:Generate a beam:Transform ;
     });
   }
 
+  // Build a collapsible tray: a clickable header (title + chevron) that toggles a
+  // `collapsed` class on the tray, hiding its body. Used by both symbol palette
+  // and motif catalogue.
+  function buildTray(container, title, body, startCollapsed) {
+    const toggle = el("span", { class: "tray-toggle" }, startCollapsed ? "▸" : "▾");
+    const head = el("div", { class: "tray-head", title: "Show / hide" }, [el("span", {}, title), toggle]);
+    head.addEventListener("click", () => {
+      const collapsed = container.classList.toggle("collapsed");
+      toggle.textContent = collapsed ? "▸" : "▾";
+    });
+    if (startCollapsed) container.classList.add("collapsed");
+    container.textContent = "";
+    container.appendChild(head);
+    container.appendChild(body);
+  }
+
   function initPalette() {
     const palette = $("#palette");
     if (!palette) return;
     const wrap = $("#canvas-wrap");
+    const body = el("div", { class: "tray-body" });
     PALETTE.forEach((item) => {
       const chip = el("div",
         { class: `palette-item ${item.kind}`, title: `Click to add, or drag onto the canvas — ${item.cls}` },
         item.label);
-      chip.addEventListener("pointerdown", (ev) => startPaletteDrag(ev, item, chip, wrap));
-      palette.appendChild(chip);
+      chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, (x, y) => addPaletteElement(item, x, y)));
+      body.appendChild(chip);
     });
+    buildTray(palette, "Symbols", body);
   }
 
-  // Click a symbol to add it (at center); or drag it onto the canvas to drop it
-  // at a point. Pointer-based (native HTML5 DnD fought the canvas pan / pointer
-  // capture). Either way the element is written to the code and redrawn live.
-  function startPaletteDrag(ev, item, chip, wrap) {
+  // Click a tray item to add it (at center); or drag it onto the canvas to drop
+  // at a point, then invoke onDrop(x, y) (both null on a plain click). Pointer-
+  // based because native HTML5 DnD fought the canvas pan / pointer capture.
+  function startTrayDrag(ev, chip, wrap, onDrop) {
     ev.preventDefault();
     ev.stopPropagation();
     const startX = ev.clientX;
@@ -421,14 +493,52 @@ ex:Generate a beam:Transform ;
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
       ghost.remove();
-      if (!moved) { addPaletteElement(item, null, null); return; } // click -> add at center
+      if (!moved) { onDrop(null, null); return; } // click -> add at center
       const r = wrap.getBoundingClientRect();
       const inside = uv.clientX >= r.left && uv.clientX <= r.right && uv.clientY >= r.top && uv.clientY <= r.bottom;
-      const onPalette = uv.target && uv.target.closest && uv.target.closest(".palette");
-      addPaletteElement(item, inside && !onPalette ? uv.clientX : null, inside && !onPalette ? uv.clientY : null);
+      const onTray = uv.target && uv.target.closest && (uv.target.closest(".palette") || uv.target.closest(".motif-palette"));
+      onDrop(inside && !onTray ? uv.clientX : null, inside && !onTray ? uv.clientY : null);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
+  }
+
+  // ---- motif catalogue -------------------------------------------------------
+  // Add a motif that a finding's control suggests as a structural mitigation
+  // (the chips under "suggested mitigation"). motifRef.id is the motif URI.
+  function addSuggestedMotif(motifRef) {
+    const shortId = String(motifRef.id || "").split(/[#/]/).pop();
+    if (!shortId) return;
+    addMotif({ id: shortId, label: motifRef.label || shortId });
+  }
+
+  function addMotif(item) {
+    return runMutation(async () => {
+      try {
+        const { ttl } = await postJson("/api/graph-edit", {
+          ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
+          op: "add-motif", motif: item.id,
+        });
+        Editor.setValue(ttl);
+        setStatus("ok", `Added "${item.label}" — already annotated; Run assessment for findings`);
+      } catch (error) {
+        setStatus("error", "Could not add motif: " + error.message.split("\n")[0]);
+      }
+    });
+  }
+
+  function initMotifPalette(templates) {
+    const panel = $("#motif-palette");
+    if (!panel) return;
+    if (!templates || !templates.length) { panel.style.display = "none"; return; }
+    const wrap = $("#canvas-wrap");
+    const body = el("div", { class: "tray-body" });
+    templates.forEach((item) => {
+      const chip = el("div", { class: "motif-item", title: `Add ${item.label} — click or drag onto the canvas` }, item.label);
+      chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, () => addMotif(item)));
+      body.appendChild(chip);
+    });
+    buildTray(panel, "Motifs", body, true); // 24 items - start collapsed, expand on demand
   }
 
   // ---- init ------------------------------------------------------------------
@@ -446,6 +556,7 @@ ex:Generate a beam:Transform ;
     Annotate.init({ vocabulary, onStatus: setStatus });
 
     initPalette();
+    initMotifPalette(vocabulary.motifTemplates || []);
 
     try {
       const examples = await api("/api/examples");
@@ -517,6 +628,7 @@ ex:Generate a beam:Transform ;
       try {
         const data = await postJson("/api/assess", { ttl });
         renderFindings(data);
+        renderMotifs(data.motifMatches); // Motifs tab (each match carries nodeIds)
         openDrawer("findings");
         setStatus("ok", `Assessment finished`, `${data.summary.riskFindingCount} findings · ${data.summary.motifMatchCount} matches`);
       } catch (error) {
