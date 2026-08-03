@@ -1,0 +1,263 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix t4b:   <http://tool4boxology.org/> .
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix beamr: <http://w3id.org/beam/risk#> .
+
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://www.w3.org/2000/01/rdf-schema#label> "Diagram".
+<http://tool4boxology.org/DesignPattern/node_1784869989408> <http://www.w3.org/2000/01/rdf-schema#label> "Compute Embeddings".
+<http://tool4boxology.org/DesignPattern/node_1784870052005> <http://www.w3.org/2000/01/rdf-schema#label> "Generation".
+<http://tool4boxology.org/DesignPattern/node_1784870083270> <http://www.w3.org/2000/01/rdf-schema#label> "Sparse Retrieval".
+<http://tool4boxology.org/DesignPattern/node_1784870204212> <http://www.w3.org/2000/01/rdf-schema#label> "Guardrail\nChecks".
+<http://tool4boxology.org/DesignPattern/node_1784875092512> <http://www.w3.org/2000/01/rdf-schema#label> "Indexing".
+<http://tool4boxology.org/DesignPattern/node_1784875177561> <http://www.w3.org/2000/01/rdf-schema#label> "Compute\nembedding".
+<http://tool4boxology.org/DesignPattern/node_1784875284652> <http://www.w3.org/2000/01/rdf-schema#label> "Re-Ranking".
+<http://tool4boxology.org/DesignPattern/node_1784887540045> <http://www.w3.org/2000/01/rdf-schema#label> "Sanitize Input".
+<http://tool4boxology.org/DesignPattern/node_281784888790737> <http://www.w3.org/2000/01/rdf-schema#label> "Sanitize Input".
+<http://tool4boxology.org/DesignPattern/node_1784887848331> <http://www.w3.org/2000/01/rdf-schema#label> "Extend Conversation\nHistory".
+<http://tool4boxology.org/Component/node_1784869793422> <http://www.w3.org/2000/01/rdf-schema#label> "Course\nMaterial".
+<http://tool4boxology.org/Component/node_1784874668240> <http://www.w3.org/2000/01/rdf-schema#label> "Embedding\nModels".
+<http://tool4boxology.org/Component/node_1784869896349> <http://www.w3.org/2000/01/rdf-schema#label> "LLM".
+<http://tool4boxology.org/Component/node_1784887565510> <http://www.w3.org/2000/01/rdf-schema#label> "Sanitized\nUser Query".
+<http://tool4boxology.org/Component/node_1784870019545> <http://www.w3.org/2000/01/rdf-schema#label> "System Prompt".
+<http://tool4boxology.org/Component/node_1784876652280> <http://www.w3.org/2000/01/rdf-schema#label> "Conversation\nHistory".
+<http://tool4boxology.org/Component/node_1784887780141> <http://www.w3.org/2000/01/rdf-schema#label> "Sanitized Retrieved\nCourse Material".
+<http://tool4boxology.org/Component/node_1784869861521> <http://www.w3.org/2000/01/rdf-schema#label> "Vector\nRepresentations".
+<http://tool4boxology.org/Component/node_1784870179734> <http://www.w3.org/2000/01/rdf-schema#label> "Generated\nAnswer".
+<http://tool4boxology.org/Component/node_1784875268724> <http://www.w3.org/2000/01/rdf-schema#label> "FlashRank".
+<http://tool4boxology.org/Component/node_1784875312354> <http://www.w3.org/2000/01/rdf-schema#label> "Sparse Retrieval \nResults".
+<http://tool4boxology.org/Component/node_1784875216876> <http://www.w3.org/2000/01/rdf-schema#label> "User Query\nVector Representation".
+<http://tool4boxology.org/Component/node_1784870012743> <http://www.w3.org/2000/01/rdf-schema#label> "User Query".
+<http://tool4boxology.org/Component/node_1784870112185> <http://www.w3.org/2000/01/rdf-schema#label> "Retrieved \nCourse Material\nChunks".
+<http://tool4boxology.org/Component/node_1784870222579> <http://www.w3.org/2000/01/rdf-schema#label> "Checked Answer".
+<http://tool4boxology.org/Component/node_1784869989408> <http://www.w3.org/2000/01/rdf-schema#label> "Compute Embeddings".
+<http://tool4boxology.org/Component/node_1784870052005> <http://www.w3.org/2000/01/rdf-schema#label> "Generation".
+<http://tool4boxology.org/Component/node_1784870083270> <http://www.w3.org/2000/01/rdf-schema#label> "Sparse Retrieval".
+<http://tool4boxology.org/Component/node_1784870204212> <http://www.w3.org/2000/01/rdf-schema#label> "Guardrail\nChecks".
+<http://tool4boxology.org/Component/node_1784875092512> <http://www.w3.org/2000/01/rdf-schema#label> "Indexing".
+<http://tool4boxology.org/Component/node_1784875177561> <http://www.w3.org/2000/01/rdf-schema#label> "Compute\nembedding".
+<http://tool4boxology.org/Component/node_1784875284652> <http://www.w3.org/2000/01/rdf-schema#label> "Re-Ranking".
+<http://tool4boxology.org/Component/node_1784887540045> <http://www.w3.org/2000/01/rdf-schema#label> "Sanitize Input".
+<http://tool4boxology.org/Component/node_281784888790737> <http://www.w3.org/2000/01/rdf-schema#label> "Sanitize Input".
+<http://tool4boxology.org/Component/node_1784887848331> <http://www.w3.org/2000/01/rdf-schema#label> "Extend Conversation\nHistory".
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784869793422> .
+<http://tool4boxology.org/Component/node_1784869861521> <http://www.w3.org/2000/01/rdf-schema#label> "Vector\nRepresentations\n" .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784869861521> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784869896349> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/node_1784869989408> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784870012743> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784870019545> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/node_1784870052005> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/node_1784870083270> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784870112185> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784870179734> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/node_1784870204212> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784870222579> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784874668240> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/node_1784875092512> .
+<http://tool4boxology.org/Component/node_1784875177561> <http://www.w3.org/2000/01/rdf-schema#label> "Compute\nembedding\n" .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/node_1784875177561> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784875216876> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784875268724> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/node_1784875284652> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784875312354> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784876652280> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/node_1784887540045> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784887565510> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/node_281784888790737> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasResource> <http://tool4boxology.org/Component/node_1784887780141> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#hasProcess> <http://tool4boxology.org/Component/node_1784887848331> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#System> .
+<http://tool4boxology.org/Component/node_1784869793422> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784869989408> .
+<http://tool4boxology.org/Component/node_1784869793422> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784875092512> .
+<http://tool4boxology.org/Component/node_1784869793422> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784869793422> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784869793422> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784869793422> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784869861521> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/node_1784869989408> .
+<http://tool4boxology.org/Component/node_1784869861521> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/node_1784875092512> .
+<http://tool4boxology.org/Component/node_1784869861521> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784870083270> .
+<http://tool4boxology.org/Component/node_1784869861521> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784869861521> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784869861521> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784869861521> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784869896349> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784870052005> .
+<http://tool4boxology.org/Component/node_1784869896349> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784869896349> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Model> .
+<http://tool4boxology.org/Component/node_1784869896349> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784869989408> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/node_1784869861521> .
+<http://tool4boxology.org/Component/node_1784869989408> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784869793422> .
+<http://tool4boxology.org/Component/node_1784869989408> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784874668240> .
+<http://tool4boxology.org/Component/node_1784869989408> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784869989408> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Infer> .
+<http://tool4boxology.org/Component/node_1784869989408> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/node_1784870012743> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784887540045> .
+<http://tool4boxology.org/Component/node_1784870012743> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784870012743> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784870012743> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784870012743> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784870019545> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784870052005> .
+<http://tool4boxology.org/Component/node_1784870019545> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784870019545> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784870019545> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784870019545> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/node_1784870179734> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784869896349> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784870019545> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784876652280> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784887565510> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784887780141> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Infer> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/node_1784870083270> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/node_1784875312354> .
+<http://tool4boxology.org/Component/node_1784870083270> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784869861521> .
+<http://tool4boxology.org/Component/node_1784870083270> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784887565510> .
+<http://tool4boxology.org/Component/node_1784870083270> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784870083270> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/node_1784870083270> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Transform> .
+<http://tool4boxology.org/Component/node_1784870112185> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/node_1784875284652> .
+<http://tool4boxology.org/Component/node_1784870112185> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_281784888790737> .
+<http://tool4boxology.org/Component/node_1784870112185> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784870112185> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784870112185> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784870112185> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784870179734> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/node_1784870052005> .
+<http://tool4boxology.org/Component/node_1784870179734> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784870204212> .
+<http://tool4boxology.org/Component/node_1784870179734> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784870179734> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784870179734> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784870179734> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784870204212> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/node_1784870222579> .
+<http://tool4boxology.org/Component/node_1784870204212> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784870179734> .
+<http://tool4boxology.org/Component/node_1784870204212> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784870204212> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/node_1784870204212> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Transform> .
+<http://tool4boxology.org/Component/node_1784870222579> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/node_1784870204212> .
+<http://tool4boxology.org/Component/node_1784870222579> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784887848331> .
+<http://tool4boxology.org/Component/node_1784870222579> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784870222579> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784870222579> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784870222579> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784874668240> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784869989408> .
+<http://tool4boxology.org/Component/node_1784874668240> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784874668240> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Model> .
+<http://tool4boxology.org/Component/node_1784874668240> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784875092512> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/node_1784869861521> .
+<http://tool4boxology.org/Component/node_1784875092512> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784869793422> .
+<http://tool4boxology.org/Component/node_1784875092512> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784875092512> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/node_1784875092512> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Transform> .
+<http://tool4boxology.org/Component/node_1784875177561> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/node_1784875216876> .
+<http://tool4boxology.org/Component/node_1784875177561> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784887565510> .
+<http://tool4boxology.org/Component/node_1784875177561> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784875177561> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Infer> .
+<http://tool4boxology.org/Component/node_1784875177561> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/node_1784875216876> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/node_1784875177561> .
+<http://tool4boxology.org/Component/node_1784875216876> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784875284652> .
+<http://tool4boxology.org/Component/node_1784875216876> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784875216876> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784875216876> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784875216876> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784875268724> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784875284652> .
+<http://tool4boxology.org/Component/node_1784875268724> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784875268724> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Model> .
+<http://tool4boxology.org/Component/node_1784875268724> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784875284652> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/node_1784870112185> .
+<http://tool4boxology.org/Component/node_1784875284652> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784875216876> .
+<http://tool4boxology.org/Component/node_1784875284652> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784875268724> .
+<http://tool4boxology.org/Component/node_1784875284652> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784875312354> .
+<http://tool4boxology.org/Component/node_1784875284652> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784875284652> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Infer> .
+<http://tool4boxology.org/Component/node_1784875284652> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/node_1784875312354> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/node_1784870083270> .
+<http://tool4boxology.org/Component/node_1784875312354> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784875284652> .
+<http://tool4boxology.org/Component/node_1784875312354> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784875312354> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784875312354> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784875312354> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784876652280> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/node_1784887848331> .
+<http://tool4boxology.org/Component/node_1784876652280> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784870052005> .
+<http://tool4boxology.org/Component/node_1784876652280> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784876652280> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784876652280> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784876652280> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784887540045> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/node_1784887565510> .
+<http://tool4boxology.org/Component/node_1784887540045> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784870012743> .
+<http://tool4boxology.org/Component/node_1784887540045> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784887540045> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/node_1784887540045> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Transform> .
+<http://tool4boxology.org/Component/node_1784887565510> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/node_1784887540045> .
+<http://tool4boxology.org/Component/node_1784887565510> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784870052005> .
+<http://tool4boxology.org/Component/node_1784887565510> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784870083270> .
+<http://tool4boxology.org/Component/node_1784887565510> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784875177561> .
+<http://tool4boxology.org/Component/node_1784887565510> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784887565510> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784887565510> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784887565510> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784887780141> <http://w3id.org/beam/core#producedBy> <http://tool4boxology.org/Component/node_281784888790737> .
+<http://tool4boxology.org/Component/node_1784887780141> <http://w3id.org/beam/core#usedBy> <http://tool4boxology.org/Component/node_1784870052005> .
+<http://tool4boxology.org/Component/node_1784887780141> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Data> .
+<http://tool4boxology.org/Component/node_1784887780141> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784887780141> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Instance> .
+<http://tool4boxology.org/Component/node_1784887780141> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Resource> .
+<http://tool4boxology.org/Component/node_1784887848331> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/node_1784876652280> .
+<http://tool4boxology.org/Component/node_1784887848331> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784870222579> .
+<http://tool4boxology.org/Component/node_1784887848331> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_1784887848331> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/node_1784887848331> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Transform> .
+<http://tool4boxology.org/Component/node_281784888790737> <http://w3id.org/beam/core#produce> <http://tool4boxology.org/Component/node_1784887780141> .
+<http://tool4boxology.org/Component/node_281784888790737> <http://w3id.org/beam/core#use> <http://tool4boxology.org/Component/node_1784870112185> .
+<http://tool4boxology.org/Component/node_281784888790737> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Element> .
+<http://tool4boxology.org/Component/node_281784888790737> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Process> .
+<http://tool4boxology.org/Component/node_281784888790737> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Transform> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#description> "The explanation system is based on RAG.\nCourse materials are indexed and later retrieved using hybrid retrieval. The LLM generates the explanations based on retrieved documents, followed by guardrails.\n\nOpen Questions:\n- Is the workflow the same for explain-on-highlight and question-answering?\n- What happens if guardrail detects issue?\n- Quality assurance of course material (content-wise and technical) as potential risk?\n" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784875446231> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Note> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784875446231> <http://www.w3.org/2000/01/rdf-schema#label> "Note" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784875446231> <http://w3id.org/beam/core#description> "both BM25 and Maximum Marginal Retrieval (MMR)? how are they combined?" .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#note> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784875446231> .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#context> "Dicoding is a learning platform, providing students with AI-based explanations. \nExplanations can be generated in two ways:\na) Explain-on-highlight in course material\nb) Chat-based question-answering\n\nNot depicted in diagram:\n- observability/tracing using LangFuse\n- sanitization of user message, retrieved material, course information\n- vector representation caching\n- session summarization?\n- fallback in case of unavailable model\n- unzipping course materials, file format specific pre-processing, chunking" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876272224> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Risk> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876272224> <http://www.w3.org/2000/01/rdf-schema#label> "Risk: Potential Processing of Personal Data" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876272224> <http://w3id.org/beam/core#description> "For question-answering: question may include personal information" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876575107> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Note> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876575107> <http://www.w3.org/2000/01/rdf-schema#label> "Note" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876575107> <http://w3id.org/beam/core#description> "OutputFilter? SSE? does it use AI models?" .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#note> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876575107> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784887929387> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Risk> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784887929387> <http://www.w3.org/2000/01/rdf-schema#label> "Risk: Model/Provider Unavailable" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784887929387> <http://w3id.org/beam/core#description> "The model or provider preferred by the user is not available at runtime." .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888000354> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#RiskControl> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888000354> <http://www.w3.org/2000/01/rdf-schema#label> "Risk Control: Fallback to Different Model" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888000354> <http://w3id.org/beam/core#description> "In case a model/provider is unavailable, fallback to using a different one at inference time." .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888288944> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/core#Note> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888288944> <http://www.w3.org/2000/01/rdf-schema#label> "Note: Other Risks + Controls" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888288944> <http://w3id.org/beam/core#description> "Risks:\n- abuse/rate-limit (including shared campus IP)\n- weak API auth (non-constant-time, without lockout)\n- path traversal in memory store\n- leak raw error messages without security headers/global exception handlers\n- dependency has not been audited\n\nRisk Controls:\n- output filter fail-closed\n- rate limit\n- double fallback (factory + service level)\n- Langfuse tracing\n- schema validation\n- isolation of “explain(ation) endpoint”\n" .
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> <http://w3id.org/beam/core#note> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888288944> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888384523> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Risk> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888384523> <http://www.w3.org/2000/01/rdf-schema#label> "Risk: Prompt Injection" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888384523> <http://w3id.org/beam/core#description> "direct & indirect" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888415122> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#Risk> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888415122> <http://www.w3.org/2000/01/rdf-schema#label> "Risk: System Prompt Leakage" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888415122> <http://w3id.org/beam/core#description> "Description" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888591614> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#RiskControl> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888591614> <http://www.w3.org/2000/01/rdf-schema#label> "Risk Control: Guardrails" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888591614> <http://w3id.org/beam/core#description> "Check generated output for system prompt leakage" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888726574> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/beam/risk#RiskControl> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888726574> <http://www.w3.org/2000/01/rdf-schema#label> "Risk Control: Input Sanitization" .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888726574> <http://w3id.org/beam/core#description> "Removal of problematic parts from the input" .
+<http://tool4boxology.org/Component/node_1784870083270> <http://w3id.org/beam/core#note> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784875446231> .
+<http://tool4boxology.org/Component/node_1784870012743> <http://w3id.org/beam/risk#hasRisk> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876272224> .
+<http://tool4boxology.org/Component/node_1784870204212> <http://w3id.org/beam/core#note> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876575107> .
+<http://tool4boxology.org/Component/node_1784869896349> <http://w3id.org/beam/risk#hasRisk> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784887929387> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888000354> <http://w3id.org/beam/risk#modifiesRiskConcept> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784887929387> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://w3id.org/beam/risk#hasRisk> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888384523> .
+<http://tool4boxology.org/Component/node_1784870052005> <http://w3id.org/beam/risk#hasRisk> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888415122> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888591614> <http://w3id.org/beam/risk#associatedTo> <http://tool4boxology.org/Component/node_1784870204212> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888591614> <http://w3id.org/beam/risk#modifiesRiskConcept> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888415122> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888726574> <http://w3id.org/beam/risk#modifiesRiskConcept> <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888384523> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888726574> <http://w3id.org/beam/risk#associatedTo> <http://tool4boxology.org/Component/node_1784887540045> .
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888726574> <http://w3id.org/beam/risk#associatedTo> <http://tool4boxology.org/Component/node_281784888790737> .

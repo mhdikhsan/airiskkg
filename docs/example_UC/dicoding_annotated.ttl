@@ -1,0 +1,317 @@
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix beamr: <http://w3id.org/beam/risk#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888000354> a beamr:RiskControl ;
+    rdfs:label "Risk Control: Fallback to Different Model" ;
+    beam:description "In case a model/provider is unavailable, fallback to using a different one at inference time." ;
+    beamr:modifiesRiskConcept <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784887929387> .
+
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888591614> a beamr:RiskControl ;
+    rdfs:label "Risk Control: Guardrails" ;
+    beam:description "Check generated output for system prompt leakage" ;
+    beamr:associatedTo <http://tool4boxology.org/Component/node_1784870204212> ;
+    beamr:modifiesRiskConcept <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888415122> .
+
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888726574> a beamr:RiskControl ;
+    rdfs:label "Risk Control: Input Sanitization" ;
+    beam:description "Removal of problematic parts from the input" ;
+    beamr:associatedTo <http://tool4boxology.org/Component/node_1784887540045>,
+        <http://tool4boxology.org/Component/node_281784888790737> ;
+    beamr:modifiesRiskConcept <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888384523> .
+
+<http://tool4boxology.org/Boxology/064a0c1a-f768-4453-a3d6-4a347facde4f> a beam:Element,
+        beam:System ;
+    rdfs:label "Diagram" ;
+    beam:context """Dicoding is a learning platform, providing students with AI-based explanations. 
+Explanations can be generated in two ways:
+a) Explain-on-highlight in course material
+b) Chat-based question-answering
+
+Not depicted in diagram:
+- observability/tracing using LangFuse
+- sanitization of user message, retrieved material, course information
+- vector representation caching
+- session summarization?
+- fallback in case of unavailable model
+- unzipping course materials, file format specific pre-processing, chunking""" ;
+    beam:description """The explanation system is based on RAG.
+Course materials are indexed and later retrieved using hybrid retrieval. The LLM generates the explanations based on retrieved documents, followed by guardrails.
+
+Open Questions:
+- Is the workflow the same for explain-on-highlight and question-answering?
+- What happens if guardrail detects issue?
+- Quality assurance of course material (content-wise and technical) as potential risk?
+""" ;
+    beam:hasProcess <http://tool4boxology.org/Component/node_1784869989408>,
+        <http://tool4boxology.org/Component/node_1784870052005>,
+        <http://tool4boxology.org/Component/node_1784870083270>,
+        <http://tool4boxology.org/Component/node_1784870204212>,
+        <http://tool4boxology.org/Component/node_1784875092512>,
+        <http://tool4boxology.org/Component/node_1784875177561>,
+        <http://tool4boxology.org/Component/node_1784875284652>,
+        <http://tool4boxology.org/Component/node_1784887540045>,
+        <http://tool4boxology.org/Component/node_1784887848331>,
+        <http://tool4boxology.org/Component/node_281784888790737> ;
+    beam:hasResource <http://tool4boxology.org/Component/node_1784869793422>,
+        <http://tool4boxology.org/Component/node_1784869861521>,
+        <http://tool4boxology.org/Component/node_1784869896349>,
+        <http://tool4boxology.org/Component/node_1784870012743>,
+        <http://tool4boxology.org/Component/node_1784870019545>,
+        <http://tool4boxology.org/Component/node_1784870112185>,
+        <http://tool4boxology.org/Component/node_1784870179734>,
+        <http://tool4boxology.org/Component/node_1784870222579>,
+        <http://tool4boxology.org/Component/node_1784874668240>,
+        <http://tool4boxology.org/Component/node_1784875216876>,
+        <http://tool4boxology.org/Component/node_1784875268724>,
+        <http://tool4boxology.org/Component/node_1784875312354>,
+        <http://tool4boxology.org/Component/node_1784876652280>,
+        <http://tool4boxology.org/Component/node_1784887565510>,
+        <http://tool4boxology.org/Component/node_1784887780141> ;
+    beam:note <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784875446231>,
+        <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876575107>,
+        <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888288944> .
+
+<http://tool4boxology.org/DesignPattern/node_1784869989408> rdfs:label "Compute Embeddings" .
+
+<http://tool4boxology.org/DesignPattern/node_1784870052005> rdfs:label "Generation" .
+
+<http://tool4boxology.org/DesignPattern/node_1784870083270> rdfs:label "Sparse Retrieval" .
+
+<http://tool4boxology.org/DesignPattern/node_1784870204212> rdfs:label """Guardrail
+Checks""" .
+
+<http://tool4boxology.org/DesignPattern/node_1784875092512> rdfs:label "Indexing" .
+
+<http://tool4boxology.org/DesignPattern/node_1784875177561> rdfs:label """Compute
+embedding""" .
+
+<http://tool4boxology.org/DesignPattern/node_1784875284652> rdfs:label "Re-Ranking" .
+
+<http://tool4boxology.org/DesignPattern/node_1784887540045> rdfs:label "Sanitize Input" .
+
+<http://tool4boxology.org/DesignPattern/node_1784887848331> rdfs:label """Extend Conversation
+History""" .
+
+<http://tool4boxology.org/DesignPattern/node_281784888790737> rdfs:label "Sanitize Input" .
+
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876272224> a beamr:Risk ;
+    rdfs:label "Risk: Potential Processing of Personal Data" ;
+    beam:description "For question-answering: question may include personal information" .
+
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888288944> a beam:Note ;
+    rdfs:label "Note: Other Risks + Controls" ;
+    beam:description """Risks:
+- abuse/rate-limit (including shared campus IP)
+- weak API auth (non-constant-time, without lockout)
+- path traversal in memory store
+- leak raw error messages without security headers/global exception handlers
+- dependency has not been audited
+
+Risk Controls:
+- output filter fail-closed
+- rate limit
+- double fallback (factory + service level)
+- Langfuse tracing
+- schema validation
+- isolation of “explain(ation) endpoint”
+""" .
+
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784875446231> a beam:Note ;
+    rdfs:label "Note" ;
+    beam:description "both BM25 and Maximum Marginal Retrieval (MMR)? how are they combined?" .
+
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876575107> a beam:Note ;
+    rdfs:label "Note" ;
+    beam:description "OutputFilter? SSE? does it use AI models?" .
+
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784887929387> a beamr:Risk ;
+    rdfs:label "Risk: Model/Provider Unavailable" ;
+    beam:description "The model or provider preferred by the user is not available at runtime." .
+
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888384523> a beamr:Risk ;
+    rdfs:label "Risk: Prompt Injection" ;
+    beam:description "direct & indirect" .
+
+<http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888415122> a beamr:Risk ;
+    rdfs:label "Risk: System Prompt Leakage" ;
+    beam:description "Description" .
+
+<http://tool4boxology.org/Component/node_1784869896349> a beam:StatisticalModel ;
+    rdfs:label "LLM" ;
+    pair:playsRole pair:FoundationLLM,
+        pair:GenerativeModel ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784870052005> ;
+    beamr:hasRisk <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784887929387> .
+
+<http://tool4boxology.org/Component/node_1784870012743> a beam:Data ;
+    rdfs:label "User Query" ;
+    pair:containsDataCategory pair:SensitiveInformation ;
+    pair:playsRole pair:UserInput ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784887540045> ;
+    beamr:hasRisk <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876272224> .
+
+<http://tool4boxology.org/Component/node_1784870019545> a beam:Data ;
+    rdfs:label "System Prompt" ;
+    pair:playsRole pair:SystemPrompt ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784870052005> .
+
+<http://tool4boxology.org/Component/node_1784874668240> a beam:Element,
+        beam:Model,
+        beam:Resource ;
+    rdfs:label "EmbeddingModels" ;
+    pair:playsRole pair:EmbeddingModel ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784869989408> .
+
+<http://tool4boxology.org/Component/node_1784875268724> a beam:Element,
+        beam:Model,
+        beam:Resource ;
+    rdfs:label "FlashRank" ;
+    pair:playsRole pair:RerankerModel ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784875284652> .
+
+<http://tool4boxology.org/Component/node_1784869793422> a beam:Data ;
+    rdfs:label "CourseMaterial" ;
+    pair:playsRole pair:SourceDocument ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784869989408>,
+        <http://tool4boxology.org/Component/node_1784875092512> .
+
+<http://tool4boxology.org/Component/node_1784870112185> a beam:Data ;
+    rdfs:label "Retrieved Course MaterialChunks" ;
+    pair:playsRole pair:RetrievedContext ;
+    beam:producedBy <http://tool4boxology.org/Component/node_1784875284652> ;
+    beam:usedBy <http://tool4boxology.org/Component/node_281784888790737> .
+
+<http://tool4boxology.org/Component/node_1784870179734> a beam:Data ;
+    rdfs:label "GeneratedAnswer" ;
+    pair:playsRole pair:LLMResponse,
+        pair:UserFacingOutput ;
+    beam:producedBy <http://tool4boxology.org/Component/node_1784870052005> ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784870204212> .
+
+<http://tool4boxology.org/Component/node_1784870222579> a beam:Data ;
+    rdfs:label "Checked Answer" ;
+    pair:playsRole pair:SanitizedOutput,
+        pair:UserFacingOutput ;
+    beam:producedBy <http://tool4boxology.org/Component/node_1784870204212> ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784887848331> .
+
+<http://tool4boxology.org/Component/node_1784875092512> a beam:Transform ;
+    rdfs:label "Indexing" ;
+    pair:playsRole pair:EmbeddingStep ;
+    beam:produce <http://tool4boxology.org/Component/node_1784869861521> ;
+    beam:use <http://tool4boxology.org/Component/node_1784869793422> .
+
+<http://tool4boxology.org/Component/node_1784875177561> a beam:Infer ;
+    rdfs:label "Computeembedding" ;
+    pair:playsRole pair:EmbeddingStep ;
+    beam:produce <http://tool4boxology.org/Component/node_1784875216876> ;
+    beam:use <http://tool4boxology.org/Component/node_1784887565510> .
+
+<http://tool4boxology.org/Component/node_1784875216876> a beam:Data ;
+    rdfs:label "User QueryVector Representation" ;
+    pair:playsRole pair:EmbeddingVector ;
+    beam:producedBy <http://tool4boxology.org/Component/node_1784875177561> ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784875284652> .
+
+<http://tool4boxology.org/Component/node_1784875312354> a beam:Data ;
+    rdfs:label "Sparse Retrieval Results" ;
+    pair:playsRole pair:RetrievedContext ;
+    beam:producedBy <http://tool4boxology.org/Component/node_1784870083270> ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784875284652> .
+
+<http://tool4boxology.org/Component/node_1784876652280> a beam:Data,
+        beam:Element,
+        beam:Instance,
+        beam:Resource ;
+    rdfs:label """Conversation
+History""" ;
+    beam:producedBy <http://tool4boxology.org/Component/node_1784887848331> ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784870052005> .
+
+<http://tool4boxology.org/Component/node_1784887780141> a beam:Data ;
+    rdfs:label "Sanitized RetrievedCourse Material" ;
+    pair:playsRole pair:RetrievedContext ;
+    beam:producedBy <http://tool4boxology.org/Component/node_281784888790737> ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784870052005> .
+
+<http://tool4boxology.org/Component/node_1784887848331> a beam:Element,
+        beam:Process,
+        beam:Transform ;
+    rdfs:label """Extend Conversation
+History""" ;
+    beam:produce <http://tool4boxology.org/Component/node_1784876652280> ;
+    beam:use <http://tool4boxology.org/Component/node_1784870222579> .
+
+<http://tool4boxology.org/Component/node_1784869861521> a beam:Data ;
+    rdfs:label "VectorRepresentations" ;
+    pair:playsRole pair:VectorIndex,
+        pair:VectorStore ;
+    beam:producedBy <http://tool4boxology.org/Component/node_1784869989408>,
+        <http://tool4boxology.org/Component/node_1784875092512> ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784870083270> .
+
+<http://tool4boxology.org/Component/node_1784869989408> a beam:Infer ;
+    rdfs:label "Compute Embeddings" ;
+    pair:playsRole pair:EmbeddingStep ;
+    beam:produce <http://tool4boxology.org/Component/node_1784869861521> ;
+    beam:use <http://tool4boxology.org/Component/node_1784869793422>,
+        <http://tool4boxology.org/Component/node_1784874668240> .
+
+<http://tool4boxology.org/Component/node_1784870083270> a beam:Transform ;
+    rdfs:label "Sparse Retrieval" ;
+    pair:playsRole pair:RetrievalStep ;
+    beam:note <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784875446231> ;
+    beam:produce <http://tool4boxology.org/Component/node_1784875312354> ;
+    beam:use <http://tool4boxology.org/Component/node_1784869861521>,
+        <http://tool4boxology.org/Component/node_1784887565510> .
+
+<http://tool4boxology.org/Component/node_1784870204212> a beam:Transform ;
+    rdfs:label "GuardrailChecks" ;
+    pair:playsRole pair:GuardrailStep ;
+    beam:note <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784876575107> ;
+    beam:produce <http://tool4boxology.org/Component/node_1784870222579> ;
+    beam:use <http://tool4boxology.org/Component/node_1784870179734> .
+
+<http://tool4boxology.org/Component/node_1784887540045> a beam:Transform ;
+    rdfs:label "Sanitize Input" ;
+    pair:playsRole pair:InputGuardrailStep ;
+    beam:produce <http://tool4boxology.org/Component/node_1784887565510> ;
+    beam:use <http://tool4boxology.org/Component/node_1784870012743> .
+
+<http://tool4boxology.org/Component/node_281784888790737> a beam:Transform ;
+    rdfs:label "Sanitize Input" ;
+    pair:playsRole pair:InputGuardrailStep ;
+    beam:produce <http://tool4boxology.org/Component/node_1784887780141> ;
+    beam:use <http://tool4boxology.org/Component/node_1784870112185> .
+
+<http://tool4boxology.org/Component/node_1784875284652> a beam:Infer ;
+    rdfs:label "Re-Ranking" ;
+    pair:playsRole pair:RerankingStep ;
+    beam:produce <http://tool4boxology.org/Component/node_1784870112185> ;
+    beam:use <http://tool4boxology.org/Component/node_1784875216876>,
+        <http://tool4boxology.org/Component/node_1784875268724>,
+        <http://tool4boxology.org/Component/node_1784875312354> .
+
+<http://tool4boxology.org/Component/node_1784887565510> a beam:Data ;
+    rdfs:label "SanitizedUser Query" ;
+    pair:playsRole pair:InputGuardrailStep,
+        pair:UserInput ;
+    beam:producedBy <http://tool4boxology.org/Component/node_1784887540045> ;
+    beam:usedBy <http://tool4boxology.org/Component/node_1784870052005>,
+        <http://tool4boxology.org/Component/node_1784870083270>,
+        <http://tool4boxology.org/Component/node_1784875177561> .
+
+<http://tool4boxology.org/Component/node_1784870052005> a beam:Infer ;
+    rdfs:label "Generation" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:produce <http://tool4boxology.org/Component/node_1784870179734> ;
+    beam:use <http://tool4boxology.org/Component/node_1784869896349>,
+        <http://tool4boxology.org/Component/node_1784870019545>,
+        <http://tool4boxology.org/Component/node_1784876652280>,
+        <http://tool4boxology.org/Component/node_1784887565510>,
+        <http://tool4boxology.org/Component/node_1784887780141> ;
+    beamr:hasRisk <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888384523>,
+        <http://tool4boxology.org/Annotation/064a0c1a-f768-4453-a3d6-4a347facde4f/node_1784888415122> .
+
