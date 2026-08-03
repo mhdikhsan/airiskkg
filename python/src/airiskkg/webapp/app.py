@@ -9,7 +9,6 @@ Endpoints
 ``POST /api/graph``        Architecture Turtle -> nodes/edges for the live preview.
 ``POST /api/validate``     Architecture Turtle -> SHACL input-contract report.
 ``POST /api/import/t4b``    Tool4Boxology export (N-Triples/Turtle) -> architecture Turtle + notes.
-``POST /api/build``        Builder model (JSON) -> architecture Turtle (legacy).
 ``POST /api/assess``       Architecture Turtle -> structured risk findings (JSON).
 """
 
@@ -22,7 +21,6 @@ from functools import lru_cache
 from flask import Flask, jsonify, request, send_from_directory
 from rdflib import RDF, RDFS, SKOS, Graph, Literal, Namespace, URIRef
 
-from airiskkg.architecture_builder import BuilderError, build_ttl
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.assessment_runner import (
     BEAM,
@@ -501,18 +499,9 @@ def create_app() -> Flask:
             return jsonify({"error": "Provide a Tool4Boxology export (N-Triples or Turtle) to import."}), 400
         try:
             ttl, warnings = t4b_to_ttl(data, fmt=fmt)
-        except (T4bImportError, BuilderError) as error:
+        except T4bImportError as error:
             return jsonify({"error": str(error)}), 400
         return jsonify({"ttl": ttl, "warnings": warnings})
-
-    @app.post("/api/build")
-    def build() -> object:
-        model = request.get_json(silent=True) or {}
-        try:
-            ttl = build_ttl(model)
-        except BuilderError as error:
-            return jsonify({"error": str(error)}), 400
-        return jsonify({"ttl": ttl})
 
     @app.post("/api/annotate")
     def annotate() -> object:

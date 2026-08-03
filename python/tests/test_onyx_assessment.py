@@ -5,7 +5,8 @@ reranker, and direct prompting — and, unlike verba, its external models are
 bound in motif matches, so the supply-chain risk pattern fires.
 """
 
-from rdflib import RDF, Namespace
+from rdflib import DCTERMS, RDF, RDFS, Namespace
+from rdflib.namespace import SKOS
 
 from airiskkg.assessment_runner import PAIR, PAT, run_assessment
 from airiskkg.paths import EXAMPLE_DIR
@@ -72,3 +73,74 @@ def test_onyx_all_findings_are_candidates() -> None:
     for finding in findings:
         status = result.risk_findings.value(finding, PAIR.findingStatus)
         assert str(status) == "candidate"
+
+
+# --- ported from the retired test_uc6_assessment.py -------------------------
+# Its uc6 / verba fixtures were removed, but two of its checks guard invariants
+# no other test covers and that the web UI cannot practically show: the
+# cross-taxonomy alignment layer, and the required shape of every finding.
+
+ATLAS = Namespace("http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#")
+MIT = Namespace("http://w3id.org/airiskkg/taxonomy/mit-ai-risk#")
+MITCTRL = Namespace("http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#")
+NIST = Namespace("http://w3id.org/airiskkg/taxonomy/nist-genai#")
+NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
+
+
+def test_sensitive_data_finding_includes_cross_taxonomy_alignment() -> None:
+    """One finding should reach every alignment layer: OWASP anchor, IBM Atlas,
+    MIT domain, MIT control families as evidence, and NIST through Atlas."""
+    result = _result()
+    finding = next(
+        result.risk_findings.subjects(
+            PAIR.hasDerivedMechanism, OWASP["mechanism-sensitive-data-propagation"]
+        )
+    )
+    risks = set(result.risk_findings.objects(finding, PAIR.hasCandidateRiskTaxonomyEntry))
+    controls = set(result.risk_findings.objects(finding, PAIR.hasSuggestedControl))
+
+    assert OWASP["llm02-sensitive-information-disclosure"] in risks
+    assert ATLAS["exposing-personal-information"] in risks
+    assert MIT["subdomain-2-1"] in risks
+
+    # pair:suggestedControl carries only PAIR-AI's own actionable catalogue.
+    assert PAT["Control_DataMinimizationAndRedaction"] in controls
+    assert PAT["Control_RetrievalAccessControl"] in controls
+    assert all(str(control).startswith(str(PAT)) for control in controls)
+
+    # MIT control families survive as an EVIDENCE layer reached through the
+    # finding's taxonomy entries, not as suggested controls.
+    grounded = set()
+    for entry in risks:
+        grounded |= set(result.combined_graph.objects(entry, NEXUS.hasRelatedControl))
+    assert MITCTRL["data-governance"] in grounded
+    assert MITCTRL["access-management"] in grounded
+
+    # NIST AI 600-1 is reachable through IBM Atlas rather than anchored directly,
+    # which is the whole design of that alignment layer.
+    aligned = set()
+    for entry in risks:
+        for predicate in (SKOS.exactMatch, SKOS.broadMatch, SKOS.closeMatch, SKOS.relatedMatch):
+            aligned |= set(result.combined_graph.objects(entry, predicate))
+    assert NIST["data-privacy"] in aligned
+
+
+def test_every_risk_finding_has_required_fields() -> None:
+    """Structural integrity of the output: no finding may be missing a field the
+    view layer and the SHACL output contract rely on."""
+    result = _result()
+    findings = set(result.risk_findings.subjects(RDF.type, PAIR.RiskFinding))
+    assert findings
+
+    required_predicates = {
+        RDFS.label,
+        DCTERMS.description,
+        PAIR.generatedFromMatch,
+        PAIR.generatedByMotif,
+        PAIR.hasDerivedMechanism,
+        PAIR.hasEvidence,
+        PAIR.findingStatus,
+    }
+    for finding in findings:
+        for predicate in required_predicates:
+            assert (finding, predicate, None) in result.risk_findings, f"{finding} missing {predicate}"
