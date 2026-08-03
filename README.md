@@ -1,8 +1,7 @@
 # AI Risk Knowledge Graph
 
-This repository supports the working paper:
-
-**A Pattern-Based Method for Design-Time AI Risk Assessment Using Knowledge Graphs Operationalization**
+This repository supports the working paper *A Pattern-Based Method for
+Design-Time AI Risk Assessment Using Knowledge Graphs Operationalization*.
 
 It contains ontology files and a small Python workspace for AI risk knowledge
 graph assessment.
@@ -22,7 +21,7 @@ ontology/                   KNOWLEDGE - the reusable AI risk knowledge base
   taxonomy/                 External risk taxonomies + the cross-taxonomy mappings
   alignments/               Adapters for external vocabularies (Tool4Boxology, DPV)
   example/                  Architecture graphs used as worked examples and fixtures
-  queries/                  Standalone SPARQL for humans (visualization, audit)
+  visualization/            Standalone SPARQL run by hand, not by the pipeline
 
 shacl/                      CONTRACTS - what a graph must satisfy
   architecture_input_contract.ttl   Accepted input graphs
@@ -45,8 +44,8 @@ Two details worth knowing before editing:
   registered by a `pair:PatternImplementation` whose `pair:implementationPath`
   is a literal string. Moving or renaming one of those files means updating its
   declaration too; `test_library_consistency.py` fails if the two drift apart.
-  `ontology/queries/` holds the opposite kind of query: standalone, run by hand,
-  referenced by no declaration.
+  `ontology/visualization/` holds the opposite kind of query: standalone, run by
+  hand, referenced by no declaration.
 - **The Python package root is `python/`, not the repository root.** Install with
   `pip install -e .` from inside `python/`. Paths back to the knowledge base are
   resolved at runtime by `airiskkg.paths`, which walks up until it finds both
@@ -68,8 +67,7 @@ and curated motif interpretations. Assessment runs in two executable steps:
 2. Apply curated interpretation conditions to materialize candidate risk findings.
 
 The SPARQL CONSTRUCT files in `ontology/patterns/implementation/` are executable
-implementations of motifs or motif interpretations. 
-
+implementations of motifs or motif interpretations.
 
 ## Web UI
 
