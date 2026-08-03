@@ -131,3 +131,72 @@ def test_vocabulary_roles_are_grouped_by_top_level_role(client) -> None:
 
     # data categories stay ungrouped so their dropdown is unaffected
     assert not any("group" in category for category in data["dataCategories"])
+
+
+def test_vocabulary_roles_declare_which_element_kind_they_apply_to(client) -> None:
+    """Roles carry `applies` ("process" / "resource") so the picker can offer the
+    ones that fit the selected element. Derived from each role family's
+    expectedClass, so process families never leak into resource families."""
+    data = client.get("/api/vocabulary").get_json()
+    roles = data["roles"]
+    assert all(role.get("applies") in {"process", "resource"} for role in roles)
+
+    by_group: dict[str, set[str]] = {}
+    for role in roles:
+        by_group.setdefault(role["group"], set()).add(role["applies"])
+    # a family is process or resource, never both
+    assert all(len(kinds) == 1 for kinds in by_group.values()), by_group
+    assert by_group["Processing Step"] == {"process"}
+    assert by_group["Control Step"] == {"process"}
+    assert by_group["Resource Role"] == {"resource"}
+
+
+def _rag_with_guardrails_ttl() -> str:
+    return (EXAMPLE_DIR / "rag_with_guardrails.ttl").read_text(encoding="utf-8")
+
+
+def test_assess_reports_why_a_near_miss_motif_did_not_match(client) -> None:
+    """Unwiring the retrieval step from the user query drops RAG and Vector-based
+    IR; the gap report names the missing edge instead of failing silently."""
+    ttl = _rag_with_guardrails_ttl()
+    broken = ttl.replace(
+        "    beam:use local:userQuery ;\n    beam:use local:vectorStore ;",
+        "    beam:use local:vectorStore ;",
+    )
+    assert broken != ttl, "fixture no longer matches the example"
+
+    data = client.post("/api/assess", json={"ttl": broken}).get_json()
+    matched = {m["motif"]["label"] for m in data["motifMatches"]}
+    assert not any("Retrieval Augmented" in label for label in matched)
+
+    gaps = {gap["label"]: gap for gap in data["motifGaps"]}
+    rag = next(gap for label, gap in gaps.items() if "Retrieval Augmented" in label)
+    assert rag["satisfied"] < rag["total"]
+    missing = " | ".join(edge["text"] for edge in rag["missingEdges"])
+    assert "Retrieval Step" in missing and "User Input" in missing
+
+
+def test_assess_gaps_exclude_motifs_that_matched(client) -> None:
+    """A motif that matched is reported as a match, never as a gap."""
+    data = client.post("/api/assess", json={"ttl": _rag_with_guardrails_ttl()}).get_json()
+    matched = {m["motif"]["label"] for m in data["motifMatches"]}
+    assert matched, "expected the example to match motifs"
+    gap_labels = {gap["label"] for gap in data["motifGaps"]}
+    assert not (matched & gap_labels)
+
+
+def test_assess_gap_candidates_are_elements_of_the_submitted_graph(client) -> None:
+    """Suggested candidates are real elements with the right type but no role, so
+    the UI can highlight them."""
+    ttl = _rag_with_guardrails_ttl().replace(
+        "    pair:playsRole pair:VectorStore .", "."
+    )
+    data = client.post("/api/assess", json={"ttl": ttl}).get_json()
+    candidates = [
+        candidate
+        for gap in data["motifGaps"]
+        for node in gap["missingNodes"]
+        for candidate in node["candidates"]
+    ]
+    assert candidates, "expected candidate elements for the untagged vector store"
+    assert all(candidate["id"].startswith("http") for candidate in candidates)
