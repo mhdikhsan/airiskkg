@@ -8,6 +8,7 @@
 
 <http://w3id.org/airiskkg/facets>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Characterization Facet Attachment Properties"@en ;
     dct:description "Object properties attaching characterization facet values (SKOS concepts) to BEAM architecture elements. Facet assignments are annotated base facts supplied by the modeler (Rule R8); they characterize elements and are read by applicability conditions, never traversed by motifs (Rule R2). Ranges are deliberately kept at skos:Concept: the intended scheme is stated in the comment, not enforced with OWL axioms (lightweight by design)."@en ;
     vann:preferredNamespacePrefix "facet" ;

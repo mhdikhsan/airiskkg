@@ -15,6 +15,27 @@
     generative-AI/LLM application security taxonomy baseline; AI Atlas Nexus
     remains a secondary adaptation and alignment source.
     """ ;
+
+    # --- Licensing -----------------------------------------------------------
+    # This file is PAIR-AI's own work and is released under CC BY 4.0, like the
+    # rest of the repository (see /LICENSE).
+    #
+    # It REFERENCES the OWASP Top 10 for LLM Applications 2025, which is
+    # published under CC BY-SA 4.0. ShareAlike binds adaptations, so this file
+    # deliberately avoids becoming one: it reuses only entry identifiers,
+    # numbering, and links to the official pages - facts and short names, not
+    # protected expression. Every skos:definition, RiskMechanism, and
+    # RiskCondition below is written from scratch for PAIR-AI's structural
+    # model and is NOT a copy or close paraphrase of OWASP's descriptions,
+    # mitigation lists, or attack scenarios.
+    #
+    # Anyone extending this file must keep that discipline: reference OWASP,
+    # never reproduce its prose. Copying their wording would pull CC BY-SA
+    # ShareAlike onto this file and conflict with the repository's CC BY 4.0.
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Entry identifiers and numbering are referenced from the OWASP Top 10 for LLM Applications 2025 (OWASP GenAI Security Project), which is licensed CC BY-SA 4.0 - see https://creativecommons.org/licenses/by-sa/4.0/. Changes were made: only identifiers, numbering, and links are reused; all definitions and risk mechanisms here are original. The nexus:tag values are upstream entry ids from IBM AI Atlas Nexus, whose licence is not yet verified (identifiers only)."@en ;
+    dct:bibliographicCitation "OWASP GenAI Security Project. (2024). OWASP Top 10 for LLM Applications 2025 (Version 2025). https://genai.owasp.org/"@en ;
+
     dct:source <https://github.com/owasp/www-project-top-10-for-large-language-model-applications> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/owasp_llm_2.0_data.yaml> .
 
@@ -28,7 +49,7 @@ owasp:OWASP_LLM_Top_10_2025 a nexus:RiskTaxonomy, skos:ConceptScheme ;
 
 owasp:llm01-prompt-injection a nexus:Risk ;
     skos:prefLabel "LLM01:2025 Prompt Injection" ;
-    skos:definition "User or external inputs may alter LLM behavior or output in unintended ways." ;
+    skos:definition "Content supplied by a user, a retrieved document, or a tool is interpreted as instruction, steering the model away from its intended task." ;
     skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
     nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
     nexus:tag "llm01-prompt-injection" ;
@@ -84,7 +105,7 @@ owasp:llm07-system-prompt-leakage a nexus:Risk ;
 
 owasp:llm08-vector-and-embedding-weaknesses a nexus:Risk ;
     skos:prefLabel "LLM08:2025 Vector and Embedding Weaknesses" ;
-    skos:definition "Weaknesses in vector generation, storage, or retrieval may affect RAG systems and downstream outputs." ;
+    skos:definition "How a system embeds, indexes, partitions, or ranks vectors becomes a risk surface for the retrieval-augmented answers built on it." ;
     skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
     nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
     nexus:tag "llm082025-vector-and-embedding-weaknesses" ;
@@ -92,7 +113,7 @@ owasp:llm08-vector-and-embedding-weaknesses a nexus:Risk ;
 
 owasp:llm09-misinformation a nexus:Risk ;
     skos:prefLabel "LLM09:2025 Misinformation" ;
-    skos:definition "LLMs may produce false or misleading information that appears credible." ;
+    skos:definition "A generated answer is wrong or unsupported, yet is presented with enough fluency and confidence that a reader treats it as reliable." ;
     skos:inScheme owasp:OWASP_LLM_Top_10_2025 ;
     nexus:isDefinedByTaxonomy owasp:OWASP_LLM_Top_10_2025 ;
     nexus:tag "llm092025-misinformation" ;

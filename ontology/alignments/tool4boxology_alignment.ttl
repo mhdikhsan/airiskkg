@@ -7,6 +7,7 @@
 
 <http://w3id.org/airiskkg/alignments/tool4boxology>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "Tool4Boxology to BEAM Alignment Adapter"@en ;
     dct:description """
     Alignment adapter normalizing Tool4Boxology architecture exports into BEAM,

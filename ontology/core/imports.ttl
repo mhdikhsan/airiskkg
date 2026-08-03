@@ -3,6 +3,7 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 <http://w3id.org/airiskkg/imports> a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     rdfs:label "AI Risk KG Ontology Imports" ;
     dct:title "AI Risk KG Ontology Imports" ;
     dct:description """

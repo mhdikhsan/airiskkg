@@ -8,6 +8,7 @@
 
 <http://w3id.org/airiskkg/facets/context>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Characterization Facets: Context (Domain, Purpose, Deployment Setting)"@en ;
     dct:description "SKOS concept schemes for situational context of an AI system (Rule R1). These are deliberately thin extension points: concrete domains, purposes, and deployment settings are added per use case or drawn from external vocabularies. Where DPV has an equivalent, the DPV URI is referenced via SKOS mapping instead of being redefined (Rule R3). Context facets enter assessment only through applicability conditions (Rule R2)."@en ;
     dct:source "DPV v2.3, https://w3id.org/dpv# (verified 2026-07-13); OECD (2022). OECD Framework for the Classification of AI Systems." ;

@@ -11,6 +11,9 @@
 #################################################################
 
 <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> a owl:Ontology ;
+    # LICENCE NOT ASSERTED: this file is derived from IBM AI Atlas Nexus (see dct:source
+    # below), whose licence has not yet been verified. Do not add dct:license until the
+    # upstream terms are confirmed and compatible with the repository CC BY 4.0.
     rdfs:label "MIT AI Risk Control Subset for AI Risk KG" ;
     dct:title "MIT AI Risk Control Subset for AI Risk KG" ;
     dct:description """
