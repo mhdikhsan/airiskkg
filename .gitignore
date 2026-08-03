@@ -11,9 +11,8 @@ pytest-cache-files-*/
 *.egg-info/
 build/
 dist/
-docs/
-
 # Personal local notes (kept on disk, not shared)
+docs/notes/
 CHANGELOG_data_model.md
 
 # Keep folder structure, but avoid committing generated research outputs by default.
