@@ -32,7 +32,8 @@
     """ ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/ibm2owasp.tsv> ,
                <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/mit-ai-risk-repository_ibm-risk-atlas.tsv> ,
-               <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/mit_ai_risk_mitigation_mappings.tsv> .
+               <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/mit_ai_risk_mitigation_mappings.tsv> ,
+               <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/owasp_asi2owasp_llm.tsv> .
 
 
 #################################################################
@@ -93,6 +94,19 @@ atlas:hallucination                  skos:relatedMatch mit:subdomain-3-1 .
 atlas:decision-bias                  skos:relatedMatch mit:subdomain-1-1 .
 atlas:impact-on-the-environment      skos:relatedMatch mit:subdomain-6-6 .
 
+
+## OWASP Agentic Top 10 (ASI) <-> OWASP LLM Top 10
+## (source: owasp_asi2owasp_llm.tsv, mapping_date 2026-04-28, all rows
+## semapv:ManualMappingCuration). Predicates and directions are reproduced
+## exactly as curated upstream, NOT re-derived. Upstream confidences:
+## asi02->llm06 0.90; asi06->llm04 0.85; asi06->llm01 0.75; asi06->llm08 0.75.
+asi:asi02-tool-misuse
+    skos:narrowMatch owasp:llm06-excessive-agency .
+
+asi:asi06-memory-and-context-poisoning
+    skos:broadMatch owasp:llm04-data-and-model-poisoning ;
+    skos:relatedMatch owasp:llm01-prompt-injection ,
+        owasp:llm08-vector-and-embedding-weaknesses .
 
 #################################################################
 # Section 2 — Project-curated mappings (PAIR-AI expert curation)
@@ -187,6 +201,25 @@ owasp:llm10-unbounded-consumption
     skos:relatedMatch mit:subdomain-2-2 ;
     skos:relatedMatch mit:subdomain-6-6 ;
     skos:relatedMatch mit:subdomain-7-3 .
+
+
+
+## OWASP Agentic Top 10 (ASI) <-> MIT domain taxonomy
+## No upstream SSSOM row exists for ASI <-> MIT, so these are PAIR-AI curation.
+## The ASI <-> OWASP LLM links ARE curated upstream and live in Section 1.
+
+# Acting on external systems through tools without mediation is an attack
+# surface on the AI system itself (2-2) and removes the human from decisions
+# the architecture still attributes to them (5-2).
+asi:asi02-tool-misuse
+    skos:relatedMatch mit:subdomain-2-2 ,
+        mit:subdomain-5-2 .
+
+# Poisoned retained context is an attack on the system (2-2) whose visible
+# effect downstream is false or misleading output (3-1).
+asi:asi06-memory-and-context-poisoning
+    skos:relatedMatch mit:subdomain-2-2 ,
+        mit:subdomain-3-1 .
 
 
 # Section 3 - Risk-to-control grounding
@@ -641,23 +674,3 @@ mitctrl:threat-modelling
 mitctrl:user-rights-recourse
     nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency .
-
-
-
-## OWASP Agentic Top 10 (ASI) <-> MIT domain taxonomy
-## No upstream SSSOM row exists for ASI; these are PAIR-AI curation. The
-## ASI <-> OWASP LLM links live on the ASI entries themselves (skos:broadMatch),
-## since OWASP frames each agentic entry as extending an LLM Top 10 entry.
-
-# Acting on external systems through tools without mediation is an attack
-# surface on the AI system itself (2-2) and removes the human from decisions
-# the architecture still attributes to them (5-2).
-asi:asi02-tool-misuse
-    skos:relatedMatch mit:subdomain-2-2 ,
-        mit:subdomain-5-2 .
-
-# Poisoned retained context is an attack on the system (2-2) whose visible
-# effect downstream is false or misleading output (3-1).
-asi:asi06-memory-and-context-poisoning
-    skos:relatedMatch mit:subdomain-2-2 ,
-        mit:subdomain-3-1 .

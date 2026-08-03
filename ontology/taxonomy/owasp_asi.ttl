@@ -21,8 +21,11 @@
     architecture graph. Adding them as risk patterns would produce findings that fire
     on every agent, which breaks candidate framing rather than supporting it.
 
-    OWASP frames ASI entries as building on the LLM Top 10, and this file follows
-    that: skos:broader links each ASI entry to the LLM entry it extends.
+    OWASP frames ASI entries as building on the LLM Top 10. Those ASI <-> LLM links
+    are NOT asserted here: IBM AI Atlas Nexus publishes a manually curated SSSOM set
+    for them (owasp_asi2owasp_llm.tsv), so they live in taxonomy_mapping.ttl Section 1
+    with the upstream predicates and confidences, rather than being re-derived.
+    nexus:tag carries the upstream entry id for each entry.
     """ ;
 
     # --- Licensing -----------------------------------------------------------
@@ -60,7 +63,7 @@ asi:asi02-tool-misuse a nexus:Risk ;
     skos:definition "An agent applies a tool it is genuinely permitted to use in a way the designer did not intend, because nothing between the decision and the call constrains scope, cost, or reversibility." ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
-    skos:broadMatch owasp:llm06-excessive-agency ;
+    nexus:tag "asi02-tool-misuse-and-exploitation" ;
     rdfs:seeAlso <https://genai.owasp.org/> .
 
 asi:asi06-memory-and-context-poisoning a nexus:Risk ;
@@ -68,7 +71,7 @@ asi:asi06-memory-and-context-poisoning a nexus:Risk ;
     skos:definition "Content an agent retains for later reuse is corrupted, so a single tainted write keeps steering reasoning across turns and sessions after the original source is gone." ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
-    skos:broadMatch owasp:llm04-data-and-model-poisoning ;
+    nexus:tag "asi06-memory-and-context-poisoning" ;
     rdfs:seeAlso <https://genai.owasp.org/> .
 
 
