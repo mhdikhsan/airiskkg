@@ -31,6 +31,7 @@ Files derived from it:
 | `ontology/taxonomy/nexus_taxonomy_core.ttl` | Nexus taxonomy structure, adapted |
 | `ontology/taxonomy/taxonomy_mapping.ttl` | Section 1 cross-taxonomy mappings (SSSOM sets) |
 | `ontology/taxonomy/owasp_llm.ttl` | `nexus:tag` entry identifiers only |
+| `ontology/taxonomy/taxonomy_mapping.ttl` (Section 1) | ASI <-> OWASP LLM rows (`owasp_asi2owasp_llm.tsv`) and Atlas <-> NIST rows (`ibm2nistgenai.tsv`) |
 
 > **Open item.** Apache 2.0 covers IBM's packaging, not upstream rights in
 > third-party content Nexus itself redistributes. The MIT AI Risk Repository and
@@ -60,6 +61,18 @@ this repository is CC BY 4.0. **Anyone extending the OWASP taxonomy files must
 reference OWASP rather than reproduce its prose** — copying their descriptions,
 mitigation lists, or attack scenarios would pull ShareAlike onto the file and
 conflict with the repository licence.
+
+## NIST AI 600-1 — U.S. government work, no copyright
+
+National Institute of Standards and Technology. (2024). *Artificial intelligence
+risk management framework: Generative artificial intelligence profile*
+(NIST AI 600-1). <https://doi.org/10.6028/NIST.AI.600-1>
+
+Works of the U.S. federal government are not subject to domestic copyright
+protection (17 U.S.C. §105), so unlike the OWASP material there is no ShareAlike
+constraint here. `ontology/taxonomy/nist_genai.ttl` uses the profile's category
+identifiers and short names; the definitions in that file are PAIR-AI summaries,
+not NIST text. The Atlas ↔ NIST mappings come from IBM AI Atlas Nexus above.
 
 ## Sources cited by the motif and role libraries
 

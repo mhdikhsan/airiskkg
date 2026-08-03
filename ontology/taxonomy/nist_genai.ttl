@@ -1,0 +1,116 @@
+@prefix nist:  <http://w3id.org/airiskkg/taxonomy/nist-genai#> .
+@prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/taxonomy/nist-genai#> a owl:Ontology ;
+    rdfs:label "NIST AI RMF Generative AI Profile Subset for AI Risk KG" ;
+    dct:title "NIST AI RMF Generative AI Profile Subset for AI Risk KG" ;
+    dct:description """
+    A selected RDF subset of the risk categories in the NIST AI Risk Management
+    Framework: Generative AI Profile (NIST AI 600-1).
+
+    Scope: only the categories reachable from the IBM AI Risk Atlas concepts this
+    project models are included (9 of the profile's 12), following the same
+    "subset what the assessment actually uses" convention as the other taxonomy
+    files. This layer is ALIGNMENT, not detection: PAIR-AI does not anchor risk
+    patterns on NIST entries, because no upstream OWASP <-> NIST mapping set
+    exists and inventing one would defeat the provenance tiering. NIST is reached
+    through IBM AI Risk Atlas, whose entries findings already surface.
+
+    Mappings to these categories live in taxonomy_mapping.ttl Section 1, taken
+    from the upstream Nexus set ibm2nistgenai.tsv (manually curated, confidence
+    0.95). Category labels are the profile's own short names; the definitions
+    here are PAIR-AI summaries written for this knowledge base.
+    """ ;
+
+    # NIST AI 600-1 is a work of the U.S. federal government and is not subject
+    # to copyright protection in the United States (17 U.S.C. 105), so unlike the
+    # OWASP material there is no ShareAlike constraint to manage here. The
+    # mappings that connect it to IBM AI Risk Atlas come from IBM AI Atlas Nexus
+    # under Apache License 2.0; see /NOTICE.md.
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Category identifiers and short names are from NIST AI 600-1, a U.S. federal government publication not subject to domestic copyright protection (17 U.S.C. 105). Definitions here are PAIR-AI summaries, not NIST text. Alignment to IBM AI Risk Atlas is derived from IBM AI Atlas Nexus (Apache License 2.0)."@en ;
+    dct:bibliographicCitation "National Institute of Standards and Technology. (2024). Artificial intelligence risk management framework: Generative artificial intelligence profile (NIST AI 600-1). U.S. Department of Commerce. https://doi.org/10.6028/NIST.AI.600-1"@en ;
+
+    dct:source <https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf> ,
+               <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/ibm2nistgenai.tsv> .
+
+
+nist:NIST_AI_600_1_GenAI_Profile a nexus:RiskTaxonomy, skos:ConceptScheme ;
+    skos:prefLabel "NIST AI RMF Generative AI Profile" ;
+    dct:description "Risk categories the NIST AI Risk Management Framework identifies as unique to, or amplified by, generative AI." ;
+    owl:versionInfo "AI 600-1 (2024)" .
+
+
+#################################################################
+# Risk categories (subset reachable from the modelled Atlas concepts)
+#
+# nexus:tag is the upstream Nexus entry id, matching how the OWASP and MIT
+# entries align, so rows in ibm2nistgenai.tsv resolve to these URIs.
+#################################################################
+
+nist:confabulation a nexus:Risk ;
+    skos:prefLabel "Confabulation" ;
+    skos:definition "The system states fabricated or erroneous content with the fluency and assurance of fact, so a reader has little signal that it is unfounded." ;
+    skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:tag "nist-confabulation" .
+
+nist:data-privacy a nexus:Risk ;
+    skos:prefLabel "Data Privacy" ;
+    skos:definition "Personal data is exposed, inferred, or re-identified through the system's training data, its context, or its outputs." ;
+    skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:tag "nist-data-privacy" .
+
+nist:environmental-impacts a nexus:Risk ;
+    skos:prefLabel "Environmental Impacts" ;
+    skos:definition "The energy, water, and hardware footprint of training and operating generative models at scale." ;
+    skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:tag "nist-environmental-impacts" .
+
+nist:harmful-bias-and-homogenization a nexus:Risk ;
+    skos:prefLabel "Harmful Bias and Homogenization" ;
+    skos:definition "The system amplifies skewed patterns in its data, or narrows the range of outputs so that the same perspectives recur across many users and uses." ;
+    skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:tag "nist-harmful-bias-and-homogenization" .
+
+nist:human-ai-configuration a nexus:Risk ;
+    skos:prefLabel "Human-AI Configuration" ;
+    skos:definition "How people and the system are arranged around each other creates the risk: unclear responsibility, or reliance calibrated too high or too low for what the system can actually do." ;
+    skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:tag "nist-human-ai-configuration" .
+
+nist:information-integrity a nexus:Risk ;
+    skos:prefLabel "Information Integrity" ;
+    skos:definition "Generated content degrades the wider information environment, by making misleading material cheap to produce and hard to distinguish from reliable material." ;
+    skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:tag "nist-information-integrity" .
+
+nist:information-security a nexus:Risk ;
+    skos:prefLabel "Information Security" ;
+    skos:definition "The system widens the attack surface: its inputs, context, weights, or outputs can be manipulated, extracted, or used to reach systems behind it." ;
+    skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:tag "nist-information-security" .
+
+nist:intellectual-property a nexus:Risk ;
+    skos:prefLabel "Intellectual Property" ;
+    skos:definition "Protected or proprietary material is reproduced, absorbed into the system, or disclosed through its outputs." ;
+    skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:tag "nist-intellectual-property" .
+
+nist:value-chain-and-component-integration a nexus:Risk ;
+    skos:prefLabel "Value Chain and Component Integration" ;
+    skos:definition "Third-party data, models, and components are assembled into the system without visibility of their provenance, quality, or the terms they carry." ;
+    skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:tag "nist-value-chain-and-component-integration" .
