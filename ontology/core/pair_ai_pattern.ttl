@@ -9,6 +9,7 @@
 @prefix dct:    <http://purl.org/dc/terms/> .
 @prefix vann:   <http://purl.org/vocab/vann/> .
 @prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix prov:   <http://www.w3.org/ns/prov#> .
 @prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
@@ -228,6 +229,23 @@ pair:derivedFrom a owl:ObjectProperty ;
         a owl:Class ;
         owl:unionOf (pair:GraphMotif pair:RiskPattern)
     ] .
+
+pair:maturity a owl:DatatypeProperty ;
+    rdfs:label "maturity"@en ;
+    rdfs:comment """Curation maturity of a graph motif or AI risk pattern, so consumers can tell
+vetted library entries from work in progress. One of three values:
+  "validated" - derived from a traceable source AND confirmed to match at least one
+                real architecture graph in this repository;
+  "draft"     - derived from a traceable source but not yet confirmed against a real
+                architecture graph;
+  "proposed"  - candidate entry with no traceable source yet; not fit for reporting.
+Maturity describes the curation state of the library entry itself. It says nothing
+about the likelihood or severity of any risk, and never affects matching."""@en ;
+    rdfs:domain [
+        a owl:Class ;
+        owl:unionOf (pair:GraphMotif pair:RiskPattern)
+    ] ;
+    rdfs:range xsd:string .
 
 pair:implementedBy a owl:ObjectProperty ;
     rdfs:label "implemented by"@en ;
