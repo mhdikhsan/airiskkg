@@ -623,13 +623,31 @@ ex:Generate a beam:Transform ;
       }
     });
 
+    // Open a graph file. A Tool4Boxology / t4b-beam export carries its own
+    // vocabulary, so loading it verbatim would leave BEAM queries with nothing
+    // to match; route those through the normalizer instead of the editor. Any
+    // other Turtle is already BEAM and loads as-is.
     $("#file-input").addEventListener("change", (ev) => {
       const file = ev.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => {
-        Editor.setValue(String(reader.result));
-        setStatus("ok", `Loaded file: ${file.name}`);
+      reader.onload = async () => {
+        const text = String(reader.result);
+        if (!text.includes("tool4boxology.org")) {
+          Editor.setValue(text);
+          setStatus("ok", `Loaded file: ${file.name}`);
+          return;
+        }
+        setStatus("busy", `Normalizing Tool4Boxology export: ${file.name}…`);
+        try {
+          const fmt = /\.nt$/i.test(file.name) ? "nt" : "turtle";
+          const { ttl, warnings } = await postJson("/api/import/t4b", { data: text, format: fmt });
+          Editor.setValue(ttl);
+          setStatus("ok", `Imported ${file.name} — ${(warnings || []).length} normalization note(s). ` +
+            "The export carries no roles: use the Annotate tab so motifs can match.");
+        } catch (error) {
+          setStatus("error", "Could not import Tool4Boxology export: " + error.message.split("\n")[0]);
+        }
       };
       reader.readAsText(file);
       ev.target.value = "";
