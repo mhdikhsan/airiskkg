@@ -14,7 +14,6 @@ CONSTRUCT {
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
-        pair:mechanismNarrative ?mechanismNarrative ;
         pair:hasEvidence ?systemPrompt ,
             ?generationStep ,
             ?userFacingOutput ;
@@ -52,16 +51,6 @@ WHERE {
         ?implementedControl beamr:associatedTo ?systemPrompt .
     }
 
-    # Instance-grounded mechanism narrative (presentation only; adds no
-    # filter, changes no finding count). The pattern's canonical curated
-    # causal text is reused verbatim from the mechanism (single source);
-    # only an instance frame naming match-stable elements is appended, so
-    # exactly one narrative is produced per finding.
-    OPTIONAL { ?mechanism dct:description ?mechanismText . }
-    BIND(CONCAT(
-        COALESCE(?mechanismText, ""),
-        " Here system prompt ", IF(CONTAINS(STR(COALESCE(?systemPrompt, "")), "#"), STRAFTER(STR(COALESCE(?systemPrompt, "")), "#"), STR(COALESCE(?systemPrompt, ""))), " feeds generation step ", IF(CONTAINS(STR(COALESCE(?generationStep, "")), "#"), STRAFTER(STR(COALESCE(?generationStep, "")), "#"), STR(COALESCE(?generationStep, ""))), ", producing user-facing output ", IF(CONTAINS(STR(COALESCE(?userFacingOutput, "")), "#"), STRAFTER(STR(COALESCE(?userFacingOutput, "")), "#"), STR(COALESCE(?userFacingOutput, ""))), "."
-    ) AS ?mechanismNarrative)
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

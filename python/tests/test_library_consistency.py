@@ -7,7 +7,7 @@ in isolation but references URIs the other layers never declare or emit:
   A. declared vocabulary  (ontology/core/pair_ai_pattern.ttl)
   B. motif library        (ontology/patterns/motif.ttl)
   C. risk pattern library (ontology/patterns/risk_pattern_library.ttl)
-  D. SPARQL queries       (ontology/patterns/implementation/*.rq)
+  D. SPARQL queries       (ontology/patterns/implementation/{match,risk,propagation}/)
   E. example graphs       (ontology/example/*.ttl)
   +  taxonomies           (ontology/taxonomy/*.ttl)
 
@@ -74,7 +74,10 @@ def taxonomies() -> Graph:
 
 @pytest.fixture(scope="module")
 def query_texts() -> dict[str, str]:
-    return {p.name: p.read_text(encoding="utf-8") for p in sorted(IMPL.glob("*.rq"))}
+    # keyed by "<kind>/<file>" (match/, risk/, propagation/) so tests can filter by
+    # query kind. Filtering on a filename prefix would silently match nothing.
+    return {f"{p.parent.name}/{p.name}": p.read_text(encoding="utf-8")
+            for p in sorted(IMPL.rglob("*.rq"))}
 
 
 def test_every_pair_and_pat_term_in_queries_is_declared(libraries, query_texts) -> None:
@@ -110,13 +113,13 @@ def test_taxonomy_terms_in_queries_and_libraries_resolve(libraries, taxonomies, 
 
 
 def test_risk_queries_only_reference_pattern_nodes_that_match_queries_emit(query_texts) -> None:
-    """risk_*.rq joins on binding-node URIs; if no match_*.rq emits that URI,
+    """risk/*.rq joins on binding-node URIs; if no match/*.rq emits that URI,
     the join is silently empty (e.g. the pat:DirectPrompting_* vs pat:DP_*
     drift this test was born from)."""
-    emitted = {n for f, t in query_texts.items() if f.startswith("match_") for n in _BINDS_RE.findall(t)}
+    emitted = {n for f, t in query_texts.items() if f.startswith("match/") for n in _BINDS_RE.findall(t)}
     offenders = []
     for fname, text in query_texts.items():
-        if not fname.startswith("risk_"):
+        if not fname.startswith("risk/"):
             continue
         for node in set(_BINDS_RE.findall(text)):
             if node not in emitted:
@@ -128,7 +131,7 @@ def test_match_queries_emit_only_declared_pattern_nodes(libraries, query_texts) 
     declared_nodes = set(libraries.subjects(RDF.type, PAIR.PatternNode))
     offenders = []
     for fname, text in query_texts.items():
-        if not fname.startswith("match_"):
+        if not fname.startswith("match/"):
             continue
         for node in set(_BINDS_RE.findall(text)):
             if PAT[node] not in declared_nodes:
@@ -147,7 +150,7 @@ def test_implementation_paths_resolve_and_no_orphan_queries(libraries) -> None:
         if not path.is_file():
             missing.append(f"{impl} -> {value}")
     assert not missing, "implementationPath does not resolve:\n" + "\n".join(missing)
-    orphans = [p.name for p in sorted(IMPL.glob("*.rq")) if p.resolve() not in registered]
+    orphans = [p.name for p in sorted(IMPL.rglob("*.rq")) if p.resolve() not in registered]
     assert not orphans, "Query files on disk but registered by no PatternImplementation:\n" + "\n".join(orphans)
 
 

@@ -23,7 +23,6 @@ CONSTRUCT {
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif pat:RetrievalAugmentedGenerationMotif ;
         pair:hasDerivedMechanism ?mechanism ;
-        pair:mechanismNarrative ?mechanismNarrative ;
         pair:hasEvidence ?query ,
             ?retrievedCtx ,
             ?genStep ,
@@ -85,15 +84,6 @@ WHERE {
         ?implementedControl beamr:associatedTo ?genStep .
     }
 
-    # Instance-grounded mechanism narrative (presentation only; adds no filter,
-    # changes no finding count). The pattern's canonical curated causal text is
-    # reused verbatim from the mechanism; only an instance frame naming
-    # match-stable elements is appended, so exactly one narrative per finding.
-    OPTIONAL { ?mechanism dct:description ?mechanismText . }
-    BIND(CONCAT(
-        COALESCE(?mechanismText, ""),
-        " Here generation step ", IF(CONTAINS(STR(COALESCE(?genStep, "")), "#"), STRAFTER(STR(COALESCE(?genStep, "")), "#"), STR(COALESCE(?genStep, ""))), " produces response ", IF(CONTAINS(STR(COALESCE(?response, "")), "#"), STRAFTER(STR(COALESCE(?response, "")), "#"), STR(COALESCE(?response, ""))), " from retrieved context ", IF(CONTAINS(STR(COALESCE(?retrievedCtx, "")), "#"), STRAFTER(STR(COALESCE(?retrievedCtx, "")), "#"), STR(COALESCE(?retrievedCtx, ""))), " with no represented verification, evaluation, or scoring step."
-    ) AS ?mechanismNarrative)
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

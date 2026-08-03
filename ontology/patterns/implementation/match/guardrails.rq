@@ -52,7 +52,6 @@ WHERE {
     ?inputGuardrailStep beam:use ?userPrompt .
     ?inputGuardrailStep beam:produce ?inputDecision .
     ?inputGuardrailStep beam:inform ?generationStep .
-    ?generationStep beam:use ?userPrompt .
     ?generationStep beam:use ?llm .
     ?generationStep beam:produce ?rawResponse .
     ?generationStep beam:inform ?outputGuardrailStep .
