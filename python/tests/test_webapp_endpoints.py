@@ -57,7 +57,7 @@ def test_graph_endpoint_empty_ttl_is_empty_graph(client) -> None:
 
 
 def test_validate_endpoint_reports_contract(client) -> None:
-    ttl = (EXAMPLE_DIR / "uc6.ttl").read_text(encoding="utf-8")
+    ttl = (EXAMPLE_DIR / "onyx_danswer.ttl").read_text(encoding="utf-8")
     response = client.post("/api/validate", json={"ttl": ttl})
     assert response.status_code == 200
     report = response.get_json()
@@ -75,7 +75,7 @@ def test_validate_endpoint_reports_contract(client) -> None:
 
 
 def test_assess_endpoint_still_works(client) -> None:
-    ttl = (EXAMPLE_DIR / "uc6.ttl").read_text(encoding="utf-8")
+    ttl = (EXAMPLE_DIR / "onyx_danswer.ttl").read_text(encoding="utf-8")
     response = client.post("/api/assess", json={"ttl": ttl})
     assert response.status_code == 200
     data = response.get_json()
