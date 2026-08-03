@@ -72,7 +72,7 @@
       const currentCats = node.categoryIds || [];
       if (!currentRoles.length) untagged += 1;
 
-      const rolePicker = MultiPicker(vocab.roles, currentRoles, { placeholder: "+ add role" });
+      const rolePicker = MultiPicker(vocab.roles, currentRoles, { placeholder: "+ add role", grouped: true });
       const catPicker = MultiPicker(vocab.dataCategories, currentCats, { placeholder: "+ add category" });
 
       rows.push({ id: node.id, rolePicker, catPicker });

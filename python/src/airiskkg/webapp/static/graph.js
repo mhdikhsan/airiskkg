@@ -63,7 +63,7 @@
       if (!changed) break;
     }
 
-    // group by layer, then reduce crossings with a few barycenter sweeps
+    
     const layers = new Map();
     for (const n of nodes) {
       const l = layer.get(n.id);
@@ -415,7 +415,7 @@
       `</div>`,
     ].join("");
     // multi-value pickers: an element may carry several roles / data categories
-    const rolePicker = MultiPicker(annotationCfg.vocabulary.roles, node.roleIds || [], { placeholder: "+ add role" });
+    const rolePicker = MultiPicker(annotationCfg.vocabulary.roles, node.roleIds || [], { placeholder: "+ add role", grouped: true });
     const catPicker = MultiPicker(annotationCfg.vocabulary.dataCategories, node.categoryIds || [], { placeholder: "+ add data category" });
     detailBox.querySelector("#nd-role-mp").appendChild(rolePicker.element);
     detailBox.querySelector("#nd-cat-mp").appendChild(catPicker.element);
