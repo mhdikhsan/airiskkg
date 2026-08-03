@@ -5,11 +5,16 @@
  * roles / data categories. Used by the node popup (graph.js) and the Annotate
  * table (annotate.js).
  *
- * window.MultiPicker(items, selectedIds, {placeholder, grouped}) -> { element, getValues }
- *   items       : [{ id, label, group? }]
+ * window.MultiPicker(items, selectedIds, {placeholder, grouped, filterKind})
+ *   -> { element, getValues }
+ *   items       : [{ id, label, group?, applies? }]
  *   selectedIds : [id, ...] already-selected ids
  *   grouped     : opt-in; render items under <optgroup> by their `group` field
  *                 (off by default, so ungrouped vocabularies are unaffected)
+ *   filterKind  : opt-in; show only items whose `applies` matches this element
+ *                 kind ("process" / "resource"). Narrowing only - a "show all"
+ *                 entry reveals the full vocabulary, and an already-selected
+ *                 value is never hidden.
  *   getValues() : current selected ids (array)
  */
 (function () {
@@ -68,18 +73,33 @@
       return names.map((name) => [name, byGroup.get(name).sort((a, b) => a.label.localeCompare(b.label))]);
     }
 
+    // Narrow to the roles that fit this element kind. Items with no `applies`
+    // are always kept (unclassified vocabulary is never hidden), and the filter
+    // is escapable via the SHOW_ALL entry - nothing becomes unreachable.
+    const SHOW_ALL = "__show_all__";
+    let showAll = false;
+    function applicable(list) {
+      if (showAll || !opts.filterKind) return { shown: list, hidden: 0 };
+      const shown = list.filter((it) => !it.applies || it.applies === opts.filterKind);
+      return { shown, hidden: list.length - shown.length };
+    }
+
     function renderSelect() {
       addSelect.innerHTML = "";
       addSelect.appendChild(el("option", { value: "" }, opts.placeholder || "+ add"));
-      const available = items.filter((it) => !selected.has(it.id));
+      const { shown, hidden } = applicable(items.filter((it) => !selected.has(it.id)));
       if (!opts.grouped) {
-        for (const it of available) addSelect.appendChild(el("option", { value: it.id }, it.label));
+        for (const it of shown) addSelect.appendChild(el("option", { value: it.id }, it.label));
       } else {
-        for (const [name, groupItems] of groupsOf(available)) {
+        for (const [name, groupItems] of groupsOf(shown)) {
           const optgroup = el("optgroup", { label: name });
           for (const it of groupItems) optgroup.appendChild(el("option", { value: it.id }, it.label));
           addSelect.appendChild(optgroup);
         }
+      }
+      if (hidden > 0) {
+        addSelect.appendChild(el("option", { value: SHOW_ALL, class: "mp-show-all" },
+          `… show all roles (+${hidden})`));
       }
       addSelect.value = "";
     }
@@ -88,7 +108,10 @@
 
     addSelect.addEventListener("change", (e) => {
       e.stopPropagation();
-      if (addSelect.value) { selected.add(addSelect.value); render(); }
+      if (!addSelect.value) return;
+      if (addSelect.value === SHOW_ALL) { showAll = true; render(); return; }
+      selected.add(addSelect.value);
+      render();
     });
     // keep clicks inside the picker from triggering a parent row's handler
     container.addEventListener("click", (e) => e.stopPropagation());

@@ -415,7 +415,10 @@
       `</div>`,
     ].join("");
     // multi-value pickers: an element may carry several roles / data categories
-    const rolePicker = MultiPicker(annotationCfg.vocabulary.roles, node.roleIds || [], { placeholder: "+ add role", grouped: true });
+    const rolePicker = MultiPicker(annotationCfg.vocabulary.roles, node.roleIds || [], {
+      placeholder: "+ add role", grouped: true,
+      filterKind: node.kind === "process" ? "process" : "resource",
+    });
     const catPicker = MultiPicker(annotationCfg.vocabulary.dataCategories, node.categoryIds || [], { placeholder: "+ add data category" });
     detailBox.querySelector("#nd-role-mp").appendChild(rolePicker.element);
     detailBox.querySelector("#nd-cat-mp").appendChild(catPicker.element);
