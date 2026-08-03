@@ -77,7 +77,7 @@ def build_rows(graph: Graph) -> list[dict[str, str]]:
 
     query_text = {
         path.name: path.read_text(encoding="utf-8")
-        for path in sorted((PATTERNS_DIR / "implementation").glob("*.rq"))
+        for path in sorted((PATTERNS_DIR / "implementation").rglob("*.rq"))
     }
 
     def ancestors(role: URIRef) -> list[URIRef]:

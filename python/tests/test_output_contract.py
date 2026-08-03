@@ -110,7 +110,7 @@ def test_pipeline_only_ever_writes_candidate() -> None:
     """No code path emits a status other than "candidate"; the other four values
     are set by humans downstream, never by the assessment."""
     emitted: dict[str, set[str]] = {}
-    for query_path in sorted(Path(PATTERNS_DIR / "implementation").glob("*.rq")):
+    for query_path in sorted(Path(PATTERNS_DIR / "implementation").rglob("*.rq")):
         text = query_path.read_text(encoding="utf-8")
         for line in text.splitlines():
             if "findingStatus" not in line:

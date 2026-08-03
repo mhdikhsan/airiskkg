@@ -14,7 +14,6 @@ CONSTRUCT {
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
-        pair:mechanismNarrative ?mechanismNarrative ;
         pair:hasEvidence ?untrustedSource ,
             ?pipelineStep ,
             ?producedArtifact ;
@@ -59,16 +58,6 @@ WHERE {
         ?implementedControl beamr:associatedTo ?untrustedSource .
     }
 
-    # Instance-grounded mechanism narrative (presentation only; adds no
-    # filter, changes no finding count). The pattern's canonical curated
-    # causal text is reused verbatim from the mechanism (single source);
-    # only an instance frame naming match-stable elements is appended, so
-    # exactly one narrative is produced per finding.
-    OPTIONAL { ?mechanism dct:description ?mechanismText . }
-    BIND(CONCAT(
-        COALESCE(?mechanismText, ""),
-        " Here the matched ", IF(CONTAINS(STR(COALESCE(?motif, "")), "#"), STRAFTER(STR(COALESCE(?motif, "")), "#"), STR(COALESCE(?motif, ""))), " path ingests untrusted or externally-sourced data with no represented curation control."
-    ) AS ?mechanismNarrative)
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

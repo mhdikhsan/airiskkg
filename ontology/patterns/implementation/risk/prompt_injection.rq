@@ -14,7 +14,6 @@ CONSTRUCT {
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
-        pair:mechanismNarrative ?mechanismNarrative ;
         pair:hasEvidence ?untrustedContent ,
             ?generationStep ,
             ?llm ,
@@ -65,12 +64,6 @@ WHERE {
         ?implementedControl beamr:associatedTo ?generationStep .
     }
 
-
-    OPTIONAL { ?mechanism dct:description ?mechanismText . }
-    BIND(CONCAT(
-        COALESCE(?mechanismText, ""),
-        " Here untrusted content can reach generation step ", IF(CONTAINS(STR(COALESCE(?generationStep, "")), "#"), STRAFTER(STR(COALESCE(?generationStep, "")), "#"), STR(COALESCE(?generationStep, ""))), ", producing user-facing output ", IF(CONTAINS(STR(COALESCE(?userFacingOutput, "")), "#"), STRAFTER(STR(COALESCE(?userFacingOutput, "")), "#"), STR(COALESCE(?userFacingOutput, ""))), "."
-    ) AS ?mechanismNarrative)
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

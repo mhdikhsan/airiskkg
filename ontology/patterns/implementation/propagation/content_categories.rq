@@ -1,0 +1,43 @@
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+
+# Content categories flow with the data that carries them.
+#
+# The modeler annotates WHERE protected content enters (Rule R8: annotated base
+# fact - only a human knows that a given store holds personal data). Whether it
+# can REACH a later element is structural, so it is derived here by following
+# beam:use -> beam:produce, rather than being hand-tagged on every element in
+# between. The runner re-runs this to a fixed point, so one hop becomes the full
+# transitive closure along the flow.
+#
+# Generic over the content-kind branch of the scheme (anything under
+# pair:Information: SensitiveInformation, ConfidentialInformation,
+# ExternalUserContent, GeneratedContent) rather than one query per category, so
+# a new content category propagates without new machinery. The trust markers
+# pair:UntrustedContent / pair:TrustedContent are deliberately NOT handled here:
+# they are roots outside pair:Information, carry different semantics, and have
+# their own rule with a guardrail barrier (propagation/untrusted_content.rq).
+#
+# Barrier: a redaction step. Content that passes through a step whose role is
+# under pair:RedactionStep is treated as no longer carrying the category, which
+# is what makes "add redaction here" a modelable mitigation rather than advice.
+#
+# Candidate framing (Rule R4): this derives REACHABILITY, not disclosure. That
+# protected content can reach an output is a structural disposition; the finding
+# built on it stays a candidate.
+
+CONSTRUCT {
+    ?downstream pair:containsDataCategory ?category .
+}
+WHERE {
+    ?upstream pair:containsDataCategory ?category .
+    ?category pair:subDataCategoryOf* pair:Information .
+
+    ?step beam:use ?upstream ;
+          beam:produce ?downstream .
+
+    FILTER NOT EXISTS {
+        ?step pair:playsRole ?stepRole .
+        ?stepRole pair:subRoleOf* pair:RedactionStep .
+    }
+}

@@ -973,6 +973,12 @@ pair:HumanApprovalStep a pair:PatternRole ;
     skos:definition "A step at which a person must confirm an action before it proceeds (human in the loop)."@en ;
     dct:source "OWASP Top 10 for LLM Applications 2025, LLM06 Excessive Agency" .
 
+pair:RedactionStep a pair:PatternRole ;
+    skos:prefLabel "RedactionStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that removes, masks, tokenizes, or minimizes protected content before it is passed on, so what leaves the step no longer carries the content category that entered it. The barrier for content-category propagation: an element downstream of a redaction step does not inherit the upstream category."@en ;
+    dct:source "OWASP Top 10 for LLM Applications 2025, LLM02 Sensitive Information Disclosure (sanitization and redaction of sensitive content before processing); OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (screening content before commit)" .
+
 pair:MemoryValidationStep a pair:PatternRole ;
     skos:prefLabel "MemoryValidationStep"@en ;
     pair:subRoleOf pair:ControlStep ;

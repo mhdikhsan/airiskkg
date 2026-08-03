@@ -12,7 +12,6 @@ CONSTRUCT {
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif pat:DirectPromptingMotif ;
         pair:hasDerivedMechanism ?mechanism ;
-        pair:mechanismNarrative ?mechanismNarrative ;
         pair:hasEvidence ?query ,
             ?step ,
             ?llm ,
@@ -68,16 +67,6 @@ WHERE {
         ?retrievedContext pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
     }
 
-    # Instance-grounded mechanism narrative (presentation only; adds no
-    # filter, changes no finding count). The pattern's canonical curated
-    # causal text is reused verbatim from the mechanism (single source);
-    # only an instance frame naming match-stable elements is appended, so
-    # exactly one narrative is produced per finding.
-    OPTIONAL { ?mechanism dct:description ?mechanismText . }
-    BIND(CONCAT(
-        COALESCE(?mechanismText, ""),
-        " Here step ", IF(CONTAINS(STR(COALESCE(?step, "")), "#"), STRAFTER(STR(COALESCE(?step, "")), "#"), STR(COALESCE(?step, ""))), " produces answer ", IF(CONTAINS(STR(COALESCE(?answer, "")), "#"), STRAFTER(STR(COALESCE(?answer, "")), "#"), STR(COALESCE(?answer, ""))), " with no represented knowledge source or retrieved grounding context."
-    ) AS ?mechanismNarrative)
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

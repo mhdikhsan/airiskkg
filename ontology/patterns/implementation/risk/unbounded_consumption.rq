@@ -14,7 +14,6 @@ CONSTRUCT {
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
-        pair:mechanismNarrative ?mechanismNarrative ;
         pair:hasEvidence ?loopSource ,
             ?loopTarget ;
         pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
@@ -78,16 +77,6 @@ WHERE {
         ?implementedControl beamr:associatedTo ?loopSource .
     }
 
-    # Instance-grounded mechanism narrative (presentation only; adds no
-    # filter, changes no finding count). The pattern's canonical curated
-    # causal text is reused verbatim from the mechanism (single source);
-    # only an instance frame naming match-stable elements is appended, so
-    # exactly one narrative is produced per finding.
-    OPTIONAL { ?mechanism dct:description ?mechanismText . }
-    BIND(CONCAT(
-        COALESCE(?mechanismText, ""),
-        " Here ", IF(CONTAINS(STR(COALESCE(?loopSource, "")), "#"), STRAFTER(STR(COALESCE(?loopSource, "")), "#"), STR(COALESCE(?loopSource, ""))), " feeds ", IF(CONTAINS(STR(COALESCE(?loopTarget, "")), "#"), STRAFTER(STR(COALESCE(?loopTarget, "")), "#"), STR(COALESCE(?loopTarget, ""))), " with no represented budget, rate, or loop control."
-    ) AS ?mechanismNarrative)
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",
