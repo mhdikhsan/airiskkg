@@ -175,6 +175,40 @@ def _vocab_terms(graph: Graph, rdf_class: URIRef) -> list[dict[str, str]]:
     return sorted(terms, key=lambda item: item["label"].lower())
 
 
+def _top_level_role(graph: Graph, role: URIRef) -> URIRef | None:
+    """Walk pair:subRoleOf up to the role's top-level ancestor (the one with no
+    parent). Top-level roles are read from the ontology, never hardcoded. A role
+    with several parents resolves to the alphabetically first top ancestor so the
+    grouping stays deterministic; cycles are guarded by the visited set."""
+    tops: set[URIRef] = set()
+    seen: set[URIRef] = {role}
+    queue: list[URIRef] = [role]
+    while queue:
+        node = queue.pop()
+        parents = [p for p in graph.objects(node, PAIR.subRoleOf) if isinstance(p, URIRef)]
+        if not parents:
+            tops.add(node)  # genuinely top-level: no parent at all
+            continue
+        for parent in parents:
+            if parent not in seen:
+                seen.add(parent)
+                queue.append(parent)
+    return sorted(tops, key=str)[0] if tops else None
+
+
+def _role_vocab_terms(graph: Graph) -> list[dict[str, str]]:
+    """Pattern roles carry the label of their top-level ancestor as `group`, so
+    the UI can render them under <optgroup> headings instead of one flat list."""
+    terms = []
+    for subject in graph.subjects(RDF.type, PAIR.PatternRole):
+        top = _top_level_role(graph, subject)
+        term = {"id": str(subject), "label": _display_label(_label(graph, subject))}
+        if top is not None:
+            term["group"] = _display_label(_label(graph, top))
+        terms.append(term)
+    return sorted(terms, key=lambda item: item["label"].lower())
+
+
 def _classes(pairs: list[tuple[URIRef, str]]) -> list[dict[str, str]]:
     return [{"id": str(uri), "label": label} for uri, label in pairs]
 
@@ -185,7 +219,7 @@ def _vocabulary() -> dict:
     always reflects the current pattern vocabulary."""
     graph = load_base_graph()
     return {
-        "roles": _vocab_terms(graph, PAIR.PatternRole),
+        "roles": _role_vocab_terms(graph),
         "dataCategories": _vocab_terms(graph, PAIR.DataCategory),
         "resourceClasses": _classes(RESOURCE_CLASSES),
         "processClasses": _classes(PROCESS_CLASSES),

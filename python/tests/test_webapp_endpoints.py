@@ -101,3 +101,33 @@ def test_import_t4b_endpoint_reports_bad_input(client) -> None:
     response = client.post("/api/import/t4b", json={"data": "not a triple at all", "format": "nt"})
     assert response.status_code == 400
     assert "error" in response.get_json()
+
+
+def test_vocabulary_roles_are_grouped_by_top_level_role(client) -> None:
+    """Every pattern role carries the label of its top-level ancestor as `group`
+    so the UI can render <optgroup> headings. Groups come from the ontology
+    (roles with no pair:subRoleOf parent), never a hardcoded list."""
+    response = client.get("/api/vocabulary")
+    assert response.status_code == 200
+    data = response.get_json()
+
+    roles = data["roles"]
+    assert roles, "roles expected"
+    # every role is selectable and grouped
+    assert all(role.get("group") for role in roles), "every role needs a group"
+    assert len({role["id"] for role in roles}) == len(roles), "role ids unique"
+
+    # groups are the ontology's top-level roles, which are their own group
+    groups = {role["group"] for role in roles}
+    by_id = {role["id"]: role for role in roles}
+    for top in ("ProcessingStep", "ControlStep", "ResourceRole", "UserInput"):
+        uri = f"http://w3id.org/airiskkg/pair-ai#{top}"
+        assert by_id[uri]["group"] == by_id[uri]["label"]
+        assert by_id[uri]["label"] in groups
+
+    # a role with several parents still resolves to a single group
+    external_model = by_id["http://w3id.org/airiskkg/pair-ai#ExternalModel"]
+    assert external_model["group"] == "Resource Role"
+
+    # data categories stay ungrouped so their dropdown is unaffected
+    assert not any("group" in category for category in data["dataCategories"])

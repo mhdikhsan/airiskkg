@@ -5,9 +5,11 @@
  * roles / data categories. Used by the node popup (graph.js) and the Annotate
  * table (annotate.js).
  *
- * window.MultiPicker(items, selectedIds, {placeholder}) -> { element, getValues }
- *   items       : [{ id, label }]
+ * window.MultiPicker(items, selectedIds, {placeholder, grouped}) -> { element, getValues }
+ *   items       : [{ id, label, group? }]
  *   selectedIds : [id, ...] already-selected ids
+ *   grouped     : opt-in; render items under <optgroup> by their `group` field
+ *                 (off by default, so ungrouped vocabularies are unaffected)
  *   getValues() : current selected ids (array)
  */
 (function () {
@@ -51,12 +53,33 @@
       chipsEl.style.display = selected.size ? "flex" : "none";
     }
 
+    // Group headings alphabetical, items alphabetical within a group, and
+    // anything without a group last under "Other".
+    const OTHER = "Other";
+    function groupsOf(available) {
+      const byGroup = new Map();
+      for (const it of available) {
+        const key = it.group || OTHER;
+        if (!byGroup.has(key)) byGroup.set(key, []);
+        byGroup.get(key).push(it);
+      }
+      const names = [...byGroup.keys()].filter((n) => n !== OTHER).sort((a, b) => a.localeCompare(b));
+      if (byGroup.has(OTHER)) names.push(OTHER);
+      return names.map((name) => [name, byGroup.get(name).sort((a, b) => a.label.localeCompare(b.label))]);
+    }
+
     function renderSelect() {
       addSelect.innerHTML = "";
       addSelect.appendChild(el("option", { value: "" }, opts.placeholder || "+ add"));
-      for (const it of items) {
-        if (selected.has(it.id)) continue;
-        addSelect.appendChild(el("option", { value: it.id }, it.label));
+      const available = items.filter((it) => !selected.has(it.id));
+      if (!opts.grouped) {
+        for (const it of available) addSelect.appendChild(el("option", { value: it.id }, it.label));
+      } else {
+        for (const [name, groupItems] of groupsOf(available)) {
+          const optgroup = el("optgroup", { label: name });
+          for (const it of groupItems) optgroup.appendChild(el("option", { value: it.id }, it.label));
+          addSelect.appendChild(optgroup);
+        }
       }
       addSelect.value = "";
     }
