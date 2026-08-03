@@ -452,3 +452,24 @@ def test_every_motif_and_risk_pattern_has_source_and_maturity(libraries) -> None
     assert not missing_maturity, (
         f"{len(missing_maturity)} entries without pair:maturity: " + ", ".join(missing_maturity)
     )
+
+
+def test_specific_roles_are_subroles_of_the_role_their_motif_queries(libraries) -> None:
+    """A precise role must sit under the general role its motif actually queries.
+
+    Match queries traverse pair:playsRole/pair:subRoleOf*, so a specific role
+    parented directly to an abstract top-level role is inert: annotating an
+    element with the obviously-correct precise term then silently prevents the
+    motif from matching, and the graph has to double-tag with the general role
+    to work. Regression guard for exactly that class of bug."""
+    expected_parents = {
+        # role -> the role its motif's pattern node requires
+        PAIR.RewrittenQuery: PAIR.UserInput,
+        PAIR.RerankedContext: PAIR.RetrievedContext,
+    }
+    for role, parent in expected_parents.items():
+        ancestors = set(libraries.transitive_objects(role, PAIR.subRoleOf))
+        assert parent in ancestors, (
+            f"{role} must be a sub-role of {parent}, otherwise tagging an element "
+            f"with {role} alone cannot satisfy the motif that queries {parent}"
+        )
