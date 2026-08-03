@@ -703,6 +703,32 @@ pat:ContentCategoryPropagationOQP
     pair:implementationPath "ontology/patterns/implementation/propagation/content_categories.rq" ;
     pair:producesOutputType pair:DataCategoryPropagation .
 
+pat:PersonalDataRightsBridgeOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Personal data rights to content category bridge OQP"@en ;
+    dct:description """
+    Derives pair:containsDataCategory pair:SensitiveInformation for any element the
+    modeler characterized with the OECD data-rights status dataf:Personal. This is
+    the first facet the assessment actually reads: the characterization facets are
+    declared per Rule R2 to be read by applicability conditions, but until now no
+    condition consumed one, so 95 OECD/DPV-grounded concepts had no effect on any
+    outcome.
+
+    Bridging rather than adding a second alternative inside each risk query keeps
+    conditions reading one vocabulary, changes no existing query's semantics, and -
+    because this runs in the same fixed-point loop - lets the derived category flow
+    downstream and stop at a pair:RedactionStep like an annotated one.
+
+    Direction is deliberate: rights status implies content category, never the
+    reverse. Sensitive information is broader than personal data, so the inverse
+    would assert data-protection status the modeler never stated.
+
+    Rule R8: facet:hasDataRights is annotated; the category is derived.
+    """@en ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. OECD Digital Economy Papers, No. 323. https://doi.org/10.1787/cb6d9eca-en; corroborated by DPV v2.3 (dataf:Personal relatedMatch dpv:PersonalData; pair:SensitiveInformation relatedMatch dpv:SensitivePersonalData)" ;
+    pair:implementationPath "ontology/patterns/implementation/propagation/personal_data_rights.rq" ;
+    pair:producesOutputType pair:DataCategoryPropagation .
+
 
 # --- Risk-pattern OQP for MisinformationFromWeakGroundingRiskPattern ---
 # The RAG counterpart of the direct-prompting-without-grounding pattern (both
