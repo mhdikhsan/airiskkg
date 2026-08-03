@@ -1,6 +1,7 @@
 @prefix atlas:   <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#> .
 @prefix mit:     <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> .
 @prefix owasp:   <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
+@prefix asi:     <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
 @prefix mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> .
 @prefix nexus:   <http://w3id.org/airiskkg/taxonomy/nexus#> .
 @prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
@@ -641,3 +642,22 @@ mitctrl:user-rights-recourse
     nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency .
 
+
+
+## OWASP Agentic Top 10 (ASI) <-> MIT domain taxonomy
+## No upstream SSSOM row exists for ASI; these are PAIR-AI curation. The
+## ASI <-> OWASP LLM links live on the ASI entries themselves (skos:broadMatch),
+## since OWASP frames each agentic entry as extending an LLM Top 10 entry.
+
+# Acting on external systems through tools without mediation is an attack
+# surface on the AI system itself (2-2) and removes the human from decisions
+# the architecture still attributes to them (5-2).
+asi:asi02-tool-misuse
+    skos:relatedMatch mit:subdomain-2-2 ,
+        mit:subdomain-5-2 .
+
+# Poisoned retained context is an attack on the system (2-2) whose visible
+# effect downstream is false or misleading output (3-1).
+asi:asi06-memory-and-context-poisoning
+    skos:relatedMatch mit:subdomain-2-2 ,
+        mit:subdomain-3-1 .

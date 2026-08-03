@@ -435,6 +435,12 @@ pair:VectorStore a pair:PatternRole ;
     skos:relatedMatch t4b:DB ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
 
+pair:AgentMemory a pair:PatternRole ;
+    skos:prefLabel "AgentMemory"@en ;
+    pair:subRoleOf pair:KnowledgeSource ;
+    skos:definition "A store holding content the system retains across turns or sessions and reads back into later reasoning: conversation summaries, scratchpads, or a long-term memory store. A specialization of KnowledgeSource whose distinguishing property is that the system writes to it as well as reads from it, so its contents are shaped by the system's own history."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of retained agent context)" .
+
 pair:VectorIndex a pair:PatternRole ;
     skos:prefLabel "VectorIndex"@en ;
     pair:subRoleOf pair:KnowledgeSource ;
@@ -889,6 +895,28 @@ pair:StateChangingStep a pair:PatternRole ;
 
 ### Prediction-step specializations 
 
+### Agentic steps
+
+pair:PlanningStep a pair:PatternRole ;
+    skos:prefLabel "PlanningStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step in which the system decides what to do next - selecting a tool, ordering sub-tasks, or revising a goal - rather than producing the user-facing answer itself. What distinguishes an agent from a single generation call."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI02 Tool Misuse and Exploitation (scope of agentic decision steps)" .
+
+pair:MemoryWriteStep a pair:PatternRole ;
+    skos:prefLabel "MemoryWriteStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step that commits content to agent memory for reuse in later turns or sessions."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of retained-context writes)" .
+
+pair:MemoryReadStep a pair:PatternRole ;
+    skos:prefLabel "MemoryReadStep"@en ;
+    pair:subRoleOf pair:RetrievalStep ;
+    skos:definition "A step that reads retained agent memory back into a working context. A specialization of RetrievalStep: recalling memory is retrieval over the system's own history rather than over an external knowledge source."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of retained-context reads)" .
+
+### Prediction-step specializations 
+
 pair:FastPredictionStep a pair:PatternRole ;
     skos:prefLabel "FastPredictionStep"@en ;
     pair:subRoleOf pair:PredictionStep ;
@@ -932,6 +960,24 @@ pair:RateLimitControlStep a pair:PatternRole ;
     pair:subRoleOf pair:ControlStep ;
     skos:definition "A step that enforces rate, budget, quota, or loop bounds on model calls, retrieval breadth, or tool use."@en ;
     dct:source "OWASP Top 10 for LLM Applications 2025, LLM10 Unbounded Consumption" .
+
+pair:PolicyEnforcementStep a pair:PatternRole ;
+    skos:prefLabel "PolicyEnforcementStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that evaluates a proposed action against a policy before it is carried out, and can narrow or refuse it. Deterministic mediation sitting between a model's decision and its effect, rather than an instruction asking the model to behave."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI02 Tool Misuse and Exploitation (scope of pre-execution mediation)" .
+
+pair:HumanApprovalStep a pair:PatternRole ;
+    skos:prefLabel "HumanApprovalStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step at which a person must confirm an action before it proceeds (human in the loop)."@en ;
+    dct:source "OWASP Top 10 for LLM Applications 2025, LLM06 Excessive Agency" .
+
+pair:MemoryValidationStep a pair:PatternRole ;
+    skos:prefLabel "MemoryValidationStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that screens, attributes, or scores content before it is committed to agent memory, so what is retained is not simply whatever was produced."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of write-time validation)" .
 
 # Data category vocabulary (the Data Category characterization facet)
 #

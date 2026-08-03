@@ -1,0 +1,82 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX beamr: <http://w3id.org/beam/risk#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate agent memory poisoning"@en ;
+        dct:description "Content is committed to an agent memory store without a represented validation step, and the recalled context later reaches a generation step - so an unchecked write keeps shaping later turns."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?writeStep ,
+            ?memory ,
+            ?readStep ,
+            ?recalledContext ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    pat:MemoryPoisoningRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    ?match
+        a pair:MotifMatch ;
+        pair:matchesMotif ?motif ;
+        pair:hasNodeBinding ?writeBinding , ?storeBinding , ?readBinding , ?recalledBinding .
+    ?writeBinding    pair:bindsPatternNode pat:AgentMemory_WriteStepNode ;       pair:matchedElement ?writeStep .
+    ?storeBinding    pair:bindsPatternNode pat:AgentMemory_StoreNode ;           pair:matchedElement ?memory .
+    ?readBinding     pair:bindsPatternNode pat:AgentMemory_ReadStepNode ;        pair:matchedElement ?readStep .
+    ?recalledBinding pair:bindsPatternNode pat:AgentMemory_RecalledContextNode ; pair:matchedElement ?recalledContext .
+
+    # Condition 2: the recalled context actually reaches generation. Without
+    # this the loop is inert, so the finding would not be actionable. Allow the
+    # context to pass through intermediate steps (prompt construction) on the way.
+    ?recalledContext (^beam:use/beam:produce)* ?contextForGeneration .
+    ?generationStep
+        beam:use ?contextForGeneration ;
+        pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+
+    # Condition 1: nothing screens what is written. Closed-world over the
+    # submitted graph only (Rule R4) - absence means "not represented" here.
+    FILTER NOT EXISTS {
+        ?validationStep pair:playsRole ?validationRole .
+        { ?validationRole pair:subRoleOf* pair:MemoryValidationStep }
+        UNION
+        { ?validationRole pair:subRoleOf* pair:InputGuardrailStep }
+        UNION
+        { ?validationRole pair:subRoleOf* pair:OutputValidationStep }
+        {
+            ?validationStep beam:inform ?writeStep .
+        }
+        UNION
+        {
+            ?writeStep beam:use ?screened .
+            ?validationStep beam:produce ?screened .
+        }
+    }
+    FILTER NOT EXISTS {
+        pat:MemoryPoisoningRiskPattern pair:suggestedControl ?implementedControl .
+        ?implementedControl beamr:associatedTo ?memory .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/memory-poisoning"
+    )) AS ?riskFinding)
+}

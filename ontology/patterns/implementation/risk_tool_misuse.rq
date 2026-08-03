@@ -1,0 +1,77 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX beamr: <http://w3id.org/beam/risk#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate unmediated agent tool use"@en ;
+        dct:description "A planning step's decision reaches a tool invocation or state change with no represented policy enforcement, human approval, or rate/budget control in between."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?planningStep ,
+            ?actionStep ,
+            ?actionResult ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    pat:ToolMisuseRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    ?match
+        a pair:MotifMatch ;
+        pair:matchesMotif ?motif ;
+        pair:hasNodeBinding ?planningBinding , ?actionBinding .
+    ?planningBinding pair:bindsPatternNode pat:ToolAgent_PlanningStepNode ;
+                     pair:matchedElement ?planningStep .
+    ?actionBinding   pair:bindsPatternNode pat:ToolAgent_ActionStepNode ;
+                     pair:matchedElement ?actionStep .
+
+    ?planningStep beam:inform ?actionStep .
+    ?actionStep beam:produce ?actionResult .
+
+    # Nothing mediates the decision: no control step is informed by the planner
+    # ahead of the action, and none gates the action itself. Closed-world over
+    # the submitted graph only (Rule R4) - absence here means "not represented",
+    # not "does not exist".
+    FILTER NOT EXISTS {
+        ?mediatingStep pair:playsRole ?mediatingRole .
+        { ?mediatingRole pair:subRoleOf* pair:PolicyEnforcementStep }
+        UNION
+        { ?mediatingRole pair:subRoleOf* pair:HumanApprovalStep }
+        UNION
+        { ?mediatingRole pair:subRoleOf* pair:RateLimitControlStep }
+        {
+            ?mediatingStep beam:inform ?actionStep .
+        }
+        UNION
+        {
+            ?planningStep beam:inform ?mediatingStep .
+        }
+    }
+    FILTER NOT EXISTS {
+        pat:ToolMisuseRiskPattern pair:suggestedControl ?implementedControl .
+        ?implementedControl beamr:associatedTo ?actionStep .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/tool-misuse"
+    )) AS ?riskFinding)
+}

@@ -1,0 +1,98 @@
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix pair:  <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix local: <http://w3id.org/airiskkg/local#> .
+
+# ---------------------------------------------------------------------------
+# Tool-using agent with conversational memory.
+#
+# Exercises the two agentic motifs. Run assessment -> you should see:
+#   - Tool-Using Agent      (planning informs a tool call that acts outside)
+#   - Agent Memory Loop     (the same store is written, then read back)
+#   - Direct Prompting      (the generation leg)
+#
+# and candidate findings for unmediated tool use (ASI02) and memory poisoning
+# (ASI06), because nothing mediates the tool call and nothing screens the write.
+#
+# Flow:
+#   User Request --> Planning --(informs)--> Tool Call --> Tool Result
+#                        |                                     |
+#                   Agent Memory <--- Memory Write <-----------+
+#                        |
+#                   Memory Read --> Recalled Context --> Generation --> Answer
+# ---------------------------------------------------------------------------
+
+local:system a beam:System ;
+    rdfs:label "Tool-using assistant with memory" ;
+    beam:hasProcess
+        local:planning ,
+        local:toolCall ,
+        local:memoryWrite ,
+        local:memoryRead ,
+        local:generation ;
+    beam:hasResource
+        local:userRequest ,
+        local:toolResult ,
+        local:agentMemory ,
+        local:recalledContext ,
+        local:llm ,
+        local:answer .
+
+local:userRequest a beam:Data ;
+    rdfs:label "User Request" ;
+    pair:playsRole pair:PublicUserInput .
+
+# --- agentic decision + action (Tool-Using Agent motif) --------------------
+local:planning a beam:Infer, beam:Process ;
+    rdfs:label "Planning Step" ;
+    pair:playsRole pair:PlanningStep ;
+    beam:use local:userRequest ;
+    beam:use local:llm ;
+    beam:inform local:toolCall .
+
+local:toolCall a beam:Process ;
+    rdfs:label "Tool Call" ;
+    pair:playsRole pair:ToolInvocationStep ;
+    beam:produce local:toolResult .
+
+local:toolResult a beam:Data ;
+    rdfs:label "Tool Result" ;
+    pair:playsRole pair:RetrievedContext .
+
+# --- memory loop (Agent Memory Loop motif) --------------------------------
+local:memoryWrite a beam:Process ;
+    rdfs:label "Memory Write" ;
+    pair:playsRole pair:MemoryWriteStep ;
+    beam:use local:toolResult ;
+    beam:produce local:agentMemory .
+
+local:agentMemory a beam:Data ;
+    rdfs:label "Agent Memory" ;
+    pair:playsRole pair:AgentMemory .
+
+local:memoryRead a beam:Process ;
+    rdfs:label "Memory Read" ;
+    pair:playsRole pair:MemoryReadStep ;
+    beam:use local:agentMemory ;
+    beam:produce local:recalledContext .
+
+local:recalledContext a beam:Data ;
+    rdfs:label "Recalled Context" ;
+    pair:playsRole pair:RetrievedContext .
+
+# --- generation -----------------------------------------------------------
+local:llm a beam:StatisticalModel ;
+    rdfs:label "Foundation LLM" ;
+    pair:playsRole pair:FoundationLLM, pair:GenerativeModel .
+
+local:generation a beam:Infer, beam:Process ;
+    rdfs:label "Generation Step" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use local:userRequest ;
+    beam:use local:recalledContext ;
+    beam:use local:llm ;
+    beam:produce local:answer .
+
+local:answer a beam:Data ;
+    rdfs:label "Answer" ;
+    pair:playsRole pair:LLMResponse, pair:UserFacingOutput .
