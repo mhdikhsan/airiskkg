@@ -344,6 +344,24 @@ pair:implementationPath a owl:DatatypeProperty ;
 
 pair:findingStatus a owl:DatatypeProperty ;
     rdfs:label "finding status"@en ;
+    rdfs:comment """Review state of a candidate risk finding. Exactly one value per finding, drawn
+from a closed set of five (enforced by shacl/assessment_output_contract.ttl):
+  "candidate" - the structure matched and the applicability conditions held. A
+                structural disposition, never a confirmed failure. THE ONLY VALUE
+                THE PIPELINE EVER WRITES: every risk query emits "candidate"
+                literally, by construction.
+  "confirmed" - a human or runtime evidence established the risk is real here;
+  "refuted"   - established the risk does not apply (e.g. a control exists that
+                the submitted graph did not represent);
+  "mitigated" - accepted as real and addressed by a control;
+  "accepted"  - acknowledged as real and knowingly tolerated.
+The four non-candidate values are an EXTENSION POINT for later human review or
+runtime evidence. Nothing in the assessment pipeline writes them, and nothing in
+it reads them: they exist so a verdict can be recorded without inventing new
+vocabulary or breaking the candidate framing (Rule R1). Kept as xsd:string rather
+than a SKOS scheme deliberately - the value set is closed and small, findings are
+generated output rather than curated knowledge, and existing tests assert the
+plain literal."""@en ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range xsd:string .
 
