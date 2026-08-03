@@ -337,3 +337,83 @@ def test_the_provenance_layer_is_in_sync_with_its_generator() -> None:
         "mapping_provenance.ttl is stale - regenerate it with\n"
         "  python python/scripts/generate_mapping_provenance.py"
     )
+
+
+# --- Facet grounding -------------------------------------------------------
+# The characterization facets carry the project's strongest provenance claim, so
+# the claim itself needs guarding. The layer is NOT wholesale "OECD/DPV-derived":
+# it is a documented mixture, and the tests below keep it honestly labelled
+# rather than letting curation drift into looking like external grounding.
+
+FACET_DIR = REPO_ROOT / "ontology" / "facets"
+
+
+@pytest.fixture(scope="module")
+def facets() -> Graph:
+    graph = Graph()
+    for path in sorted(FACET_DIR.glob("*.ttl")):
+        graph.parse(path)
+    return graph
+
+
+def test_every_facet_concept_declares_a_source(facets: Graph) -> None:
+    """A facet value with no stated origin is indistinguishable from one lifted
+    from a published framework, which is the confusion the whole facet layer is
+    supposed to resolve."""
+    unsourced = [
+        c
+        for c in facets.subjects(SKOS.inScheme, None)
+        if not list(facets.objects(c, DCTERMS.source))
+    ]
+    assert not unsourced, "facet concepts with no dct:source: " + ", ".join(
+        sorted(_name(c) for c in unsourced)
+    )
+
+
+def test_facet_sources_are_of_a_recognised_kind(facets: Graph) -> None:
+    """Closed set of four forms: a citable work, a resolvable vocabulary URI, an
+    internal document with a section locus, or an explicit statement that this is
+    project curation. Free text would let 'based on OECD' sit next to 'OECD
+    (2022), Table 4' and read as equally grounded."""
+    import re
+
+    unclassified = []
+    for source in facets.objects(None, DCTERMS.source):
+        text = str(source)
+        citable = "doi.org" in text or re.search(r"\(\d{4}\)", text)
+        resolvable = text.startswith("http") or "w3id.org" in text
+        internal = "glossary" in text.lower() and "Section" in text
+        curated = "curation" in text.lower()
+        if not (citable or resolvable or internal or curated):
+            unclassified.append(text)
+    assert not unclassified, "unclassifiable facet sources:\n" + "\n".join(
+        f"  {t[:90]}" for t in unclassified
+    )
+
+
+def test_citing_dpv_requires_actually_linking_to_dpv(facets: Graph) -> None:
+    """The difference between alignment and name-dropping. DPV publishes
+    resolvable URIs, so a concept that claims DPV as its source can carry a
+    mapping a third party can check - and if it cannot, the citation is doing
+    rhetorical work its evidence does not support.
+
+    This is the check that would not survive minting an OECD concept scheme:
+    OECD publishes no URIs, so an oecd:* concept could only ever be one we wrote
+    ourselves from the same reading that produced the facet value. The mapping
+    would be true by construction and would prove nothing. That asymmetry is why
+    OECD stays a cited documentary source while DPV is an alignment target."""
+    offenders = []
+    for concept in facets.subjects(SKOS.inScheme, None):
+        sources = " ".join(str(o) for o in facets.objects(concept, DCTERMS.source))
+        if "dpv" not in sources.lower():
+            continue
+        linked = any(
+            "dpv" in str(o)
+            for predicate in MAPPING_PREDICATES
+            for o in facets.objects(concept, predicate)
+        )
+        if not linked:
+            offenders.append(concept)
+    assert not offenders, "cite DPV but carry no DPV mapping: " + ", ".join(
+        sorted(_name(c) for c in offenders)
+    )
