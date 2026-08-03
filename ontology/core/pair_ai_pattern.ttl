@@ -585,8 +585,8 @@ pair:SanitizedOutput a pair:PatternRole ;
 
 pair:RewrittenQuery a pair:PatternRole ;
     skos:prefLabel "RewrittenQuery"@en ;
-    pair:subRoleOf pair:ResourceRole ;
-    skos:definition "A reformulated query produced by a query rewriting step."@en ;
+    pair:subRoleOf pair:UserInput ;
+    skos:definition "A reformulated query produced by a query rewriting step. A specialization of UserInput: a rewritten query is still the user's request, restated, and carries the same untrusted provenance - so it satisfies every condition written against UserInput. Previously placed directly under ResourceRole, which made the precise role inert: queries traverse pair:subRoleOf* from UserInput, so tagging an element only as RewrittenQuery silently prevented the Query Rewriting motif from matching."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
 
 pair:RetrievedCandidateSet a pair:PatternRole ;
@@ -597,8 +597,8 @@ pair:RetrievedCandidateSet a pair:PatternRole ;
 
 pair:RerankedContext a pair:PatternRole ;
     skos:prefLabel "RerankedContext"@en ;
-    pair:subRoleOf pair:ResourceRole ;
-    skos:definition "Reranked, selected context fragments for generation."@en ;
+    pair:subRoleOf pair:RetrievedContext ;
+    skos:definition "Reranked, selected context fragments for generation. A specialization of RetrievedContext: reranking reorders and trims retrieved fragments without changing what they are, so reranked context satisfies every condition written against RetrievedContext. Previously placed directly under ResourceRole, which made the precise role inert: tagging an element only as RerankedContext silently prevented the Reranker motif from matching."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
 
 pair:DocumentChunk a pair:PatternRole ;
