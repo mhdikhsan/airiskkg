@@ -22,7 +22,7 @@ import re
 from pathlib import Path
 
 import pytest
-from rdflib import RDF, Graph, Namespace, URIRef
+from rdflib import DCTERMS, RDF, Graph, Namespace, URIRef
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CORE = REPO_ROOT / "ontology" / "core"
@@ -419,4 +419,36 @@ def test_each_motif_query_matches_its_canonical_instance(libraries) -> None:
     assert not offenders, (
         "Motif queries that match none of their own canonical instance:\n"
         + "\n".join(sorted(offenders))
+    )
+
+
+# Un-skip this (delete the xfail marker) once the provenance worklist has been
+# filled in by hand and pair:maturity written back into the libraries. Generate
+# the worklist with:
+#     python python/scripts/pattern_provenance_worklist.py
+# It reports, per motif / risk pattern, what source and maturity are already
+# present. Sources must never be invented - leave an entry unsourced rather
+# than attributing it to a document it did not come from.
+@pytest.mark.xfail(
+    strict=False,
+    reason="pair:maturity is not curated yet; see /tmp/pattern_provenance_worklist.csv",
+)
+def test_every_motif_and_risk_pattern_has_source_and_maturity(libraries) -> None:
+    """Every curated library entry states where it came from (dct:source) and how
+    far its curation has got (pair:maturity)."""
+    missing_source: list[str] = []
+    missing_maturity: list[str] = []
+
+    for rdf_type in (PAIR.GraphMotif, PAIR.RiskPattern):
+        for subject in sorted(libraries.subjects(RDF.type, rdf_type), key=str):
+            if libraries.value(subject, DCTERMS.source) is None:
+                missing_source.append(str(subject))
+            if libraries.value(subject, PAIR.maturity) is None:
+                missing_maturity.append(str(subject))
+
+    assert not missing_source, (
+        f"{len(missing_source)} entries without dct:source: " + ", ".join(missing_source)
+    )
+    assert not missing_maturity, (
+        f"{len(missing_maturity)} entries without pair:maturity: " + ", ".join(missing_maturity)
     )
