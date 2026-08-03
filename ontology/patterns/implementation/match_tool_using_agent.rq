@@ -1,0 +1,49 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Faithful projection of pat:ToolUsingAgentMotif. Matches structure only
+# (candidate framing): a planning step hands off to a step that acts outside the
+# system, and that action produces a result. Whether anything mediates the
+# handoff is a risk-pattern question, not a motif question.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Tool-Using Agent motif match"@en ;
+        pair:matchesMotif pat:ToolUsingAgentMotif ;
+        pair:hasNodeBinding ?planningB , ?actionB , ?resultB .
+
+    ?planningB a pair:NodeBinding ; pair:bindsPatternNode pat:ToolAgent_PlanningStepNode ; pair:matchedElement ?planningStep .
+    ?actionB   a pair:NodeBinding ; pair:bindsPatternNode pat:ToolAgent_ActionStepNode ;   pair:matchedElement ?actionStep .
+    ?resultB   a pair:NodeBinding ; pair:bindsPatternNode pat:ToolAgent_ActionResultNode ; pair:matchedElement ?actionResult .
+}
+WHERE {
+    ?planningStep a beam:Process ;
+                  pair:playsRole/pair:subRoleOf* pair:PlanningStep ;
+                  beam:inform ?actionStep .
+
+    # The action reaches outside the system: a tool call or a direct state
+    # change. Both are ProcessingStep specializations, so bind either.
+    ?actionStep a beam:Process ;
+                pair:playsRole ?actionRole ;
+                beam:produce ?actionResult .
+    { ?actionRole pair:subRoleOf* pair:ToolInvocationStep }
+    UNION
+    { ?actionRole pair:subRoleOf* pair:StateChangingStep }
+
+    ?actionResult a beam:Data .
+
+    FILTER(?planningStep != ?actionStep)
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/tool-using-agent/",
+        ENCODE_FOR_URI(STR(?planningStep)), "/",
+        ENCODE_FOR_URI(STR(?actionStep))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/planning-step")) AS ?planningB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/action-step"))   AS ?actionB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/action-result")) AS ?resultB)
+}

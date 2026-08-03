@@ -1,0 +1,113 @@
+@prefix asi:   <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
+@prefix owasp: <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
+@prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix pair:  <http://w3id.org/airiskkg/pair-ai#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/taxonomy/owasp-asi#> a owl:Ontology ;
+    rdfs:label "OWASP Agentic Top 10 Subset for AI Risk KG" ;
+    dct:title "OWASP Agentic Top 10 Subset for AI Risk KG" ;
+    dct:description """
+    RDF representation of selected OWASP Top 10 for Agentic Applications 2026 (ASI)
+    entries, for the agentic layer of graph-pattern-based AI risk assessment.
+
+    Only the entries PAIR-AI can detect from design-time architecture structure are
+    modelled. ASI is a taxonomy of agentic threats, several of which are runtime or
+    behavioural properties (ASI10 Rogue Agents is defined by behavioural divergence
+    after deployment) and therefore have no structural signature in a submitted
+    architecture graph. Adding them as risk patterns would produce findings that fire
+    on every agent, which breaks candidate framing rather than supporting it.
+
+    OWASP frames ASI entries as building on the LLM Top 10, and this file follows
+    that: skos:broader links each ASI entry to the LLM entry it extends.
+    """ ;
+
+    # --- Licensing -----------------------------------------------------------
+    # Same posture as ontology/taxonomy/owasp_llm.ttl. This file is PAIR-AI's own
+    # work under CC BY 4.0. It REFERENCES the OWASP Top 10 for Agentic Applications
+    # 2026, which is published under CC BY-SA 4.0; ShareAlike binds adaptations, so
+    # only entry identifiers, numbering, and links to the official material are
+    # reused - facts and short names, not protected expression. Every
+    # skos:definition, RiskMechanism, and RiskCondition below is written from
+    # scratch for PAIR-AI's structural model and is NOT a copy or close paraphrase
+    # of OWASP's descriptions, mitigation lists, or attack scenarios.
+    #
+    # Anyone extending this file must keep that discipline: reference OWASP, never
+    # reproduce its prose. See /NOTICE.md.
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Entry identifiers and numbering are referenced from the OWASP Top 10 for Agentic Applications 2026 (OWASP GenAI Security Project - Agentic Security Initiative), which is licensed CC BY-SA 4.0 - see https://creativecommons.org/licenses/by-sa/4.0/. Changes were made: only identifiers, numbering, and links are reused; all definitions and risk mechanisms here are original."@en ;
+    dct:bibliographicCitation "OWASP GenAI Security Project. (2025). OWASP Top 10 for Agentic Applications 2026 (Version 2026). https://genai.owasp.org/"@en ;
+
+    dct:source <https://genai.owasp.org/> ;
+    owl:imports <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
+
+
+asi:OWASP_Agentic_Top_10_2026 a nexus:RiskTaxonomy, skos:ConceptScheme ;
+    skos:prefLabel "OWASP Top 10 for Agentic Applications" ;
+    dct:description "A taxonomy of security threats specific to applications where an AI agent plans, decides, and acts across multiple steps and systems." ;
+    owl:versionInfo "2026" .
+
+
+#################################################################
+# Risk entries (subset: structurally detectable at design time)
+#################################################################
+
+asi:asi02-tool-misuse a nexus:Risk ;
+    skos:prefLabel "ASI02:2026 Tool Misuse and Exploitation" ;
+    skos:definition "An agent applies a tool it is genuinely permitted to use in a way the designer did not intend, because nothing between the decision and the call constrains scope, cost, or reversibility." ;
+    skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
+    nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
+    skos:broadMatch owasp:llm06-excessive-agency ;
+    rdfs:seeAlso <https://genai.owasp.org/> .
+
+asi:asi06-memory-and-context-poisoning a nexus:Risk ;
+    skos:prefLabel "ASI06:2026 Memory & Context Poisoning" ;
+    skos:definition "Content an agent retains for later reuse is corrupted, so a single tainted write keeps steering reasoning across turns and sessions after the original source is gone." ;
+    skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
+    nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
+    skos:broadMatch owasp:llm04-data-and-model-poisoning ;
+    rdfs:seeAlso <https://genai.owasp.org/> .
+
+
+#################################################################
+# Risk mechanisms and conditions (PAIR-AI structural vocabulary)
+#################################################################
+
+asi:asi02-tool-misuse
+    nexus:hasRiskMechanism asi:mechanism-unconstrained-tool-execution ;
+    nexus:hasRiskCondition asi:condition-tool-invocation-without-mediation .
+
+asi:asi06-memory-and-context-poisoning
+    nexus:hasRiskMechanism asi:mechanism-persisted-context-corruption ;
+    nexus:hasRiskCondition asi:condition-untrusted-content-written-to-agent-memory ,
+        asi:condition-agent-memory-reread-into-generation .
+
+asi:mechanism-unconstrained-tool-execution
+    a pair:RiskMechanism ;
+    rdfs:label "Unconstrained tool execution from model decisions"@en ;
+    dct:description "A model decision is carried into an external action with nothing in between that can narrow, price, pause, or refuse it, so an incorrect or manipulated decision becomes an effect on other systems."@en ;
+    nexus:mechanismForRisk asi:asi02-tool-misuse .
+
+asi:mechanism-persisted-context-corruption
+    a pair:RiskMechanism ;
+    rdfs:label "Corruption of persisted agent context"@en ;
+    dct:description "Because retained content is read back into later generation, anything unchecked that reaches the store outlives the turn that produced it and shapes reasoning the architecture no longer traces to its origin."@en ;
+    nexus:mechanismForRisk asi:asi06-memory-and-context-poisoning .
+
+asi:condition-tool-invocation-without-mediation
+    a nexus:RiskCondition ;
+    skos:prefLabel "A model-driven step reaches a tool or state change with no mediating control"@en ;
+    nexus:conditionForRisk asi:asi02-tool-misuse .
+
+asi:condition-untrusted-content-written-to-agent-memory
+    a nexus:RiskCondition ;
+    skos:prefLabel "Content of untrusted or generated provenance is written to agent memory"@en ;
+    nexus:conditionForRisk asi:asi06-memory-and-context-poisoning .
+
+asi:condition-agent-memory-reread-into-generation
+    a nexus:RiskCondition ;
+    skos:prefLabel "Agent memory is read back into a later generation context"@en ;
+    nexus:conditionForRisk asi:asi06-memory-and-context-poisoning .

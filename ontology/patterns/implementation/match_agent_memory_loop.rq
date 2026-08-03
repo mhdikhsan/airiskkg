@@ -1,0 +1,50 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Faithful projection of pat:AgentMemoryLoopMotif. The distinguishing shape is
+# the loop: the SAME store is produced by a write step and used by a later read
+# step. Matches structure only (candidate framing) - whether what gets written
+# is trustworthy is a risk-pattern question.
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Agent Memory Loop motif match"@en ;
+        pair:matchesMotif pat:AgentMemoryLoopMotif ;
+        pair:hasNodeBinding ?writeB , ?storeB , ?readB , ?recalledB .
+
+    ?writeB    a pair:NodeBinding ; pair:bindsPatternNode pat:AgentMemory_WriteStepNode ;       pair:matchedElement ?writeStep .
+    ?storeB    a pair:NodeBinding ; pair:bindsPatternNode pat:AgentMemory_StoreNode ;           pair:matchedElement ?memory .
+    ?readB     a pair:NodeBinding ; pair:bindsPatternNode pat:AgentMemory_ReadStepNode ;        pair:matchedElement ?readStep .
+    ?recalledB a pair:NodeBinding ; pair:bindsPatternNode pat:AgentMemory_RecalledContextNode ; pair:matchedElement ?recalledContext .
+}
+WHERE {
+    ?writeStep a beam:Process ;
+               pair:playsRole/pair:subRoleOf* pair:MemoryWriteStep ;
+               beam:produce ?memory .
+
+    ?memory a beam:Data ;
+            pair:playsRole/pair:subRoleOf* pair:AgentMemory .
+
+    ?readStep a beam:Process ;
+              pair:playsRole/pair:subRoleOf* pair:MemoryReadStep ;
+              beam:use ?memory ;
+              beam:produce ?recalledContext .
+
+    ?recalledContext a beam:Data ;
+                     pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/agent-memory-loop/",
+        ENCODE_FOR_URI(STR(?writeStep)), "/",
+        ENCODE_FOR_URI(STR(?memory)), "/",
+        ENCODE_FOR_URI(STR(?readStep))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/write-step"))       AS ?writeB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/memory-store"))     AS ?storeB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/read-step"))        AS ?readB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/recalled-context")) AS ?recalledB)
+}
