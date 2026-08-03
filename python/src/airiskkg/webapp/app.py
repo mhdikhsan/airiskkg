@@ -427,40 +427,6 @@ def _shacl_report(ttl: str) -> dict:
     }
 
 
-def _motif_matches(ttl: str) -> list[dict]:
-    """Run only the motif-matching queries (no risk, no data-category propagation)
-    over the submitted graph, and return each match's motif label + the URIs of
-    its bound elements - used to draw the dashed motif group boxes live."""
-    graph = load_base_graph()
-    graph.parse(data=ttl, format="turtle")
-    matches = Graph()
-    for query_path in implementation_paths_for_output_type(graph, PAIR.MotifMatch):
-        for triple in run_construct_query(graph, query_path):
-            matches.add(triple)
-
-    results = []
-    for match in set(matches.subjects(RDF.type, PAIR.MotifMatch)):
-        motif = matches.value(match, PAIR.matchesMotif)
-        node_ids = {
-            str(element)
-            for binding in matches.objects(match, PAIR.hasNodeBinding)
-            for element in [matches.value(binding, PAIR.matchedElement)]
-            if element is not None
-        }
-        if not node_ids:
-            continue
-        motif_short = str(motif).rsplit("#", 1)[-1] if motif is not None else "Motif"
-        label = graph.value(motif, RDFS.label) if motif is not None else None
-        results.append({
-            "matchId": str(match),
-            "motifId": motif_short,
-            "label": str(label) if label else motif_short,
-            "nodeIds": sorted(node_ids),
-        })
-    results.sort(key=lambda item: (item["label"], item["matchId"]))
-    return results
-
-
 def _warm_query_cache() -> None:
     """Pre-compile every assessment query once at startup (in the background) so
     the first Run assessment is as fast as the rest. Holds the SPARQL lock so it
@@ -731,14 +697,6 @@ def create_app() -> Flask:
                 data.remove((s, p, o))
             for s, p, o in list(data.triples((None, None, element))):
                 data.remove((s, p, o))
-        elif op == "delete-elements":
-            # batch delete (used to remove a whole motif group box's elements)
-            for element_id in payload.get("elements") or []:
-                element = URIRef(element_id)
-                for s, p, o in list(data.triples((element, None, None))):
-                    data.remove((s, p, o))
-                for s, p, o in list(data.triples((None, None, element))):
-                    data.remove((s, p, o))
         else:
             return jsonify({"error": f"Unknown edit op: {op}"}), 400
 
@@ -746,18 +704,6 @@ def create_app() -> Flask:
         data.bind("pair", PAIR)
         data.bind("local", local)
         return jsonify({"ttl": data.serialize(format="turtle"), "newId": new_id})
-
-    @app.post("/api/motif-matches")
-    def motif_matches() -> object:
-        payload = request.get_json(silent=True) or {}
-        ttl = (payload.get("ttl") or "").strip()
-        if not ttl:
-            return jsonify({"matches": []})
-        try:
-            with _SPARQL_LOCK:
-                return jsonify({"matches": _motif_matches(ttl)})
-        except Exception:  # noqa: BLE001 - mid-edit parse errors: just draw no boxes
-            return jsonify({"matches": []})
 
     @app.post("/api/assess")
     def assess() -> object:

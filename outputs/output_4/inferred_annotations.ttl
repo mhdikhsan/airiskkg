@@ -1,8 +1,0 @@
-@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
-
-<http://w3id.org/airiskkg/example/uc6#EmbeddedQuestion> pair:containsDataCategory pair:UntrustedContent .
-
-<http://w3id.org/airiskkg/example/uc6#EventSummary> pair:containsDataCategory pair:UntrustedContent .
-
-<http://w3id.org/airiskkg/example/uc6#ReformulatedQuery> pair:containsDataCategory pair:UntrustedContent .
-

@@ -1,6 +1,0 @@
-@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
-
-<http://w3id.org/airiskkg/example/onyx-danswer#ChunkEmbeddings> pair:containsDataCategory pair:UntrustedContent .
-
-<http://w3id.org/airiskkg/example/onyx-danswer#CitedAnswer> pair:containsDataCategory pair:UntrustedContent .
-
