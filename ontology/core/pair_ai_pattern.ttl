@@ -17,6 +17,7 @@
 # Ontology
 
 <http://w3id.org/airiskkg/pair-ai#> a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Pattern Module Ontology"@en ;
     dct:description "Pattern-level vocabulary for constructing the PAIR-AI AI Risk Knowledge Graph."@en ;
     vann:preferredNamespacePrefix "pair" ;

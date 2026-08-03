@@ -9,6 +9,7 @@
 
 <http://w3id.org/airiskkg/patterns/motif-library#>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "Architecture Motif Library"@en ;
     dct:description """
     Reusable architecture motifs for PAIR-AI assessment.

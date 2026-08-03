@@ -8,6 +8,7 @@
 
 <http://w3id.org/airiskkg/facets/implementation-type>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Characterization Facet: Implementation Type"@en ;
     dct:description "SKOS concept scheme (extension point) classifying HOW a model is implemented (e.g. architecture family, hosting form). This is the facet counterpart to the deliberate absence of beam:Model subclasses beyond Semantic/Statistical (Rule R1 + Task 4 decision: implementation types are classification values, not query-traversed structure). Assigned via facet:hasImplementationType; read by applicability conditions only (Rule R2)."@en ;
     dct:source "PAIR-AI glossary v1.1, Section A.3 (Implementation Type listed as characterization facet)" ;

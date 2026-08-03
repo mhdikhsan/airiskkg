@@ -8,6 +8,7 @@
 
 <http://w3id.org/airiskkg/facets/autonomy>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Characterization Facet: Autonomy Level"@en ;
     dct:description "SKOS concept scheme classifying the action autonomy of an AI system (Rule R1: facet values are SKOS concepts, never OWL classes to instantiate). Assigned to a beam:System via facet:hasAutonomyLevel; read by applicability conditions, never matched by motifs (Rule R2)."@en ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. OECD Digital Economy Papers, No. 323. https://doi.org/10.1787/cb6d9eca-en" ;
