@@ -116,3 +116,64 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
         result = run_assessment(EXAMPLE_DIR / name, write_outputs=False)
         assert result.motif_match_count == motifs, name
         assert result.risk_finding_count == findings, name
+
+
+# --- OECD/DPV facet bridge -------------------------------------------------
+# The characterization facets are declared per Rule R2 to be read by
+# applicability conditions, but no condition consumed one, so 95 OECD/DPV-
+# grounded concepts had no effect on any outcome. dataf:Personal is the first
+# to become load-bearing, via a bridge to the content-category vocabulary.
+
+_FACET_GRAPH = _GRAPH.replace(
+    "pair:containsDataCategory pair:SensitiveInformation .",
+    "facet:hasDataRights dataf:Personal .",
+).replace(
+    "@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .",
+    "@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .\n"
+    "@prefix facet: <http://w3id.org/airiskkg/facets#> .\n"
+    "@prefix dataf: <http://w3id.org/airiskkg/facets/data#> .",
+)
+
+
+def test_oecd_personal_rights_derives_the_content_category() -> None:
+    """An element characterized only with the OECD data-rights status gains the
+    content category, so the facet vocabulary reaches the assessment at all."""
+    result = run_assessment_from_text(_FACET_GRAPH % ("", "ex:Ctx"))
+    assert "SensitiveInformation" in _categories(result, "Store")
+
+
+def test_the_facet_route_inherits_propagation_and_the_barrier() -> None:
+    """A derived category must behave exactly like an annotated one: it flows
+    downstream, and a RedactionStep stops it. This is the reason for bridging
+    into the category vocabulary instead of special-casing facets per query."""
+    flowing = run_assessment_from_text(_FACET_GRAPH % ("", "ex:Ctx"))
+    assert "SensitiveInformation" in _categories(flowing, "Answer")
+
+    stopped = run_assessment_from_text(_FACET_GRAPH % (_REDACTION, "ex:Clean"))
+    assert "SensitiveInformation" not in _categories(stopped, "Clean")
+
+
+def test_a_finding_fires_from_the_facet_alone() -> None:
+    """End to end: one OECD facet on the source, no pair: category anywhere in
+    the input, and the LLM02 condition is satisfied."""
+    ttl = _FACET_GRAPH % ("", "ex:Ctx")
+    assert "containsDataCategory" not in ttl, "input must not pre-tag any category"
+    result = run_assessment_from_text(ttl)
+    labels = {
+        str(result.risk_findings.value(f, RDFS.label))
+        for f in result.risk_findings.subjects(RDF.type, PAIR.RiskFinding)
+    }
+    assert "Candidate sensitive data retrieval exposure" in labels
+
+
+def test_the_bridge_is_one_directional() -> None:
+    """Rights status implies the category, never the reverse: sensitive content
+    is broader than personal data, so the inverse would assert data-protection
+    status the modeler never stated."""
+    from rdflib import Namespace
+
+    facet = Namespace("http://w3id.org/airiskkg/facets#")
+    dataf = Namespace("http://w3id.org/airiskkg/facets/data#")
+    result = run_assessment_from_text(_GRAPH % ("", "ex:Ctx"))  # category-annotated input
+    store = URIRef(EX + "Store")
+    assert (store, facet.hasDataRights, dataf.Personal) not in result.combined_graph
