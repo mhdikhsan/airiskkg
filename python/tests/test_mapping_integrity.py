@@ -262,12 +262,29 @@ def test_the_provenance_layer_is_not_loaded_by_the_assessment(taxonomy: Graph) -
     assert not list(taxonomy.triples((None, SSSOM.mapping_justification, None)))
 
 
+@pytest.fixture(scope="module")
+def all_mapped() -> Graph:
+    """Every directory that can declare a mapping, not just ontology/taxonomy/.
+
+    The first version of this fixture read taxonomy/ alone, so the coverage test
+    below passed while 80 mappings in patterns/ and core/ had no provenance at
+    all - a green test asserting a guarantee it was not making. Scoping a
+    coverage check to the place you already looked is worse than having none,
+    because it converts an unknown into a false assurance."""
+    graph = Graph()
+    for sub in ("taxonomy", "patterns", "core"):
+        for path in sorted((REPO_ROOT / "ontology" / sub).glob("*.ttl")):
+            graph.parse(path)
+    return graph
+
+
 def test_every_mapping_has_exactly_one_provenance_record(
-    taxonomy: Graph, provenance: Graph
+    all_mapped: Graph, provenance: Graph
 ) -> None:
     """Coverage. An unrecorded mapping is indistinguishable from a curated one
     once loaded, which is the failure this layer exists to prevent - so silence
-    is not an acceptable default for any mapping in the directory."""
+    is not an acceptable default for any mapping anywhere in the ontology."""
+    taxonomy = all_mapped
     recorded = {
         (s, p, o)
         for record in provenance.subjects(RDF.type, SSSOM.Mapping)
