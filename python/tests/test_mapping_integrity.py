@@ -434,3 +434,91 @@ def test_citing_dpv_requires_actually_linking_to_dpv(facets: Graph) -> None:
     assert not offenders, "cite DPV but carry no DPV mapping: " + ", ".join(
         sorted(_name(c) for c in offenders)
     )
+
+
+# --- Section 3 reproducibility --------------------------------------------
+# The 32 embedding-derived risk -> control links were the weakest block in the
+# knowledge base and, until the source CSV was recovered, could not be checked by
+# anyone. Now they can, so this pins it: the committed links must remain exactly
+# what the CSV rolls up to, or one of the two has drifted.
+
+RISK_TO_MITIGATION_CSV = (
+    REPO_ROOT / "data" / "mappings" / "Final_Mapped_Taxonomy_Table_Output.csv"
+)
+OWASP_NS = Namespace("http://w3id.org/airiskkg/taxonomy/owasp-llm#")
+
+# Three MIT sub-categories have no same-named control concept here; these are the
+# approximations recorded when the rollup was first applied (2026-07-17).
+SUBCATEGORY_ALIASES = {
+    "model-alignment": "model-safety-engineering",
+    "governance-disclosure": "risk-disclosure",
+    "third-party-system-access": "access-management",
+}
+
+
+def _rollup_from_csv() -> dict[str, set[str]]:
+    """Reproduce the documented method: for each OWASP risk, collect its mapped
+    MIT actions' sub-categories and map them 1:1 onto mitctrl:* concepts."""
+    import csv
+    import re
+
+    rolled: dict[str, set[str]] = {}
+    with RISK_TO_MITIGATION_CSV.open(encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            # The CSV carries the OWASP year inline (llm022025-...); the ontology
+            # does not. This drift is in the source, not introduced here.
+            owasp = row["owasp_id"]
+            if re.match(r"llm\d{2}2025", owasp):
+                owasp = owasp.replace("2025", "", 1)
+            slug = re.sub(r"^[0-9.]+\s*", "", row["Sub_category"]).lower()
+            slug = slug.replace(" & ", "-").replace(" ", "-").replace("&", "-")
+            rolled.setdefault(owasp, set()).add(SUBCATEGORY_ALIASES.get(slug, slug))
+    return rolled
+
+
+def test_the_risk_to_mitigation_csv_is_present() -> None:
+    """Without it the block below is unverifiable, which was the situation until
+    the file was recovered. Losing it again should fail loudly, not silently
+    reduce these links back to unfalsifiable assertions."""
+    assert RISK_TO_MITIGATION_CSV.exists(), (
+        f"{RISK_TO_MITIGATION_CSV.name} is missing - the 32 embedding-derived "
+        "risk-to-control links can no longer be re-derived or checked"
+    )
+
+
+def test_section_3_control_links_reproduce_from_the_csv(taxonomy: Graph) -> None:
+    """The committed links must equal the CSV rollup exactly, in both directions.
+
+    Extra links would mean curation crept in under an evidence-grounded label;
+    missing links would mean the rollup was applied selectively. Either way the
+    stated provenance would no longer describe the data."""
+    offenders = []
+    for owasp, expected in sorted(_rollup_from_csv().items()):
+        actual = {
+            _name(o)
+            for o in taxonomy.objects(OWASP_NS[owasp], HAS_RELATED_CONTROL)
+        }
+        if missing := expected - actual:
+            offenders.append(f"{owasp}: in CSV but not in repo - {sorted(missing)}")
+        if extra := actual - expected:
+            offenders.append(f"{owasp}: in repo but not in CSV - {sorted(extra)}")
+    assert not offenders, "\n".join(offenders)
+
+
+def test_the_csv_defect_is_still_the_known_one(taxonomy: Graph) -> None:
+    """The source has a recorded internal inconsistency: action A0973 sits in
+    sub-category '2.3 Model Safety Engineering' but is tagged Category 3. The
+    rollup keys on Sub_category, so this does not affect any mapping - but if the
+    defect ever disappears the CSV has been edited, and the provenance note
+    describing it would be stale."""
+    import csv
+
+    with RISK_TO_MITIGATION_CSV.open(encoding="utf-8") as handle:
+        rows = [r for r in csv.DictReader(handle) if "A0973" in r["mit_action_id"]]
+    assert rows, "A0973 is gone - the CSV changed; re-check the provenance note"
+    for row in rows:
+        assert row["Sub_category"].startswith("2.3"), row
+        assert row["Category"].startswith("3."), (
+            "the known Category/Sub_category mismatch on A0973 is no longer "
+            "present; the provenance note needs updating"
+        )
