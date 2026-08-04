@@ -276,7 +276,175 @@ def main() -> int:
     add("")
     add("---")
     add("")
-    add("## 7. Provenance summary")
+    add("## 7. Motif library - all 26, by source catalogue")
+    add("")
+    add("Motifs are risk-neutral: they describe a shape, not a problem. The grouping below")
+    add("is the *published catalogue each was derived from* (`pair:derivedFrom`), because")
+    add("that is the only classification the data actually carries - PAIR-AI does not")
+    add("assign motifs to families of its own.")
+    add("")
+
+    def catalogue(motif):
+        for obj in g.objects(motif, PAIR.derivedFrom):
+            url = str(obj)
+            if "mercari" in url:
+                section = url.split("ml-system-design-pattern/")[-1].split("/")[0]
+                return "Mercari ML System Design Patterns", section.replace("-patterns", "")
+            if "martinfowler" in url:
+                return "Fowler - Patterns of Generative AI", "GenAI"
+            if "owasp-asi" in url:
+                return "OWASP Agentic Top 10 (ASI)", "agentic"
+            if "owasp" in url:
+                return "OWASP LLM Top 10", "supply chain"
+        return "unrecorded", ""
+
+    grouped = defaultdict(lambda: defaultdict(list))
+    for motif in motifs:
+        source, section = catalogue(motif)
+        grouped[source][section].append(motif)
+
+    for source in sorted(grouped, key=lambda s: -sum(len(v) for v in grouped[s].values())):
+        total = sum(len(v) for v in grouped[source].values())
+        add(f"### {source} ({total})")
+        add("")
+        add("| Motif | Catalogue section | Risk patterns it feeds |")
+        add("|---|---|---|")
+        for section in sorted(grouped[source]):
+            for motif in sorted(grouped[source][section], key=lambda m: local(m)):
+                feeds = sorted(
+                    local(rp).replace("RiskPattern", "")
+                    for rp in g.subjects(PAIR.hasMotif, motif)
+                )
+                add(
+                    f"| `{local(motif)}` | {section} | "
+                    f"{', '.join(feeds) if feeds else '*(risk-neutral - none)*'} |"
+                )
+        add("")
+
+    add("---")
+    add("")
+    add("## 8. Risk patterns - all 13")
+    add("")
+    add("| Risk pattern | Anchor | Motifs | Suggested controls |")
+    add("|---|---|---|---|")
+    for rp in risk_patterns:
+        anchor = sorted(local(x) for x in g.objects(rp, PAIR.derivedFrom))
+        ms = sorted(local(m).replace("Motif", "") for m in g.objects(rp, PAIR.hasMotif))
+        cs = sorted(local(c).replace("Control_", "") for c in g.objects(rp, PAIR.suggestedControl))
+        add(
+            f"| **{local(rp).replace('RiskPattern', '')}** "
+            f"| `{anchor[0] if anchor else '-'}` "
+            f"| {', '.join(ms) if ms else '**(none - cannot fire)**'} "
+            f"| {', '.join(cs)} |"
+        )
+    add("")
+    add("---")
+    add("")
+    add("## 9. Controls and mitigations - technical vs non-technical")
+    add("")
+    add("### 9a. PAIR-AI suggested controls (12) - `pair:controlNature`")
+    add("")
+    add("This is the axis that matters operationally: a technical control has a footprint")
+    add("in the architecture, so the assessment can look for it. A non-technical one is")
+    add("organisational and leaves no structure to detect, so it can only ever be advice.")
+    add("")
+    for nature, heading in (
+        ("TechnicalControl", "Technical"),
+        ("NonTechnicalControl", "Non-technical"),
+    ):
+        members = sorted(
+            (c for c in controls if local(g.value(c, PAIR.controlNature) or "") == nature),
+            key=lambda c: local(c),
+        )
+        add(f"**{heading} ({len(members)})**")
+        add("")
+        add("| Control | Realizing motif | Verifiable from the graph? |")
+        add("|---|---|---|")
+        for control in members:
+            realizing = sorted(local(m).replace("Motif", "") for m in g.objects(control, PAIR.realizedByMotif))
+            verdict = "**yes**" if realizing else ("no - no motif expresses it" if nature == "TechnicalControl" else "never - no architectural footprint")
+            add(
+                f"| **{g.value(control, SKOS.prefLabel)}**<br>`{local(control)}` "
+                f"| {', '.join(realizing) or '(none)'} | {verdict} |"
+            )
+        add("")
+
+    add("### 9b. MIT mitigation vocabulary (36 families + 52 actions)")
+    add("")
+    add("MIT's own top-level category decides technical vs non-technical here. Note that")
+    add("`nexus:controlType` mixes two axes - the MIT category (governance, technical,")
+    add("operational, transparency-accountability) and control function (preventive,")
+    add("detective, corrective) - so it cannot be read as a nature flag on its own.")
+    add("")
+
+    def top_categories(concept) -> set[str]:
+        """All top-level ancestors, not one. The taxonomy is a polyhierarchy and
+        8 of the 36 concepts sit under two categories at once, so returning a
+        single answer would mean silently picking one - false precision of
+        exactly the kind this document is meant to avoid."""
+        found, seen, frontier = set(), set(), [concept]
+        while frontier:
+            node = frontier.pop()
+            if node in seen:
+                continue
+            seen.add(node)
+            parents = list(tax.objects(node, SKOS.broader))
+            if not parents:
+                found.add(local(node))
+            frontier.extend(parents)
+        return found
+
+    TECHNICAL_CATEGORY = "technical-security-controls"
+    pure_technical, pure_non_technical, both = [], [], []
+    for concept in sorted(groups + mit_controls, key=lambda c: local(c)):
+        cats = top_categories(concept)
+        if cats == {TECHNICAL_CATEGORY}:
+            pure_technical.append((concept, cats))
+        elif TECHNICAL_CATEGORY in cats:
+            both.append((concept, cats))
+        else:
+            pure_non_technical.append((concept, cats))
+
+    def actions_under(entries):
+        return sum(len(children.get(local(c), [])) for c, _ in entries)
+
+    add("| Nature | Families/controls | Actions beneath |")
+    add("|---|---|---|")
+    add(f"| **Technical** only | {len(pure_technical)} | {actions_under(pure_technical)} |")
+    add(f"| **Both** - sits under a technical *and* a non-technical category | {len(both)} | {actions_under(both)} |")
+    add(f"| Non-technical only | {len(pure_non_technical)} | {actions_under(pure_non_technical)} |")
+    add("")
+    multi_parent = sum(1 for c in groups + mit_controls if len(top_categories(c)) > 1)
+    add(f"> **The taxonomy is a polyhierarchy.** {multi_parent} of the "
+        f"{len(groups) + len(mit_controls)} concepts have more than one top-level parent, and "
+        f"{len(both)} of those straddle the technical boundary specifically. So \"technical vs "
+        "non-technical\" is not a clean partition here, the way `pair:controlNature` is for the "
+        "12 suggested controls. Where a single answer is needed, use 9a.")
+    add(">")
+    add("> Note that **all "
+        f"{len(both)} straddling concepts are PAIR-AI curation**, not MIT entries. The ambiguity "
+        "comes from this project deliberately parenting its own controls under two families, not "
+        "from anything in MIT's taxonomy.")
+    add("")
+
+    for heading, entries in (
+        ("Technical only", pure_technical),
+        ("Both technical and non-technical", both),
+        ("Non-technical only", pure_non_technical),
+    ):
+        add(f"**{heading} ({len(entries)})**")
+        add("")
+        for concept, cats in entries:
+            kind = "MIT verbatim" if concept in verbatim else "**PAIR-AI curation**"
+            n_act = len(children.get(local(concept), []))
+            suffix = f", {n_act} actions" if n_act else ""
+            categories = ", ".join(sorted(c.replace("-controls", "") for c in cats))
+            add(f"- `{local(concept)}` - {kind}{suffix}  <br>*under: {categories}*")
+        add("")
+
+    add("---")
+    add("")
+    add("## 10. Provenance summary")
     add("")
     add("| Claim | Basis |")
     add("|---|---|")
@@ -290,6 +458,77 @@ def main() -> int:
     add("")
     add("Per-mapping records with SEMAPV justifications are in "
         "`ontology/taxonomy/provenance/mapping_provenance.ttl`.")
+    add("")
+    add("---")
+    add("")
+    add("## 11. Files that make up this work")
+    add("")
+    add("Everything below is in the repository. Paths are the source of truth; this")
+    add("document is generated from them.")
+    add("")
+    add("### Knowledge - the vocabularies and the library")
+    add("")
+    add("| File | Holds |")
+    add("|---|---|")
+    inventory = [
+        ("ontology/patterns/motif.ttl", f"the {len(motifs)} motifs and their pattern nodes/edges"),
+        ("ontology/patterns/risk_pattern_library.ttl",
+         f"the {len(risk_patterns)} risk patterns, the {len(controls)} suggested controls, "
+         "and the control-to-MIT bridge"),
+        ("ontology/patterns/control_mitigation_layer.ttl",
+         "technical/non-technical classification and `realizedByMotif`"),
+        ("ontology/core/pair_ai_pattern.ttl", "the pattern meta-vocabulary: roles, predicates, data categories"),
+        ("ontology/core/beam_core.ttl", "BEAM elements and flow predicates"),
+        ("ontology/taxonomy/mit_air_risk_control.ttl",
+         f"{len(groups)} MIT families (verbatim) + {len(mit_controls)} PAIR-AI concrete controls"),
+        ("ontology/taxonomy/mit_mitigation_action.ttl",
+         f"**{len(actions)} MIT mitigation actions** (generated)"),
+        ("ontology/taxonomy/taxonomy_mapping.ttl", "cross-taxonomy mappings + risk-to-control grounding"),
+        ("ontology/taxonomy/owasp_llm.ttl, owasp_asi.ttl, ibm_risk_atlas.ttl, mit_ai_risk.ttl, nist_genai.ttl",
+         "the risk taxonomies"),
+        ("ontology/facets/", "OECD/DPV characterization facets"),
+        ("ontology/patterns/implementation/", "the executable SPARQL: `match/`, `risk/`, `propagation/`"),
+    ]
+    for path, holds in inventory:
+        add(f"| `{path}` | {holds} |")
+    add("")
+    add("### Evidence and provenance")
+    add("")
+    add("| File | Holds |")
+    add("|---|---|")
+    add("| `data/mappings/Final_Mapped_Taxonomy_Table_Output.csv` | the 93-row cross-walk "
+        "(OWASP -> IBM Atlas -> MIT action). **The source of the action layer.** |")
+    add("| `ontology/taxonomy/provenance/mapping_provenance.ttl` | one `sssom:Mapping` per "
+        "correspondence, with a SEMAPV justification. Deliberately outside the runner's glob |")
+    add("| `NOTICE.md` | third-party attribution and licence posture per source |")
+    add("")
+    add("### Generators - re-run after editing the ontology")
+    add("")
+    add("```")
+    add("python python/scripts/generate_mit_action_layer.py        # the 52-action layer")
+    add("python python/scripts/generate_mapping_provenance.py      # provenance records")
+    add("python python/scripts/generate_risk_control_linkage.py    # this document")
+    add("```")
+    add("")
+    add("### Tests that hold it together")
+    add("")
+    add("| File | Checks |")
+    add("|---|---|")
+    add("| `python/tests/test_library_consistency.py` | motif/risk-pattern/query coherence, "
+        "taxonomy anchors, role hierarchy |")
+    add("| `python/tests/test_mapping_integrity.py` | mapping coherence, provenance coverage, "
+        "cross-walk reproducibility, the action layer |")
+    add("| `python/tests/test_propagation.py` | data-category propagation and its barriers |")
+    add("")
+    add("### Background reading")
+    add("")
+    add("| File | Why |")
+    add("|---|---|")
+    add("| `docs/reference/PAIR-AI_glossary_v1.2.md` | terminology and the locked modelling "
+        "rules (R1-R8). Read Section C before changing anything |")
+    add("| `docs/reference/PAIR-AI_method_and_construction.md` | how the knowledge base was built |")
+    add("| `docs/reference/catalogue.md` | the motif catalogue in prose |")
+    add("| `docs/claude/CLAUDE.md` | locked decisions, including licence posture per source |")
     add("")
 
     target = REPO_ROOT / "docs" / "reference" / "risk_control_linkage.md"
