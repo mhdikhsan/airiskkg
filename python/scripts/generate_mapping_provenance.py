@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from rdflib import Graph, SKOS, URIRef  # noqa: E402
 
-from airiskkg.paths import TAXONOMY_DIR  # noqa: E402
+from airiskkg.paths import CORE_DIR, PATTERNS_DIR, TAXONOMY_DIR  # noqa: E402
 
 SOURCE = TAXONOMY_DIR / "taxonomy_mapping.ttl"
 TARGET = TAXONOMY_DIR / "provenance" / "mapping_provenance.ttl"
@@ -163,6 +163,37 @@ ELSEWHERE = {
     "validated": True,
 }
 
+# pat:Control_* -> mitctrl:* in risk_pattern_library.ttl. The file already states
+# the provenance exactly: "an INDICATIVE bridge ... not audited SSSOM mappings -
+# they are PAIR-AI curation and carry no upstream provenance". Recording it as
+# such is the whole job; validated=False carries the "indicative, not audited"
+# part, which no justification term expresses on its own.
+CONTROL_BRIDGE = {
+    "set": "pair-ai-control-bridge",
+    "label": "PAIR-AI control catalogue to MIT mitigation family (indicative)",
+    "justification": "ManualMappingCuration",
+    "confidence": None,
+    "tsv": None,
+    "date": None,
+    "curator": "pair-ai",
+    "validated": False,
+}
+
+# Role and class alignments to external vocabularies (Tool4Boxology, DPV, AIRO,
+# dpv-ai) declared in the core pattern vocabulary. Hand-authored alignments in a
+# hand-authored file. Note the direction convention: BEAM specializes the
+# published Boxology, so these are closeMatch rather than exactMatch.
+VOCABULARY_ALIGNMENT = {
+    "set": "beam-external-vocabulary-alignment",
+    "label": "BEAM/PAIR-AI vocabulary alignment to Boxology, DPV and AIRO",
+    "justification": "ManualMappingCuration",
+    "confidence": None,
+    "tsv": None,
+    "date": None,
+    "curator": "pair-ai",
+    "validated": True,
+}
+
 # Per-row confidences stated in the ASI block header.
 ROW_CONFIDENCE = {
     ("asi02-tool-misuse", "llm06-excessive-agency"): "0.90",
@@ -246,20 +277,28 @@ def main() -> int:
                 )
                 records.append((subject, predicate, obj, effective, confidence))
 
-    # Mappings can also be written directly in a vocabulary file rather than in
-    # the mapping file - mitctrl:redaction's link to DPV is one. Sweeping the
-    # rest of the directory means a mapping cannot escape the provenance layer by
-    # being declared somewhere the block table does not look.
+    # Mappings are also written directly into vocabulary files rather than into
+    # the mapping file, and NOT only under ontology/taxonomy/. Sweeping every
+    # directory that can hold one is the difference between a coverage guarantee
+    # and a coverage guarantee over the directory we happened to look in - the
+    # first version of this script swept taxonomy/ alone and silently missed 80
+    # mappings in patterns/ and core/, while its coverage test still passed.
     already = {(s, p, o) for s, p, o, _, _ in records}
-    for path in sorted(TAXONOMY_DIR.glob("*.ttl")):
-        if path == SOURCE:
-            continue
-        graph = Graph()
-        graph.parse(path)
-        for predicate in MAPPING_PREDICATES:
-            for subject, _, obj in graph.triples((None, predicate, None)):
-                if (subject, predicate, obj) not in already:
-                    records.append((subject, predicate, obj, ELSEWHERE, None))
+    for directory, block in (
+        (TAXONOMY_DIR, ELSEWHERE),
+        (PATTERNS_DIR, CONTROL_BRIDGE),
+        (CORE_DIR, VOCABULARY_ALIGNMENT),
+    ):
+        for path in sorted(directory.glob("*.ttl")):
+            if path == SOURCE:
+                continue
+            graph = Graph()
+            graph.parse(path)
+            for predicate in MAPPING_PREDICATES:
+                for subject, _, obj in graph.triples((None, predicate, None)):
+                    if (subject, predicate, obj) not in already:
+                        already.add((subject, predicate, obj))
+                        records.append((subject, predicate, obj, block, None))
 
     records.sort(key=lambda r: (r[3]["set"], str(r[0]), str(r[1]), str(r[2])))
 
@@ -283,7 +322,7 @@ def main() -> int:
     ]
 
     seen_sets = []
-    for block in [*BLOCKS, CURATED_FALLBACK, ELSEWHERE]:
+    for block in [*BLOCKS, CURATED_FALLBACK, ELSEWHERE, CONTROL_BRIDGE, VOCABULARY_ALIGNMENT]:
         if block["set"] in seen_sets:
             continue
         seen_sets.append(block["set"])
