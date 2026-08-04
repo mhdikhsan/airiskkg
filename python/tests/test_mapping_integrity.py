@@ -522,3 +522,66 @@ def test_the_csv_defect_is_still_the_known_one(taxonomy: Graph) -> None:
             "the known Category/Sub_category mismatch on A0973 is no longer "
             "present; the provenance note needs updating"
         )
+
+
+# --- MIT action layer ------------------------------------------------------
+# The mitigation taxonomy is modelled at two levels: families (verbatim MIT) and
+# the concrete actions beneath them, generated from the cross-walk. Before the
+# action layer existed the rollup collapsed 52 actions into their families before
+# the data reached the graph, which is why "93 rows" and "36 concepts" looked
+# irreconcilable.
+
+MIT_ACTION_FILE = REPO_ROOT / "ontology" / "taxonomy" / "mit_mitigation_action.ttl"
+NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
+
+
+@pytest.fixture(scope="module")
+def actions() -> Graph:
+    graph = Graph()
+    graph.parse(MIT_ACTION_FILE)
+    return graph
+
+
+def test_every_action_in_the_crosswalk_is_modelled(actions: Graph) -> None:
+    """Both directions. A missing action means the layer was generated from a
+    stale CSV; an extra one means it was hand-edited, which the header forbids."""
+    import csv
+    import re
+
+    with RISK_TO_MITIGATION_CSV.open(encoding="utf-8") as handle:
+        expected = {
+            re.match(r"^(A\d+)_", row["mit_action_id"]).group(1)
+            for row in csv.DictReader(handle)
+        }
+    modelled = {str(o) for _, _, o in actions.triples((None, SKOS.notation, None))}
+    assert modelled == expected, (
+        f"missing {sorted(expected - modelled)}, unexpected {sorted(modelled - expected)}"
+    )
+
+
+def test_every_action_hangs_off_a_declared_family(taxonomy: Graph, actions: Graph) -> None:
+    """An action whose parent does not exist is unreachable from a finding, which
+    silently undoes the point of adding the level at all."""
+    families = {
+        s for s in taxonomy.subjects(RDF.type, NEXUS.RiskControlGroup)
+    } | {
+        s for s in taxonomy.subjects(RDF.type, NEXUS.RiskControl)
+        if "mit-ai-risk-control#" in str(s)
+    }
+    dangling = [
+        (a, parent)
+        for a, _, parent in actions.triples((None, SKOS.broader, None))
+        if parent not in families
+    ]
+    assert not dangling, "\n".join(
+        f"{_name(a)} -> {_name(p)} (no such family)" for a, p in dangling
+    )
+
+
+def test_actions_are_marked_as_genuine_mit_entries(actions: Graph) -> None:
+    """These ARE taxonomy entries, unlike the 16 concrete mitctrl:* controls,
+    which are project curation named after MIT mitigations. Conflating the two
+    would claim external grounding for our own work."""
+    for action in actions.subjects(SKOS.notation, None):
+        assert list(actions.objects(action, NEXUS.isDefinedByTaxonomy)), _name(action)
+        assert list(actions.objects(action, DCTERMS.source)), _name(action)
