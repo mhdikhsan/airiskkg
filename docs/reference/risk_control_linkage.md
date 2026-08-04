@@ -78,12 +78,12 @@ they are never merged into one column.
 | 3 | **Data minimization and redaction**<br>`pat:Control_DataMinimizationAndRedaction` | SensitiveDataRetrievalExposure | VectorBasedInformationRetrieval | (none) | data-minimization, privacy-control-for-user-data, redaction | 0 |
 | 4 | **Retrieval access control**<br>`pat:Control_RetrievalAccessControl` | SensitiveDataRetrievalExposure, VectorAndEmbeddingWeakness | Embeddings, Reranker, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval | (none) | access-management, retrieval-quality-evaluation, retrieval-source-filtering | 4 |
 | 5 | **Model and dependency provenance**<br>`pat:Control_ModelAndDependencyProvenance` | DataAndModelPoisoning, SupplyChainCompromise | Embeddings, ExternalDependency, FineTuning, ModelInImage, ModelLoad, TrainingToServing | (none) | model-infrastructure-security, risk-register, system-architecture-documentation | 0 |
-| 6 | **Trusted training and indexing data**<br>`pat:Control_TrustedTrainingAndIndexingData` | DataAndModelPoisoning, MemoryPoisoning, VectorAndEmbeddingWeakness | AgentMemoryLoop, Embeddings, FineTuning, Reranker, RetrievalAugmentedGeneration, TrainingToServing | (none) | data-curation-process, data-governance, testing-auditing | 26 |
-| 7 | **Tool permission boundaries**<br>`pat:Control_ToolPermissionBoundaries` | ExcessiveAgency, ToolMisuse | ToolUsingAgent | (none) | access-management, human-oversight-protocol, post-deployment-behavior-monitoring | 4 |
-| 8 | **System prompt secrecy**<br>`pat:Control_SystemPromptSecrecy` | SystemPromptLeakage | Guardrails | (none) | prompt-context-limiting, red-teaming, system-architecture-documentation | 0 |
+| 6 | **Trusted training and indexing data**<br>`pat:Control_TrustedTrainingAndIndexingData` | DataAndModelPoisoning, MemoryPoisoning, VectorAndEmbeddingWeakness | AgentMemoryLoop, Embeddings, FineTuning, Reranker, RetrievalAugmentedGeneration, TrainingToServing | (none) | data-curation-process, data-governance, testing-auditing | 27 |
+| 7 | **Tool permission boundaries**<br>`pat:Control_ToolPermissionBoundaries` | ExcessiveAgency, ToolMisuse | ToolUsingAgent | (none) | access-management, human-oversight-protocol, post-deployment-behavior-monitoring | 5 |
+| 8 | **System prompt secrecy**<br>`pat:Control_SystemPromptSecrecy` | SystemPromptLeakage | Guardrails | (none) | prompt-context-limiting, red-teaming, system-architecture-documentation | 2 |
 | 9 | **Grounding and verification**<br>`pat:Control_GroundingAndVerification` | DirectPromptingWithoutGrounding, MisinformationFromWeakGrounding, VectorAndEmbeddingWeakness | DirectPrompting, Embeddings, Reranker, RetrievalAugmentedGeneration | **HybridRetriever, Reranker, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval** | human-oversight-protocol, retrieval-quality-evaluation, testing-auditing | 12 |
-| 10 | **Rate, budget, and loop control**<br>`pat:Control_RateLimitBudgetAndLoopControl` | ExcessiveAgency, ToolMisuse, UnboundedConsumption | DirectPrompting, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent | (none) | access-management, post-deployment-behavior-monitoring, prompt-context-limiting | 4 |
-| 11 | **Logging, monitoring, and evals**<br>`pat:Control_LoggingMonitoringAndEvals` | DataAndModelPoisoning, DirectPromptingWithoutGrounding, ExcessiveAgency, MemoryPoisoning, MisinformationFromWeakGrounding, PromptInjection, SupplyChainCompromise, ToolMisuse, UnboundedConsumption | AgentMemoryLoop, DirectPrompting, Embeddings, ExternalDependency, FineTuning, ModelInImage, ModelLoad, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent, TrainingToServing | **Evals, PredictionLogging, PredictionMonitoring** | post-deployment-behavior-monitoring, red-teaming, testing-auditing | 12 |
+| 10 | **Rate, budget, and loop control**<br>`pat:Control_RateLimitBudgetAndLoopControl` | ExcessiveAgency, ToolMisuse, UnboundedConsumption | DirectPrompting, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent | (none) | access-management, post-deployment-behavior-monitoring, prompt-context-limiting | 5 |
+| 11 | **Logging, monitoring, and evals**<br>`pat:Control_LoggingMonitoringAndEvals` | DataAndModelPoisoning, DirectPromptingWithoutGrounding, ExcessiveAgency, MemoryPoisoning, MisinformationFromWeakGrounding, PromptInjection, SupplyChainCompromise, ToolMisuse, UnboundedConsumption | AgentMemoryLoop, DirectPrompting, Embeddings, ExternalDependency, FineTuning, ModelInImage, ModelLoad, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent, TrainingToServing | **Evals, PredictionLogging, PredictionMonitoring** | post-deployment-behavior-monitoring, red-teaming, testing-auditing | 15 |
 | 12 | **Input and output filtering**<br>`pat:Control_Guardrails` | ImproperOutputHandling, PromptInjection, SensitiveDataRetrievalExposure, SystemPromptLeakage | DirectPrompting, Guardrails, QueryRewriting, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval | **Guardrails** | content-safety-controls, input-output-filtering, model-safety-engineering | 9 |
 
 ---
@@ -119,8 +119,11 @@ Risk patterns with no action-level evidence (3): `SystemPromptLeakage`, `Unbound
 | `risk-disclosure` | 3 | **no** |
 | `content-safety-controls` | 2 | yes |
 | `incident-reporting` | 2 | **no** |
+| `red-teaming` | 2 | yes |
 | `system-documentation` | 2 | **no** |
+| `data-curation-process` | 1 | yes |
 | `incident-response-recovery` | 1 | **no** |
+| `post-deployment-behavior-monitoring` | 1 | yes |
 | `post-deployment-monitoring` | 1 | **no** |
 | `risk-management` | 1 | **no** |
 | `safety-decision-frameworks` | 1 | **no** |
@@ -246,67 +249,75 @@ organisational and leaves no structure to detect, so it can only ever be advice.
 | **Model and dependency provenance**<br>`Control_ModelAndDependencyProvenance` | (none) | never - no architectural footprint |
 | **Trusted training and indexing data**<br>`Control_TrustedTrainingAndIndexingData` | (none) | never - no architectural footprint |
 
-### 9b. MIT mitigation vocabulary (36 families + 52 actions)
+### 9b. MIT mitigation vocabulary
 
-MIT's own top-level category decides technical vs non-technical here. Note that
-`nexus:controlType` mixes two axes - the MIT category (governance, technical,
-operational, transparency-accountability) and control function (preventive,
-detective, corrective) - so it cannot be read as a nature flag on its own.
+Two altitudes, treated differently on purpose.
 
-| Nature | Families/controls | Actions beneath |
+**The 16 concrete controls carry `pair:controlNature`**, the same
+declared axis as 9a. They are the same altitude as a suggested control, so the same
+rule applies: technical means a footprint in the architecture; non-technical means
+organisation, process, governance or documentation with nothing to detect.
+
+**The 20 families are deliberately not classified.** A family such as
+`data-governance` contains both technical and non-technical mitigations, so a single
+label at that altitude would be meaningless - the reason `control_mitigation_layer.ttl`
+records for keeping them out.
+
+> Do not read `nexus:controlType` as a nature flag. It mixes the MIT category axis
+> (governance, technical, operational, transparency-accountability) with a control
+> function axis (preventive, detective, corrective).
+
+#### The 16 concrete controls
+
+| Control | Nature | Sits under | Actions |
+|---|---|---|---|
+| `data-minimization` | **Technical** | operational-process | - |
+| `input-output-filtering` | **Technical** | technical-security | - |
+| `post-deployment-behavior-monitoring` | **Technical** | operational-process | 1 |
+| `privacy-control-for-user-data` | **Technical** | operational-process | - |
+| `prompt-context-limiting` ⚖️ | **Technical** | operational-process, technical-security | - |
+| `redaction` ⚖️ | **Technical** | operational-process, technical-security | - |
+| `retrieval-quality-evaluation` | **Technical** | operational-process | - |
+| `retrieval-source-filtering` ⚖️ | **Technical** | operational-process, technical-security | - |
+| `data-curation-process` | Non-technical | operational-process | 1 |
+| `human-oversight-protocol` | Non-technical | governance-oversight, transparency-accountability | - |
+| `incident-response-plan` | Non-technical | operational-process, transparency-accountability | - |
+| `pre-deployment-risk-assessment` | Non-technical | governance-oversight, operational-process | - |
+| `red-teaming` ⚖️ | Non-technical | operational-process, technical-security | 2 |
+| `risk-register` | Non-technical | governance-oversight | - |
+| `system-architecture-documentation` | Non-technical | transparency-accountability | - |
+| `threat-modelling` ⚖️ | Non-technical | operational-process, technical-security | - |
+
+⚖️ = one of the 5 controls that sit under a technical **and** a
+non-technical MIT category at once. The hierarchy cannot decide their nature, so it is
+declared rather than derived - previously this document walked to a top-level ancestor
+and silently took whichever branch the traversal reached first. All 5 are PAIR-AI curation; the ambiguity comes from this project
+parenting its own controls under two families, not from MIT.
+
+#### The 20 families - not classified, by design
+
+| Family | Actions beneath | Reached by a suggested control? |
 |---|---|---|
-| **Technical** only | 5 | 9 |
-| **Both** - sits under a technical *and* a non-technical category | 5 | 0 |
-| Non-technical only | 26 | 43 |
-
-> **The taxonomy is a polyhierarchy.** 8 of the 36 concepts have more than one top-level parent, and 5 of those straddle the technical boundary specifically. So "technical vs non-technical" is not a clean partition here, the way `pair:controlNature` is for the 12 suggested controls. Where a single answer is needed, use 9a.
->
-> Note that **all 5 straddling concepts are PAIR-AI curation**, not MIT entries. The ambiguity comes from this project deliberately parenting its own controls under two families, not from anything in MIT's taxonomy.
-
-**Technical only (5)**
-
-- `content-safety-controls` - MIT verbatim, 2 actions  <br>*under: technical-security*
-- `input-output-filtering` - **PAIR-AI curation**  <br>*under: technical-security*
-- `model-infrastructure-security` - MIT verbatim  <br>*under: technical-security*
-- `model-safety-engineering` - MIT verbatim, 7 actions  <br>*under: technical-security*
-- `technical-security-controls` - MIT verbatim  <br>*under: technical-security*
-
-**Both technical and non-technical (5)**
-
-- `prompt-context-limiting` - **PAIR-AI curation**  <br>*under: operational-process, technical-security*
-- `red-teaming` - **PAIR-AI curation**  <br>*under: operational-process, technical-security*
-- `redaction` - **PAIR-AI curation**  <br>*under: operational-process, technical-security*
-- `retrieval-source-filtering` - **PAIR-AI curation**  <br>*under: operational-process, technical-security*
-- `threat-modelling` - **PAIR-AI curation**  <br>*under: operational-process, technical-security*
-
-**Non-technical only (26)**
-
-- `access-management` - MIT verbatim, 4 actions  <br>*under: operational-process*
-- `data-curation-process` - **PAIR-AI curation**  <br>*under: operational-process*
-- `data-governance` - MIT verbatim, 14 actions  <br>*under: operational-process*
-- `data-minimization` - **PAIR-AI curation**  <br>*under: operational-process*
-- `governance-oversight-controls` - MIT verbatim  <br>*under: governance-oversight*
-- `human-oversight-protocol` - **PAIR-AI curation**  <br>*under: governance-oversight, transparency-accountability*
-- `incident-reporting` - MIT verbatim, 2 actions  <br>*under: transparency-accountability*
-- `incident-response-plan` - **PAIR-AI curation**  <br>*under: operational-process, transparency-accountability*
-- `incident-response-recovery` - MIT verbatim, 1 actions  <br>*under: operational-process*
-- `operational-process-controls` - MIT verbatim  <br>*under: operational-process*
-- `post-deployment-behavior-monitoring` - **PAIR-AI curation**  <br>*under: operational-process*
-- `post-deployment-monitoring` - MIT verbatim, 1 actions  <br>*under: operational-process*
-- `pre-deployment-risk-assessment` - **PAIR-AI curation**  <br>*under: governance-oversight, operational-process*
-- `privacy-control-for-user-data` - **PAIR-AI curation**  <br>*under: operational-process*
-- `retrieval-quality-evaluation` - **PAIR-AI curation**  <br>*under: operational-process*
-- `risk-disclosure` - MIT verbatim, 3 actions  <br>*under: transparency-accountability*
-- `risk-management` - MIT verbatim, 1 actions  <br>*under: governance-oversight*
-- `risk-register` - **PAIR-AI curation**  <br>*under: governance-oversight*
-- `safety-decision-frameworks` - MIT verbatim, 1 actions  <br>*under: governance-oversight*
-- `societal-impact-assessment` - MIT verbatim, 1 actions  <br>*under: governance-oversight*
-- `staged-deployment` - MIT verbatim  <br>*under: operational-process*
-- `system-architecture-documentation` - **PAIR-AI curation**  <br>*under: transparency-accountability*
-- `system-documentation` - MIT verbatim, 2 actions  <br>*under: transparency-accountability*
-- `testing-auditing` - MIT verbatim, 12 actions  <br>*under: operational-process*
-- `transparency-accountability-controls` - MIT verbatim  <br>*under: transparency-accountability*
-- `user-rights-recourse` - MIT verbatim, 1 actions  <br>*under: transparency-accountability*
+| `data-governance` | 14 | yes |
+| `testing-auditing` | 12 | yes |
+| `model-safety-engineering` | 7 | yes |
+| `access-management` | 4 | yes |
+| `risk-disclosure` | 3 | **no** |
+| `content-safety-controls` | 2 | yes |
+| `incident-reporting` | 2 | **no** |
+| `system-documentation` | 2 | **no** |
+| `incident-response-recovery` | 1 | **no** |
+| `post-deployment-monitoring` | 1 | **no** |
+| `risk-management` | 1 | **no** |
+| `safety-decision-frameworks` | 1 | **no** |
+| `societal-impact-assessment` | 1 | **no** |
+| `user-rights-recourse` | 1 | **no** |
+| `governance-oversight-controls` | - | **no** |
+| `model-infrastructure-security` | - | yes |
+| `operational-process-controls` | - | **no** |
+| `staged-deployment` | - | **no** |
+| `technical-security-controls` | - | **no** |
+| `transparency-accountability-controls` | - | **no** |
 
 ---
 
