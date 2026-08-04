@@ -93,6 +93,70 @@ method can currently express a *checkable* fix.
 
 ---
 
+## Risk pattern → taxonomy: explicit triples, not inferred from names
+
+Risk pattern names read like OWASP entries (`PromptInjection`,
+`SystemPromptLeakage`), which invites the assumption that the taxonomy link is
+recovered from the name. It is not. There is no `mapsToRisk` predicate and no
+string matching anywhere in the pipeline. Every risk pattern carries two
+explicit sets of triples to resolvable URIs:
+
+- **`pair:derivedFrom`** — the single entry the pattern was written from.
+- **`pair:mayIndicateRisk`** — every taxonomy entry a finding may cite. Named
+  for Rule R1: a match *may indicate* a risk, it does not *map to* one.
+
+Name-based inference would in fact get several of these wrong:
+
+| | |
+|---|---|
+| `DirectPromptingWithoutGrounding` **and** `MisinformationFromWeakGrounding` | both anchor to `llm09-misinformation` — two patterns, one OWASP entry |
+| `ToolMisuse` | derives from **ASI**02, yet also indicates `llm06-excessive-agency` |
+| `MemoryPoisoning` | derives from **ASI**06, yet also indicates `llm04-data-and-model-poisoning` |
+| `VectorAndEmbeddingWeakness` | indicates `ibm-risk-atlas:prompt-injection`, which its name never suggests |
+
+Two tests hold the chain together:
+
+- `test_risk_patterns_have_condition_mechanism_and_taxonomy_anchor` — a risk
+  pattern without an anchor fails.
+- `test_may_indicate_risk_entries_are_mapped_to_anchor` — every *non-anchor*
+  entry must be joined to the anchor by a real SKOS mapping triple in the
+  taxonomy layer. Atlas and MIT entries cannot float free; they are reachable
+  only through a mapping that itself now carries a semapv justification in
+  `ontology/taxonomy/provenance/`.
+
+So the full evidence chain behind one suggested control is:
+
+```
+  motif --hasMotif--> risk pattern --derivedFrom--> OWASP entry
+                            |
+                            +--mayIndicateRisk--> Atlas / MIT / ASI entries
+                            |                     (each SKOS-mapped to the anchor,
+                            |                      each mapping justified)
+                            +--suggestedControl--> control
+```
+
+Only the last hop is uncorroborated project curation. Everything to its left
+is either a published pattern catalogue or a taxonomy link with recorded
+provenance.
+
+| Risk pattern | Anchor (`derivedFrom`) | Also indicates (`mayIndicateRisk`) |
+|---|---|---|
+| `DataAndModelPoisoning` | `llm04-data-and-model-poisoning` | `data-poisoning`, `subdomain-1-3`, `subdomain-2-2`, `subdomain-7-3` |
+| `DirectPromptingWithoutGrounding` | `llm09-misinformation` | `hallucination`, `incomplete-advice`, `subdomain-3-1`, `subdomain-5-1`, `subdomain-7-3` |
+| `ExcessiveAgency` | `llm06-excessive-agency` | `redundant-actions-agentic`, `subdomain-2-2`, `subdomain-5-2` |
+| `ImproperOutputHandling` | `llm05-improper-output-handling` | `subdomain-1-2`, `subdomain-2-2` |
+| `MemoryPoisoning` | `asi06-memory-and-context-poisoning` | `llm04-data-and-model-poisoning`, `subdomain-2-2`, `subdomain-3-1` |
+| `MisinformationFromWeakGrounding` | `llm09-misinformation` | `hallucination`, `incomplete-advice`, `subdomain-3-1`, `subdomain-5-1`, `subdomain-7-3` |
+| `PromptInjection` | `llm01-prompt-injection` | `prompt-injection`, `subdomain-2-2` |
+| `SensitiveDataRetrievalExposure` | `llm02-sensitive-information-disclosure` | `exposing-personal-information`, `subdomain-2-1` |
+| `SupplyChainCompromise` | `llm03-supply-chain` | `data-curation`, `subdomain-2-2`, `subdomain-7-3`, `subdomain-7-4` |
+| `SystemPromptLeakage` | `llm07-system-prompt-leakage` | `confidential-data-in-prompt`, `prompt-leaking`, `subdomain-2-1`, `subdomain-2-2` |
+| `ToolMisuse` | `asi02-tool-misuse` | `llm06-excessive-agency`, `subdomain-2-2`, `subdomain-5-2` |
+| `UnboundedConsumption` | `llm10-unbounded-consumption` | `redundant-actions-agentic`, `subdomain-2-2`, `subdomain-6-6`, `subdomain-7-3` |
+| `VectorAndEmbeddingWeakness` | `llm08-vector-and-embedding-weaknesses` | `prompt-injection`, `subdomain-2-2`, `subdomain-7-3` |
+
+---
+
 ## Realization links — the motifs that ARE controls
 
 These are the tier-A enablers: insert this motif and the control is, structurally,
