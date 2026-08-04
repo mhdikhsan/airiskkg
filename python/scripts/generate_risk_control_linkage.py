@@ -93,11 +93,20 @@ def main() -> int:
         if "mit-ai-risk-control#" in str(s) or "mitigation-action#" in str(s)
     }
 
-    # action -> parent sub-category, and the reverse
-    action_parent = {a: local(tax.value(a, SKOS.broader)) for a in actions}
+    # action -> parents, and the reverse. Plural on purpose: four actions were
+    # adjudicated under a curated control in addition to their sub-category, so
+    # tax.value() would return one arbitrary parent and lose the other - which is
+    # how the concrete-control action counts first came out as zero.
+    action_parents = {a: [local(p) for p in tax.objects(a, SKOS.broader)] for a in actions}
     children = defaultdict(list)
-    for action, parent in action_parent.items():
-        children[parent].append(action)
+    for action, parents in action_parents.items():
+        for parent in parents:
+            children[parent].append(action)
+    # Sub-category only, for the "how many sub-categories" figure.
+    action_parent = {
+        a: next((p for p in parents if p not in {local(c) for c in mit_controls}), parents[0])
+        for a, parents in action_parents.items()
+    }
 
     with CSV_PATH.open(encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
@@ -369,12 +378,23 @@ def main() -> int:
             )
         add("")
 
-    add("### 9b. MIT mitigation vocabulary (36 families + 52 actions)")
+    add("### 9b. MIT mitigation vocabulary")
     add("")
-    add("MIT's own top-level category decides technical vs non-technical here. Note that")
-    add("`nexus:controlType` mixes two axes - the MIT category (governance, technical,")
-    add("operational, transparency-accountability) and control function (preventive,")
-    add("detective, corrective) - so it cannot be read as a nature flag on its own.")
+    add("Two altitudes, treated differently on purpose.")
+    add("")
+    add(f"**The {len(mit_controls)} concrete controls carry `pair:controlNature`**, the same")
+    add("declared axis as 9a. They are the same altitude as a suggested control, so the same")
+    add("rule applies: technical means a footprint in the architecture; non-technical means")
+    add("organisation, process, governance or documentation with nothing to detect.")
+    add("")
+    add(f"**The {len(groups)} families are deliberately not classified.** A family such as")
+    add("`data-governance` contains both technical and non-technical mitigations, so a single")
+    add("label at that altitude would be meaningless - the reason `control_mitigation_layer.ttl`")
+    add("records for keeping them out.")
+    add("")
+    add("> Do not read `nexus:controlType` as a nature flag. It mixes the MIT category axis")
+    add("> (governance, technical, operational, transparency-accountability) with a control")
+    add("> function axis (preventive, detective, corrective).")
     add("")
 
     def top_categories(concept) -> set[str]:
@@ -395,52 +415,45 @@ def main() -> int:
         return found
 
     TECHNICAL_CATEGORY = "technical-security-controls"
-    pure_technical, pure_non_technical, both = [], [], []
-    for concept in sorted(groups + mit_controls, key=lambda c: local(c)):
-        cats = top_categories(concept)
-        if cats == {TECHNICAL_CATEGORY}:
-            pure_technical.append((concept, cats))
-        elif TECHNICAL_CATEGORY in cats:
-            both.append((concept, cats))
-        else:
-            pure_non_technical.append((concept, cats))
+    straddling = {
+        local(c) for c in mit_controls
+        if len(top_categories(c)) > 1 and TECHNICAL_CATEGORY in top_categories(c)
+    }
 
-    def actions_under(entries):
-        return sum(len(children.get(local(c), [])) for c, _ in entries)
-
-    add("| Nature | Families/controls | Actions beneath |")
-    add("|---|---|---|")
-    add(f"| **Technical** only | {len(pure_technical)} | {actions_under(pure_technical)} |")
-    add(f"| **Both** - sits under a technical *and* a non-technical category | {len(both)} | {actions_under(both)} |")
-    add(f"| Non-technical only | {len(pure_non_technical)} | {actions_under(pure_non_technical)} |")
+    add(f"#### The {len(mit_controls)} concrete controls")
     add("")
-    multi_parent = sum(1 for c in groups + mit_controls if len(top_categories(c)) > 1)
-    add(f"> **The taxonomy is a polyhierarchy.** {multi_parent} of the "
-        f"{len(groups) + len(mit_controls)} concepts have more than one top-level parent, and "
-        f"{len(both)} of those straddle the technical boundary specifically. So \"technical vs "
-        "non-technical\" is not a clean partition here, the way `pair:controlNature` is for the "
-        "12 suggested controls. Where a single answer is needed, use 9a.")
-    add(">")
-    add("> Note that **all "
-        f"{len(both)} straddling concepts are PAIR-AI curation**, not MIT entries. The ambiguity "
-        "comes from this project deliberately parenting its own controls under two families, not "
-        "from anything in MIT's taxonomy.")
-    add("")
-
-    for heading, entries in (
-        ("Technical only", pure_technical),
-        ("Both technical and non-technical", both),
-        ("Non-technical only", pure_non_technical),
+    add("| Control | Nature | Sits under | Actions |")
+    add("|---|---|---|---|")
+    for nature_uri, label in (
+        (PAIR.TechnicalControl, "**Technical**"),
+        (PAIR.NonTechnicalControl, "Non-technical"),
     ):
-        add(f"**{heading} ({len(entries)})**")
-        add("")
-        for concept, cats in entries:
-            kind = "MIT verbatim" if concept in verbatim else "**PAIR-AI curation**"
+        members = sorted(
+            (c for c in mit_controls if g.value(c, PAIR.controlNature) == nature_uri),
+            key=lambda c: local(c),
+        )
+        for concept in members:
+            cats = ", ".join(sorted(x.replace("-controls", "") for x in top_categories(concept)))
+            flag = " ⚖️" if local(concept) in straddling else ""
             n_act = len(children.get(local(concept), []))
-            suffix = f", {n_act} actions" if n_act else ""
-            categories = ", ".join(sorted(c.replace("-controls", "") for c in cats))
-            add(f"- `{local(concept)}` - {kind}{suffix}  <br>*under: {categories}*")
-        add("")
+            add(f"| `{local(concept)}`{flag} | {label} | {cats} | {n_act or '-'} |")
+    add("")
+    add(f"⚖️ = one of the {len(straddling)} controls that sit under a technical **and** a")
+    add("non-technical MIT category at once. The hierarchy cannot decide their nature, so it is")
+    add("declared rather than derived - previously this document walked to a top-level ancestor")
+    add("and silently took whichever branch the traversal reached first. All "
+        f"{len(straddling)} are PAIR-AI curation; the ambiguity comes from this project")
+    add("parenting its own controls under two families, not from MIT.")
+    add("")
+    add(f"#### The {len(groups)} families - not classified, by design")
+    add("")
+    add("| Family | Actions beneath | Reached by a suggested control? |")
+    add("|---|---|---|")
+    linked = {local(o) for c in controls for o in g.objects(c, SKOS.relatedMatch)}
+    for family in sorted(groups, key=lambda f: (-len(children.get(local(f), [])), local(f))):
+        n_act = len(children.get(local(family), []))
+        add(f"| `{local(family)}` | {n_act or '-'} | {'yes' if local(family) in linked else '**no**'} |")
+    add("")
 
     add("---")
     add("")
