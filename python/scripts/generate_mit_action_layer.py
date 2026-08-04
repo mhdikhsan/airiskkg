@@ -48,6 +48,34 @@ SUBCATEGORY_ALIASES = {
 }
 
 
+# Adjudicated refinements: actions that are a specific instance of one of the 16
+# curated mitctrl:* controls, which sit between a sub-category and the concrete
+# actions. Nine curated controls cite the MIT database in prose; lexical
+# candidate generation over the 52 actions proposed matches for six of them, and
+# three survived review:
+#
+#   accepted - name matches the cited mitigation and the family agrees
+#   rejected - risk-register/A0132 (overlap on "risk" alone; a register is not an
+#              assessment), pre-deployment-risk-assessment/A0793 (different
+#              family), privacy-control-for-user-data/A0993 (quantifying a risk
+#              is not controlling it)
+#   no candidate at all - human-oversight-protocol, incident-response-plan,
+#              threat-modelling, whose prose cites the MIT database for
+#              mitigations the cross-walk never touches, so those citations
+#              remain unverifiable from anything in this repository
+#
+# Recorded here rather than hand-edited into the TTL so the adjudication travels
+# with the generator and cannot drift from the file it produces. This is a
+# hierarchy refinement, NOT a mapping: both sides sit in the same concept scheme,
+# so skos:closeMatch would be wrong and the same-scheme test would reject it.
+ADJUDICATED_REFINEMENTS = {
+    "A0468": "data-curation-process",  # "Training Data Curation", the cited name
+    "A0522": "red-teaming",            # "AI Red-Teaming Resilience"
+    "A0531": "red-teaming",            # "Data Exposure Red-Teaming"
+    "A0979": "post-deployment-behavior-monitoring",
+}
+
+
 def subcategory_slug(raw: str) -> str:
     slug = re.sub(r"^[0-9.]+\s*", "", raw).lower()
     slug = slug.replace(" & ", "-").replace(" ", "-").replace("&", "-")
@@ -135,6 +163,9 @@ def main() -> int:
         lines.append(f'    skos:prefLabel "{escape(entry["name"])}"@en ;')
         lines.append(f'    skos:notation "{code}" ;')
         lines.append(f"    skos:broader mitctrl:{entry['subcategory']} ;")
+        refinement = ADJUDICATED_REFINEMENTS.get(code)
+        if refinement:
+            lines.append(f"    skos:broader mitctrl:{refinement} ;")
         lines.append("    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;")
         lines.append(
             "    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;"
@@ -145,6 +176,11 @@ def main() -> int:
         )
         if entry["citation"]:
             source += f"; primary source: {escape(entry['citation'])}"
+        if refinement:
+            source += (
+                f"; placed under mitctrl:{refinement} by review - lexical candidate "
+                "generation over the 52 actions, adjudicated 2026-08-04"
+            )
         lines.append(f'    dct:source "{source}"@en .')
         lines.append("")
 
