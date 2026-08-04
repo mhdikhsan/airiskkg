@@ -141,7 +141,176 @@ Families with no action beneath them (6): `governance-oversight-controls`, `mode
 
 ---
 
-## 7. Provenance summary
+## 7. Motif library - all 26, by source catalogue
+
+Motifs are risk-neutral: they describe a shape, not a problem. The grouping below
+is the *published catalogue each was derived from* (`pair:derivedFrom`), because
+that is the only classification the data actually carries - PAIR-AI does not
+assign motifs to families of its own.
+
+### Mercari ML System Design Patterns (13)
+
+| Motif | Catalogue section | Risk patterns it feeds |
+|---|---|---|
+| `TrainThenServeMotif` | Lifecycle | *(risk-neutral - none)* |
+| `TrainingToServingMotif` | Lifecycle | DataAndModelPoisoning, SupplyChainCompromise |
+| `ModelInImageMotif` | Operation | SupplyChainCompromise |
+| `ModelLoadMotif` | Operation | SupplyChainCompromise |
+| `PredictionLoggingMotif` | Operation | *(risk-neutral - none)* |
+| `PredictionMonitoringMotif` | Operation | *(risk-neutral - none)* |
+| `AsynchronousPredictionMotif` | Serving | *(risk-neutral - none)* |
+| `BatchPredictionMotif` | Serving | *(risk-neutral - none)* |
+| `MultiStagePredictionMotif` | Serving | *(risk-neutral - none)* |
+| `PreprocessPredictionMotif` | Serving | *(risk-neutral - none)* |
+| `SynchronousPredictionMotif` | Serving | *(risk-neutral - none)* |
+| `BatchTrainingMotif` | Training | *(risk-neutral - none)* |
+| `PipelineTrainingMotif` | Training | *(risk-neutral - none)* |
+
+### Fowler - Patterns of Generative AI (10)
+
+| Motif | Catalogue section | Risk patterns it feeds |
+|---|---|---|
+| `DirectPromptingMotif` | GenAI | DirectPromptingWithoutGrounding, ImproperOutputHandling, PromptInjection, UnboundedConsumption |
+| `EmbeddingsMotif` | GenAI | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
+| `EvalsMotif` | GenAI | *(risk-neutral - none)* |
+| `FineTuningMotif` | GenAI | DataAndModelPoisoning, SupplyChainCompromise |
+| `GuardrailsMotif` | GenAI | ImproperOutputHandling, SystemPromptLeakage |
+| `HybridRetrieverMotif` | GenAI | *(risk-neutral - none)* |
+| `QueryRewritingMotif` | GenAI | PromptInjection, UnboundedConsumption |
+| `RerankerMotif` | GenAI | VectorAndEmbeddingWeakness |
+| `RetrievalAugmentedGenerationMotif` | GenAI | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption, VectorAndEmbeddingWeakness |
+| `VectorBasedInformationRetrievalMotif` | GenAI | SensitiveDataRetrievalExposure |
+
+### OWASP Agentic Top 10 (ASI) (2)
+
+| Motif | Catalogue section | Risk patterns it feeds |
+|---|---|---|
+| `AgentMemoryLoopMotif` | agentic | MemoryPoisoning |
+| `ToolUsingAgentMotif` | agentic | ToolMisuse |
+
+### OWASP LLM Top 10 (1)
+
+| Motif | Catalogue section | Risk patterns it feeds |
+|---|---|---|
+| `ExternalDependencyMotif` | supply chain | SupplyChainCompromise |
+
+---
+
+## 8. Risk patterns - all 13
+
+| Risk pattern | Anchor | Motifs | Suggested controls |
+|---|---|---|---|
+| **DataAndModelPoisoning** | `llm04-data-and-model-poisoning` | Embeddings, FineTuning, TrainingToServing | LoggingMonitoringAndEvals, ModelAndDependencyProvenance, TrustedTrainingAndIndexingData |
+| **DirectPromptingWithoutGrounding** | `llm09-misinformation` | DirectPrompting | GroundingAndVerification, LoggingMonitoringAndEvals |
+| **ExcessiveAgency** | `llm06-excessive-agency` | **(none - cannot fire)** | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl, ToolPermissionBoundaries |
+| **ImproperOutputHandling** | `llm05-improper-output-handling` | DirectPrompting, Guardrails | Guardrails, OutputValidationAndSanitization |
+| **MemoryPoisoning** | `asi06-memory-and-context-poisoning` | AgentMemoryLoop | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, TrustedTrainingAndIndexingData |
+| **MisinformationFromWeakGrounding** | `llm09-misinformation` | RetrievalAugmentedGeneration | GroundingAndVerification, LoggingMonitoringAndEvals |
+| **PromptInjection** | `llm01-prompt-injection` | DirectPrompting, QueryRewriting, RetrievalAugmentedGeneration | Guardrails, InputValidationAndPromptIsolation, LoggingMonitoringAndEvals |
+| **SensitiveDataRetrievalExposure** | `llm02-sensitive-information-disclosure` | VectorBasedInformationRetrieval | DataMinimizationAndRedaction, Guardrails, OutputValidationAndSanitization, RetrievalAccessControl |
+| **SupplyChainCompromise** | `llm03-supply-chain` | ExternalDependency, FineTuning, ModelInImage, ModelLoad, TrainingToServing | LoggingMonitoringAndEvals, ModelAndDependencyProvenance |
+| **SystemPromptLeakage** | `llm07-system-prompt-leakage` | Guardrails | Guardrails, OutputValidationAndSanitization, SystemPromptSecrecy |
+| **ToolMisuse** | `asi02-tool-misuse` | ToolUsingAgent | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl, ToolPermissionBoundaries |
+| **UnboundedConsumption** | `llm10-unbounded-consumption` | DirectPrompting, QueryRewriting, RetrievalAugmentedGeneration | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl |
+| **VectorAndEmbeddingWeakness** | `llm08-vector-and-embedding-weaknesses` | Embeddings, Reranker, RetrievalAugmentedGeneration | GroundingAndVerification, RetrievalAccessControl, TrustedTrainingAndIndexingData |
+
+---
+
+## 9. Controls and mitigations - technical vs non-technical
+
+### 9a. PAIR-AI suggested controls (12) - `pair:controlNature`
+
+This is the axis that matters operationally: a technical control has a footprint
+in the architecture, so the assessment can look for it. A non-technical one is
+organisational and leaves no structure to detect, so it can only ever be advice.
+
+**Technical (10)**
+
+| Control | Realizing motif | Verifiable from the graph? |
+|---|---|---|
+| **Data minimization and redaction**<br>`Control_DataMinimizationAndRedaction` | (none) | no - no motif expresses it |
+| **Grounding and verification**<br>`Control_GroundingAndVerification` | HybridRetriever, Reranker, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval | **yes** |
+| **Input and output filtering**<br>`Control_Guardrails` | Guardrails | **yes** |
+| **Input validation and prompt isolation**<br>`Control_InputValidationAndPromptIsolation` | Guardrails | **yes** |
+| **Logging, monitoring, and evals**<br>`Control_LoggingMonitoringAndEvals` | Evals, PredictionLogging, PredictionMonitoring | **yes** |
+| **Output validation and sanitization**<br>`Control_OutputValidationAndSanitization` | Guardrails | **yes** |
+| **Rate, budget, and loop control**<br>`Control_RateLimitBudgetAndLoopControl` | (none) | no - no motif expresses it |
+| **Retrieval access control**<br>`Control_RetrievalAccessControl` | (none) | no - no motif expresses it |
+| **System prompt secrecy**<br>`Control_SystemPromptSecrecy` | (none) | no - no motif expresses it |
+| **Tool permission boundaries**<br>`Control_ToolPermissionBoundaries` | (none) | no - no motif expresses it |
+
+**Non-technical (2)**
+
+| Control | Realizing motif | Verifiable from the graph? |
+|---|---|---|
+| **Model and dependency provenance**<br>`Control_ModelAndDependencyProvenance` | (none) | never - no architectural footprint |
+| **Trusted training and indexing data**<br>`Control_TrustedTrainingAndIndexingData` | (none) | never - no architectural footprint |
+
+### 9b. MIT mitigation vocabulary (36 families + 52 actions)
+
+MIT's own top-level category decides technical vs non-technical here. Note that
+`nexus:controlType` mixes two axes - the MIT category (governance, technical,
+operational, transparency-accountability) and control function (preventive,
+detective, corrective) - so it cannot be read as a nature flag on its own.
+
+| Nature | Families/controls | Actions beneath |
+|---|---|---|
+| **Technical** only | 5 | 9 |
+| **Both** - sits under a technical *and* a non-technical category | 5 | 0 |
+| Non-technical only | 26 | 43 |
+
+> **The taxonomy is a polyhierarchy.** 8 of the 36 concepts have more than one top-level parent, and 5 of those straddle the technical boundary specifically. So "technical vs non-technical" is not a clean partition here, the way `pair:controlNature` is for the 12 suggested controls. Where a single answer is needed, use 9a.
+>
+> Note that **all 5 straddling concepts are PAIR-AI curation**, not MIT entries. The ambiguity comes from this project deliberately parenting its own controls under two families, not from anything in MIT's taxonomy.
+
+**Technical only (5)**
+
+- `content-safety-controls` - MIT verbatim, 2 actions  <br>*under: technical-security*
+- `input-output-filtering` - **PAIR-AI curation**  <br>*under: technical-security*
+- `model-infrastructure-security` - MIT verbatim  <br>*under: technical-security*
+- `model-safety-engineering` - MIT verbatim, 7 actions  <br>*under: technical-security*
+- `technical-security-controls` - MIT verbatim  <br>*under: technical-security*
+
+**Both technical and non-technical (5)**
+
+- `prompt-context-limiting` - **PAIR-AI curation**  <br>*under: operational-process, technical-security*
+- `red-teaming` - **PAIR-AI curation**  <br>*under: operational-process, technical-security*
+- `redaction` - **PAIR-AI curation**  <br>*under: operational-process, technical-security*
+- `retrieval-source-filtering` - **PAIR-AI curation**  <br>*under: operational-process, technical-security*
+- `threat-modelling` - **PAIR-AI curation**  <br>*under: operational-process, technical-security*
+
+**Non-technical only (26)**
+
+- `access-management` - MIT verbatim, 4 actions  <br>*under: operational-process*
+- `data-curation-process` - **PAIR-AI curation**  <br>*under: operational-process*
+- `data-governance` - MIT verbatim, 14 actions  <br>*under: operational-process*
+- `data-minimization` - **PAIR-AI curation**  <br>*under: operational-process*
+- `governance-oversight-controls` - MIT verbatim  <br>*under: governance-oversight*
+- `human-oversight-protocol` - **PAIR-AI curation**  <br>*under: governance-oversight, transparency-accountability*
+- `incident-reporting` - MIT verbatim, 2 actions  <br>*under: transparency-accountability*
+- `incident-response-plan` - **PAIR-AI curation**  <br>*under: operational-process, transparency-accountability*
+- `incident-response-recovery` - MIT verbatim, 1 actions  <br>*under: operational-process*
+- `operational-process-controls` - MIT verbatim  <br>*under: operational-process*
+- `post-deployment-behavior-monitoring` - **PAIR-AI curation**  <br>*under: operational-process*
+- `post-deployment-monitoring` - MIT verbatim, 1 actions  <br>*under: operational-process*
+- `pre-deployment-risk-assessment` - **PAIR-AI curation**  <br>*under: governance-oversight, operational-process*
+- `privacy-control-for-user-data` - **PAIR-AI curation**  <br>*under: operational-process*
+- `retrieval-quality-evaluation` - **PAIR-AI curation**  <br>*under: operational-process*
+- `risk-disclosure` - MIT verbatim, 3 actions  <br>*under: transparency-accountability*
+- `risk-management` - MIT verbatim, 1 actions  <br>*under: governance-oversight*
+- `risk-register` - **PAIR-AI curation**  <br>*under: governance-oversight*
+- `safety-decision-frameworks` - MIT verbatim, 1 actions  <br>*under: governance-oversight*
+- `societal-impact-assessment` - MIT verbatim, 1 actions  <br>*under: governance-oversight*
+- `staged-deployment` - MIT verbatim  <br>*under: operational-process*
+- `system-architecture-documentation` - **PAIR-AI curation**  <br>*under: transparency-accountability*
+- `system-documentation` - MIT verbatim, 2 actions  <br>*under: transparency-accountability*
+- `testing-auditing` - MIT verbatim, 12 actions  <br>*under: operational-process*
+- `transparency-accountability-controls` - MIT verbatim  <br>*under: transparency-accountability*
+- `user-rights-recourse` - MIT verbatim, 1 actions  <br>*under: transparency-accountability*
+
+---
+
+## 10. Provenance summary
 
 | Claim | Basis |
 |---|---|
@@ -154,4 +323,60 @@ Families with no action beneath them (6): `governance-oversight-controls`, `mode
 | Suggested control catalogue | PAIR-AI curation |
 
 Per-mapping records with SEMAPV justifications are in `ontology/taxonomy/provenance/mapping_provenance.ttl`.
+
+---
+
+## 11. Files that make up this work
+
+Everything below is in the repository. Paths are the source of truth; this
+document is generated from them.
+
+### Knowledge - the vocabularies and the library
+
+| File | Holds |
+|---|---|
+| `ontology/patterns/motif.ttl` | the 26 motifs and their pattern nodes/edges |
+| `ontology/patterns/risk_pattern_library.ttl` | the 13 risk patterns, the 12 suggested controls, and the control-to-MIT bridge |
+| `ontology/patterns/control_mitigation_layer.ttl` | technical/non-technical classification and `realizedByMotif` |
+| `ontology/core/pair_ai_pattern.ttl` | the pattern meta-vocabulary: roles, predicates, data categories |
+| `ontology/core/beam_core.ttl` | BEAM elements and flow predicates |
+| `ontology/taxonomy/mit_air_risk_control.ttl` | 20 MIT families (verbatim) + 16 PAIR-AI concrete controls |
+| `ontology/taxonomy/mit_mitigation_action.ttl` | **52 MIT mitigation actions** (generated) |
+| `ontology/taxonomy/taxonomy_mapping.ttl` | cross-taxonomy mappings + risk-to-control grounding |
+| `ontology/taxonomy/owasp_llm.ttl, owasp_asi.ttl, ibm_risk_atlas.ttl, mit_ai_risk.ttl, nist_genai.ttl` | the risk taxonomies |
+| `ontology/facets/` | OECD/DPV characterization facets |
+| `ontology/patterns/implementation/` | the executable SPARQL: `match/`, `risk/`, `propagation/` |
+
+### Evidence and provenance
+
+| File | Holds |
+|---|---|
+| `data/mappings/Final_Mapped_Taxonomy_Table_Output.csv` | the 93-row cross-walk (OWASP -> IBM Atlas -> MIT action). **The source of the action layer.** |
+| `ontology/taxonomy/provenance/mapping_provenance.ttl` | one `sssom:Mapping` per correspondence, with a SEMAPV justification. Deliberately outside the runner's glob |
+| `NOTICE.md` | third-party attribution and licence posture per source |
+
+### Generators - re-run after editing the ontology
+
+```
+python python/scripts/generate_mit_action_layer.py        # the 52-action layer
+python python/scripts/generate_mapping_provenance.py      # provenance records
+python python/scripts/generate_risk_control_linkage.py    # this document
+```
+
+### Tests that hold it together
+
+| File | Checks |
+|---|---|
+| `python/tests/test_library_consistency.py` | motif/risk-pattern/query coherence, taxonomy anchors, role hierarchy |
+| `python/tests/test_mapping_integrity.py` | mapping coherence, provenance coverage, cross-walk reproducibility, the action layer |
+| `python/tests/test_propagation.py` | data-category propagation and its barriers |
+
+### Background reading
+
+| File | Why |
+|---|---|
+| `docs/reference/PAIR-AI_glossary_v1.2.md` | terminology and the locked modelling rules (R1-R8). Read Section C before changing anything |
+| `docs/reference/PAIR-AI_method_and_construction.md` | how the knowledge base was built |
+| `docs/reference/catalogue.md` | the motif catalogue in prose |
+| `docs/claude/CLAUDE.md` | locked decisions, including licence posture per source |
 
