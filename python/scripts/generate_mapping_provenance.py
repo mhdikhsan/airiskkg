@@ -118,23 +118,28 @@ BLOCKS = [
         "curator": "pair-ai",
         "validated": False,
         "except_subjects": ("llm07-", "llm08-", "llm10-"),
-        # Naming the artefact matters more here than anywhere else in this file.
-        # These are the weakest links in the knowledge base, and until now the
-        # only record of which document produced them lived in
-        # CHANGELOG_data_model.md, which is gitignored - so the evidence for 32
-        # mappings existed on one machine and in no repository. The CSV itself
-        # is not in the tree either, which is a reproducibility gap that
-        # recording the name does not close, only makes visible.
+        # The source CSV is now in the tree, so these stopped being assertions
+        # and became reproducible: test_section_3_control_links_reproduce_from_
+        # the_csv recomputes the rollup and diffs it both ways. Still the weakest
+        # block in the knowledge base - reproducible is not the same as
+        # validated, and nobody has adjudicated the underlying cosine matches.
         "source_note": (
-            "PAIR-AI risk-to-mitigation CSV 'Final_Mapped_Taxonomy_Table_Output' "
-            "(OWASP -> IBM -> MIT-action embedding mapping), applied 2026-07-17. "
+            "PAIR-AI risk-to-mitigation CSV, "
+            "data/mappings/Final_Mapped_Taxonomy_Table_Output.csv "
+            "(OWASP -> IBM Atlas -> MIT-action embedding mapping; 93 rows, 7 "
+            "OWASP risks, 30 IBM risks, 52 MIT actions), applied 2026-07-17. "
             "Method per its own reference doc: embedding-matched, cosine top-3, "
-            "unvalidated. Covers LLM01-06 and LLM09 only. Known defects carried "
-            "from the source: action A0973 filed under sub-category 2.3 but "
-            "tagged Category 3; capitalization drift; references 19 IBM risks "
-            "this project does not declare. NOT PRESENT IN THIS REPOSITORY - "
-            "these mappings cannot currently be re-derived or independently "
-            "checked."
+            "UNVALIDATED - reproducible but not adjudicated. Rollup: each risk's "
+            "mapped actions collected to their MIT sub-categories, mapped 1:1 to "
+            "mitctrl:*, with three approximations (2.2 Model Alignment -> "
+            "model-safety-engineering; 4.4 Governance Disclosure -> "
+            "risk-disclosure; 4.5 Third-Party System Access -> "
+            "access-management). Covers LLM01-06 and LLM09 only; LLM07/08/10 "
+            "keep prior curation. Defects carried from the source: action A0973 "
+            "sits in sub-category 2.3 but is tagged Category 3 (does not affect "
+            "the rollup, which keys on Sub_category); OWASP ids embed the year "
+            "inline (llm022025-) unlike the ontology; 19 of the 30 referenced "
+            "IBM risks are not declared in this project."
         ),
     },
     {
