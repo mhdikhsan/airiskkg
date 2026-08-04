@@ -142,9 +142,10 @@ mitact:A0468
     skos:prefLabel "Training Data Curation"@en ;
     skos:notation "A0468" ;
     skos:broader mitctrl:data-governance ;
+    skos:broader mitctrl:data-curation-process ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
     nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    dct:source "MIT AI Risk Mitigation Database, action A0468 (sub-category '3.2 Data Governance'); primary source: NIST (2024)"@en .
+    dct:source "MIT AI Risk Mitigation Database, action A0468 (sub-category '3.2 Data Governance'); primary source: NIST (2024); placed under mitctrl:data-curation-process by review - lexical candidate generation over the 52 actions, adjudicated 2026-08-04"@en .
 
 mitact:A0470
     a nexus:RiskControl ;
@@ -205,18 +206,20 @@ mitact:A0522
     skos:prefLabel "AI Red-Teaming Resilience"@en ;
     skos:notation "A0522" ;
     skos:broader mitctrl:testing-auditing ;
+    skos:broader mitctrl:red-teaming ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
     nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    dct:source "MIT AI Risk Mitigation Database, action A0522 (sub-category '3.1 Testing & Auditing'); primary source: NIST (2024)"@en .
+    dct:source "MIT AI Risk Mitigation Database, action A0522 (sub-category '3.1 Testing & Auditing'); primary source: NIST (2024); placed under mitctrl:red-teaming by review - lexical candidate generation over the 52 actions, adjudicated 2026-08-04"@en .
 
 mitact:A0531
     a nexus:RiskControl ;
     skos:prefLabel "Data Exposure Red-Teaming"@en ;
     skos:notation "A0531" ;
     skos:broader mitctrl:testing-auditing ;
+    skos:broader mitctrl:red-teaming ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
     nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    dct:source "MIT AI Risk Mitigation Database, action A0531 (sub-category '3.1 Testing & Auditing'); primary source: NIST (2024)"@en .
+    dct:source "MIT AI Risk Mitigation Database, action A0531 (sub-category '3.1 Testing & Auditing'); primary source: NIST (2024); placed under mitctrl:red-teaming by review - lexical candidate generation over the 52 actions, adjudicated 2026-08-04"@en .
 
 mitact:A0792
     a nexus:RiskControl ;
@@ -448,9 +451,10 @@ mitact:A0979
     skos:prefLabel "Post-deployment ongoing monitoring for unexpected use cases"@en ;
     skos:notation "A0979" ;
     skos:broader mitctrl:post-deployment-monitoring ;
+    skos:broader mitctrl:post-deployment-behavior-monitoring ;
     skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
     nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
-    dct:source "MIT AI Risk Mitigation Database, action A0979 (sub-category '3.5 Post-deployment Monitoring'); primary source: Gipikis (2024)"@en .
+    dct:source "MIT AI Risk Mitigation Database, action A0979 (sub-category '3.5 Post-deployment Monitoring'); primary source: Gipikis (2024); placed under mitctrl:post-deployment-behavior-monitoring by review - lexical candidate generation over the 52 actions, adjudicated 2026-08-04"@en .
 
 mitact:A0993
     a nexus:RiskControl ;
