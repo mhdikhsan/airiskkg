@@ -114,10 +114,28 @@ BLOCKS = [
         "justification": "SemanticSimilarityThresholdMatching",
         "confidence": None,
         "tsv": None,
-        "date": None,
+        "date": "2026-07-17",
         "curator": "pair-ai",
         "validated": False,
         "except_subjects": ("llm07-", "llm08-", "llm10-"),
+        # Naming the artefact matters more here than anywhere else in this file.
+        # These are the weakest links in the knowledge base, and until now the
+        # only record of which document produced them lived in
+        # CHANGELOG_data_model.md, which is gitignored - so the evidence for 32
+        # mappings existed on one machine and in no repository. The CSV itself
+        # is not in the tree either, which is a reproducibility gap that
+        # recording the name does not close, only makes visible.
+        "source_note": (
+            "PAIR-AI risk-to-mitigation CSV 'Final_Mapped_Taxonomy_Table_Output' "
+            "(OWASP -> IBM -> MIT-action embedding mapping), applied 2026-07-17. "
+            "Method per its own reference doc: embedding-matched, cosine top-3, "
+            "unvalidated. Covers LLM01-06 and LLM09 only. Known defects carried "
+            "from the source: action A0973 filed under sub-category 2.3 but "
+            "tagged Category 3; capitalization drift; references 19 IBM risks "
+            "this project does not declare. NOT PRESENT IN THIS REPOSITORY - "
+            "these mappings cannot currently be re-derived or independently "
+            "checked."
+        ),
     },
     {
         "start": "## IBM Atlas risk -> control",
@@ -330,6 +348,8 @@ def main() -> int:
         lines.append(f'    rdfs:label "{block["label"]}"@en ;')
         if block["tsv"]:
             lines.append(f"    dct:source <{NEXUS_TSV}{block['tsv']}> ;")
+        if block.get("source_note"):
+            lines.append(f'    dct:source "{block["source_note"]}"@en ;')
         if block.get("validated") is False:
             lines.append(
                 '    dct:description "NOT validated. These links were produced '

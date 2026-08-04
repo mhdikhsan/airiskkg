@@ -56,6 +56,7 @@ pairm:pair-ai-curation a sssom:MappingSet ;
 
 pairm:pair-ai-risk-to-control-embedding a sssom:MappingSet ;
     rdfs:label "OWASP risk to MIT control family, embedding-derived"@en ;
+    dct:source "PAIR-AI risk-to-mitigation CSV 'Final_Mapped_Taxonomy_Table_Output' (OWASP -> IBM -> MIT-action embedding mapping), applied 2026-07-17. Method per its own reference doc: embedding-matched, cosine top-3, unvalidated. Covers LLM01-06 and LLM09 only. Known defects carried from the source: action A0973 filed under sub-category 2.3 but tagged Category 3; capitalization drift; references 19 IBM risks this project does not declare. NOT PRESENT IN THIS REPOSITORY - these mappings cannot currently be re-derived or independently checked."@en ;
     dct:description "NOT validated. These links were produced without human adjudication of each row; treat as a baseline pending review, not as curated correspondences."@en ;
     sssom:mapping_tool "pair-ai" .
 
@@ -1390,6 +1391,7 @@ pairm:mapping-176 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-177 a sssom:Mapping ;
@@ -1397,6 +1399,7 @@ pairm:mapping-177 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:incident-reporting ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-178 a sssom:Mapping ;
@@ -1404,6 +1407,7 @@ pairm:mapping-178 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:model-safety-engineering ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-179 a sssom:Mapping ;
@@ -1411,6 +1415,7 @@ pairm:mapping-179 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-180 a sssom:Mapping ;
@@ -1418,6 +1423,7 @@ pairm:mapping-180 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-181 a sssom:Mapping ;
@@ -1425,6 +1431,7 @@ pairm:mapping-181 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:access-management ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-182 a sssom:Mapping ;
@@ -1432,6 +1439,7 @@ pairm:mapping-182 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:content-safety-controls ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-183 a sssom:Mapping ;
@@ -1439,6 +1447,7 @@ pairm:mapping-183 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-184 a sssom:Mapping ;
@@ -1446,6 +1455,7 @@ pairm:mapping-184 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:model-safety-engineering ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-185 a sssom:Mapping ;
@@ -1453,6 +1463,7 @@ pairm:mapping-185 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-186 a sssom:Mapping ;
@@ -1460,6 +1471,7 @@ pairm:mapping-186 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-management ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-187 a sssom:Mapping ;
@@ -1467,6 +1479,7 @@ pairm:mapping-187 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:societal-impact-assessment ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-188 a sssom:Mapping ;
@@ -1474,6 +1487,7 @@ pairm:mapping-188 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-189 a sssom:Mapping ;
@@ -1481,6 +1495,7 @@ pairm:mapping-189 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:access-management ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-190 a sssom:Mapping ;
@@ -1488,6 +1503,7 @@ pairm:mapping-190 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-191 a sssom:Mapping ;
@@ -1495,6 +1511,7 @@ pairm:mapping-191 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-192 a sssom:Mapping ;
@@ -1502,6 +1519,7 @@ pairm:mapping-192 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-193 a sssom:Mapping ;
@@ -1509,6 +1527,7 @@ pairm:mapping-193 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-194 a sssom:Mapping ;
@@ -1516,6 +1535,7 @@ pairm:mapping-194 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-195 a sssom:Mapping ;
@@ -1523,6 +1543,7 @@ pairm:mapping-195 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:incident-response-recovery ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-196 a sssom:Mapping ;
@@ -1530,6 +1551,7 @@ pairm:mapping-196 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:safety-decision-frameworks ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-197 a sssom:Mapping ;
@@ -1537,6 +1559,7 @@ pairm:mapping-197 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-198 a sssom:Mapping ;
@@ -1544,6 +1567,7 @@ pairm:mapping-198 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:user-rights-recourse ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-199 a sssom:Mapping ;
@@ -1551,6 +1575,7 @@ pairm:mapping-199 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:safety-decision-frameworks ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-200 a sssom:Mapping ;
@@ -1558,6 +1583,7 @@ pairm:mapping-200 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-201 a sssom:Mapping ;
@@ -1565,6 +1591,7 @@ pairm:mapping-201 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:user-rights-recourse ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-202 a sssom:Mapping ;
@@ -1572,6 +1599,7 @@ pairm:mapping-202 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:content-safety-controls ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-203 a sssom:Mapping ;
@@ -1579,6 +1607,7 @@ pairm:mapping-203 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-204 a sssom:Mapping ;
@@ -1586,6 +1615,7 @@ pairm:mapping-204 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:model-safety-engineering ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-205 a sssom:Mapping ;
@@ -1593,6 +1623,7 @@ pairm:mapping-205 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:post-deployment-monitoring ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-206 a sssom:Mapping ;
@@ -1600,6 +1631,7 @@ pairm:mapping-206 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-207 a sssom:Mapping ;
@@ -1607,6 +1639,7 @@ pairm:mapping-207 a sssom:Mapping ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:SemanticSimilarityThresholdMatching ;
+    sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
 pairm:mapping-208 a sssom:Mapping ;
