@@ -1,0 +1,134 @@
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://tool4boxology.org/Boxology/graphrag-example> a beam:Element,
+        beam:System ;
+    rdfs:label "GraphRAG Example" ;
+    beam:context "The system will be used in a demonstration environment (not real-world use case) to showcase RAG systems for potential users." ;
+    beam:description "The workflow describes a simplified event information chatbot based on the GraphRAG approach." ;
+    beam:hasProcess <http://tool4boxology.org/Component/extraction>,
+        <http://tool4boxology.org/Component/kg_query>,
+        <http://tool4boxology.org/Component/llm_prompt> ;
+    beam:hasResource <http://tool4boxology.org/Component/event_id>,
+        <http://tool4boxology.org/Component/event_kg>,
+        <http://tool4boxology.org/Component/kg_subgraph>,
+        <http://tool4boxology.org/Component/llm>,
+        <http://tool4boxology.org/Component/nlq>,
+        <http://tool4boxology.org/Component/sparql_tmpl>,
+        <http://tool4boxology.org/Component/summary>,
+        <http://tool4boxology.org/Component/sys_prompt_tmpl> .
+
+<http://tool4boxology.org/DesignPattern/extraction> rdfs:label "Event ID Extraction" .
+
+<http://tool4boxology.org/DesignPattern/kg_query> rdfs:label "KG Querying (Retrieval)" .
+
+<http://tool4boxology.org/DesignPattern/llm_prompt> rdfs:label "LLM Prompting (Generation)" .
+
+<http://tool4boxology.org/Component/event_kg> a beam:SemanticModel,
+        beam:Data ;
+    rdfs:label "Event KG" ;
+    pair:playsRole pair:VectorStore ;
+    beam:usedBy <http://tool4boxology.org/Component/kg_query> .
+
+<http://tool4boxology.org/Component/llm> a beam:StatisticalModel ;
+    rdfs:label "LLM" ;
+    pair:containsDataCategory pair:ExternalUserContent,
+        pair:Information,
+        pair:UntrustedContent ;
+    pair:playsRole pair:FoundationLLM,
+        pair:GenerativeModel ;
+    beam:usedBy <http://tool4boxology.org/Component/llm_prompt> .
+
+<http://tool4boxology.org/Component/nlq> a beam:Data ;
+    rdfs:label "Natural Language Question" ;
+    pair:containsDataCategory pair:ConfidentialInformation,
+        pair:SensitiveInformation ;
+    pair:playsRole pair:PublicUserInput,
+        pair:UserInput ;
+    beam:usedBy <http://tool4boxology.org/Component/extraction> .
+
+<http://tool4boxology.org/Component/sparql_tmpl> a beam:Symbol ;
+    rdfs:label "SPARQL Query Template" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:RewrittenQuery ;
+    beam:usedBy <http://tool4boxology.org/Component/kg_query> .
+
+<http://tool4boxology.org/Component/summary> a beam:Data ;
+    rdfs:label "Event Summary" ;
+    pair:playsRole pair:UserFacingOutput,
+        pair:LLMResponse ;
+    beam:producedBy <http://tool4boxology.org/Component/llm_prompt> .
+
+<http://tool4boxology.org/Component/sys_prompt_tmpl> a beam:Symbol ;
+    rdfs:label "System Prompt Template" ;
+    pair:containsDataCategory pair:PromptInstruction ;
+    pair:playsRole pair:SystemPrompt ;
+    beam:usedBy <http://tool4boxology.org/Component/llm_prompt> .
+
+<http://tool4boxology.org/Component/event_id> a beam:Data ;
+    rdfs:label "Event ID" ;
+    pair:containsDataCategory pair:ConfidentialInformation,
+        pair:SensitiveInformation ;
+    pair:playsRole pair:ResourceRole,
+        pair:UserInput ;
+    beam:producedBy <http://tool4boxology.org/Component/extraction> ;
+    beam:usedBy <http://tool4boxology.org/Component/kg_query> .
+
+<http://tool4boxology.org/Component/extraction> a beam:Infer ;
+    rdfs:label "Event ID Extraction" ;
+    pair:playsRole pair:ProcessingStep,
+        pair:QueryReformulationStep ;
+    beam:produce <http://tool4boxology.org/Component/event_id> ;
+    beam:use <http://tool4boxology.org/Component/nlq> .
+
+<http://tool4boxology.org/Component/kg_subgraph> a beam:Data ;
+    rdfs:label "Event KG Subgraph on Event ID" ;
+    pair:containsDataCategory pair:ConfidentialInformation,
+        pair:SensitiveInformation ;
+    pair:playsRole pair:RetrievedResult ;
+    beam:producedBy <http://tool4boxology.org/Component/kg_query> ;
+    beam:usedBy <http://tool4boxology.org/Component/llm_prompt> .
+
+<http://tool4boxology.org/Component/kg_query> a beam:Transform ;
+    rdfs:label "KG Querying (Retrieval)" ;
+    pair:playsRole pair:RetrievalStep ;
+    beam:produce <http://tool4boxology.org/Component/kg_subgraph> ;
+    beam:use <http://tool4boxology.org/Component/event_id>,
+        <http://tool4boxology.org/Component/event_kg>,
+        <http://tool4boxology.org/Component/sparql_tmpl> .
+
+
+<http://tool4boxology.org/Component/llm_prompt> a beam:Generate,
+        beam:Infer ;
+    rdfs:label "LLM Prompting (Generation)" ;
+    pair:containsDataCategory pair:ConfidentialInformation,
+        pair:PromptInstruction,
+        pair:SensitiveInformation,
+        pair:UntrustedContent ;
+    pair:playsRole pair:GenerationStep ;
+    beam:produce <http://tool4boxology.org/Component/summary> ;
+    beam:use <http://tool4boxology.org/Component/assembled_prompt>,
+        <http://tool4boxology.org/Component/kg_subgraph>,
+        <http://tool4boxology.org/Component/llm>,
+        <http://tool4boxology.org/Component/sys_prompt_tmpl> .
+
+<http://tool4boxology.org/Component/prompt_build> a beam:Transform,
+        beam:Process ;
+    rdfs:label "Prompt Assembly" ;
+    pair:playsRole pair:PromptConstructionStep ;
+    beam:produce <http://tool4boxology.org/Component/assembled_prompt> ;
+    beam:use <http://tool4boxology.org/Component/event_id>,
+        <http://tool4boxology.org/Component/kg_subgraph>,
+        <http://tool4boxology.org/Component/nlq>,
+        <http://tool4boxology.org/Component/sys_prompt_tmpl> .
+
+<http://tool4boxology.org/Component/assembled_prompt> a beam:Data ;
+    rdfs:label "Assembled Prompt" ;
+    pair:containsDataCategory pair:ConfidentialInformation,
+        pair:PromptInstruction,
+        pair:SensitiveInformation ;
+    pair:playsRole pair:PromptTemplate ;
+    beam:producedBy <http://tool4boxology.org/Component/prompt_build> ;
+    beam:usedBy <http://tool4boxology.org/Component/llm_prompt> .
+

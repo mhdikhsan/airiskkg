@@ -23,14 +23,6 @@
     A selected RDF subset of the MIT Draft AI Risk Mitigation Taxonomy and related
     risk controls, adapted from AI Atlas Nexus. This file provides a control
     grounding layer for graph-pattern-based AI risk assessment.
-
-    Provenance: the RiskControlGroup layer (4 categories +
-    subcategories) reproduces the MIT draft taxonomy verbatim, verified against
-    the upstream Nexus data. The concrete RiskControl layer at the end of this
-    file is PAIR-AI curation: it names controls found as individual mitigations
-    in the MIT mitigation database (cited per concept) or distilled from OWASP
-    LLM Top 10 prevention guidance; these are NOT entries of the MIT taxonomy
-    itself and therefore do not carry nexus:isDefinedByTaxonomy.
     """ ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_mitigation_data.yaml> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_repository_data_controls.yaml> .
@@ -101,9 +93,8 @@ mitctrl:transparency-accountability-controls
     nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
     nexus:controlType "transparency-accountability" .
 
-#################################################################
 # Governance and oversight control groups
-#################################################################
+
 
 mitctrl:risk-management
     a nexus:RiskControlGroup ;
@@ -147,9 +138,8 @@ mitctrl:societal-impact-assessment
     nexus:controlType "governance" ;
     nexus:lifecyclePhase "design-time" .
 
-#################################################################
 # Technical and security control groups
-#################################################################
+
 
 mitctrl:model-infrastructure-security
     a nexus:RiskControlGroup ;
@@ -194,9 +184,8 @@ mitctrl:content-safety-controls
     nexus:lifecyclePhase "deployment" ;
     nexus:lifecyclePhase "operation" .
 
-#################################################################
 # Operational process control groups
-#################################################################
+
 
 mitctrl:testing-auditing
     a nexus:RiskControlGroup ;
@@ -281,9 +270,8 @@ mitctrl:incident-response-recovery
     nexus:lifecyclePhase "operation" ;
     nexus:lifecyclePhase "post-deployment" .
 
-#################################################################
 # Transparency and accountability control groups
-#################################################################
+
 
 mitctrl:system-documentation
     a nexus:RiskControlGroup ;
@@ -340,13 +328,7 @@ mitctrl:user-rights-recourse
     nexus:lifecyclePhase "deployment" ;
     nexus:lifecyclePhase "post-deployment" .
 
-#################################################################
-# Concrete controls (PAIR-AI curated layer — not MIT taxonomy entries)
-# Each concept cites its evidence: a mitigation in the MIT AI Risk
-# Mitigation Database (via mit_ai_risk_mitigation_mappings.tsv) and/or
-# OWASP LLM Top 10 2025 prevention guidance; skos:broader anchors it
-# to the verbatim MIT subcategory it specializes.
-#################################################################
+
 
 mitctrl:risk-register
     a nexus:RiskControl ;

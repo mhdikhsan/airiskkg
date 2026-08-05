@@ -165,9 +165,8 @@ nexus:hasRelatedControl a owl:ObjectProperty ;
     rdfs:range beamr:RiskControl ;
     rdfs:comment "Links a risk taxonomy entry to a related control or mitigation concept." .
 
-#################################################################
 # Datatype properties
-#################################################################
+
 
 nexus:tag a owl:DatatypeProperty ;
     rdfs:label "tag" ;
