@@ -63,7 +63,7 @@ pair:RiskPattern a owl:Class ;
 
 pair:RiskMechanism a owl:Class ;
     rdfs:label "Risk Mechanism"@en ;
-    rdfs:comment "The curated causal account of how or why a matched configuration under the observed conditions can lead to harm: the risk-pattern's 'why', as opposed to its applicability conditions, which are the machine-checkable 'what' (the detection gate). A mechanism is deliberately NOT part of the detection logic - it is never evaluated or filtered on during matching (encoding the causal account as a second graph condition would duplicate the applicability condition and reintroduce declarative/executable drift). It is inert, reusable text attached by reference to every finding of its pattern, guaranteeing the same explanation is reproduced (never regenerated or paraphrased) across systems and runs. Grounded in the source taxonomy (e.g. an OWASP LLM Top 10 risk's mechanism). Per-finding instance grounding - naming the concrete risk-bearing elements - is added at assessment time via pair:mechanismNarrative, which frames this canonical text against the matched elements without altering it."@en .
+    rdfs:comment "The curated causal account of how or why a matched configuration under the observed conditions can lead to harm: the risk-pattern's 'why', as opposed to its applicability conditions, which are the machine-checkable 'what' (the detection gate). A mechanism is deliberately NOT part of the detection logic - it is never evaluated or filtered on during matching (encoding the causal account as a second graph condition would duplicate the applicability condition and reintroduce declarative/executable drift). It is inert, reusable text attached by reference to every finding of its pattern, guaranteeing the same explanation is reproduced (never regenerated or paraphrased) across systems and runs. Grounded in the source taxonomy (e.g. an OWASP LLM Top 10 risk's mechanism). Per-finding instance grounding is NOT materialized in the graph: the concrete risk-bearing elements are already asserted via pair:hasEvidence, and any instance-framed sentence belongs to the presentation layer (glossary v1.2, decision F2)."@en .
 
 pair:PatternImplementation a owl:Class ;
     rdfs:label "Pattern Implementation"@en ;
@@ -144,14 +144,14 @@ pair:expectedRole a owl:ObjectProperty ;
 
 pair:hasRiskPattern a owl:ObjectProperty ;
     rdfs:label "has risk pattern"@en ;
-    rdfs:comment "Links a risk-neutral graph motif to an AI risk pattern that extends it with risk semantics."@en ;
+    rdfs:comment "Links a risk-neutral graph motif to an AI risk pattern that extends it with risk semantics. AUTHORING RULE (glossary v1.2, term 6): this is the REQUIRED MIRROR of pair:hasMotif, which is canonical. Assert the binding on the risk pattern first, then mirror it here. The mirror is not optional and is not inferred: no OWL reasoning runs during assessment, so owl:inverseOf below is documentation only and materializes nothing. python/tests/test_library_consistency.py fails if either direction is missing."@en ;
     rdfs:domain pair:GraphMotif ;
     rdfs:range pair:RiskPattern ;
     owl:inverseOf pair:hasMotif .
 
 pair:hasMotif a owl:ObjectProperty ;
     rdfs:label "has motif"@en ;
-    rdfs:comment "Links an AI risk pattern to the structural motif that must be present for it to apply."@en ;
+    rdfs:comment "Links an AI risk pattern to the structural motif that must be present for it to apply. AUTHORING RULE (glossary v1.2, term 6): this direction is CANONICAL - a motif is a constituent of the risk pattern (Risk Pattern = Motif + Applicability Conditions + Mechanism + Taxonomy Links + Controls), so the binding is authored here, on the pattern. Every assertion must also be mirrored by pair:hasRiskPattern on the motif, because no reasoner materializes the inverse."@en ;
     rdfs:domain pair:RiskPattern ;
     rdfs:range pair:GraphMotif .
 
@@ -366,11 +366,13 @@ plain literal."""@en ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range xsd:string .
 
-pair:mechanismNarrative a owl:DatatypeProperty ;
-    rdfs:label "mechanism narrative"@en ;
-    rdfs:comment "An instance-grounded rendering of a candidate risk finding's mechanism: the pattern's canonical curated causal text (pair:hasDerivedMechanism / pair:RiskMechanism) framed against the concrete architecture elements that triggered this specific finding. Materialized at assessment time by the risk query. The canonical causal wording is reused verbatim from the mechanism individual (single source, no paraphrase), with only an instance frame naming the matched elements appended - so this presentation string introduces no new curated claim and cannot drift from the mechanism. Complements pair:hasDerivedMechanism (the reusable IRI pointer, kept for traceability) rather than replacing it."@en ;
-    rdfs:domain pair:RiskFinding ;
-    rdfs:range xsd:string .
+# pair:mechanismNarrative was removed in glossary v1.2 (decision F2, 2026-07-28).
+# It rendered a per-finding prose sentence by concatenating the mechanism text with
+# URI fragments of the bound elements. Removed because: nothing consumed it; every
+# element it named is already asserted as pair:hasEvidence in queryable form; and the
+# string building was presentation logic inside the knowledge layer. Render such a
+# sentence in the view (python/src/airiskkg/assessment_view.py), where rdfs:labels are
+# available, not in the graph.
 
 ### Top-level roles
 
@@ -893,6 +895,26 @@ pair:StateChangingStep a pair:PatternRole ;
     skos:definition "A step that changes external state: writes, transactions, or other actions with side effects outside the system boundary."@en ;
     dct:source "OWASP Top 10 for LLM Applications 2025, LLM06 Excessive Agency" .
 
+### Agentic steps
+
+pair:PlanningStep a pair:PatternRole ;
+    skos:prefLabel "PlanningStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step in which the system decides what to do next - selecting a tool, ordering sub-tasks, or revising a goal - rather than producing the user-facing answer itself. What distinguishes an agent from a single generation call."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI02 Tool Misuse and Exploitation (scope of agentic decision steps)" .
+
+pair:MemoryWriteStep a pair:PatternRole ;
+    skos:prefLabel "MemoryWriteStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step that commits content to agent memory for reuse in later turns or sessions."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of retained-context writes)" .
+
+pair:MemoryReadStep a pair:PatternRole ;
+    skos:prefLabel "MemoryReadStep"@en ;
+    pair:subRoleOf pair:RetrievalStep ;
+    skos:definition "A step that reads retained agent memory back into a working context. A specialization of RetrievalStep: recalling memory is retrieval over the system's own history rather than over an external knowledge source."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of retained-context reads)" .
+
 ### Prediction-step specializations 
 
 ### Agentic steps
@@ -998,8 +1020,8 @@ pair:MemoryValidationStep a pair:PatternRole ;
 
 pair:DataCategoryScheme a skos:ConceptScheme ;
     skos:prefLabel "Data Category"@en ;
-    skos:definition "Characterization facet classifying the content of data resources (glossary v1.1 A.3). Read by applicability conditions only; aligned to DPV data concepts where equivalents exist (Rule R3: referenced, never copied)."@en ;
-    dct:source "PAIR-AI glossary v1.1, Section A.3; DPV v2.3 (https://w3id.org/dpv#, verified 2026-07-13)" .
+    skos:definition "Characterization facet classifying the content of data resources (glossary v1.2 A.3). Read by applicability conditions only; aligned to DPV data concepts where equivalents exist (Rule R3: referenced, never copied)."@en ;
+    dct:source "PAIR-AI glossary v1.2, Section A.3; DPV v2.3 (https://w3id.org/dpv#, verified 2026-07-13)" .
 
 pair:Information a pair:DataCategory ;
     skos:prefLabel "Information"@en ;
