@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import threading
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -142,12 +143,22 @@ def load_assessment_graph(architecture_paths: Path | str | Iterable[Path | str] 
     return graph
 
 
+# rdflib compiles SPARQL with pyparsing, whose parser state is global and NOT
+# thread-safe: two threads compiling different queries at once corrupt it, and it
+# surfaces as "Param.postParse2() missing 1 required positional argument". Guard
+# compilation here rather than in any one caller - this is the single point where
+# every query (webapp request, test, CLI) is parsed. Executing an already
+# prepared query is read-only and needs no lock.
+_PARSE_LOCK = threading.Lock()
+
+
 @lru_cache(maxsize=None)
 def _prepared_query(query_path_str: str):
     """Parse-and-compile a SPARQL query once and reuse it. Parsing (pyparsing) is
     ~98% of a construct query's cost and the query text never changes at runtime,
     so caching the prepared query cuts a full assessment from ~2s to ~0.1s."""
-    return prepareQuery(Path(query_path_str).read_text(encoding="utf-8"))
+    with _PARSE_LOCK:
+        return prepareQuery(Path(query_path_str).read_text(encoding="utf-8"))
 
 
 def run_construct_query(graph: Graph, query_path: Path) -> Graph:

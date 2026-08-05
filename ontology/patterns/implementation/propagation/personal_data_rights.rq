@@ -1,0 +1,39 @@
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX facet: <http://w3id.org/airiskkg/facets#>
+PREFIX dataf: <http://w3id.org/airiskkg/facets/data#>
+
+# Bridge: OECD data-rights status -> PAIR-AI content category.
+#
+# Data carrying the OECD "Personal" rights status is, by pair:SensitiveInformation's
+# own definition, protection-worthy content ("personal, medical, financial, or
+# otherwise protection-worthy"). Both concepts also point at DPV independently -
+# dataf:Personal skos:relatedMatch dpv:PersonalData, pair:SensitiveInformation
+# skos:relatedMatch dpv:SensitivePersonalData - so the bridge is corroborated by a
+# shared external vocabulary rather than asserted on our own authority.
+#
+# Why a bridge rather than a second alternative inside the risk queries:
+#
+#   1. It changes no existing query's semantics. Conditions keep reading one
+#      vocabulary (pair:DataCategory) and gain the facet route for free.
+#   2. It runs in the same fixed-point loop as the other propagation rules, so a
+#      derived category then flows downstream through
+#      propagation/content_categories.rq and stops at a pair:RedactionStep,
+#      exactly like a hand-annotated one. Tagging the source is enough.
+#   3. Adding the next facet -> category bridge costs one query, not an edit to
+#      every condition that should honour it.
+#
+# Direction matters and is deliberate: an OECD rights status implies the content
+# category, NOT the reverse. Sensitive information is a broader notion than
+# personal data (trade secrets are sensitive and not personal), so deriving
+# dataf:Personal from pair:SensitiveInformation would over-claim - it would assert
+# data-protection status the modeler never stated.
+#
+# Rule R8: facet:hasDataRights is an annotated base fact supplied by the modeler;
+# the category asserted here is derived.
+
+CONSTRUCT {
+    ?element pair:containsDataCategory pair:SensitiveInformation .
+}
+WHERE {
+    ?element facet:hasDataRights dataf:Personal .
+}

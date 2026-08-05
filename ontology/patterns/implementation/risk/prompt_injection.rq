@@ -1,0 +1,73 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX beamr: <http://w3id.org/beam/risk#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate prompt injection exposure"@en ;
+        dct:description "Untrusted user or retrieved content can enter LLM prompt or generation context."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?untrustedContent ,
+            ?generationStep ,
+            ?llm ,
+            ?userFacingOutput ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    pat:PromptInjectionRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    ?match
+        a pair:MotifMatch ;
+        pair:matchesMotif ?motif ;
+        pair:hasNodeBinding/pair:matchedElement ?untrustedContent .
+    ?untrustedContent pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
+
+    ?generationStep
+        beam:use ?llm ;
+        beam:produce ?userFacingOutput ;
+        pair:playsRole ?generationRole .
+    ?generationRole pair:subRoleOf* pair:GenerationStep .
+    ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+    ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+
+    {
+        ?generationStep beam:use ?untrustedContent .
+    }
+    UNION
+    {
+        ?intermediateStep
+            beam:use ?untrustedContent ;
+            beam:produce ?derivedContext .
+        ?generationStep beam:use ?derivedContext .
+    }
+
+    FILTER NOT EXISTS {
+        pat:PromptInjectionRiskPattern pair:suggestedControl ?implementedControl .
+        ?implementedControl beamr:associatedTo ?generationStep .
+    }
+
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/prompt-injection"
+    )) AS ?riskFinding)
+}

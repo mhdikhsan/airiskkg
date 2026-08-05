@@ -10,6 +10,12 @@
 #################################################################
 
 <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> a owl:Ontology ;
+    # Third-party provenance: derived from IBM AI Atlas Nexus (Apache License 2.0).
+    # Apache 2.0 is permissive, so this file may be released under the repository
+    # licence; its section 4 duties (retain notices, state changes, propagate NOTICE)
+    # are met here and in /NOTICE.md.
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Derived from IBM AI Atlas Nexus, licensed Apache License 2.0 - see https://www.apache.org/licenses/LICENSE-2.0. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary. The underlying MIT AI Risk Repository is a third-party work packaged by Nexus; Apache 2.0 covers IBM's packaging, not upstream rights, and MIT's own terms are not yet verified."@en ;
     rdfs:label "MIT AI Risk Repository Subset for AI Risk KG" ;
     dct:title "MIT AI Risk Repository Subset for AI Risk KG" ;
     dct:description """

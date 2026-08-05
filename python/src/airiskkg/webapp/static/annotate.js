@@ -39,6 +39,11 @@
     return data;
   }
 
+  // Roles split cleanly into process roles and resource roles (the backend
+  // derives this from each role family's expectedClass), so the picker can offer
+  // the ones that fit the element. Anything not a BEAM process is a resource.
+  const roleKindFor = (node) => (node.kind === "process" ? "process" : "resource");
+
   let vocab = { roles: [], dataCategories: [] };
   let onStatus = () => {};
   let rows = []; // { id, rolePicker, catPicker }
@@ -72,7 +77,9 @@
       const currentCats = node.categoryIds || [];
       if (!currentRoles.length) untagged += 1;
 
-      const rolePicker = MultiPicker(vocab.roles, currentRoles, { placeholder: "+ add role" });
+      const rolePicker = MultiPicker(vocab.roles, currentRoles, {
+        placeholder: "+ add role", grouped: true, filterKind: roleKindFor(node),
+      });
       const catPicker = MultiPicker(vocab.dataCategories, currentCats, { placeholder: "+ add category" });
 
       rows.push({ id: node.id, rolePicker, catPicker });

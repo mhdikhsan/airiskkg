@@ -7,7 +7,7 @@ in isolation but references URIs the other layers never declare or emit:
   A. declared vocabulary  (ontology/core/pair_ai_pattern.ttl)
   B. motif library        (ontology/patterns/motif.ttl)
   C. risk pattern library (ontology/patterns/risk_pattern_library.ttl)
-  D. SPARQL queries       (ontology/patterns/implementation/*.rq)
+  D. SPARQL queries       (ontology/patterns/implementation/{match,risk,propagation}/)
   E. example graphs       (ontology/example/*.ttl)
   +  taxonomies           (ontology/taxonomy/*.ttl)
 
@@ -22,7 +22,7 @@ import re
 from pathlib import Path
 
 import pytest
-from rdflib import RDF, Graph, Namespace, URIRef
+from rdflib import DCTERMS, RDF, Graph, Namespace, URIRef
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CORE = REPO_ROOT / "ontology" / "core"
@@ -74,7 +74,10 @@ def taxonomies() -> Graph:
 
 @pytest.fixture(scope="module")
 def query_texts() -> dict[str, str]:
-    return {p.name: p.read_text(encoding="utf-8") for p in sorted(IMPL.glob("*.rq"))}
+    # keyed by "<kind>/<file>" (match/, risk/, propagation/) so tests can filter by
+    # query kind. Filtering on a filename prefix would silently match nothing.
+    return {f"{p.parent.name}/{p.name}": p.read_text(encoding="utf-8")
+            for p in sorted(IMPL.rglob("*.rq"))}
 
 
 def test_every_pair_and_pat_term_in_queries_is_declared(libraries, query_texts) -> None:
@@ -110,13 +113,13 @@ def test_taxonomy_terms_in_queries_and_libraries_resolve(libraries, taxonomies, 
 
 
 def test_risk_queries_only_reference_pattern_nodes_that_match_queries_emit(query_texts) -> None:
-    """risk_*.rq joins on binding-node URIs; if no match_*.rq emits that URI,
+    """risk/*.rq joins on binding-node URIs; if no match/*.rq emits that URI,
     the join is silently empty (e.g. the pat:DirectPrompting_* vs pat:DP_*
     drift this test was born from)."""
-    emitted = {n for f, t in query_texts.items() if f.startswith("match_") for n in _BINDS_RE.findall(t)}
+    emitted = {n for f, t in query_texts.items() if f.startswith("match/") for n in _BINDS_RE.findall(t)}
     offenders = []
     for fname, text in query_texts.items():
-        if not fname.startswith("risk_"):
+        if not fname.startswith("risk/"):
             continue
         for node in set(_BINDS_RE.findall(text)):
             if node not in emitted:
@@ -128,7 +131,7 @@ def test_match_queries_emit_only_declared_pattern_nodes(libraries, query_texts) 
     declared_nodes = set(libraries.subjects(RDF.type, PAIR.PatternNode))
     offenders = []
     for fname, text in query_texts.items():
-        if not fname.startswith("match_"):
+        if not fname.startswith("match/"):
             continue
         for node in set(_BINDS_RE.findall(text)):
             if PAT[node] not in declared_nodes:
@@ -147,7 +150,7 @@ def test_implementation_paths_resolve_and_no_orphan_queries(libraries) -> None:
         if not path.is_file():
             missing.append(f"{impl} -> {value}")
     assert not missing, "implementationPath does not resolve:\n" + "\n".join(missing)
-    orphans = [p.name for p in sorted(IMPL.glob("*.rq")) if p.resolve() not in registered]
+    orphans = [p.name for p in sorted(IMPL.rglob("*.rq")) if p.resolve() not in registered]
     assert not orphans, "Query files on disk but registered by no PatternImplementation:\n" + "\n".join(orphans)
 
 
@@ -420,3 +423,56 @@ def test_each_motif_query_matches_its_canonical_instance(libraries) -> None:
         "Motif queries that match none of their own canonical instance:\n"
         + "\n".join(sorted(offenders))
     )
+
+
+# Un-skip this (delete the xfail marker) once the provenance worklist has been
+# filled in by hand and pair:maturity written back into the libraries. Generate
+# the worklist with:
+#     python python/scripts/pattern_provenance_worklist.py
+# It reports, per motif / risk pattern, what source and maturity are already
+# present. Sources must never be invented - leave an entry unsourced rather
+# than attributing it to a document it did not come from.
+@pytest.mark.xfail(
+    strict=False,
+    reason="pair:maturity is not curated yet; see /tmp/pattern_provenance_worklist.csv",
+)
+def test_every_motif_and_risk_pattern_has_source_and_maturity(libraries) -> None:
+    """Every curated library entry states where it came from (dct:source) and how
+    far its curation has got (pair:maturity)."""
+    missing_source: list[str] = []
+    missing_maturity: list[str] = []
+
+    for rdf_type in (PAIR.GraphMotif, PAIR.RiskPattern):
+        for subject in sorted(libraries.subjects(RDF.type, rdf_type), key=str):
+            if libraries.value(subject, DCTERMS.source) is None:
+                missing_source.append(str(subject))
+            if libraries.value(subject, PAIR.maturity) is None:
+                missing_maturity.append(str(subject))
+
+    assert not missing_source, (
+        f"{len(missing_source)} entries without dct:source: " + ", ".join(missing_source)
+    )
+    assert not missing_maturity, (
+        f"{len(missing_maturity)} entries without pair:maturity: " + ", ".join(missing_maturity)
+    )
+
+
+def test_specific_roles_are_subroles_of_the_role_their_motif_queries(libraries) -> None:
+    """A precise role must sit under the general role its motif actually queries.
+
+    Match queries traverse pair:playsRole/pair:subRoleOf*, so a specific role
+    parented directly to an abstract top-level role is inert: annotating an
+    element with the obviously-correct precise term then silently prevents the
+    motif from matching, and the graph has to double-tag with the general role
+    to work. Regression guard for exactly that class of bug."""
+    expected_parents = {
+        # role -> the role its motif's pattern node requires
+        PAIR.RewrittenQuery: PAIR.UserInput,
+        PAIR.RerankedContext: PAIR.RetrievedContext,
+    }
+    for role, parent in expected_parents.items():
+        ancestors = set(libraries.transitive_objects(role, PAIR.subRoleOf))
+        assert parent in ancestors, (
+            f"{role} must be a sub-role of {parent}, otherwise tagging an element "
+            f"with {role} alone cannot satisfy the motif that queries {parent}"
+        )

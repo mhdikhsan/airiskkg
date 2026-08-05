@@ -7,6 +7,7 @@
 @prefix mit:   <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> .
 @prefix mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> .
 @prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix asi:   <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
@@ -14,6 +15,7 @@
 
 <http://w3id.org/airiskkg/patterns/risk-pattern-library#>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "OWASP-Aligned LLM Risk Pattern Library"@en ;
     dct:description """
     Curated PAIR-AI risk pattern library for LLM-based applications. OWASP
@@ -554,7 +556,7 @@ pat:VectorIR_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Vector information retrieval motif matching OQP"@en ;
     pair:implementsMotif pat:VectorBasedInformationRetrievalMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_vector_ir.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/vector_ir.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:DirectPrompting_MatchingOQP
@@ -562,14 +564,14 @@ pat:DirectPrompting_MatchingOQP
     rdfs:label "Direct Prompting motif matching OQP"@en ;
     skos:altLabel "Direct LLM answering motif matching OQP"@en ;
     pair:implementsMotif pat:DirectPromptingMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_direct_prompting.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/direct_prompting.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:SensitiveDataRetrievalExposureOQP
     a pair:PatternImplementation ;
     rdfs:label "Sensitive data retrieval exposure risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:SensitiveDataRetrievalExposureRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_sensitive_retrieval.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/sensitive_retrieval.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:DirectPromptingWithoutGroundingOQP
@@ -577,105 +579,154 @@ pat:DirectPromptingWithoutGroundingOQP
     rdfs:label "Direct Prompting without grounding risk pattern OQP"@en ;
     skos:altLabel "Direct LLM answering without grounding risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:DirectPromptingWithoutGroundingRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_direct_prompting_without_grounding.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/direct_prompting_without_grounding.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:Embeddings_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Embeddings motif matching OQP"@en ;
     pair:implementsMotif pat:EmbeddingsMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_embeddings.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/embeddings.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:RAG_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Retrieval augmented generation motif matching OQP"@en ;
     pair:implementsMotif pat:RetrievalAugmentedGenerationMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_rag.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/rag.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:QueryRewriting_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Query rewriting motif matching OQP"@en ;
     pair:implementsMotif pat:QueryRewritingMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_query_rewriting.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/query_rewriting.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:Reranker_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Reranker motif matching OQP"@en ;
     pair:implementsMotif pat:RerankerMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_reranker.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/reranker.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:ExternalDependency_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "External dependency motif matching OQP"@en ;
     pair:implementsMotif pat:ExternalDependencyMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_external_dependency.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/external_dependency.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:PromptInjectionOQP
     a pair:PatternImplementation ;
     rdfs:label "Prompt injection risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:PromptInjectionRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_prompt_injection.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/prompt_injection.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:SupplyChainCompromiseOQP
     a pair:PatternImplementation ;
     rdfs:label "Supply chain compromise risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:SupplyChainCompromiseRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_supply_chain.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/supply_chain.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:DataAndModelPoisoningOQP
     a pair:PatternImplementation ;
     rdfs:label "Data and model poisoning risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:DataAndModelPoisoningRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_data_model_poisoning.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/data_model_poisoning.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:ImproperOutputHandlingOQP
     a pair:PatternImplementation ;
     rdfs:label "Improper output handling risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:ImproperOutputHandlingRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_improper_output_handling.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/improper_output_handling.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:ExcessiveAgencyOQP
     a pair:PatternImplementation ;
     rdfs:label "Excessive agency risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:ExcessiveAgencyRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_excessive_agency.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/excessive_agency.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:SystemPromptLeakageOQP
     a pair:PatternImplementation ;
     rdfs:label "System prompt leakage risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:SystemPromptLeakageRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_system_prompt_leakage.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/system_prompt_leakage.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:VectorAndEmbeddingWeaknessOQP
     a pair:PatternImplementation ;
     rdfs:label "Vector and embedding weakness risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:VectorAndEmbeddingWeaknessRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_vector_embedding_weakness.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/vector_embedding_weakness.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:UnboundedConsumptionOQP
     a pair:PatternImplementation ;
     rdfs:label "Unbounded consumption risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:UnboundedConsumptionRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_unbounded_consumption.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/unbounded_consumption.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 pat:UntrustedContentPropagationOQP
     a pair:PatternImplementation ;
     rdfs:label "Untrusted content propagation OQP"@en ;
     dct:description "Infers pair:containsDataCategory pair:UntrustedContent from public-input/retrieved-context roles and propagates it along beam:use/beam:produce edges, so risk patterns don't depend on every element being hand-tagged."@en ;
-    pair:implementationPath "ontology/patterns/implementation/propagate_untrusted_content.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/propagation/untrusted_content.rq" ;
+    pair:producesOutputType pair:DataCategoryPropagation .
+
+pat:ContentCategoryPropagationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Content category propagation OQP"@en ;
+    dct:description """
+    Propagates content categories (the pair:Information branch: SensitiveInformation,
+    ConfidentialInformation, ExternalUserContent, GeneratedContent) along
+    beam:use -> beam:produce, so the modeler annotates only where protected content
+    ENTERS the system rather than tagging every element it passes through.
+
+    Rule R8 split: the entry points are annotated base facts (only a human knows a
+    store holds personal data); reachability along the flow is derived here. Rule R4:
+    what is derived is that the content CAN reach an element, which is a structural
+    disposition - findings built on it remain candidates.
+
+    Barrier: pair:RedactionStep. Content passing through a redaction step does not
+    carry the category onward, which makes inserting redaction a modelable mitigation.
+    Generic over the branch rather than one query per category, so a new content
+    category propagates without new machinery.
+    """@en ;
+    dct:source "OWASP Top 10 for LLM Applications 2025, LLM02 Sensitive Information Disclosure (sanitization and redaction before processing)" ;
+    pair:implementationPath "ontology/patterns/implementation/propagation/content_categories.rq" ;
+    pair:producesOutputType pair:DataCategoryPropagation .
+
+pat:PersonalDataRightsBridgeOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Personal data rights to content category bridge OQP"@en ;
+    dct:description """
+    Derives pair:containsDataCategory pair:SensitiveInformation for any element the
+    modeler characterized with the OECD data-rights status dataf:Personal. This is
+    the first facet the assessment actually reads: the characterization facets are
+    declared per Rule R2 to be read by applicability conditions, but until now no
+    condition consumed one, so 95 OECD/DPV-grounded concepts had no effect on any
+    outcome.
+
+    Bridging rather than adding a second alternative inside each risk query keeps
+    conditions reading one vocabulary, changes no existing query's semantics, and -
+    because this runs in the same fixed-point loop - lets the derived category flow
+    downstream and stop at a pair:RedactionStep like an annotated one.
+
+    Direction is deliberate: rights status implies content category, never the
+    reverse. Sensitive information is broader than personal data, so the inverse
+    would assert data-protection status the modeler never stated.
+
+    Rule R8: facet:hasDataRights is annotated; the category is derived.
+    """@en ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. OECD Digital Economy Papers, No. 323. https://doi.org/10.1787/cb6d9eca-en; corroborated by DPV v2.3 (dataf:Personal relatedMatch dpv:PersonalData; pair:SensitiveInformation relatedMatch dpv:SensitivePersonalData)" ;
+    pair:implementationPath "ontology/patterns/implementation/propagation/personal_data_rights.rq" ;
     pair:producesOutputType pair:DataCategoryPropagation .
 
 
@@ -688,7 +739,7 @@ pat:MisinformationFromWeakGroundingOQP
     a pair:PatternImplementation ;
     rdfs:label "Misinformation from weak grounding risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk_misinformation_weak_grounding.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/risk/misinformation_weak_grounding.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
 
@@ -704,119 +755,226 @@ pat:SyncPred_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Synchronous Prediction Motif matching OQP"@en ;
     pair:implementsMotif pat:SynchronousPredictionMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_synchronous_prediction.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/synchronous_prediction.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:AsyncPred_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Asynchronous Prediction Motif matching OQP"@en ;
     pair:implementsMotif pat:AsynchronousPredictionMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_asynchronous_prediction.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/asynchronous_prediction.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:BatchPred_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Batch Prediction Motif matching OQP"@en ;
     pair:implementsMotif pat:BatchPredictionMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_batch_prediction.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/batch_prediction.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:PrepPred_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Preprocess-Prediction Motif matching OQP"@en ;
     pair:implementsMotif pat:PreprocessPredictionMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_preprocess_prediction.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/preprocess_prediction.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:MultiStage_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Multi-stage Prediction Motif matching OQP"@en ;
     pair:implementsMotif pat:MultiStagePredictionMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_multi_stage_prediction.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/multi_stage_prediction.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:BatchTrain_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Batch Training Motif matching OQP"@en ;
     pair:implementsMotif pat:BatchTrainingMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_batch_training.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/batch_training.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:PipeTrain_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Pipeline Training Motif matching OQP"@en ;
     pair:implementsMotif pat:PipelineTrainingMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_pipeline_training.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/pipeline_training.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:TrainServe_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Train-Then-Serve Motif matching OQP"@en ;
     pair:implementsMotif pat:TrainThenServeMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_train_then_serve.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/train_then_serve.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:TrainToServe_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Training-to-Serving Motif matching OQP"@en ;
     pair:implementsMotif pat:TrainingToServingMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_training_to_serving.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/training_to_serving.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:PredLog_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Prediction Logging Motif matching OQP"@en ;
     pair:implementsMotif pat:PredictionLoggingMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_prediction_logging.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/prediction_logging.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:PredMon_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Prediction Monitoring Motif matching OQP"@en ;
     pair:implementsMotif pat:PredictionMonitoringMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_prediction_monitoring.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/prediction_monitoring.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:ModelLoad_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Model Load Motif matching OQP"@en ;
     pair:implementsMotif pat:ModelLoadMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_model_load.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/model_load.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:ModelImage_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Model-in-Image Motif matching OQP"@en ;
     pair:implementsMotif pat:ModelInImageMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_model_in_image.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/model_in_image.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:FineTune_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Fine Tuning Motif matching OQP"@en ;
     pair:implementsMotif pat:FineTuningMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_fine_tuning.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/fine_tuning.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:Guardrails_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Guardrails Motif matching OQP"@en ;
     pair:implementsMotif pat:GuardrailsMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_guardrails.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/guardrails.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:Hybrid_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Hybrid Retriever Motif matching OQP"@en ;
     pair:implementsMotif pat:HybridRetrieverMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_hybrid_retriever.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/hybrid_retriever.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:Evals_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Evals Motif matching OQP"@en ;
     pair:implementsMotif pat:EvalsMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match_evals.rq" ;
+    pair:implementationPath "ontology/patterns/implementation/match/evals.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 
+
+
+#################################################################
+# Agentic risk patterns (OWASP Agentic Top 10)
+#################################################################
+
+pat:ToolMisuse_UnmediatedActionCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "A planned action reaches a tool or state change with no mediating control"@en ;
+    pair:operationalizesRiskCondition asi:condition-tool-invocation-without-mediation .
+
+pat:MemoryPoisoning_UnvalidatedWriteCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "Content is committed to agent memory without a represented validation step"@en ;
+    pair:operationalizesRiskCondition asi:condition-untrusted-content-written-to-agent-memory .
+
+pat:MemoryPoisoning_RecalledIntoGenerationCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "Recalled agent memory reaches a later generation context"@en ;
+    pair:operationalizesRiskCondition asi:condition-agent-memory-reread-into-generation .
+
+pat:ToolMisuseRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom asi:asi02-tool-misuse ;
+    dct:source <https://genai.owasp.org/> ;
+    rdfs:label "Tool misuse risk pattern"@en ;
+    dct:description """
+    Applies to a Tool-Using Agent match where the planning step's decision reaches
+    a tool invocation or state change without any represented policy enforcement,
+    human approval, or rate/budget control in between. The agent acts within its
+    granted permissions; what is missing is anything that can narrow, pause, or
+    refuse a particular action before it takes effect.
+    """@en ;
+    pair:hasMotif pat:ToolUsingAgentMotif ;
+    pair:hasMechanism asi:mechanism-unconstrained-tool-execution ;
+    pair:hasApplicabilityCondition pat:ToolMisuse_UnmediatedActionCondition ;
+    pair:mayIndicateRisk
+        asi:asi02-tool-misuse ,
+        owasp:llm06-excessive-agency ,
+        mit:subdomain-2-2 ,
+        mit:subdomain-5-2 ;
+    pair:suggestedControl
+        pat:Control_ToolPermissionBoundaries ,
+        pat:Control_RateLimitBudgetAndLoopControl ,
+        pat:Control_LoggingMonitoringAndEvals ;
+    pair:implementedBy pat:ToolMisuseOQP .
+
+pat:MemoryPoisoningRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom asi:asi06-memory-and-context-poisoning ;
+    dct:source <https://genai.owasp.org/> ;
+    rdfs:label "Memory and context poisoning risk pattern"@en ;
+    dct:description """
+    Applies to an Agent Memory Loop match where content is committed to the store
+    without a represented validation step and the recalled context later reaches a
+    generation step. The loop is what makes this different from ordinary retrieval:
+    what is written persists and is re-read, so a single unchecked write keeps
+    influencing later turns rather than expiring with the one that produced it.
+    """@en ;
+    pair:hasMotif pat:AgentMemoryLoopMotif ;
+    pair:hasMechanism asi:mechanism-persisted-context-corruption ;
+    pair:hasApplicabilityCondition
+        pat:MemoryPoisoning_UnvalidatedWriteCondition ,
+        pat:MemoryPoisoning_RecalledIntoGenerationCondition ;
+    pair:mayIndicateRisk
+        asi:asi06-memory-and-context-poisoning ,
+        owasp:llm04-data-and-model-poisoning ,
+        mit:subdomain-2-2 ,
+        mit:subdomain-3-1 ;
+    pair:suggestedControl
+        pat:Control_TrustedTrainingAndIndexingData ,
+        pat:Control_InputValidationAndPromptIsolation ,
+        pat:Control_LoggingMonitoringAndEvals ;
+    pair:implementedBy pat:MemoryPoisoningOQP .
+
+
+#################################################################
+# Agentic pattern implementations
+#################################################################
+
+pat:ToolUsingAgent_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Tool-Using Agent Motif matching OQP"@en ;
+    pair:implementsMotif pat:ToolUsingAgentMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/tool_using_agent.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:AgentMemoryLoop_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Agent Memory Loop Motif matching OQP"@en ;
+    pair:implementsMotif pat:AgentMemoryLoopMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/agent_memory_loop.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:ToolMisuseOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Tool misuse risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:ToolMisuseRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk/tool_misuse.rq" ;
+    pair:producesOutputType pair:RiskFinding .
+
+pat:MemoryPoisoningOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Memory and context poisoning risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:MemoryPoisoningRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk/memory_poisoning.rq" ;
+    pair:producesOutputType pair:RiskFinding .

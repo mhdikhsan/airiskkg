@@ -11,13 +11,15 @@ pytest-cache-files-*/
 *.egg-info/
 build/
 dist/
-docs/
-
 # Personal local notes (kept on disk, not shared)
+docs/notes/
 CHANGELOG_data_model.md
 
 # Keep folder structure, but avoid committing generated research outputs by default.
+# assessment_runner writes each run to outputs/output_<n>/, so a top-level glob
+# alone never matched them and 1.9 MB of generated Turtle ended up tracked.
 outputs/*.ttl
+outputs/output_*/
 data/processed/**
 !data/processed/
 !data/processed/.gitkeep

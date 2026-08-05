@@ -1,0 +1,511 @@
+# GENERATED FILE - do not edit by hand.
+# Regenerate with: python python/scripts/generate_mit_action_layer.py
+#
+# The MIT mitigation taxonomy at ACTION level - the concrete mitigations that sit
+# beneath the sub-categories in mit_air_risk_control.ttl. Derived from
+# data/mappings/Final_Mapped_Taxonomy_Table_Output.csv, where each action already
+# carries the sub-category it belongs to and, in its identifier, the primary source
+# document MIT drew it from.
+#
+# These are genuine MIT taxonomy entries and carry nexus:isDefinedByTaxonomy, unlike
+# the 16 concrete mitctrl:* controls in mit_air_risk_control.ttl, which are PAIR-AI
+# curation named after MIT mitigations rather than entries of the taxonomy itself.
+#
+# Coverage is bounded by the cross-walk, which covers OWASP LLM01-06 and LLM09 only.
+# This is NOT the complete MIT mitigation database - it is every action the
+# cross-walk actually cites.
+#
+# LICENSING: reproduces MIT AI Risk Mitigation Database action ids and names. Same
+# unresolved item recorded in CLAUDE.md for mit_air_risk_control.ttl.
+
+@prefix mitact:  <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-mitigation-action#> .
+@prefix mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> .
+@prefix nexus:   <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:     <http://purl.org/dc/terms/> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/taxonomy/mit-ai-risk-mitigation-action#>
+    a owl:Ontology ;
+    rdfs:label "MIT AI Risk Mitigation Actions (cross-walk subset)"@en ;
+    dct:title "MIT AI Risk Mitigation Actions (cross-walk subset)"@en ;
+    dct:description """
+    The 52 individual MIT mitigation actions cited by the PAIR-AI
+    risk-to-mitigation cross-walk, placed under the sub-categories they belong to.
+    Adds the level that the 2026-07-17 rollup collapsed away.
+    """@en ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus> ;
+    dct:source "MIT AI Risk Mitigation Database, via data/mappings/Final_Mapped_Taxonomy_Table_Output.csv"@en .
+
+mitact:A0052
+    a nexus:RiskControl ;
+    skos:prefLabel "Establish AI decision explanation framework"@en ;
+    skos:notation "A0052" ;
+    skos:broader mitctrl:user-rights-recourse ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0052 (sub-category '4.6 User Rights & Recourse'); primary source: Eisenberg (2025)"@en .
+
+mitact:A0117
+    a nexus:RiskControl ;
+    skos:prefLabel "Harmful Data Removal from Training Sets"@en ;
+    skos:notation "A0117" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0117 (sub-category '3.2 Data Governance'); primary source: Future of Life Institute (2024)"@en .
+
+mitact:A0132
+    a nexus:RiskControl ;
+    skos:prefLabel "Ongoing model risk assessments"@en ;
+    skos:notation "A0132" ;
+    skos:broader mitctrl:risk-management ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0132 (sub-category '1.2 Risk Management'); primary source: Future of Life Institute (2024)"@en .
+
+mitact:A0169
+    a nexus:RiskControl ;
+    skos:prefLabel "Terms of Service"@en ;
+    skos:notation "A0169" ;
+    skos:broader mitctrl:risk-disclosure ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0169 (sub-category '4.4 Governance Disclosure'); primary source: Future of Life Institute (2024)"@en .
+
+mitact:A0207
+    a nexus:RiskControl ;
+    skos:prefLabel "Safety Restrictions"@en ;
+    skos:notation "A0207" ;
+    skos:broader mitctrl:access-management ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0207 (sub-category '3.3 Access Management'); primary source: Schuett (2023)"@en .
+
+mitact:A0212
+    a nexus:RiskControl ;
+    skos:prefLabel "Statement about governance structure"@en ;
+    skos:notation "A0212" ;
+    skos:broader mitctrl:risk-disclosure ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0212 (sub-category '4.4 Governance Disclosure'); primary source: Schuett (2023)"@en .
+
+mitact:A0332
+    a nexus:RiskControl ;
+    skos:prefLabel "Decision-Making Protocols"@en ;
+    skos:notation "A0332" ;
+    skos:broader mitctrl:safety-decision-frameworks ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0332 (sub-category '1.5 Safety Decision Frameworks'); primary source: Campos (2025)"@en .
+
+mitact:A0388
+    a nexus:RiskControl ;
+    skos:prefLabel "Legal Compliance Alignment"@en ;
+    skos:notation "A0388" ;
+    skos:broader mitctrl:system-documentation ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0388 (sub-category '4.1 System Documentation'); primary source: NIST (2024)"@en .
+
+mitact:A0421
+    a nexus:RiskControl ;
+    skos:prefLabel "Terms of Service Establishment"@en ;
+    skos:notation "A0421" ;
+    skos:broader mitctrl:access-management ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0421 (sub-category '3.3 Access Management'); primary source: NIST (2024)"@en .
+
+mitact:A0437
+    a nexus:RiskControl ;
+    skos:prefLabel "Value Chain Risk Documentation"@en ;
+    skos:notation "A0437" ;
+    skos:broader mitctrl:system-documentation ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0437 (sub-category '4.1 System Documentation'); primary source: NIST (2024)"@en .
+
+mitact:A0451
+    a nexus:RiskControl ;
+    skos:prefLabel "Content Flow Testing"@en ;
+    skos:notation "A0451" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0451 (sub-category '3.1 Testing & Auditing'); primary source: NIST (2024)"@en .
+
+mitact:A0468
+    a nexus:RiskControl ;
+    skos:prefLabel "Training Data Curation"@en ;
+    skos:notation "A0468" ;
+    skos:broader mitctrl:data-governance ;
+    skos:broader mitctrl:data-curation-process ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0468 (sub-category '3.2 Data Governance'); primary source: NIST (2024); placed under mitctrl:data-curation-process by review - lexical candidate generation over the 52 actions, adjudicated 2026-08-04"@en .
+
+mitact:A0470
+    a nexus:RiskControl ;
+    skos:prefLabel "Third-Party IP Protection"@en ;
+    skos:notation "A0470" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0470 (sub-category '3.2 Data Governance'); primary source: NIST (2024)"@en .
+
+mitact:A0473
+    a nexus:RiskControl ;
+    skos:prefLabel "PII Detection Methods"@en ;
+    skos:notation "A0473" ;
+    skos:broader mitctrl:content-safety-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0473 (sub-category '2.4 Content Safety Controls'); primary source: NIST (2024)"@en .
+
+mitact:A0474
+    a nexus:RiskControl ;
+    skos:prefLabel "Training Data Diligence"@en ;
+    skos:notation "A0474" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0474 (sub-category '3.2 Data Governance'); primary source: NIST (2024)"@en .
+
+mitact:A0476
+    a nexus:RiskControl ;
+    skos:prefLabel "Provenance Harm Identification"@en ;
+    skos:notation "A0476" ;
+    skos:broader mitctrl:content-safety-controls ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0476 (sub-category '2.4 Content Safety Controls'); primary source: NIST (2024)"@en .
+
+mitact:A0507
+    a nexus:RiskControl ;
+    skos:prefLabel "Data Provenance Verification"@en ;
+    skos:notation "A0507" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0507 (sub-category '3.2 Data Governance'); primary source: NIST (2024)"@en .
+
+mitact:A0512
+    a nexus:RiskControl ;
+    skos:prefLabel "Generated Code Review"@en ;
+    skos:notation "A0512" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0512 (sub-category '3.1 Testing & Auditing'); primary source: NIST (2024)"@en .
+
+mitact:A0522
+    a nexus:RiskControl ;
+    skos:prefLabel "AI Red-Teaming Resilience"@en ;
+    skos:notation "A0522" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:broader mitctrl:red-teaming ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0522 (sub-category '3.1 Testing & Auditing'); primary source: NIST (2024); placed under mitctrl:red-teaming by review - lexical candidate generation over the 52 actions, adjudicated 2026-08-04"@en .
+
+mitact:A0531
+    a nexus:RiskControl ;
+    skos:prefLabel "Data Exposure Red-Teaming"@en ;
+    skos:notation "A0531" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:broader mitctrl:red-teaming ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0531 (sub-category '3.1 Testing & Auditing'); primary source: NIST (2024); placed under mitctrl:red-teaming by review - lexical candidate generation over the 52 actions, adjudicated 2026-08-04"@en .
+
+mitact:A0792
+    a nexus:RiskControl ;
+    skos:prefLabel "Pre-training and Fine-tuning of Models"@en ;
+    skos:notation "A0792" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0792 (sub-category '3.1 Testing & Auditing'); primary source: UK Government (2023)"@en .
+
+mitact:A0793
+    a nexus:RiskControl ;
+    skos:prefLabel "Pre-Deployment Evaluations"@en ;
+    skos:notation "A0793" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0793 (sub-category '3.1 Testing & Auditing'); primary source: UK Government (2023)"@en .
+
+mitact:A0854
+    a nexus:RiskControl ;
+    skos:prefLabel "Jailbreaking Method Vulnerability Reports"@en ;
+    skos:notation "A0854" ;
+    skos:broader mitctrl:incident-reporting ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0854 (sub-category '4.3 Incident Reporting'); primary source: UK Government (2023)"@en .
+
+mitact:A0855
+    a nexus:RiskControl ;
+    skos:prefLabel "Prompt Injection Vulnerability Reports"@en ;
+    skos:notation "A0855" ;
+    skos:broader mitctrl:incident-reporting ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0855 (sub-category '4.3 Incident Reporting'); primary source: UK Government (2023)"@en .
+
+mitact:A0884
+    a nexus:RiskControl ;
+    skos:prefLabel "Societal Impact Research"@en ;
+    skos:notation "A0884" ;
+    skos:broader mitctrl:societal-impact-assessment ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0884 (sub-category '1.7 Societal Impact Assessment'); primary source: UK Government (2023)"@en .
+
+mitact:A0892
+    a nexus:RiskControl ;
+    skos:prefLabel "Content Filters"@en ;
+    skos:notation "A0892" ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0892 (sub-category '2.3 Model Safety Engineering'); primary source: UK Government (2023)"@en .
+
+mitact:A0894
+    a nexus:RiskControl ;
+    skos:prefLabel "Robust Content Filters"@en ;
+    skos:notation "A0894" ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0894 (sub-category '2.3 Model Safety Engineering'); primary source: UK Government (2023)"@en .
+
+mitact:A0897
+    a nexus:RiskControl ;
+    skos:prefLabel "Model Prompting"@en ;
+    skos:notation "A0897" ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0897 (sub-category '2.3 Model Safety Engineering'); primary source: UK Government (2023)"@en .
+
+mitact:A0913
+    a nexus:RiskControl ;
+    skos:prefLabel "Principle of Data Minimisation"@en ;
+    skos:notation "A0913" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0913 (sub-category '3.2 Data Governance'); primary source: UK Government (2023)"@en .
+
+mitact:A0916
+    a nexus:RiskControl ;
+    skos:prefLabel "Assessment of Training Data"@en ;
+    skos:notation "A0916" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0916 (sub-category '3.2 Data Governance'); primary source: UK Government (2023)"@en .
+
+mitact:A0918
+    a nexus:RiskControl ;
+    skos:prefLabel "Audits for Private or Sensitive Information"@en ;
+    skos:notation "A0918" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0918 (sub-category '3.2 Data Governance'); primary source: UK Government (2023)"@en .
+
+mitact:A0919
+    a nexus:RiskControl ;
+    skos:prefLabel "Audits for Biases in the Data"@en ;
+    skos:notation "A0919" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0919 (sub-category '3.2 Data Governance'); primary source: UK Government (2023)"@en .
+
+mitact:A0921
+    a nexus:RiskControl ;
+    skos:prefLabel "Audits for Misinformation"@en ;
+    skos:notation "A0921" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0921 (sub-category '3.2 Data Governance'); primary source: UK Government (2023)"@en .
+
+mitact:A0923
+    a nexus:RiskControl ;
+    skos:prefLabel "Data Audits for AI System Behavior"@en ;
+    skos:notation "A0923" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0923 (sub-category '3.1 Testing & Auditing'); primary source: UK Government (2023)"@en .
+
+mitact:A0924
+    a nexus:RiskControl ;
+    skos:prefLabel "Data Audits for AI System Behavior"@en ;
+    skos:notation "A0924" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0924 (sub-category '3.1 Testing & Auditing'); primary source: UK Government (2023)"@en .
+
+mitact:A0929
+    a nexus:RiskControl ;
+    skos:prefLabel "Harmful Data for Reduction of Dangerous Capabilities"@en ;
+    skos:notation "A0929" ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0929 (sub-category '2.2 Model Alignment'); primary source: UK Government (2023)"@en .
+
+mitact:A0930
+    a nexus:RiskControl ;
+    skos:prefLabel "Sourcing or Generation of Additional Data for Training Dataset"@en ;
+    skos:notation "A0930" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0930 (sub-category '3.2 Data Governance'); primary source: UK Government (2023)"@en .
+
+mitact:A0932
+    a nexus:RiskControl ;
+    skos:prefLabel "Independent Data Input Audits"@en ;
+    skos:notation "A0932" ;
+    skos:broader mitctrl:access-management ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0932 (sub-category '4.5 Third-Party System Access'); primary source: UK Government (2023)"@en .
+
+mitact:A0933
+    a nexus:RiskControl ;
+    skos:prefLabel "Disclosure of Input Data Audits with External Stakeholders"@en ;
+    skos:notation "A0933" ;
+    skos:broader mitctrl:risk-disclosure ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0933 (sub-category '4.2 Risk Disclosure'); primary source: UK Government (2023)"@en .
+
+mitact:A0934
+    a nexus:RiskControl ;
+    skos:prefLabel "Use of Synthetic Data"@en ;
+    skos:notation "A0934" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0934 (sub-category '3.2 Data Governance'); primary source: Gipikis (2024)"@en .
+
+mitact:A0941
+    a nexus:RiskControl ;
+    skos:prefLabel "Internal data poisoning diagnosis"@en ;
+    skos:notation "A0941" ;
+    skos:broader mitctrl:incident-response-recovery ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0941 (sub-category '3.6 Incident Response & Recovery'); primary source: Gipikis (2024)"@en .
+
+mitact:A0949
+    a nexus:RiskControl ;
+    skos:prefLabel "Testing for erroneous or irrelevant features through concept learning"@en ;
+    skos:notation "A0949" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0949 (sub-category '3.1 Testing & Auditing'); primary source: Gipikis (2024)"@en .
+
+mitact:A0954
+    a nexus:RiskControl ;
+    skos:prefLabel "Interpretability techniques that target deception"@en ;
+    skos:notation "A0954" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0954 (sub-category '3.1 Testing & Auditing'); primary source: Gipikis (2024)"@en .
+
+mitact:A0971
+    a nexus:RiskControl ;
+    skos:prefLabel "Restricted usage terms for open-source models"@en ;
+    skos:notation "A0971" ;
+    skos:broader mitctrl:access-management ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0971 (sub-category '3.3 Access Management'); primary source: Gipikis (2024)"@en .
+
+mitact:A0973
+    a nexus:RiskControl ;
+    skos:prefLabel "Pop-up interventions in LLMs"@en ;
+    skos:notation "A0973" ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0973 (sub-category '2.3 Model Safety Engineering'); primary source: Gipikis (2024)"@en .
+
+mitact:A0979
+    a nexus:RiskControl ;
+    skos:prefLabel "Post-deployment ongoing monitoring for unexpected use cases"@en ;
+    skos:notation "A0979" ;
+    skos:broader mitctrl:post-deployment-monitoring ;
+    skos:broader mitctrl:post-deployment-behavior-monitoring ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0979 (sub-category '3.5 Post-deployment Monitoring'); primary source: Gipikis (2024); placed under mitctrl:post-deployment-behavior-monitoring by review - lexical candidate generation over the 52 actions, adjudicated 2026-08-04"@en .
+
+mitact:A0993
+    a nexus:RiskControl ;
+    skos:prefLabel "Quantifying privacy risks of AI models"@en ;
+    skos:notation "A0993" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A0993 (sub-category '3.1 Testing & Auditing'); primary source: Gipikis (2024)"@en .
+
+mitact:A1007
+    a nexus:RiskControl ;
+    skos:prefLabel "Contamination detection"@en ;
+    skos:notation "A1007" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A1007 (sub-category '3.2 Data Governance'); primary source: Gipikis (2024)"@en .
+
+mitact:A1012
+    a nexus:RiskControl ;
+    skos:prefLabel "Using an AI model to evaluate AI model outputs"@en ;
+    skos:notation "A1012" ;
+    skos:broader mitctrl:testing-auditing ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A1012 (sub-category '3.1 Testing & Auditing'); primary source: Gipikis (2024)"@en .
+
+mitact:A1019
+    a nexus:RiskControl ;
+    skos:prefLabel "Adversarial Robustness"@en ;
+    skos:notation "A1019" ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A1019 (sub-category '2.3 Model Safety Engineering'); primary source: Uuk (2024)"@en .
+
+mitact:A1022
+    a nexus:RiskControl ;
+    skos:prefLabel "Data curation"@en ;
+    skos:notation "A1022" ;
+    skos:broader mitctrl:data-governance ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A1022 (sub-category '3.2 Data Governance'); primary source: Uuk (2024)"@en .
+
+mitact:A1027
+    a nexus:RiskControl ;
+    skos:prefLabel "Input and output filtering"@en ;
+    skos:notation "A1027" ;
+    skos:broader mitctrl:model-safety-engineering ;
+    skos:inScheme mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
+    dct:source "MIT AI Risk Mitigation Database, action A1027 (sub-category '2.3 Model Safety Engineering'); primary source: Uuk (2024)"@en .

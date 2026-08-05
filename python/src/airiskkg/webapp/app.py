@@ -9,7 +9,6 @@ Endpoints
 ``POST /api/graph``        Architecture Turtle -> nodes/edges for the live preview.
 ``POST /api/validate``     Architecture Turtle -> SHACL input-contract report.
 ``POST /api/import/t4b``    Tool4Boxology export (N-Triples/Turtle) -> architecture Turtle + notes.
-``POST /api/build``        Builder model (JSON) -> architecture Turtle (legacy).
 ``POST /api/assess``       Architecture Turtle -> structured risk findings (JSON).
 """
 
@@ -22,7 +21,6 @@ from functools import lru_cache
 from flask import Flask, jsonify, request, send_from_directory
 from rdflib import RDF, RDFS, SKOS, Graph, Literal, Namespace, URIRef
 
-from airiskkg.architecture_builder import BuilderError, build_ttl
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.assessment_runner import (
     BEAM,
@@ -144,6 +142,109 @@ def _motif_template_list() -> list[dict[str, str]]:
     )
 
 
+def _role_closure(graph: Graph, role_name: str) -> set[URIRef]:
+    """A role plus every role beneath it: match queries traverse
+    pair:playsRole/pair:subRoleOf*, so a sub-role satisfies its parent."""
+    root = PAIR[role_name]
+    closure = {root}
+    frontier = [root]
+    while frontier:
+        current = frontier.pop()
+        for child in graph.subjects(PAIR.subRoleOf, current):
+            if child not in closure:
+                closure.add(child)
+                frontier.append(child)
+    return closure
+
+
+def _motif_gaps(ttl: str) -> list[dict]:
+    """Explain why motifs did NOT match: per motif, which pattern nodes and edges
+    the submitted graph leaves unsatisfied.
+
+    Mirrors the match queries deliberately - explicit rdf:type (no subclass
+    inference, exactly like the queries) and pair:subRoleOf* for roles - so the
+    report can never disagree with the assessment. Fully matched motifs are left
+    out; they are already reported as matches."""
+    graph = load_base_graph()
+    graph.parse(data=ttl, format="turtle")
+
+    def element_label(element: URIRef) -> str:
+        return _label(graph, element)
+
+    # elements by explicit type, and the roles each element plays
+    roles_of: dict[URIRef, set[URIRef]] = {}
+    for element, _p, role in graph.triples((None, PAIR.playsRole, None)):
+        roles_of.setdefault(element, set()).add(role)
+
+    gaps: list[dict] = []
+    for motif_id, template in _motif_templates().items():
+        node_matches: dict[str, set[URIRef]] = {}
+        near_misses: dict[str, list[URIRef]] = {}
+
+        for node in template["nodes"]:
+            expected_class = BEAM[node["cls"]]
+            typed = set(graph.subjects(RDF.type, expected_class))
+            if node["roles"]:
+                wanted = _role_closure(graph, node["roles"][0])
+                matched = {e for e in typed if roles_of.get(e, set()) & wanted}
+                # right type, missing the role: the actionable hint
+                near_misses[node["key"]] = sorted(typed - matched, key=str)[:4]
+            else:
+                matched = typed
+            node_matches[node["key"]] = matched
+
+        edge_ok: dict[tuple, bool] = {}
+        for source, predicate, target in template["edges"]:
+            sources = node_matches.get(source, set())
+            targets = node_matches.get(target, set())
+            edge_ok[(source, predicate, target)] = any(
+                (s, BEAM[predicate], t) in graph for s in sources for t in targets
+            )
+
+        satisfied_nodes = sum(1 for key, elements in node_matches.items() if elements)
+        satisfied_edges = sum(1 for ok in edge_ok.values() if ok)
+        total = len(node_matches) + len(edge_ok)
+        satisfied = satisfied_nodes + satisfied_edges
+        if total == 0 or satisfied == total:
+            continue  # nothing to explain, or it matched
+
+        label_of = {node["key"]: node["label"] for node in template["nodes"]}
+        missing_nodes = [
+            {
+                "role": label_of[key],
+                "candidates": [
+                    {"id": str(e), "label": element_label(e)} for e in near_misses.get(key, [])
+                ],
+            }
+            for key, elements in node_matches.items()
+            if not elements
+        ]
+        missing_edges = [
+            {
+                "text": f"no {label_of.get(source, source)} {predicate}s "
+                        f"a {label_of.get(target, target)}",
+                "source": label_of.get(source, source),
+                "predicate": predicate,
+                "target": label_of.get(target, target),
+            }
+            for (source, predicate, target), ok in edge_ok.items()
+            if not ok
+        ]
+
+        gaps.append({
+            "motifId": motif_id,
+            "label": template["label"],
+            "satisfied": satisfied,
+            "total": total,
+            "missingNodes": missing_nodes,
+            "missingEdges": missing_edges,
+        })
+
+    # closest first: the motifs a small annotation fix would complete
+    gaps.sort(key=lambda g: (-(g["satisfied"] / g["total"]), g["label"].lower()))
+    return gaps
+
+
 def _label(graph: Graph, resource: URIRef) -> str:
     value = graph.value(resource, SKOS.prefLabel) or graph.value(resource, RDFS.label)
     if value:
@@ -175,6 +276,84 @@ def _vocab_terms(graph: Graph, rdf_class: URIRef) -> list[dict[str, str]]:
     return sorted(terms, key=lambda item: item["label"].lower())
 
 
+def _top_level_role(graph: Graph, role: URIRef) -> URIRef | None:
+    """Walk pair:subRoleOf up to the role's top-level ancestor (the one with no
+    parent). Top-level roles are read from the ontology, never hardcoded. A role
+    with several parents resolves to the alphabetically first top ancestor so the
+    grouping stays deterministic; cycles are guarded by the visited set."""
+    tops: set[URIRef] = set()
+    seen: set[URIRef] = {role}
+    queue: list[URIRef] = [role]
+    while queue:
+        node = queue.pop()
+        parents = [p for p in graph.objects(node, PAIR.subRoleOf) if isinstance(p, URIRef)]
+        if not parents:
+            tops.add(node)  # genuinely top-level: no parent at all
+            continue
+        for parent in parents:
+            if parent not in seen:
+                seen.add(parent)
+                queue.append(parent)
+    return sorted(tops, key=str)[0] if tops else None
+
+
+def _role_applicability(graph: Graph) -> dict[URIRef, str]:
+    """Map each pattern role to the kind of element it applies to ("process" or
+    "resource").
+
+    Derived, never hardcoded: motif pattern nodes pair an expectedRole with an
+    expectedClass, so a role family's element kind is read off those classes via
+    the BEAM subclass hierarchy. The evidence is pooled per top-level role family
+    (every role under ProcessingStep is a process role, etc.), which also covers
+    roles no motif references yet. A family with conflicting or no evidence is
+    left unclassified, and the UI then shows those roles for any element."""
+    evidence: dict[URIRef, set[str]] = {}
+    for pattern_node in graph.subjects(RDF.type, PAIR.PatternNode):
+        role = graph.value(pattern_node, PAIR.expectedRole)
+        cls = graph.value(pattern_node, PAIR.expectedClass)
+        if role is None or cls is None:
+            continue
+        supers = set(graph.transitive_objects(cls, RDFS.subClassOf)) | {cls}
+        if BEAM.Process in supers:
+            kind = "process"
+        elif BEAM.Resource in supers:
+            kind = "resource"
+        else:
+            continue
+        family = _top_level_role(graph, role)
+        if family is not None:
+            evidence.setdefault(family, set()).add(kind)
+
+    # a family counts as classified only when its evidence is unanimous
+    family_kind = {family: next(iter(kinds)) for family, kinds in evidence.items() if len(kinds) == 1}
+
+    applies: dict[URIRef, str] = {}
+    for role in graph.subjects(RDF.type, PAIR.PatternRole):
+        family = _top_level_role(graph, role)
+        kind = family_kind.get(family)
+        if kind:
+            applies[role] = kind
+    return applies
+
+
+def _role_vocab_terms(graph: Graph) -> list[dict[str, str]]:
+    """Pattern roles carry the label of their top-level ancestor as `group`, so
+    the UI can render them under <optgroup> headings instead of one flat list,
+    plus `applies` ("process" / "resource") so the picker can offer the roles
+    that fit the selected element first."""
+    applies = _role_applicability(graph)
+    terms = []
+    for subject in graph.subjects(RDF.type, PAIR.PatternRole):
+        top = _top_level_role(graph, subject)
+        term = {"id": str(subject), "label": _display_label(_label(graph, subject))}
+        if top is not None:
+            term["group"] = _display_label(_label(graph, top))
+        if subject in applies:
+            term["applies"] = applies[subject]
+        terms.append(term)
+    return sorted(terms, key=lambda item: item["label"].lower())
+
+
 def _classes(pairs: list[tuple[URIRef, str]]) -> list[dict[str, str]]:
     return [{"id": str(uri), "label": label} for uri, label in pairs]
 
@@ -185,7 +364,7 @@ def _vocabulary() -> dict:
     always reflects the current pattern vocabulary."""
     graph = load_base_graph()
     return {
-        "roles": _vocab_terms(graph, PAIR.PatternRole),
+        "roles": _role_vocab_terms(graph),
         "dataCategories": _vocab_terms(graph, PAIR.DataCategory),
         "resourceClasses": _classes(RESOURCE_CLASSES),
         "processClasses": _classes(PROCESS_CLASSES),
@@ -244,40 +423,6 @@ def _shacl_report(ttl: str) -> dict:
         "violations": violations,
         "warnings": warnings,
     }
-
-
-def _motif_matches(ttl: str) -> list[dict]:
-    """Run only the motif-matching queries (no risk, no data-category propagation)
-    over the submitted graph, and return each match's motif label + the URIs of
-    its bound elements - used to draw the dashed motif group boxes live."""
-    graph = load_base_graph()
-    graph.parse(data=ttl, format="turtle")
-    matches = Graph()
-    for query_path in implementation_paths_for_output_type(graph, PAIR.MotifMatch):
-        for triple in run_construct_query(graph, query_path):
-            matches.add(triple)
-
-    results = []
-    for match in set(matches.subjects(RDF.type, PAIR.MotifMatch)):
-        motif = matches.value(match, PAIR.matchesMotif)
-        node_ids = {
-            str(element)
-            for binding in matches.objects(match, PAIR.hasNodeBinding)
-            for element in [matches.value(binding, PAIR.matchedElement)]
-            if element is not None
-        }
-        if not node_ids:
-            continue
-        motif_short = str(motif).rsplit("#", 1)[-1] if motif is not None else "Motif"
-        label = graph.value(motif, RDFS.label) if motif is not None else None
-        results.append({
-            "matchId": str(match),
-            "motifId": motif_short,
-            "label": str(label) if label else motif_short,
-            "nodeIds": sorted(node_ids),
-        })
-    results.sort(key=lambda item: (item["label"], item["matchId"]))
-    return results
 
 
 def _warm_query_cache() -> None:
@@ -354,18 +499,9 @@ def create_app() -> Flask:
             return jsonify({"error": "Provide a Tool4Boxology export (N-Triples or Turtle) to import."}), 400
         try:
             ttl, warnings = t4b_to_ttl(data, fmt=fmt)
-        except (T4bImportError, BuilderError) as error:
+        except T4bImportError as error:
             return jsonify({"error": str(error)}), 400
         return jsonify({"ttl": ttl, "warnings": warnings})
-
-    @app.post("/api/build")
-    def build() -> object:
-        model = request.get_json(silent=True) or {}
-        try:
-            ttl = build_ttl(model)
-        except BuilderError as error:
-            return jsonify({"error": str(error)}), 400
-        return jsonify({"ttl": ttl})
 
     @app.post("/api/annotate")
     def annotate() -> object:
@@ -550,14 +686,6 @@ def create_app() -> Flask:
                 data.remove((s, p, o))
             for s, p, o in list(data.triples((None, None, element))):
                 data.remove((s, p, o))
-        elif op == "delete-elements":
-            # batch delete (used to remove a whole motif group box's elements)
-            for element_id in payload.get("elements") or []:
-                element = URIRef(element_id)
-                for s, p, o in list(data.triples((element, None, None))):
-                    data.remove((s, p, o))
-                for s, p, o in list(data.triples((None, None, element))):
-                    data.remove((s, p, o))
         else:
             return jsonify({"error": f"Unknown edit op: {op}"}), 400
 
@@ -565,18 +693,6 @@ def create_app() -> Flask:
         data.bind("pair", PAIR)
         data.bind("local", local)
         return jsonify({"ttl": data.serialize(format="turtle"), "newId": new_id})
-
-    @app.post("/api/motif-matches")
-    def motif_matches() -> object:
-        payload = request.get_json(silent=True) or {}
-        ttl = (payload.get("ttl") or "").strip()
-        if not ttl:
-            return jsonify({"matches": []})
-        try:
-            with _SPARQL_LOCK:
-                return jsonify({"matches": _motif_matches(ttl)})
-        except Exception:  # noqa: BLE001 - mid-edit parse errors: just draw no boxes
-            return jsonify({"matches": []})
 
     @app.post("/api/assess")
     def assess() -> object:
@@ -587,9 +703,14 @@ def create_app() -> Flask:
         try:
             with _SPARQL_LOCK:
                 result = run_assessment_from_text(ttl)
+                gaps = _motif_gaps(ttl)
         except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
             return jsonify({"error": f"Could not run assessment: {error}"}), 400
-        return jsonify(summarize_result(result))
+        summary = summarize_result(result)
+        # why the near-miss motifs did not match, so an empty or thin result set
+        # is actionable instead of silent
+        summary["motifGaps"] = gaps
+        return jsonify(summary)
 
     return app
 

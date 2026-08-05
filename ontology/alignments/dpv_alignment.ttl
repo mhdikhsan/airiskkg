@@ -7,6 +7,7 @@
 
 <http://w3id.org/airiskkg/alignments/dpv>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "DPV to BEAM Entity Alignment"@en ;
     dct:description """
     Alignment anchoring beam:Agent to DPV's entity vocabulary via

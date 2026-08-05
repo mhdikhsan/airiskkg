@@ -8,9 +8,10 @@
 
 <http://w3id.org/airiskkg/facets/implementation-type>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Characterization Facet: Implementation Type"@en ;
     dct:description "SKOS concept scheme (extension point) classifying HOW a model is implemented (e.g. architecture family, hosting form). This is the facet counterpart to the deliberate absence of beam:Model subclasses beyond Semantic/Statistical (Rule R1 + Task 4 decision: implementation types are classification values, not query-traversed structure). Assigned via facet:hasImplementationType; read by applicability conditions only (Rule R2)."@en ;
-    dct:source "PAIR-AI glossary v1.1, Section A.3 (Implementation Type listed as characterization facet)" ;
+    dct:source "PAIR-AI glossary v1.2, Section A.3 (Implementation Type listed as characterization facet)" ;
     vann:preferredNamespacePrefix "impl" ;
     vann:preferredNamespaceUri "http://w3id.org/airiskkg/facets/implementation-type#" .
 
@@ -19,7 +20,7 @@ impl:ImplementationType
     skos:prefLabel "Implementation Type"@en ;
     skos:definition "Classification of a model's implementation: architecture family, technique, or hosting form. Extension point: concrete values are added per use case or when the paper's implementation-type taxonomy is settled. When populated, prefer reusing DPV AI extension ai:Technique concepts directly (https://w3id.org/dpv/ai#, Rule R3) over redefining architecture families locally."@en ;
     skos:relatedMatch ai:Technique ;
-    dct:source "PAIR-AI glossary v1.1, Section A.3" .
+    dct:source "PAIR-AI glossary v1.2, Section A.3" .
     # TODO: populate with the agreed implementation-type taxonomy. Candidate
     # DPV AI extension anchors verified against DPV v2.3:
     # ai:MachineLearning, ai:DeepLearning, ai:NeuralNetwork,

@@ -1,6 +1,7 @@
 @prefix pat:   <http://w3id.org/airiskkg/patterns#> .
 @prefix pair:    <http://w3id.org/airiskkg/pair-ai#> .
 @prefix beam:  <http://w3id.org/beam/core#> .
+@prefix asi:   <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
@@ -9,6 +10,7 @@
 
 <http://w3id.org/airiskkg/patterns/motif-library#>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "Architecture Motif Library"@en ;
     dct:description """
     Reusable architecture motifs for PAIR-AI assessment.
@@ -1635,15 +1637,13 @@ pat:Embedding_VectorIndexUsesVectorEdge
 pat:RetrievalAugmentedGenerationMotif
     a pair:GraphMotif ;
     rdfs:label "Retrieval Augmented Generation (RAG) Motif"@en ;
-    dct:description "GenAI motif in which a user query is used to retrieve relevant context from a vector index (optionally via a query-embedding step), combined with the query into a prompt, and sent to an LLM to produce an answer."@en ;
-    rdfs:comment "Relaxed: the query-embedding leg (RAG_QueryEmbeddingStepNode/RAG_QueryVectorNode + their edges) is OPTIONAL in the OQP, and retrieved context may pass through intermediate steps (reranking, aggregation) between the retrieval step and prompt construction - RAG_PromptConstructionUsesContextEdge is path-tolerant, requiring only that the consumed context plays a role under pair:RetrievedContext. The earlier declaration also included an embedding-model node and a phantom prompt-template INPUT node the OQP never bound - removed (the PromptTemplate role belongs to the produced prompt, pat:RAG_PromptNode)."@en ;
+    dct:description "GenAI motif in which a user query drives retrieval of relevant context from a vector store, which is combined with the query into a prompt and sent to an LLM to produce an answer."@en ;
+    rdfs:comment "Query-time RAG faithful to Martin Fowler's gen-AI patterns: the retrieval step is DRIVEN BY the user query (it beam:use-s the query) and reads a vector store (a resource under pair:VectorStore or pair:VectorIndex); retrieved context may pass through intermediate steps (reranking, aggregation) before prompt construction - RAG_PromptConstructionUsesContextEdge is path-tolerant, requiring only that the consumed context plays a role under pair:RetrievedContext. Because retrieval is query-driven over a vector store, a RAG graph also satisfies the Vector-based Information Retrieval motif. Offline document embedding/indexing is modelled separately by the Embeddings motif and is intentionally not part of this query-time motif (an earlier version wired a stand-alone query-embedding step whose output dead-ended and left retrieval disconnected from the query - removed)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:RAG_QueryNode ,
-        pat:RAG_QueryEmbeddingStepNode ,
-        pat:RAG_QueryVectorNode ,
-        pat:RAG_VectorIndexNode ,
+        pat:RAG_VectorStoreNode ,
         pat:RAG_RetrievalStepNode ,
         pat:RAG_RetrievedContextNode ,
         pat:RAG_PromptConstructionStepNode ,
@@ -1652,9 +1652,8 @@ pat:RetrievalAugmentedGenerationMotif
         pat:RAG_GenerationStepNode ,
         pat:RAG_ResponseNode ;
     pair:hasPatternEdge
-        pat:RAG_QueryEmbeddingUsesQueryEdge ,
-        pat:RAG_QueryEmbeddingProducesVectorEdge ,
-        pat:RAG_RetrievalUsesVectorIndexEdge ,
+        pat:RAG_RetrievalUsesQueryEdge ,
+        pat:RAG_RetrievalUsesVectorStoreEdge ,
         pat:RAG_RetrievalProducesContextEdge ,
         pat:RAG_PromptConstructionUsesQueryEdge ,
         pat:RAG_PromptConstructionUsesContextEdge ,
@@ -1670,23 +1669,11 @@ pat:RAG_QueryNode
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
-pat:RAG_QueryEmbeddingStepNode
+pat:RAG_VectorStoreNode
     a pair:PatternNode ;
-    rdfs:label "RAG query embedding step node"@en ;
-    pair:expectedClass beam:Transform ;
-    pair:expectedRole pair:EmbeddingStep .
-
-pat:RAG_QueryVectorNode
-    a pair:PatternNode ;
-    rdfs:label "RAG query vector node"@en ;
+    rdfs:label "RAG vector store node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:EmbeddingVector .
-
-pat:RAG_VectorIndexNode
-    a pair:PatternNode ;
-    rdfs:label "RAG vector index node"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:VectorIndex .
+    pair:expectedRole pair:VectorStore .
 
 pat:RAG_RetrievalStepNode
     a pair:PatternNode ;
@@ -1730,26 +1717,19 @@ pat:RAG_ResponseNode
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:LLMResponse .
 
-pat:RAG_QueryEmbeddingUsesQueryEdge
+pat:RAG_RetrievalUsesQueryEdge
     a pair:PatternEdge ;
-    rdfs:label "RAG query embedding uses query"@en ;
-    pair:sourcePatternNode pat:RAG_QueryEmbeddingStepNode ;
+    rdfs:label "RAG retrieval uses query"@en ;
+    pair:sourcePatternNode pat:RAG_RetrievalStepNode ;
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:RAG_QueryNode .
 
-pat:RAG_QueryEmbeddingProducesVectorEdge
+pat:RAG_RetrievalUsesVectorStoreEdge
     a pair:PatternEdge ;
-    rdfs:label "RAG query embedding produces vector"@en ;
-    pair:sourcePatternNode pat:RAG_QueryEmbeddingStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:RAG_QueryVectorNode .
-
-pat:RAG_RetrievalUsesVectorIndexEdge
-    a pair:PatternEdge ;
-    rdfs:label "RAG retrieval uses vector index"@en ;
+    rdfs:label "RAG retrieval uses vector store"@en ;
     pair:sourcePatternNode pat:RAG_RetrievalStepNode ;
     pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RAG_VectorIndexNode .
+    pair:targetPatternNode pat:RAG_VectorStoreNode .
 
 pat:RAG_RetrievalProducesContextEdge
     a pair:PatternEdge ;
@@ -2060,6 +2040,7 @@ pat:GuardrailsMotif
     a pair:GraphMotif ;
     rdfs:label "Guardrails Motif"@en ;
     dct:description "GenAI motif in which input and output guardrail steps screen or sanitize user prompts and generated responses around the primary LLM generation step."@en ;
+    rdfs:comment "Flow-agnostic: the guarded generation is anchored by the inform edges (input guardrail informs generation; generation informs output guardrail), so this motif matches whether the generation consumes the user prompt directly (Direct Prompting) or a prompt constructed from it (RAG, where generation uses a PromptTemplate). An earlier version also required the generation step to beam:use the raw user prompt, which excluded RAG+Guardrails compositions - removed."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
@@ -2075,7 +2056,6 @@ pat:GuardrailsMotif
         pat:Guardrails_InputGuardrailUsesPromptEdge ,
         pat:Guardrails_InputGuardrailProducesDecisionEdge ,
         pat:Guardrails_InputGuardrailInformsGenerationEdge ,
-        pat:Guardrails_GenerationUsesPromptEdge ,
         pat:Guardrails_GenerationUsesLLMEdge ,
         pat:Guardrails_GenerationProducesRawResponseEdge ,
         pat:Guardrails_GenerationInformsOutputGuardrailEdge ,
@@ -2150,13 +2130,6 @@ pat:Guardrails_InputGuardrailInformsGenerationEdge
     pair:sourcePatternNode pat:Guardrails_InputGuardrailStepNode ;
     pair:patternPredicate beam:inform ;
     pair:targetPatternNode pat:Guardrails_GenerationStepNode .
-
-pat:Guardrails_GenerationUsesPromptEdge
-    a pair:PatternEdge ;
-    rdfs:label "guarded generation uses prompt"@en ;
-    pair:sourcePatternNode pat:Guardrails_GenerationStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:Guardrails_UserPromptNode .
 
 pat:Guardrails_GenerationUsesLLMEdge
     a pair:PatternEdge ;
@@ -2322,3 +2295,125 @@ pat:ExtDep_StepUsesResourceEdge
     pair:sourcePatternNode pat:ExtDep_UsingStepNode ;
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:ExtDep_ExternalResourceNode .
+
+
+#################################################################
+# Agentic motifs
+#
+# Structure that distinguishes an agent from a single generation call: a step
+# that decides what to do next and can act on that decision, and a store the
+# system writes to and later reads back. Both are risk-neutral on their own.
+#################################################################
+
+pat:ToolUsingAgentMotif
+    a pair:GraphMotif ;
+    rdfs:label "Tool-Using Agent Motif"@en ;
+    dct:description "Agentic motif in which a planning step decides on an action and hands off to a step that invokes an external tool or changes external state, producing a result the system consumes."@en ;
+    rdfs:comment "The motif is risk-neutral: acting through tools is what makes an agent useful. What the associated risk pattern checks is whether anything mediates between the decision and the effect. Anchored on the inform edge from planning to action, so it matches whether the planner is an Infer step or a plain Process, and whether the action is a tool call or a direct state change (ToolInvocationStep and StateChangingStep are both bound through pair:ProcessingStep in the query)."@en ;
+    dct:source <https://genai.owasp.org/> ;
+    pair:derivedFrom asi:asi02-tool-misuse ;
+    pair:hasPatternNode
+        pat:ToolAgent_PlanningStepNode ,
+        pat:ToolAgent_ActionStepNode ,
+        pat:ToolAgent_ActionResultNode ;
+    pair:hasPatternEdge
+        pat:ToolAgent_PlanningInformsActionEdge ,
+        pat:ToolAgent_ActionProducesResultEdge ;
+    pair:hasRiskPattern pat:ToolMisuseRiskPattern ;
+    pair:implementedBy pat:ToolUsingAgent_MatchingOQP .
+
+pat:ToolAgent_PlanningStepNode
+    a pair:PatternNode ;
+    rdfs:label "agent planning step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:PlanningStep .
+
+pat:ToolAgent_ActionStepNode
+    a pair:PatternNode ;
+    rdfs:label "agent action step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:ToolInvocationStep .
+
+pat:ToolAgent_ActionResultNode
+    a pair:PatternNode ;
+    rdfs:label "agent action result node"@en ;
+    pair:expectedClass beam:Data .
+
+pat:ToolAgent_PlanningInformsActionEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning informs action"@en ;
+    pair:sourcePatternNode pat:ToolAgent_PlanningStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:ToolAgent_ActionStepNode .
+
+pat:ToolAgent_ActionProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "action produces result"@en ;
+    pair:sourcePatternNode pat:ToolAgent_ActionStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ToolAgent_ActionResultNode .
+
+
+pat:AgentMemoryLoopMotif
+    a pair:GraphMotif ;
+    rdfs:label "Agent Memory Loop Motif"@en ;
+    dct:description "Agentic motif in which a step writes content to an agent memory store and a later step reads that same store back into a working context, so the system's own history feeds its later reasoning."@en ;
+    rdfs:comment "The distinguishing shape is the loop through a store: the same resource is both written and read. This is what separates retained agent context from an ordinary read-only knowledge source, and it is why a single bad write outlives the turn that produced it. Risk-neutral on its own - memory is what makes an agent coherent across turns."@en ;
+    dct:source <https://genai.owasp.org/> ;
+    pair:derivedFrom asi:asi06-memory-and-context-poisoning ;
+    pair:hasPatternNode
+        pat:AgentMemory_WriteStepNode ,
+        pat:AgentMemory_StoreNode ,
+        pat:AgentMemory_ReadStepNode ,
+        pat:AgentMemory_RecalledContextNode ;
+    pair:hasPatternEdge
+        pat:AgentMemory_WriteProducesStoreEdge ,
+        pat:AgentMemory_ReadUsesStoreEdge ,
+        pat:AgentMemory_ReadProducesContextEdge ;
+    pair:hasRiskPattern pat:MemoryPoisoningRiskPattern ;
+    pair:implementedBy pat:AgentMemoryLoop_MatchingOQP .
+
+pat:AgentMemory_WriteStepNode
+    a pair:PatternNode ;
+    rdfs:label "memory write step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:MemoryWriteStep .
+
+pat:AgentMemory_StoreNode
+    a pair:PatternNode ;
+    rdfs:label "agent memory store node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:AgentMemory .
+
+pat:AgentMemory_ReadStepNode
+    a pair:PatternNode ;
+    rdfs:label "memory read step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:MemoryReadStep .
+
+pat:AgentMemory_RecalledContextNode
+    a pair:PatternNode ;
+    rdfs:label "recalled context node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
+
+pat:AgentMemory_WriteProducesStoreEdge
+    a pair:PatternEdge ;
+    rdfs:label "memory write produces store"@en ;
+    pair:sourcePatternNode pat:AgentMemory_WriteStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:AgentMemory_StoreNode .
+
+pat:AgentMemory_ReadUsesStoreEdge
+    a pair:PatternEdge ;
+    rdfs:label "memory read uses store"@en ;
+    pair:sourcePatternNode pat:AgentMemory_ReadStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:AgentMemory_StoreNode .
+
+pat:AgentMemory_ReadProducesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "memory read produces recalled context"@en ;
+    pair:sourcePatternNode pat:AgentMemory_ReadStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:AgentMemory_RecalledContextNode .

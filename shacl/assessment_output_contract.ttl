@@ -1,0 +1,34 @@
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix aoc:  <http://w3id.org/airiskkg/shacl/assessment-output-contract#> .
+
+<http://w3id.org/airiskkg/shacl/assessment-output-contract>
+    a owl:Ontology ;
+    dct:title "PAIR-AI Assessment Output Contract"@en ;
+    dct:description """
+    SHACL shapes over the graph an assessment run PRODUCES, as opposed to the
+    architecture graph it consumes (that is shacl/architecture_input_contract.ttl).
+    Kept in a separate file so input validation never targets output classes:
+    both are loaded by explicit filename, never by globbing shacl/.
+    """@en .
+
+# Every candidate risk finding carries exactly one status, drawn from a closed
+# value set. The pipeline emits only "candidate"; the remaining values exist so
+# a later human review or runtime evidence can record a verdict without
+# inventing new vocabulary. See pair:findingStatus for what each value means.
+
+aoc:RiskFindingStatusShape
+    a sh:NodeShape ;
+    sh:targetClass pair:RiskFinding ;
+    sh:property [
+        sh:path pair:findingStatus ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "candidate" "confirmed" "refuted" "mitigated" "accepted" ) ;
+        sh:severity sh:Violation ;
+        sh:message "A risk finding must carry exactly one pair:findingStatus, one of: candidate, confirmed, refuted, mitigated, accepted." ;
+    ] .

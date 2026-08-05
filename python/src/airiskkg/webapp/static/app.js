@@ -202,7 +202,52 @@
   // ---- matched motifs tab ----------------------------------------------------
   let selectedMotifRow = null;
 
-  function renderMotifs(matches) {
+  // "Almost matched" motifs: what the graph is missing for each one. Turns a
+  // thin or empty result into a checklist instead of a silent non-match.
+  function gapCard(gap) {
+    const items = [];
+    gap.missingNodes.forEach((n) => {
+      const hint = n.candidates.length
+        ? ` — try: ${n.candidates.map((c) => c.label).join(", ")}`
+        : "";
+      items.push(el("li", { class: "gap-need-role" }, [
+        el("span", {}, "no element plays "),
+        el("strong", {}, n.role),
+        el("span", { class: "gap-hint" }, hint),
+      ]));
+    });
+    gap.missingEdges.forEach((e) => items.push(el("li", { class: "gap-need-edge" }, e.text)));
+
+    const card = el("div", { class: "gap-row" }, [
+      el("div", { class: "gap-head" }, [
+        el("span", { class: "motif-row-name" }, gap.label.replace(/\s+Motif$/, "")),
+        el("span", { class: "gap-score", title: "pattern nodes and edges satisfied" },
+          `${gap.satisfied}/${gap.total}`),
+      ]),
+      el("ul", { class: "gap-list" }, items),
+    ]);
+    // clicking highlights the elements that are the likeliest fix
+    const candidateIds = gap.missingNodes.flatMap((n) => n.candidates.map((c) => c.id));
+    if (candidateIds.length) {
+      card.classList.add("clickable");
+      card.title = "Click to highlight the elements that could take these roles";
+      card.addEventListener("click", () => GraphView.setHighlight(candidateIds));
+    }
+    return card;
+  }
+
+  function renderMotifGaps(gaps) {
+    const list = $("#motifs-list");
+    // only the near misses are actionable; a motif sharing nothing with the
+    // graph would just be noise
+    const near = (gaps || []).filter((g) => g.satisfied / g.total >= 0.5).slice(0, 5);
+    if (!near.length) return;
+    list.appendChild(el("div", { class: "gap-section-head" },
+      "Almost matched — what's missing"));
+    near.forEach((g) => list.appendChild(gapCard(g)));
+  }
+
+  function renderMotifs(matches, gaps) {
     // Collapse repeated matches of the same motif into one row (a motif can match
     // several times with different elements — e.g. External Dependency per source).
     const byName = new Map();
@@ -225,6 +270,7 @@
       empty.textContent = "No motifs matched. Add roles so motifs can bind, then Run assessment.";
       empty.classList.remove("hidden");
       $("#motifs-count").textContent = "";
+      renderMotifGaps(gaps); // say what is missing, not just that nothing matched
       return;
     }
     empty.classList.add("hidden");
@@ -246,6 +292,7 @@
       });
       list.appendChild(row);
     });
+    renderMotifGaps(gaps);
     $("#motifs-count").textContent = String(rows.length);
   }
 
@@ -576,13 +623,31 @@ ex:Generate a beam:Transform ;
       }
     });
 
+    // Open a graph file. A Tool4Boxology / t4b-beam export carries its own
+    // vocabulary, so loading it verbatim would leave BEAM queries with nothing
+    // to match; route those through the normalizer instead of the editor. Any
+    // other Turtle is already BEAM and loads as-is.
     $("#file-input").addEventListener("change", (ev) => {
       const file = ev.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => {
-        Editor.setValue(String(reader.result));
-        setStatus("ok", `Loaded file: ${file.name}`);
+      reader.onload = async () => {
+        const text = String(reader.result);
+        if (!text.includes("tool4boxology.org")) {
+          Editor.setValue(text);
+          setStatus("ok", `Loaded file: ${file.name}`);
+          return;
+        }
+        setStatus("busy", `Normalizing Tool4Boxology export: ${file.name}…`);
+        try {
+          const fmt = /\.nt$/i.test(file.name) ? "nt" : "turtle";
+          const { ttl, warnings } = await postJson("/api/import/t4b", { data: text, format: fmt });
+          Editor.setValue(ttl);
+          setStatus("ok", `Imported ${file.name} — ${(warnings || []).length} normalization note(s). ` +
+            "The export carries no roles: use the Annotate tab so motifs can match.");
+        } catch (error) {
+          setStatus("error", "Could not import Tool4Boxology export: " + error.message.split("\n")[0]);
+        }
       };
       reader.readAsText(file);
       ev.target.value = "";
@@ -628,7 +693,7 @@ ex:Generate a beam:Transform ;
       try {
         const data = await postJson("/api/assess", { ttl });
         renderFindings(data);
-        renderMotifs(data.motifMatches); // Motifs tab (each match carries nodeIds)
+        renderMotifs(data.motifMatches, data.motifGaps); // Motifs tab (each match carries nodeIds)
         openDrawer("findings");
         setStatus("ok", `Assessment finished`, `${data.summary.riskFindingCount} findings · ${data.summary.motifMatchCount} matches`);
       } catch (error) {

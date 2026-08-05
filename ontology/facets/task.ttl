@@ -8,6 +8,7 @@
 
 <http://w3id.org/airiskkg/facets/task>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Characterization Facet: AI Task"@en ;
     dct:description "SKOS concept scheme implementing the PAIR-AI unified task taxonomy: the functional input-to-output relation performed by a functional unit (Rule R1). Assigned via facet:hasTaskCategory. Rule R7: Task, Capability (VAIR), and Application Type (OECD) are three separate axes, SKOS-mapped, never merged. NOTE: no mapping to the TUEV AI.ST taxonomy is included; its license/citability is unverified (on hold)."@en ;
     dct:source "PAIR-AI unified task taxonomy (expert curation); OECD (2022). OECD Framework for the Classification of AI Systems, Task & Output dimension. https://doi.org/10.1787/cb6d9eca-en" ;

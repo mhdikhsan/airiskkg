@@ -9,6 +9,7 @@
 @prefix dct:    <http://purl.org/dc/terms/> .
 @prefix vann:   <http://purl.org/vocab/vann/> .
 @prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix prov:   <http://www.w3.org/ns/prov#> .
 @prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
@@ -16,6 +17,7 @@
 # Ontology
 
 <http://w3id.org/airiskkg/pair-ai#> a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Pattern Module Ontology"@en ;
     dct:description "Pattern-level vocabulary for constructing the PAIR-AI AI Risk Knowledge Graph."@en ;
     vann:preferredNamespacePrefix "pair" ;
@@ -61,7 +63,7 @@ pair:RiskPattern a owl:Class ;
 
 pair:RiskMechanism a owl:Class ;
     rdfs:label "Risk Mechanism"@en ;
-    rdfs:comment "The curated causal account of how or why a matched configuration under the observed conditions can lead to harm: the risk-pattern's 'why', as opposed to its applicability conditions, which are the machine-checkable 'what' (the detection gate). A mechanism is deliberately NOT part of the detection logic - it is never evaluated or filtered on during matching (encoding the causal account as a second graph condition would duplicate the applicability condition and reintroduce declarative/executable drift). It is inert, reusable text attached by reference to every finding of its pattern, guaranteeing the same explanation is reproduced (never regenerated or paraphrased) across systems and runs. Grounded in the source taxonomy (e.g. an OWASP LLM Top 10 risk's mechanism). Per-finding instance grounding - naming the concrete risk-bearing elements - is added at assessment time via pair:mechanismNarrative, which frames this canonical text against the matched elements without altering it."@en .
+    rdfs:comment "The curated causal account of how or why a matched configuration under the observed conditions can lead to harm: the risk-pattern's 'why', as opposed to its applicability conditions, which are the machine-checkable 'what' (the detection gate). A mechanism is deliberately NOT part of the detection logic - it is never evaluated or filtered on during matching (encoding the causal account as a second graph condition would duplicate the applicability condition and reintroduce declarative/executable drift). It is inert, reusable text attached by reference to every finding of its pattern, guaranteeing the same explanation is reproduced (never regenerated or paraphrased) across systems and runs. Grounded in the source taxonomy (e.g. an OWASP LLM Top 10 risk's mechanism). Per-finding instance grounding is NOT materialized in the graph: the concrete risk-bearing elements are already asserted via pair:hasEvidence, and any instance-framed sentence belongs to the presentation layer (glossary v1.2, decision F2)."@en .
 
 pair:PatternImplementation a owl:Class ;
     rdfs:label "Pattern Implementation"@en ;
@@ -142,14 +144,14 @@ pair:expectedRole a owl:ObjectProperty ;
 
 pair:hasRiskPattern a owl:ObjectProperty ;
     rdfs:label "has risk pattern"@en ;
-    rdfs:comment "Links a risk-neutral graph motif to an AI risk pattern that extends it with risk semantics."@en ;
+    rdfs:comment "Links a risk-neutral graph motif to an AI risk pattern that extends it with risk semantics. AUTHORING RULE (glossary v1.2, term 6): this is the REQUIRED MIRROR of pair:hasMotif, which is canonical. Assert the binding on the risk pattern first, then mirror it here. The mirror is not optional and is not inferred: no OWL reasoning runs during assessment, so owl:inverseOf below is documentation only and materializes nothing. python/tests/test_library_consistency.py fails if either direction is missing."@en ;
     rdfs:domain pair:GraphMotif ;
     rdfs:range pair:RiskPattern ;
     owl:inverseOf pair:hasMotif .
 
 pair:hasMotif a owl:ObjectProperty ;
     rdfs:label "has motif"@en ;
-    rdfs:comment "Links an AI risk pattern to the structural motif that must be present for it to apply."@en ;
+    rdfs:comment "Links an AI risk pattern to the structural motif that must be present for it to apply. AUTHORING RULE (glossary v1.2, term 6): this direction is CANONICAL - a motif is a constituent of the risk pattern (Risk Pattern = Motif + Applicability Conditions + Mechanism + Taxonomy Links + Controls), so the binding is authored here, on the pattern. Every assertion must also be mirrored by pair:hasRiskPattern on the motif, because no reasoner materializes the inverse."@en ;
     rdfs:domain pair:RiskPattern ;
     rdfs:range pair:GraphMotif .
 
@@ -228,6 +230,23 @@ pair:derivedFrom a owl:ObjectProperty ;
         a owl:Class ;
         owl:unionOf (pair:GraphMotif pair:RiskPattern)
     ] .
+
+pair:maturity a owl:DatatypeProperty ;
+    rdfs:label "maturity"@en ;
+    rdfs:comment """Curation maturity of a graph motif or AI risk pattern, so consumers can tell
+vetted library entries from work in progress. One of three values:
+  "validated" - derived from a traceable source AND confirmed to match at least one
+                real architecture graph in this repository;
+  "draft"     - derived from a traceable source but not yet confirmed against a real
+                architecture graph;
+  "proposed"  - candidate entry with no traceable source yet; not fit for reporting.
+Maturity describes the curation state of the library entry itself. It says nothing
+about the likelihood or severity of any risk, and never affects matching."""@en ;
+    rdfs:domain [
+        a owl:Class ;
+        owl:unionOf (pair:GraphMotif pair:RiskPattern)
+    ] ;
+    rdfs:range xsd:string .
 
 pair:implementedBy a owl:ObjectProperty ;
     rdfs:label "implemented by"@en ;
@@ -326,14 +345,34 @@ pair:implementationPath a owl:DatatypeProperty ;
 
 pair:findingStatus a owl:DatatypeProperty ;
     rdfs:label "finding status"@en ;
+    rdfs:comment """Review state of a candidate risk finding. Exactly one value per finding, drawn
+from a closed set of five (enforced by shacl/assessment_output_contract.ttl):
+  "candidate" - the structure matched and the applicability conditions held. A
+                structural disposition, never a confirmed failure. THE ONLY VALUE
+                THE PIPELINE EVER WRITES: every risk query emits "candidate"
+                literally, by construction.
+  "confirmed" - a human or runtime evidence established the risk is real here;
+  "refuted"   - established the risk does not apply (e.g. a control exists that
+                the submitted graph did not represent);
+  "mitigated" - accepted as real and addressed by a control;
+  "accepted"  - acknowledged as real and knowingly tolerated.
+The four non-candidate values are an EXTENSION POINT for later human review or
+runtime evidence. Nothing in the assessment pipeline writes them, and nothing in
+it reads them: they exist so a verdict can be recorded without inventing new
+vocabulary or breaking the candidate framing (Rule R1). Kept as xsd:string rather
+than a SKOS scheme deliberately - the value set is closed and small, findings are
+generated output rather than curated knowledge, and existing tests assert the
+plain literal."""@en ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range xsd:string .
 
-pair:mechanismNarrative a owl:DatatypeProperty ;
-    rdfs:label "mechanism narrative"@en ;
-    rdfs:comment "An instance-grounded rendering of a candidate risk finding's mechanism: the pattern's canonical curated causal text (pair:hasDerivedMechanism / pair:RiskMechanism) framed against the concrete architecture elements that triggered this specific finding. Materialized at assessment time by the risk query. The canonical causal wording is reused verbatim from the mechanism individual (single source, no paraphrase), with only an instance frame naming the matched elements appended - so this presentation string introduces no new curated claim and cannot drift from the mechanism. Complements pair:hasDerivedMechanism (the reusable IRI pointer, kept for traceability) rather than replacing it."@en ;
-    rdfs:domain pair:RiskFinding ;
-    rdfs:range xsd:string .
+# pair:mechanismNarrative was removed in glossary v1.2 (decision F2, 2026-07-28).
+# It rendered a per-finding prose sentence by concatenating the mechanism text with
+# URI fragments of the bound elements. Removed because: nothing consumed it; every
+# element it named is already asserted as pair:hasEvidence in queryable form; and the
+# string building was presentation logic inside the knowledge layer. Render such a
+# sentence in the view (python/src/airiskkg/assessment_view.py), where rdfs:labels are
+# available, not in the graph.
 
 ### Top-level roles
 
@@ -397,6 +436,12 @@ pair:VectorStore a pair:PatternRole ;
     skos:definition "A vector database serving as a knowledge source for retrieval."@en ;
     skos:relatedMatch t4b:DB ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pair:AgentMemory a pair:PatternRole ;
+    skos:prefLabel "AgentMemory"@en ;
+    pair:subRoleOf pair:KnowledgeSource ;
+    skos:definition "A store holding content the system retains across turns or sessions and reads back into later reasoning: conversation summaries, scratchpads, or a long-term memory store. A specialization of KnowledgeSource whose distinguishing property is that the system writes to it as well as reads from it, so its contents are shaped by the system's own history."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of retained agent context)" .
 
 pair:VectorIndex a pair:PatternRole ;
     skos:prefLabel "VectorIndex"@en ;
@@ -549,8 +594,8 @@ pair:SanitizedOutput a pair:PatternRole ;
 
 pair:RewrittenQuery a pair:PatternRole ;
     skos:prefLabel "RewrittenQuery"@en ;
-    pair:subRoleOf pair:ResourceRole ;
-    skos:definition "A reformulated query produced by a query rewriting step."@en ;
+    pair:subRoleOf pair:UserInput ;
+    skos:definition "A reformulated query produced by a query rewriting step. A specialization of UserInput: a rewritten query is still the user's request, restated, and carries the same untrusted provenance - so it satisfies every condition written against UserInput. Previously placed directly under ResourceRole, which made the precise role inert: queries traverse pair:subRoleOf* from UserInput, so tagging an element only as RewrittenQuery silently prevented the Query Rewriting motif from matching."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
 
 pair:RetrievedCandidateSet a pair:PatternRole ;
@@ -561,8 +606,8 @@ pair:RetrievedCandidateSet a pair:PatternRole ;
 
 pair:RerankedContext a pair:PatternRole ;
     skos:prefLabel "RerankedContext"@en ;
-    pair:subRoleOf pair:ResourceRole ;
-    skos:definition "Reranked, selected context fragments for generation."@en ;
+    pair:subRoleOf pair:RetrievedContext ;
+    skos:definition "Reranked, selected context fragments for generation. A specialization of RetrievedContext: reranking reorders and trims retrieved fragments without changing what they are, so reranked context satisfies every condition written against RetrievedContext. Previously placed directly under ResourceRole, which made the precise role inert: tagging an element only as RerankedContext silently prevented the Reranker motif from matching."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
 
 pair:DocumentChunk a pair:PatternRole ;
@@ -850,6 +895,48 @@ pair:StateChangingStep a pair:PatternRole ;
     skos:definition "A step that changes external state: writes, transactions, or other actions with side effects outside the system boundary."@en ;
     dct:source "OWASP Top 10 for LLM Applications 2025, LLM06 Excessive Agency" .
 
+### Agentic steps
+
+pair:PlanningStep a pair:PatternRole ;
+    skos:prefLabel "PlanningStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step in which the system decides what to do next - selecting a tool, ordering sub-tasks, or revising a goal - rather than producing the user-facing answer itself. What distinguishes an agent from a single generation call."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI02 Tool Misuse and Exploitation (scope of agentic decision steps)" .
+
+pair:MemoryWriteStep a pair:PatternRole ;
+    skos:prefLabel "MemoryWriteStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step that commits content to agent memory for reuse in later turns or sessions."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of retained-context writes)" .
+
+pair:MemoryReadStep a pair:PatternRole ;
+    skos:prefLabel "MemoryReadStep"@en ;
+    pair:subRoleOf pair:RetrievalStep ;
+    skos:definition "A step that reads retained agent memory back into a working context. A specialization of RetrievalStep: recalling memory is retrieval over the system's own history rather than over an external knowledge source."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of retained-context reads)" .
+
+### Prediction-step specializations 
+
+### Agentic steps
+
+pair:PlanningStep a pair:PatternRole ;
+    skos:prefLabel "PlanningStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step in which the system decides what to do next - selecting a tool, ordering sub-tasks, or revising a goal - rather than producing the user-facing answer itself. What distinguishes an agent from a single generation call."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI02 Tool Misuse and Exploitation (scope of agentic decision steps)" .
+
+pair:MemoryWriteStep a pair:PatternRole ;
+    skos:prefLabel "MemoryWriteStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step that commits content to agent memory for reuse in later turns or sessions."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of retained-context writes)" .
+
+pair:MemoryReadStep a pair:PatternRole ;
+    skos:prefLabel "MemoryReadStep"@en ;
+    pair:subRoleOf pair:RetrievalStep ;
+    skos:definition "A step that reads retained agent memory back into a working context. A specialization of RetrievalStep: recalling memory is retrieval over the system's own history rather than over an external knowledge source."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of retained-context reads)" .
+
 ### Prediction-step specializations 
 
 pair:FastPredictionStep a pair:PatternRole ;
@@ -896,6 +983,30 @@ pair:RateLimitControlStep a pair:PatternRole ;
     skos:definition "A step that enforces rate, budget, quota, or loop bounds on model calls, retrieval breadth, or tool use."@en ;
     dct:source "OWASP Top 10 for LLM Applications 2025, LLM10 Unbounded Consumption" .
 
+pair:PolicyEnforcementStep a pair:PatternRole ;
+    skos:prefLabel "PolicyEnforcementStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that evaluates a proposed action against a policy before it is carried out, and can narrow or refuse it. Deterministic mediation sitting between a model's decision and its effect, rather than an instruction asking the model to behave."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI02 Tool Misuse and Exploitation (scope of pre-execution mediation)" .
+
+pair:HumanApprovalStep a pair:PatternRole ;
+    skos:prefLabel "HumanApprovalStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step at which a person must confirm an action before it proceeds (human in the loop)."@en ;
+    dct:source "OWASP Top 10 for LLM Applications 2025, LLM06 Excessive Agency" .
+
+pair:RedactionStep a pair:PatternRole ;
+    skos:prefLabel "RedactionStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that removes, masks, tokenizes, or minimizes protected content before it is passed on, so what leaves the step no longer carries the content category that entered it. The barrier for content-category propagation: an element downstream of a redaction step does not inherit the upstream category."@en ;
+    dct:source "OWASP Top 10 for LLM Applications 2025, LLM02 Sensitive Information Disclosure (sanitization and redaction of sensitive content before processing); OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (screening content before commit)" .
+
+pair:MemoryValidationStep a pair:PatternRole ;
+    skos:prefLabel "MemoryValidationStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that screens, attributes, or scores content before it is committed to agent memory, so what is retained is not simply whatever was produced."@en ;
+    dct:source "expert curation; OWASP Top 10 for Agentic Applications 2026, ASI06 Memory & Context Poisoning (scope of write-time validation)" .
+
 # Data category vocabulary (the Data Category characterization facet)
 #
 # Curated scheme of content classification values. Assignment is an annotated
@@ -909,8 +1020,8 @@ pair:RateLimitControlStep a pair:PatternRole ;
 
 pair:DataCategoryScheme a skos:ConceptScheme ;
     skos:prefLabel "Data Category"@en ;
-    skos:definition "Characterization facet classifying the content of data resources (glossary v1.1 A.3). Read by applicability conditions only; aligned to DPV data concepts where equivalents exist (Rule R3: referenced, never copied)."@en ;
-    dct:source "PAIR-AI glossary v1.1, Section A.3; DPV v2.3 (https://w3id.org/dpv#, verified 2026-07-13)" .
+    skos:definition "Characterization facet classifying the content of data resources (glossary v1.2 A.3). Read by applicability conditions only; aligned to DPV data concepts where equivalents exist (Rule R3: referenced, never copied)."@en ;
+    dct:source "PAIR-AI glossary v1.2, Section A.3; DPV v2.3 (https://w3id.org/dpv#, verified 2026-07-13)" .
 
 pair:Information a pair:DataCategory ;
     skos:prefLabel "Information"@en ;

@@ -1,6 +1,8 @@
 @prefix atlas:   <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#> .
 @prefix mit:     <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> .
 @prefix owasp:   <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
+@prefix asi:     <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
+@prefix nist:    <http://w3id.org/airiskkg/taxonomy/nist-genai#> .
 @prefix mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> .
 @prefix nexus:   <http://w3id.org/airiskkg/taxonomy/nexus#> .
 @prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
@@ -10,6 +12,12 @@
 
 
 <http://w3id.org/airiskkg/taxonomy/mappings#> a owl:Ontology ;
+    # Third-party provenance: derived from IBM AI Atlas Nexus (Apache License 2.0).
+    # Apache 2.0 is permissive, so this file may be released under the repository
+    # licence; its section 4 duties (retain notices, state changes, propagate NOTICE)
+    # are met here and in /NOTICE.md.
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Derived from IBM AI Atlas Nexus, licensed Apache License 2.0 - see https://www.apache.org/licenses/LICENSE-2.0. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary. Section 1 mappings come from the Nexus SSSOM sets; Section 2 mappings are PAIR-AI curation."@en ;
     rdfs:label "AI Risk KG Taxonomy Mappings" ;
     dct:title "AI Risk KG Taxonomy Mappings" ;
     dct:description """
@@ -25,7 +33,9 @@
     """ ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/ibm2owasp.tsv> ,
                <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/mit-ai-risk-repository_ibm-risk-atlas.tsv> ,
-               <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/mit_ai_risk_mitigation_mappings.tsv> .
+               <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/mit_ai_risk_mitigation_mappings.tsv> ,
+               <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/owasp_asi2owasp_llm.tsv> ,
+               <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/ibm2nistgenai.tsv> .
 
 
 #################################################################
@@ -86,6 +96,79 @@ atlas:hallucination                  skos:relatedMatch mit:subdomain-3-1 .
 atlas:decision-bias                  skos:relatedMatch mit:subdomain-1-1 .
 atlas:impact-on-the-environment      skos:relatedMatch mit:subdomain-6-6 .
 
+
+## OWASP Agentic Top 10 (ASI) <-> OWASP LLM Top 10
+## (source: owasp_asi2owasp_llm.tsv, mapping_date 2026-04-28, all rows
+## semapv:ManualMappingCuration). Predicates and directions are reproduced
+## exactly as curated upstream, NOT re-derived. Upstream confidences:
+## asi02->llm06 0.90; asi06->llm04 0.85; asi06->llm01 0.75; asi06->llm08 0.75.
+asi:asi02-tool-misuse
+    skos:narrowMatch owasp:llm06-excessive-agency .
+
+asi:asi06-memory-and-context-poisoning
+    skos:broadMatch owasp:llm04-data-and-model-poisoning ;
+    skos:relatedMatch owasp:llm01-prompt-injection ,
+        owasp:llm08-vector-and-embedding-weaknesses .
+
+## IBM Atlas <-> NIST AI RMF Generative AI Profile (NIST AI 600-1)
+## (source: ibm2nistgenai.tsv, mapping_date 2025-01-29, every row
+## semapv:ManualMappingCuration at confidence 0.95). Predicates and directions
+## reproduced exactly as curated upstream, NOT re-derived. Two modelled Atlas
+## concepts have no row upstream - data-usage-restrictions and the agentic
+## redundant-actions-agentic - and are deliberately left unmapped rather than
+## curated here.
+atlas:hallucination
+    skos:exactMatch nist:confabulation .
+
+atlas:impact-on-the-environment
+    skos:exactMatch nist:environmental-impacts .
+
+atlas:data-poisoning
+    skos:broadMatch nist:information-security .
+
+atlas:prompt-injection
+    skos:broadMatch nist:information-security .
+
+atlas:prompt-leaking
+    skos:broadMatch nist:information-security .
+
+atlas:evasion-attack
+    skos:broadMatch nist:information-security .
+
+atlas:exposing-personal-information
+    skos:broadMatch nist:data-privacy .
+
+atlas:personal-information-in-prompt
+    skos:broadMatch nist:data-privacy .
+
+atlas:personal-information-in-data
+    skos:broadMatch nist:data-privacy .
+
+atlas:reidentification
+    skos:broadMatch nist:data-privacy .
+
+atlas:decision-bias
+    skos:broadMatch nist:harmful-bias-and-homogenization .
+
+atlas:confidential-data-in-prompt
+    skos:broadMatch nist:intellectual-property .
+
+atlas:data-curation
+    skos:broadMatch nist:value-chain-and-component-integration .
+
+atlas:legal-accountability
+    skos:broadMatch nist:value-chain-and-component-integration ,
+        nist:data-privacy ,
+        nist:intellectual-property .
+
+atlas:incomplete-advice
+    skos:broadMatch nist:information-integrity ,
+        nist:value-chain-and-component-integration .
+
+atlas:poor-model-accuracy
+    skos:broadMatch nist:value-chain-and-component-integration ,
+        nist:information-integrity ,
+        nist:human-ai-configuration .
 
 #################################################################
 # Section 2 — Project-curated mappings (PAIR-AI expert curation)
@@ -180,6 +263,25 @@ owasp:llm10-unbounded-consumption
     skos:relatedMatch mit:subdomain-2-2 ;
     skos:relatedMatch mit:subdomain-6-6 ;
     skos:relatedMatch mit:subdomain-7-3 .
+
+
+
+## OWASP Agentic Top 10 (ASI) <-> MIT domain taxonomy
+## No upstream SSSOM row exists for ASI <-> MIT, so these are PAIR-AI curation.
+## The ASI <-> OWASP LLM links ARE curated upstream and live in Section 1.
+
+# Acting on external systems through tools without mediation is an attack
+# surface on the AI system itself (2-2) and removes the human from decisions
+# the architecture still attributes to them (5-2).
+asi:asi02-tool-misuse
+    skos:relatedMatch mit:subdomain-2-2 ,
+        mit:subdomain-5-2 .
+
+# Poisoned retained context is an attack on the system (2-2) whose visible
+# effect downstream is false or misleading output (3-1).
+asi:asi06-memory-and-context-poisoning
+    skos:relatedMatch mit:subdomain-2-2 ,
+        mit:subdomain-3-1 .
 
 
 # Section 3 - Risk-to-control grounding
@@ -634,4 +736,3 @@ mitctrl:threat-modelling
 mitctrl:user-rights-recourse
     nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency .
-

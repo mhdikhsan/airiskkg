@@ -11,20 +11,18 @@
 #################################################################
 
 <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> a owl:Ontology ;
+    # Third-party provenance: derived from IBM AI Atlas Nexus (Apache License 2.0).
+    # Apache 2.0 is permissive, so this file may be released under the repository
+    # licence; its section 4 duties (retain notices, state changes, propagate NOTICE)
+    # are met here and in /NOTICE.md.
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Derived from IBM AI Atlas Nexus, licensed Apache License 2.0 - see https://www.apache.org/licenses/LICENSE-2.0. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary. The RiskControlGroup layer reproduces the MIT draft mitigation taxonomy verbatim. Apache 2.0 covers IBM's packaging, not upstream rights, and MIT's own terms are not yet verified."@en ;
     rdfs:label "MIT AI Risk Control Subset for AI Risk KG" ;
     dct:title "MIT AI Risk Control Subset for AI Risk KG" ;
     dct:description """
     A selected RDF subset of the MIT Draft AI Risk Mitigation Taxonomy and related
     risk controls, adapted from AI Atlas Nexus. This file provides a control
     grounding layer for graph-pattern-based AI risk assessment.
-
-    Provenance: the RiskControlGroup layer (4 categories +
-    subcategories) reproduces the MIT draft taxonomy verbatim, verified against
-    the upstream Nexus data. The concrete RiskControl layer at the end of this
-    file is PAIR-AI curation: it names controls found as individual mitigations
-    in the MIT mitigation database (cited per concept) or distilled from OWASP
-    LLM Top 10 prevention guidance; these are NOT entries of the MIT taxonomy
-    itself and therefore do not carry nexus:isDefinedByTaxonomy.
     """ ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_mitigation_data.yaml> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_repository_data_controls.yaml> .
@@ -95,9 +93,8 @@ mitctrl:transparency-accountability-controls
     nexus:isDefinedByTaxonomy mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy ;
     nexus:controlType "transparency-accountability" .
 
-#################################################################
 # Governance and oversight control groups
-#################################################################
+
 
 mitctrl:risk-management
     a nexus:RiskControlGroup ;
@@ -141,9 +138,8 @@ mitctrl:societal-impact-assessment
     nexus:controlType "governance" ;
     nexus:lifecyclePhase "design-time" .
 
-#################################################################
 # Technical and security control groups
-#################################################################
+
 
 mitctrl:model-infrastructure-security
     a nexus:RiskControlGroup ;
@@ -188,9 +184,8 @@ mitctrl:content-safety-controls
     nexus:lifecyclePhase "deployment" ;
     nexus:lifecyclePhase "operation" .
 
-#################################################################
 # Operational process control groups
-#################################################################
+
 
 mitctrl:testing-auditing
     a nexus:RiskControlGroup ;
@@ -275,9 +270,8 @@ mitctrl:incident-response-recovery
     nexus:lifecyclePhase "operation" ;
     nexus:lifecyclePhase "post-deployment" .
 
-#################################################################
 # Transparency and accountability control groups
-#################################################################
+
 
 mitctrl:system-documentation
     a nexus:RiskControlGroup ;
@@ -334,13 +328,7 @@ mitctrl:user-rights-recourse
     nexus:lifecyclePhase "deployment" ;
     nexus:lifecyclePhase "post-deployment" .
 
-#################################################################
-# Concrete controls (PAIR-AI curated layer — not MIT taxonomy entries)
-# Each concept cites its evidence: a mitigation in the MIT AI Risk
-# Mitigation Database (via mit_ai_risk_mitigation_mappings.tsv) and/or
-# OWASP LLM Top 10 2025 prevention guidance; skos:broader anchors it
-# to the verbatim MIT subcategory it specializes.
-#################################################################
+
 
 mitctrl:risk-register
     a nexus:RiskControl ;
