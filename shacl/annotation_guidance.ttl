@@ -1,0 +1,225 @@
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix ag:   <http://w3id.org/airiskkg/shacl/annotation-guidance#> .
+
+<http://w3id.org/airiskkg/shacl/annotation-guidance>
+    a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:title "PAIR-AI Annotation Guidance Shapes"@en ;
+    dct:description """
+    A third shapes file, alongside the two contracts, aimed at a different
+    question.
+
+    architecture_input_contract.ttl asks "is this graph well formed enough to
+    assess?". assessment_output_contract.ttl asks "is what we emitted well
+    formed?". Neither asks "will this annotation actually do anything?" - and
+    that is where real annotation effort is lost. A graph can satisfy the input
+    contract completely and still produce zero findings because a role sits on
+    the wrong kind of element, or a store nothing retrieves from, or a memory
+    written but never read. The assessment then reports nothing, and silence
+    reads as safety.
+
+    Every shape here is sh:Info or sh:Warning and NONE is sh:Violation. These
+    are not conditions of acceptance: an architecture is allowed to have a
+    dangling store, and a modeler is allowed to annotate partially. Reporting
+    them as violations would make the contract lie about what it requires.
+
+    Candidate framing applies here too, one level up: a warning says the
+    ANNOTATION looks incomplete, never that the system is unsafe.
+    """@en .
+
+ag:StepRoleNeedsAProcessTypeShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf pair:playsRole ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "This element plays a step role but carries no class from the process family (beam:Process, beam:Infer, beam:Transform, beam:Train, beam:Generate). Step nodes match on 'a/rdfs:subClassOf* beam:Process', so an element outside that family can never bind and the role has no effect." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            SELECT $this
+            WHERE {
+                $this pair:playsRole ?role .
+                { ?role pair:subRoleOf* pair:ProcessingStep }
+                UNION
+                { ?role pair:subRoleOf* pair:ControlStep }
+                FILTER NOT EXISTS {
+                    $this a ?processClass .
+                    FILTER(?processClass IN (beam:Process, beam:Infer, beam:Transform, beam:Train, beam:Generate))
+                }
+            }
+        """ ;
+    ] .
+
+ag:ResourceRoleOnProcessShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf pair:playsRole ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "This element plays a resource role but is typed beam:Process. A role says what an element does functionally; it cannot turn a process into a resource. Motifs constrain both, so the node will not bind." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            SELECT $this
+            WHERE {
+                $this pair:playsRole ?role ;
+                      a beam:Process .
+                ?role pair:subRoleOf* pair:ResourceRole .
+            }
+        """ ;
+    ] .
+
+ag:VectorStoreIsRetrievedFromShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf pair:playsRole ;
+    sh:severity sh:Info ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "This vector store or index is not used by any retrieval step. The Vector-IR and RAG motifs both require a step that beam:use-s the store, so no retrieval-side finding can be raised about it." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            SELECT $this
+            WHERE {
+                $this pair:playsRole ?role .
+                { ?role pair:subRoleOf* pair:VectorStore }
+                UNION
+                { ?role pair:subRoleOf* pair:VectorIndex }
+                FILTER NOT EXISTS {
+                    ?step pair:playsRole/pair:subRoleOf* pair:RetrievalStep ;
+                          beam:use $this .
+                }
+            }
+        """ ;
+    ] .
+
+ag:GenerationStepUsesAModelShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf pair:playsRole ;
+    sh:severity sh:Info ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "This generation step uses no element playing pair:GenerativeModel. Direct Prompting, RAG, and Guardrails all bind the model explicitly, so none of them will match and no generation-side finding can be raised." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            SELECT $this
+            WHERE {
+                $this pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+                FILTER NOT EXISTS {
+                    $this beam:use ?model .
+                    ?model pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+                }
+            }
+        """ ;
+    ] .
+
+ag:AgentMemoryIsALoopShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf pair:playsRole ;
+    sh:severity sh:Info ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "This agent memory store is only written or only read, never both. The Agent Memory Loop motif is constituted by the loop through the store, so a one-way store is an ordinary knowledge source and ASI06 cannot be raised about it." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            SELECT $this
+            WHERE {
+                $this pair:playsRole/pair:subRoleOf* pair:AgentMemory .
+                FILTER (
+                    NOT EXISTS { ?writer beam:produce $this }
+                    || NOT EXISTS { ?reader beam:use $this }
+                )
+            }
+        """ ;
+    ] .
+
+ag:AgentMessageIsReceivedShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf pair:playsRole ;
+    sh:severity sh:Info ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "This inter-agent message is not consumed by any step playing pair:AgentHandoffStep. The Agent Delegation motif needs both sides of the crossing, so ASI07 cannot be raised about this handoff." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            SELECT $this
+            WHERE {
+                $this pair:playsRole/pair:subRoleOf* pair:AgentMessage .
+                FILTER NOT EXISTS {
+                    ?receiver pair:playsRole/pair:subRoleOf* pair:AgentHandoffStep ;
+                              beam:use $this .
+                }
+            }
+        """ ;
+    ] .
+
+ag:DataCarriesARoleShape
+    a sh:NodeShape ;
+    sh:targetClass beam:Data ;
+    sh:severity sh:Info ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "This data element plays no pattern role, so no motif can bind it. That is legitimate for incidental elements, but if it carries user input, retrieved context, a prompt, or model output, annotating it is what makes the surrounding motif matchable." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            SELECT $this
+            WHERE {
+                FILTER NOT EXISTS { $this pair:playsRole ?role . }
+            }
+        """ ;
+    ] .
+
+ag:UserFacingOutputIsProducedShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf pair:playsRole ;
+    sh:severity sh:Info ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "This user-facing output is not produced by any step. Output-side patterns (improper output handling, system prompt leakage, sensitive disclosure) all reach the sink through beam:produce, so none of them can see it." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            SELECT $this
+            WHERE {
+                $this pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+                FILTER NOT EXISTS { ?step beam:produce $this . }
+            }
+        """ ;
+    ] .
+
+ag:KnowledgeSourceDeclaresContentShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf pair:playsRole ;
+    sh:severity sh:Info ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "This knowledge source declares no data category. Whether a store holds sensitive or confidential content is an annotated base fact (Rule R8) - the propagation rules carry it onward but cannot originate it, so sensitive-disclosure findings stay silent until it is stated." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            SELECT $this
+            WHERE {
+                $this pair:playsRole/pair:subRoleOf* pair:KnowledgeSource .
+                FILTER NOT EXISTS { $this pair:containsDataCategory ?category . }
+                FILTER NOT EXISTS { $this ?facet ?value . FILTER(STRSTARTS(STR(?facet), "http://w3id.org/airiskkg/facets#")) }
+            }
+        """ ;
+    ] .

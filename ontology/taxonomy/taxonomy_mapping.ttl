@@ -101,9 +101,18 @@ atlas:impact-on-the-environment      skos:relatedMatch mit:subdomain-6-6 .
 ## (source: owasp_asi2owasp_llm.tsv, mapping_date 2026-04-28, all rows
 ## semapv:ManualMappingCuration). Predicates and directions are reproduced
 ## exactly as curated upstream, NOT re-derived. Upstream confidences:
-## asi02->llm06 0.90; asi06->llm04 0.85; asi06->llm01 0.75; asi06->llm08 0.75.
+## asi02->llm06 0.90; asi06->llm04 0.85; asi06->llm01 0.75; asi06->llm08 0.75;
+## asi01->llm01 0.85; asi01->llm06 0.80; asi07->llm02 0.75; asi07->llm06 0.75.
+asi:asi01-agent-goal-hijack
+    skos:broadMatch owasp:llm01-prompt-injection ;
+    skos:relatedMatch owasp:llm06-excessive-agency .
+
 asi:asi02-tool-misuse
     skos:narrowMatch owasp:llm06-excessive-agency .
+
+asi:asi07-insecure-inter-agent-communication
+    skos:relatedMatch owasp:llm02-sensitive-information-disclosure ,
+        owasp:llm06-excessive-agency .
 
 asi:asi06-memory-and-context-poisoning
     skos:broadMatch owasp:llm04-data-and-model-poisoning ;

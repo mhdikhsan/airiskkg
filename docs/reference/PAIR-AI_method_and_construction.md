@@ -1,8 +1,8 @@
 # PAIR-AI — Method and Knowledge-Base Construction
 
 Status: current as of **2026-07-28**, branch `feature/characterization-layer`.
-Authority on terminology and modeling rules: `docs/reference/PAIR-AI_glossary_v1.2.md`
-(locked; rules R1–R8). Where this document and the glossary disagree, the glossary wins.
+Authority on terminology and modeling rules: `docs/reference/PAIR-AI_glossary_v1_3.md`
+(rules R1–R10). Where this document and the glossary disagree, the glossary wins.
 
 **What this document is.** One place that explains how the PAIR-AI knowledge base was
 *built* and how an assessment *runs*: where risk patterns come from, where the role
@@ -11,7 +11,7 @@ curated, how the ontology reuses and aligns external vocabularies, what the pipe
 executes, and what the method currently cannot do.
 
 **What this document is not.** Not a user guide (see `docs/user_guide.md` for the
-workbench, `docs/annotation_facilitator_cheatsheet.md` for annotation sessions), not an
+workbench), not an
 inventory (see `docs/reference/catalogue.md`), not a change record (see
 `CHANGELOG_data_model.md`).
 
@@ -608,7 +608,7 @@ The 23 findings on `onyx_danswer` span 16 distinct (motif, risk) combinations ac
 OWASP categories, with prompt-injection alone firing from four different motifs. The zero
 on `beam_export_graph_rag.ttl` is not a failure of the pipeline — it is the method's
 central dependency made visible: an unannotated graph, however well-drawn, matches nothing
-(§6.6; `docs/annotation_walkthrough_graphrag.md` walks through annotating exactly this
+(§6.6; `docs/example_UC/beam_export_graph_rag_annotated.ttl` is the annotated form of exactly this
 file).
 
 ---
@@ -699,13 +699,12 @@ cannot be authored there even though the vocabulary exists.
 
 | Document | Role |
 | --- | --- |
-| `docs/reference/PAIR-AI_glossary_v1.2.md` | **Authoritative.** Definitions, rules R1–R8, grounding references |
+| `docs/reference/PAIR-AI_glossary_v1_3.md` | **Authoritative.** Definitions, rules R1–R10, grounding references |
 | `docs/reference/catalogue.md` | Full inventory of motifs, risk patterns, roles, data categories |
+| `docs/reference/risk_control_linkage.md` | Risk to control linkage, including the MIT evidence layer |
 | `docs/user_guide.md` | Workbench user guide |
-| `docs/annotation_facilitator_cheatsheet.md` | Annotation guidance for facilitated sessions |
-| `docs/annotation_walkthrough_graphrag.md`, `..._dicoding.md` | Worked annotation examples end to end |
+| `docs/example_UC/*.ttl` | Worked and unannotated example architecture graphs |
 | `docs/notes/running_assessment_runner.md`, `running_the_webapp.md` | Operational setup |
 | `docs/notes/control_layer_weakness_analysis.md` | Deep critique of the risk→control→motif chain |
 | `docs/notes/mitigation_research_roadmap.md` | Forward plan for the mitigation layer |
-| `docs/claude/engine_consistency_cleanup_plan.md` | Consistency audit and cleanup plan |
 | `CHANGELOG_data_model.md` | v1 → v2 rename and migration record |

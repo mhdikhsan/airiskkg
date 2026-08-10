@@ -3,11 +3,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-# Auto-derived faithful projection of pat:BatchTrainingMotif (declared PatternNode/
-# PatternEdge structure). Matches structure only (candidate framing): each
-# declared node is bound by expectedClass + expectedRole, each declared edge
-# is required. No risk semantics here - those come from a risk pattern.
-
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
@@ -36,17 +31,17 @@ WHERE {
            pair:playsRole/pair:subRoleOf* pair:TrainingDataset .
     ?evaluationResult a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:EvaluationResult .
-    ?evaluationStep a beam:Process ;
+    ?evaluationStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:EvaluationStep .
     ?modelArtifact a beam:StatisticalModel ;
            pair:playsRole/pair:subRoleOf* pair:ModelArtifact .
-    ?preprocessStep a beam:Transform ;
+    ?preprocessStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:PreprocessingStep .
-    ?scheduler a beam:Process ;
+    ?scheduler a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:JobScheduler .
     ?trainingData a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:PreprocessedData .
-    ?trainingStep a beam:Train ;
+    ?trainingStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:TrainingStep .
 
     ?scheduler beam:inform ?preprocessStep .

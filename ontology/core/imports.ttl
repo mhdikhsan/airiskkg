@@ -7,7 +7,7 @@
     rdfs:label "AI Risk KG Ontology Imports" ;
     dct:title "AI Risk KG Ontology Imports" ;
     dct:description """
-    Aggregator ontology for loading the BEAM core ontology, BEAM risk extension,
+    Aggregator ontology for loading the BEAM core ontology and
     the PAIR-AI pattern module ontology, and the characterization facet schemes
     together.
     """ ;

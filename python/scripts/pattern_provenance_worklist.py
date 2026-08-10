@@ -1,18 +1,4 @@
-"""Emit a hand-curation worklist for motif / risk-pattern provenance and maturity.
 
-One row per pair:GraphMotif and pair:RiskPattern:
-
-    uri, type, label, existing_source, existing_maturity, proposed_source, notes
-
-`existing_*` columns are read straight from triples already in the ontology.
-`proposed_source` is filled ONLY when the repository itself names an origin that
-is not already recorded as dct:source; the evidence is then quoted in `notes`
-with the file it came from. Sources are never invented -- an entry with no
-traceable origin is left empty for a human to fill in.
-
-Usage:  python python/scripts/pattern_provenance_worklist.py [OUTPUT_CSV]
-        (default output: /tmp/pattern_provenance_worklist.csv)
-"""
 
 from __future__ import annotations
 
@@ -20,10 +6,12 @@ import csv
 import sys
 from pathlib import Path
 
-from rdflib import DCTERMS, RDF, RDFS, Graph, URIRef
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from airiskkg.assessment_runner import PAIR, load_base_graph
-from airiskkg.paths import PATTERNS_DIR
+from rdflib import DCTERMS, RDF, RDFS, Graph, URIRef  # noqa: E402
+
+from airiskkg.assessment_runner import PAIR, load_base_graph  # noqa: E402
+from airiskkg.paths import PATTERNS_DIR  # noqa: E402
 
 DEFAULT_OUTPUT = Path("/tmp/pattern_provenance_worklist.csv")
 
@@ -72,30 +60,28 @@ def build_rows(graph: Graph) -> list[dict[str, str]]:
         for subject in sorted(graph.subjects(RDF.type, rdf_type), key=str):
             source = _literal(graph, subject, DCTERMS.source)
             derived = _literal(graph, subject, PAIR.derivedFrom)
-            maturity = _literal(graph, subject, PAIR.maturity)
             comment = _literal(graph, subject, RDFS.comment)
 
             notes: list[str] = []
-            proposed_source = ""
 
             if source:
                 notes.append(f'dct:source already present in {declared_in}: "{source}"')
                 if not _is_traceable(source):
                     notes.append("NOT independently traceable - needs an external citation")
             else:
-                # No dct:source. Only propose one if the repo itself names an origin.
+                # dct:source is deliberately absent on entries whose origin is a
+                # document rather than a semantic resource (OECD, OWASP, pattern
+                # catalogues). pair:derivedFrom carries the origin for those, so
+                # it counts as provenance here rather than as a gap to fill.
                 if derived:
-                    proposed_source = derived
-                    notes.append(f'pair:derivedFrom in {declared_in}: "{derived}"')
+                    notes.append(f'origin via pair:derivedFrom in {declared_in}: "{derived}"')
                 elif comment:
-                    notes.append(f'no source; rdfs:comment in {declared_in}: "{comment}"')
+                    notes.append(f'no origin stated; rdfs:comment in {declared_in}: "{comment}"')
                 else:
-                    notes.append(f"no source and no origin named in {declared_in} - fill in by hand")
+                    notes.append(f"no origin named in {declared_in} - fill in by hand")
 
             if derived and source and derived != source:
                 notes.append(f'pair:derivedFrom: "{derived}"')
-            if not maturity:
-                notes.append("maturity unset - choose validated / draft / proposed")
 
             rows.append(
                 {
@@ -103,8 +89,7 @@ def build_rows(graph: Graph) -> list[dict[str, str]]:
                     "type": type_name,
                     "label": _literal(graph, subject, RDFS.label),
                     "existing_source": source,
-                    "existing_maturity": maturity,
-                    "proposed_source": proposed_source,
+                    "origin": derived,
                     "notes": " | ".join(notes),
                 }
             )
@@ -116,7 +101,7 @@ def main() -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
 
     rows = build_rows(load_base_graph())
-    fields = ["uri", "type", "label", "existing_source", "existing_maturity", "proposed_source", "notes"]
+    fields = ["uri", "type", "label", "existing_source", "origin", "notes"]
     with output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
@@ -124,14 +109,19 @@ def main() -> int:
 
     motifs = [r for r in rows if r["type"] == "GraphMotif"]
     patterns = [r for r in rows if r["type"] == "RiskPattern"]
-    untraceable = [r for r in rows if not _is_traceable(r["existing_source"])]
-    unset_maturity = [r for r in rows if not r["existing_maturity"]]
+    # An entry needs a traceable origin, from either predicate. dct:source is not
+    # required: it is reserved for semantic resources, and an entry derived from a
+    # document states its origin with pair:derivedFrom instead.
+    untraceable = [
+        r
+        for r in rows
+        if not _is_traceable(r["existing_source"]) and not _is_traceable(r["origin"])
+    ]
     print(f"wrote {len(rows)} rows to {output}")
     print(f"  motifs: {len(motifs)}  risk patterns: {len(patterns)}")
-    print(f"  without a traceable source: {len(untraceable)}")
-    print(f"  without maturity: {len(unset_maturity)}")
+    print(f"  without a traceable origin: {len(untraceable)}")
     for row in untraceable:
-        print(f"    no traceable source: {row['label'] or row['uri']}")
+        print(f"    no traceable origin: {row['label'] or row['uri']}")
     return 0
 
 

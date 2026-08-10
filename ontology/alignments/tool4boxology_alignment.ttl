@@ -11,24 +11,13 @@
     dct:title "Tool4Boxology to BEAM Alignment Adapter"@en ;
     dct:description """
     Alignment adapter normalizing Tool4Boxology architecture exports into BEAM,
-    the canonical internal model of PAIR-AI. Per Rule R5, external vocabularies
-    enter only via rdfs:subPropertyOf / rdfs:subClassOf alignments here plus
-    CONSTRUCT normalization in python/scripts/normalize_t4b.py; nothing
-    tool-specific enters beam_core.ttl. This adapter is the template for future
-    vocabularies (e.g. AgentO).
-
-    Both vocabularies anchor to easy-ai (https://kastle-lab.org/easy-ai2/),
-    which BEAM already references (beam:Instance/Model/Process/Agent are
-    subclasses of easy-ai Artifact/Model/Process/Actor).
+    the canonical internal model of PAIR-AI.
     """@en ;
     dct:source <https://github.com/SDM-TIB/Tool4Boxology> ;
     rdfs:seeAlso <https://doi.org/10.1007/978-3-032-25159-6_11> ;
     vann:preferredNamespacePrefix "t4b" ;
     owl:imports <http://w3id.org/beam/core#> .
 
-# --- Property alignments (verified export edge directions) -----------------
-# InputArtifact --inputRoleParticipatesInProcess--> Process
-# Process --outputRoleParticipatesInProcess--> OutputArtifact
 
 t4b:inputRoleParticipatesInProcess
     rdfs:subPropertyOf beam:usedBy ;
@@ -38,7 +27,7 @@ t4b:outputRoleParticipatesInProcess
     rdfs:subPropertyOf beam:produce ;
     rdfs:comment "A process produces an output artifact. Verified direction: process -> artifact, matching beam:produce (Process -> Resource)."@en .
 
-# --- Class alignments -----------------------------------------
+# Class alignments
 
 t4b:Data rdfs:subClassOf beam:Data ;
     rdfs:comment "Tool4Boxology data artifact aligned to BEAM Data."@en .
@@ -66,8 +55,6 @@ t4b:Infer rdfs:subClassOf beam:Infer ;
 
 t4b:Generate rdfs:subClassOf beam:Generate ;
     rdfs:comment "Tool4Boxology generation process aligned to BEAM Generate."@en .
-
-# --- DESIGN DECISIONS flagged for review ------------------------------------
 
 t4b:Deduce rdfs:subClassOf beam:Infer ;
     rdfs:comment "DESIGN DECISION (review): t4b:Deduce has no direct BEAM equivalent; mapped to beam:Infer as the closest process type (deduction is symbolic inference)."@en .

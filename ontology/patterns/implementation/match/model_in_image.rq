@@ -3,11 +3,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-# Auto-derived faithful projection of pat:ModelInImageMotif (declared PatternNode/
-# PatternEdge structure). Matches structure only (candidate framing): each
-# declared node is bound by expectedClass + expectedRole, each declared edge
-# is required. No risk semantics here - those come from a risk pattern.
-
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
@@ -28,17 +23,17 @@ CONSTRUCT {
     ?trainingStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelImage_TrainingStepNode ; pair:matchedElement ?trainingStep .
 }
 WHERE {
-    ?deploymentStep a beam:Process ;
+    ?deploymentStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:DeploymentStep .
-    ?imageBuildStep a beam:Process ;
+    ?imageBuildStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:ImageBuildStep .
     ?modelArtifact a beam:StatisticalModel ;
            pair:playsRole/pair:subRoleOf* pair:ModelArtifact .
-    ?predictionStep a beam:Infer ;
+    ?predictionStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:PredictionStep .
     ?servingImage a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:ServingImage .
-    ?trainingStep a beam:Train ;
+    ?trainingStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:TrainingStep .
 
     ?trainingStep beam:produce ?modelArtifact .

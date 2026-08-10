@@ -7,53 +7,129 @@ if a task seems to require violating a rule here, stop and ask.
 ## What this project is
 
 PAIR-AI is a design-time AI risk assessment method. It matches **architectural motifs**
-(SPARQL graph patterns over pattern roles) against RDF **architecture graphs** of AI
-systems (BEAM vocabulary), and when a motif match satisfies the **applicability
-conditions** of an **AI risk pattern**, it emits a **candidate risk finding** with
-evidence, a risk mechanism, taxonomy links (IBM AI Risk Atlas / OWASP LLM Top 10 /
-OWASP Agentic Top 10 / MIT AI Risk Repository / NIST AI 600-1), and suggested
-controls.
+(reusable, type-level configurations of **pattern roles** connected by flow relations,
+executed as SPARQL CONSTRUCT queries) against RDF **architecture graphs** of AI systems
+(BEAM, the Boxology Notation vocabulary). A motif is risk-neutral by itself: it states
+what structure is present, never whether that structure is dangerous. Risk enters only
+when an **AI risk pattern** evaluates its **applicability conditions** over a motif match.
+Satisfaction emits a **candidate risk finding** carrying evidence, a curated risk
+mechanism, taxonomy links (IBM AI Risk Atlas / OWASP LLM Top 10 / OWASP Agentic Top 10 /
+MIT AI Risk Repository / NIST AI 600-1), and suggested controls.
+
+The constituent equation (glossary term 7):
+**Risk Pattern = Motif + Applicability Conditions + Mechanism + Taxonomy Links + Controls.**
 
 Mental model: static code analysis for AI architectures. Motifs ≈ linter rules,
-findings ≈ warnings (never confirmed bugs).
+findings ≈ alerts requiring human triage — never confirmed defects.
 
 The library covers GenAI, ML serving/training, supply-chain, and agentic shapes.
 Agentic coverage is deliberately partial: only ASI entries with a design-time
-structural signature are modelled. Entries defined by runtime behaviour (ASI10
-Rogue Agents is behavioural divergence after deployment) have no shape in a
-submitted graph, and adding them would fire a finding on every agent — noise that
-breaks candidate framing instead of supporting it.
+structural signature are modelled (ASI01 goal hijack, ASI02 tool misuse, ASI06
+memory and context poisoning, ASI07 insecure inter-agent communication).
+Entries defined by runtime behaviour have no shape in a submitted graph,
+and adding them would fire a finding on every agent — noise that breaks candidate
+framing instead of supporting it.
 
 ## Authoritative documents (read before non-trivial changes)
 
-- `docs/reference/PAIR-AI_glossary_v1.2.md` — terminology and modeling rules, **v1.2, locked
-  2026-07-28** (supersedes v1.1). Section C (rules R1–R8) is a hard constraint on every change.
-  Section E is the completed rename record; Section F is the decision record.
+- `docs/reference/PAIR-AI_glossary_v1_3.md` — terminology and modeling rules, **v1.3**
+  (supersedes v1.2, which is deleted; any surviving reference to `PAIR-AI_glossary_v1.2.md`
+  is a broken link to fix). Four sections: **A** core terms (the nine defined entities),
+  **B** internal and narrative terms, **C** modeling rules **R1–R10** — a hard constraint on
+  every change — and **D** grounding references. The rename record and decision record that
+  v1.2 carried as Sections E/F are gone; do not cite them.
 - `docs/reference/PAIR-AI_method_and_construction.md` — how the knowledge base was built and how
   an assessment runs: risk-pattern derivation, role provenance, motif curation, ontology reuse
   and alignment, the pipeline, and current limitations.
-- `docs/claude/claude_code_prompt_data_model_update.md` — the Tasks 1–7 plan this branch grew
-  from. Largely delivered: the Task 2 facets, Task 5 SHACL contract, and Task 6 Tool4Boxology
-  adapter and `external/` vendoring all exist. Read it as history and rationale, not as an
-  outstanding backlog.
+- `docs/reference/catalogue.md` — the inventory of what the library can recognise and flag:
+  every motif, risk pattern, annotation role, and data category. Written by hand against the
+  loaded ontology, so it goes stale silently — re-check its counts whenever the library changes.
+- `docs/reference/risk_control_linkage.md` — how risk patterns reach controls, including the
+  MIT mitigation/action evidence layer.
 - `CHANGELOG_data_model.md` — running record of data-model changes and past audits, including
   which layers were found to contain fabricated content and how each was fixed. Worth reading
   before touching the taxonomy or mapping layers. Local-only (gitignored).
 
-## Locked decisions (summary — full versions in GLOSSARY.md Section C)
+## Locked decisions (summary — full versions in the glossary, Sections A and C)
 
 - **Candidate framing is non-negotiable.** All outputs are *candidate* risks
-  (structural dispositions), never confirmed failures. Every comment, label, and doc
-  string must respect this. Formal basis: Open World Assumption — `FILTER NOT EXISTS`
-  is closed-world over the submitted graph only.
+  (structural dispositions), never confirmed failures, observed incidents, or predictions
+  that harm will occur. Every comment, label, and doc string must respect this. Formal
+  basis (R4): Open World Assumption — `FILTER NOT EXISTS` is closed-world over the
+  submitted graph only, so "no validation control is represented" ≠ "none exists".
+- **Motifs cannot express absence (R9).** Motif matching is monotone: if a motif matches
+  a graph it matches every extension of it, so a motif asserts presence only. Every
+  negative, exclusivity, or sufficiency claim (*direct*, *only*, *pure*, *without*,
+  *unmediated*, *standalone*) belongs to an applicability condition, and motif labels must
+  be positive accordingly. A risk pattern name may carry the negative; a motif name may not.
+- **Motifs may nest, deliberately.** The library is not an antichain — a smaller motif can
+  be a subgraph of a larger one and always co-matches with it. Match counts therefore
+  measure structural coverage, not distinct architectural features; never report them as
+  "how many different things the system does".
+- **Facet conditions are positive; only control conditions may be negative (R10).** A
+  condition may test for the presence of a facet value on a bound element, never its
+  absence, unless the SHACL input contract makes that facet mandatory. Facets are annotated
+  base facts (R8), so a missing value means the modeler did not fill it in — a negative
+  facet condition fires on every under-annotated system. Absence-of-control conditions are
+  exempt: they are claims about represented structure, already graph-relative under R4.
+- **Conditions are evaluated over a motif match, not over the graph at large.** "Personal
+  data is present somewhere in this system" and "the data bound to the prompt-context node
+  is personal" are different claims; only the second licenses a finding.
+- **`pair:hasMotif` is canonical, `pair:hasRiskPattern` is a required mirror.** The binding
+  is authored on the risk pattern, because the motif is a constituent of the pattern. **No
+  OWL reasoning runs in the pipeline** — `owl:inverseOf` is declared as documentation only,
+  so a one-sided assertion is invisible to any consumer reading the other side. Write both
+  directions; `test_library_consistency.py` enforces it.
+- **Mechanisms are curated, never computed.** A `pair:RiskMechanism` takes no part in
+  detection: it is never evaluated or filtered on during matching or condition evaluation.
+  Findings carry it by reference (`pair:hasDerivedMechanism`) so the same explanation
+  reproduces unchanged across systems and runs. Sentences naming concrete matched elements
+  are built in the presentation layer from mechanism text plus evidence labels — never
+  stored in the graph.
+- **A declarative motif and its query are ODP and OQP.** The motif is the ontology design
+  pattern; the registered SPARQL CONSTRUCT is the ontology query pattern derived from it.
+  The OQP may differ topologically where matching requires it, but must not violate the
+  ODP's semantics — which is why a declaration that drifts from its `.rq` is a defect, not
+  a stylistic mismatch.
+- **Process typing never decides whether a motif matches (unified 2026-08-06).** Every
+  step-node class check in every match query is `?step a/rdfs:subClassOf* beam:Process`
+  — the same shape as the library's role idiom, `pair:playsRole/pair:subRoleOf*`. It walks
+  the class hierarchy already in the loaded graph, so no reasoner is involved and
+  `beam:Process`, `beam:Infer`, `beam:Transform`, `beam:Train`, and `beam:Generate` all
+  bind identically. Before this, three conventions coexisted and a leaf-typed agent matched
+  *zero* agentic motifs while an identical generic-typed one matched them all.
+  **Never write a bare `a beam:Infer` in a query** — `test_queries_check_process_typing_one_way`
+  fails on it, and `test_process_typing_does_not_change_what_matches` proves the equivalence
+  end to end. The role is the discriminator; the class is only a coarse process/resource
+  guard. `annotation_guidance.ttl` still warns when a step carries no process-family class
+  at all, since that genuinely cannot bind.
+- **Provenance reaches the role vocabulary too (R6).** Every `pair:PatternRole` states a
+  `dct:source` or a SKOS mapping. Where a role has no external source of its own, its
+  provenance is *derived* — the source of the motif or risk pattern whose registered query
+  traverses it — or declared explicitly as a refinement introduced for annotation
+  precision. Never attribute a role to a document it did not come from;
+  `test_every_pattern_role_states_its_provenance` is the net.
+- **Declared-but-unused vocabulary gets removed, not documented.** `pair:maturity` and
+  `pair:identifiesCandidateRisk` were deleted 2026-08-06: nothing wrote them and nothing
+  read them, so they described intentions rather than the pipeline. Reinstate such a term
+  only together with the query that populates it.
 - **BEAM is the canonical internal model.** External tool vocabularies (Tool4Boxology
   now, AgentO later) enter only via alignment adapters in `ontology/alignments/` +
   normalizer scripts. Nothing tool-specific in `beam_core.ttl`.
-- **OWL class vs SKOS concept**: OWL classes only for instantiated, query-traversed
+- **OWL class vs SKOS concept (R1)**: OWL classes only for instantiated, query-traversed
   structure (BEAM elements). SKOS concepts for classification values (pattern roles,
   data categories, all facets). Never instantiate a facet value.
-- **Motifs match structure only** (roles + flow relations). Applicability conditions
-  evaluate structure + facets (context, data categories, absence of controls).
+- **Motifs match structure only (R2)** — roles + flow relations, reading **no** facet.
+  Applicability conditions evaluate structure + facets (context, data categories, absence
+  of controls). Situational context enters at the applicability phase, never at matching.
+- **Flow relations are not data flow.** `inform` is process-to-process ordering with no
+  resource transfer and it is load-bearing (the Guardrails motif is constituted by a
+  guardrail step *informing* a generation step). Never redefine a motif over "data flow".
+- **There is no "Personal" data category, and there must not be one.** Personal data is
+  expressed with DPV concepts through `facet:hasPersonalDataCategory` (R3), never mirrored
+  into `pair:DataCategoryScheme`. Data Category is the one facet that lives in the pattern
+  module rather than `ontology/facets/`, because its values are also *derived* along data
+  flow by registered propagation queries (R8); every other facet is an annotated base fact.
 - **Predicate economy**: no new flow predicates in BEAM core; node types carry edge
   semantics.
 - **Provenance everywhere**: `dct:source` on reused concepts; `pair:derivedFrom` on every
@@ -111,12 +187,27 @@ The prefix is **`pair:`** (`http://w3id.org/airiskkg/pair-ai#`) — this section
 wrote these terms as `rp:`, which appears nowhere in the ontology. Pattern instances use
 `pat:`; taxonomies use `owasp:` / `asi:` / `atlas:` / `mit:` / `nist:` / `nexus:`.
 
-- `pair:RiskPattern` (formerly `MotifInterpretation`) — the AI risk pattern entity.
-- `pair:ApplicabilityCondition` (formerly interpretation/graph condition).
-- `pair:hasEvidence` — property on `pair:RiskFinding` (EvidenceSubgraph class demoted).
-- `pair:RiskFinding` links to risk via `pair:identifiesCandidateRisk` (no longer a subclass
-  of `beamr:Risk`); its taxonomy entries hang off `pair:hasCandidateRiskTaxonomyEntry`.
+- `pair:RiskPattern` — the AI risk pattern entity.
+- `pair:ApplicabilityCondition`, with `pair:PropertyPathCondition` for conditions evaluated
+  via a SPARQL property path (reachability).
+- `pair:GraphMotif` (the ODP) / `pair:PatternImplementation` (the OQP) / `pair:MotifMatch`
+  (the instantiation, materialized with explicit `pair:hasNodeBinding` bindings).
+- `pair:hasEvidence` — property on `pair:RiskFinding`.
+- `pair:RiskFinding` carries its taxonomy entries on `pair:hasCandidateRiskTaxonomyEntry`
+  and its status on `pair:findingStatus` (the triage extension point). The assessed system
+  is **not** asserted on the finding — derive it by traversing from an evidence element to
+  the containing `beam:System`.
+- `pair:identifiesCandidateRisk` is **declared but not emitted** — no finding currently
+  links to a `beamr:Risk` individual, and no alignment exists between `nexus:Risk`
+  (taxonomy entries) and `beamr:Risk`. Open item; do not write docs implying it works.
 - Two curated collections: **Motif Library** (risk-neutral) and **Risk Pattern Library**.
+- Control layer: `pair:controlNature` (technical / non-technical) and
+  `pair:realizedByMotif` (control → motif that could structurally realize it).
+  `pair:realizedByMotif` marks a **candidate** structural mitigation, not proof that
+  inserting the motif removes the risk — and several realizing motifs are themselves
+  risk-bearing. Only project-authored `pat:Control_*` concepts appear in
+  `pair:suggestedControl`; MIT `mitctrl:*` families are reached as an evidence layer
+  through taxonomy links.
 
 If code or TTL still uses old names, that is migration debt — fix toward the new names,
 never toward the old ones.
@@ -128,11 +219,17 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 
 - `ontology/core/` — beam_core.ttl, beam_core_risk.ttl, pair_ai_pattern.ttl (pattern meta-vocabulary)
 - `ontology/patterns/` — motif.ttl, risk_pattern_library.ttl, control_mitigation_layer.ttl
-- `ontology/patterns/implementation/` — one executable SPARQL CONSTRUCT per motif / risk pattern.
+- `ontology/patterns/implementation/` — the executable SPARQL CONSTRUCTs, in three
+  subdirectories: `match/` (one per motif, 28), `risk/` (one per risk pattern, 15), and
+  `propagation/` (4 derived-fact rules: content categories, untrusted taint, generated
+  content, personal data rights — re-run to a fixed point by the runner).
   **These paths are data**: each is registered by a `pair:PatternImplementation` whose
   `pair:implementationPath` is a literal string, so moving or renaming a query means updating
   its declaration too. `test_library_consistency.py` fails if the two drift apart.
-- `ontology/facets/` — SKOS characterization facets (task, context, autonomy, data)
+- `ontology/facets/` — SKOS characterization facets: `task.ttl`, `context.ttl` (domain,
+  purpose, deployment setting), `autonomy.ttl`, `data_facets.ttl` (provenance, dynamism,
+  rights), `implementation_type.ttl`, and `facet_properties.ttl` (the assignment
+  properties). Data Category is **not** here — see the locked decision above.
 - `ontology/alignments/` — external vocabulary adapters (Tool4Boxology, DPV; later AgentO)
 - `ontology/taxonomy/` — IBM Atlas, OWASP LLM, OWASP Agentic (ASI), MIT, NIST AI 600-1 + the
   cross-taxonomy mappings. Mappings are tiered by evidence: Section 1 reproduces upstream SSSOM
@@ -141,8 +238,18 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - `ontology/visualization/` — standalone SPARQL run by hand; referenced by no declaration,
   unlike `patterns/implementation/`
 - `ontology/example/` — architecture graphs used as worked examples and test fixtures
-- `shacl/` — `architecture_input_contract.ttl` (accepted input) and
-  `assessment_output_contract.ttl` (emitted findings)
+  (`onyx_danswer.ttl`, `rag_with_guardrails.ttl`, `beam_export_graph_rag_annotated.ttl`)
+- `docs/example_UC/` — the remaining use-case graphs, including the agentic examples and the
+  unannotated imports: `agentic_assistant.ttl`, `multi_agent_assistant.ttl`,
+  `beam_export_graph_rag.ttl`, `dicoding.ttl`, `dicoding_annotated.ttl`.
+  `paths.EXAMPLE_UC_DIR` resolves this directory; tests that need these fixtures use it.
+- `shacl/` — three shapes files answering three different questions:
+  `architecture_input_contract.ttl` (is this graph acceptable? Violations),
+  `assessment_output_contract.ttl` (are emitted findings well formed?), and
+  `annotation_guidance.ttl` (will this annotation actually match anything?).
+  **Every guidance shape is `sh:Info` or `sh:Warning`, never `sh:Violation`** — it
+  cannot change whether a graph conforms, and a test enforces that. It rides along with
+  the input contract in the webapp and in `validate_graphs.py`.
 - `external/tool4boxology/` — vendored schema + sample export; attribution in `NOTICE.md`
 - `python/src/airiskkg/`, `python/scripts/`, `python/tests/` — pipeline code, CLI, webapp, and
   maintenance scripts. The Python package root is `python/`, not the repo root; `airiskkg.paths`
@@ -156,10 +263,22 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 
 - Branch per feature; one labeled commit per task; never commit directly to main.
 - After every ontology change: parse all `.ttl` with RDFLib, run pyshacl where shapes
-  exist, and re-run the assessment on the bundled examples — `onyx_danswer.ttl` (broadest:
-  13 motifs / 23 findings), `agentic_assistant.ttl` (agentic layer),
-  `rag_with_guardrails.ttl` (composition), `beam_export_graph_rag.ttl` (unannotated import,
-  expects zero) — and explain any diff in findings.
+  exist, and re-run the assessment on the bundled examples — then explain any diff.
+  Current baseline (matches / findings, as of 2026-08-06):
+
+  | Graph | Matches | Findings |
+  | --- | --- | --- |
+  | `ontology/example/onyx_danswer.ttl` (broadest: 7 distinct motifs) | 13 | 23 |
+  | `ontology/example/rag_with_guardrails.ttl` (composition) | 3 | 3 |
+  | `ontology/example/beam_export_graph_rag_annotated.ttl` | 3 | 9 |
+  | `docs/example_UC/agentic_assistant.ttl` (agentic layer) | 3 | 7 |
+  | `docs/example_UC/multi_agent_assistant.ttl` (delegation + oversight) | 3 | 3 |
+  | `docs/example_UC/dicoding_annotated.ttl` | 3 | 6 |
+  | `docs/example_UC/beam_export_graph_rag.ttl` (unannotated import) | 0 | 0 |
+  | `docs/example_UC/dicoding.ttl` (unannotated) | 0 | 0 |
+
+  Matches are `pair:MotifMatch` instances, not distinct motifs — nested motifs co-match
+  by design, so the number is structural coverage.
 - **rdflib's SPARQL compiler is not thread-safe.** pyparsing keeps global parser state, so
   two threads compiling queries at once corrupt it and surface as
   "`Param.postParse2() missing 1 required positional argument`". Compilation is serialized
@@ -176,6 +295,13 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - Tool4Boxology export quirks the normalizer must handle: lowercase type URIs
   (`t4b:transform` vs `t4b:Transform`), ontology declares `patternProcess` but exports
   `hasProcess`, instances multi-typed with `t4b:Component`.
+- Current library size (2026-08-06): **28 motifs**, **15 risk patterns**, **95 pattern
+  roles**, **7 data categories**, **35 facet concepts**, 16 applicability-condition
+  attachments. Implementations: 28 match queries, 15 risk queries, 4 propagation rules.
+  When any of these changes, update `docs/reference/catalogue.md` in the same commit —
+  nothing regenerates it.
+- Sweep motif labels against R9 whenever the library version changes: no *direct*, *only*,
+  *pure*, *without*, *unmediated*, *standalone* in a motif name.
 - Write English comments/labels; APA 7th for any citation in docs.
 - Ask before any change that alters the semantics of existing motif SPARQL queries.
 - Roles must sit under the role their motif query actually traverses. Queries walk

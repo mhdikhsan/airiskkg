@@ -2,28 +2,34 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 
 CONSTRUCT {
-    ?downstream pair:containsDataCategory pair:UntrustedContent .
+    ?tainted pair:containsDataCategory pair:UntrustedContent .
 }
 WHERE {
     {
-        ?upstream pair:playsRole ?upstreamRole .
-        ?upstreamRole pair:subRoleOf* ?rootRole .
+        ?tainted pair:playsRole ?taintedRole .
+        ?taintedRole pair:subRoleOf* ?rootRole .
         VALUES ?rootRole { pair:PublicUserInput pair:RetrievedContext }
     }
     UNION
     {
-        ?upstream pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
+        # One flow hop onward. Re-run to a fixed point by the runner, this
+        # becomes the transitive closure.
+        {
+            ?upstream pair:playsRole ?upstreamRole .
+            ?upstreamRole pair:subRoleOf* ?rootRole .
+            VALUES ?rootRole { pair:PublicUserInput pair:RetrievedContext }
+        }
+        UNION
+        {
+            ?upstream pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
+        }
+
+        ?step beam:use ?upstream ;
+              beam:produce ?tainted .
+
+        FILTER NOT EXISTS {
+            ?step pair:playsRole ?stepRole .
+            ?stepRole pair:subRoleOf* pair:GuardrailStep .
+        }
     }
-
-    FILTER NOT EXISTS { ?upstream pair:containsDataCategory pair:TrustedContent . }
-
-    ?step beam:use ?upstream ;
-          beam:produce ?downstream .
-
-    FILTER NOT EXISTS {
-        ?step pair:playsRole ?stepRole .
-        ?stepRole pair:subRoleOf* pair:GuardrailStep .
-    }
-
-    FILTER NOT EXISTS { ?downstream pair:containsDataCategory pair:TrustedContent . }
 }

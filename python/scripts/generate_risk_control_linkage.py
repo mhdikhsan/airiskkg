@@ -84,19 +84,12 @@ def main() -> int:
         (s for s in tax.subjects(RDF.type, NEXUS.RiskControl) if "mitigation-action#" in str(s)),
         key=str,
     )
-    # Scoped to the mitigation vocabulary on purpose: nexus:isDefinedByTaxonomy is
-    # used by the risk taxonomies too, so an unscoped count returns 142 and reads
-    # as more mitigation grounding than exists.
     verbatim = {
         s
         for s in tax.subjects(NEXUS.isDefinedByTaxonomy, None)
         if "mit-ai-risk-control#" in str(s) or "mitigation-action#" in str(s)
     }
 
-    # action -> parents, and the reverse. Plural on purpose: four actions were
-    # adjudicated under a curated control in addition to their sub-category, so
-    # tax.value() would return one arbitrary parent and lose the other - which is
-    # how the concrete-control action counts first came out as zero.
     action_parents = {a: [local(p) for p in tax.objects(a, SKOS.broader)] for a in actions}
     children = defaultdict(list)
     for action, parents in action_parents.items():
@@ -537,8 +530,8 @@ def main() -> int:
     add("")
     add("| File | Why |")
     add("|---|---|")
-    add("| `docs/reference/PAIR-AI_glossary_v1.2.md` | terminology and the locked modelling "
-        "rules (R1-R8). Read Section C before changing anything |")
+    add("| `docs/reference/PAIR-AI_glossary_v1_3.md` | terminology and the modelling "
+        "rules (R1-R10). Read Section C before changing anything |")
     add("| `docs/reference/PAIR-AI_method_and_construction.md` | how the knowledge base was built |")
     add("| `docs/reference/catalogue.md` | the motif catalogue in prose |")
     add("| `docs/claude/CLAUDE.md` | locked decisions, including licence posture per source |")

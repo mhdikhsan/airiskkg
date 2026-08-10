@@ -74,6 +74,31 @@ def test_validate_endpoint_reports_contract(client) -> None:
     assert report["violations"]
 
 
+def test_validate_endpoint_returns_annotation_guidance_hints(client) -> None:
+    """The guidance shapes must actually reach the endpoint's output.
+
+    They were loaded but inert once before: the shapes walk pair:subRoleOf*
+    inside sh:sparql constraints, which only see the data graph, so passing the
+    role hierarchy as pyshacl's ont_graph left every Info hint unproduced. The
+    file parsed, the endpoint answered 200, and the hints were simply absent -
+    nothing failed.
+
+    A vector store no retrieval step uses is the trigger: annotated correctly,
+    but no motif can bind it."""
+    ttl = """
+    @prefix ex: <http://example.org/hint#> .
+    @prefix beam: <http://w3id.org/beam/core#> .
+    @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+    ex:sys a beam:System ; beam:contain ex:store, ex:step .
+    ex:store a beam:Data ; pair:playsRole pair:VectorStore .
+    ex:step a beam:Process ; pair:playsRole pair:ProcessingStep ; beam:produce ex:store .
+    """
+    report = client.post("/api/validate", json={"ttl": ttl}).get_json()
+    assert report["conforms"] is True, "guidance must never affect conformance"
+    assert report["hints"], "annotation-guidance hints are missing from the report"
+    assert any("retrieval step" in hint["message"] for hint in report["hints"])
+
+
 def test_assess_endpoint_still_works(client) -> None:
     ttl = (EXAMPLE_DIR / "onyx_danswer.ttl").read_text(encoding="utf-8")
     response = client.post("/api/assess", json={"ttl": ttl})

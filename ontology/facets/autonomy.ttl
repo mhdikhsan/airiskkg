@@ -10,7 +10,7 @@
     a owl:Ontology ;
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Characterization Facet: Autonomy Level"@en ;
-    dct:description "SKOS concept scheme classifying the action autonomy of an AI system (Rule R1: facet values are SKOS concepts, never OWL classes to instantiate). Assigned to a beam:System via facet:hasAutonomyLevel; read by applicability conditions, never matched by motifs (Rule R2)."@en ;
+    dct:description "SKOS concept scheme classifying the action autonomy of an AI system ."@en ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. OECD Digital Economy Papers, No. 323. https://doi.org/10.1787/cb6d9eca-en" ;
     dct:source <https://w3id.org/dpv/2.3/modules/processing> ;
     vann:preferredNamespacePrefix "aut" ;
@@ -19,13 +19,10 @@
 aut:AutonomyLevel
     a skos:ConceptScheme ;
     skos:prefLabel "Autonomy Level"@en ;
-    skos:definition "Degree of action autonomy of an AI system: how much the system can act on its outputs without a human in the decision path. SKOS-mapped to the DPV automation levels (dpv:AutomationLevel, aligned to ISO/IEC 22989:2022) and human-involvement concepts; the four PAIR-AI levels are coarser than the seven ISO levels, so mappings are close/narrow/related, never exact (verified against DPV v2.3, 2026-07-15)."@en ;
+    skos:definition "Degree of action autonomy of an AI system."@en ;
     skos:relatedMatch dpv:AutomationLevel , dpv:HumanInvolvement ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. https://doi.org/10.1787/cb6d9eca-en" .
 
-# The OECD framework is published as a report only - the OECD provides no
-# resolvable concept URIs for its classification values. The OECD anchoring is
-# therefore the dct:source citation above, not a SKOS mapping.
 
 aut:NoActionAutonomy
     a skos:Concept ;

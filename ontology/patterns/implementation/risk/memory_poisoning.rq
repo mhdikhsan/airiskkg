@@ -43,9 +43,6 @@ WHERE {
     ?readBinding     pair:bindsPatternNode pat:AgentMemory_ReadStepNode ;        pair:matchedElement ?readStep .
     ?recalledBinding pair:bindsPatternNode pat:AgentMemory_RecalledContextNode ; pair:matchedElement ?recalledContext .
 
-    # Condition 2: the recalled context actually reaches generation. Without
-    # this the loop is inert, so the finding would not be actionable. Allow the
-    # context to pass through intermediate steps (prompt construction) on the way.
     ?recalledContext (^beam:use/beam:produce)* ?contextForGeneration .
     ?generationStep
         beam:use ?contextForGeneration ;

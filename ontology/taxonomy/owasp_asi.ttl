@@ -47,16 +47,18 @@
     dct:source <https://genai.owasp.org/> ;
     owl:imports <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
 
-
 asi:OWASP_Agentic_Top_10_2026 a nexus:RiskTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "OWASP Top 10 for Agentic Applications" ;
     dct:description "A taxonomy of security threats specific to applications where an AI agent plans, decides, and acts across multiple steps and systems." ;
     owl:versionInfo "2026" .
 
-
-#################################################################
-# Risk entries (subset: structurally detectable at design time)
-#################################################################
+asi:asi01-agent-goal-hijack a nexus:Risk ;
+    skos:prefLabel "ASI01:2026 Agent Goal Hijack" ;
+    skos:definition "The objective an agent is pursuing is redirected by content it consumed rather than by its principal, so every step that follows is faithful execution of the wrong goal." ;
+    skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
+    nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
+    nexus:tag "asi01-agent-goal-hijack" ;
+    rdfs:seeAlso <https://genai.owasp.org/> .
 
 asi:asi02-tool-misuse a nexus:Risk ;
     skos:prefLabel "ASI02:2026 Tool Misuse and Exploitation" ;
@@ -74,10 +76,13 @@ asi:asi06-memory-and-context-poisoning a nexus:Risk ;
     nexus:tag "asi06-memory-and-context-poisoning" ;
     rdfs:seeAlso <https://genai.owasp.org/> .
 
-
-#################################################################
-# Risk mechanisms and conditions (PAIR-AI structural vocabulary)
-#################################################################
+asi:asi07-insecure-inter-agent-communication a nexus:Risk ;
+    skos:prefLabel "ASI07:2026 Insecure Inter-Agent Communication" ;
+    skos:definition "One agent accepts work from another on the strength of the message alone, so a message that is forged, replayed, or simply wrong is acted on as though the sending agent's authority had been established." ;
+    skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
+    nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
+    nexus:tag "asi07-insecure-inter-agent-communication" ;
+    rdfs:seeAlso <https://genai.owasp.org/> .
 
 asi:asi02-tool-misuse
     nexus:hasRiskMechanism asi:mechanism-unconstrained-tool-execution ;
@@ -114,3 +119,33 @@ asi:condition-agent-memory-reread-into-generation
     a nexus:RiskCondition ;
     skos:prefLabel "Agent memory is read back into a later generation context"@en ;
     nexus:conditionForRisk asi:asi06-memory-and-context-poisoning .
+
+asi:asi01-agent-goal-hijack
+    nexus:hasRiskMechanism asi:mechanism-goal-redirection-through-consumed-content ;
+    nexus:hasRiskCondition asi:condition-untrusted-content-reaches-planning .
+
+asi:asi07-insecure-inter-agent-communication
+    nexus:hasRiskMechanism asi:mechanism-unauthenticated-agent-handoff ;
+    nexus:hasRiskCondition asi:condition-agent-handoff-without-validation .
+
+asi:mechanism-goal-redirection-through-consumed-content
+    a pair:RiskMechanism ;
+    rdfs:label "Goal redirection through consumed content"@en ;
+    dct:description "The step that decides what to do next reads the same channel as ordinary content, so instructions arriving as data are weighed alongside the principal's objective. Nothing downstream can distinguish a hijacked plan from a legitimate one: the agent's later steps are correct execution of an objective it should never have adopted, which is what separates this from output-level manipulation."@en ;
+    nexus:mechanismForRisk asi:asi01-agent-goal-hijack .
+
+asi:mechanism-unauthenticated-agent-handoff
+    a pair:RiskMechanism ;
+    rdfs:label "Unauthenticated handoff between agents"@en ;
+    dct:description "Work crosses from one agent to another as a message with no represented step that establishes where it came from or whether it is well formed. The receiving agent's own permissions are then applied to instructions it did not verify, so trust granted to the sending agent is effectively extended to whoever could write to the channel."@en ;
+    nexus:mechanismForRisk asi:asi07-insecure-inter-agent-communication .
+
+asi:condition-untrusted-content-reaches-planning
+    a nexus:RiskCondition ;
+    skos:prefLabel "Content of untrusted provenance reaches the step that decides the agent's next action"@en ;
+    nexus:conditionForRisk asi:asi01-agent-goal-hijack .
+
+asi:condition-agent-handoff-without-validation
+    a nexus:RiskCondition ;
+    skos:prefLabel "A message passes between agents with no represented validation or policy step"@en ;
+    nexus:conditionForRisk asi:asi07-insecure-inter-agent-communication .
