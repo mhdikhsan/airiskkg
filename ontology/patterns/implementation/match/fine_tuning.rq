@@ -3,11 +3,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-# Auto-derived faithful projection of pat:FineTuningMotif (declared PatternNode/
-# PatternEdge structure). Matches structure only (candidate framing): each
-# declared node is bound by expectedClass + expectedRole, each declared edge
-# is required. No risk semantics here - those come from a risk pattern.
-
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
@@ -34,11 +29,11 @@ WHERE {
            pair:playsRole/pair:subRoleOf* pair:FineTuningDataset .
     ?evaluationScore a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:EvaluationScore .
-    ?evaluationStep a beam:Process ;
+    ?evaluationStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:EvaluationStep .
     ?fineTunedModel a beam:StatisticalModel ;
            pair:playsRole/pair:subRoleOf* pair:FineTunedModel .
-    ?trainingStep a beam:Train ;
+    ?trainingStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:FineTuningStep .
 
     ?trainingStep beam:use ?baseModel .

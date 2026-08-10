@@ -1,0 +1,44 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Human Oversight motif match"@en ;
+        pair:matchesMotif pat:HumanOversightMotif ;
+        pair:hasNodeBinding ?approvalB , ?actionB , ?resultB .
+
+    ?approvalB a pair:NodeBinding ; pair:bindsPatternNode pat:HumanOversight_ApprovalStepNode ; pair:matchedElement ?approvalStep .
+    ?actionB   a pair:NodeBinding ; pair:bindsPatternNode pat:HumanOversight_ActionStepNode ;   pair:matchedElement ?actionStep .
+    ?resultB   a pair:NodeBinding ; pair:bindsPatternNode pat:HumanOversight_ActionResultNode ; pair:matchedElement ?actionResult .
+}
+WHERE {
+    ?approvalStep a/rdfs:subClassOf* beam:Process ;
+                  pair:playsRole/pair:subRoleOf* pair:HumanApprovalStep ;
+                  beam:inform ?actionStep .
+
+    # Same action side as the Tool-Using Agent motif: a tool call or a direct
+    # state change, so oversight of either shape is recognised.
+    ?actionStep a/rdfs:subClassOf* beam:Process ;
+                pair:playsRole ?actionRole ;
+                beam:produce ?actionResult .
+    { ?actionRole pair:subRoleOf* pair:ToolInvocationStep }
+    UNION
+    { ?actionRole pair:subRoleOf* pair:StateChangingStep }
+
+    ?actionResult a beam:Data .
+
+    FILTER(?approvalStep != ?actionStep)
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/human-oversight/",
+        ENCODE_FOR_URI(STR(?approvalStep)), "/",
+        ENCODE_FOR_URI(STR(?actionStep))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/approval-step")) AS ?approvalB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/action-step"))   AS ?actionB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/action-result")) AS ?resultB)
+}

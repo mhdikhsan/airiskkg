@@ -1,0 +1,40 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Agent Delegation motif match"@en ;
+        pair:matchesMotif pat:AgentDelegationMotif ;
+        pair:hasNodeBinding ?delegatingB , ?messageB , ?receivingB .
+
+    ?delegatingB a pair:NodeBinding ; pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ; pair:matchedElement ?delegatingStep .
+    ?messageB    a pair:NodeBinding ; pair:bindsPatternNode pat:AgentDelegation_MessageNode ;        pair:matchedElement ?message .
+    ?receivingB  a pair:NodeBinding ; pair:bindsPatternNode pat:AgentDelegation_ReceivingStepNode ;  pair:matchedElement ?receivingStep .
+}
+WHERE {
+    ?delegatingStep a/rdfs:subClassOf* beam:Process ;
+                    pair:playsRole/pair:subRoleOf* pair:PlanningStep ;
+                    beam:produce ?message .
+
+    ?message a beam:Data ;
+             pair:playsRole/pair:subRoleOf* pair:AgentMessage .
+
+    ?receivingStep a/rdfs:subClassOf* beam:Process ;
+                   pair:playsRole/pair:subRoleOf* pair:AgentHandoffStep ;
+                   beam:use ?message .
+
+    FILTER(?delegatingStep != ?receivingStep)
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/agent-delegation/",
+        ENCODE_FOR_URI(STR(?delegatingStep)), "/",
+        ENCODE_FOR_URI(STR(?receivingStep))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/delegating-step")) AS ?delegatingB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/message"))         AS ?messageB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/receiving-step"))  AS ?receivingB)
+}

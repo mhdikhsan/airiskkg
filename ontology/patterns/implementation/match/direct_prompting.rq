@@ -21,7 +21,7 @@ CONSTRUCT {
         pair:bindsPatternNode pat:DP_AnswerNode ;         pair:matchedElement ?answer .
 }
 WHERE {
-    ?step a beam:Infer ;
+    ?step a/rdfs:subClassOf* beam:Process ;
           pair:playsRole/pair:subRoleOf* pair:GenerationStep ;
           beam:use ?query ;
           beam:use ?llm ;

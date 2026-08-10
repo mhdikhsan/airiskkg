@@ -3,11 +3,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-# Auto-derived faithful projection of pat:MultiStagePredictionMotif (declared PatternNode/
-# PatternEdge structure). Matches structure only (candidate framing): each
-# declared node is bound by expectedClass + expectedRole, each declared edge
-# is required. No risk semantics here - those come from a risk pattern.
-
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
@@ -32,7 +27,7 @@ CONSTRUCT {
 WHERE {
     ?fastModel a beam:StatisticalModel ;
            pair:playsRole/pair:subRoleOf* pair:Model .
-    ?fastPredictionStep a beam:Infer ;
+    ?fastPredictionStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:FastPredictionStep .
     ?improvedResult a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:PredictionResult .
@@ -42,7 +37,7 @@ WHERE {
            pair:playsRole/pair:subRoleOf* pair:PredictionRequest .
     ?slowModel a beam:StatisticalModel ;
            pair:playsRole/pair:subRoleOf* pair:Model .
-    ?slowPredictionStep a beam:Infer ;
+    ?slowPredictionStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:SlowPredictionStep .
 
     ?fastPredictionStep beam:use ?request .

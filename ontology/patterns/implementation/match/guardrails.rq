@@ -3,11 +3,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-# Auto-derived faithful projection of pat:GuardrailsMotif (declared PatternNode/
-# PatternEdge structure). Matches structure only (candidate framing): each
-# declared node is bound by expectedClass + expectedRole, each declared edge
-# is required. No risk semantics here - those come from a risk pattern.
-
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
@@ -32,15 +27,15 @@ CONSTRUCT {
     ?userPromptBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Guardrails_UserPromptNode ; pair:matchedElement ?userPrompt .
 }
 WHERE {
-    ?generationStep a beam:Infer ;
+    ?generationStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:GenerationStep .
     ?inputDecision a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:GuardrailDecision .
-    ?inputGuardrailStep a beam:Process ;
+    ?inputGuardrailStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:InputGuardrailStep .
     ?llm a beam:StatisticalModel ;
            pair:playsRole/pair:subRoleOf* pair:FoundationLLM .
-    ?outputGuardrailStep a beam:Process ;
+    ?outputGuardrailStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:OutputGuardrailStep .
     ?rawResponse a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:LLMResponse .
