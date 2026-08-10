@@ -6,10 +6,6 @@
 @prefix owl:    <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
 
-#################################################################
-# Ontology declaration
-#################################################################
-
 <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> a owl:Ontology ;
     # Third-party provenance: derived from IBM AI Atlas Nexus (Apache License 2.0).
     # Apache 2.0 is permissive, so this file may be released under the repository
@@ -27,10 +23,6 @@
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_mitigation_data.yaml> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/mit_ai_risk_repository_data_controls.yaml> .
 
-#################################################################
-# Control taxonomy
-#################################################################
-
 mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy
     a nexus:RiskControlTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "MIT Draft AI Risk Mitigation Taxonomy" ;
@@ -40,10 +32,6 @@ mitctrl:MIT_Draft_AI_Risk_Mitigation_Taxonomy
     and accountability controls.
     """ ;
     owl:versionInfo "1" .
-
-#################################################################
-# Top-level control groups
-#################################################################
 
 mitctrl:governance-oversight-controls
     a nexus:RiskControlGroup ;
@@ -95,7 +83,6 @@ mitctrl:transparency-accountability-controls
 
 # Governance and oversight control groups
 
-
 mitctrl:risk-management
     a nexus:RiskControlGroup ;
     skos:prefLabel "Risk Management" ;
@@ -139,7 +126,6 @@ mitctrl:societal-impact-assessment
     nexus:lifecyclePhase "design-time" .
 
 # Technical and security control groups
-
 
 mitctrl:model-infrastructure-security
     a nexus:RiskControlGroup ;
@@ -185,7 +171,6 @@ mitctrl:content-safety-controls
     nexus:lifecyclePhase "operation" .
 
 # Operational process control groups
-
 
 mitctrl:testing-auditing
     a nexus:RiskControlGroup ;
@@ -272,7 +257,6 @@ mitctrl:incident-response-recovery
 
 # Transparency and accountability control groups
 
-
 mitctrl:system-documentation
     a nexus:RiskControlGroup ;
     skos:prefLabel "System Documentation" ;
@@ -327,8 +311,6 @@ mitctrl:user-rights-recourse
     nexus:controlType "transparency-accountability" ;
     nexus:lifecyclePhase "deployment" ;
     nexus:lifecyclePhase "post-deployment" .
-
-
 
 mitctrl:risk-register
     a nexus:RiskControl ;

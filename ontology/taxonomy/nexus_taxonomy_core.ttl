@@ -7,10 +7,6 @@
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 
-#################################################################
-# Ontology declaration
-#################################################################
-
 <http://w3id.org/airiskkg/taxonomy/nexus#> a owl:Ontology ;
     # Third-party provenance: derived from IBM AI Atlas Nexus (Apache License 2.0).
     # Apache 2.0 is permissive, so this file may be released under the repository
@@ -29,10 +25,6 @@
     """ ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/tree/main/src/ai_atlas_nexus/data/knowledge_graph> .
 
-#################################################################
-# Taxonomy classes
-#################################################################
-
 nexus:Taxonomy a owl:Class ;
     rdfs:subClassOf skos:ConceptScheme ;
     rdfs:label "Taxonomy" ;
@@ -47,10 +39,6 @@ nexus:RiskControlTaxonomy a owl:Class ;
     rdfs:subClassOf nexus:Taxonomy ;
     rdfs:label "Risk Control Taxonomy" ;
     rdfs:comment "A taxonomy that organizes AI risk controls, mitigations, actions, or control groups." .
-
-#################################################################
-# Risk taxonomy classes
-#################################################################
 
 nexus:RiskGroup a owl:Class ;
     rdfs:subClassOf skos:Concept ;
@@ -80,10 +68,6 @@ nexus:RiskCondition a owl:Class ;
     category is grounded by mechanisms and observable or queryable conditions.
     """ .
 
-#################################################################
-# Risk control taxonomy classes
-#################################################################
-
 nexus:RiskControlGroup a owl:Class ;
     rdfs:subClassOf skos:Concept, beamr:RiskControl ;
     rdfs:label "Risk Control Group" ;
@@ -99,10 +83,6 @@ nexus:RiskControl a owl:Class ;
     A taxonomy-level control or mitigation entry. This may be linked to concrete
     BEAM risk controls or used as a possible/required control for a graph risk pattern.
     """ .
-
-#################################################################
-# Object properties
-#################################################################
 
 nexus:isDefinedByTaxonomy a owl:ObjectProperty ;
     rdfs:label "is defined by taxonomy" ;
@@ -166,7 +146,6 @@ nexus:hasRelatedControl a owl:ObjectProperty ;
     rdfs:comment "Links a risk taxonomy entry to a related control or mitigation concept." .
 
 # Datatype properties
-
 
 nexus:tag a owl:DatatypeProperty ;
     rdfs:label "tag" ;

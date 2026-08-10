@@ -38,19 +38,10 @@
     dct:source <https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf> ,
                <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/ibm2nistgenai.tsv> .
 
-
 nist:NIST_AI_600_1_GenAI_Profile a nexus:RiskTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "NIST AI RMF Generative AI Profile" ;
     dct:description "Risk categories the NIST AI Risk Management Framework identifies as unique to, or amplified by, generative AI." ;
     owl:versionInfo "AI 600-1 (2024)" .
-
-
-#################################################################
-# Risk categories (subset reachable from the modelled Atlas concepts)
-#
-# nexus:tag is the upstream Nexus entry id, matching how the OWASP and MIT
-# entries align, so rows in ibm2nistgenai.tsv resolve to these URIs.
-#################################################################
 
 nist:confabulation a nexus:Risk ;
     skos:prefLabel "Confabulation" ;
