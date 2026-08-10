@@ -48,26 +48,6 @@ SUBCATEGORY_ALIASES = {
 }
 
 
-# Adjudicated refinements: actions that are a specific instance of one of the 16
-# curated mitctrl:* controls, which sit between a sub-category and the concrete
-# actions. Nine curated controls cite the MIT database in prose; lexical
-# candidate generation over the 52 actions proposed matches for six of them, and
-# three survived review:
-#
-#   accepted - name matches the cited mitigation and the family agrees
-#   rejected - risk-register/A0132 (overlap on "risk" alone; a register is not an
-#              assessment), pre-deployment-risk-assessment/A0793 (different
-#              family), privacy-control-for-user-data/A0993 (quantifying a risk
-#              is not controlling it)
-#   no candidate at all - human-oversight-protocol, incident-response-plan,
-#              threat-modelling, whose prose cites the MIT database for
-#              mitigations the cross-walk never touches, so those citations
-#              remain unverifiable from anything in this repository
-#
-# Recorded here rather than hand-edited into the TTL so the adjudication travels
-# with the generator and cannot drift from the file it produces. This is a
-# hierarchy refinement, NOT a mapping: both sides sit in the same concept scheme,
-# so skos:closeMatch would be wrong and the same-scheme test would reject it.
 ADJUDICATED_REFINEMENTS = {
     "A0468": "data-curation-process",  # "Training Data Curation", the cited name
     "A0522": "red-teaming",            # "AI Red-Teaming Resilience"

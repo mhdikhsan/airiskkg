@@ -12,8 +12,7 @@ in isolation but references URIs the other layers never declare or emit:
   +  taxonomies           (ontology/taxonomy/*.ttl)
 
 A hallucinated URI anywhere becomes a test failure here instead of a
-silently dead (or unfalsifiable) rule. See
-docs/claude/engine_consistency_cleanup_plan.md.
+silently dead (or unfalsifiable) rule.
 """
 
 from __future__ import annotations
@@ -182,6 +181,34 @@ def test_motif_riskpattern_links_are_symmetric(libraries) -> None:
     assert not offenders, "Asymmetric motif<->risk-pattern links:\n" + "\n".join(sorted(offenders))
 
 
+def test_implementation_links_are_symmetric(libraries) -> None:
+    """pair:implementedBy and pair:implementsMotif / pair:implementsRiskPattern
+    must both be present, for the same reason the hasMotif mirror must be: no
+    OWL reasoning runs, so an inverse is never materialized and a one-sided
+    assertion is invisible to any consumer reading the other side.
+
+    This is not hypothetical. A comment-stripping pass on 2026-08-06 dropped
+    pair:implementedBy from 17 of 28 motifs. Every test still passed - the
+    library-consistency checks all read the OQP->motif direction, which
+    survived - while ontology/visualization/motif_visual_graph.rq, which reads
+    motif->OQP, silently lost 17 motifs from its output. Nothing failed; the
+    view just quietly got smaller."""
+    offenders = []
+    for subject, implementation in libraries.subject_objects(PAIR.implementedBy):
+        back = (implementation, PAIR.implementsMotif, subject) in libraries or (
+            implementation,
+            PAIR.implementsRiskPattern,
+            subject,
+        ) in libraries
+        if not back:
+            offenders.append(f"{subject} -> implementedBy {implementation} has no reverse link")
+    for predicate in (PAIR.implementsMotif, PAIR.implementsRiskPattern):
+        for implementation, subject in libraries.subject_objects(predicate):
+            if (subject, PAIR.implementedBy, implementation) not in libraries:
+                offenders.append(f"{subject} missing implementedBy {implementation}")
+    assert not offenders, "Asymmetric implementation links:\n" + "\n".join(sorted(offenders))
+
+
 def test_example_roles_and_categories_are_declared(libraries) -> None:
     offenders = []
     for path in sorted(EXAMPLES.glob("*.ttl")):
@@ -212,21 +239,9 @@ def test_risk_patterns_have_condition_mechanism_and_taxonomy_anchor(libraries) -
     assert not offenders, "\n".join(sorted(offenders))
 
 
-# --- Anchor-alignment checks (2026-07-17 taxonomy audit) -------------------
-#
-# Every risk pattern anchors to one OWASP entry via pair:derivedFrom. Its
-# mechanism, applicability conditions, direct mitctrl suggestions, and
-# taxonomy links must all be reachable from that anchor through the curated
-# taxonomy/mapping layer - otherwise the pattern free-rides on links that
-# nothing in the aligned knowledge supports (the LLM-fabrication failure
-# mode this audit removed).
-
 NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 SKOS_NS = Namespace("http://www.w3.org/2004/02/skos/core#")
 
-# Documented exception: the sensitive-retrieval pattern (LLM02 anchor)
-# deliberately reuses the LLM08-defined retrieval conditions because its OQP
-# gates on vector-store retrieval; see the comment in risk_pattern_library.ttl.
 CONDITION_EXCEPTIONS = {
     (PAT.SensitiveDataRetrievalExposureRiskPattern,
      PAT.VectorEmbeddingWeakness_RetrievalCondition),
@@ -340,14 +355,6 @@ def test_realized_by_motif_targets_are_declared_motifs(libraries) -> None:
     assert not offenders, "\n".join(sorted(offenders))
 
 
-# --- Library completeness (2026-07-21) --------------------------------------
-#
-# Every motif in the motif library must have a matching OQP, and every risk
-# pattern must have a risk OQP - otherwise a declared pattern is inert
-# knowledge the engine can never surface. The canonical-instance test also
-# guards the always-empty-query failure mode: a registered query that matches
-# nothing because its role/class constraints drifted from the motif's ODP.
-
 def test_every_motif_has_a_matching_oqp(libraries) -> None:
     matched = set(libraries.objects(None, PAIR.implementsMotif))
     offenders = sorted(
@@ -364,11 +371,6 @@ def test_every_risk_pattern_has_an_oqp(libraries) -> None:
     assert not offenders, "Risk patterns with no OQP:\n" + "\n".join(offenders)
 
 
-# Documented ODP/OQP divergence: EmbeddingsMotif's OQP additionally requires an
-# indexing step (uses chunk + vector, produces the index) that the motif does
-# NOT declare as a pattern node - stated in its rdfs:comment in motif.ttl. A
-# canonical instance built from the declared nodes therefore lacks that step and
-# does not match; this is a deliberate, recorded exception (not drift).
 CANONICAL_INSTANCE_EXCEPTIONS = {PAT.EmbeddingsMotif}
 
 
@@ -425,36 +427,99 @@ def test_each_motif_query_matches_its_canonical_instance(libraries) -> None:
     )
 
 
-# Un-skip this (delete the xfail marker) once the provenance worklist has been
-# filled in by hand and pair:maturity written back into the libraries. Generate
-# the worklist with:
-#     python python/scripts/pattern_provenance_worklist.py
-# It reports, per motif / risk pattern, what source and maturity are already
-# present. Sources must never be invented - leave an entry unsourced rather
-# than attributing it to a document it did not come from.
-@pytest.mark.xfail(
-    strict=False,
-    reason="pair:maturity is not curated yet; see /tmp/pattern_provenance_worklist.csv",
-)
-def test_every_motif_and_risk_pattern_has_source_and_maturity(libraries) -> None:
-    """Every curated library entry states where it came from (dct:source) and how
-    far its curation has got (pair:maturity)."""
-    missing_source: list[str] = []
-    missing_maturity: list[str] = []
+def test_every_motif_and_risk_pattern_states_its_source(libraries) -> None:
+    """Every curated library entry states where it came from (Rule R6).
 
-    for rdf_type in (PAIR.GraphMotif, PAIR.RiskPattern):
-        for subject in sorted(libraries.subjects(RDF.type, rdf_type), key=str):
-            if libraries.value(subject, DCTERMS.source) is None:
-                missing_source.append(str(subject))
-            if libraries.value(subject, PAIR.maturity) is None:
-                missing_maturity.append(str(subject))
-
+    This was previously xfail-ed because it also demanded pair:maturity, a
+    property nothing ever wrote. Maturity was removed 2026-08-06; the dct:source
+    half was already satisfied, so the test now runs for real."""
+    missing_source = [
+        str(subject)
+        for rdf_type in (PAIR.GraphMotif, PAIR.RiskPattern)
+        for subject in sorted(libraries.subjects(RDF.type, rdf_type), key=str)
+        if libraries.value(subject, DCTERMS.source) is None
+        and libraries.value(subject, PAIR.derivedFrom) is None
+    ]
     assert not missing_source, (
-        f"{len(missing_source)} entries without dct:source: " + ", ".join(missing_source)
+        f"{len(missing_source)} entries without dct:source or pair:derivedFrom: "
+        + ", ".join(missing_source)
     )
-    assert not missing_maturity, (
-        f"{len(missing_maturity)} entries without pair:maturity: " + ", ".join(missing_maturity)
+
+
+def test_every_pattern_role_states_its_provenance(libraries) -> None:
+    """Rule R6 reaches the role vocabulary too.
+
+    59 roles once carried neither a dct:source nor a SKOS mapping. Provenance is
+    now stated for all of them - derived from the motif or risk pattern whose
+    query traverses the role, or declared as a refinement introduced for
+    annotation precision. A new role added without either regresses this."""
+    mapping_predicates = (
+        SKOS_NS.exactMatch,
+        SKOS_NS.closeMatch,
+        SKOS_NS.broadMatch,
+        SKOS_NS.narrowMatch,
+        SKOS_NS.relatedMatch,
     )
+    unsourced = [
+        str(role).rsplit("#", 1)[-1]
+        for role in sorted(libraries.subjects(RDF.type, PAIR.PatternRole), key=str)
+        if libraries.value(role, DCTERMS.source) is None
+        and not any(libraries.value(role, predicate) for predicate in mapping_predicates)
+    ]
+    assert not unsourced, (
+        f"{len(unsourced)} pattern roles state no provenance: " + ", ".join(unsourced)
+    )
+
+
+def test_queries_check_process_typing_one_way(query_texts) -> None:
+    """Process typing must not decide whether a motif matches.
+
+    Three conventions used to coexist: `a beam:Process`, `a beam:Infer` /
+    `beam:Transform` / `beam:Train` / `beam:Generate`, and no class check at all.
+    Nothing infers rdfs:subClassOf at match time, so a graph typed one way was
+    invisible to queries written the other - a leaf-typed agent matched zero
+    agentic motifs while an identical generic-typed one matched them all.
+
+    Every step-node class check is now `a/rdfs:subClassOf* beam:Process`, the
+    same shape as the library's role idiom. A bare `a beam:Infer` reintroduces
+    the split, so it fails here."""
+    offenders = []
+    for fname, text in query_texts.items():
+        for leaf in ("Infer", "Transform", "Train", "Generate", "Process"):
+            for match in re.finditer(rf"\ba\s+beam:{leaf}\b", text):
+                offenders.append(f"{fname}: bare 'a beam:{leaf}'")
+    assert not offenders, (
+        "Step class checks must use 'a/rdfs:subClassOf* beam:Process' so any "
+        "process-family typing binds:\n" + "\n".join(sorted(set(offenders)))
+    )
+
+
+def test_process_typing_does_not_change_what_matches() -> None:
+    """The unification, end to end: the same architecture typed with leaf classes
+    and with beam:Process must produce identical matches."""
+    from airiskkg.assessment_runner import run_assessment_from_text
+
+    graph = """
+    @prefix ex: <http://example.org/typing#> .
+    @prefix beam: <http://w3id.org/beam/core#> .
+    @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+    ex:sys a beam:System ; beam:contain ex:plan, ex:act, ex:res .
+    ex:plan a beam:%s ; pair:playsRole pair:PlanningStep ; beam:inform ex:act .
+    ex:act a beam:%s ; pair:playsRole pair:ToolInvocationStep ; beam:produce ex:res .
+    ex:res a beam:Data ; pair:playsRole pair:RetrievedContext .
+    """
+
+    def motifs(typing: tuple[str, str]) -> set[str]:
+        result = run_assessment_from_text(graph % typing)
+        return {
+            str(m).rsplit("#", 1)[-1]
+            for m in result.combined_graph.objects(None, PAIR.matchesMotif)
+        }
+
+    leaf = motifs(("Infer", "Transform"))
+    generic = motifs(("Process", "Process"))
+    assert leaf, "a leaf-typed agent must match the agentic motifs"
+    assert leaf == generic, f"typing changed what matched: leaf={leaf} generic={generic}"
 
 
 def test_specific_roles_are_subroles_of_the_role_their_motif_queries(libraries) -> None:

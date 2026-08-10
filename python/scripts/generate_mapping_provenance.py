@@ -44,9 +44,6 @@ NEXUS_TSV = (
     "https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/"
 )
 
-# Each block of the mapping file, keyed by the line where it starts. Values are
-# taken from the block's own comment header - this table restates them in a form
-# the generator can attach to individual mappings.
 BLOCKS = [
     {
         "start": "## Atlas <-> OWASP",
@@ -94,9 +91,6 @@ BLOCKS = [
         "set": "pair-ai-curation",
         "label": "PAIR-AI project curation",
         "justification": "ManualMappingCuration",
-        # Deliberately unset: no measured confidence exists for these. Asserting a
-        # number we never computed would be exactly the false precision this layer
-        # is meant to expose.
         "confidence": None,
         "tsv": None,
         "date": None,
@@ -106,11 +100,6 @@ BLOCKS = [
         "start": "# Section 3",
         "set": "pair-ai-risk-to-control-embedding",
         "label": "OWASP risk to MIT control family, embedding-derived",
-        # The block header states these plainly: "the underlying risk->action
-        # edges are embedding-matched (cosine top-3, unvalidated)". Recording
-        # them as manual curation would be false; SEMAPV has a term for exactly
-        # this and using it is the whole point of the layer. LLM07/08/10 are
-        # absent from that CSV and are split out below.
         "justification": "SemanticSimilarityThresholdMatching",
         "confidence": None,
         "tsv": None,
@@ -118,11 +107,6 @@ BLOCKS = [
         "curator": "pair-ai",
         "validated": False,
         "except_subjects": ("llm07-", "llm08-", "llm10-"),
-        # The source CSV is now in the tree, so these stopped being assertions
-        # and became reproducible: test_section_3_control_links_reproduce_from_
-        # the_csv recomputes the rollup and diffs it both ways. Still the weakest
-        # block in the knowledge base - reproducible is not the same as
-        # validated, and nobody has adjudicated the underlying cosine matches.
         "source_note": (
             "PAIR-AI risk-to-mitigation CSV, "
             "data/mappings/Final_Mapped_Taxonomy_Table_Output.csv "
@@ -146,11 +130,6 @@ BLOCKS = [
         "start": "## IBM Atlas risk -> control",
         "set": "unrecorded-risk-to-control",
         "label": "Atlas and MIT risk to control family, provenance unrecorded",
-        # Neither subsection states how these were produced, and inferring a
-        # method from the surrounding text would manufacture the confidence this
-        # layer exists to prevent. semapv:UnspecifiedMatching is the honest
-        # value: it makes the gap queryable instead of letting the links pass as
-        # curated. These are the largest single group in the file.
         "justification": "UnspecifiedMatching",
         "confidence": None,
         "tsv": None,
@@ -172,9 +151,6 @@ CURATED_FALLBACK = {
     "validated": True,
 }
 
-# Mappings written directly into a vocabulary file rather than the mapping file.
-# Hand-authored alignments in hand-authored files, so the justification is
-# accurate rather than assumed.
 ELSEWHERE = {
     "set": "pair-ai-vocabulary-alignment",
     "label": "Alignments declared inline in a vocabulary file",
@@ -186,11 +162,6 @@ ELSEWHERE = {
     "validated": True,
 }
 
-# pat:Control_* -> mitctrl:* in risk_pattern_library.ttl. The file already states
-# the provenance exactly: "an INDICATIVE bridge ... not audited SSSOM mappings -
-# they are PAIR-AI curation and carry no upstream provenance". Recording it as
-# such is the whole job; validated=False carries the "indicative, not audited"
-# part, which no justification term expresses on its own.
 CONTROL_BRIDGE = {
     "set": "pair-ai-control-bridge",
     "label": "PAIR-AI control catalogue to MIT mitigation family (indicative)",
@@ -202,10 +173,6 @@ CONTROL_BRIDGE = {
     "validated": False,
 }
 
-# Role and class alignments to external vocabularies (Tool4Boxology, DPV, AIRO,
-# dpv-ai) declared in the core pattern vocabulary. Hand-authored alignments in a
-# hand-authored file. Note the direction convention: BEAM specializes the
-# published Boxology, so these are closeMatch rather than exactMatch.
 VOCABULARY_ALIGNMENT = {
     "set": "beam-external-vocabulary-alignment",
     "label": "BEAM/PAIR-AI vocabulary alignment to Boxology, DPV and AIRO",
@@ -227,12 +194,6 @@ ROW_CONFIDENCE = {
 
 HAS_RELATED_CONTROL = URIRef("http://w3id.org/airiskkg/taxonomy/nexus#hasRelatedControl")
 
-# Risk -> control grounding is covered alongside the SKOS mappings because it is
-# assertion of the same kind - a claim that two concepts correspond - and it is
-# the larger and weaker-provenanced half. Leaving it out would let the layer
-# report only on the part that was already in good shape. The reverse
-# nexus:mitigatesRiskTaxonomyEntry links are inverses of these and are skipped
-# rather than counted twice.
 MAPPING_PREDICATES = (
     SKOS.exactMatch,
     SKOS.closeMatch,
@@ -277,7 +238,17 @@ def _curie(term, namespaces: dict[str, str]) -> str:
     return f"<{term}>"
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    """Regenerate the provenance layer.
+
+    Usage: generate_mapping_provenance.py [OUTPUT_PATH]
+
+    OUTPUT_PATH lets a caller write somewhere other than the tracked file, which
+    is how the sync test compares without mutating the working tree.
+    """
+    argv = sys.argv[1:] if argv is None else argv
+    target = Path(argv[0]) if argv else TARGET
+
     text = SOURCE.read_text(encoding="utf-8")
     header = _prefixes(text)
 
@@ -300,12 +271,6 @@ def main() -> int:
                 )
                 records.append((subject, predicate, obj, effective, confidence))
 
-    # Mappings are also written directly into vocabulary files rather than into
-    # the mapping file, and NOT only under ontology/taxonomy/. Sweeping every
-    # directory that can hold one is the difference between a coverage guarantee
-    # and a coverage guarantee over the directory we happened to look in - the
-    # first version of this script swept taxonomy/ alone and silently missed 80
-    # mappings in patterns/ and core/, while its coverage test still passed.
     already = {(s, p, o) for s, p, o, _, _ in records}
     for directory, block in (
         (TAXONOMY_DIR, ELSEWHERE),
@@ -394,9 +359,9 @@ def main() -> int:
         "@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .",
     )
 
-    TARGET.parent.mkdir(parents=True, exist_ok=True)
-    TARGET.write_text("\n".join(lines), encoding="utf-8")
-    print(f"{TARGET.relative_to(TARGET.parents[3])}: {len(records)} mappings across {len(seen_sets)} sets")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("\n".join(lines), encoding="utf-8")
+    print(f"{target.name}: {len(records)} mappings across {len(seen_sets)} sets")
     return 0
 
 

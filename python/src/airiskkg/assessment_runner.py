@@ -143,12 +143,6 @@ def load_assessment_graph(architecture_paths: Path | str | Iterable[Path | str] 
     return graph
 
 
-# rdflib compiles SPARQL with pyparsing, whose parser state is global and NOT
-# thread-safe: two threads compiling different queries at once corrupt it, and it
-# surfaces as "Param.postParse2() missing 1 required positional argument". Guard
-# compilation here rather than in any one caller - this is the single point where
-# every query (webapp request, test, CLI) is parsed. Executing an already
-# prepared query is read-only and needs no lock.
 _PARSE_LOCK = threading.Lock()
 
 

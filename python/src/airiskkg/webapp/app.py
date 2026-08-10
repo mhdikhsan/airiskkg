@@ -54,24 +54,12 @@ EDGE_KINDS = [
     {"id": "inform", "label": "informs (process → process)", "target": "process"},
 ]
 
-# rdflib's SPARQL parser (pyparsing) and pyshacl are not thread-safe; serialize
-# every query/validation run so concurrent requests (e.g. a debounced motif-box
-# refresh landing while an assessment runs) can't corrupt the shared parser state.
 _SPARQL_LOCK = threading.Lock()
 
 # BEAM process classes (everything else is a resource) - used to attach a
 # templated node to its system via hasProcess vs hasResource.
 _PROCESS_CLASS_NAMES = {"Transform", "Infer", "Train", "Generate", "Process"}
 
-# Motif templates are auto-generated from each pair:GraphMotif's DECLARED pattern
-# structure (expectedClass + expectedRole per node, and the pattern edges), so the
-# catalogue always covers every motif and each instantiated template matches its
-# motif exactly (the match_*.rq queries are faithful projections of this same
-# structure). Node: (key, BEAM class, label, roles). Edge: (src, use|produce|inform, dst).
-# A few motif match queries need structure beyond the declared pattern nodes
-# (documented divergences). EmbeddingsMotif's query requires a separate indexing
-# process using the chunk and the vector to produce the index, which the
-# declaration shortcuts as a resource-to-resource edge; supplement it here.
 _MOTIF_SUPPLEMENTS = {
     "EmbeddingsMotif": {
         "nodes": [{"key": "Embedding_IndexingStep", "cls": "Transform", "label": "Indexing", "roles": []}],
@@ -142,6 +130,22 @@ def _motif_template_list() -> list[dict[str, str]]:
     )
 
 
+def _elements_of_class(graph: Graph, class_name: str) -> set[URIRef]:
+    """Elements satisfying a pattern node's expected class, matching what the
+    queries accept.
+
+    Step nodes ask for `a/rdfs:subClassOf* beam:Process`, so any process-family
+    typing qualifies - beam:Infer, beam:Transform, beam:Train, beam:Generate, or
+    beam:Process itself. The gap report must use the same rule or it will claim a
+    node is unsatisfied while the assessment matches it."""
+    if class_name in _PROCESS_CLASS_NAMES:
+        elements: set[URIRef] = set()
+        for name in _PROCESS_CLASS_NAMES:
+            elements |= set(graph.subjects(RDF.type, BEAM[name]))
+        return elements
+    return set(graph.subjects(RDF.type, BEAM[class_name]))
+
+
 def _role_closure(graph: Graph, role_name: str) -> set[URIRef]:
     """A role plus every role beneath it: match queries traverse
     pair:playsRole/pair:subRoleOf*, so a sub-role satisfies its parent."""
@@ -182,8 +186,7 @@ def _motif_gaps(ttl: str) -> list[dict]:
         near_misses: dict[str, list[URIRef]] = {}
 
         for node in template["nodes"]:
-            expected_class = BEAM[node["cls"]]
-            typed = set(graph.subjects(RDF.type, expected_class))
+            typed = _elements_of_class(graph, node["cls"])
             if node["roles"]:
                 wanted = _role_closure(graph, node["roles"][0])
                 matched = {e for e in typed if roles_of.get(e, set()) & wanted}
@@ -377,6 +380,7 @@ def _vocabulary() -> dict:
 def _shacl_shapes_and_ontology() -> tuple[Graph, Graph]:
     shapes = Graph()
     shapes.parse(SHACL_DIR / "architecture_input_contract.ttl", format="turtle")
+    shapes.parse(SHACL_DIR / "annotation_guidance.ttl", format="turtle")
     ontology = Graph()
     for name in ("beam_core.ttl", "beam_core_risk.ttl", "pair_ai_pattern.ttl"):
         ontology.parse(CORE_DIR / name, format="turtle")
@@ -395,10 +399,14 @@ def _shacl_report(ttl: str) -> dict:
     data = Graph()
     data.parse(data=ttl, format="turtle")
     shapes, ontology = _shacl_shapes_and_ontology()
+    # The ontology is merged into the data graph, not passed as ont_graph. The
+    # guidance shapes walk pair:subRoleOf* inside sh:sparql constraints, and
+    # those constraints only see the data graph: with ont_graph the role
+    # hierarchy is invisible to them and every Info-level hint silently
+    # disappears (onyx_danswer drops from 8 hints to 0).
     _conforms, results_graph, _text = shacl_validate(
-        data_graph=data,
+        data_graph=data + ontology,
         shacl_graph=shapes,
-        ont_graph=ontology,
         advanced=True,
         inference="none",
     )
@@ -418,10 +426,12 @@ def _shacl_report(ttl: str) -> dict:
 
     violations = collect(sh("Violation"))
     warnings = collect(sh("Warning"))
+    hints = collect(sh("Info"))
     return {
         "conforms": not violations,
         "violations": violations,
         "warnings": warnings,
+        "hints": hints,
     }
 
 
@@ -655,9 +665,6 @@ def create_app() -> Flask:
                 key_to_uri[node["key"]] = uri
                 is_process = node["cls"] in _PROCESS_CLASS_NAMES
                 data.add((uri, RDF.type, BEAM[node["cls"]]))
-                # Multi-type with the BEAM parent class, as real exports do, so
-                # queries that ask for `a beam:Process` (no RDFS inference here)
-                # still bind Transform/Infer/... steps.
                 if is_process and node["cls"] != "Process":
                     data.add((uri, RDF.type, BEAM.Process))
                 data.add((uri, RDFS.label, Literal(node["label"])))

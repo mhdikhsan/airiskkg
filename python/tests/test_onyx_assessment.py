@@ -75,11 +75,6 @@ def test_onyx_all_findings_are_candidates() -> None:
         assert str(status) == "candidate"
 
 
-# --- ported from the retired test_uc6_assessment.py -------------------------
-# Its uc6 / verba fixtures were removed, but two of its checks guard invariants
-# no other test covers and that the web UI cannot practically show: the
-# cross-taxonomy alignment layer, and the required shape of every finding.
-
 ATLAS = Namespace("http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#")
 MIT = Namespace("http://w3id.org/airiskkg/taxonomy/mit-ai-risk#")
 MITCTRL = Namespace("http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#")

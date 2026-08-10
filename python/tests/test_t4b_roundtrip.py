@@ -58,8 +58,5 @@ def test_motif_queries_run_on_normalized_graph() -> None:
     for triple in normalize(SAMPLE_EXPORT):
         working_graph.add(triple)
     result = _run_assessment_on_graph(working_graph, write_outputs=False, output_dir=".")
-    # The t4b sample carries no PAIR roles, so no matches are required -
-    # the assertion is that the full pipeline runs without error and
-    # produces well-formed (possibly empty) outputs.
     assert result.motif_match_count >= 0
     assert result.risk_finding_count >= 0
