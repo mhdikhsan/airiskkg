@@ -15,11 +15,6 @@
     both are loaded by explicit filename, never by globbing shacl/.
     """@en .
 
-# Every candidate risk finding carries exactly one status, drawn from a closed
-# value set. The pipeline emits only "candidate"; the remaining values exist so
-# a later human review or runtime evidence can record a verdict without
-# inventing new vocabulary. See pair:findingStatus for what each value means.
-
 aoc:RiskFindingStatusShape
     a sh:NodeShape ;
     sh:targetClass pair:RiskFinding ;
