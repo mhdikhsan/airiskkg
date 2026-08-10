@@ -17,7 +17,7 @@ from __future__ import annotations
 from rdflib import RDF, RDFS, URIRef
 
 from airiskkg.assessment_runner import PAIR, run_assessment, run_assessment_from_text
-from airiskkg.paths import EXAMPLE_DIR
+from airiskkg.paths import EXAMPLE_DIR, EXAMPLE_UC_DIR
 
 EX = "http://example.org/"
 
@@ -109,20 +109,65 @@ def test_trust_taint_and_content_categories_propagate_independently() -> None:
     assert "SensitiveInformation" not in clean
 
 
+def test_taint_roots_carry_the_marker_themselves() -> None:
+    """An element whose role IS a taint root must carry pair:UntrustedContent.
+
+    Until 2026-08-06 the rule only tagged what a root flowed into, so the
+    elements whose untrusted provenance is least in doubt - the public input,
+    the retrieved context - were invisible to any condition reading a step's
+    own input. Roots are now marked directly."""
+    result = run_assessment_from_text(_without_redaction())
+    assert "UntrustedContent" in _categories(result, "Query"), "public input is a taint root"
+    assert "UntrustedContent" in _categories(result, "Ctx"), "retrieved context is a taint root"
+
+
+def test_generation_output_is_marked_as_generated_content() -> None:
+    """What a generation step produces is generated content, by definition of
+    the role. Derived rather than annotated (Rule R8): no human judgement is
+    involved, unlike SensitiveInformation."""
+    result = run_assessment_from_text(_without_redaction())
+    assert "GeneratedContent" in _categories(result, "Answer")
+
+
+def test_redaction_stops_protected_content_but_not_origin_markers() -> None:
+    """Redaction removes protected content; it does not rewrite provenance.
+
+    Redacting a model's output does not make that output un-generated, so
+    pair:GeneratedContent passes the barrier while pair:SensitiveInformation
+    does not. A barrier that erased both would destroy provenance a downstream
+    condition may need."""
+    graph = _GRAPH % (_REDACTION, "ex:Clean") + """
+ex:RedactAnswer a beam:Process ; pair:playsRole pair:RedactionStep ;
+    beam:use ex:Answer ; beam:produce ex:PublicAnswer .
+ex:PublicAnswer a beam:Data ; pair:playsRole pair:UserFacingOutput .
+"""
+    categories = _categories(run_assessment_from_text(graph), "PublicAnswer")
+    assert "GeneratedContent" in categories, "redaction does not un-generate content"
+    assert "SensitiveInformation" not in categories, "redaction stops protected content"
+
+
 def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
-    """The new rule must not silently re-tag the curated examples."""
-    expected = {"onyx_danswer.ttl": (13, 23), "agentic_assistant.ttl": (3, 5)}
+    """The propagation rules must not silently re-tag the curated examples.
+
+    agentic_assistant went 5 -> 7 findings on 2026-08-06 and the change is
+    intended, not drift. Two causes, both deliberate: taint roots now carry
+    pair:UntrustedContent themselves rather than only what they flow into (see
+    propagation/untrusted_content.rq), which makes the agent's own public input
+    visible to conditions reading a step's direct input; and the ASI01 goal
+    hijack pattern was added, which is exactly such a condition. onyx is
+    unchanged, which is the check that the root-marking did not loosen the
+    generation-side patterns."""
+    expected = {
+        EXAMPLE_DIR / "onyx_danswer.ttl": (13, 23),
+        EXAMPLE_DIR / "rag_with_guardrails.ttl": (3, 3),
+        EXAMPLE_UC_DIR / "agentic_assistant.ttl": (3, 7),
+        EXAMPLE_UC_DIR / "multi_agent_assistant.ttl": (3, 3),
+    }
     for name, (motifs, findings) in expected.items():
-        result = run_assessment(EXAMPLE_DIR / name, write_outputs=False)
+        result = run_assessment(name, write_outputs=False)
         assert result.motif_match_count == motifs, name
         assert result.risk_finding_count == findings, name
 
-
-# --- OECD/DPV facet bridge -------------------------------------------------
-# The characterization facets are declared per Rule R2 to be read by
-# applicability conditions, but no condition consumed one, so 95 OECD/DPV-
-# grounded concepts had no effect on any outcome. dataf:Personal is the first
-# to become load-bearing, via a bridge to the content-category vocabulary.
 
 _FACET_GRAPH = _GRAPH.replace(
     "pair:containsDataCategory pair:SensitiveInformation .",

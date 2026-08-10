@@ -25,10 +25,12 @@ import re
 import sys
 from pathlib import Path
 
-from rdflib import DCTERMS, RDF, SKOS, Graph, URIRef
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from airiskkg.assessment_runner import PAIR, load_base_graph
-from airiskkg.paths import PATTERNS_DIR
+from rdflib import DCTERMS, RDF, SKOS, Graph, URIRef  # noqa: E402
+
+from airiskkg.assessment_runner import PAIR, load_base_graph  # noqa: E402
+from airiskkg.paths import PATTERNS_DIR  # noqa: E402
 
 DEFAULT_OUTPUT = Path("/tmp/role_provenance.csv")
 MAPPING_PREDICATES = (SKOS.closeMatch, SKOS.relatedMatch, SKOS.broadMatch, SKOS.narrowMatch)
@@ -124,10 +126,6 @@ def build_rows(graph: Graph) -> list[dict[str, str]]:
                 "external_mappings": " ; ".join(mappings),
                 "used_by_motifs": " ; ".join(sorted(motif_of_node.get(role, ()))),
                 "used_by_queries": " ; ".join(naming),
-                # Queries traverse pair:playsRole/pair:subRoleOf*, so a role that
-                # is never named directly still binds through a named ancestor.
-                # Without this column the usage columns read as "does nothing",
-                # which would be wrong for e.g. RerankerModel (binds via Model).
                 "binds_via_ancestor": " ; ".join(
                     _short(a) for a in ancestors(role) if named_anywhere(a)
                 ) if not named_anywhere(role) else "",

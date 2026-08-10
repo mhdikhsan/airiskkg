@@ -8,6 +8,11 @@ The contract (shacl/architecture_input_contract.ttl) operationalizes Rule R4:
 it makes explicit what the submitted graph must represent for candidate risk
 findings to be meaningful. Violations fail (exit code 1); Warnings are
 reported but do not fail.
+
+shacl/annotation_guidance.ttl is validated alongside it. Those shapes ask a
+different question - not "is this graph acceptable?" but "will this annotation
+actually match anything?" - and every one of them is Info or Warning, so they
+never affect the exit code.
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ from airiskkg.paths import CORE_DIR, EXAMPLE_DIR, REPO_ROOT  # noqa: E402
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
 SHAPES_PATH = REPO_ROOT / "shacl" / "architecture_input_contract.ttl"
+GUIDANCE_PATH = REPO_ROOT / "shacl" / "annotation_guidance.ttl"
 
 
 def _load_ontology_graph() -> Graph:
@@ -37,10 +43,11 @@ def _load_ontology_graph() -> Graph:
 def validate_graph(graph_path: Path, shapes: Graph, ont: Graph) -> tuple[bool, int, int, str]:
     data = Graph()
     data.parse(graph_path, format="turtle")
+    # Merged, not passed as ont_graph: the guidance shapes walk pair:subRoleOf*
+    # inside sh:sparql constraints, which only see the data graph.
     conforms, results_graph, results_text = validate(
-        data_graph=data,
+        data_graph=data + ont,
         shacl_graph=shapes,
-        ont_graph=ont,
         advanced=True,
         inference="none",
     )
@@ -63,6 +70,7 @@ def main(argv: list[str]) -> int:
 
     shapes = Graph()
     shapes.parse(SHAPES_PATH, format="turtle")
+    shapes.parse(GUIDANCE_PATH, format="turtle")
     ont = _load_ontology_graph()
 
     exit_code = 0

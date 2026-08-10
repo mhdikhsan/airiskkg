@@ -38,9 +38,6 @@ from airiskkg.paths import REPO_ROOT
 # record a checked non-correspondence, which is a result worth keeping.
 NO_MATCH = URIRef(str(SKOS) + "noMatch")
 
-# Risk -> control grounding is a correspondence claim too, and the larger half of
-# the mapping layer. It is excluded from the coherence checks above (it is not a
-# SKOS hierarchy) but included in the provenance coverage check below.
 HAS_RELATED_CONTROL = URIRef("http://w3id.org/airiskkg/taxonomy/nexus#hasRelatedControl")
 
 MAPPING_PREDICATES = (
@@ -217,10 +214,6 @@ def test_every_mapped_concept_is_declared_somewhere(taxonomy: Graph) -> None:
     )
 
 
-# --- Provenance layer ------------------------------------------------------
-# Every mapping carries how it was produced, as data rather than as a section
-# comment. See python/scripts/generate_mapping_provenance.py.
-
 SSSOM = Namespace("https://w3id.org/sssom/")
 SEMAPV = Namespace("https://w3id.org/semapv/vocab/")
 PROVENANCE = REPO_ROOT / "ontology" / "taxonomy" / "provenance" / "mapping_provenance.ttl"
@@ -337,30 +330,35 @@ def test_no_confidence_is_asserted_without_an_upstream_source(provenance: Graph)
     )
 
 
-def test_the_provenance_layer_is_in_sync_with_its_generator() -> None:
+def test_the_provenance_layer_is_in_sync_with_its_generator(tmp_path) -> None:
     """The file is generated, so it can drift from the mappings it describes the
-    moment someone edits one and not the other. Regenerating and comparing makes
-    that impossible to miss."""
+    moment someone edits one and not the other.
+
+    The comparison must not write to the tracked file. An earlier version ran the
+    generator in place, which made the check self-healing: a genuinely stale file
+    failed once, got rewritten as a side effect of the failing test, and passed on
+    every rerun - so the drift disappeared from the report before anyone could
+    look at it, and the working tree gained an unexplained modification. Here the
+    generator is redirected at a temp path and only the bytes are compared."""
     import subprocess
     import sys
 
-    before = PROVENANCE.read_text(encoding="utf-8")
-    subprocess.run(
-        [sys.executable, str(REPO_ROOT / "python" / "scripts" / "generate_mapping_provenance.py")],
-        check=True,
+    generated = tmp_path / "mapping_provenance.ttl"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "python" / "scripts" / "generate_mapping_provenance.py"),
+            str(generated),
+        ],
         capture_output=True,
+        text=True,
     )
-    assert PROVENANCE.read_text(encoding="utf-8") == before, (
+    assert result.returncode == 0, f"generator failed:\n{result.stderr}"
+    assert generated.read_text(encoding="utf-8") == PROVENANCE.read_text(encoding="utf-8"), (
         "mapping_provenance.ttl is stale - regenerate it with\n"
         "  python python/scripts/generate_mapping_provenance.py"
     )
 
-
-# --- Facet grounding -------------------------------------------------------
-# The characterization facets carry the project's strongest provenance claim, so
-# the claim itself needs guarding. The layer is NOT wholesale "OECD/DPV-derived":
-# it is a documented mixture, and the tests below keep it honestly labelled
-# rather than letting curation drift into looking like external grounding.
 
 FACET_DIR = REPO_ROOT / "ontology" / "facets"
 
@@ -435,12 +433,6 @@ def test_citing_dpv_requires_actually_linking_to_dpv(facets: Graph) -> None:
         sorted(_name(c) for c in offenders)
     )
 
-
-# --- Section 3 reproducibility --------------------------------------------
-# The 32 embedding-derived risk -> control links were the weakest block in the
-# knowledge base and, until the source CSV was recovered, could not be checked by
-# anyone. Now they can, so this pins it: the committed links must remain exactly
-# what the CSV rolls up to, or one of the two has drifted.
 
 RISK_TO_MITIGATION_CSV = (
     REPO_ROOT / "data" / "mappings" / "Final_Mapped_Taxonomy_Table_Output.csv"
@@ -523,13 +515,6 @@ def test_the_csv_defect_is_still_the_known_one(taxonomy: Graph) -> None:
             "present; the provenance note needs updating"
         )
 
-
-# --- MIT action layer ------------------------------------------------------
-# The mitigation taxonomy is modelled at two levels: families (verbatim MIT) and
-# the concrete actions beneath them, generated from the cross-walk. Before the
-# action layer existed the rollup collapsed 52 actions into their families before
-# the data reached the graph, which is why "93 rows" and "36 concepts" looked
-# irreconcilable.
 
 MIT_ACTION_FILE = REPO_ROOT / "ontology" / "taxonomy" / "mit_mitigation_action.ttl"
 NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")

@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from airiskkg.assessment_runner import run_assessment, run_assessment_from_text
 from airiskkg.assessment_view import summarize_result
-from airiskkg.paths import EXAMPLE_DIR
+from airiskkg.paths import EXAMPLE_UC_DIR
 
-EXAMPLE = EXAMPLE_DIR / "agentic_assistant.ttl"
+EXAMPLE = EXAMPLE_UC_DIR / "agentic_assistant.ttl"
 
 POLICY_GATE = """
 local:policyGate a beam:Process ; rdfs:label "Policy Gate" ;
