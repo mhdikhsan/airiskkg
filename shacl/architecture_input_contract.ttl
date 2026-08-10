@@ -10,22 +10,7 @@
 
 <http://w3id.org/airiskkg/shacl/architecture-input-contract>
     a owl:Ontology ;
-    dct:title "PAIR-AI Architecture Graph Input Contract"@en ;
-    dct:description """
-    SHACL shapes defining the minimal valid architecture graph accepted by the
-    PAIR-AI assessment pipeline. This operationalizes Rule R4: under the Open
-    World Assumption a missing triple means unknown, not false; FILTER NOT
-    EXISTS in applicability conditions is a closed-world claim about the
-    submitted graph only. The input contract makes explicit what the submitted
-    graph must (Violation) and should (Warning) represent for candidate risk
-    findings to be meaningful.
-    Validate with the beam_core class hierarchy available (e.g. pyshacl
-    ont_graph), since leaf-type and subclass checks traverse rdfs:subClassOf.
-    """@en .
-
-# 1. Every architecture graph must contain at least one beam:System.
-#    (Graph-level constraint, expressed as a SPARQL constraint on a fixed
-#    anchor node so it fires exactly once per validation run.)
+    dct:title "PAIR-AI Architecture Graph Input Contract"@en .
 
 aic:GraphHasSystemShape
     a sh:NodeShape ;
@@ -56,8 +41,6 @@ aic:ProcessFlowShape
         [ sh:path beam:produce ; sh:minCount 1 ]
     ) .
 
-# 3. Every beam:Resource should be typed to a leaf class (a proper subtype of
-#    Data, Symbol, or Model) - Warning, not Violation.
 
 aic:ResourceLeafTypeShape
     a sh:NodeShape ;
@@ -81,10 +64,6 @@ aic:ResourceLeafTypeShape
             }
         """ ;
     ] .
-
-# 4. Every element intended for motif matching (processes and resources)
-#    should carry at least one pair:playsRole - Warning.
-
 aic:ProcessRoleShape
     a sh:NodeShape ;
     sh:targetClass beam:Process ;
