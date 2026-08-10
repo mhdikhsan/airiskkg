@@ -186,10 +186,10 @@ roles**. Annotation is the step that makes such a graph assessable.
 We'll use the bundled **`beam_export_graph_rag.ttl`** example — a real t4b-beam
 export of a GraphRAG event-information chatbot.
 
-> **A complete, reproduce-it-yourself version of this walkthrough** — with the
-> exact component→role table and the verified findings — lives in its own doc:
-> **[annotation_walkthrough_graphrag.md](annotation_walkthrough_graphrag.md)**.
-> The summary below is the short version.
+> **The finished result of this walkthrough** — the same graph with every role
+> and facet filled in — is bundled as
+> **`ontology/example/beam_export_graph_rag_annotated.ttl`**, so you can compare
+> your annotation against it.
 
 ### Step 1 — Load it and look
 
