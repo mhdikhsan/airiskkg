@@ -10,32 +10,32 @@
     a owl:Ontology ;
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Characterization Facet Attachment Properties"@en ;
-    dct:description "Object properties attaching characterization facet values (SKOS concepts) to BEAM architecture elements. Facet assignments are annotated base facts supplied by the modeler (Rule R8); they characterize elements and are read by applicability conditions, never traversed by motifs (Rule R2). Ranges are deliberately kept at skos:Concept: the intended scheme is stated in the comment, not enforced with OWL axioms (lightweight by design)."@en ;
+    dct:description "Object properties attaching characterization facet values (SKOS concepts) to BEAM architecture elements."@en ;
     vann:preferredNamespacePrefix "facet" ;
     vann:preferredNamespaceUri "http://w3id.org/airiskkg/facets#" ;
     owl:imports <http://w3id.org/beam/core#> .
 
 facet:hasAutonomyLevel a owl:ObjectProperty ;
     rdfs:label "has autonomy level"@en ;
-    rdfs:comment "Intended values: concepts of the aut:AutonomyLevel scheme (ontology/facets/autonomy.ttl)."@en ;
+    rdfs:comment "Intended values: concepts of the aut:AutonomyLevel scheme."@en ;
     rdfs:domain beam:System ;
     rdfs:range skos:Concept .
 
 facet:hasDataProvenance a owl:ObjectProperty ;
     rdfs:label "has data provenance"@en ;
-    rdfs:comment "Intended values: concepts of the dataf:DataProvenance scheme (ontology/facets/data_facets.ttl). Where a concept has a DPV counterpart (dpv:ObservedData, dpv:ProvidedData, dpv:DerivedData, dpv:SyntheticData in the DPV personal_data module) the scheme links it via skos:closeMatch (Rule R3)."@en ;
+    rdfs:comment "Intended values: concepts of the dataf:DataProvenance scheme."@en ;
     rdfs:domain beam:Data ;
     rdfs:range skos:Concept .
 
 facet:hasDataDynamism a owl:ObjectProperty ;
     rdfs:label "has data dynamism"@en ;
-    rdfs:comment "Intended values: concepts of the dataf:DataDynamism scheme (ontology/facets/data_facets.ttl)."@en ;
+    rdfs:comment "Intended values: concepts of the dataf:DataDynamism scheme."@en ;
     rdfs:domain beam:Data ;
     rdfs:range skos:Concept .
 
 facet:hasPersonalDataCategory a owl:ObjectProperty ;
     rdfs:label "has personal data category"@en ;
-    rdfs:comment "Kind of (non-)personal data an element contains, expressed directly as DPV concepts (Rule R3: reference DPV URIs, never copy definitions locally). Intended values are the dpv:Data hierarchy of the DPV personal_data module, verified against DPV v2.3 (2026-07-15): dpv:PersonalData and narrower (dpv:SensitivePersonalData, dpv:SpecialCategoryPersonalData, dpv:IdentifyingPersonalData, dpv:CollectedPersonalData, dpv:DerivedPersonalData, dpv:InferredPersonalData, dpv:GeneratedPersonalData), and dpv:NonPersonalData (incl. dpv:AnonymisedData). For fine-grained categories (health, financial, etc.) use the DPV-PD extension concepts (https://w3id.org/dpv/pd#)."@en ;
+    rdfs:comment "Kind of (non-)personal data an element contains, expressed directly as DPV concepts."@en ;
     rdfs:domain beam:Data ;
     rdfs:range skos:Concept ;
     dct:source <https://w3id.org/dpv/2.3/modules/personal_data> .
@@ -43,43 +43,38 @@ facet:hasPersonalDataCategory a owl:ObjectProperty ;
 facet:hasIdentifiabilityLevel a owl:ObjectProperty ;
     rdfs:subPropertyOf facet:hasPersonalDataCategory ;
     rdfs:label "has identifiability level"@en ;
-    rdfs:comment "Degree of identifiability of the data with respect to natural persons; the identifiability axis of facet:hasPersonalDataCategory. Intended values are DPV concepts reused directly (Rule R3: reference DPV URIs, never copy definitions locally), all part of the DPV personal_data module. Verified against DPV v2.3 (https://w3id.org/dpv#, 2026-07-13): dpv:IdentifyingPersonalData (explicitly identifies a person by itself), dpv:PseudonymisedData, dpv:AnonymisedData, dpv:ContextuallyAnonymisedData. Note: DPV defines no concept named 'IdentifiedData'; dpv:IdentifyingPersonalData is the closest verified equivalent."@en ;
+    rdfs:comment "Degree of identifiability of the data with respect to natural persons."@en ;
     rdfs:domain beam:Data ;
     rdfs:range skos:Concept ;
     dct:source <https://w3id.org/dpv/2.3/modules/personal_data> .
 
 facet:hasDataRights a owl:ObjectProperty ;
     rdfs:label "has data rights"@en ;
-    rdfs:comment "Intended values: concepts of the dataf:DataRights scheme (ontology/facets/data_facets.ttl)."@en ;
+    rdfs:comment "Intended values: concepts of the dataf:DataRights scheme."@en ;
     rdfs:domain beam:Data ;
     rdfs:range skos:Concept .
 
 facet:hasImplementationType a owl:ObjectProperty ;
     rdfs:label "has implementation type"@en ;
-    rdfs:comment "Intended values: concepts of the impl:ImplementationType scheme (ontology/facets/implementation_type.ttl). Facet counterpart to the deliberate absence of beam:Model implementation subclasses."@en ;
+    rdfs:comment "Intended values: concepts of the impl:ImplementationType scheme."@en ;
     rdfs:domain beam:Model ;
     rdfs:range skos:Concept .
 
 facet:hasTaskCategory a owl:ObjectProperty ;
     rdfs:label "has task category"@en ;
-    rdfs:comment "Intended values: concepts of the task:AITask scheme (ontology/facets/task.ttl). Rule R7: task is a separate axis from capability and application type."@en ;
+    rdfs:comment "Intended values: concepts of the task:AITask scheme."@en ;
     rdfs:domain beam:Task ;
     rdfs:range skos:Concept .
 
 facet:hasDomain a owl:ObjectProperty ;
     rdfs:label "has domain"@en ;
-    rdfs:comment "Intended values: concepts of the ctx:Domain scheme (ontology/facets/context.ttl) or referenced external sector vocabularies."@en ;
+    rdfs:comment "Intended values: DPV sector concepts, assigned directly (the ctx:Domain scheme is an anchor, not a value list)."@en ;
     rdfs:domain beam:System ;
-    rdfs:range skos:Concept .
+    rdfs:range skos:Concept ;
+    dct:source <https://w3id.org/dpv/sector> .
 
 facet:hasPurpose a owl:ObjectProperty ;
     rdfs:label "has purpose"@en ;
-    rdfs:comment "Intended values: DPV purpose concepts (dpv:Purpose and narrower; Rule R3) or concepts of the ctx:Purpose scheme (ontology/facets/context.ttl)."@en ;
-    rdfs:domain beam:System ;
-    rdfs:range skos:Concept .
-
-facet:hasDeploymentSetting a owl:ObjectProperty ;
-    rdfs:label "has deployment setting"@en ;
-    rdfs:comment "Intended values: concepts of the ctx:DeploymentSetting scheme (ontology/facets/context.ttl)."@en ;
+    rdfs:comment "Intended values: DPV purpose concepts or concepts of the ctx:Purpose scheme."@en ;
     rdfs:domain beam:System ;
     rdfs:range skos:Concept .

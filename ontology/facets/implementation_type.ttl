@@ -10,27 +10,33 @@
     a owl:Ontology ;
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Characterization Facet: Implementation Type"@en ;
-    dct:description "SKOS concept scheme (extension point) classifying HOW a model is implemented (e.g. architecture family, hosting form). This is the facet counterpart to the deliberate absence of beam:Model subclasses beyond Semantic/Statistical (Rule R1 + Task 4 decision: implementation types are classification values, not query-traversed structure). Assigned via facet:hasImplementationType; read by applicability conditions only (Rule R2)."@en ;
-    dct:source "PAIR-AI glossary v1.2, Section A.3 (Implementation Type listed as characterization facet)" ;
+    dct:description "SKOS concept scheme classifying HOW a model is implemented: architecture family or learning technique. Assigned to beam:Model via facet:hasImplementationType. Values are DPV AI extension technique concepts, used directly."@en ;
+    dct:source <https://w3id.org/dpv/ai> ;
     vann:preferredNamespacePrefix "impl" ;
     vann:preferredNamespaceUri "http://w3id.org/airiskkg/facets/implementation-type#" .
 
 impl:ImplementationType
-    a skos:ConceptScheme ;
+    a skos:ConceptScheme , skos:Collection ;
     skos:prefLabel "Implementation Type"@en ;
-    skos:definition "Classification of a model's implementation: architecture family, technique, or hosting form. Extension point: concrete values are added per use case or when the paper's implementation-type taxonomy is settled. When populated, prefer reusing DPV AI extension ai:Technique concepts directly (https://w3id.org/dpv/ai#, Rule R3) over redefining architecture families locally."@en ;
+    skos:definition "Classification of a model's implementation: architecture family or learning technique. Values are DPV AI extension concepts assigned directly; this scheme is the anchor and the value list, not a source of local terms."@en ;
     skos:relatedMatch ai:Technique ;
-    dct:source "PAIR-AI glossary v1.2, Section A.3" .
-    # TODO: populate with the agreed implementation-type taxonomy. Candidate
-    # DPV AI extension anchors verified against DPV v2.3:
-    # ai:MachineLearning, ai:DeepLearning, ai:NeuralNetwork,
-    # ai:ConvolutionalNeuralNetwork, ai:RecurrentNeuralNetwork,
-    # ai:SupervisedLearning / UnsupervisedLearning / SelfSupervisedLearning /
-    # ReinforcementLearning / TransferLearning, ai:RuleBasedTechnique,
-    # ai:SymbolicReasoning, ai:BayesianNetwork, ai:SupportVectorMachine,
-    # ai:DecisionTree, ai:LLM (subClassOf ai:Model, added DPV 2025-12-17).
-    # DPV has no explicit "Transformer" architecture concept yet - do not
-    # invent one; leave as a gap until DPV adds it.
-    # Candidate secondary anchors: Tool4Boxology model subclasses
-    # (t4b:NeuralNetwork, t4b:Transformer, ...) via skos:exactMatch - do not
-    # copy them as BEAM classes (Rule R5 / Task 4 decision).
+    dct:source <https://w3id.org/dpv/ai> ;
+    # Architecture families
+    skos:member ai:NeuralNetwork ,
+                ai:ConvolutionalNeuralNetwork ,
+                ai:RecurrentNeuralNetwork ,
+                ai:BayesianNetwork ,
+                ai:SupportVectorMachine ,
+                ai:DecisionTree ,
+                ai:LLM ;
+    # Learning techniques
+    skos:member ai:MachineLearning ,
+                ai:DeepLearning ,
+                ai:SupervisedLearning ,
+                ai:UnsupervisedLearning ,
+                ai:SelfSupervisedLearning ,
+                ai:ReinforcementLearning ,
+                ai:TransferLearning ;
+    # Symbolic / non-learned
+    skos:member ai:RuleBasedTechnique ,
+                ai:SymbolicReasoning .

@@ -16,12 +16,9 @@
 <http://w3id.org/airiskkg/patterns/risk-pattern-library#>
     a owl:Ontology ;
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
-    dct:title "OWASP-Aligned LLM Risk Pattern Library"@en ;
+    dct:title "Risk Pattern Library"@en ;
     dct:description """
-    Curated PAIR-AI risk pattern library for LLM-based applications. OWASP
-    LLM Top 10 entries are used as the primary risk anchors, while MIT AI Risk
-    Repository, IBM AI Risk Atlas, and MIT AI Risk Control entries provide
-    broader taxonomy and control grounding through the Nexus model.
+    Curated PAIR-AI risk pattern library.
     """@en ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ,
                <https://owasp.org/www-project-top-10-for-large-language-model-applications/assets/PDF/OWASP-Top-10-for-LLMs-v2025.pdf> ,
@@ -38,23 +35,6 @@
                 <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> ,
                 <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> ,
                 <http://w3id.org/airiskkg/taxonomy/mappings#> .
-
-
-# PAIR-AI actionable control catalogue (single suggested-control vocabulary)
-#
-# These 12 pat:Control_* individuals are the ONLY vocabulary that appears in
-# pair:suggestedControl. They are
-# PAIR-AI's own architecture-facing controls: each is classified
-# technical/non-technical and, where applicable, linked to a realizing motif in
-# control_mitigation_layer.ttl.
-#
-# The skos:relatedMatch links below to mitctrl:* are an INDICATIVE bridge
-# (which MIT mitigation family each control corresponds to), not audited SSSOM
-# mappings - they are PAIR-AI curation and carry no upstream provenance. The
-# evidence-grounded risk -> MIT-control-family links live separately in
-# taxonomy_mapping.ttl (owasp:* nexus:hasRelatedControl mitctrl:*, CSV-grounded)
-# and are surfaced by a finding as an evidence layer via its taxonomy entries -
-# they are no longer mirrored into pair:suggestedControl.
 
 pat:Control_InputValidationAndPromptIsolation
     a beamr:RiskControl ;
@@ -150,7 +130,6 @@ pat:Control_Guardrails
                       mitctrl:input-output-filtering ,
                       mitctrl:model-safety-engineering .
 
-
 # OWASP applicability conditions
 
 pat:PromptInjection_UntrustedPromptContextCondition
@@ -215,25 +194,14 @@ pat:UnboundedConsumption_UnboundedUseCondition
     rdfs:label "Prompt, retrieval, tool, or model use is not bounded"@en ;
     pair:operationalizesRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
 
-
-# OWASP risk patterns
+# risk patterns
 
 pat:DirectPromptingMotif
     pair:hasRiskPattern
         pat:PromptInjectionRiskPattern ,
         pat:DirectPromptingWithoutGroundingRiskPattern ,
         pat:ImproperOutputHandlingRiskPattern ,
-        pat:UnboundedConsumptionRiskPattern ;
-    skos:scopeNote """
-    Direct Prompting is linked to these risk patterns because the
-    motif represents user input flowing directly into a generative model and
-    producing user-facing output without an explicit retrieval or grounding
-    step. This makes prompt-context manipulation, unsupported generation,
-    unvalidated generated output, and unbounded model use relevant conditions
-    to test. The mapping does not assert that every Direct Prompting instance
-    is risky; each risk pattern still requires its applicability condition and
-    executable OQP to be satisfied during assessment.
-    """@en .
+        pat:UnboundedConsumptionRiskPattern .
 
 pat:RetrievalAugmentedGenerationMotif
     pair:hasRiskPattern
@@ -242,9 +210,6 @@ pat:RetrievalAugmentedGenerationMotif
         pat:MisinformationFromWeakGroundingRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
 
-# SensitiveDataRetrievalExposure anchors here because its OQP
-# (risk_sensitive_retrieval.rq) consumes VectorBasedInformationRetrievalMotif
-# matches, not RAG matches.
 pat:VectorBasedInformationRetrievalMotif
     pair:hasRiskPattern pat:SensitiveDataRetrievalExposureRiskPattern .
 
@@ -317,12 +282,7 @@ pat:SensitiveDataRetrievalExposureRiskPattern
     rdfs:label "Sensitive data retrieval exposure risk pattern"@en ;
     pair:hasMotif pat:VectorBasedInformationRetrievalMotif ;
     pair:hasMechanism owasp:mechanism-sensitive-data-propagation ;
-    # The retrieval condition below operationalizes LLM08-defined risk
-    # conditions although this pattern anchors to LLM02: the OQP genuinely
-    # gates on vector-store retrieval reaching generation, which is the
-    # retrieval-specific route to sensitive-information disclosure.
-    # Conditions are reusable constituents; this cross-anchor reuse is
-    # deliberate and allowed as a documented exception in the consistency net.
+   
     pair:hasApplicabilityCondition
         pat:SensitiveInfo_SensitiveContextCondition ,
         pat:SensitiveInfo_OutputExposureCondition ,
@@ -371,7 +331,6 @@ pat:DataAndModelPoisoningRiskPattern
         pat:TrainingToServingMotif ;
     pair:hasMechanism owasp:mechanism-data-or-model-poisoning ;
     pair:hasApplicabilityCondition pat:Poisoning_UntrustedTrainingOrIndexingDataCondition ;
-    # atlas:data-poisoning is the upstream-verified llm04 anchor (ibm2owasp.tsv).
     pair:mayIndicateRisk
         owasp:llm04-data-and-model-poisoning ,
         atlas:data-poisoning ,
@@ -412,10 +371,6 @@ pat:ExcessiveAgencyRiskPattern
     pair:derivedFrom owasp:llm06-excessive-agency ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Excessive agency risk pattern"@en ;
-    # Deliberately no pair:hasMotif - this pattern is anchored on roles
-    # (GenerationStep informing a ToolInvocationStep/StateChangingStep) across
-    # any motif match; no motif-side hasRiskPattern lists it either. Revisit
-    # when an agentic tool-use motif is added to the motif library.
     pair:hasMechanism owasp:mechanism-excessive-agency-action-execution ;
     pair:hasApplicabilityCondition pat:ExcessiveAgency_ToolOrStateChangeCondition ;
     pair:mayIndicateRisk
@@ -503,11 +458,6 @@ pat:MisinformationFromWeakGroundingRiskPattern
     pair:derivedFrom owasp:llm09-misinformation ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Misinformation from weak grounding risk pattern"@en ;
-    # Distinct from DirectPromptingWithoutGroundingRiskPattern (same OWASP LLM09
-    # anchor): this targets RAG pipelines whose grounding is WEAK (retrieved
-    # context reaches generation without verification) rather than absent.
-    # Implemented by risk_misinformation_weak_grounding.rq: fires on a RAG match
-    # whose response has no represented verification/evaluation/scoring step.
     pair:hasMotif pat:RetrievalAugmentedGenerationMotif ;
     pair:hasMechanism owasp:mechanism-unsupported-generation ;
     pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;
@@ -548,7 +498,6 @@ pat:UnboundedConsumptionRiskPattern
         pat:Control_RateLimitBudgetAndLoopControl ,
         pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:UnboundedConsumptionOQP .
-
 
 # Executable OQP metadata
 
@@ -683,57 +632,24 @@ pat:UntrustedContentPropagationOQP
 pat:ContentCategoryPropagationOQP
     a pair:PatternImplementation ;
     rdfs:label "Content category propagation OQP"@en ;
-    dct:description """
-    Propagates content categories (the pair:Information branch: SensitiveInformation,
-    ConfidentialInformation, ExternalUserContent, GeneratedContent) along
-    beam:use -> beam:produce, so the modeler annotates only where protected content
-    ENTERS the system rather than tagging every element it passes through.
-
-    Rule R8 split: the entry points are annotated base facts (only a human knows a
-    store holds personal data); reachability along the flow is derived here. Rule R4:
-    what is derived is that the content CAN reach an element, which is a structural
-    disposition - findings built on it remain candidates.
-
-    Barrier: pair:RedactionStep. Content passing through a redaction step does not
-    carry the category onward, which makes inserting redaction a modelable mitigation.
-    Generic over the branch rather than one query per category, so a new content
-    category propagates without new machinery.
-    """@en ;
-    dct:source "OWASP Top 10 for LLM Applications 2025, LLM02 Sensitive Information Disclosure (sanitization and redaction before processing)" ;
+    dct:source "OWASP Top 10 for LLM Applications 2025, LLM02 Sensitive Information Disclosure" ;
     pair:implementationPath "ontology/patterns/implementation/propagation/content_categories.rq" ;
+    pair:producesOutputType pair:DataCategoryPropagation .
+
+pat:GeneratedContentPropagationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Generated content derivation OQP"@en ;
+    dct:description "Derives pair:containsDataCategory pair:GeneratedContent for every beam:Data element a pair:GenerationStep produces. Definitional rather than interpretive: the role already says the step generates, so the category needs no human judgement (Rule R8, derived fact)."@en ;
+    dct:source "PAIR-AI glossary v1.3, Section A.3 (Data Category is derived along data flow by registered queries) and Rule R8." ;
+    pair:implementationPath "ontology/patterns/implementation/propagation/generated_content.rq" ;
     pair:producesOutputType pair:DataCategoryPropagation .
 
 pat:PersonalDataRightsBridgeOQP
     a pair:PatternImplementation ;
     rdfs:label "Personal data rights to content category bridge OQP"@en ;
-    dct:description """
-    Derives pair:containsDataCategory pair:SensitiveInformation for any element the
-    modeler characterized with the OECD data-rights status dataf:Personal. This is
-    the first facet the assessment actually reads: the characterization facets are
-    declared per Rule R2 to be read by applicability conditions, but until now no
-    condition consumed one, so 95 OECD/DPV-grounded concepts had no effect on any
-    outcome.
-
-    Bridging rather than adding a second alternative inside each risk query keeps
-    conditions reading one vocabulary, changes no existing query's semantics, and -
-    because this runs in the same fixed-point loop - lets the derived category flow
-    downstream and stop at a pair:RedactionStep like an annotated one.
-
-    Direction is deliberate: rights status implies content category, never the
-    reverse. Sensitive information is broader than personal data, so the inverse
-    would assert data-protection status the modeler never stated.
-
-    Rule R8: facet:hasDataRights is annotated; the category is derived.
-    """@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. OECD Digital Economy Papers, No. 323. https://doi.org/10.1787/cb6d9eca-en; corroborated by DPV v2.3 (dataf:Personal relatedMatch dpv:PersonalData; pair:SensitiveInformation relatedMatch dpv:SensitivePersonalData)" ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. OECD Digital Economy Papers, No. 323. https://doi.org/10.1787/cb6d9eca-en; corroborated by DPV v2.3" ;
     pair:implementationPath "ontology/patterns/implementation/propagation/personal_data_rights.rq" ;
     pair:producesOutputType pair:DataCategoryPropagation .
-
-
-# --- Risk-pattern OQP for MisinformationFromWeakGroundingRiskPattern ---
-# The RAG counterpart of the direct-prompting-without-grounding pattern (both
-# OWASP LLM09); its OQP fires on RAG matches whose response has no represented
-# verification step.
 
 pat:MisinformationFromWeakGroundingOQP
     a pair:PatternImplementation ;
@@ -741,15 +657,6 @@ pat:MisinformationFromWeakGroundingOQP
     pair:implementsRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk/misinformation_weak_grounding.rq" ;
     pair:producesOutputType pair:RiskFinding .
-
-
-# --- Motif-matching OQPs ---
-# One matching OQP per motif (faithful structural projections of each motif's
-# declared PatternNode/PatternEdge blueprint). These produce pair:MotifMatch
-# outputs; risk semantics stay in the risk OQPs. GenAI motifs (Guardrails,
-# Hybrid Retriever, Evals, Fine Tuning) are consumed by match-anchored risk
-# patterns; the Mercari MLOps motifs are detected for completeness and workbench
-# reporting even where no risk pattern yet consumes them.
 
 pat:SyncPred_MatchingOQP
     a pair:PatternImplementation ;
@@ -870,12 +777,7 @@ pat:Evals_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/evals.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-
-
-
-#################################################################
 # Agentic risk patterns (OWASP Agentic Top 10)
-#################################################################
 
 pat:ToolMisuse_UnmediatedActionCondition
     a pair:ApplicabilityCondition ;
@@ -946,10 +848,7 @@ pat:MemoryPoisoningRiskPattern
         pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:MemoryPoisoningOQP .
 
-
-#################################################################
 # Agentic pattern implementations
-#################################################################
 
 pat:ToolUsingAgent_MatchingOQP
     a pair:PatternImplementation ;
@@ -977,4 +876,93 @@ pat:MemoryPoisoningOQP
     rdfs:label "Memory and context poisoning risk pattern OQP"@en ;
     pair:implementsRiskPattern pat:MemoryPoisoningRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk/memory_poisoning.rq" ;
+    pair:producesOutputType pair:RiskFinding .
+
+pat:GoalHijack_UntrustedPlanningInputCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "Untrusted content reaches the step that decides the agent's next action"@en ;
+    pair:operationalizesRiskCondition asi:condition-untrusted-content-reaches-planning .
+
+pat:InsecureAgentCommunication_UnvalidatedHandoffCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "An inter-agent message is acted on with no represented validation step"@en ;
+    pair:operationalizesRiskCondition asi:condition-agent-handoff-without-validation .
+
+pat:GoalHijackRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom asi:asi01-agent-goal-hijack ;
+    dct:source <https://genai.owasp.org/> ;
+    rdfs:label "Agent goal hijack risk pattern"@en ;
+    dct:description """
+    Applies to a Tool-Using Agent match whose planning step consumes content of
+    untrusted provenance with nothing screening it on the way. The distinction
+    from prompt injection is where the content lands: reaching the step that
+    decides the next action means the agent then pursues a different objective
+    competently, rather than producing one bad answer. Everything downstream
+    looks correct, because with respect to the hijacked goal it is.
+    """@en ;
+    pair:hasMotif pat:ToolUsingAgentMotif ;
+    pair:hasMechanism asi:mechanism-goal-redirection-through-consumed-content ;
+    pair:hasApplicabilityCondition pat:GoalHijack_UntrustedPlanningInputCondition ;
+    pair:mayIndicateRisk
+        asi:asi01-agent-goal-hijack ,
+        owasp:llm01-prompt-injection ,
+        owasp:llm06-excessive-agency ;
+    pair:suggestedControl
+        pat:Control_InputValidationAndPromptIsolation ,
+        pat:Control_ToolPermissionBoundaries ,
+        pat:Control_LoggingMonitoringAndEvals ;
+    pair:implementedBy pat:GoalHijackOQP .
+
+pat:InsecureAgentCommunicationRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom asi:asi07-insecure-inter-agent-communication ;
+    dct:source <https://genai.owasp.org/> ;
+    rdfs:label "Insecure inter-agent communication risk pattern"@en ;
+    dct:description """
+    Applies to an Agent Delegation match where the message crossing between the
+    two agents passes no represented validation, guardrail, or policy step. The
+    receiving agent applies its own permissions to instructions whose origin the
+    architecture never establishes, so trust intended for the sending agent
+    extends to anything that can write to the channel.
+    """@en ;
+    pair:hasMotif pat:AgentDelegationMotif ;
+    pair:hasMechanism asi:mechanism-unauthenticated-agent-handoff ;
+    pair:hasApplicabilityCondition pat:InsecureAgentCommunication_UnvalidatedHandoffCondition ;
+    pair:mayIndicateRisk
+        asi:asi07-insecure-inter-agent-communication ,
+        owasp:llm02-sensitive-information-disclosure ,
+        owasp:llm06-excessive-agency ;
+    pair:suggestedControl
+        pat:Control_InputValidationAndPromptIsolation ,
+        pat:Control_ToolPermissionBoundaries ,
+        pat:Control_LoggingMonitoringAndEvals ;
+    pair:implementedBy pat:InsecureAgentCommunicationOQP .
+
+pat:AgentDelegation_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Agent Delegation Motif matching OQP"@en ;
+    pair:implementsMotif pat:AgentDelegationMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/agent_delegation.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:HumanOversight_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Human Oversight Motif matching OQP"@en ;
+    pair:implementsMotif pat:HumanOversightMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/human_oversight.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:GoalHijackOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Agent goal hijack risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:GoalHijackRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk/goal_hijack.rq" ;
+    pair:producesOutputType pair:RiskFinding .
+
+pat:InsecureAgentCommunicationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Insecure inter-agent communication risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:InsecureAgentCommunicationRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk/insecure_agent_communication.rq" ;
     pair:producesOutputType pair:RiskFinding .

@@ -10,7 +10,8 @@
     a owl:Ontology ;
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Characterization Facets: Data Provenance, Dynamism, Rights"@en ;
-    dct:description "SKOS concept schemes classifying data resources of an AI system (Rule R1). Assigned to beam:Data via facet:hasDataProvenance / hasDataDynamism / hasDataRights; read by applicability conditions, never matched by motifs (Rule R2). Data identifiability is deliberately NOT defined here: DPV concepts are reused directly (Rule R3, see facet_properties.ttl). The Data Category facet (glossary A.3) is also NOT defined here: it lives in the pattern module (pair:DataCategoryScheme, assigned via pair:containsDataCategory) because its values are propagated along data flow by registered queries (Rule R8, derived facts) - see ontology/core/pair_ai_pattern.ttl."@en ;
+    dct:description "SKOS concept schemes classifying data resources of an AI system. Assigned to beam:Data via facet:hasDataProvenance / hasDataDynamism / hasDataRights."@en ;
+    dct:source <https://w3id.org/dpv> ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems. OECD Digital Economy Papers, No. 323. https://doi.org/10.1787/cb6d9eca-en" ;
     vann:preferredNamespacePrefix "dataf" ;
     vann:preferredNamespaceUri "http://w3id.org/airiskkg/facets/data#" .
@@ -21,17 +22,9 @@ dataf:DataProvenance
     a skos:ConceptScheme ;
     skos:prefLabel "Data Provenance"@en ;
     skos:definition "Origin of the data used or produced by the system: how the data came into existence relative to the system and its stakeholders."@en ;
+    rdfs:seeAlso <https://w3id.org/dpv#Data> ;
+    dct:source <https://w3id.org/dpv> ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Data & Input dimension)." .
-
-dataf:ExpertInput
-    a skos:Concept ;
-    skos:inScheme dataf:DataProvenance ;
-    skos:topConceptOf dataf:DataProvenance ;
-    skos:prefLabel "Expert Input"@en ;
-    skos:definition "Data encoding human expert knowledge (e.g. rules, labels, curated knowledge) provided by domain experts."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
-    # The OECD publishes no resolvable concept URIs (report/PDF only); OECD
-    # anchoring throughout this file is the citation, not a SKOS mapping.
 
 dataf:ProvidedData
     a skos:Concept ;
@@ -39,8 +32,8 @@ dataf:ProvidedData
     skos:topConceptOf dataf:DataProvenance ;
     skos:prefLabel "Provided Data"@en ;
     skos:definition "Data deliberately provided by data subjects or users (e.g. form input, uploads, user prompts)."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
-    skos:closeMatch dpv:ProvidedData .
+    skos:closeMatch dpv:ProvidedData ;
+    dct:source <https://w3id.org/dpv> .
 
 dataf:ObservedData
     a skos:Concept ;
@@ -48,8 +41,8 @@ dataf:ObservedData
     skos:topConceptOf dataf:DataProvenance ;
     skos:prefLabel "Observed Data"@en ;
     skos:definition "Data captured by observing behavior or the environment (e.g. logs, sensor readings, click streams), not deliberately provided."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
-    skos:closeMatch dpv:ObservedData .
+    skos:closeMatch dpv:ObservedData ;
+    dct:source <https://w3id.org/dpv> .
 
 dataf:SyntheticData
     a skos:Concept ;
@@ -57,8 +50,8 @@ dataf:SyntheticData
     skos:topConceptOf dataf:DataProvenance ;
     skos:prefLabel "Synthetic Data"@en ;
     skos:definition "Artificially generated data (e.g. simulation output, generative-model output used as data)."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
-    skos:closeMatch dpv:SyntheticData .
+    skos:closeMatch dpv:SyntheticData ;
+    dct:source <https://w3id.org/dpv> .
 
 dataf:DerivedData
     a skos:Concept ;
@@ -66,10 +59,17 @@ dataf:DerivedData
     skos:topConceptOf dataf:DataProvenance ;
     skos:prefLabel "Derived Data"@en ;
     skos:definition "Data produced from other data by processing, aggregation, or inference (e.g. embeddings, features, profiles)."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
-    skos:closeMatch dpv:DerivedData .
+    skos:closeMatch dpv:DerivedData ;
+    dct:source <https://w3id.org/dpv> .
 
-# Scheme 2: Data Dynamism
+dataf:ExpertInput
+    a skos:Concept ;
+    skos:inScheme dataf:DataProvenance ;
+    skos:topConceptOf dataf:DataProvenance ;
+    skos:prefLabel "Expert Input"@en ;
+    skos:definition "Data encoding human expert knowledge (e.g. rules, labels, curated knowledge) provided by domain experts."@en ;
+    skos:note "No verified counterpart in the alignment target vocabulary; the citation below is the only anchor."@en ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Data & Input dimension)." .
 
 dataf:DataDynamism
     a skos:ConceptScheme ;
@@ -101,13 +101,20 @@ dataf:RealTimeUpdated
     skos:definition "The data resource changes continuously during operation (e.g. live feeds, streaming ingestion, online learning input)."@en ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
 
-# Scheme 3: Data Rights
-
 dataf:DataRights
     a skos:ConceptScheme ;
     skos:prefLabel "Data Rights"@en ;
     skos:definition "Rights and ownership status of a data resource, constraining how it may be used."@en ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Data & Input dimension)." .
+
+dataf:Personal
+    a skos:Concept ;
+    skos:inScheme dataf:DataRights ;
+    skos:topConceptOf dataf:DataRights ;
+    skos:prefLabel "Personal"@en ;
+    skos:definition "Data relating to identified or identifiable natural persons, subject to data-protection law. This concept only flags the rights status; for the kind of personal data use DPV concepts directly via facet:hasPersonalDataCategory, and for the degree of identifiability via facet:hasIdentifiabilityLevel (Rule R3), not this scheme."@en ;
+    skos:relatedMatch dpv:PersonalData ;
+    dct:source <https://w3id.org/dpv> .
 
 dataf:Proprietary
     a skos:Concept ;
@@ -124,12 +131,3 @@ dataf:Public
     skos:prefLabel "Public"@en ;
     skos:definition "Data available for public use (e.g. open data, public web content), subject to its license terms."@en ;
     dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
-
-dataf:Personal
-    a skos:Concept ;
-    skos:inScheme dataf:DataRights ;
-    skos:topConceptOf dataf:DataRights ;
-    skos:prefLabel "Personal"@en ;
-    skos:definition "Data relating to identified or identifiable natural persons, subject to data-protection law. This concept only flags the rights status; for the kind of personal data use DPV concepts directly via facet:hasPersonalDataCategory, and for the degree of identifiability via facet:hasIdentifiabilityLevel (Rule R3), not this scheme."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
-    skos:relatedMatch dpv:PersonalData .
