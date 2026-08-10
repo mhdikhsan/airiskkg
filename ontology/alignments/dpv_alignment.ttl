@@ -11,21 +11,7 @@
     dct:title "DPV to BEAM Entity Alignment"@en ;
     dct:description """
     Alignment anchoring beam:Agent to DPV's entity vocabulary via
-    rdfs:subClassOf. Scope is deliberately narrow:
-    DPV reuse in this project covers (a) data categories, handled entirely
-    in the facet layer (ontology/facets/, hasPersonalDataCategory /
-    hasIdentifiabilityLevel / data_facets closeMatches - see
-    CHANGELOG_data_model.md), and (b) entities such as human and agent
-    actors, handled here. DPV is NOT aligned to BEAM's Data/Model/Process/
-    System classes - Tool4Boxology (ontology/alignments/
-    tool4boxology_alignment.ttl) is the adapter for BEAM's general
-    structural classes; it is a closer fit (same architecture-diagram
-    domain) and is not duplicated here.
-
-    Purely additive and machine-checkable interoperability (FAIR): this
-    axiom is not consumed by motif SPARQL queries (no OWL reasoning runs
-    during motif matching), so it cannot change any existing finding.
-    """@en ;
+    rdfs:subClassOf. """@en ;
     dct:source <https://w3id.org/dpv> ;
     rdfs:seeAlso <https://w3c-cg.github.io/dpv/2.3/dpv/> ;
     vann:preferredNamespacePrefix "dpv" ;
@@ -34,13 +20,4 @@
 # --- Class alignment (verified against DPV v2.3) ---------------------------
 
 beam:Agent rdfs:subClassOf dpv:Entity ;
-    rdfs:comment "BEAM Agent aligned to DPV's Entity class ('a human or non-human thing that constitutes as an entity') - the correct breadth, since beam:Agent instances represent human actors (e.g. a human reviewer) as well as AI/software agents. Deliberately NOT aligned to the narrower dpv:Agent ('acting on behalf of another Entity, authorised to do so' - a delegated-authority relation, not what beam:Agent means) or to the AI extension's ai:AIAgent (would wrongly imply every beam:Agent, including human actors, is an AI agent)."@en .
-
-# --- Checked, not aligned ----------------------------------------------------
-#
-# If BEAM ever splits beam:Agent into human vs. AI/software subtypes, the
-# natural DPV anchors are already verified: dpv:NaturalPerson ("a human")
-# for a human-actor subtype, and the DPV AI extension's ai:AIAgent ("a
-# software agent that utilises AI technologies") for an AI-actor subtype.
-# Not added now because no such BEAM subtypes exist yet (Rule R5: no
-# speculative structure).
+    rdfs:comment "BEAM Agent aligned to DPV's Entity class "@en .

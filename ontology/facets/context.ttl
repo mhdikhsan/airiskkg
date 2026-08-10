@@ -9,65 +9,27 @@
 <http://w3id.org/airiskkg/facets/context>
     a owl:Ontology ;
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
-    dct:title "PAIR-AI Characterization Facets: Context (Domain, Purpose, Deployment Setting)"@en ;
-    dct:description "SKOS concept schemes for situational context of an AI system (Rule R1). These are deliberately thin extension points: concrete domains, purposes, and deployment settings are added per use case or drawn from external vocabularies. Where DPV has an equivalent, the DPV URI is referenced via SKOS mapping instead of being redefined (Rule R3). Context facets enter assessment only through applicability conditions (Rule R2)."@en ;
-    dct:source "DPV v2.3, https://w3id.org/dpv# (verified 2026-07-13); OECD (2022). OECD Framework for the Classification of AI Systems." ;
+    dct:title "PAIR-AI Characterization Facets: Context (Domain, Purpose)"@en ;
+    dct:description "SKOS concept schemes for the situational context of an AI system. Both are deliberately empty extension points anchored to DPV: concrete values are DPV URIs used directly, not local concepts (Rule R3)."@en ;
+    dct:source <https://w3id.org/dpv> ;
     vann:preferredNamespacePrefix "ctx" ;
     vann:preferredNamespaceUri "http://w3id.org/airiskkg/facets/context#" .
 
-# Scheme 1: Domain (extension point)
+# Scheme 1: Domain (extension point, anchored to DPV sectors)
 
 ctx:Domain
     a skos:ConceptScheme ;
     skos:prefLabel "Domain"@en ;
-    skos:definition "Application domain / economic sector in which the AI system operates (e.g. healthcare, finance, education). Extension point: concrete domain concepts are added per use case; prefer reusing DPV sector-extension concepts (https://w3id.org/dpv/sector/health, .../finance, .../education, .../infrastructure, .../law, .../public-services) or NACE codes directly (Rule R3) rather than redefining."@en ;
+    skos:definition "Application domain / economic sector in which the AI system operates (e.g. healthcare, finance, education). Assign DPV sector concepts directly."@en ;
     skos:relatedMatch dpv:Sector ;
     rdfs:seeAlso <https://w3id.org/dpv/sector> ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Economic Context dimension); dpv:Sector verified against DPV v2.3, 2026-07-15." .
+    dct:source <https://w3id.org/dpv> .
 
 # Scheme 2: Purpose (extension point, anchored to DPV)
 
 ctx:Purpose
     a skos:ConceptScheme ;
     skos:prefLabel "Purpose"@en ;
-    skos:definition "Purpose for which the AI system (or a processing step) is operated. DPV defines an extensive purpose taxonomy; concrete values should reuse DPV purpose concepts directly (Rule R3: reference, never copy)."@en ;
+    skos:definition "Purpose for which the AI system (or a processing step) is operated. Assign DPV purpose concepts directly."@en ;
     skos:exactMatch dpv:Purpose ;
-    dct:source "DPV v2.3 concept dpv:Purpose, https://w3id.org/dpv#Purpose (verified 2026-07-13)" .
-
-# Scheme 3: Deployment Setting (extension point)
-
-ctx:DeploymentSetting
-    a skos:ConceptScheme ;
-    skos:prefLabel "Deployment Setting"@en ;
-    skos:definition "Operational setting in which the system is deployed (e.g. internal tool, public-facing service, safety-critical environment, regulated environment). Extension point: concrete settings are added per use case."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems, Economic Context dimension (criticality of function, breadth of deployment). https://doi.org/10.1787/cb6d9eca-en. The framework's five dimensions are People & Planet, Economic Context, Data & Input, AI Model, Task & Output." .
-    # Checked against DPV v2.3: the DPV context module covers
-    # statuses, durations, frequencies, and locations - it has no
-    # deployment-setting counterpart, so the starter concepts below remain
-    # expert curation without DPV mappings.
-
-# Starter concepts (minimal, so the schemes are usable immediately)
-
-ctx:PublicFacingService
-    a skos:Concept ;
-    skos:inScheme ctx:DeploymentSetting ;
-    skos:topConceptOf ctx:DeploymentSetting ;
-    skos:prefLabel "Public-Facing Service"@en ;
-    skos:definition "The system is exposed to the general public (unauthenticated or self-registered users)."@en ;
-    dct:source "expert curation" .
-
-ctx:InternalTool
-    a skos:Concept ;
-    skos:inScheme ctx:DeploymentSetting ;
-    skos:topConceptOf ctx:DeploymentSetting ;
-    skos:prefLabel "Internal Tool"@en ;
-    skos:definition "The system is used only inside an organization by authenticated members."@en ;
-    dct:source "expert curation" .
-
-ctx:SafetyCriticalEnvironment
-    a skos:Concept ;
-    skos:inScheme ctx:DeploymentSetting ;
-    skos:topConceptOf ctx:DeploymentSetting ;
-    skos:prefLabel "Safety-Critical Environment"@en ;
-    skos:definition "System failures can directly endanger health, safety, or critical infrastructure."@en ;
-    dct:source "expert curation" .
+    dct:source <https://w3id.org/dpv> .

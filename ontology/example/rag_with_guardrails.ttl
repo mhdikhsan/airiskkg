@@ -3,26 +3,6 @@
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix local: <http://w3id.org/airiskkg/local#> .
 
-# ---------------------------------------------------------------------------
-# RAG chatbot with input + output guardrails.
-#
-# One architecture that composes THREE motifs. Run assessment -> you should see:
-#   - Guardrails                          (input + output screening around generation)
-#   - Retrieval Augmented Generation      (query-driven retrieval -> prompt -> LLM)
-#   - Vector-based Information Retrieval   (the retrieval leg on its own)
-#
-# Flow (left -> right):
-#   User Query --> Input Guardrail --(informs)--> Generation
-#        |                 |
-#        |             Guardrail Decision --> Retrieval <-- Vector Store
-#        |                                       |
-#        +--------------------> Retrieval -> Retrieved Context
-#                                                |
-#   User Query + Retrieved Context -> Prompt Construction -> Prompt
-#   Prompt + Foundation LLM -> Generation -> LLM Response
-#   LLM Response -> Output Guardrail -> Sanitized Response
-# ---------------------------------------------------------------------------
-
 local:system a beam:System ;
     rdfs:label "RAG chatbot with guardrails" ;
     beam:hasProcess

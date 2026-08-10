@@ -1,0 +1,103 @@
+@prefix local: <http://example.org/multi-agent-assistant#> .
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix pair:  <http://w3id.org/airiskkg/pair-ai#> .
+@prefix facet: <http://w3id.org/airiskkg/facets#> .
+@prefix aut:   <http://w3id.org/airiskkg/facets/autonomy#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+# A multi-agent research assistant, written to exercise the second tranche of
+# the agentic layer: delegation between agents (ASI07), goal hijack on the
+# planning side (ASI01), and human oversight as a control shape.
+#
+# The architecture on purpose has one mediated path and one unmediated one, so
+# the example shows both a finding and its suppression rather than only the
+# alarming half:
+#
+#   coordinator --(message)--> researcher   : NO validation  -> ASI07 fires
+#   coordinator --(message)--> publisher    : policy gate    -> ASI07 suppressed
+#   publisher action                        : human approval -> ASI02 suppressed
+#   researcher action                       : unmediated     -> ASI02 fires
+#
+# The coordinator also reads public user input, which the taint rules carry into
+# its planning step, so ASI01 fires on the goal-setting path.
+
+local:system a beam:System ;
+    rdfs:label "Multi-agent research assistant" ;
+    facet:hasAutonomyLevel aut:HighActionAutonomy ;
+    beam:contain
+        local:userRequest , local:coordinatorLlm , local:coordinatorPlanning ,
+        local:researchTask , local:publishTask ,
+        local:researcherHandoff , local:researcherToolCall , local:researchResult ,
+        local:policyGate ,
+        local:publisherHandoff , local:approvalStep , local:publisherToolCall ,
+        local:publishedReport .
+
+# --- Coordinator agent -----------------------------------------------------
+
+local:userRequest a beam:Data ;
+    rdfs:label "User request" ;
+    pair:playsRole pair:PublicUserInput .
+
+local:coordinatorLlm a beam:StatisticalModel ;
+    rdfs:label "Coordinator LLM" ;
+    pair:playsRole pair:GenerativeModel .
+
+local:coordinatorPlanning a beam:Infer, beam:Process ;
+    rdfs:label "Coordinator planning" ;
+    pair:playsRole pair:PlanningStep ;
+    beam:use local:userRequest , local:coordinatorLlm ;
+    beam:produce local:researchTask , local:publishTask ;
+    beam:inform local:researcherHandoff , local:publisherHandoff .
+
+local:researchTask a beam:Data ;
+    rdfs:label "Research task message" ;
+    pair:playsRole pair:AgentMessage .
+
+local:publishTask a beam:Data ;
+    rdfs:label "Publish task message" ;
+    pair:playsRole pair:AgentMessage .
+
+# --- Researcher agent: delegation with nothing checking the message ---------
+
+local:researcherHandoff a beam:Process ;
+    rdfs:label "Researcher handoff" ;
+    pair:playsRole pair:AgentHandoffStep ;
+    beam:use local:researchTask ;
+    beam:inform local:researcherToolCall .
+
+local:researcherToolCall a beam:Process ;
+    rdfs:label "Web search tool call" ;
+    pair:playsRole pair:ToolInvocationStep ;
+    beam:produce local:researchResult .
+
+local:researchResult a beam:Data ;
+    rdfs:label "Research result" ;
+    pair:playsRole pair:RetrievedContext .
+
+# --- Publisher agent: the same delegation, but mediated --------------------
+
+local:policyGate a beam:Process ;
+    rdfs:label "Delegation policy gate" ;
+    pair:playsRole pair:PolicyEnforcementStep ;
+    beam:use local:publishTask ;
+    beam:inform local:publisherHandoff .
+
+local:publisherHandoff a beam:Process ;
+    rdfs:label "Publisher handoff" ;
+    pair:playsRole pair:AgentHandoffStep ;
+    beam:use local:publishTask ;
+    beam:inform local:publisherToolCall .
+
+local:approvalStep a beam:Process ;
+    rdfs:label "Editor approval" ;
+    pair:playsRole pair:HumanApprovalStep ;
+    beam:inform local:publisherToolCall .
+
+local:publisherToolCall a beam:Process ;
+    rdfs:label "Publish tool call" ;
+    pair:playsRole pair:StateChangingStep ;
+    beam:produce local:publishedReport .
+
+local:publishedReport a beam:Data ;
+    rdfs:label "Published report" ;
+    pair:playsRole pair:PublicUserFacingOutput .
