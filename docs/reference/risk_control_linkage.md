@@ -12,8 +12,8 @@ Supersedes `motif_control_linkage.md` and `control_catalogue_table.md`.
 
 | Layer | Count | What it is |
 |---|---|---|
-| **Motif library** | **26** | Risk-neutral architectural shapes (`pair:GraphMotif`) |
-| **Risk patterns** | **13** | Motif + applicability condition -> candidate finding |
+| **Motif library** | **28** | Risk-neutral architectural shapes (`pair:GraphMotif`) |
+| **Risk patterns** | **15** | Motif + applicability condition -> candidate finding |
 | **Suggested controls** | **12** | `pat:Control_*`, the only vocabulary in `pair:suggestedControl` |
 | | | |
 | MIT control groups | 20 | Categories + sub-categories, **MIT verbatim** |
@@ -73,17 +73,17 @@ they are never merged into one column.
 
 | # | Suggested control | Candidate risk | Exposing motif | Realizing motif | MIT family | Actions |
 |---|---|---|---|---|---|---|
-| 1 | **Input validation and prompt isolation**<br>`pat:Control_InputValidationAndPromptIsolation` | MemoryPoisoning, PromptInjection | AgentMemoryLoop, DirectPrompting, QueryRewriting, RetrievalAugmentedGeneration | **Guardrails** | input-output-filtering, prompt-context-limiting | 0 |
+| 1 | **Input validation and prompt isolation**<br>`pat:Control_InputValidationAndPromptIsolation` | GoalHijack, InsecureAgentCommunication, MemoryPoisoning, PromptInjection | AgentDelegation, AgentMemoryLoop, DirectPrompting, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent | **Guardrails** | input-output-filtering, prompt-context-limiting | 0 |
 | 2 | **Output validation and sanitization**<br>`pat:Control_OutputValidationAndSanitization` | ImproperOutputHandling, SensitiveDataRetrievalExposure, SystemPromptLeakage | DirectPrompting, Guardrails, VectorBasedInformationRetrieval | **Guardrails** | content-safety-controls, input-output-filtering | 2 |
 | 3 | **Data minimization and redaction**<br>`pat:Control_DataMinimizationAndRedaction` | SensitiveDataRetrievalExposure | VectorBasedInformationRetrieval | (none) | data-minimization, privacy-control-for-user-data, redaction | 0 |
 | 4 | **Retrieval access control**<br>`pat:Control_RetrievalAccessControl` | SensitiveDataRetrievalExposure, VectorAndEmbeddingWeakness | Embeddings, Reranker, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval | (none) | access-management, retrieval-quality-evaluation, retrieval-source-filtering | 4 |
 | 5 | **Model and dependency provenance**<br>`pat:Control_ModelAndDependencyProvenance` | DataAndModelPoisoning, SupplyChainCompromise | Embeddings, ExternalDependency, FineTuning, ModelInImage, ModelLoad, TrainingToServing | (none) | model-infrastructure-security, risk-register, system-architecture-documentation | 0 |
 | 6 | **Trusted training and indexing data**<br>`pat:Control_TrustedTrainingAndIndexingData` | DataAndModelPoisoning, MemoryPoisoning, VectorAndEmbeddingWeakness | AgentMemoryLoop, Embeddings, FineTuning, Reranker, RetrievalAugmentedGeneration, TrainingToServing | (none) | data-curation-process, data-governance, testing-auditing | 27 |
-| 7 | **Tool permission boundaries**<br>`pat:Control_ToolPermissionBoundaries` | ExcessiveAgency, ToolMisuse | ToolUsingAgent | (none) | access-management, human-oversight-protocol, post-deployment-behavior-monitoring | 5 |
+| 7 | **Tool permission boundaries**<br>`pat:Control_ToolPermissionBoundaries` | ExcessiveAgency, GoalHijack, InsecureAgentCommunication, ToolMisuse | AgentDelegation, ToolUsingAgent | (none) | access-management, human-oversight-protocol, post-deployment-behavior-monitoring | 5 |
 | 8 | **System prompt secrecy**<br>`pat:Control_SystemPromptSecrecy` | SystemPromptLeakage | Guardrails | (none) | prompt-context-limiting, red-teaming, system-architecture-documentation | 2 |
 | 9 | **Grounding and verification**<br>`pat:Control_GroundingAndVerification` | DirectPromptingWithoutGrounding, MisinformationFromWeakGrounding, VectorAndEmbeddingWeakness | DirectPrompting, Embeddings, Reranker, RetrievalAugmentedGeneration | **HybridRetriever, Reranker, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval** | human-oversight-protocol, retrieval-quality-evaluation, testing-auditing | 12 |
 | 10 | **Rate, budget, and loop control**<br>`pat:Control_RateLimitBudgetAndLoopControl` | ExcessiveAgency, ToolMisuse, UnboundedConsumption | DirectPrompting, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent | (none) | access-management, post-deployment-behavior-monitoring, prompt-context-limiting | 5 |
-| 11 | **Logging, monitoring, and evals**<br>`pat:Control_LoggingMonitoringAndEvals` | DataAndModelPoisoning, DirectPromptingWithoutGrounding, ExcessiveAgency, MemoryPoisoning, MisinformationFromWeakGrounding, PromptInjection, SupplyChainCompromise, ToolMisuse, UnboundedConsumption | AgentMemoryLoop, DirectPrompting, Embeddings, ExternalDependency, FineTuning, ModelInImage, ModelLoad, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent, TrainingToServing | **Evals, PredictionLogging, PredictionMonitoring** | post-deployment-behavior-monitoring, red-teaming, testing-auditing | 15 |
+| 11 | **Logging, monitoring, and evals**<br>`pat:Control_LoggingMonitoringAndEvals` | DataAndModelPoisoning, DirectPromptingWithoutGrounding, ExcessiveAgency, GoalHijack, InsecureAgentCommunication, MemoryPoisoning, MisinformationFromWeakGrounding, PromptInjection, SupplyChainCompromise, ToolMisuse, UnboundedConsumption | AgentDelegation, AgentMemoryLoop, DirectPrompting, Embeddings, ExternalDependency, FineTuning, ModelInImage, ModelLoad, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent, TrainingToServing | **Evals, PredictionLogging, PredictionMonitoring** | post-deployment-behavior-monitoring, red-teaming, testing-auditing | 15 |
 | 12 | **Input and output filtering**<br>`pat:Control_Guardrails` | ImproperOutputHandling, PromptInjection, SensitiveDataRetrievalExposure, SystemPromptLeakage | DirectPrompting, Guardrails, QueryRewriting, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval | **Guardrails** | content-safety-controls, input-output-filtering, model-safety-engineering | 9 |
 
 ---
@@ -137,7 +137,7 @@ Families with no action beneath them (6): `governance-oversight-controls`, `mode
 ## 6. Gaps
 
 1. **7 of 12 controls have no realizing motif.** The tool can advise them but cannot verify from the graph that they were applied.
-2. **12 of 26 motifs reach no control** - by design for the risk-neutral ML-serving shapes.
+2. **13 of 28 motifs reach no control** - by design for the risk-neutral ML-serving shapes.
 3. **1 risk pattern declares no motif** (`ExcessiveAgencyRiskPattern`) so it can never fire.
 4. **7 circular suggestions** - the motif that triggers the finding is also the motif that would realize the suggested fix.
 5. **Coverage is bounded by the cross-walk.** LLM07, LLM08 and LLM10 have no action-level evidence at all; their control links remain prior curation.
@@ -184,12 +184,14 @@ assign motifs to families of its own.
 | `RetrievalAugmentedGenerationMotif` | GenAI | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption, VectorAndEmbeddingWeakness |
 | `VectorBasedInformationRetrievalMotif` | GenAI | SensitiveDataRetrievalExposure |
 
-### OWASP Agentic Top 10 (ASI) (2)
+### OWASP Agentic Top 10 (ASI) (4)
 
 | Motif | Catalogue section | Risk patterns it feeds |
 |---|---|---|
+| `AgentDelegationMotif` | agentic | InsecureAgentCommunication |
 | `AgentMemoryLoopMotif` | agentic | MemoryPoisoning |
-| `ToolUsingAgentMotif` | agentic | ToolMisuse |
+| `HumanOversightMotif` | agentic | *(risk-neutral - none)* |
+| `ToolUsingAgentMotif` | agentic | GoalHijack, ToolMisuse |
 
 ### OWASP LLM Top 10 (1)
 
@@ -206,7 +208,9 @@ assign motifs to families of its own.
 | **DataAndModelPoisoning** | `llm04-data-and-model-poisoning` | Embeddings, FineTuning, TrainingToServing | LoggingMonitoringAndEvals, ModelAndDependencyProvenance, TrustedTrainingAndIndexingData |
 | **DirectPromptingWithoutGrounding** | `llm09-misinformation` | DirectPrompting | GroundingAndVerification, LoggingMonitoringAndEvals |
 | **ExcessiveAgency** | `llm06-excessive-agency` | **(none - cannot fire)** | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl, ToolPermissionBoundaries |
+| **GoalHijack** | `asi01-agent-goal-hijack` | ToolUsingAgent | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, ToolPermissionBoundaries |
 | **ImproperOutputHandling** | `llm05-improper-output-handling` | DirectPrompting, Guardrails | Guardrails, OutputValidationAndSanitization |
+| **InsecureAgentCommunication** | `asi07-insecure-inter-agent-communication` | AgentDelegation | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, ToolPermissionBoundaries |
 | **MemoryPoisoning** | `asi06-memory-and-context-poisoning` | AgentMemoryLoop | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, TrustedTrainingAndIndexingData |
 | **MisinformationFromWeakGrounding** | `llm09-misinformation` | RetrievalAugmentedGeneration | GroundingAndVerification, LoggingMonitoringAndEvals |
 | **PromptInjection** | `llm01-prompt-injection` | DirectPrompting, QueryRewriting, RetrievalAugmentedGeneration | Guardrails, InputValidationAndPromptIsolation, LoggingMonitoringAndEvals |
@@ -346,8 +350,8 @@ document is generated from them.
 
 | File | Holds |
 |---|---|
-| `ontology/patterns/motif.ttl` | the 26 motifs and their pattern nodes/edges |
-| `ontology/patterns/risk_pattern_library.ttl` | the 13 risk patterns, the 12 suggested controls, and the control-to-MIT bridge |
+| `ontology/patterns/motif.ttl` | the 28 motifs and their pattern nodes/edges |
+| `ontology/patterns/risk_pattern_library.ttl` | the 15 risk patterns, the 12 suggested controls, and the control-to-MIT bridge |
 | `ontology/patterns/control_mitigation_layer.ttl` | technical/non-technical classification and `realizedByMotif` |
 | `ontology/core/pair_ai_pattern.ttl` | the pattern meta-vocabulary: roles, predicates, data categories |
 | `ontology/core/beam_core.ttl` | BEAM elements and flow predicates |
@@ -386,7 +390,7 @@ python python/scripts/generate_risk_control_linkage.py    # this document
 
 | File | Why |
 |---|---|
-| `docs/reference/PAIR-AI_glossary_v1.2.md` | terminology and the locked modelling rules (R1-R8). Read Section C before changing anything |
+| `docs/reference/PAIR-AI_glossary_v1_3.md` | terminology and the modelling rules (R1-R10). Read Section C before changing anything |
 | `docs/reference/PAIR-AI_method_and_construction.md` | how the knowledge base was built |
 | `docs/reference/catalogue.md` | the motif catalogue in prose |
 | `docs/claude/CLAUDE.md` | locked decisions, including licence posture per source |
