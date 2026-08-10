@@ -3,11 +3,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-# Faithful projection of pat:ToolUsingAgentMotif. Matches structure only
-# (candidate framing): a planning step hands off to a step that acts outside the
-# system, and that action produces a result. Whether anything mediates the
-# handoff is a risk-pattern question, not a motif question.
-
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
@@ -20,13 +15,13 @@ CONSTRUCT {
     ?resultB   a pair:NodeBinding ; pair:bindsPatternNode pat:ToolAgent_ActionResultNode ; pair:matchedElement ?actionResult .
 }
 WHERE {
-    ?planningStep a beam:Process ;
+    ?planningStep a/rdfs:subClassOf* beam:Process ;
                   pair:playsRole/pair:subRoleOf* pair:PlanningStep ;
                   beam:inform ?actionStep .
 
     # The action reaches outside the system: a tool call or a direct state
     # change. Both are ProcessingStep specializations, so bind either.
-    ?actionStep a beam:Process ;
+    ?actionStep a/rdfs:subClassOf* beam:Process ;
                 pair:playsRole ?actionRole ;
                 beam:produce ?actionResult .
     { ?actionRole pair:subRoleOf* pair:ToolInvocationStep }

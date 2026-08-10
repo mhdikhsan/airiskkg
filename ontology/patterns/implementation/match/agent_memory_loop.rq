@@ -3,11 +3,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-# Faithful projection of pat:AgentMemoryLoopMotif. The distinguishing shape is
-# the loop: the SAME store is produced by a write step and used by a later read
-# step. Matches structure only (candidate framing) - whether what gets written
-# is trustworthy is a risk-pattern question.
-
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
@@ -21,14 +16,14 @@ CONSTRUCT {
     ?recalledB a pair:NodeBinding ; pair:bindsPatternNode pat:AgentMemory_RecalledContextNode ; pair:matchedElement ?recalledContext .
 }
 WHERE {
-    ?writeStep a beam:Process ;
+    ?writeStep a/rdfs:subClassOf* beam:Process ;
                pair:playsRole/pair:subRoleOf* pair:MemoryWriteStep ;
                beam:produce ?memory .
 
     ?memory a beam:Data ;
             pair:playsRole/pair:subRoleOf* pair:AgentMemory .
 
-    ?readStep a beam:Process ;
+    ?readStep a/rdfs:subClassOf* beam:Process ;
               pair:playsRole/pair:subRoleOf* pair:MemoryReadStep ;
               beam:use ?memory ;
               beam:produce ?recalledContext .

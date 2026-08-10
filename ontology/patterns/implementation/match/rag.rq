@@ -44,14 +44,14 @@ WHERE {
     ?retrievedCtx (^beam:use/beam:produce)* ?ctxForPrompt .
     ?ctxForPrompt pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
 
-    ?promptConstruct a beam:Transform ;
+    ?promptConstruct a/rdfs:subClassOf* beam:Process ;
                      pair:playsRole/pair:subRoleOf* pair:PromptConstructionStep ;
                      beam:use ?query ;
                      beam:use ?ctxForPrompt ;
                      beam:produce ?prompt .
     ?prompt a beam:Data ; pair:playsRole/pair:subRoleOf* pair:PromptTemplate .
 
-    ?genStep a beam:Infer ;
+    ?genStep a/rdfs:subClassOf* beam:Process ;
              pair:playsRole/pair:subRoleOf* pair:GenerationStep ;
              beam:use ?prompt ;
              beam:use ?llm ;

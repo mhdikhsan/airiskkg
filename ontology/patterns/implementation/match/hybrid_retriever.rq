@@ -3,11 +3,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-# Auto-derived faithful projection of pat:HybridRetrieverMotif (declared PatternNode/
-# PatternEdge structure). Matches structure only (candidate framing): each
-# declared node is bound by expectedClass + expectedRole, each declared edge
-# is required. No risk semantics here - those come from a risk pattern.
-
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
@@ -30,19 +25,19 @@ CONSTRUCT {
     ?vectorSearchBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_VectorSearchNode ; pair:matchedElement ?vectorSearch .
 }
 WHERE {
-    ?aggregation a beam:Process ;
+    ?aggregation a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:AggregationStep .
     ?candidateSet a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:RetrievedCandidateSet .
     ?keywordIndex a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:KeywordIndex .
-    ?keywordSearch a beam:Process ;
+    ?keywordSearch a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:KeywordSearchStep .
     ?query a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:UserInput .
     ?vectorIndex a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:VectorIndex .
-    ?vectorSearch a beam:Process ;
+    ?vectorSearch a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:VectorSearchStep .
 
     ?vectorSearch beam:use ?query .

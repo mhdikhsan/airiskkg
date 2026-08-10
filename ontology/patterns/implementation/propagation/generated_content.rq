@@ -1,0 +1,13 @@
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+
+CONSTRUCT {
+    ?produced pair:containsDataCategory pair:GeneratedContent .
+}
+WHERE {
+    ?step pair:playsRole ?stepRole ;
+          beam:produce ?produced .
+    ?stepRole pair:subRoleOf* pair:GenerationStep .
+
+    ?produced a beam:Data .
+}
