@@ -288,6 +288,84 @@
     near.forEach((g) => list.appendChild(gapCard(g)));
   }
 
+  /* Why does this element carry that category?
+   *
+   * A propagated category is the engine's claim, not the modeler's, and one they
+   * cannot check from the graph alone - the annotation that caused it may be
+   * several hops upstream. Each hop is grouped under the element it landed on
+   * and the chain is walked back to the element nobody derived, which is the one
+   * a human actually annotated. Clicking a row highlights the whole path in the
+   * diagram, so the claim can be read off the picture.
+   */
+  function renderDerivedCategories(rows) {
+    const list = $("#derived-list");
+    const empty = $("#derived-empty");
+    const count = $("#derived-count");
+    list.innerHTML = "";
+    if (!rows || !rows.length) {
+      empty.textContent = "Nothing was inferred: every data category in this graph was annotated by hand.";
+      empty.classList.remove("hidden");
+      count.textContent = "";
+      return;
+    }
+    empty.classList.add("hidden");
+    count.textContent = String(rows.length);
+
+    // hop lookup: "element|category" -> the hop that put the category there
+    const hopBy = new Map();
+    rows.forEach((r) => hopBy.set(`${r.element.id}|${r.category.id}`, r));
+
+    const chainFor = (row) => {
+      const chain = [];
+      let current = row;
+      const seen = new Set();
+      while (current && !seen.has(current.from ? current.from.id : "")) {
+        chain.push(current);
+        if (!current.from) break;
+        seen.add(current.from.id);
+        current = hopBy.get(`${current.from.id}|${current.category.id}`);
+      }
+      return chain;
+    };
+
+    // One entry per (element, category) the modeler sees on an element.
+    const byElement = new Map();
+    rows.forEach((r) => {
+      const key = r.element.id;
+      if (!byElement.has(key)) byElement.set(key, { element: r.element, categories: new Map() });
+      byElement.get(key).categories.set(r.category.id, r);
+    });
+
+    [...byElement.values()]
+      .sort((a, b) => a.element.label.localeCompare(b.element.label))
+      .forEach((group) => {
+        const block = el("div", { class: "derived-group" });
+        block.appendChild(el("div", { class: "derived-element" }, group.element.label));
+        [...group.categories.values()]
+          .sort((a, b) => a.category.label.localeCompare(b.category.label))
+          .forEach((row) => {
+            const chain = chainFor(row);
+            const origin = chain[chain.length - 1];
+            const steps = chain.map((hop) => hop.via && hop.via.label).filter(Boolean);
+            const line = el("div", { class: "derived-row", title: "Click to highlight this path in the diagram" }, [
+              el("span", { class: "derived-cat" }, row.category.label),
+              el("span", { class: "derived-why" },
+                `from ${origin && origin.from ? origin.from.label : "an annotation"}` +
+                (steps.length ? ` · via ${steps.reverse().join(" → ")}` : "")),
+            ]);
+            const path = [row.element.id, ...chain.map((h) => h.from && h.from.id), ...chain.map((h) => h.via && h.via.id)]
+              .filter(Boolean);
+            line.addEventListener("click", () => {
+              $$("#derived-list .derived-row").forEach((n) => n.classList.remove("active"));
+              line.classList.add("active");
+              GraphView.setHighlight(path);
+            });
+            block.appendChild(line);
+          });
+        list.appendChild(block);
+      });
+  }
+
   function renderMotifs(matches, gaps) {
     // Collapse repeated matches of the same motif into one row (a motif can match
     // several times with different elements — e.g. External Dependency per source).
@@ -735,6 +813,7 @@ ex:Generate a beam:Transform ;
         const data = await postJson("/api/assess", { ttl });
         renderFindings(data);
         renderMotifs(data.motifMatches, data.motifGaps); // Motifs tab (each match carries nodeIds)
+        renderDerivedCategories(data.derivedCategories);
         openDrawer("findings");
         setStatus("ok", `Assessment finished`, `${data.summary.riskFindingCount} findings · ${data.summary.motifMatchCount} matches`);
       } catch (error) {

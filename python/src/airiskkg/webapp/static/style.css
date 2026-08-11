@@ -762,3 +762,23 @@ label.btn { display: inline-flex; align-items: center; }
 .gap-list li strong { color: var(--text); font-weight: 600; }
 .gap-hint { color: #7f8ba3; font-style: italic; }
 .mp-show-all { font-style: italic; }
+
+/* ---- derived data categories ---- */
+.derived-group { margin-bottom: 12px; }
+.derived-element {
+  font-size: 12px; font-weight: 600; color: var(--text);
+  margin-bottom: 4px; padding-left: 2px;
+}
+.derived-row {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding: 7px 12px; margin-bottom: 4px; border-radius: 8px;
+  border: 1px solid var(--border); background: #202430; cursor: pointer;
+}
+.derived-row:hover { border-color: #3d4452; background: #252a38; }
+.derived-row.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.derived-cat {
+  font-size: 11px; font-weight: 600; color: #f0d9a8;
+  background: #332c1c; border: 1px solid #5a4a2a; border-radius: 10px; padding: 1px 9px;
+  white-space: nowrap;
+}
+.derived-why { font-size: 12px; color: var(--text-dim); }

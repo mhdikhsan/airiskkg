@@ -90,6 +90,7 @@
           <div class="drawer-tabs">
             <button type="button" class="drawer-tab active" data-drawer-tab="findings">Findings <span class="count" id="findings-count"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="motifs">Motifs <span class="count" id="motifs-count" title="matched motifs"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="derived">Derived <span class="count" id="derived-count" title="data categories the engine inferred"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="annotate">Annotate <span class="count" id="annotate-count" title="elements without a role"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="validation">Input contract <span class="count" id="validation-count"></span></button>
           </div>
@@ -104,6 +105,10 @@
           <div class="drawer-panel hidden" data-drawer-panel="motifs">
             <p class="drawer-empty" id="motifs-empty">Run an assessment to see which motifs matched. Selecting a motif highlights its elements in the graph.</p>
             <div id="motifs-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="derived">
+            <p class="drawer-empty" id="derived-empty">Run an assessment to see which data categories were inferred rather than annotated, and the path each one travelled.</p>
+            <div id="derived-list"></div>
           </div>
           <div class="drawer-panel hidden" data-drawer-panel="annotate">
             <div class="annotate-head">
