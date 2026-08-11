@@ -125,6 +125,20 @@ framing instead of supporting it.
 - **Flow relations are not data flow.** `inform` is process-to-process ordering with no
   resource transfer and it is load-bearing (the Guardrails motif is constituted by a
   guardrail step *informing* a generation step). Never redefine a motif over "data flow".
+- **Facets reach the assessment two ways, and only two (decided 2026-08-11).**
+  (i) **Bridge** — a protection-relevant facet value is mapped into a `pair:DataCategory`
+  by a registered propagation query, and the category then travels along the flow like any
+  other. Used for `facet:hasPersonalDataCategory` → `SensitiveInformation` and
+  `facet:hasDataRights dataf:Proprietary` → `ConfidentialInformation`.
+  (ii) **Direct read** — an applicability condition tests the facet on a *bound element of
+  the match* (R2), positively (R10). No propagation is involved.
+  **Facets are never propagated as facets.** R8 makes Data Category the one facet that is
+  also derived; propagating others would break that line and force every condition to read
+  two propagating vocabularies. Concretely: content-borne properties (sensitivity,
+  confidentiality) bridge and travel; element-intrinsic properties (provenance, dynamism)
+  do not, because an element derived from observed data is *derived* data, not observed
+  data — copying the label downstream would assert something false. "What was this derived
+  from?" is answered by the `prov:Derivation` chain instead, which is exact.
 - **There is no "Personal" data category, and there must not be one.** Personal data is
   expressed with DPV concepts through `facet:hasPersonalDataCategory` (R3), never mirrored
   into `pair:DataCategoryScheme`. Data Category is the one facet that lives in the pattern
