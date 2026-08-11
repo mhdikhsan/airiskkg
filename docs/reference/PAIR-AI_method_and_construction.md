@@ -641,12 +641,11 @@ caught by reading both.
 grounding by URI, no SKOS scheme, no inter-annotator agreement study, and role granularity
 was shaped by what motifs needed to bind.
 
-**6.5 Example and test debt.** `ontology/example/uc6.ttl` and the Verba example were
-removed, but `python/tests/test_uc6_assessment.py` and two tests in
-`test_webapp_endpoints.py` still load them: **10 of 47 tests currently fail**
-(`FileNotFoundError`), all for that reason. The remaining 37 pass. These tests need to be
-repointed at `onyx_danswer.ttl` or a replacement fixture; until then the suite gives no
-signal on those code paths.
+**6.5 Example and test debt — resolved.** Two third-party use-case graphs and the Verba
+example were removed, which for a time left several tests loading fixtures that no longer
+existed. Those tests were repointed at `onyx_danswer.ttl` and the agentic examples, and the
+suite is green again. Every example the repository ships now lives in `ontology/example/`;
+nothing in the test suite reads from an ignored directory.
 
 **6.6 Assessment quality is bounded by annotation quality.** The method has no way to
 recover a role the modeler did not assign, and three type mismatches silently block
