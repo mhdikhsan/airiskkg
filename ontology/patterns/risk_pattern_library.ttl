@@ -644,6 +644,22 @@ pat:GeneratedContentPropagationOQP
     pair:implementationPath "ontology/patterns/implementation/propagation/generated_content.rq" ;
     pair:producesOutputType pair:DataCategoryPropagation .
 
+pat:PersonalDataCategoryBridgeOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Personal data category to content category bridge OQP"@en ;
+    dct:description "Derives pair:SensitiveInformation for any element annotated with a DPV personal-data kind via facet:hasPersonalDataCategory, excluding the DPV values that state the data is not personal. Makes the DPV annotation load-bearing without mirroring DPV into pair:DataCategoryScheme (Rule R3)."@en ;
+    dct:source <https://w3id.org/dpv> ;
+    pair:implementationPath "ontology/patterns/implementation/propagation/personal_data_category.rq" ;
+    pair:producesOutputType pair:DataCategoryPropagation .
+
+pat:ProprietaryDataBridgeOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Proprietary data rights to content category bridge OQP"@en ;
+    dct:description "Derives pair:ConfidentialInformation for data whose rights status is dataf:Proprietary, so licence-encumbered content is carried downstream by the normal content-category propagation."@en ;
+    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Data & Input dimension)." ;
+    pair:implementationPath "ontology/patterns/implementation/propagation/proprietary_data.rq" ;
+    pair:producesOutputType pair:DataCategoryPropagation .
+
 pat:PersonalDataRightsBridgeOQP
     a pair:PatternImplementation ;
     rdfs:label "Personal data rights to content category bridge OQP"@en ;

@@ -7,6 +7,7 @@ from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 from airiskkg.assessment_runner import PAIR, AssessmentResult
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
+PROV = Namespace("http://www.w3.org/ns/prov#")
 _MITCTRL_PREFIX = "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#"
 # skos:*Match predicates by which a pat:Control_* points at the MIT mitigation
 # family it corresponds to (indicative bridge, not an audited SSSOM mapping).
@@ -194,16 +195,48 @@ def _findings_by_owasp_category(graph: Graph, findings: list[URIRef]) -> list[di
     ]
 
 
+def _derived_categories(result: AssessmentResult) -> list[dict]:
+    """Every data category the engine inferred, with the hop that produced it.
+
+    A derived fact the modeler cannot check is a fact they have to trust. The
+    propagation rules record, per hop, which element the category came from and
+    which step it passed through, so "the answer is sensitive" can be traced back
+    to the annotation a human actually made."""
+    graph = result.combined_graph
+    rows: list[dict] = []
+    for element, derivation in graph.subject_objects(PROV.qualifiedDerivation):
+        category = graph.value(derivation, PAIR.derivedCategory)
+        if category is None:
+            continue
+        upstream = graph.value(derivation, PROV.entity)
+        step = graph.value(derivation, PROV.hadActivity)
+        rows.append(
+            {
+                "element": _ref(graph, element),
+                "category": _ref(graph, category),
+                "from": _ref(graph, upstream) if upstream is not None else None,
+                "via": _ref(graph, step) if step is not None else None,
+            }
+        )
+    return sorted(
+        rows,
+        key=lambda row: (row["element"]["label"], row["category"]["label"], (row["from"] or {}).get("label", "")),
+    )
+
+
 def summarize_result(result: AssessmentResult) -> dict:
     findings = sorted(result.risk_findings.subjects(RDF.type, PAIR.RiskFinding), key=str)
     matches = sorted(result.motif_matches.subjects(RDF.type, PAIR.MotifMatch), key=str)
+    derived = _derived_categories(result)
 
     return {
         "summary": {
             "riskFindingCount": len(findings),
             "motifMatchCount": len(matches),
+            "derivedCategoryCount": len(derived),
             "findingsByOwaspCategory": _findings_by_owasp_category(result.combined_graph, findings),
         },
         "findings": [_finding_view(result.combined_graph, finding) for finding in findings],
         "motifMatches": [_motif_match_view(result.combined_graph, match) for match in matches],
+        "derivedCategories": derived,
     }

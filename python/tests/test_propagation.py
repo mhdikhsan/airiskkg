@@ -146,6 +146,131 @@ ex:PublicAnswer a beam:Data ; pair:playsRole pair:UserFacingOutput .
     assert "SensitiveInformation" not in categories, "redaction stops protected content"
 
 
+# --- facet bridges ---------------------------------------------------------
+# The point of the facet layer is that a modeler annotates a source once, in the
+# vocabulary that fits the fact (a DPV personal-data kind, an OECD rights
+# status), and the engine works out where it can reach. These check the bridge
+# from each facet into the content-category vocabulary that actually propagates.
+
+_DPV_GRAPH = """
+@prefix ex: <http://example.org/facet#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix facet: <http://w3id.org/airiskkg/facets#> .
+@prefix dpv: <https://w3id.org/dpv#> .
+@prefix dataf: <http://w3id.org/airiskkg/facets/data#> .
+
+ex:sys a beam:System ; beam:contain ex:input, ex:mid, ex:out .
+ex:input a beam:Data ; pair:playsRole pair:UserInput ;
+    facet:hasPersonalDataCategory dpv:HealthData .
+ex:step a beam:Process ; pair:playsRole pair:ProcessingStep %s ;
+    beam:use ex:input ; beam:produce ex:mid .
+ex:mid a beam:Data ; pair:playsRole pair:RetrievedContext .
+ex:step2 a beam:Process ; pair:playsRole pair:ProcessingStep ;
+    beam:use ex:mid ; beam:produce ex:out .
+ex:out a beam:Data ; pair:playsRole pair:UserFacingOutput .
+"""
+
+DPV_EX = "http://example.org/facet#"
+
+
+def _dpv_categories(mitigation: str, local_name: str) -> set[str]:
+    result = run_assessment_from_text(_DPV_GRAPH % mitigation)
+    element = URIRef(DPV_EX + local_name)
+    return {
+        str(c).rsplit("#", 1)[-1]
+        for c in result.combined_graph.objects(element, PAIR.containsDataCategory)
+    }
+
+
+def test_a_dpv_personal_data_annotation_reaches_the_output() -> None:
+    """Annotate the source with a DPV kind, once, and the sensitivity arrives at
+    the user-facing output without a single hand-tagged element in between."""
+    assert "SensitiveInformation" in _dpv_categories("", "input")
+    assert "SensitiveInformation" in _dpv_categories("", "out")
+
+
+def test_anonymisation_clears_sensitivity_but_pseudonymisation_does_not() -> None:
+    """DPV settles this, and the two must not be treated alike.
+
+    dpv:AnonymisedData is a subclass of dpv:NonPersonalData, so anonymised
+    output is no longer personal; dpv:PseudonymisedData is a subclass of
+    dpv:PersonalData, so it still is. A barrier that cleared sensitivity at a
+    pseudonymisation step would under-report the disclosure risk this facet
+    exists to surface."""
+    assert "SensitiveInformation" not in _dpv_categories(", pair:AnonymizationStep", "out")
+    assert "SensitiveInformation" in _dpv_categories(", pair:PseudonymizationStep", "out")
+
+
+def test_data_annotated_as_anonymised_is_not_marked_sensitive() -> None:
+    """The bridge fires on the presence of a personal-data annotation, so the
+    DPV values that say the data is NOT personal have to be excluded - otherwise
+    annotating something as anonymised would mark it sensitive, the opposite of
+    what the modeler said."""
+    graph = _DPV_GRAPH % "" + """
+ex:anon a beam:Data ; pair:playsRole pair:UserInput ;
+    facet:hasPersonalDataCategory dpv:AnonymisedData .
+"""
+    result = run_assessment_from_text(graph)
+    categories = {
+        str(c).rsplit("#", 1)[-1]
+        for c in result.combined_graph.objects(URIRef(DPV_EX + "anon"), PAIR.containsDataCategory)
+    }
+    assert "SensitiveInformation" not in categories
+
+
+def test_proprietary_rights_become_confidential_information() -> None:
+    graph = _DPV_GRAPH % "" + """
+ex:corpus a beam:Data ; pair:playsRole pair:KnowledgeSource ;
+    facet:hasDataRights dataf:Proprietary .
+"""
+    result = run_assessment_from_text(graph)
+    categories = {
+        str(c).rsplit("#", 1)[-1]
+        for c in result.combined_graph.objects(URIRef(DPV_EX + "corpus"), PAIR.containsDataCategory)
+    }
+    assert "ConfidentialInformation" in categories
+
+
+def test_a_derived_category_can_be_traced_back_to_its_annotation() -> None:
+    """A derived fact the modeler cannot check is a fact they have to trust.
+
+    Each propagation hop records the upstream element and the step it passed
+    through, so the chain from a sensitive output back to the human annotation
+    is walkable."""
+    from rdflib import Namespace
+
+    prov = Namespace("http://www.w3.org/ns/prov#")
+    result = run_assessment_from_text(_DPV_GRAPH % "")
+    graph = result.combined_graph
+
+    def one_hop_back(element):
+        for derivation in graph.objects(element, prov.qualifiedDerivation):
+            if (derivation, PAIR.derivedCategory, PAIR.SensitiveInformation) in graph:
+                return graph.value(derivation, prov.entity), graph.value(derivation, prov.hadActivity)
+        return None, None
+
+    upstream, step = one_hop_back(URIRef(DPV_EX + "out"))
+    assert upstream == URIRef(DPV_EX + "mid"), "output should trace back to the middle element"
+    assert step == URIRef(DPV_EX + "step2"), "the hop must name the step it passed through"
+
+    origin, _ = one_hop_back(upstream)
+    assert origin == URIRef(DPV_EX + "input"), "the chain must reach the annotated source"
+
+
+def test_derivation_records_do_not_break_the_fixed_point() -> None:
+    """Provenance IRIs are deterministic on purpose.
+
+    The runner loops until no new triple appears. Blank-node derivations would
+    mint a fresh identifier every pass, so the rule would never converge and
+    would grow the graph until the iteration cap stopped it."""
+    result = run_assessment_from_text(_DPV_GRAPH % "")
+    assert len(result.inferred_annotations) < 60, (
+        f"propagation did not converge tightly ({len(result.inferred_annotations)} triples); "
+        "check the derivation IRIs are deterministic"
+    )
+
+
 def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     """The propagation rules must not silently re-tag the curated examples.
 
