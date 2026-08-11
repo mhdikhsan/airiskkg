@@ -45,10 +45,104 @@
   }
 
   // ---- layout ---------------------------------------------------------------
+
+  /* Disconnected parts of the graph are laid out separately and stacked.
+   *
+   * A single global layered layout assigns every source node to layer 0, so two
+   * unconnected flows - which is exactly what you get after dropping a motif
+   * from the catalogue onto an existing diagram - are interleaved into the same
+   * columns and rows. The barycentre sweep cannot pull them apart either,
+   * because there are no edges between them to pull on. The result reads as one
+   * tangled diagram rather than two tidy ones.
+   *
+   * Laying out each connected component on its own and stacking them
+   * vertically keeps each flow intact and puts a newly dropped motif in its own
+   * band below what is already there.
+   */
+  const COMPONENT_GAP = 70;
+
+  /** Sort key that reads trailing digits numerically, so e2 precedes e10.
+   *  Generated element ids are minted sequentially (local:e1, e2, ...), so this
+   *  orders components by when they were added: older above, newer below. */
+  function naturalKey(id) {
+    const match = /^(.*?)(\d+)$/.exec(String(id));
+    return match ? [match[1], Number(match[2])] : [String(id), -1];
+  }
+
+  function compareIds(a, b) {
+    const [pa, na] = naturalKey(a);
+    const [pb, nb] = naturalKey(b);
+    return pa === pb ? na - nb : pa < pb ? -1 : 1;
+  }
+
+  /** Weakly-connected components: flow direction is ignored, since a chain is
+   *  one visual unit regardless of which way its arrows point. */
+  function connectedComponents(nodes, flowEdges) {
+    const parent = new Map(nodes.map((n) => [n.id, n.id]));
+    const find = (id) => {
+      while (parent.get(id) !== id) {
+        parent.set(id, parent.get(parent.get(id)));
+        id = parent.get(id);
+      }
+      return id;
+    };
+    const union = (a, b) => {
+      const ra = find(a);
+      const rb = find(b);
+      if (ra !== rb) parent.set(ra, rb);
+    };
+    for (const e of flowEdges) union(e.source, e.target);
+
+    const groups = new Map();
+    for (const n of nodes) {
+      const root = find(n.id);
+      if (!groups.has(root)) groups.set(root, []);
+      groups.get(root).push(n);
+    }
+    const components = Array.from(groups.values()).map((groupNodes) => {
+      const memberIds = new Set(groupNodes.map((n) => n.id));
+      return {
+        nodes: groupNodes,
+        edges: flowEdges.filter((e) => memberIds.has(e.source)),
+        // Oldest element in the component decides where the band sits.
+        key: groupNodes.map((n) => n.id).sort(compareIds)[0],
+      };
+    });
+    components.sort((a, b) => compareIds(a.key, b.key));
+    return components;
+  }
+
   function layout(nodes, edges) {
-    const layer = new Map(nodes.map((n) => [n.id, 0]));
     const ids = new Set(nodes.map((n) => n.id));
     const flowEdges = edges.filter((e) => ids.has(e.source) && ids.has(e.target));
+
+    positions = new Map();
+    let offsetY = 0;
+    for (const component of connectedComponents(nodes, flowEdges)) {
+      const local = layoutComponent(component.nodes, component.edges);
+      let minY = Infinity;
+      let maxY = -Infinity;
+      for (const p of local.values()) {
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y + p.h);
+      }
+      if (!isFinite(minY)) continue;
+      for (const [id, p] of local) positions.set(id, { ...p, y: p.y - minY + offsetY });
+      offsetY += maxY - minY + COMPONENT_GAP;
+    }
+
+    // Re-apply manual drag positions on top of the computed layout, so a dragged
+    // node keeps its place across re-renders (positions are view-only state).
+    for (const [id, p] of manualPositions) {
+      const cur = positions.get(id);
+      if (cur) positions.set(id, { ...cur, x: p.x, y: p.y });
+    }
+  }
+
+  /** Layered left-to-right layout of one connected component, from its own
+   *  origin. Returns positions rather than writing the module-level map. */
+  function layoutComponent(nodes, flowEdges) {
+    const layer = new Map(nodes.map((n) => [n.id, 0]));
 
     // longest-path layering with a relaxation cap so cycles terminate
     for (let pass = 0; pass < nodes.length + 1; pass += 1) {
@@ -99,7 +193,7 @@
     sweep(preds); sweep(succs); sweep(preds);
 
     // coordinates: x by layer (widest node wins), y centered per layer
-    positions = new Map();
+    const placed = new Map();
     let x = 0;
     const totalHeight = Math.max(...layerKeys.map((l) => layers.get(l).length)) * (NODE_H + ROW_GAP);
     for (const l of layerKeys) {
@@ -108,18 +202,12 @@
       const rowHeight = row.length * (NODE_H + ROW_GAP) - ROW_GAP;
       let y = (totalHeight - rowHeight) / 2;
       for (const n of row) {
-        positions.set(n.id, { x: x + (w - nodeWidth(n)) / 2, y, w: nodeWidth(n), h: NODE_H });
+        placed.set(n.id, { x: x + (w - nodeWidth(n)) / 2, y, w: nodeWidth(n), h: NODE_H });
         y += NODE_H + ROW_GAP;
       }
       x += w + LAYER_GAP;
     }
-
-    // Re-apply manual drag positions on top of the computed layout, so a dragged
-    // node keeps its place across re-renders (positions are view-only state).
-    for (const [id, p] of manualPositions) {
-      const cur = positions.get(id);
-      if (cur) positions.set(id, { ...cur, x: p.x, y: p.y });
-    }
+    return placed;
   }
 
   // ---- rendering ------------------------------------------------------------
