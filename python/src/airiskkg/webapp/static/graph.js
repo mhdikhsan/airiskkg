@@ -123,21 +123,72 @@
   }
 
   // ---- rendering ------------------------------------------------------------
+
+  /* Edges attach to whichever side of a box faces the other box, rather than
+   * always leaving the right edge and arriving at the left.
+   *
+   * The layered layout puts most edges between adjacent layers, where the boxes
+   * are separated horizontally and right -> left is correct. But nodes in the
+   * same layer are stacked vertically, and nodes moved by hand can end up in any
+   * arrangement at all; forcing right -> left there drags the line back across
+   * both boxes and arrives from behind. Picking the facing sides keeps the line
+   * outside the boxes and lets the arrowhead point the way the flow reads.
+   *
+   * Each anchor carries an outward normal, and the Bezier control points are
+   * pushed along it, so a line leaves and arrives perpendicular to the side it
+   * touches instead of clipping the corner.
+   */
+  function sideAnchor(box, side) {
+    switch (side) {
+      case "right":  return { x: box.x + box.w,     y: box.y + box.h / 2, nx: 1,  ny: 0 };
+      case "left":   return { x: box.x,             y: box.y + box.h / 2, nx: -1, ny: 0 };
+      case "bottom": return { x: box.x + box.w / 2, y: box.y + box.h,     nx: 0,  ny: 1 };
+      default:       return { x: box.x + box.w / 2, y: box.y,             nx: 0,  ny: -1 };
+    }
+  }
+
+  /** Which sides face each other, from the gaps between the two boxes. */
+  function facingSides(s, t) {
+    // Positive when the boxes are actually apart on that axis; negative when
+    // their spans overlap. Comparing gaps rather than centre distance is what
+    // makes two stacked, horizontally-overlapping boxes connect top-to-bottom.
+    const gapX = Math.max(s.x - (t.x + t.w), t.x - (s.x + s.w));
+    const gapY = Math.max(s.y - (t.y + t.h), t.y - (s.y + s.h));
+    if (gapX >= gapY) {
+      return t.x + t.w / 2 >= s.x + s.w / 2 ? ["right", "left"] : ["left", "right"];
+    }
+    return t.y + t.h / 2 >= s.y + s.h / 2 ? ["bottom", "top"] : ["top", "bottom"];
+  }
+
+  /** A self-edge, drawn as a loop off the top-right so it stays visible. */
+  function selfLoopPath(box) {
+    const x = box.x + box.w;
+    const y = box.y + box.h / 2;
+    const r = Math.max(26, box.h * 0.7);
+    const topX = box.x + box.w * 0.72;
+    return `M ${x} ${y} C ${x + r} ${y}, ${x + r} ${box.y - r}, ${topX} ${box.y}`;
+  }
+
   function edgePath(e) {
     const s = positions.get(e.source);
     const t = positions.get(e.target);
     if (!s || !t) return null;
-    const x1 = s.x + s.w;
-    const y1 = s.y + s.h / 2;
-    const x2 = t.x;
-    const y2 = t.y + t.h / 2;
-    if (x2 >= x1) {
-      const dx = Math.max(30, (x2 - x1) / 2);
-      return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-    }
-    // back edge: route below both nodes
-    const yb = Math.max(y1, y2) + NODE_H * 1.4;
-    return `M ${s.x + s.w / 2} ${s.y + s.h} C ${s.x + s.w / 2} ${yb}, ${t.x + t.w / 2} ${yb}, ${t.x + t.w / 2} ${t.y + t.h}`;
+    if (e.source === e.target) return selfLoopPath(s);
+
+    const [sourceSide, targetSide] = facingSides(s, t);
+    const a1 = sideAnchor(s, sourceSide);
+    const a2 = sideAnchor(t, targetSide);
+
+    // Control-point reach scales with the span, clamped so short hops keep a
+    // visible curve and long ones do not balloon across the canvas.
+    const span = Math.hypot(a2.x - a1.x, a2.y - a1.y);
+    const reach = Math.max(30, Math.min(120, span * 0.4));
+
+    const c1x = a1.x + a1.nx * reach;
+    const c1y = a1.y + a1.ny * reach;
+    const c2x = a2.x + a2.nx * reach;
+    const c2y = a2.y + a2.ny * reach;
+    return `M ${a1.x} ${a1.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${a2.x} ${a2.y}`;
   }
 
   function nodeShape(group, node, pos) {
