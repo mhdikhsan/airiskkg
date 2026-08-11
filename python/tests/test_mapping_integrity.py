@@ -330,6 +330,91 @@ def test_no_confidence_is_asserted_without_an_upstream_source(provenance: Graph)
     )
 
 
+PAIRM = Namespace("http://w3id.org/airiskkg/taxonomy/mappings/provenance#")
+_ATLAS_NS = "http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#"
+_OWASP_NS = "http://w3id.org/airiskkg/taxonomy/owasp-llm#"
+_MIT_NS = "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#"
+
+
+def test_chain_corroboration_flags_match_the_upstream_edges() -> None:
+    """No upstream set links OWASP to MIT, so those rows are project curation.
+    Some are triangulated through an IBM Atlas concept that upstream mapped to
+    both ends; the rest rest on judgement alone. The flag records which is which.
+
+    Corroboration must come from INDEPENDENTLY curated edges. Chaining through
+    an Atlas link that this project curated itself would be our own judgement
+    corroborating our own judgement - circular, and it inflates the count: three
+    OWASP-MIT links look supported until the project-curated Atlas edges they
+    lean on are excluded.
+
+    Recomputed here from the recorded mapping sets rather than by calling the
+    generator, so a bug in its logic cannot validate itself."""
+    graph = Graph().parse(PROVENANCE, format="turtle")
+
+    upstream_atlas_owasp: dict = {}
+    upstream_atlas_mit: dict = {}
+    for mapping in graph.subjects(RDF.type, SSSOM.Mapping):
+        subject = graph.value(mapping, SSSOM.subject_id)
+        obj = graph.value(mapping, SSSOM.object_id)
+        source_set = graph.value(mapping, PROV.wasDerivedFrom)
+        if subject is None or obj is None or source_set == PAIRM["pair-ai-curation"]:
+            continue
+        ends = {str(subject), str(obj)}
+        if not any(e.startswith(_ATLAS_NS) for e in ends):
+            continue
+        anchor = subject if str(subject).startswith(_ATLAS_NS) else obj
+        other = obj if anchor == subject else subject
+        if str(other).startswith(_OWASP_NS):
+            upstream_atlas_owasp.setdefault(anchor, set()).add(other)
+        elif str(other).startswith(_MIT_NS):
+            upstream_atlas_mit.setdefault(anchor, set()).add(other)
+
+    offenders = []
+    checked = 0
+    for mapping in graph.subjects(PAIRM.chainCorroborated, None):
+        checked += 1
+        subject = graph.value(mapping, SSSOM.subject_id)
+        obj = graph.value(mapping, SSSOM.object_id)
+        recorded_flag = bool(graph.value(mapping, PAIRM.chainCorroborated))
+        recorded_via = {str(v) for v in graph.objects(mapping, PAIRM.corroboratedVia)}
+
+        owasp_end = subject if str(subject).startswith(_OWASP_NS) else obj
+        mit_end = obj if str(obj).startswith(_MIT_NS) else subject
+        expected_via = {
+            str(anchor)
+            for anchor in set(upstream_atlas_owasp) & set(upstream_atlas_mit)
+            if owasp_end in upstream_atlas_owasp[anchor] and mit_end in upstream_atlas_mit[anchor]
+        }
+        if bool(expected_via) != recorded_flag or expected_via != recorded_via:
+            offenders.append(
+                f"{owasp_end} <-> {mit_end}: recorded {recorded_flag} via "
+                f"{sorted(recorded_via)}, upstream supports {sorted(expected_via)}"
+            )
+
+    assert checked, "no chain-corroboration flags were emitted at all"
+    assert not offenders, "chain corroboration disagrees with the upstream edges:\n" + "\n".join(
+        sorted(offenders)
+    )
+
+
+def test_only_project_curated_owasp_mit_links_carry_the_flag() -> None:
+    """The flag answers a question that only arises for project curation. An
+    upstream row is already someone else's judgement; annotating it with our
+    corroboration would blur the tier the whole file exists to keep visible."""
+    graph = Graph().parse(PROVENANCE, format="turtle")
+    offenders = []
+    for mapping in graph.subjects(PAIRM.chainCorroborated, None):
+        source_set = graph.value(mapping, PROV.wasDerivedFrom)
+        subject = str(graph.value(mapping, SSSOM.subject_id))
+        obj = str(graph.value(mapping, SSSOM.object_id))
+        if source_set != PAIRM["pair-ai-curation"]:
+            offenders.append(f"{subject} <-> {obj} is upstream but carries a corroboration flag")
+        ends = {subject, obj}
+        if not (any(e.startswith(_OWASP_NS) for e in ends) and any(e.startswith(_MIT_NS) for e in ends)):
+            offenders.append(f"{subject} <-> {obj} is not an OWASP<->MIT link but carries the flag")
+    assert not offenders, "\n".join(sorted(offenders))
+
+
 def test_the_provenance_layer_is_in_sync_with_its_generator(tmp_path) -> None:
     """The file is generated, so it can drift from the mappings it describes the
     moment someone edits one and not the other.

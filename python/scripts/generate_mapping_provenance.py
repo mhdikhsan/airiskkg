@@ -238,6 +238,70 @@ def _curie(term, namespaces: dict[str, str]) -> str:
     return f"<{term}>"
 
 
+_ATLAS_NS = "http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#"
+_OWASP_NS = "http://w3id.org/airiskkg/taxonomy/owasp-llm#"
+_MIT_NS = "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#"
+
+
+def _chain_corroboration(records) -> dict:
+    """Which project-curated OWASP<->MIT links are backed by a chain through IBM.
+
+    No upstream mapping set links OWASP to MIT, so those rows are this project's
+    own curation. Some of them are triangulated: an IBM Atlas concept is mapped
+    upstream to the OWASP entry AND upstream to the MIT subdomain, so two
+    independently curated edges meet in the middle.
+
+    That is corroboration, NOT derivation, and the distinction is the point.
+    SSSOM's chaining rules decline to make skos:relatedMatch transitive, and
+    every upstream Atlas->MIT edge uses exactly that predicate, so no chain here
+    licenses the conclusion - it only shows someone else drew both halves. The
+    flag records which curations have that support and which rest on judgement
+    alone, so a reader can tell them apart without parsing section comments, and
+    so a link that quietly loses its support when upstream is revised shows up
+    as a diff instead of going unnoticed.
+    """
+    atlas_to_owasp: dict = {}
+    atlas_to_mit: dict = {}
+    curated_pairs = []
+
+    for subject, _predicate, obj, block, _confidence in records:
+        subject_str, object_str = str(subject), str(obj)
+        ends = {subject_str, object_str}
+        upstream = block["set"] != "pair-ai-curation"
+
+        def other(ns: str):
+            return subject if object_str.startswith(ns) else obj
+
+        if upstream and any(e.startswith(_ATLAS_NS) for e in ends):
+            if any(e.startswith(_OWASP_NS) for e in ends):
+                anchor = subject if subject_str.startswith(_ATLAS_NS) else obj
+                atlas_to_owasp.setdefault(anchor, set()).add(other(_ATLAS_NS))
+            elif any(e.startswith(_MIT_NS) for e in ends):
+                anchor = subject if subject_str.startswith(_ATLAS_NS) else obj
+                atlas_to_mit.setdefault(anchor, set()).add(other(_ATLAS_NS))
+
+        if not upstream and {_OWASP_NS, _MIT_NS} <= {
+            _OWASP_NS if e.startswith(_OWASP_NS) else _MIT_NS if e.startswith(_MIT_NS) else ""
+            for e in ends
+        }:
+            curated_pairs.append((subject, obj))
+
+    result: dict = {}
+    for subject, obj in curated_pairs:
+        owasp_end = subject if str(subject).startswith(_OWASP_NS) else obj
+        mit_end = obj if str(obj).startswith(_MIT_NS) else subject
+        shared = sorted(
+            (
+                anchor
+                for anchor in set(atlas_to_owasp) & set(atlas_to_mit)
+                if owasp_end in atlas_to_owasp[anchor] and mit_end in atlas_to_mit[anchor]
+            ),
+            key=str,
+        )
+        result[(subject, obj)] = shared
+    return result
+
+
 def main(argv: list[str] | None = None) -> int:
     """Regenerate the provenance layer.
 
@@ -341,6 +405,8 @@ def main(argv: list[str] | None = None) -> int:
         lines.append(f"    sssom:mapping_tool \"{block['curator']}\" .")
         lines.append("")
 
+    corroboration = _chain_corroboration(records)
+
     for index, (subject, predicate, obj, block, confidence) in enumerate(records, start=1):
         lines.append(f"pairm:mapping-{index:03d} a sssom:Mapping ;")
         lines.append(f"    sssom:subject_id {_curie(subject, namespaces)} ;")
@@ -351,6 +417,11 @@ def main(argv: list[str] | None = None) -> int:
             lines.append(f"    sssom:confidence {confidence} ;")
         if block["date"]:
             lines.append(f'    sssom:mapping_date "{block["date"]}"^^xsd:date ;')
+        via = corroboration.get((subject, obj))
+        if via is not None:
+            lines.append(f"    pairm:chainCorroborated {'true' if via else 'false'} ;")
+            for anchor in via:
+                lines.append(f"    pairm:corroboratedVia {_curie(anchor, namespaces)} ;")
         lines.append(f"    prov:wasDerivedFrom pairm:{block['set']} .")
         lines.append("")
 

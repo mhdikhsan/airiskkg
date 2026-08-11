@@ -1192,6 +1192,8 @@ pairm:mapping-147 a sssom:Mapping ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated true ;
+    pairm:corroboratedVia atlas:prompt-injection ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-148 a sssom:Mapping ;
@@ -1199,6 +1201,11 @@ pairm:mapping-148 a sssom:Mapping ;
     sssom:predicate_id skos:closeMatch ;
     sssom:object_id mit:subdomain-2-1 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated true ;
+    pairm:corroboratedVia atlas:confidential-data-in-prompt ;
+    pairm:corroboratedVia atlas:exposing-personal-information ;
+    pairm:corroboratedVia atlas:personal-information-in-data ;
+    pairm:corroboratedVia atlas:personal-information-in-prompt ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-149 a sssom:Mapping ;
@@ -1206,6 +1213,7 @@ pairm:mapping-149 a sssom:Mapping ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-150 a sssom:Mapping ;
@@ -1213,6 +1221,8 @@ pairm:mapping-150 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated true ;
+    pairm:corroboratedVia atlas:data-curation ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-151 a sssom:Mapping ;
@@ -1220,6 +1230,7 @@ pairm:mapping-151 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-4 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-152 a sssom:Mapping ;
@@ -1227,6 +1238,8 @@ pairm:mapping-152 a sssom:Mapping ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated true ;
+    pairm:corroboratedVia atlas:data-poisoning ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-153 a sssom:Mapping ;
@@ -1234,6 +1247,7 @@ pairm:mapping-153 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-1-3 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-154 a sssom:Mapping ;
@@ -1241,6 +1255,7 @@ pairm:mapping-154 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-155 a sssom:Mapping ;
@@ -1248,6 +1263,7 @@ pairm:mapping-155 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-1-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-156 a sssom:Mapping ;
@@ -1255,6 +1271,7 @@ pairm:mapping-156 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-157 a sssom:Mapping ;
@@ -1262,6 +1279,7 @@ pairm:mapping-157 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-158 a sssom:Mapping ;
@@ -1269,6 +1287,7 @@ pairm:mapping-158 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-5-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-159 a sssom:Mapping ;
@@ -1276,6 +1295,7 @@ pairm:mapping-159 a sssom:Mapping ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-1 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-160 a sssom:Mapping ;
@@ -1283,6 +1303,7 @@ pairm:mapping-160 a sssom:Mapping ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-161 a sssom:Mapping ;
@@ -1290,6 +1311,7 @@ pairm:mapping-161 a sssom:Mapping ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-162 a sssom:Mapping ;
@@ -1297,6 +1319,7 @@ pairm:mapping-162 a sssom:Mapping ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-7-3 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-163 a sssom:Mapping ;
@@ -1304,6 +1327,8 @@ pairm:mapping-163 a sssom:Mapping ;
     sssom:predicate_id skos:closeMatch ;
     sssom:object_id mit:subdomain-3-1 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated true ;
+    pairm:corroboratedVia atlas:hallucination ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-164 a sssom:Mapping ;
@@ -1311,6 +1336,7 @@ pairm:mapping-164 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-5-1 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-165 a sssom:Mapping ;
@@ -1318,6 +1344,8 @@ pairm:mapping-165 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated true ;
+    pairm:corroboratedVia atlas:incomplete-advice ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-166 a sssom:Mapping ;
@@ -1332,6 +1360,7 @@ pairm:mapping-167 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-168 a sssom:Mapping ;
@@ -1339,6 +1368,7 @@ pairm:mapping-168 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-6-6 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-169 a sssom:Mapping ;
@@ -1346,6 +1376,7 @@ pairm:mapping-169 a sssom:Mapping ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
 pairm:mapping-170 a sssom:Mapping ;
