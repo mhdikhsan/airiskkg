@@ -237,12 +237,14 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   risk to controls. Prefer adopting an upstream row over curating one.
 - `ontology/visualization/` — standalone SPARQL run by hand; referenced by no declaration,
   unlike `patterns/implementation/`
-- `ontology/example/` — architecture graphs used as worked examples and test fixtures
-  (`onyx_danswer.ttl`, `rag_with_guardrails.ttl`, `beam_export_graph_rag_annotated.ttl`)
-- `docs/example_UC/` — the remaining use-case graphs, including the agentic examples and the
-  unannotated imports: `agentic_assistant.ttl`, `multi_agent_assistant.ttl`,
-  `beam_export_graph_rag.ttl`, `dicoding.ttl`, `dicoding_annotated.ttl`.
-  `paths.EXAMPLE_UC_DIR` resolves this directory; tests that need these fixtures use it.
+- `ontology/example/` — **every** architecture graph the repo ships: worked examples,
+  agentic examples, and the unannotated import used as a zero-findings control
+  (`onyx_danswer.ttl`, `rag_with_guardrails.ttl`, `beam_export_graph_rag_annotated.ttl`,
+  `beam_export_graph_rag.ttl`, `agentic_assistant.ttl`, `multi_agent_assistant.ttl`).
+  Tests resolve these through `paths.EXAMPLE_DIR`.
+- `docs/example_UC/` — **NDA-covered use-case graphs, gitignored.** Absent from a fresh
+  clone, so nothing in the test suite or the library may depend on it. `paths.EXAMPLE_UC_DIR`
+  resolves it for local runs only; never add a test or an example that reads from there.
 - `shacl/` — three shapes files answering three different questions:
   `architecture_input_contract.ttl` (is this graph acceptable? Violations),
   `assessment_output_contract.ttl` (are emitted findings well formed?), and
@@ -271,11 +273,9 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   | `ontology/example/onyx_danswer.ttl` (broadest: 7 distinct motifs) | 13 | 23 |
   | `ontology/example/rag_with_guardrails.ttl` (composition) | 3 | 3 |
   | `ontology/example/beam_export_graph_rag_annotated.ttl` | 3 | 9 |
-  | `docs/example_UC/agentic_assistant.ttl` (agentic layer) | 3 | 7 |
-  | `docs/example_UC/multi_agent_assistant.ttl` (delegation + oversight) | 3 | 3 |
-  | `docs/example_UC/dicoding_annotated.ttl` | 3 | 6 |
-  | `docs/example_UC/beam_export_graph_rag.ttl` (unannotated import) | 0 | 0 |
-  | `docs/example_UC/dicoding.ttl` (unannotated) | 0 | 0 |
+  | `ontology/example/agentic_assistant.ttl` (agentic layer) | 3 | 7 |
+  | `ontology/example/multi_agent_assistant.ttl` (delegation + oversight) | 3 | 3 |
+  | `ontology/example/beam_export_graph_rag.ttl` (unannotated import) | 0 | 0 |
 
   Matches are `pair:MotifMatch` instances, not distinct motifs — nested motifs co-match
   by design, so the number is structural coverage.

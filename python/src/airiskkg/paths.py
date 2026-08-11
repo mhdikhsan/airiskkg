@@ -19,8 +19,8 @@ IMPLEMENTATION_DIR = PATTERNS_DIR / "implementation"
 FACETS_DIR = ONTOLOGY_DIR / "facets"
 TAXONOMY_DIR = ONTOLOGY_DIR / "taxonomy"
 EXAMPLE_DIR = ONTOLOGY_DIR / "example"
-# Use-case graphs kept with the docs rather than with the ontology: worked
-# examples and unannotated imports that are not part of the shipped library.
+# NDA-covered use-case graphs. Gitignored, so this directory is absent from a
+# fresh clone: never let the test suite or the shipped library depend on it.
 EXAMPLE_UC_DIR = REPO_ROOT / "docs" / "example_UC"
 SHACL_DIR = REPO_ROOT / "shacl"
 OUTPUTS_DIR = REPO_ROOT / "outputs"

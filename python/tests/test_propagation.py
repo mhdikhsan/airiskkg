@@ -17,7 +17,7 @@ from __future__ import annotations
 from rdflib import RDF, RDFS, URIRef
 
 from airiskkg.assessment_runner import PAIR, run_assessment, run_assessment_from_text
-from airiskkg.paths import EXAMPLE_DIR, EXAMPLE_UC_DIR
+from airiskkg.paths import EXAMPLE_DIR
 
 EX = "http://example.org/"
 
@@ -160,8 +160,8 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     expected = {
         EXAMPLE_DIR / "onyx_danswer.ttl": (13, 23),
         EXAMPLE_DIR / "rag_with_guardrails.ttl": (3, 3),
-        EXAMPLE_UC_DIR / "agentic_assistant.ttl": (3, 7),
-        EXAMPLE_UC_DIR / "multi_agent_assistant.ttl": (3, 3),
+        EXAMPLE_DIR / "agentic_assistant.ttl": (3, 7),
+        EXAMPLE_DIR / "multi_agent_assistant.ttl": (3, 3),
     }
     for name, (motifs, findings) in expected.items():
         result = run_assessment(name, write_outputs=False)

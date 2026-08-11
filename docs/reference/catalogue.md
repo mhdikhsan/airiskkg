@@ -435,4 +435,4 @@ workbench and in `validate_graphs.py`. What it catches:
 - [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md) — terminology and modeling rules (R1–R10)
 - [PAIR-AI_method_and_construction.md](PAIR-AI_method_and_construction.md) — how the library was built
 - [risk_control_linkage.md](risk_control_linkage.md) — risk → control linkage, including the MIT evidence layer
-- [../example_UC/](../example_UC/) and [../../ontology/example/](../../ontology/example/) — worked annotation examples
+- [../../ontology/example/](../../ontology/example/) — worked annotation examples and the unannotated control graph

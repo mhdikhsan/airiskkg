@@ -91,6 +91,7 @@ local:publisherHandoff a beam:Process ;
 local:approvalStep a beam:Process ;
     rdfs:label "Editor approval" ;
     pair:playsRole pair:HumanApprovalStep ;
+    beam:use local:publishTask ;
     beam:inform local:publisherToolCall .
 
 local:publisherToolCall a beam:Process ;

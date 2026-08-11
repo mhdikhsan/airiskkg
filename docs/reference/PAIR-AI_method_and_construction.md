@@ -608,7 +608,7 @@ The 23 findings on `onyx_danswer` span 16 distinct (motif, risk) combinations ac
 OWASP categories, with prompt-injection alone firing from four different motifs. The zero
 on `beam_export_graph_rag.ttl` is not a failure of the pipeline — it is the method's
 central dependency made visible: an unannotated graph, however well-drawn, matches nothing
-(§6.6; `docs/example_UC/beam_export_graph_rag_annotated.ttl` is the annotated form of exactly this
+(§6.6; `ontology/example/beam_export_graph_rag_annotated.ttl` is the annotated form of exactly this
 file).
 
 ---
@@ -703,7 +703,7 @@ cannot be authored there even though the vocabulary exists.
 | `docs/reference/catalogue.md` | Full inventory of motifs, risk patterns, roles, data categories |
 | `docs/reference/risk_control_linkage.md` | Risk to control linkage, including the MIT evidence layer |
 | `docs/user_guide.md` | Workbench user guide |
-| `docs/example_UC/*.ttl` | Worked and unannotated example architecture graphs |
+| `ontology/example/*.ttl` | Worked and unannotated example architecture graphs |
 | `docs/notes/running_assessment_runner.md`, `running_the_webapp.md` | Operational setup |
 | `docs/notes/control_layer_weakness_analysis.md` | Deep critique of the risk→control→motif chain |
 | `docs/notes/mitigation_research_roadmap.md` | Forward plan for the mitigation layer |

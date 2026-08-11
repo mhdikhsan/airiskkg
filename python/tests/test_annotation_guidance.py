@@ -26,7 +26,7 @@ from rdflib import Graph, Namespace, URIRef
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from airiskkg.assessment_runner import load_base_graph  # noqa: E402
-from airiskkg.paths import EXAMPLE_DIR, EXAMPLE_UC_DIR, SHACL_DIR  # noqa: E402
+from airiskkg.paths import EXAMPLE_DIR, SHACL_DIR  # noqa: E402
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
 GUIDANCE_PATH = SHACL_DIR / "annotation_guidance.ttl"
@@ -186,8 +186,8 @@ def test_curated_examples_raise_no_guidance_warnings(shapes, ontology) -> None:
     for path in (
         EXAMPLE_DIR / "onyx_danswer.ttl",
         EXAMPLE_DIR / "rag_with_guardrails.ttl",
-        EXAMPLE_UC_DIR / "agentic_assistant.ttl",
-        EXAMPLE_UC_DIR / "multi_agent_assistant.ttl",
+        EXAMPLE_DIR / "agentic_assistant.ttl",
+        EXAMPLE_DIR / "multi_agent_assistant.ttl",
     ):
         data = Graph().parse(path, format="turtle")
         _conforms, results, _text = validate(
