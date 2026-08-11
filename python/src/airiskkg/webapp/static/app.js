@@ -184,6 +184,38 @@
     ];
   }
 
+  /* Taxonomy chips, with the overflow actually reachable.
+   *
+   * The row used to cut off at four and render a dead "+3" that named nothing
+   * and could not be opened, so the anchors a finding carries - which are the
+   * whole point of anchoring to external taxonomies - were unreadable. The
+   * counter is now a button that reveals the rest in place. */
+  const TAXONOMY_CHIP_LIMIT = 4;
+
+  function taxonomyChips(finding) {
+    const entries = finding.taxonomyEntries || [];
+    const row = el("div", { class: "finding-meta" });
+    if (finding.mechanism) {
+      row.appendChild(el("span", { class: "chip mech", title: finding.mechanism.id }, finding.mechanism.label));
+    }
+    const chipFor = (t) => el("span", { class: "chip tax", title: t.definition || t.id }, t.label);
+    entries.slice(0, TAXONOMY_CHIP_LIMIT).forEach((t) => row.appendChild(chipFor(t)));
+
+    const hidden = entries.slice(TAXONOMY_CHIP_LIMIT);
+    if (!hidden.length) return row;
+
+    const more = el("button",
+      { type: "button", class: "chip tax chip-more", title: "Show the remaining taxonomy entries" },
+      `+${hidden.length}`);
+    more.addEventListener("click", (ev) => {
+      ev.stopPropagation(); // the card itself selects the finding
+      hidden.forEach((t) => row.insertBefore(chipFor(t), more));
+      more.remove();
+    });
+    row.appendChild(more);
+    return row;
+  }
+
   function findingCard(finding) {
     const evidenceIds = finding.evidence.map((e) => e.id);
     const card = el("div", { class: "finding-card", tabindex: "0" }, [
@@ -192,11 +224,7 @@
         finding.motif ? el("span", { class: "chip" }, finding.motif.label) : null,
       ]),
       finding.description ? el("p", { class: "finding-desc" }, finding.description) : null,
-      el("div", { class: "finding-meta" }, [
-        finding.mechanism ? el("span", { class: "chip mech", title: finding.mechanism.id }, finding.mechanism.label) : null,
-        ...finding.taxonomyEntries.slice(0, 4).map((t) => el("span", { class: "chip tax", title: t.definition || t.id }, t.label)),
-        finding.taxonomyEntries.length > 4 ? el("span", { class: "chip tax" }, `+${finding.taxonomyEntries.length - 4}`) : null,
-      ]),
+      taxonomyChips(finding),
       el("details", {}, [
         el("summary", {}, `Suggested controls (${finding.suggestedControls.length}) · evidence (${finding.evidence.length})`),
         ...controlSections(finding.suggestedControls),

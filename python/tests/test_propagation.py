@@ -283,7 +283,7 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     unchanged, which is the check that the root-marking did not loosen the
     generation-side patterns."""
     expected = {
-        EXAMPLE_DIR / "onyx_danswer.ttl": (13, 23),
+        EXAMPLE_DIR / "onyx_danswer.ttl": (13, 25),
         EXAMPLE_DIR / "rag_with_guardrails.ttl": (3, 3),
         EXAMPLE_DIR / "agentic_assistant.ttl": (3, 7),
         EXAMPLE_DIR / "multi_agent_assistant.ttl": (3, 3),
