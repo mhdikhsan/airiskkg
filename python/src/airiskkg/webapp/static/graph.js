@@ -2,8 +2,8 @@
 
 /* Live architecture graph preview: layered left-to-right layout of the BEAM
  * flow graph, boxology-style node shapes, pan/zoom, node details, and
- * evidence highlighting.
- * Exposes window.GraphView = { init, render, clear, setHighlight, fit }.
+ * evidence highlighting, and standalone SVG export.
+ * The public surface is the window.GraphView assignment at the end of the file.
  */
 (function () {
   const SVG_NS = "http://www.w3.org/2000/svg";
@@ -586,5 +586,139 @@
     return new Map(positions);
   }
 
-  window.GraphView = { init, render, clear, setHighlight, fit, layoutPositions, setAnnotation, placeNodeAt };
+  // ---- SVG export -----------------------------------------------------------
+
+  /* The canvas is already SVG, so exporting is not a re-render - it is making
+   * the live element stand on its own. Three things stop a naive clone from
+   * opening correctly in Inkscape, Illustrator, or a browser tab:
+   *
+   *   1. Every colour lives in style.css, referenced through CSS custom
+   *      properties. Detached from the page there is no stylesheet and no
+   *      :root, so an unmodified clone renders as black shapes on transparent.
+   *   2. The viewport carries the current pan/zoom transform, so the file would
+   *      capture whatever happened to be on screen rather than the whole graph.
+   *   3. Interaction-only elements (transparent edge hit-targets, drag ports)
+   *      are invisible but land in the file as stray shapes an editor shows.
+   *
+   * Rules are copied out of the live stylesheet rather than hardcoded here, so
+   * a colour change in style.css reaches the export without anyone remembering
+   * to update two places.
+   */
+
+  const EXPORT_STYLE_PREFIXES = [".edge", ".arrow", ".node", ".shape", "#viewport"];
+
+  // Classes whose elements are removed from the export, plus transient UI
+  // state. Their rules would be dead weight an SVG editor still lists.
+  const EXPORT_STRIPPED_CLASSES = [
+    "edge-hit", "port", "temp", "selected", "highlight", "node-detail", "edge-tip",
+  ];
+
+  function exportedStyleText() {
+    const rulesText = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      let rules;
+      try {
+        rules = sheet.cssRules; // same-origin only; a cross-origin sheet throws
+      } catch {
+        continue;
+      }
+      for (const rule of Array.from(rules || [])) {
+        if (!rule.selectorText || !rule.cssText) continue;
+        // Interaction states cannot fire in a static file, and :hover would
+        // otherwise override the base fill in some editors.
+        if (/:(hover|active|focus)/.test(rule.selectorText)) continue;
+        if (EXPORT_STRIPPED_CLASSES.some((cls) =>
+          new RegExp(`\\.${cls}\\b`).test(rule.selectorText))) continue;
+        const relevant = EXPORT_STYLE_PREFIXES.some((prefix) =>
+          rule.selectorText.split(",").some((sel) => sel.trim().startsWith(prefix)));
+        if (relevant) rulesText.push(rule.cssText);
+      }
+    }
+
+    /* Resolve exactly the custom properties the kept rules reference, read off
+     * the live :root. Deriving the list instead of hardcoding it is the point:
+     * a hardcoded list silently goes stale the moment a rule starts using a new
+     * variable, and the symptom is a shape that exports with no colour at all
+     * rather than an error anyone would notice. */
+    const root = getComputedStyle(document.documentElement);
+    const referenced = new Set();
+    for (const text of rulesText) {
+      for (const match of text.matchAll(/var\((--[\w-]+)\)/g)) referenced.add(match[1]);
+    }
+    referenced.add("--canvas-bg"); // used by the background rect, not by a rule
+
+    const resolved = Array.from(referenced)
+      .sort()
+      .map((name) => [name, root.getPropertyValue(name).trim()])
+      .filter(([, value]) => value)
+      .map(([name, value]) => `  ${name}: ${value};`);
+
+    return [`:root {\n${resolved.join("\n")}\n}`, ...rulesText].join("\n");
+  }
+
+  /** Serialize the current graph as a standalone SVG document string. */
+  function toSvgDocument() {
+    if (!contentBox || !current.nodes.length) return null;
+
+    const clone = svg.cloneNode(true);
+    clone.removeAttribute("style");
+    // Strip interaction-only elements and transient state.
+    clone.querySelectorAll(".edge-hit, .port, .edge.temp").forEach((el) => el.remove());
+    clone.querySelectorAll("[data-port]").forEach((el) => el.removeAttribute("data-port"));
+    const clonedViewport = clone.querySelector("#viewport");
+    if (clonedViewport) {
+      // Export the whole graph, not the current pan/zoom.
+      clonedViewport.removeAttribute("transform");
+      clonedViewport.classList.remove("has-highlight");
+    }
+
+    const box = contentBox;
+    clone.setAttribute("xmlns", SVG_NS);
+    clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    clone.setAttribute("viewBox", `${box.x} ${box.y} ${box.w} ${box.h}`);
+    clone.setAttribute("width", Math.round(box.w));
+    clone.setAttribute("height", Math.round(box.h));
+
+    const style = document.createElementNS(SVG_NS, "style");
+    style.textContent = exportedStyleText();
+    clone.insertBefore(style, clone.firstChild);
+
+    // Opaque background: the canvas is light in the app, and a transparent
+    // export looks broken on any dark surface it is pasted onto.
+    const bg = document.createElementNS(SVG_NS, "rect");
+    const canvasBg = getComputedStyle(document.documentElement)
+      .getPropertyValue("--canvas-bg").trim() || "#ffffff";
+    bg.setAttribute("x", box.x);
+    bg.setAttribute("y", box.y);
+    bg.setAttribute("width", box.w);
+    bg.setAttribute("height", box.h);
+    bg.setAttribute("fill", canvasBg);
+    clone.insertBefore(bg, style.nextSibling);
+
+    const serialized = new XMLSerializer().serializeToString(clone);
+    return `<?xml version="1.0" encoding="UTF-8"?>\n${serialized}`;
+  }
+
+  /** Download the current graph as an .svg file. Returns false if empty. */
+  function exportSvg(filename = "architecture.svg") {
+    const doc = toSvgDocument();
+    if (!doc) return false;
+    const blob = new Blob([doc], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    // Revoke on the next frame: revoking synchronously can cancel the download
+    // in some browsers before it has read the blob.
+    requestAnimationFrame(() => URL.revokeObjectURL(url));
+    return true;
+  }
+
+  window.GraphView = {
+    init, render, clear, setHighlight, fit, layoutPositions, setAnnotation, placeNodeAt,
+    exportSvg, toSvgDocument,
+  };
 })();

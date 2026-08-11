@@ -10,17 +10,20 @@ Endpoints
 ``POST /api/validate``     Architecture Turtle -> SHACL input-contract report.
 ``POST /api/import/t4b``    Tool4Boxology export (N-Triples/Turtle) -> architecture Turtle + notes.
 ``POST /api/assess``       Architecture Turtle -> structured risk findings (JSON).
+``POST /api/export/assessment`` Architecture Turtle -> the run as a downloadable RDF graph.
 """
 
 from __future__ import annotations
 
 import re
 import threading
+from datetime import datetime, timezone
 from functools import lru_cache
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 from rdflib import RDF, RDFS, SKOS, Graph, Literal, Namespace, URIRef
 
+from airiskkg.assessment_export import EXPORT_FORMATS, build_export
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.assessment_runner import (
     BEAM,
@@ -471,7 +474,6 @@ def create_app() -> Flask:
     @app.get("/api/examples/<name>")
     def example(name: str) -> object:
         path = (EXAMPLE_DIR / f"{name}.ttl").resolve()
-        # Guard against path traversal: the resolved file must stay inside EXAMPLE_DIR.
         if EXAMPLE_DIR.resolve() not in path.parents or not path.is_file():
             return jsonify({"error": "Example not found."}), 404
         return jsonify({"name": name, "ttl": path.read_text(encoding="utf-8")})
@@ -718,6 +720,51 @@ def create_app() -> Flask:
         # is actionable instead of silent
         summary["motifGaps"] = gaps
         return jsonify(summary)
+
+    @app.post("/api/export/assessment")
+    def export_assessment() -> object:
+        """Re-run the assessment and return it as a downloadable RDF graph.
+
+        The run is repeated rather than cached from /api/assess: the editor is
+        live, so caching would risk handing back findings for a graph the user
+        has since edited - an export that silently disagrees with the screen is
+        worse than one that takes a second longer."""
+        payload = request.get_json(silent=True) or {}
+        ttl = (payload.get("ttl") or "").strip()
+        export_format = (payload.get("format") or "turtle").strip()
+        if not ttl:
+            return jsonify({"error": "Provide an architecture graph (Turtle) to export."}), 400
+        if export_format not in EXPORT_FORMATS:
+            return jsonify(
+                {"error": f"Unsupported format {export_format!r}. "
+                          f"Use one of: {', '.join(sorted(EXPORT_FORMATS))}."}
+            ), 400
+        started_at = datetime.now(timezone.utc)
+        try:
+            architecture = Graph().parse(data=ttl, format="turtle")
+            with _SPARQL_LOCK:
+                result = run_assessment_from_text(ttl)
+        except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
+            return jsonify({"error": f"Could not export assessment: {error}"}), 400
+
+        export = build_export(
+            result,
+            architecture,
+            source_label=payload.get("sourceLabel") or None,
+            started_at=started_at,
+        )
+        media_type, extension = EXPORT_FORMATS[export_format]
+        body = export.serialize(export_format)
+        return Response(
+            body,
+            mimetype=media_type,
+            headers={
+                "Content-Disposition":
+                    f'attachment; filename="pair-ai-assessment.{extension}"',
+                "X-PAIR-AI-Findings": str(result.risk_finding_count),
+                "X-PAIR-AI-Matches": str(result.motif_match_count),
+            },
+        )
 
     return app
 

@@ -24,6 +24,14 @@
       <span class="toolbar-sep"></span>
       <button type="button" class="btn" id="btn-validate" title="Validate against the SHACL input contract">Validate</button>
       <button type="button" class="btn primary" id="btn-assess" title="Run the PAIR-AI candidate risk assessment">Run assessment</button>
+      <span class="toolbar-sep"></span>
+      <button type="button" class="btn" id="btn-export-svg" title="Download the diagram as a standalone SVG image">Export SVG</button>
+      <select id="export-format" title="RDF serialization for the assessment export">
+        <option value="turtle">Turtle</option>
+        <option value="json-ld">JSON-LD</option>
+        <option value="nt">N-Triples</option>
+      </select>
+      <button type="button" class="btn" id="btn-export-kg" title="Download this assessment as an RDF knowledge graph, with a PROV record of the run">Export assessment</button>
     </div>
   </header>
 

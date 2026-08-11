@@ -33,6 +33,47 @@
     return api(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   }
 
+  /* Download endpoints answer with a file on success and JSON on failure, so
+   * they cannot go through api() - it parses every response as JSON and would
+   * turn a perfectly good Turtle download into a parse error. */
+  async function postForFile(url, body) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Request failed (${res.status})`);
+    }
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = /filename="([^"]+)"/.exec(disposition);
+    return {
+      blob: await res.blob(),
+      findings: res.headers.get("X-PAIR-AI-Findings") || "0",
+      matches: res.headers.get("X-PAIR-AI-Matches") || "0",
+      filename: match ? match[1] : null,
+    };
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    requestAnimationFrame(() => URL.revokeObjectURL(url));
+  }
+
+  /** Name exports after the loaded example, so several downloads stay apart. */
+  function exportBaseName() {
+    const selected = $("#example-select");
+    const name = selected && selected.value ? selected.value : "";
+    return (name || "architecture").replace(/\.(ttl|turtle|nt)$/i, "");
+  }
+
   // ---- status bar ------------------------------------------------------------
   function setStatus(state, message, stats) {
     const dot = $("#status-dot");
@@ -696,6 +737,33 @@ ex:Generate a beam:Transform ;
         renderMotifs(data.motifMatches, data.motifGaps); // Motifs tab (each match carries nodeIds)
         openDrawer("findings");
         setStatus("ok", `Assessment finished`, `${data.summary.riskFindingCount} findings · ${data.summary.motifMatchCount} matches`);
+      } catch (error) {
+        setStatus("error", error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $("#btn-export-svg").addEventListener("click", () => {
+      const ok = GraphView.exportSvg(`${exportBaseName()}.svg`);
+      if (ok) setStatus("ok", "Diagram exported as SVG.");
+      else setStatus("error", "Nothing to export - the diagram is empty.");
+    });
+
+    $("#btn-export-kg").addEventListener("click", async () => {
+      const ttl = Editor.getValue().trim();
+      if (!ttl) { setStatus("error", "Nothing to export - the editor is empty."); return; }
+      const button = $("#btn-export-kg");
+      const format = $("#export-format").value;
+      button.disabled = true;
+      setStatus("busy", "Building the assessment knowledge graph…");
+      try {
+        const { blob, findings, matches, filename } = await postForFile(
+          "/api/export/assessment",
+          { ttl, format, sourceLabel: exportBaseName() },
+        );
+        downloadBlob(blob, filename || `${exportBaseName()}-assessment`);
+        setStatus("ok", "Assessment exported", `${findings} findings · ${matches} matches`);
       } catch (error) {
         setStatus("error", error.message);
       } finally {

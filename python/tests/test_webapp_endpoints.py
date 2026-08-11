@@ -74,6 +74,43 @@ def test_validate_endpoint_reports_contract(client) -> None:
     assert report["violations"]
 
 
+def test_export_endpoint_returns_a_downloadable_graph(client) -> None:
+    """The export must arrive as a file, not JSON, and carry the run counts so
+    the UI can report what it downloaded without re-running the assessment."""
+    from rdflib import Graph
+
+    ttl = (EXAMPLE_DIR / "onyx_danswer.ttl").read_text(encoding="utf-8")
+    response = client.post(
+        "/api/export/assessment", json={"ttl": ttl, "format": "turtle"}
+    )
+    assert response.status_code == 200
+    assert response.mimetype == "text/turtle"
+    assert "attachment" in response.headers["Content-Disposition"]
+    assert int(response.headers["X-PAIR-AI-Findings"]) > 0
+
+    parsed = Graph().parse(data=response.get_data(as_text=True), format="turtle")
+    assert len(parsed) > 0
+
+
+def test_export_endpoint_rejects_bad_input(client) -> None:
+    """Errors stay JSON so the UI can show the message rather than download it."""
+    empty = client.post("/api/export/assessment", json={"ttl": ""})
+    assert empty.status_code == 400
+    assert "error" in empty.get_json()
+
+    # Inline, so the check does not depend on which examples are bundled.
+    minimal = """
+    @prefix ex: <http://example.org/x#> .
+    @prefix beam: <http://w3id.org/beam/core#> .
+    ex:sys a beam:System .
+    """
+    bad_format = client.post(
+        "/api/export/assessment", json={"ttl": minimal, "format": "pdf"}
+    )
+    assert bad_format.status_code == 400
+    assert "pdf" in bad_format.get_json()["error"]
+
+
 def test_validate_endpoint_returns_annotation_guidance_hints(client) -> None:
     """The guidance shapes must actually reach the endpoint's output.
 
