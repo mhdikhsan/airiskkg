@@ -147,7 +147,7 @@ def test_export_without_the_parsed_architecture_still_excludes_the_library() -> 
 
 def test_bundled_example_exports_and_stays_small() -> None:
     """End to end on a real example, and a guard on the size claim."""
-    turtle = (EXAMPLE_DIR / "onyx_danswer.ttl").read_text(encoding="utf-8")
+    turtle = (EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl").read_text(encoding="utf-8")
     result, export = _export(turtle)
     assert result.risk_finding_count > 0
     assert len(export.graph) < len(result.working_graph) / 2, (

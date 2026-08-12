@@ -184,10 +184,9 @@ def test_curated_examples_raise_no_guidance_warnings(shapes, ontology) -> None:
     are not: those name annotations that cannot work."""
     offenders = []
     for path in (
-        EXAMPLE_DIR / "onyx_danswer.ttl",
-        EXAMPLE_DIR / "rag_with_guardrails.ttl",
-        EXAMPLE_DIR / "agentic_assistant.ttl",
-        EXAMPLE_DIR / "multi_agent_assistant.ttl",
+        EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl",
+        EXAMPLE_DIR / "simple_graph_rag.ttl",
+        EXAMPLE_DIR / "MCP_Example_Action.ttl",
     ):
         data = Graph().parse(path, format="turtle")
         _conforms, results, _text = validate(

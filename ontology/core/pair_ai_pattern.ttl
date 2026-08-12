@@ -430,8 +430,8 @@ pair:PretrainedModel a pair:PatternRole ;
 
 pair:FoundationLLM a pair:PatternRole ;
     skos:prefLabel "Foundation LLM"@en ;
-    pair:subRoleOf pair:Model ;
-    skos:definition "A foundation large language model used directly for generation."@en ;
+    pair:subRoleOf pair:GenerativeModel ;
+    skos:definition "A foundation large language model used directly for generation. A specialization of GenerativeModel: by its own definition it generates content, so tagging an element only as a foundation LLM must satisfy every motif that queries for a generative model. It sat directly under Model until 2026-08-12, which made the precise term inert - graphs had to double-tag with GenerativeModel to match anything, and one that named only the LLM silently missed every generation-side motif."@en ;
     skos:closeMatch ai:LLM ;
     skos:relatedMatch ai:GPAIModel .
 

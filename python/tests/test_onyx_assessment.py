@@ -11,7 +11,7 @@ from rdflib.namespace import SKOS
 from airiskkg.assessment_runner import PAIR, PAT, run_assessment
 from airiskkg.paths import EXAMPLE_DIR
 
-ONYX_PATH = EXAMPLE_DIR / "onyx_danswer.ttl"
+ONYX_PATH = EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl"
 
 OWASP = Namespace("http://w3id.org/airiskkg/taxonomy/owasp-llm#")
 

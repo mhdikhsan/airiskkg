@@ -16,7 +16,7 @@ def client():
 
 
 def test_graph_endpoint_returns_nodes_and_edges(client) -> None:
-    ttl = (EXAMPLE_DIR / "onyx_danswer.ttl").read_text(encoding="utf-8")
+    ttl = (EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl").read_text(encoding="utf-8")
     response = client.post("/api/graph", json={"ttl": ttl})
     assert response.status_code == 200
     data = response.get_json()
@@ -57,7 +57,7 @@ def test_graph_endpoint_empty_ttl_is_empty_graph(client) -> None:
 
 
 def test_validate_endpoint_reports_contract(client) -> None:
-    ttl = (EXAMPLE_DIR / "onyx_danswer.ttl").read_text(encoding="utf-8")
+    ttl = (EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl").read_text(encoding="utf-8")
     response = client.post("/api/validate", json={"ttl": ttl})
     assert response.status_code == 200
     report = response.get_json()
@@ -79,7 +79,7 @@ def test_export_endpoint_returns_a_downloadable_graph(client) -> None:
     the UI can report what it downloaded without re-running the assessment."""
     from rdflib import Graph
 
-    ttl = (EXAMPLE_DIR / "onyx_danswer.ttl").read_text(encoding="utf-8")
+    ttl = (EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl").read_text(encoding="utf-8")
     response = client.post(
         "/api/export/assessment", json={"ttl": ttl, "format": "turtle"}
     )
@@ -137,7 +137,7 @@ def test_validate_endpoint_returns_annotation_guidance_hints(client) -> None:
 
 
 def test_assess_endpoint_still_works(client) -> None:
-    ttl = (EXAMPLE_DIR / "onyx_danswer.ttl").read_text(encoding="utf-8")
+    ttl = (EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl").read_text(encoding="utf-8")
     response = client.post("/api/assess", json={"ttl": ttl})
     assert response.status_code == 200
     data = response.get_json()
@@ -213,8 +213,51 @@ def test_vocabulary_roles_declare_which_element_kind_they_apply_to(client) -> No
     assert by_group["Resource Role"] == {"resource"}
 
 
+# Inline RAG fixture. These three tests used to load a bundled example and then
+# edit it by string replacement, which silently stopped testing anything the
+# moment the example was renamed or its element names changed - the assertion
+# that caught it was a guard someone had the foresight to add. Stating the graph
+# here keeps the gap report under test regardless of how examples are organised.
+_RAG_GRAPH = """
+@prefix local: <http://example.org/rag#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+local:sys a beam:System ; rdfs:label "RAG probe" ;
+    beam:contain local:userQuery, local:vectorStore, local:retrieve, local:retrievedContext,
+                 local:promptBuild, local:prompt, local:llm, local:generate, local:response .
+
+local:userQuery a beam:Data ; rdfs:label "User query" ;
+    pair:playsRole pair:UserInput .
+local:vectorStore a beam:Data ; rdfs:label "Vector store" ;
+    pair:playsRole pair:VectorStore .
+local:retrieve a beam:Transform, beam:Process ; rdfs:label "Retrieve" ;
+    pair:playsRole pair:RetrievalStep ;
+    beam:use local:userQuery ;
+    beam:use local:vectorStore ;
+    beam:produce local:retrievedContext .
+local:retrievedContext a beam:Data ; rdfs:label "Retrieved context" ;
+    pair:playsRole pair:RetrievedContext .
+local:promptBuild a beam:Transform, beam:Process ; rdfs:label "Build prompt" ;
+    pair:playsRole pair:PromptConstructionStep ;
+    beam:use local:retrievedContext ;
+    beam:produce local:prompt .
+local:prompt a beam:Data ; rdfs:label "Prompt" ;
+    pair:playsRole pair:PromptTemplate .
+local:llm a beam:StatisticalModel ; rdfs:label "LLM" ;
+    pair:playsRole pair:FoundationLLM .
+local:generate a beam:Infer, beam:Process ; rdfs:label "Generate" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use local:prompt ; beam:use local:llm ;
+    beam:produce local:response .
+local:response a beam:Data ; rdfs:label "Response" ;
+    pair:playsRole pair:LLMResponse, pair:PublicUserFacingOutput .
+"""
+
+
 def _rag_with_guardrails_ttl() -> str:
-    return (EXAMPLE_DIR / "rag_with_guardrails.ttl").read_text(encoding="utf-8")
+    return _RAG_GRAPH
 
 
 def test_assess_reports_why_a_near_miss_motif_did_not_match(client) -> None:

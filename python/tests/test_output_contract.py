@@ -48,7 +48,7 @@ def _conforms(data: Graph) -> tuple[bool, str]:
 
 def test_example_assessment_output_conforms() -> None:
     """A real example's assessment output satisfies the output contract."""
-    result = run_assessment(EXAMPLE_DIR / "onyx_danswer.ttl", write_outputs=False)
+    result = run_assessment(EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl", write_outputs=False)
     assert result.risk_finding_count > 0, "expected findings to validate"
     conforms, text = _conforms(result.risk_findings)
     assert conforms, text
