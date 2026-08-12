@@ -339,21 +339,48 @@
     empty.classList.add("hidden");
     count.textContent = String(rows.length);
 
-    // hop lookup: "element|category" -> the hop that put the category there
-    const hopBy = new Map();
-    rows.forEach((r) => hopBy.set(`${r.element.id}|${r.category.id}`, r));
+    /* Hop lookup: "element|category" -> EVERY hop that put the category there.
+     * An element can acquire the same category from several upstream elements,
+     * so keeping one per key silently hid alternative provenance. */
+    const hopsBy = new Map();
+    rows.forEach((r) => {
+      const key = `${r.element.id}|${r.category.id}`;
+      if (!hopsBy.has(key)) hopsBy.set(key, []);
+      hopsBy.get(key).push(r);
+    });
 
-    const chainFor = (row) => {
-      const chain = [];
-      let current = row;
-      const seen = new Set();
-      while (current && !seen.has(current.from ? current.from.id : "")) {
-        chain.push(current);
-        if (!current.from) break;
-        seen.add(current.from.id);
-        current = hopBy.get(`${current.from.id}|${current.category.id}`);
+    /* Trace back to the annotation the category actually came from.
+     *
+     * Following hops backwards and reporting wherever you stop is wrong when the
+     * flow contains a loop - a conversation store written at the end of a turn
+     * and read at the start of the next is a loop - because the category
+     * circulates and there is no last hop. Whatever the walk reported as the
+     * "origin" was then an artefact of traversal order, which is how a structured
+     * response ended up blamed on the context-update step it feeds rather than
+     * on the store it came from.
+     *
+     * Breadth-first back to the nearest ANNOTATED source instead: the element a
+     * human tagged is a real endpoint, and searching for it terminates a cycle on
+     * a meaningful criterion. If no annotated source is reachable the trail is
+     * genuinely circular, and the row says so rather than inventing a start.
+     */
+    const traceFor = (row) => {
+      const queue = [[row]];
+      const visited = new Set([row.element.id]);
+      let deepest = [row];
+      while (queue.length) {
+        const path = queue.shift();
+        const last = path[path.length - 1];
+        if (path.length > deepest.length) deepest = path;
+        if (!last.from) return { path, origin: null, circular: false };
+        if (last.fromAnnotated) return { path, origin: last.from, circular: false };
+        if (visited.has(last.from.id)) continue;
+        visited.add(last.from.id);
+        for (const next of hopsBy.get(`${last.from.id}|${row.category.id}`) || []) {
+          queue.push([...path, next]);
+        }
       }
-      return chain;
+      return { path: deepest, origin: null, circular: true };
     };
 
     // One entry per (element, category) the modeler sees on an element.
@@ -372,14 +399,25 @@
         [...group.categories.values()]
           .sort((a, b) => a.category.label.localeCompare(b.category.label))
           .forEach((row) => {
-            const chain = chainFor(row);
-            const origin = chain[chain.length - 1];
-            const steps = chain.map((hop) => hop.via && hop.via.label).filter(Boolean);
+            const { path: chain, origin, circular } = traceFor(row);
+            // Read the trail forwards, the direction the data actually moved.
+            const steps = chain.map((hop) => hop.via && hop.via.label).filter(Boolean).reverse();
+            const alternatives =
+              (hopsBy.get(`${row.element.id}|${row.category.id}`) || []).length - 1;
+
+            let why;
+            if (circular) {
+              why = `circulates through ${chain[chain.length - 1].from.label}` +
+                (steps.length ? ` · via ${steps.join(" → ")}` : "");
+            } else {
+              why = `annotated on ${origin ? origin.label : "an upstream element"}` +
+                (steps.length ? ` · via ${steps.join(" → ")}` : "");
+            }
+            if (alternatives > 0) why += ` · +${alternatives} other source${alternatives > 1 ? "s" : ""}`;
+
             const line = el("div", { class: "derived-row", title: "Click to highlight this path in the diagram" }, [
               el("span", { class: "derived-cat" }, row.category.label),
-              el("span", { class: "derived-why" },
-                `from ${origin && origin.from ? origin.from.label : "an annotation"}` +
-                (steps.length ? ` · via ${steps.reverse().join(" → ")}` : "")),
+              el("span", { class: "derived-why" }, why),
             ]);
             const path = [row.element.id, ...chain.map((h) => h.from && h.from.id), ...chain.map((h) => h.via && h.via.id)]
               .filter(Boolean);

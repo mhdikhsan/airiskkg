@@ -201,8 +201,30 @@ def _derived_categories(result: AssessmentResult) -> list[dict]:
     A derived fact the modeler cannot check is a fact they have to trust. The
     propagation rules record, per hop, which element the category came from and
     which step it passed through, so "the answer is sensitive" can be traced back
-    to the annotation a human actually made."""
+    to the annotation a human actually made.
+
+    Each hop also says whether its source holds the category as an ANNOTATION
+    rather than by derivation. Without that the consumer cannot tell where a
+    trail ends, and in a graph with a memory loop there is no end to find: the
+    category circulates, so following hops backwards runs in a circle and any
+    "origin" picked from it is an artefact of traversal order rather than a fact
+    about the system. Knowing which sources are annotated gives the walk a
+    truthful place to stop - the element a human actually tagged."""
     graph = result.combined_graph
+    # A category is annotated when the modeler stated it: present in the working
+    # graph but not among the triples propagation added.
+    inferred = {
+        (subject, obj)
+        for subject, obj in result.inferred_annotations.subject_objects(PAIR.containsDataCategory)
+    }
+
+    def is_annotated(element, category) -> bool:
+        return (
+            element is not None
+            and (element, PAIR.containsDataCategory, category) in graph
+            and (element, category) not in inferred
+        )
+
     rows: list[dict] = []
     for element, derivation in graph.subject_objects(PROV.qualifiedDerivation):
         category = graph.value(derivation, PAIR.derivedCategory)
@@ -216,6 +238,7 @@ def _derived_categories(result: AssessmentResult) -> list[dict]:
                 "category": _ref(graph, category),
                 "from": _ref(graph, upstream) if upstream is not None else None,
                 "via": _ref(graph, step) if step is not None else None,
+                "fromAnnotated": is_annotated(upstream, category),
             }
         )
     return sorted(
