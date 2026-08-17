@@ -2,13 +2,14 @@
 
 /* Lightweight Turtle editor: a textarea with a syntax-highlight overlay,
  * a line-number gutter, and a debounced change callback.
- * Exposes window.Editor = { init, getValue, setValue, markErrorLine }.
+ * Exposes window.Editor = { init, getValue, setValue, markErrorLine, revealLines }.
  */
 (function () {
   let textarea, highlightCode, gutter, codeScroll;
   let changeHandler = null;
   let debounceTimer = null;
   let errorLine = null;
+  let markedLines = [];
 
   const DEBOUNCE_MS = 500;
 
@@ -56,7 +57,9 @@
     const lineCount = text.split("\n").length;
     const rows = [];
     for (let i = 1; i <= lineCount; i += 1) {
-      const cls = i === errorLine ? ' class="err-line"' : "";
+      let cls = "";
+      if (i === errorLine) cls = ' class="err-line"';
+      else if (markedLines.includes(i)) cls = ' class="marked-line"';
       rows.push(`<div${cls}>${i}</div>`);
     }
     gutter.innerHTML = rows.join("");
@@ -95,7 +98,7 @@
     codeScroll = document.getElementById("code-scroll");
     changeHandler = options.onChange || null;
 
-    textarea.addEventListener("input", () => { errorLine = null; refresh(); scheduleChange(); });
+    textarea.addEventListener("input", () => { errorLine = null; markedLines = []; refresh(); scheduleChange(); });
     textarea.addEventListener("scroll", syncScroll);
     textarea.addEventListener("keydown", handleKeydown);
     refresh();
@@ -112,18 +115,34 @@
     return textarea.value;
   }
 
-  function markErrorLine(line) {
-    errorLine = line;
-    refresh();
-    if (line !== null) {
-      const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
-      const target = (line - 1) * lineHeight;
-      if (target < textarea.scrollTop || target > textarea.scrollTop + textarea.clientHeight - lineHeight) {
-        textarea.scrollTop = Math.max(0, target - textarea.clientHeight / 2);
-        syncScroll();
-      }
+  function scrollLineIntoView(line) {
+    const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
+    const target = (line - 1) * lineHeight;
+    if (target < textarea.scrollTop || target > textarea.scrollTop + textarea.clientHeight - lineHeight) {
+      textarea.scrollTop = Math.max(0, target - textarea.clientHeight / 2);
+      syncScroll();
     }
   }
 
-  window.Editor = { init, getValue, setValue, markErrorLine };
+  function markErrorLine(line) {
+    errorLine = line;
+    refresh();
+    if (line !== null) scrollLineIntoView(line);
+  }
+
+  /* Show where something on the canvas lives in the source.
+   *
+   * The diagram and the Turtle are two views of one document, and until now
+   * there was no way across: you read a label off a box and searched for it.
+   * Several lines at once because a motif match is a set of elements, and the
+   * first one is what gets scrolled to - scrolling to each in turn would just
+   * land on the last.
+   */
+  function revealLines(lines) {
+    markedLines = (lines || []).filter((n) => Number.isInteger(n) && n > 0).sort((a, b) => a - b);
+    refresh();
+    if (markedLines.length) scrollLineIntoView(markedLines[0]);
+  }
+
+  window.Editor = { init, getValue, setValue, markErrorLine, revealLines };
 })();

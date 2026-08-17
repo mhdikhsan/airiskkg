@@ -10,6 +10,7 @@ vocabulary of the pattern module, both loaded once and cached.
 
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 
 from rdflib import RDF, RDFS, SKOS, Graph, URIRef
@@ -116,6 +117,43 @@ def _kind_and_type(types: set[URIRef]) -> tuple[str, str | None]:
     return "other", _local_name(chosen)
 
 
+_PREFIX_RE = re.compile(r"^\s*@prefix\s+([A-Za-z][\w.-]*)?:\s*<([^>]*)>\s*\.", re.M)
+
+
+def source_lines(ttl_text: str) -> dict[str, int]:
+    """Map each subject IRI to the 1-based line where it is first declared.
+
+    rdflib discards source positions, so this is a separate scan of the same
+    text. It exists so clicking an element on the canvas can put the cursor on
+    the triple that produced it - the diagram and the code are two views of one
+    document, and a reader who cannot get from one to the other has to search by
+    label and hope the label is unique.
+
+    Only statement-initial subjects count: a line whose first token is a term,
+    which is where rdflib's own serializer (the app rewrites the buffer with it
+    on every structural edit) puts them. Continuation lines under `;` and `,`
+    belong to a subject already recorded, and predicate positions are not what
+    the reader wants anyway."""
+    prefixes = {name or "": iri for name, iri in _PREFIX_RE.findall(ttl_text)}
+    lines: dict[str, int] = {}
+
+    for number, raw in enumerate(ttl_text.splitlines(), start=1):
+        if not raw[:1].strip() or raw.lstrip().startswith(("#", "@")):
+            continue  # indented continuation, comment, or directive
+        token = raw.split(None, 1)[0].rstrip(";,")
+        iri: str | None = None
+        if token.startswith("<") and token.endswith(">"):
+            iri = token[1:-1]
+        elif ":" in token:
+            prefix, _, local = token.partition(":")
+            base = prefixes.get(prefix)
+            if base is not None:
+                iri = base + local
+        if iri and iri not in lines:
+            lines[iri] = number
+    return lines
+
+
 def graph_view(ttl_text: str) -> dict:
     """Parse architecture Turtle and return {system, nodes, edges}.
 
@@ -128,6 +166,7 @@ def graph_view(ttl_text: str) -> dict:
         raise ValueError(str(error)) from error
 
     ontology = _ontology()
+    lines = source_lines(ttl_text)
 
     # candidate nodes: everything typed with a BEAM class or touched by a flow edge
     node_ids: set[URIRef] = set()
@@ -180,6 +219,9 @@ def graph_view(ttl_text: str) -> dict:
             "roleIds": role_ids,
             "categories": [_label(graph, ontology, URIRef(c)) for c in category_ids],
             "categoryIds": category_ids,
+            # where this element is declared in the editor buffer, or None when
+            # it only appears as the object of someone else's triple
+            "line": lines.get(str(node)),
         }
         if kind == "system":
             systems.append(entry)
@@ -190,7 +232,7 @@ def graph_view(ttl_text: str) -> dict:
     edges = [e for e in edges if e["source"] in node_set and e["target"] in node_set]
 
     return {
-        "systems": [{"id": s["id"], "label": s["label"]} for s in systems],
+        "systems": [{"id": s["id"], "label": s["label"], "line": s["line"]} for s in systems],
         "nodes": nodes,
         "edges": edges,
         "stats": {"nodes": len(nodes), "edges": len(edges)},

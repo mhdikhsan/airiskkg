@@ -333,3 +333,43 @@ def test_module_notes_list_every_registered_route(client) -> None:
     assert documented == routes, (
         "endpoints missing from the notes in app.py: " + ", ".join(sorted(routes - documented))
     )
+
+
+def test_graph_nodes_carry_the_line_that_declares_them(client) -> None:
+    """The canvas and the Turtle are two views of one document. Without a line
+    number the only way across is to read a label off a box and search for it,
+    which fails the moment two elements share a label."""
+    ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
+    data = client.post("/api/graph", json={"ttl": ttl}).get_json()
+    assert data["nodes"], "expected nodes"
+    missing = [n["label"] for n in data["nodes"] if not n.get("line")]
+    assert not missing, "nodes with no source line: " + ", ".join(missing)
+
+    # every reported line must actually declare that element
+    source = ttl.splitlines()
+    for node in data["nodes"]:
+        local = node["id"].rsplit("#", 1)[-1].rsplit("/", 1)[-1]
+        line = source[node["line"] - 1]
+        assert local in line, f"{node['label']} -> line {node['line']}: {line!r}"
+
+
+def test_source_lines_ignore_continuations_and_comments() -> None:
+    """A subject is where a statement starts. Indented predicate lines belong to
+    a subject already recorded, and a term inside a comment is not a
+    declaration."""
+    from airiskkg.graph_view import source_lines
+
+    ttl = (
+        "@prefix ex: <http://example.org/x#> .\n"   # 1
+        "# ex:decoy is only mentioned here\n"        # 2
+        "\n"                                         # 3
+        "ex:thing a <http://example.org/C> ;\n"      # 4
+        "    ex:prop ex:other .\n"                   # 5
+        "\n"                                         # 6
+        "ex:other a <http://example.org/C> .\n"      # 7
+    )
+    lines = source_lines(ttl)
+    assert lines["http://example.org/x#thing"] == 4
+    assert lines["http://example.org/x#other"] == 7, "object position must not win over the declaration"
+    assert "http://example.org/x#decoy" not in lines
+    assert "http://example.org/x#prop" not in lines, "a predicate is not a subject"

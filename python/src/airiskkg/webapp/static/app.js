@@ -102,6 +102,12 @@
       const data = await postJson("/api/graph", { ttl });
       if (seq !== previewSeq) return; // a newer edit is already in flight
       GraphView.render(data);
+      // Rebuilt on every parse, so it can never point into a stale buffer.
+      sourceLines = new Map(
+        [...data.nodes, ...data.systems]
+          .filter((n) => n.line)
+          .map((n) => [n.id, n.line])
+      );
       Editor.markErrorLine(null);
       const badge = $("#system-badge");
       if (data.systems.length) {
@@ -119,6 +125,16 @@
       setStatus("error", line ? `Line ${line}: ${firstLine}` : firstLine);
       // keep the last good graph on screen while the user is mid-edit
     }
+  }
+
+  /* Element id -> the line of the editor buffer that declares it, from the
+   * last successful parse. Clicking anything that names elements - a node, a
+   * motif match, a finding - can then put the cursor on the source. */
+  let sourceLines = new Map();
+
+  function revealInSource(ids) {
+    const lines = (ids || []).map((id) => sourceLines.get(id)).filter(Boolean);
+    if (lines.length) Editor.revealLines(lines);
   }
 
   // ---- drawer ----------------------------------------------------------------
@@ -243,6 +259,7 @@
       selectedFinding = card;
       card.classList.add("selected");
       GraphView.setHighlight(evidenceIds);
+      revealInSource(evidenceIds);
     });
     return card;
   }
@@ -485,6 +502,7 @@
         selectedMotifRow = row;
         row.classList.add("selected");
         GraphView.setHighlight(r.nodeIds);
+        revealInSource(r.nodeIds);
       });
       list.appendChild(row);
     });
@@ -795,7 +813,11 @@ ex:Generate a beam:Transform ;
       vocabulary = await api("/api/vocabulary");
     } catch (_) { /* annotation popups will just have empty pick lists */ }
     const classes = [...(vocabulary.resourceClasses || []), ...(vocabulary.processClasses || [])];
-    GraphView.setAnnotation({ vocabulary, classes, onEdit: applyEdit, onDelete: applyDelete, onConnect: applyConnect, onStatus: setStatus });
+    GraphView.setAnnotation({
+      vocabulary, classes,
+      onEdit: applyEdit, onDelete: applyDelete, onConnect: applyConnect, onStatus: setStatus,
+      onSelect: (id) => revealInSource([id]),
+    });
     Annotate.init({ vocabulary, onStatus: setStatus });
 
     initPalette();
