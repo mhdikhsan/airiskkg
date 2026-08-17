@@ -1,22 +1,6 @@
 "use strict";
 
-/* Shared multi-value picker: current selections show as removable chips, plus an
- * "add" dropdown listing the remaining vocabulary. Lets an element carry several
- * roles / data categories. Used by the node popup (graph.js) and the Annotate
- * table (annotate.js).
- *
- * window.MultiPicker(items, selectedIds, {placeholder, grouped, filterKind})
- *   -> { element, getValues }
- *   items       : [{ id, label, group?, applies? }]
- *   selectedIds : [id, ...] already-selected ids
- *   grouped     : opt-in; render items under <optgroup> by their `group` field
- *                 (off by default, so ungrouped vocabularies are unaffected)
- *   filterKind  : opt-in; show only items whose `applies` matches this element
- *                 kind ("process" / "resource"). Narrowing only - a "show all"
- *                 entry reveals the full vocabulary, and an already-selected
- *                 value is never hidden.
- *   getValues() : current selected ids (array)
- */
+
 (function () {
   function el(tag, attrs, children) {
     const node = document.createElement(tag);
@@ -58,8 +42,6 @@
       chipsEl.style.display = selected.size ? "flex" : "none";
     }
 
-    // Group headings alphabetical, items alphabetical within a group, and
-    // anything without a group last under "Other".
     const OTHER = "Other";
     function groupsOf(available) {
       const byGroup = new Map();
@@ -73,9 +55,7 @@
       return names.map((name) => [name, byGroup.get(name).sort((a, b) => a.label.localeCompare(b.label))]);
     }
 
-    // Narrow to the roles that fit this element kind. Items with no `applies`
-    // are always kept (unclassified vocabulary is never hidden), and the filter
-    // is escapable via the SHOW_ALL entry - nothing becomes unreachable.
+   
     const SHOW_ALL = "__show_all__";
     let showAll = false;
     function applicable(list) {

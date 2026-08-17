@@ -1,9 +1,4 @@
 """Flask application serving the PAIR-AI risk assessment UI.
-
-Every endpoint is stateless: the architecture graph lives in the browser's editor
-and is posted with each call, so nothing here holds a session and any request can
-be replayed on its own. Turtle in, JSON out, except the two exports.
-
 Reading the graph
     ``GET  /``                       Single-page UI (editor left, canvas right).
     ``GET  /api/vocabulary``         Pattern roles (grouped, with the element kind
@@ -12,22 +7,13 @@ Reading the graph
     ``GET  /api/examples``           Names of the example graphs on offer, each
                                      flagged ``local`` or not.
     ``GET  /api/examples/<name>``    Raw Turtle for one of them.
-
-Only the two bundled graphs in ``ontology/example/`` are offered by default.
-``ontology/example_local/`` — the user's own, possibly confidential graphs — is
-listed only when the app is created with ``local_examples=True`` (which is what
-``cli serve`` does) or ``PAIR_AI_LOCAL_EXAMPLES`` is set. Importing ``app`` for a
-WSGI server therefore never exposes it, and neither endpoint can read a file the
-listing would not show.
     ``POST /api/graph``              Turtle -> nodes/edges/systems for the canvas.
-
 Editing the graph — each returns the rewritten Turtle, which the editor adopts
     ``POST /api/annotate``           Replace roles/categories on named elements.
     ``POST /api/graph-edit``         One structural edit: add-element, add-edge,
                                      edit-element, add-motif, delete-element.
     ``POST /api/import/t4b``         Tool4Boxology export (N-Triples/Turtle) ->
                                      BEAM Turtle + normalizer notes.
-
 Assessing the graph
     ``POST /api/validate``           SHACL input contract + annotation guidance,
                                      split into violations / warnings / hints.
@@ -35,10 +21,6 @@ Assessing the graph
                                      and the near-miss motif gap report.
     ``POST /api/export/assessment``  The whole run as a downloadable RDF graph
                                      (Turtle or JSON-LD).
-
-Findings are *candidate* risks throughout (Rule R4): absence of a control in the
-response means the submitted graph does not represent one, never that none
-exists.
 """
 
 from __future__ import annotations

@@ -1,32 +1,3 @@
-"""Export one assessment run as a self-contained, traceable knowledge graph.
-
-The assessment already produces RDF - motif matches and candidate risk findings.
-What it does not produce is a graph anyone can read on its own. Two things are
-missing from a bare dump:
-
-  * The findings reference elements by URI, so without the architecture graph
-    beside them the evidence is unresolvable. A finding that says "this element
-    is exposed" is useless if nothing in the file says what that element is.
-  * Nothing records that the findings came from a *run*: which graph was
-    assessed, when, and by what. A file of candidate risks with no provenance
-    invites exactly the reading the method rejects - findings as standing facts
-    rather than the output of one analysis of one submitted graph.
-
-So the export is the architecture graph, the matches, the findings, the derived
-annotations, and a PROV-O record tying them together.
-
-Deliberately NOT included: the motif library, the risk-pattern library, and the
-taxonomies. Those are the reusable knowledge resource, not this run's output;
-bundling them would republish a CC BY-SA-adjacent corpus into every export and
-inflate a small result to megabytes. Findings reference library terms by URI,
-which is what URIs are for.
-
-No new pair: vocabulary is minted here. The run header is plain PROV-O and
-Dublin Core, so a consumer needs no PAIR-AI-specific knowledge to see what the
-file is - and the glossary is explicit that "assessment output" is a narrative
-term, not a defined class.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -40,12 +11,7 @@ from airiskkg.assessment_runner import AssessmentResult, _bind_prefixes
 PROV = Namespace("http://www.w3.org/ns/prov#")
 BEAM = Namespace("http://w3id.org/beam/core#")
 PAIR = Namespace("http://w3id.org/airiskkg/pair-ai#")
-
-#: Identifies the software that produced an export, as a PROV agent.
 PAIR_AI_AGENT = URIRef("https://w3id.org/airiskkg/pair-ai")
-
-#: The shapes an export is expected to satisfy, advertised via dct:conformsTo so
-#: a consumer can check the file rather than take its word for it.
 OUTPUT_CONTRACT = URIRef("http://w3id.org/airiskkg/shacl/assessment-output-contract")
 
 EXPORT_FORMATS = {
@@ -130,10 +96,6 @@ def build_export(
     graph.add((activity, DCTERMS.conformsTo, OUTPUT_CONTRACT))
     if source_label:
         graph.add((activity, DCTERMS.title, Literal(source_label)))
-
-    # What was assessed, and what came out of it. prov:used points at the
-    # systems present in the submitted graph; every finding and match is
-    # attributed to this run, so merging several exports keeps them apart.
     for system in set(graph.subjects(RDF.type, BEAM.System)):
         graph.add((activity, PROV.used, system))
     for generated_type in (PAIR.RiskFinding, PAIR.MotifMatch):
