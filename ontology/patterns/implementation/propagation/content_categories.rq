@@ -2,22 +2,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 
-# Content categories flow with the data that carries them, and each hop records
-# why.
-#
-# The category triple alone tells a modeler that the output is sensitive without
-# telling them how it got that way, which for a derived fact is the difference
-# between a claim they can check and one they have to take on trust. Every hop
-# therefore also emits a prov:Derivation naming the upstream element the category
-# came from and the step it passed through, so a chain can be walked back to the
-# annotation a human actually made.
-#
-# The derivation IRI is deterministic - built from the three elements it relates
-# - and that is load-bearing, not cosmetic. The runner re-runs these rules until
-# no new triple appears; blank nodes would mint a fresh identifier on every pass,
-# so the rule would never reach a fixed point and would inflate the graph until
-# the iteration cap stopped it.
-
 CONSTRUCT {
     ?downstream pair:containsDataCategory ?category .
 
@@ -34,11 +18,7 @@ WHERE {
     ?step beam:use ?upstream ;
           beam:produce ?downstream .
 
-    # Redaction stops protected content only; origin markers survive it.
-    # pair:AnonymizationStep is a sub-role of pair:RedactionStep and so is caught
-    # here, while pair:PseudonymizationStep deliberately is not: DPV types
-    # pseudonymised data as personal data and anonymised data as non-personal,
-    # so clearing sensitivity at a pseudonymisation step would under-report.
+
     FILTER NOT EXISTS {
         ?step pair:playsRole ?stepRole .
         ?stepRole pair:subRoleOf* pair:RedactionStep .

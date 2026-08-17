@@ -2,31 +2,6 @@ PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
 PREFIX facet: <http://w3id.org/airiskkg/facets#>
 PREFIX dpv:   <https://w3id.org/dpv#>
 
-# Bridge: "this element holds personal data" -> pair:SensitiveInformation.
-#
-# The modeler annotates the kind of personal data with DPV concepts, which is
-# what Rule R3 asks for - reference DPV, never mirror it. Those annotations were
-# inert: no condition read facet:hasPersonalDataCategory, so declaring a store to
-# hold health records changed no outcome. This bridges the facet into the one
-# vocabulary the propagation engine and the conditions already speak, so the
-# annotation reaches a finding without a second propagating vocabulary (R8: Data
-# Category is the one facet that is also derived).
-#
-# Deliberately collapsing: every kind of personal data becomes
-# pair:SensitiveInformation. Health and financial data do not get separate
-# categories, because minting them would mirror DPV's taxonomy into
-# pair:DataCategoryScheme, which R3 forbids. Specificity is preserved where it
-# was asserted - the DPV value stays on the element - and is recoverable from
-# there if a condition ever needs it.
-#
-# The exclusion is the point of care. The property ranges over any DPV concept,
-# including the ones that say the data is NOT personal, and a blanket rule would
-# mark anonymised data as sensitive - the exact opposite of what the annotation
-# says. DPV settles which those are by its own axioms: dpv:AnonymisedData is a
-# subclass of dpv:NonPersonalData, while dpv:PseudonymisedData is a subclass of
-# dpv:PersonalData and so is correctly left in. The list is explicit because DPV
-# is referenced rather than loaded, so there is no subclass hierarchy here to
-# walk (verified against the DPV 2.1 serialization, 2026-08-11).
 
 CONSTRUCT {
     ?element pair:containsDataCategory pair:SensitiveInformation .

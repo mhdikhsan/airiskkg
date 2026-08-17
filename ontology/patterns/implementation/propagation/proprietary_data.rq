@@ -2,17 +2,7 @@ PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
 PREFIX facet: <http://w3id.org/airiskkg/facets#>
 PREFIX dataf: <http://w3id.org/airiskkg/facets/data#>
 
-# Bridge: the OECD data-rights status "Proprietary" -> pair:ConfidentialInformation.
-#
-# Same shape as the personal-data bridge, different harm. Proprietary data is
-# owned or licensed with restricted use, which is what pair:ConfidentialInformation
-# already denotes: content kept secret for operational or business reasons, and
-# deliberately not a sub-category of SensitiveInformation because the harm is to
-# an organization rather than a person.
-#
-# Restriction survives derivation - an embedding of a licensed corpus is still
-# encumbered by its licence - so once bridged, the category rides the normal
-# content-category propagation downstream and stops at the same barrier.
+
 
 CONSTRUCT {
     ?element pair:containsDataCategory pair:ConfidentialInformation .
