@@ -19,6 +19,7 @@ from pyshacl import validate as shacl_validate  # noqa: E402
 
 from airiskkg.assessment_runner import run_assessment  # noqa: E402
 from airiskkg.paths import CORE_DIR, EXAMPLE_DIR, PATTERNS_DIR, SHACL_DIR  # noqa: E402
+from conftest import ONYX_NS, example_path  # noqa: E402
 
 SHAPES_PATH = SHACL_DIR / "assessment_output_contract.ttl"
 ALLOWED_STATUSES = {"candidate", "confirmed", "refuted", "mitigated", "accepted"}
@@ -48,7 +49,7 @@ def _conforms(data: Graph) -> tuple[bool, str]:
 
 def test_example_assessment_output_conforms() -> None:
     """A real example's assessment output satisfies the output contract."""
-    result = run_assessment(EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl", write_outputs=False)
+    result = run_assessment(example_path(ONYX_NS), write_outputs=False)
     assert result.risk_finding_count > 0, "expected findings to validate"
     conforms, text = _conforms(result.risk_findings)
     assert conforms, text

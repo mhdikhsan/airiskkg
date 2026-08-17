@@ -23,6 +23,43 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding ?delegatingBinding , ?messageBinding , ?receivingBinding .
+        ?delegatingBinding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
+                           pair:matchedElement ?delegatingStep .
+        ?messageBinding    pair:bindsPatternNode pat:AgentDelegation_MessageNode ;
+                           pair:matchedElement ?message .
+        ?receivingBinding  pair:bindsPatternNode pat:AgentDelegation_ReceivingStepNode ;
+                           pair:matchedElement ?receivingStep .
+
+        FILTER NOT EXISTS {
+            ?mediatingStep pair:playsRole ?mediatingRole .
+            { ?mediatingRole pair:subRoleOf* pair:PolicyEnforcementStep }
+            UNION
+            { ?mediatingRole pair:subRoleOf* pair:GuardrailStep }
+            UNION
+            { ?mediatingRole pair:subRoleOf* pair:MemoryValidationStep }
+            UNION
+            { ?mediatingRole pair:subRoleOf* pair:OutputValidationStep }
+            {
+                ?mediatingStep beam:use ?message .
+            }
+            UNION
+            {
+                ?mediatingStep beam:inform ?receivingStep .
+            }
+        }
+        FILTER NOT EXISTS {
+            pat:InsecureAgentCommunicationRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?message .
+        }
+
+
+    }
+
     pat:InsecureAgentCommunicationRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -31,39 +68,6 @@ WHERE {
 
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
-    }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif ;
-        pair:hasNodeBinding ?delegatingBinding , ?messageBinding , ?receivingBinding .
-    ?delegatingBinding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
-                       pair:matchedElement ?delegatingStep .
-    ?messageBinding    pair:bindsPatternNode pat:AgentDelegation_MessageNode ;
-                       pair:matchedElement ?message .
-    ?receivingBinding  pair:bindsPatternNode pat:AgentDelegation_ReceivingStepNode ;
-                       pair:matchedElement ?receivingStep .
-
-    FILTER NOT EXISTS {
-        ?mediatingStep pair:playsRole ?mediatingRole .
-        { ?mediatingRole pair:subRoleOf* pair:PolicyEnforcementStep }
-        UNION
-        { ?mediatingRole pair:subRoleOf* pair:GuardrailStep }
-        UNION
-        { ?mediatingRole pair:subRoleOf* pair:MemoryValidationStep }
-        UNION
-        { ?mediatingRole pair:subRoleOf* pair:OutputValidationStep }
-        {
-            ?mediatingStep beam:use ?message .
-        }
-        UNION
-        {
-            ?mediatingStep beam:inform ?receivingStep .
-        }
-    }
-    FILTER NOT EXISTS {
-        pat:InsecureAgentCommunicationRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?message .
     }
 
     BIND(IRI(CONCAT(

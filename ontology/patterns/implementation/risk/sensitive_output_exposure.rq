@@ -5,25 +5,6 @@ PREFIX beamr: <http://w3id.org/beam/risk#>
 PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX dct:   <http://purl.org/dc/terms/>
 
-# Protected content reaching a user-facing element, however it got there.
-#
-# This reads the propagation engine's own conclusion. The category on the sink is
-# usually derived rather than annotated - the modeler tagged a source once, and
-# content_categories.rq carried it - so the finding fires on exactly the fact the
-# Derived tab can explain hop by hop.
-#
-# Not bound to a motif, deliberately. The retrieval-scoped sensitive-disclosure
-# pattern requires a Vector-IR match with a sensitive store, which is what left
-# every non-retrieval route unreported: content typed by a user, returned by a
-# tool, or recalled from agent memory reached the output with nothing to say so.
-# The risk here is about where content ends up, not which configuration carried
-# it, so the query anchors on the sink.
-#
-# Barriers are already respected upstream: content that passed a redaction or
-# anonymisation step never acquires the category on the far side, so this cannot
-# fire there. What is checked here in addition is whether anything screens the
-# sink itself (Rule R4: absence in the submitted graph, not in the world).
-
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
@@ -40,6 +21,33 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?sink pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+        ?sink pair:containsDataCategory/pair:subDataCategoryOf* ?category .
+        VALUES ?category { pair:SensitiveInformation pair:ConfidentialInformation }
+
+
+        ?producingStep beam:produce ?sink .
+
+        ?match a pair:MotifMatch ;
+               pair:matchesMotif ?motif ;
+               pair:hasNodeBinding/pair:matchedElement ?sink .
+
+        FILTER NOT EXISTS {
+            ?control pair:playsRole ?controlRole .
+            { ?controlRole pair:subRoleOf* pair:RedactionStep }
+            UNION
+            { ?controlRole pair:subRoleOf* pair:OutputValidationStep }
+            UNION
+            { ?controlRole pair:subRoleOf* pair:OutputGuardrailStep }
+            { ?control beam:use ?sink } UNION { ?control beam:produce ?sink }
+        }
+        FILTER NOT EXISTS {
+            pat:SensitiveOutputExposureRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?sink .
+        }
+    }
+
     pat:SensitiveOutputExposureRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -48,42 +56,6 @@ WHERE {
 
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
-    }
-
-    # A user-facing sink that carries protected content. The category is matched
-    # through pair:subDataCategoryOf* rather than by exact value: a graph may
-    # declare its own kinds beneath the protected roots - onyx_danswer does
-    # exactly that - and an exact-match test would silently miss every one of
-    # them while the Derived tab happily showed the content arriving.
-    ?sink pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
-    ?sink pair:containsDataCategory/pair:subDataCategoryOf* ?category .
-    VALUES ?category { pair:SensitiveInformation pair:ConfidentialInformation }
-
-    # The step that produced it, for evidence and to anchor the control check.
-    ?producingStep beam:produce ?sink .
-
-    # The sink must be bound in some motif match. Motif-less means "not tied to
-    # one particular motif", not "detached from structure": a finding is defined
-    # as applying to a motif match, and pair:generatedFromMatch is what lets the
-    # workbench highlight the configuration a finding rests on. Same shape as the
-    # excessive-agency pattern, which is motif-less in the same sense.
-    ?match a pair:MotifMatch ;
-           pair:matchesMotif ?motif ;
-           pair:hasNodeBinding/pair:matchedElement ?sink .
-
-    # Nothing screens the sink on the way out.
-    FILTER NOT EXISTS {
-        ?control pair:playsRole ?controlRole .
-        { ?controlRole pair:subRoleOf* pair:RedactionStep }
-        UNION
-        { ?controlRole pair:subRoleOf* pair:OutputValidationStep }
-        UNION
-        { ?controlRole pair:subRoleOf* pair:OutputGuardrailStep }
-        { ?control beam:use ?sink } UNION { ?control beam:produce ?sink }
-    }
-    FILTER NOT EXISTS {
-        pat:SensitiveOutputExposureRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?sink .
     }
 
     BIND(IRI(CONCAT(

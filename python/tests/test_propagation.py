@@ -18,6 +18,7 @@ from rdflib import RDF, RDFS, URIRef
 
 from airiskkg.assessment_runner import PAIR, run_assessment, run_assessment_from_text
 from airiskkg.paths import EXAMPLE_DIR
+from conftest import ONYX_NS, MCP_NS, example_path  # noqa: E402
 
 EX = "http://example.org/"
 
@@ -283,9 +284,9 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     unchanged, which is the check that the root-marking did not loosen the
     generation-side patterns."""
     expected = {
-        EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl": (13, 25),
+        example_path(ONYX_NS): (13, 25),
         EXAMPLE_DIR / "simple_graph_rag.ttl": (3, 11),
-        EXAMPLE_DIR / "MCP_Example_Action.ttl": (9, 18),
+        example_path(MCP_NS): (9, 18),
     }
     for name, (motifs, findings) in expected.items():
         result = run_assessment(name, write_outputs=False)

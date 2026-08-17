@@ -1,11 +1,14 @@
 """Endpoint tests for the workbench webapp (live preview + validation)."""
 
+import re
+
 import pytest
 
 flask = pytest.importorskip("flask")
 
 from airiskkg.paths import EXAMPLE_DIR, REPO_ROOT  # noqa: E402
 from airiskkg.webapp.app import create_app  # noqa: E402
+from conftest import ONYX_NS, example_path  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -16,7 +19,7 @@ def client():
 
 
 def test_graph_endpoint_returns_nodes_and_edges(client) -> None:
-    ttl = (EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl").read_text(encoding="utf-8")
+    ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     response = client.post("/api/graph", json={"ttl": ttl})
     assert response.status_code == 200
     data = response.get_json()
@@ -57,7 +60,7 @@ def test_graph_endpoint_empty_ttl_is_empty_graph(client) -> None:
 
 
 def test_validate_endpoint_reports_contract(client) -> None:
-    ttl = (EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl").read_text(encoding="utf-8")
+    ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     response = client.post("/api/validate", json={"ttl": ttl})
     assert response.status_code == 200
     report = response.get_json()
@@ -79,7 +82,7 @@ def test_export_endpoint_returns_a_downloadable_graph(client) -> None:
     the UI can report what it downloaded without re-running the assessment."""
     from rdflib import Graph
 
-    ttl = (EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl").read_text(encoding="utf-8")
+    ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     response = client.post(
         "/api/export/assessment", json={"ttl": ttl, "format": "turtle"}
     )
@@ -137,7 +140,7 @@ def test_validate_endpoint_returns_annotation_guidance_hints(client) -> None:
 
 
 def test_assess_endpoint_still_works(client) -> None:
-    ttl = (EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl").read_text(encoding="utf-8")
+    ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     response = client.post("/api/assess", json={"ttl": ttl})
     assert response.status_code == 200
     data = response.get_json()
@@ -305,3 +308,28 @@ def test_assess_gap_candidates_are_elements_of_the_submitted_graph(client) -> No
     ]
     assert candidates, "expected candidate elements for the untagged vector store"
     assert all(candidate["id"].startswith("http") for candidate in candidates)
+
+
+def test_module_notes_list_every_registered_route(client) -> None:
+    """The endpoint notes at the top of app.py are the first thing a reader of
+    this webapp sees, and nothing regenerates them - ``/api/annotate`` and
+    ``/api/graph-edit`` were both live for weeks without appearing there. A
+    docstring that is silently incomplete is worse than none, so it is checked
+    like any other claim the repository makes."""
+    from airiskkg.webapp import app as module
+
+    notes = module.__doc__ or ""
+    routes = {
+        rule.rule
+        for rule in client.application.url_map.iter_rules()
+        if not rule.rule.startswith("/static")
+    }
+    # Flask writes converters as <name>; the notes may say <name> or <n>.
+    documented = {
+        route
+        for route in routes
+        if route in notes or re.sub(r"<[^>]+>", "<", route) in re.sub(r"<[^>]+>", "<", notes)
+    }
+    assert documented == routes, (
+        "endpoints missing from the notes in app.py: " + ", ".join(sorted(routes - documented))
+    )

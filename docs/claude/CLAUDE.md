@@ -251,11 +251,14 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   risk to controls. Prefer adopting an upstream row over curating one.
 - `ontology/visualization/` — standalone SPARQL run by hand; referenced by no declaration,
   unlike `patterns/implementation/`
-- `ontology/example/` — **every** architecture graph the repo ships: worked examples,
-  agentic examples, and the unannotated import used as a zero-findings control
-  (`onyx_danswer.ttl`, `rag_with_guardrails.ttl`, `beam_export_graph_rag_annotated.ttl`,
-  `beam_export_graph_rag.ttl`, `agentic_assistant.ttl`, `multi_agent_assistant.ttl`).
-  Tests resolve these through `paths.EXAMPLE_DIR`.
+- `ontology/example/` — **every** architecture graph the repo ships: a RAG chatbot
+  (Onyx / Danswer), a minimal graph-RAG, and an agentic MCP tool-use system.
+  **Never name one of these files in a test.** They get renamed — `onyx_danswer.ttl`
+  became `onyx_danswer_rag_chatbot.ttl` became `ony_rag_chatbot.ttl` inside two days —
+  and each rename broke suites for reasons unrelated to what they test. Resolve one
+  through `tests/conftest.py::example_path(NAMESPACE)`, which finds the graph by the
+  IRI it mints elements under: renaming a file is a filing decision, changing a
+  namespace is a modelling one.
 - `docs/example_UC/` — **NDA-covered use-case graphs, gitignored.** Absent from a fresh
   clone, so nothing in the test suite or the library may depend on it. `paths.EXAMPLE_UC_DIR`
   resolves it for local runs only; never add a test or an example that reads from there.
@@ -280,24 +283,37 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - Branch per feature; one labeled commit per task; never commit directly to main.
 - After every ontology change: parse all `.ttl` with RDFLib, run pyshacl where shapes
   exist, and re-run the assessment on the bundled examples — then explain any diff.
-  Current baseline (matches / findings, as of 2026-08-06):
+  Current baseline (matches / findings, as of 2026-08-17):
 
   | Graph | Matches | Findings |
   | --- | --- | --- |
-  | `ontology/example/onyx_danswer.ttl` (broadest: 7 distinct motifs) | 13 | 23 |
-  | `ontology/example/rag_with_guardrails.ttl` (composition) | 3 | 3 |
-  | `ontology/example/beam_export_graph_rag_annotated.ttl` | 3 | 9 |
-  | `ontology/example/agentic_assistant.ttl` (agentic layer) | 3 | 7 |
-  | `ontology/example/multi_agent_assistant.ttl` (delegation + oversight) | 3 | 3 |
-  | `ontology/example/beam_export_graph_rag.ttl` (unannotated import) | 0 | 0 |
+  | RAG chatbot, Onyx / Danswer (broadest: 7 distinct motifs) | 13 | 25 |
+  | Agentic MCP tool use (agentic layer: delegation, memory, tools) | 9 | 18 |
+  | Minimal graph RAG | 3 | 11 |
 
   Matches are `pair:MotifMatch` instances, not distinct motifs — nested motifs co-match
-  by design, so the number is structural coverage.
+  by design, so the number is structural coverage. `test_propagation.py` asserts these
+  numbers; the graphs are named there by namespace, not filename.
 - **rdflib's SPARQL compiler is not thread-safe.** pyparsing keeps global parser state, so
   two threads compiling queries at once corrupt it and surface as
   "`Param.postParse2() missing 1 required positional argument`". Compilation is serialized
   in `assessment_runner._prepared_query`; keep it there rather than locking in a caller,
   and never parse SPARQL off the main thread outside that function.
+- **Clause order is load-bearing in a risk query (2026-08-17).** rdflib has no query
+  optimizer: it evaluates a BGP in textual order and applies a FILTER to its whole group.
+  So every risk query is written as `WHERE { { structure … FILTER NOT EXISTS … } curated
+  metadata . OPTIONAL … BIND … }`. The metadata block (`hasMechanism` /
+  `hasApplicabilityCondition` / `mayIndicateRisk` / `suggestedControl`) is a small cross
+  product — 18 to 36 rows — and leading with it multiplied every structural join, property
+  path, and absence-of-control check by that factor. Restoring the old order costs ~3x
+  runtime and changes nothing about the result. Never hoist the metadata back to the top,
+  and keep the structural braces: without them the filters leave that group and fire once
+  per metadata row again.
+- **The knowledge base is parsed once per process** and copied per call
+  (`assessment_runner._base_knowledge`). Turtle parsing was the largest single cost in
+  every entry point. `load_base_graph()` still hands back a fresh writable graph — callers
+  parse an architecture into it — so never return the cached instance. Editing a `.ttl` in
+  a live server needs `reload_knowledge_base()`; Flask's reloader watches Python only.
 - Adding a query file is a two-part change: the `.rq` **and** a `pair:PatternImplementation`
   registering its `pair:implementationPath`. `test_library_consistency.py` is the net that
   catches an orphaned query or a dangling path.

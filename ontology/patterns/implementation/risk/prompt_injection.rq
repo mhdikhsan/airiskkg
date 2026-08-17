@@ -24,6 +24,38 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding/pair:matchedElement ?untrustedContent .
+        ?untrustedContent pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
+
+        ?generationStep
+            beam:use ?llm ;
+            beam:produce ?userFacingOutput ;
+            pair:playsRole ?generationRole .
+        ?generationRole pair:subRoleOf* pair:GenerationStep .
+        ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+        ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+
+        {
+            ?generationStep beam:use ?untrustedContent .
+        }
+        UNION
+        {
+            ?intermediateStep
+                beam:use ?untrustedContent ;
+                beam:produce ?derivedContext .
+            ?generationStep beam:use ?derivedContext .
+        }
+
+        FILTER NOT EXISTS {
+            pat:PromptInjectionRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?generationStep .
+        }
+    }
+
     pat:PromptInjectionRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -33,37 +65,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif ;
-        pair:hasNodeBinding/pair:matchedElement ?untrustedContent .
-    ?untrustedContent pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
-
-    ?generationStep
-        beam:use ?llm ;
-        beam:produce ?userFacingOutput ;
-        pair:playsRole ?generationRole .
-    ?generationRole pair:subRoleOf* pair:GenerationStep .
-    ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
-    ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
-
-    {
-        ?generationStep beam:use ?untrustedContent .
-    }
-    UNION
-    {
-        ?intermediateStep
-            beam:use ?untrustedContent ;
-            beam:produce ?derivedContext .
-        ?generationStep beam:use ?derivedContext .
-    }
-
-    FILTER NOT EXISTS {
-        pat:PromptInjectionRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?generationStep .
-    }
-
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

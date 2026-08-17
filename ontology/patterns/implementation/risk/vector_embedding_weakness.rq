@@ -20,6 +20,26 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        VALUES ?motif {
+            pat:VectorBasedInformationRetrievalMotif
+            pat:RetrievalAugmentedGenerationMotif
+            pat:EmbeddingsMotif
+            pat:RerankerMotif
+        }
+
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding/pair:matchedElement ?evidenceElement .
+
+        FILTER NOT EXISTS {
+            pat:VectorAndEmbeddingWeaknessRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?evidenceElement .
+        }
+
+    }
+
     pat:VectorAndEmbeddingWeaknessRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -29,24 +49,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-
-    VALUES ?motif {
-        pat:VectorBasedInformationRetrievalMotif
-        pat:RetrievalAugmentedGenerationMotif
-        pat:EmbeddingsMotif
-        pat:RerankerMotif
-    }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif ;
-        pair:hasNodeBinding/pair:matchedElement ?evidenceElement .
-
-    FILTER NOT EXISTS {
-        pat:VectorAndEmbeddingWeaknessRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?evidenceElement .
-    }
-
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

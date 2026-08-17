@@ -22,6 +22,26 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding ?resourceBinding , ?stepBinding .
+        VALUES ?motif { pat:ExternalDependencyMotif }
+
+        ?resourceBinding
+            pair:bindsPatternNode pat:ExtDep_ExternalResourceNode ;
+            pair:matchedElement ?externalResource .
+        ?stepBinding
+            pair:bindsPatternNode pat:ExtDep_UsingStepNode ;
+            pair:matchedElement ?usingStep .
+
+        FILTER NOT EXISTS {
+            pat:SupplyChainCompromiseRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?externalResource .
+        }
+    }
+
     pat:SupplyChainCompromiseRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -31,24 +51,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif ;
-        pair:hasNodeBinding ?resourceBinding , ?stepBinding .
-    VALUES ?motif { pat:ExternalDependencyMotif }
-
-    ?resourceBinding
-        pair:bindsPatternNode pat:ExtDep_ExternalResourceNode ;
-        pair:matchedElement ?externalResource .
-    ?stepBinding
-        pair:bindsPatternNode pat:ExtDep_UsingStepNode ;
-        pair:matchedElement ?usingStep .
-
-    FILTER NOT EXISTS {
-        pat:SupplyChainCompromiseRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?externalResource .
-    }
-
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

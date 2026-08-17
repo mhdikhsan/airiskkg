@@ -1,16 +1,36 @@
 """Flask application serving the PAIR-AI risk assessment UI.
 
-Endpoints
----------
-``GET  /``                 Single-page UI (editor left, live graph preview right).
-``GET  /api/vocabulary``   Roles, data categories, and element classes.
-``GET  /api/examples``     Bundled example architecture graphs.
-``GET  /api/examples/<n>`` Raw Turtle for one bundled example.
-``POST /api/graph``        Architecture Turtle -> nodes/edges for the live preview.
-``POST /api/validate``     Architecture Turtle -> SHACL input-contract report.
-``POST /api/import/t4b``    Tool4Boxology export (N-Triples/Turtle) -> architecture Turtle + notes.
-``POST /api/assess``       Architecture Turtle -> structured risk findings (JSON).
-``POST /api/export/assessment`` Architecture Turtle -> the run as a downloadable RDF graph.
+Every endpoint is stateless: the architecture graph lives in the browser's editor
+and is posted with each call, so nothing here holds a session and any request can
+be replayed on its own. Turtle in, JSON out, except the two exports.
+
+Reading the graph
+    ``GET  /``                       Single-page UI (editor left, canvas right).
+    ``GET  /api/vocabulary``         Pattern roles (grouped, with the element kind
+                                     each applies to), data categories, BEAM
+                                     element classes, edge kinds, motif templates.
+    ``GET  /api/examples``           Names of the bundled example graphs.
+    ``GET  /api/examples/<name>``    Raw Turtle for one bundled example.
+    ``POST /api/graph``              Turtle -> nodes/edges/systems for the canvas.
+
+Editing the graph — each returns the rewritten Turtle, which the editor adopts
+    ``POST /api/annotate``           Replace roles/categories on named elements.
+    ``POST /api/graph-edit``         One structural edit: add-element, add-edge,
+                                     edit-element, add-motif, delete-element.
+    ``POST /api/import/t4b``         Tool4Boxology export (N-Triples/Turtle) ->
+                                     BEAM Turtle + normalizer notes.
+
+Assessing the graph
+    ``POST /api/validate``           SHACL input contract + annotation guidance,
+                                     split into violations / warnings / hints.
+    ``POST /api/assess``             Findings, motif matches, derived categories,
+                                     and the near-miss motif gap report.
+    ``POST /api/export/assessment``  The whole run as a downloadable RDF graph
+                                     (Turtle or JSON-LD).
+
+Findings are *candidate* risks throughout (Rule R4): absence of a control in the
+response means the submitted graph does not represent one, never that none
+exists.
 """
 
 from __future__ import annotations
@@ -28,10 +48,8 @@ from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.assessment_runner import (
     BEAM,
     PAIR,
-    implementation_paths_for_output_type,
     load_base_graph,
     run_assessment_from_text,
-    run_construct_query,
 )
 from airiskkg.assessment_view import summarize_result
 from airiskkg.graph_view import graph_view
@@ -438,6 +456,9 @@ def _shacl_report(ttl: str) -> dict:
     }
 
 
+_WARMUP_STARTED = False
+
+
 def _warm_query_cache() -> None:
     """Pre-compile every assessment query once at startup (in the background) so
     the first Run assessment is as fast as the rest. Holds the SPARQL lock so it
@@ -451,9 +472,23 @@ def _warm_query_cache() -> None:
         pass
 
 
+def _start_warmup() -> None:
+    """Once per process, whatever creates the app.
+
+    Importing this module already builds an app for WSGI servers, and the CLI
+    builds another - so an unguarded warm-up ran twice, and because it holds the
+    SPARQL lock the second run delayed the first real request instead of
+    shortening it."""
+    global _WARMUP_STARTED
+    if _WARMUP_STARTED:
+        return
+    _WARMUP_STARTED = True
+    threading.Thread(target=_warm_query_cache, daemon=True).start()
+
+
 def create_app() -> Flask:
     app = Flask(__name__, static_folder="static", static_url_path="/static")
-    threading.Thread(target=_warm_query_cache, daemon=True).start()
+    _start_warmup()
 
     @app.get("/")
     def index() -> object:
@@ -712,7 +747,10 @@ def create_app() -> Flask:
         try:
             with _SPARQL_LOCK:
                 result = run_assessment_from_text(ttl)
-                gaps = _motif_gaps(ttl)
+            # Outside the lock on purpose: the gap report runs no SPARQL, it walks
+            # the loaded graph directly, so holding the compiler lock across it
+            # would serialize concurrent requests for nothing.
+            gaps = _motif_gaps(ttl)
         except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
             return jsonify({"error": f"Could not run assessment: {error}"}), 400
         summary = summarize_result(result)

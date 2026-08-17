@@ -23,6 +23,40 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding/pair:matchedElement ?generationStep .
+
+        ?generationStep
+            beam:use ?llm ;
+            beam:produce ?userFacingOutput ;
+            pair:playsRole ?generationRole .
+        ?generationRole pair:subRoleOf* pair:GenerationStep .
+        ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+        ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+
+        FILTER NOT EXISTS {
+            ?outputControlStep
+                beam:use ?userFacingOutput ;
+                pair:playsRole ?outputControlRole .
+            {
+                ?outputControlRole pair:subRoleOf* pair:OutputValidationStep .
+            }
+            UNION
+            {
+                ?outputControlRole pair:subRoleOf* pair:OutputGuardrailStep .
+            }
+        }
+        FILTER NOT EXISTS {
+            pat:ImproperOutputHandlingRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?userFacingOutput .
+        }
+
+
+    }
+
     pat:ImproperOutputHandlingRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -32,37 +66,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif ;
-        pair:hasNodeBinding/pair:matchedElement ?generationStep .
-
-    ?generationStep
-        beam:use ?llm ;
-        beam:produce ?userFacingOutput ;
-        pair:playsRole ?generationRole .
-    ?generationRole pair:subRoleOf* pair:GenerationStep .
-    ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
-    ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
-
-    FILTER NOT EXISTS {
-        ?outputControlStep
-            beam:use ?userFacingOutput ;
-            pair:playsRole ?outputControlRole .
-        {
-            ?outputControlRole pair:subRoleOf* pair:OutputValidationStep .
-        }
-        UNION
-        {
-            ?outputControlRole pair:subRoleOf* pair:OutputGuardrailStep .
-        }
-    }
-    FILTER NOT EXISTS {
-        pat:ImproperOutputHandlingRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?userFacingOutput .
-    }
-
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

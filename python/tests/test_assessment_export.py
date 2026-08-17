@@ -26,6 +26,7 @@ from airiskkg.assessment_export import (
 )
 from airiskkg.assessment_runner import PAIR, run_assessment_from_text
 from airiskkg.paths import EXAMPLE_DIR, SHACL_DIR
+from conftest import ONYX_NS, example_path  # noqa: E402
 
 PROV = Namespace("http://www.w3.org/ns/prov#")
 BEAM = Namespace("http://w3id.org/beam/core#")
@@ -147,7 +148,7 @@ def test_export_without_the_parsed_architecture_still_excludes_the_library() -> 
 
 def test_bundled_example_exports_and_stays_small() -> None:
     """End to end on a real example, and a guard on the size claim."""
-    turtle = (EXAMPLE_DIR / "onyx_danswer_rag_chatbot.ttl").read_text(encoding="utf-8")
+    turtle = example_path(ONYX_NS).read_text(encoding="utf-8")
     result, export = _export(turtle)
     assert result.risk_finding_count > 0
     assert len(export.graph) < len(result.working_graph) / 2, (

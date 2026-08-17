@@ -22,6 +22,29 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding/pair:matchedElement ?generationStep .
+
+        ?generationStep pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+        ?toolOrActionStep pair:playsRole ?actionRole .
+        {
+            ?actionRole pair:subRoleOf* pair:ToolInvocationStep .
+        }
+        UNION
+        {
+            ?actionRole pair:subRoleOf* pair:StateChangingStep .
+        }
+        ?generationStep beam:inform+ ?toolOrActionStep .
+
+        FILTER NOT EXISTS {
+            pat:ExcessiveAgencyRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?toolOrActionStep .
+        }
+    }
+
     pat:ExcessiveAgencyRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -31,28 +54,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif ;
-        pair:hasNodeBinding/pair:matchedElement ?generationStep .
-
-    ?generationStep pair:playsRole/pair:subRoleOf* pair:GenerationStep .
-    ?toolOrActionStep pair:playsRole ?actionRole .
-    {
-        ?actionRole pair:subRoleOf* pair:ToolInvocationStep .
-    }
-    UNION
-    {
-        ?actionRole pair:subRoleOf* pair:StateChangingStep .
-    }
-    ?generationStep beam:inform+ ?toolOrActionStep .
-
-    FILTER NOT EXISTS {
-        pat:ExcessiveAgencyRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?toolOrActionStep .
-    }
-
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

@@ -27,6 +27,73 @@ CONSTRUCT {
         pair:findingStatus "candidate" .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
+            pair:hasNodeBinding ?queryBinding ,
+                ?retrievalBinding ,
+                ?vectorStoreBinding ,
+                ?resultBinding .
+
+        ?queryBinding
+            pair:bindsPatternNode pat:VectorIR_QueryNode ;
+            pair:matchedElement ?query .
+
+        ?retrievalBinding
+            pair:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+            pair:matchedElement ?retrievalStep .
+
+        ?vectorStoreBinding
+            pair:bindsPatternNode pat:VectorIR_VectorStoreNode ;
+            pair:matchedElement ?vectorStore .
+
+        ?resultBinding
+            pair:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+            pair:matchedElement ?retrievedResult .
+
+        ?vectorStore pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
+        ?retrievedResult pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
+
+        {
+            ?generationStep
+                beam:use ?retrievedResult ;
+                beam:use ?llm ;
+                beam:produce ?userFacingOutput ;
+                pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+            ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+            ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+        }
+        UNION
+        {
+            ?intermediateStep
+                beam:use ?retrievedResult ;
+                beam:produce ?enhancedContext .
+            ?generationStep
+                beam:use ?enhancedContext ;
+                beam:use ?llm ;
+                beam:produce ?userFacingOutput ;
+                pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+            ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+            ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+        }
+
+        FILTER NOT EXISTS {
+            pat:SensitiveDataRetrievalExposureRiskPattern
+                pair:suggestedControl ?implementedDisclosureControl .
+            ?implementedDisclosureControl beamr:associatedTo ?controlledElement .
+            FILTER(?controlledElement IN (
+                ?retrievalStep,
+                ?vectorStore,
+                ?retrievedResult,
+                ?generationStep,
+                ?llm,
+                ?userFacingOutput
+            ))
+        }
+    .
+    }
+
     pat:SensitiveDataRetrievalExposureRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -36,71 +103,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
-        pair:hasNodeBinding ?queryBinding ,
-            ?retrievalBinding ,
-            ?vectorStoreBinding ,
-            ?resultBinding .
-
-    ?queryBinding
-        pair:bindsPatternNode pat:VectorIR_QueryNode ;
-        pair:matchedElement ?query .
-
-    ?retrievalBinding
-        pair:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
-        pair:matchedElement ?retrievalStep .
-
-    ?vectorStoreBinding
-        pair:bindsPatternNode pat:VectorIR_VectorStoreNode ;
-        pair:matchedElement ?vectorStore .
-
-    ?resultBinding
-        pair:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
-        pair:matchedElement ?retrievedResult .
-
-    ?vectorStore pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
-    ?retrievedResult pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
-
-    {
-        ?generationStep
-            beam:use ?retrievedResult ;
-            beam:use ?llm ;
-            beam:produce ?userFacingOutput ;
-            pair:playsRole/pair:subRoleOf* pair:GenerationStep .
-        ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
-        ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
-    }
-    UNION
-    {
-        ?intermediateStep
-            beam:use ?retrievedResult ;
-            beam:produce ?enhancedContext .
-        ?generationStep
-            beam:use ?enhancedContext ;
-            beam:use ?llm ;
-            beam:produce ?userFacingOutput ;
-            pair:playsRole/pair:subRoleOf* pair:GenerationStep .
-        ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
-        ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
-    }
-
-    FILTER NOT EXISTS {
-        pat:SensitiveDataRetrievalExposureRiskPattern
-            pair:suggestedControl ?implementedDisclosureControl .
-        ?implementedDisclosureControl beamr:associatedTo ?controlledElement .
-        FILTER(?controlledElement IN (
-            ?retrievalStep,
-            ?vectorStore,
-            ?retrievedResult,
-            ?generationStep,
-            ?llm,
-            ?userFacingOutput
-        ))
-    }
-
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

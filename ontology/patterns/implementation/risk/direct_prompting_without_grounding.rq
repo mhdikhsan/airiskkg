@@ -23,6 +23,44 @@ CONSTRUCT {
         pair:findingStatus "candidate" .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif pat:DirectPromptingMotif ;
+            pair:hasNodeBinding ?queryBinding ,
+                ?stepBinding ,
+                ?modelBinding ,
+                ?answerBinding .
+
+        ?queryBinding
+            pair:bindsPatternNode pat:DP_QueryNode ;
+            pair:matchedElement ?query .
+
+        ?stepBinding
+            pair:bindsPatternNode pat:DP_GenerationStepNode ;
+            pair:matchedElement ?step .
+
+        ?modelBinding
+            pair:bindsPatternNode pat:DP_ModelNode ;
+            pair:matchedElement ?llm .
+
+        ?answerBinding
+            pair:bindsPatternNode pat:DP_AnswerNode ;
+            pair:matchedElement ?answer .
+
+        FILTER NOT EXISTS {
+            ?step beam:use ?knowledgeSource .
+            ?knowledgeSource pair:playsRole/pair:subRoleOf* pair:KnowledgeSource .
+        }
+
+        FILTER NOT EXISTS {
+            ?step beam:use ?retrievedContext .
+            ?retrievedContext pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
+        }
+
+
+    }
+
     pat:DirectPromptingWithoutGroundingRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -32,41 +70,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif pat:DirectPromptingMotif ;
-        pair:hasNodeBinding ?queryBinding ,
-            ?stepBinding ,
-            ?modelBinding ,
-            ?answerBinding .
-
-    ?queryBinding
-        pair:bindsPatternNode pat:DP_QueryNode ;
-        pair:matchedElement ?query .
-
-    ?stepBinding
-        pair:bindsPatternNode pat:DP_GenerationStepNode ;
-        pair:matchedElement ?step .
-
-    ?modelBinding
-        pair:bindsPatternNode pat:DP_ModelNode ;
-        pair:matchedElement ?llm .
-
-    ?answerBinding
-        pair:bindsPatternNode pat:DP_AnswerNode ;
-        pair:matchedElement ?answer .
-
-    FILTER NOT EXISTS {
-        ?step beam:use ?knowledgeSource .
-        ?knowledgeSource pair:playsRole/pair:subRoleOf* pair:KnowledgeSource .
-    }
-
-    FILTER NOT EXISTS {
-        ?step beam:use ?retrievedContext .
-        ?retrievedContext pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
-    }
-
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",
