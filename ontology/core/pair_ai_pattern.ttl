@@ -703,14 +703,14 @@ pair:ChunkingStep a pair:PatternRole ;
 
 pair:VectorSearchStep a pair:PatternRole ;
     skos:prefLabel "VectorSearchStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
-    skos:definition "A step performing vector similarity search."@en ;
+    pair:subRoleOf pair:RetrievalStep ;
+    skos:definition "A step performing vector similarity search. A specialization of RetrievalStep: it retrieves fragments from a knowledge source, by embedding proximity. It sat under ProcessingStep until 2026-08-17, which made the precise term inert - retrieval motifs walk pair:subRoleOf* from RetrievalStep, so a step tagged only VectorSearchStep matched nothing."@en ;
     skos:relatedMatch ai:InformationRetrieval .
 
 pair:KeywordSearchStep a pair:PatternRole ;
     skos:prefLabel "KeywordSearchStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
-    skos:definition "A step performing keyword/lexical search."@en ;
+    pair:subRoleOf pair:RetrievalStep ;
+    skos:definition "A step performing keyword/lexical search. A specialization of RetrievalStep, for the same reason as VectorSearchStep: it retrieves from a knowledge source, by lexical match."@en ;
     skos:relatedMatch ai:InformationRetrieval .
 
 pair:AggregationStep a pair:PatternRole ;

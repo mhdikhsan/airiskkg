@@ -27,20 +27,14 @@ CONSTRUCT {
 WHERE {
     ?query a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
 
-    # Retrieval is DRIVEN BY the user query (Martin Fowler: "user request -> retriever")
-    # and reads a vector store / index; retrieval that ignores the query is not RAG.
+   
     ?retrievalStep pair:playsRole/pair:subRoleOf* pair:RetrievalStep ;
                    beam:use ?query ;
-                   beam:use ?vectorStore ;
+                   beam:use ?knowledgeSource ;
                    beam:produce ?retrievedCtx .
-    ?vectorStore a beam:Data .
-    { ?vectorStore pair:playsRole/pair:subRoleOf* pair:VectorStore }
-    UNION
-    { ?vectorStore pair:playsRole/pair:subRoleOf* pair:VectorIndex }
+    ?knowledgeSource a beam:Data ;
+                     pair:playsRole/pair:subRoleOf* pair:KnowledgeSource .
     ?retrievedCtx a beam:Data ; pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
-
-    # Retrieved context may pass through intermediate steps (reranking, aggregation)
-    # between the retrieval step and prompt construction - path-tolerant.
     ?retrievedCtx (^beam:use/beam:produce)* ?ctxForPrompt .
     ?ctxForPrompt pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
 
