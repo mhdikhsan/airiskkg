@@ -24,6 +24,14 @@
       <span class="toolbar-sep"></span>
       <button type="button" class="btn" id="btn-validate" title="Validate against the SHACL input contract">Validate</button>
       <button type="button" class="btn primary" id="btn-assess" title="Run the PAIR-AI candidate risk assessment">Run assessment</button>
+      <span class="toolbar-sep"></span>
+      <button type="button" class="btn" id="btn-export-svg" title="Download the diagram as a standalone SVG image">Export SVG</button>
+      <select id="export-format" title="RDF serialization for the assessment export">
+        <option value="turtle">Turtle</option>
+        <option value="json-ld">JSON-LD</option>
+        <option value="nt">N-Triples</option>
+      </select>
+      <button type="button" class="btn" id="btn-export-kg" title="Download this assessment as an RDF knowledge graph, with a PROV record of the run">Export assessment</button>
     </div>
   </header>
 
@@ -82,6 +90,7 @@
           <div class="drawer-tabs">
             <button type="button" class="drawer-tab active" data-drawer-tab="findings">Findings <span class="count" id="findings-count"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="motifs">Motifs <span class="count" id="motifs-count" title="matched motifs"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="derived">Data flow <span class="count" id="derived-count" title="data categories the engine inferred by following the flow — annotated ones are not counted"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="annotate">Annotate <span class="count" id="annotate-count" title="elements without a role"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="validation">Input contract <span class="count" id="validation-count"></span></button>
           </div>
@@ -96,6 +105,10 @@
           <div class="drawer-panel hidden" data-drawer-panel="motifs">
             <p class="drawer-empty" id="motifs-empty">Run an assessment to see which motifs matched. Selecting a motif highlights its elements in the graph.</p>
             <div id="motifs-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="derived">
+            <p class="drawer-empty" id="derived-empty">Run an assessment to follow protected content through the system: which elements ended up carrying a data category you did not annotate, and the route it took to get there.</p>
+            <div id="derived-list"></div>
           </div>
           <div class="drawer-panel hidden" data-drawer-panel="annotate">
             <div class="annotate-head">

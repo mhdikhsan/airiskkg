@@ -1,35 +1,18 @@
-# Keep the build context lean and the image reproducible.
-.git
-.gitignore
-.github
+*
+# What the running app reads
+!python/src
+!ontology
+!shacl
+!external
 
-# Python caches / build artifacts
-**/__pycache__/
+# Attribution and licence travel with the code
+!NOTICE.md
+!LICENSE
+!README.md
+
+
+ontology/example_local
+**/__pycache__
 **/*.py[cod]
-**/*.egg-info/
-.pytest_cache/
-**/.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-# Virtualenvs
-.venv/
-venv/
-env/
-
-# Generated assessment outputs (recreated at runtime; not needed in the image)
-outputs/
-
-# Frozen prior-generation snapshot — the app reads ontology/, not v1/
-v1/
-
-# Editor / OS noise
-.idea/
-.vscode/
-*.log
-.DS_Store
-
-# Don't ship the build files into the image
-Dockerfile
-.dockerignore
-docker-compose.yml
+**/*.egg-info
+**/.pytest_cache

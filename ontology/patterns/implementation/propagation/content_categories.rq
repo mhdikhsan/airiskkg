@@ -1,8 +1,15 @@
 PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
 
 CONSTRUCT {
     ?downstream pair:containsDataCategory ?category .
+
+    ?downstream prov:qualifiedDerivation ?derivation .
+    ?derivation a prov:Derivation ;
+        prov:entity ?upstream ;
+        prov:hadActivity ?step ;
+        pair:derivedCategory ?category .
 }
 WHERE {
     ?upstream pair:containsDataCategory ?category .
@@ -11,7 +18,7 @@ WHERE {
     ?step beam:use ?upstream ;
           beam:produce ?downstream .
 
-    # Redaction stops protected content only; origin markers survive it.
+
     FILTER NOT EXISTS {
         ?step pair:playsRole ?stepRole .
         ?stepRole pair:subRoleOf* pair:RedactionStep .
@@ -22,4 +29,11 @@ WHERE {
             pair:PromptInstruction
         }
     }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/category-derivation/",
+        ENCODE_FOR_URI(STR(?downstream)), "/",
+        ENCODE_FOR_URI(STR(?category)), "/",
+        ENCODE_FOR_URI(STR(?upstream))
+    )) AS ?derivation)
 }

@@ -23,6 +23,33 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif .
+        VALUES ?motif {
+            pat:EmbeddingsMotif
+            pat:FineTuningMotif
+            pat:TrainingToServingMotif
+        }
+
+        ?match pair:hasNodeBinding/pair:matchedElement ?untrustedSource .
+        ?untrustedSource pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
+
+        OPTIONAL {
+            ?match pair:hasNodeBinding/pair:matchedElement ?pipelineStep .
+            ?pipelineStep beam:use ?untrustedSource .
+            OPTIONAL {
+                ?pipelineStep beam:produce ?producedArtifact .
+            }
+        }
+
+        FILTER NOT EXISTS {
+            pat:DataAndModelPoisoningRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?untrustedSource .
+        }
+    }
+
     pat:DataAndModelPoisoningRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -32,32 +59,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif .
-    VALUES ?motif {
-        pat:EmbeddingsMotif
-        pat:FineTuningMotif
-        pat:TrainingToServingMotif
-    }
-
-    ?match pair:hasNodeBinding/pair:matchedElement ?untrustedSource .
-    ?untrustedSource pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
-
-    OPTIONAL {
-        ?match pair:hasNodeBinding/pair:matchedElement ?pipelineStep .
-        ?pipelineStep beam:use ?untrustedSource .
-        OPTIONAL {
-            ?pipelineStep beam:produce ?producedArtifact .
-        }
-    }
-
-    FILTER NOT EXISTS {
-        pat:DataAndModelPoisoningRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?untrustedSource .
-    }
-
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

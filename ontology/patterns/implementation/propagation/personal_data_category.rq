@@ -1,0 +1,13 @@
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX facet: <http://w3id.org/airiskkg/facets#>
+PREFIX dpv:   <https://w3id.org/dpv#>
+
+
+CONSTRUCT {
+    ?element pair:containsDataCategory pair:SensitiveInformation .
+}
+WHERE {
+    ?element facet:hasPersonalDataCategory ?personalDataKind .
+
+    FILTER (?personalDataKind NOT IN (dpv:AnonymisedData, dpv:NonPersonalData))
+}

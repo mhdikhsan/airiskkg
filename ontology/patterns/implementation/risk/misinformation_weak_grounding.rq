@@ -25,6 +25,47 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif pat:RetrievalAugmentedGenerationMotif ;
+            pair:hasNodeBinding ?queryBinding ,
+                ?retrievedCtxBinding ,
+                ?genStepBinding ,
+                ?llmBinding ,
+                ?responseBinding .
+
+        ?queryBinding
+            pair:bindsPatternNode pat:RAG_QueryNode ;
+            pair:matchedElement ?query .
+        ?retrievedCtxBinding
+            pair:bindsPatternNode pat:RAG_RetrievedContextNode ;
+            pair:matchedElement ?retrievedCtx .
+        ?genStepBinding
+            pair:bindsPatternNode pat:RAG_GenerationStepNode ;
+            pair:matchedElement ?genStep .
+        ?llmBinding
+            pair:bindsPatternNode pat:RAG_LLMNode ;
+            pair:matchedElement ?llm .
+        ?responseBinding
+            pair:bindsPatternNode pat:RAG_ResponseNode ;
+            pair:matchedElement ?response .
+
+
+        FILTER NOT EXISTS {
+            ?verificationStep beam:use ?response .
+            { ?verificationStep pair:playsRole/pair:subRoleOf* pair:EvaluationStep }
+            UNION
+            { ?verificationStep pair:playsRole/pair:subRoleOf* pair:ScoringStep }
+        }
+
+
+        FILTER NOT EXISTS {
+            pat:MisinformationFromWeakGroundingRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?genStep .
+        }
+    }
+
     pat:MisinformationFromWeakGroundingRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -33,46 +74,6 @@ WHERE {
 
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
-    }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif pat:RetrievalAugmentedGenerationMotif ;
-        pair:hasNodeBinding ?queryBinding ,
-            ?retrievedCtxBinding ,
-            ?genStepBinding ,
-            ?llmBinding ,
-            ?responseBinding .
-
-    ?queryBinding
-        pair:bindsPatternNode pat:RAG_QueryNode ;
-        pair:matchedElement ?query .
-    ?retrievedCtxBinding
-        pair:bindsPatternNode pat:RAG_RetrievedContextNode ;
-        pair:matchedElement ?retrievedCtx .
-    ?genStepBinding
-        pair:bindsPatternNode pat:RAG_GenerationStepNode ;
-        pair:matchedElement ?genStep .
-    ?llmBinding
-        pair:bindsPatternNode pat:RAG_LLMNode ;
-        pair:matchedElement ?llm .
-    ?responseBinding
-        pair:bindsPatternNode pat:RAG_ResponseNode ;
-        pair:matchedElement ?response .
-
-    # Weak grounding: no represented verification of the generated response.
-    FILTER NOT EXISTS {
-        ?verificationStep beam:use ?response .
-        { ?verificationStep pair:playsRole/pair:subRoleOf* pair:EvaluationStep }
-        UNION
-        { ?verificationStep pair:playsRole/pair:subRoleOf* pair:ScoringStep }
-    }
-
-    # A represented grounding/verification control on the response also exempts
-    # the pipeline (mirrors the control-presence guard in the other risk OQPs).
-    FILTER NOT EXISTS {
-        pat:MisinformationFromWeakGroundingRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?genStep .
     }
 
     BIND(IRI(CONCAT(

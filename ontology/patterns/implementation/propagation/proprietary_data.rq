@@ -1,0 +1,12 @@
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX facet: <http://w3id.org/airiskkg/facets#>
+PREFIX dataf: <http://w3id.org/airiskkg/facets/data#>
+
+
+
+CONSTRUCT {
+    ?element pair:containsDataCategory pair:ConfidentialInformation .
+}
+WHERE {
+    ?element facet:hasDataRights dataf:Proprietary .
+}

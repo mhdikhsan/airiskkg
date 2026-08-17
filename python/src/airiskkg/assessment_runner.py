@@ -49,9 +49,19 @@ class AssessmentResult:
     working_graph: Graph
     motif_matches: Graph
     risk_findings: Graph
-    combined_graph: Graph
     output_dir: Path | None = None
     inferred_annotations: Graph = field(default_factory=Graph)
+
+    @property
+    def combined_graph(self) -> Graph:
+        """Everything the run knows: library + architecture + every derived fact.
+
+        This *is* the working graph. Matches and findings are merged back into it
+        as they are constructed, so the two were always equal by the time a
+        caller saw them, and materializing a second copy cost a few thousand
+        triple insertions per run to hand back a graph nobody distinguished.
+        Kept as a named view because "combined" is what consumers mean."""
+        return self.working_graph
 
     @property
     def motif_match_count(self) -> int:
@@ -123,7 +133,17 @@ def _next_output_run_dir(base_dir: Path) -> Path:
     return base_dir / f"output_{next_run}"
 
 
-def load_base_graph() -> Graph:
+@lru_cache(maxsize=1)
+def _base_knowledge() -> Graph:
+    """Parse the knowledge base once per process.
+
+    Turtle parsing dominates every entry point that touches the library - a full
+    load is ~0.2s against ~0.05s to copy the result - and the files do not change
+    while a process runs. Never hand this instance out: callers parse an
+    architecture into the graph they get back and the assessment writes derived
+    facts into it, so a shared instance would leak one run's findings into the
+    next. See reload_knowledge_base() for editing the .ttl files in a live
+    process."""
     graph = _bind_prefixes(Graph())
     for path in CORE_FILES:
         _load_turtle(graph, path)
@@ -133,6 +153,21 @@ def load_base_graph() -> Graph:
         _load_turtle(graph, path)
     for path in sorted(TAXONOMY_DIR.glob("*.ttl")):
         _load_turtle(graph, path)
+    return graph
+
+
+def reload_knowledge_base() -> None:
+    """Drop the cached parse so the next load picks up edited .ttl files.
+
+    Flask's reloader watches Python sources only, so a live server keeps serving
+    the ontology it started with until this is called or the process restarts."""
+    _base_knowledge.cache_clear()
+
+
+def load_base_graph() -> Graph:
+    """A fresh, writable copy of the loaded knowledge base."""
+    graph = _bind_prefixes(Graph())
+    graph += _base_knowledge()
     return graph
 
 
@@ -227,9 +262,6 @@ def _run_assessment_on_graph(
         _merge(risk_findings, constructed)
         _merge(working_graph, constructed)
 
-    combined_graph = _bind_prefixes(Graph())
-    _merge(combined_graph, working_graph)
-
     run_output_dir: Path | None = None
     if write_outputs:
         run_output_dir = _next_output_run_dir(_resolve_output_dir(output_dir))
@@ -237,13 +269,12 @@ def _run_assessment_on_graph(
         inferred_annotations.serialize(run_output_dir / "inferred_annotations.ttl", format="turtle")
         motif_matches.serialize(run_output_dir / "motif_matches.ttl", format="turtle")
         risk_findings.serialize(run_output_dir / "risk_findings.ttl", format="turtle")
-        combined_graph.serialize(run_output_dir / "combined_assessment_graph.ttl", format="turtle")
+        working_graph.serialize(run_output_dir / "combined_assessment_graph.ttl", format="turtle")
 
     return AssessmentResult(
         working_graph=working_graph,
         motif_matches=motif_matches,
         risk_findings=risk_findings,
-        combined_graph=combined_graph,
         output_dir=run_output_dir,
         inferred_annotations=inferred_annotations,
     )

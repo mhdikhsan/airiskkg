@@ -8,11 +8,62 @@ each test pairs a positive case with a control that must suppress it.
 
 from __future__ import annotations
 
-from airiskkg.assessment_runner import run_assessment, run_assessment_from_text
+from airiskkg.assessment_runner import run_assessment_from_text
 from airiskkg.assessment_view import summarize_result
-from airiskkg.paths import EXAMPLE_DIR
 
-EXAMPLE = EXAMPLE_DIR / "agentic_assistant.ttl"
+# Self-contained on purpose. This suite used to load a bundled example, which
+# made it hostage to how the example set is organised - it broke three times in
+# one week as graphs were renamed, moved, and replaced. The shapes under test
+# are small enough to state here, so the tests now fail only when the agentic
+# layer changes.
+AGENT_GRAPH = """
+@prefix local: <http://example.org/agentic#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+local:sys a beam:System ; rdfs:label "Agentic probe" ;
+    beam:contain local:userRequest, local:planning, local:toolCall, local:toolResult,
+                 local:memoryWrite, local:agentMemory, local:memoryRead,
+                 local:recalledContext, local:llm, local:generation, local:answer .
+
+local:userRequest a beam:Data ; rdfs:label "User request" ;
+    pair:playsRole pair:PublicUserInput .
+local:llm a beam:StatisticalModel ; rdfs:label "LLM" ;
+    pair:playsRole pair:GenerativeModel .
+
+# planning -> action -> result: the Tool-Using Agent shape
+local:planning a beam:Infer, beam:Process ; rdfs:label "Planning" ;
+    pair:playsRole pair:PlanningStep ;
+    beam:use local:userRequest, local:llm ;
+    beam:inform local:toolCall .
+local:toolCall a beam:Process ; rdfs:label "Tool call" ;
+    pair:playsRole pair:ToolInvocationStep ;
+    beam:produce local:toolResult .
+local:toolResult a beam:Data ; rdfs:label "Tool result" ;
+    pair:playsRole pair:RetrievedContext .
+
+# write -> store -> read: the Agent Memory Loop shape
+local:memoryWrite a beam:Process ; rdfs:label "Memory write" ;
+    pair:playsRole pair:MemoryWriteStep ;
+    beam:use local:toolResult ;
+    beam:produce local:agentMemory .
+local:agentMemory a beam:Data ; rdfs:label "Agent memory" ;
+    pair:playsRole pair:AgentMemory .
+local:memoryRead a beam:Process ; rdfs:label "Memory read" ;
+    pair:playsRole pair:MemoryReadStep ;
+    beam:use local:agentMemory ;
+    beam:produce local:recalledContext .
+local:recalledContext a beam:Data ; rdfs:label "Recalled context" ;
+    pair:playsRole pair:RetrievedContext .
+
+local:generation a beam:Infer, beam:Process ; rdfs:label "Generation" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use local:recalledContext, local:llm ;
+    beam:produce local:answer .
+local:answer a beam:Data ; rdfs:label "Answer" ;
+    pair:playsRole pair:PublicUserFacingOutput .
+"""
 
 POLICY_GATE = """
 local:policyGate a beam:Process ; rdfs:label "Policy Gate" ;
@@ -38,7 +89,7 @@ def _findings(summary: dict) -> set[str]:
 
 
 def _example_ttl() -> str:
-    return EXAMPLE.read_text(encoding="utf-8")
+    return AGENT_GRAPH
 
 
 def test_agentic_example_matches_both_agentic_motifs() -> None:
@@ -81,7 +132,7 @@ def test_memory_loop_needs_the_same_store_written_and_read() -> None:
 
 def test_agentic_findings_are_candidates() -> None:
     """Candidate framing (Rule R1) holds for the agentic layer too."""
-    result = run_assessment(EXAMPLE, write_outputs=False)
+    result = run_assessment_from_text(AGENT_GRAPH)
     statuses = {
         str(o)
         for _s, o in result.risk_findings.subject_objects(

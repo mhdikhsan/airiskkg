@@ -125,6 +125,20 @@ framing instead of supporting it.
 - **Flow relations are not data flow.** `inform` is process-to-process ordering with no
   resource transfer and it is load-bearing (the Guardrails motif is constituted by a
   guardrail step *informing* a generation step). Never redefine a motif over "data flow".
+- **Facets reach the assessment two ways, and only two (decided 2026-08-11).**
+  (i) **Bridge** — a protection-relevant facet value is mapped into a `pair:DataCategory`
+  by a registered propagation query, and the category then travels along the flow like any
+  other. Used for `facet:hasPersonalDataCategory` → `SensitiveInformation` and
+  `facet:hasDataRights dataf:Proprietary` → `ConfidentialInformation`.
+  (ii) **Direct read** — an applicability condition tests the facet on a *bound element of
+  the match* (R2), positively (R10). No propagation is involved.
+  **Facets are never propagated as facets.** R8 makes Data Category the one facet that is
+  also derived; propagating others would break that line and force every condition to read
+  two propagating vocabularies. Concretely: content-borne properties (sensitivity,
+  confidentiality) bridge and travel; element-intrinsic properties (provenance, dynamism)
+  do not, because an element derived from observed data is *derived* data, not observed
+  data — copying the label downstream would assert something false. "What was this derived
+  from?" is answered by the `prov:Derivation` chain instead, which is exact.
 - **There is no "Personal" data category, and there must not be one.** Personal data is
   expressed with DPV concepts through `facet:hasPersonalDataCategory` (R3), never mirrored
   into `pair:DataCategoryScheme`. Data Category is the one facet that lives in the pattern
@@ -237,11 +251,29 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   risk to controls. Prefer adopting an upstream row over curating one.
 - `ontology/visualization/` — standalone SPARQL run by hand; referenced by no declaration,
   unlike `patterns/implementation/`
-- `ontology/example/` — **every** architecture graph the repo ships: worked examples,
-  agentic examples, and the unannotated import used as a zero-findings control
-  (`onyx_danswer.ttl`, `rag_with_guardrails.ttl`, `beam_export_graph_rag_annotated.ttl`,
-  `beam_export_graph_rag.ttl`, `agentic_assistant.ttl`, `multi_agent_assistant.ttl`).
-  Tests resolve these through `paths.EXAMPLE_DIR`.
+- `ontology/example/` — **every** architecture graph the repo ships: a RAG chatbot
+  (Onyx / Danswer) and a minimal graph-RAG. Two, deliberately: enough for someone to
+  try the tool, and a set small enough to keep pinned.
+  **Never name one of these files in a test.** They get renamed — `onyx_danswer.ttl`
+  became `onyx_danswer_rag_chatbot.ttl` became `ony_rag_chatbot.ttl` became
+  `onyx_rag_chatbot.ttl` inside two days — and each rename broke suites for reasons
+  unrelated to what they test. Resolve one through
+  `tests/conftest.py::example_path(NAMESPACE)`, which finds the graph by the IRI it
+  mints elements under: renaming a file is a filing decision, changing a namespace is
+  a modelling one.
+- `ontology/example_local/` — **the user's own graphs: gitignored, and not in the
+  Docker image.** Confidential and NDA-covered architectures live here (the MCP
+  tool-use graph moved here 2026-08-17). Only its `README.md` is tracked. Nothing in
+  the test suite or the shipped library may read from it — a fresh clone has to pass —
+  and `test_private_examples.py` enforces that, plus the ignore rule, the
+  `.dockerignore` allow-list, and that a WSGI app neither lists nor serves the folder.
+  Serving it is opt-in: `create_app(local_examples=True)`, which only `cli serve` does.
+- **`.dockerignore` is an allow-list, and must stay one.** `COPY . /app` once shipped
+  `docs/example_UC/` — NDA-covered and carefully gitignored — because `.gitignore` and
+  `.dockerignore` are unrelated files and nobody updated the second. It now excludes
+  `*` and names what the app reads, so a new private directory is left out by default
+  rather than by vigilance. Never convert it back to a deny-list; when the app starts
+  reading a new path, add a `!` line and rebuild.
 - `docs/example_UC/` — **NDA-covered use-case graphs, gitignored.** Absent from a fresh
   clone, so nothing in the test suite or the library may depend on it. `paths.EXAMPLE_UC_DIR`
   resolves it for local runs only; never add a test or an example that reads from there.
@@ -266,24 +298,39 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - Branch per feature; one labeled commit per task; never commit directly to main.
 - After every ontology change: parse all `.ttl` with RDFLib, run pyshacl where shapes
   exist, and re-run the assessment on the bundled examples — then explain any diff.
-  Current baseline (matches / findings, as of 2026-08-06):
+  Current baseline (matches / findings, as of 2026-08-17):
 
   | Graph | Matches | Findings |
   | --- | --- | --- |
-  | `ontology/example/onyx_danswer.ttl` (broadest: 7 distinct motifs) | 13 | 23 |
-  | `ontology/example/rag_with_guardrails.ttl` (composition) | 3 | 3 |
-  | `ontology/example/beam_export_graph_rag_annotated.ttl` | 3 | 9 |
-  | `ontology/example/agentic_assistant.ttl` (agentic layer) | 3 | 7 |
-  | `ontology/example/multi_agent_assistant.ttl` (delegation + oversight) | 3 | 3 |
-  | `ontology/example/beam_export_graph_rag.ttl` (unannotated import) | 0 | 0 |
+  | RAG chatbot, Onyx / Danswer (broadest: 7 distinct motifs) | 13 | 25 |
+  | Minimal graph RAG | 3 | 11 |
+
+  The agentic layer is covered by `test_agentic_assessment.py`, which states its own
+  graph inline — the MCP example it used to read now lives in `example_local/`.
 
   Matches are `pair:MotifMatch` instances, not distinct motifs — nested motifs co-match
-  by design, so the number is structural coverage.
+  by design, so the number is structural coverage. `test_propagation.py` asserts these
+  numbers; the graphs are named there by namespace, not filename.
 - **rdflib's SPARQL compiler is not thread-safe.** pyparsing keeps global parser state, so
   two threads compiling queries at once corrupt it and surface as
   "`Param.postParse2() missing 1 required positional argument`". Compilation is serialized
   in `assessment_runner._prepared_query`; keep it there rather than locking in a caller,
   and never parse SPARQL off the main thread outside that function.
+- **Clause order is load-bearing in a risk query (2026-08-17).** rdflib has no query
+  optimizer: it evaluates a BGP in textual order and applies a FILTER to its whole group.
+  So every risk query is written as `WHERE { { structure … FILTER NOT EXISTS … } curated
+  metadata . OPTIONAL … BIND … }`. The metadata block (`hasMechanism` /
+  `hasApplicabilityCondition` / `mayIndicateRisk` / `suggestedControl`) is a small cross
+  product — 18 to 36 rows — and leading with it multiplied every structural join, property
+  path, and absence-of-control check by that factor. Restoring the old order costs ~3x
+  runtime and changes nothing about the result. Never hoist the metadata back to the top,
+  and keep the structural braces: without them the filters leave that group and fire once
+  per metadata row again.
+- **The knowledge base is parsed once per process** and copied per call
+  (`assessment_runner._base_knowledge`). Turtle parsing was the largest single cost in
+  every entry point. `load_base_graph()` still hands back a fresh writable graph — callers
+  parse an architecture into it — so never return the cached instance. Editing a `.ttl` in
+  a live server needs `reload_knowledge_base()`; Flask's reloader watches Python only.
 - Adding a query file is a two-part change: the `.rq` **and** a `pair:PatternImplementation`
   registering its `pair:implementationPath`. `test_library_consistency.py` is the net that
   catches an orphaned query or a dangling path.

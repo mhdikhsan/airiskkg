@@ -98,12 +98,29 @@ stay in sync both ways**:
 
 | Button | What it does |
 | --- | --- |
-| **Load example ▾** | Load a bundled architecture graph — `onyx_danswer` (a fully-annotated RAG assistant) or `beam_export_graph_rag` (a structure-only t4b-beam export you annotate yourself). |
+| **Load example ▾** | Load an architecture graph. Under **Bundled**: `onyx_rag_chatbot` (a fully-annotated RAG assistant) and `simple_graph_rag` (a small graph-RAG). Under **Local**: anything you dropped in `ontology/example_local/` — see [Your own graphs](#26-your-own-graphs). |
 | **Open .ttl** | Upload your own Turtle file. |
 | **Starter** | Replace the editor with a minimal starter graph to build from. |
 | **Clear** | Empty both the code and the diagram (asks to confirm). |
 | **Validate** | Check the graph against the SHACL *input contract* — reports in the **Input contract** drawer tab. |
 | **Run assessment** | Run the full motif-matching + risk-interpretation pipeline; results land in the **Findings** and **Motifs** tabs. |
+
+### 2.6 Your own graphs
+
+`ontology/example_local/` is yours. Drop any `.ttl` in it and the workbench
+offers it in **Load example ▾** under a **Local** heading, so you can always
+tell your graphs from the two the project ships.
+
+Nothing there can be published by accident:
+
+| | |
+| --- | --- |
+| **git** | Every file in the folder is gitignored, so `git add .` cannot stage one. Only the folder's `README.md` is tracked. |
+| **Docker image** | `.dockerignore` is an allow-list, and it excludes the folder explicitly. A built image contains the two bundled graphs and nothing else. |
+| **Deployed server** | A WSGI server (gunicorn, the Docker image) never lists or serves the folder, whatever is on its disk. Only `cli serve` offers it, because that is by definition a local run — pass `--no-local-examples` to turn it off there too. |
+
+`python/tests/test_private_examples.py` enforces all four of those, so a change
+that would start leaking fails the suite rather than a review.
 
 ### 2.3 Editing the diagram (right pane)
 
@@ -545,11 +562,12 @@ specific role that fits.
 
 | I want to… | Do this |
 | --- | --- |
-| Try it fast | **Load example ▾ → onyx_danswer**, then **Run assessment** |
-| Import a structure-only graph | **Open .ttl** (or load `beam_export_graph_rag`), then annotate |
+| Try it fast | **Load example ▾ → onyx_rag_chatbot**, then **Run assessment** |
+| Import a structure-only graph | **Open .ttl**, or **Import t4b** for a Tool4Boxology export, then annotate |
 | Make a graph matchable | **Annotate** tab → assign roles → **Apply annotations** |
 | Check my graph is well-formed | **Validate** → read the **Input contract** tab |
 | See why a finding fired | Select it in **Findings** → evidence highlights in the diagram |
 | See which motifs matched | **Run assessment** → **Motifs** tab → click a motif to highlight its elements |
 | Scaffold a pattern fast | Open the **Motifs** tray (right of the canvas) → click a motif to drop its annotated elements |
 | Start from scratch | **Starter**, or **Clear** and build with the palette |
+| Keep a graph off GitHub | Put it in `ontology/example_local/` — gitignored, and never in a built image |

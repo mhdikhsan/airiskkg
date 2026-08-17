@@ -22,6 +22,46 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding ?planningBinding .
+        {
+            ?planningBinding pair:bindsPatternNode pat:ToolAgent_PlanningStepNode ;
+                             pair:matchedElement ?planningStep .
+        }
+        UNION
+        {
+            ?planningBinding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
+                             pair:matchedElement ?planningStep .
+        }
+
+        ?planningStep beam:use ?untrustedContent .
+        ?untrustedContent pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
+
+        # No screening between the untrusted content and the decision.
+        FILTER NOT EXISTS {
+            ?screeningStep pair:playsRole ?screeningRole .
+            { ?screeningRole pair:subRoleOf* pair:GuardrailStep }
+            UNION
+            { ?screeningRole pair:subRoleOf* pair:PolicyEnforcementStep }
+            {
+                ?screeningStep beam:produce ?untrustedContent .
+            }
+            UNION
+            {
+                ?screeningStep beam:inform ?planningStep .
+            }
+        }
+        FILTER NOT EXISTS {
+            pat:GoalHijackRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?planningStep .
+        }
+
+
+    }
+
     pat:GoalHijackRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -30,42 +70,6 @@ WHERE {
 
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
-    }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif ;
-        pair:hasNodeBinding ?planningBinding .
-    {
-        ?planningBinding pair:bindsPatternNode pat:ToolAgent_PlanningStepNode ;
-                         pair:matchedElement ?planningStep .
-    }
-    UNION
-    {
-        ?planningBinding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
-                         pair:matchedElement ?planningStep .
-    }
-
-    ?planningStep beam:use ?untrustedContent .
-    ?untrustedContent pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
-
-    # No screening between the untrusted content and the decision.
-    FILTER NOT EXISTS {
-        ?screeningStep pair:playsRole ?screeningRole .
-        { ?screeningRole pair:subRoleOf* pair:GuardrailStep }
-        UNION
-        { ?screeningRole pair:subRoleOf* pair:PolicyEnforcementStep }
-        {
-            ?screeningStep beam:produce ?untrustedContent .
-        }
-        UNION
-        {
-            ?screeningStep beam:inform ?planningStep .
-        }
-    }
-    FILTER NOT EXISTS {
-        pat:GoalHijackRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?planningStep .
     }
 
     BIND(IRI(CONCAT(

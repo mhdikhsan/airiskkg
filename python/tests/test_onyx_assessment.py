@@ -10,8 +10,9 @@ from rdflib.namespace import SKOS
 
 from airiskkg.assessment_runner import PAIR, PAT, run_assessment
 from airiskkg.paths import EXAMPLE_DIR
+from conftest import ONYX_NS, example_path  # noqa: E402
 
-ONYX_PATH = EXAMPLE_DIR / "onyx_danswer.ttl"
+ONYX_PATH = example_path(ONYX_NS)
 
 OWASP = Namespace("http://w3id.org/airiskkg/taxonomy/owasp-llm#")
 
@@ -86,10 +87,18 @@ def test_sensitive_data_finding_includes_cross_taxonomy_alignment() -> None:
     """One finding should reach every alignment layer: OWASP anchor, IBM Atlas,
     MIT domain, MIT control families as evidence, and NIST through Atlas."""
     result = _result()
+    # Two patterns share this mechanism - the retrieval-scoped one and the
+    # general user-facing-output one - so picking whichever came first out of an
+    # unordered set made this test depend on graph iteration order. The
+    # retrieval-scoped finding is the one that reaches every layer, and it is
+    # identified by the control only it suggests.
     finding = next(
-        result.risk_findings.subjects(
+        candidate
+        for candidate in result.risk_findings.subjects(
             PAIR.hasDerivedMechanism, OWASP["mechanism-sensitive-data-propagation"]
         )
+        if PAT["Control_RetrievalAccessControl"]
+        in set(result.risk_findings.objects(candidate, PAIR.hasSuggestedControl))
     )
     risks = set(result.risk_findings.objects(finding, PAIR.hasCandidateRiskTaxonomyEntry))
     controls = set(result.risk_findings.objects(finding, PAIR.hasSuggestedControl))

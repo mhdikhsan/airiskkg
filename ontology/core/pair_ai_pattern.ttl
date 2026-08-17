@@ -101,6 +101,12 @@ pair:containsDataCategory a owl:ObjectProperty ;
     rdfs:domain beam:Data ;
     rdfs:range pair:DataCategory .
 
+pair:derivedCategory a owl:ObjectProperty ;
+    rdfs:label "derived category"@en ;
+    rdfs:comment "On a prov:Derivation emitted by the content-category propagation: which data category travelled along that hop. A derivation names the upstream element and the step, and this names what was carried, so the chain from an annotated source to a derived category on an output can be walked back and shown to the modeler."@en ;
+    rdfs:domain prov:Derivation ;
+    rdfs:range pair:DataCategory .
+
 pair:subDataCategoryOf a owl:ObjectProperty , owl:TransitiveProperty ;
     rdfs:label "sub-data-category of"@en ;
     rdfs:domain pair:DataCategory ;
@@ -424,8 +430,8 @@ pair:PretrainedModel a pair:PatternRole ;
 
 pair:FoundationLLM a pair:PatternRole ;
     skos:prefLabel "Foundation LLM"@en ;
-    pair:subRoleOf pair:Model ;
-    skos:definition "A foundation large language model used directly for generation."@en ;
+    pair:subRoleOf pair:GenerativeModel ;
+    skos:definition "A foundation large language model used directly for generation. A specialization of GenerativeModel: by its own definition it generates content, so tagging an element only as a foundation LLM must satisfy every motif that queries for a generative model. It sat directly under Model until 2026-08-12, which made the precise term inert - graphs had to double-tag with GenerativeModel to match anything, and one that named only the LLM silently missed every generation-side motif."@en ;
     skos:closeMatch ai:LLM ;
     skos:relatedMatch ai:GPAIModel .
 
@@ -853,6 +859,18 @@ pair:RedactionStep a pair:PatternRole ;
     skos:prefLabel "RedactionStep"@en ;
     pair:subRoleOf pair:ControlStep ;
     skos:definition "A step that removes, masks, tokenizes, or minimizes protected content before it is passed on, so what leaves the step no longer carries the content category that entered it. The barrier for content-category propagation: an element downstream of a redaction step does not inherit the upstream category."@en .
+
+pair:AnonymizationStep a pair:PatternRole ;
+    skos:prefLabel "AnonymizationStep"@en ;
+    pair:subRoleOf pair:RedactionStep ;
+    skos:definition "A step that renders data no longer attributable to a person, so what leaves it is not personal data. A specialization of RedactionStep, which makes it a barrier for content-category propagation without any change to the propagation rules."@en ;
+    skos:relatedMatch dpv:Anonymisation .
+
+pair:PseudonymizationStep a pair:PatternRole ;
+    skos:prefLabel "PseudonymizationStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that replaces identifiers with pseudonyms while the data remains attributable to a person given additional information. Deliberately NOT a sub-role of RedactionStep: pseudonymised data is still personal data, so the sensitivity category must survive the step. DPV states this directly - dpv:PseudonymisedData is a subclass of dpv:PersonalData, whereas dpv:AnonymisedData is a subclass of dpv:NonPersonalData - so treating the two alike would under-report exactly the disclosure risk this facet exists to surface."@en ;
+    skos:relatedMatch dpv:Pseudonymisation .
 
 pair:MemoryValidationStep a pair:PatternRole ;
     skos:prefLabel "MemoryValidationStep"@en ;

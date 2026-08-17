@@ -37,6 +37,13 @@ def main() -> None:
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host to bind (default 127.0.0.1).")
     serve_parser.add_argument("--port", type=int, default=5000, help="Port to bind (default 5000).")
     serve_parser.add_argument("--debug", action="store_true", help="Enable Flask debug mode.")
+    serve_parser.add_argument(
+        "--no-local-examples",
+        action="store_true",
+        help="Do not offer graphs from ontology/example_local/. They are offered "
+        "by default here because this command is a local run; a WSGI server "
+        "importing the app never offers them.",
+    )
 
     args = parser.parse_args()
 
@@ -59,10 +66,20 @@ def main() -> None:
         )
         print_assessment_summary(result)
     elif args.command == "serve":
+        from airiskkg.paths import EXAMPLE_LOCAL_DIR
         from airiskkg.webapp import create_app
 
-        app = create_app()
+        local_examples = not args.no_local_examples
+        app = create_app(local_examples=local_examples)
         print(f"PAIR-AI risk assessment UI running at http://{args.host}:{args.port}")
+        if local_examples:
+            count = len(list(EXAMPLE_LOCAL_DIR.glob("*.ttl"))) if EXAMPLE_LOCAL_DIR.is_dir() else 0
+            # Say it out loud: these graphs may be confidential, and binding to a
+            # non-loopback host puts them on the network.
+            print(
+                f"Offering {count} local graph(s) from {EXAMPLE_LOCAL_DIR} "
+                "(--no-local-examples to hide them)"
+            )
         app.run(host=args.host, port=args.port, debug=args.debug)
 
 

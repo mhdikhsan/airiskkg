@@ -23,6 +23,28 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?systemPrompt pair:playsRole/pair:subRoleOf* pair:SystemPrompt .
+        ?generationStep
+            beam:use ?systemPrompt ;
+            beam:produce ?userFacingOutput ;
+            pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+        ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding/pair:matchedElement ?matchedElement .
+        FILTER(?matchedElement IN (?systemPrompt, ?generationStep, ?userFacingOutput))
+
+        FILTER NOT EXISTS {
+            pat:SystemPromptLeakageRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?systemPrompt .
+        }
+
+
+    }
+
     pat:SystemPromptLeakageRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -32,25 +54,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-
-    ?systemPrompt pair:playsRole/pair:subRoleOf* pair:SystemPrompt .
-    ?generationStep
-        beam:use ?systemPrompt ;
-        beam:produce ?userFacingOutput ;
-        pair:playsRole/pair:subRoleOf* pair:GenerationStep .
-    ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif ;
-        pair:hasNodeBinding/pair:matchedElement ?matchedElement .
-    FILTER(?matchedElement IN (?systemPrompt, ?generationStep, ?userFacingOutput))
-
-    FILTER NOT EXISTS {
-        pat:SystemPromptLeakageRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?systemPrompt .
-    }
-
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

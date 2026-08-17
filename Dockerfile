@@ -24,8 +24,14 @@ WORKDIR /app
 # is cached across code changes.
 RUN pip install --no-cache-dir rdflib pyshacl flask gunicorn
 
-# Project source + the ontology / shacl / example data read at runtime
-# (see .dockerignore for what is excluded from the build context).
+# Project source + the ontology / shacl / example data read at runtime.
+#
+# This copies the build context, and .dockerignore is an allow-list, so the
+# context is only what the app reads: python/src, ontology, shacl, external and
+# the three top-level text files. Everything else - docs/, v1/, data/, tests,
+# and every private path - is excluded by default rather than by remembering.
+# ontology/example_local/ is excluded from inside ontology/ as well: those are
+# the user's own, possibly confidential graphs and they never ship.
 COPY . /app
 
 # Run unprivileged; the app only reads these files (default perms are readable).

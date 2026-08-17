@@ -19,8 +19,10 @@ IMPLEMENTATION_DIR = PATTERNS_DIR / "implementation"
 FACETS_DIR = ONTOLOGY_DIR / "facets"
 TAXONOMY_DIR = ONTOLOGY_DIR / "taxonomy"
 EXAMPLE_DIR = ONTOLOGY_DIR / "example"
-# NDA-covered use-case graphs. Gitignored, so this directory is absent from a
-# fresh clone: never let the test suite or the shipped library depend on it.
+# The user's own graphs: gitignored, excluded from the Docker image, and served
+# only by a local `cli serve`. Absent from a fresh clone apart from its README,
+# so nothing in the test suite or the shipped library may read from it.
+EXAMPLE_LOCAL_DIR = ONTOLOGY_DIR / "example_local"
 EXAMPLE_UC_DIR = REPO_ROOT / "docs" / "example_UC"
 SHACL_DIR = REPO_ROOT / "shacl"
 OUTPUTS_DIR = REPO_ROOT / "outputs"

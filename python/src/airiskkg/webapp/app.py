@@ -1,38 +1,51 @@
 """Flask application serving the PAIR-AI risk assessment UI.
-
-Endpoints
----------
-``GET  /``                 Single-page UI (editor left, live graph preview right).
-``GET  /api/vocabulary``   Roles, data categories, and element classes.
-``GET  /api/examples``     Bundled example architecture graphs.
-``GET  /api/examples/<n>`` Raw Turtle for one bundled example.
-``POST /api/graph``        Architecture Turtle -> nodes/edges for the live preview.
-``POST /api/validate``     Architecture Turtle -> SHACL input-contract report.
-``POST /api/import/t4b``    Tool4Boxology export (N-Triples/Turtle) -> architecture Turtle + notes.
-``POST /api/assess``       Architecture Turtle -> structured risk findings (JSON).
+Reading the graph
+    ``GET  /``                       Single-page UI (editor left, canvas right).
+    ``GET  /api/vocabulary``         Pattern roles (grouped, with the element kind
+                                     each applies to), data categories, BEAM
+                                     element classes, edge kinds, motif templates.
+    ``GET  /api/examples``           Names of the example graphs on offer, each
+                                     flagged ``local`` or not.
+    ``GET  /api/examples/<name>``    Raw Turtle for one of them.
+    ``POST /api/graph``              Turtle -> nodes/edges/systems for the canvas.
+Editing the graph — each returns the rewritten Turtle, which the editor adopts
+    ``POST /api/annotate``           Replace roles/categories on named elements.
+    ``POST /api/graph-edit``         One structural edit: add-element, add-edge,
+                                     edit-element, add-motif, delete-element.
+    ``POST /api/import/t4b``         Tool4Boxology export (N-Triples/Turtle) ->
+                                     BEAM Turtle + normalizer notes.
+Assessing the graph
+    ``POST /api/validate``           SHACL input contract + annotation guidance,
+                                     split into violations / warnings / hints.
+    ``POST /api/assess``             Findings, motif matches, derived categories,
+                                     and the near-miss motif gap report.
+    ``POST /api/export/assessment``  The whole run as a downloadable RDF graph
+                                     (Turtle or JSON-LD).
 """
 
 from __future__ import annotations
 
+import os
 import re
 import threading
+from datetime import datetime, timezone
 from functools import lru_cache
+from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 from rdflib import RDF, RDFS, SKOS, Graph, Literal, Namespace, URIRef
 
+from airiskkg.assessment_export import EXPORT_FORMATS, build_export
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.assessment_runner import (
     BEAM,
     PAIR,
-    implementation_paths_for_output_type,
     load_base_graph,
     run_assessment_from_text,
-    run_construct_query,
 )
 from airiskkg.assessment_view import summarize_result
 from airiskkg.graph_view import graph_view
-from airiskkg.paths import CORE_DIR, EXAMPLE_DIR, SHACL_DIR
+from airiskkg.paths import CORE_DIR, EXAMPLE_DIR, EXAMPLE_LOCAL_DIR, SHACL_DIR
 
 # Element classes the guided builder offers, paired with the BEAM class they map to.
 RESOURCE_CLASSES = [
@@ -435,6 +448,9 @@ def _shacl_report(ttl: str) -> dict:
     }
 
 
+_WARMUP_STARTED = False
+
+
 def _warm_query_cache() -> None:
     """Pre-compile every assessment query once at startup (in the background) so
     the first Run assessment is as fast as the rest. Holds the SPARQL lock so it
@@ -448,9 +464,45 @@ def _warm_query_cache() -> None:
         pass
 
 
-def create_app() -> Flask:
-    app = Flask(__name__, static_folder="static", static_url_path="/static")
+def _start_warmup() -> None:
+    """Once per process, whatever creates the app.
+
+    Importing this module already builds an app for WSGI servers, and the CLI
+    builds another - so an unguarded warm-up ran twice, and because it holds the
+    SPARQL lock the second run delayed the first real request instead of
+    shortening it."""
+    global _WARMUP_STARTED
+    if _WARMUP_STARTED:
+        return
+    _WARMUP_STARTED = True
     threading.Thread(target=_warm_query_cache, daemon=True).start()
+
+
+def _local_examples_default() -> bool:
+    """Whether to offer ontology/example_local/ when the caller says nothing.
+
+    Off. That folder is where confidential and NDA-covered architectures live,
+    so exposure has to be something you asked for rather than something you
+    forgot to switch off: a WSGI server importing ``app`` gets the safe answer
+    without configuring anything, and `cli serve` opts in explicitly because it
+    is by definition a local run. ``PAIR_AI_LOCAL_EXAMPLES=1`` opts a WSGI
+    server in for the rare case where that is genuinely wanted."""
+    return os.environ.get("PAIR_AI_LOCAL_EXAMPLES", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def create_app(*, local_examples: bool | None = None) -> Flask:
+    app = Flask(__name__, static_folder="static", static_url_path="/static")
+    app.config["LOCAL_EXAMPLES"] = (
+        _local_examples_default() if local_examples is None else local_examples
+    )
+    _start_warmup()
+
+    def _example_dirs() -> list[tuple[Path, bool]]:
+        """Directories to offer examples from, each flagged local or not."""
+        dirs = [(EXAMPLE_DIR, False)]
+        if app.config["LOCAL_EXAMPLES"] and EXAMPLE_LOCAL_DIR.is_dir():
+            dirs.append((EXAMPLE_LOCAL_DIR, True))
+        return dirs
 
     @app.get("/")
     def index() -> object:
@@ -463,18 +515,21 @@ def create_app() -> Flask:
     @app.get("/api/examples")
     def examples() -> object:
         items = [
-            {"name": path.stem, "filename": path.name}
-            for path in sorted(EXAMPLE_DIR.glob("*.ttl"))
+            {"name": path.stem, "filename": path.name, "local": is_local}
+            for directory, is_local in _example_dirs()
+            for path in sorted(directory.glob("*.ttl"))
         ]
         return jsonify(items)
 
     @app.get("/api/examples/<name>")
     def example(name: str) -> object:
-        path = (EXAMPLE_DIR / f"{name}.ttl").resolve()
-        # Guard against path traversal: the resolved file must stay inside EXAMPLE_DIR.
-        if EXAMPLE_DIR.resolve() not in path.parents or not path.is_file():
-            return jsonify({"error": "Example not found."}), 404
-        return jsonify({"name": name, "ttl": path.read_text(encoding="utf-8")})
+        # Same directories the listing offers, so a name the UI cannot see is a
+        # name this cannot read either.
+        for directory, _is_local in _example_dirs():
+            path = (directory / f"{name}.ttl").resolve()
+            if directory.resolve() in path.parents and path.is_file():
+                return jsonify({"name": name, "ttl": path.read_text(encoding="utf-8")})
+        return jsonify({"error": "Example not found."}), 404
 
     @app.post("/api/graph")
     def graph() -> object:
@@ -710,7 +765,10 @@ def create_app() -> Flask:
         try:
             with _SPARQL_LOCK:
                 result = run_assessment_from_text(ttl)
-                gaps = _motif_gaps(ttl)
+            # Outside the lock on purpose: the gap report runs no SPARQL, it walks
+            # the loaded graph directly, so holding the compiler lock across it
+            # would serialize concurrent requests for nothing.
+            gaps = _motif_gaps(ttl)
         except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
             return jsonify({"error": f"Could not run assessment: {error}"}), 400
         summary = summarize_result(result)
@@ -718,6 +776,51 @@ def create_app() -> Flask:
         # is actionable instead of silent
         summary["motifGaps"] = gaps
         return jsonify(summary)
+
+    @app.post("/api/export/assessment")
+    def export_assessment() -> object:
+        """Re-run the assessment and return it as a downloadable RDF graph.
+
+        The run is repeated rather than cached from /api/assess: the editor is
+        live, so caching would risk handing back findings for a graph the user
+        has since edited - an export that silently disagrees with the screen is
+        worse than one that takes a second longer."""
+        payload = request.get_json(silent=True) or {}
+        ttl = (payload.get("ttl") or "").strip()
+        export_format = (payload.get("format") or "turtle").strip()
+        if not ttl:
+            return jsonify({"error": "Provide an architecture graph (Turtle) to export."}), 400
+        if export_format not in EXPORT_FORMATS:
+            return jsonify(
+                {"error": f"Unsupported format {export_format!r}. "
+                          f"Use one of: {', '.join(sorted(EXPORT_FORMATS))}."}
+            ), 400
+        started_at = datetime.now(timezone.utc)
+        try:
+            architecture = Graph().parse(data=ttl, format="turtle")
+            with _SPARQL_LOCK:
+                result = run_assessment_from_text(ttl)
+        except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
+            return jsonify({"error": f"Could not export assessment: {error}"}), 400
+
+        export = build_export(
+            result,
+            architecture,
+            source_label=payload.get("sourceLabel") or None,
+            started_at=started_at,
+        )
+        media_type, extension = EXPORT_FORMATS[export_format]
+        body = export.serialize(export_format)
+        return Response(
+            body,
+            mimetype=media_type,
+            headers={
+                "Content-Disposition":
+                    f'attachment; filename="pair-ai-assessment.{extension}"',
+                "X-PAIR-AI-Findings": str(result.risk_finding_count),
+                "X-PAIR-AI-Matches": str(result.motif_match_count),
+            },
+        )
 
     return app
 

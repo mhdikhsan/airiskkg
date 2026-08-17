@@ -23,6 +23,40 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding ?planningBinding , ?actionBinding .
+        ?planningBinding pair:bindsPatternNode pat:ToolAgent_PlanningStepNode ;
+                         pair:matchedElement ?planningStep .
+        ?actionBinding   pair:bindsPatternNode pat:ToolAgent_ActionStepNode ;
+                         pair:matchedElement ?actionStep .
+
+        ?planningStep beam:inform ?actionStep .
+        ?actionStep beam:produce ?actionResult .
+
+        FILTER NOT EXISTS {
+            ?mediatingStep pair:playsRole ?mediatingRole .
+            { ?mediatingRole pair:subRoleOf* pair:PolicyEnforcementStep }
+            UNION
+            { ?mediatingRole pair:subRoleOf* pair:HumanApprovalStep }
+            UNION
+            { ?mediatingRole pair:subRoleOf* pair:RateLimitControlStep }
+            {
+                ?mediatingStep beam:inform ?actionStep .
+            }
+            UNION
+            {
+                ?planningStep beam:inform ?mediatingStep .
+            }
+        }
+        FILTER NOT EXISTS {
+            pat:ToolMisuseRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?actionStep .
+        }
+    }
+
     pat:ToolMisuseRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -31,38 +65,6 @@ WHERE {
 
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
-    }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif ;
-        pair:hasNodeBinding ?planningBinding , ?actionBinding .
-    ?planningBinding pair:bindsPatternNode pat:ToolAgent_PlanningStepNode ;
-                     pair:matchedElement ?planningStep .
-    ?actionBinding   pair:bindsPatternNode pat:ToolAgent_ActionStepNode ;
-                     pair:matchedElement ?actionStep .
-
-    ?planningStep beam:inform ?actionStep .
-    ?actionStep beam:produce ?actionResult .
-
-    FILTER NOT EXISTS {
-        ?mediatingStep pair:playsRole ?mediatingRole .
-        { ?mediatingRole pair:subRoleOf* pair:PolicyEnforcementStep }
-        UNION
-        { ?mediatingRole pair:subRoleOf* pair:HumanApprovalStep }
-        UNION
-        { ?mediatingRole pair:subRoleOf* pair:RateLimitControlStep }
-        {
-            ?mediatingStep beam:inform ?actionStep .
-        }
-        UNION
-        {
-            ?planningStep beam:inform ?mediatingStep .
-        }
-    }
-    FILTER NOT EXISTS {
-        pat:ToolMisuseRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?actionStep .
     }
 
     BIND(IRI(CONCAT(

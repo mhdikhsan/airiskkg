@@ -22,6 +22,55 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif .
+
+        {
+            ?match
+                pair:hasNodeBinding/pair:matchedElement ?loopSource ;
+                pair:hasNodeBinding/pair:matchedElement ?loopTarget .
+            VALUES ?motif {
+                pat:QueryRewritingMotif
+                pat:RetrievalAugmentedGenerationMotif
+            }
+            ?loopSource beam:inform+ ?loopTarget .
+            ?loopTarget beam:inform+ ?loopSource .
+            FILTER(STR(?loopSource) < STR(?loopTarget))
+
+            FILTER NOT EXISTS {
+                ?controlStep pair:playsRole/pair:subRoleOf* pair:RateLimitControlStep .
+                ?controlStep beam:inform* ?loopSource .
+            }
+        }
+        UNION
+        {
+
+            VALUES ?motif { pat:DirectPromptingMotif }
+            ?match
+                pair:hasNodeBinding ?stepBinding ,
+                    ?answerBinding .
+            ?stepBinding
+                pair:bindsPatternNode pat:DP_GenerationStepNode ;
+                pair:matchedElement ?loopSource .
+            ?answerBinding
+                pair:bindsPatternNode pat:DP_AnswerNode ;
+                pair:matchedElement ?loopTarget .
+
+            FILTER NOT EXISTS {
+                ?controlStep pair:playsRole/pair:subRoleOf* pair:RateLimitControlStep .
+                ?controlStep beam:inform* ?loopSource .
+            }
+        }
+        FILTER NOT EXISTS {
+            pat:UnboundedConsumptionRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?loopSource .
+        }
+
+
+    }
+
     pat:UnboundedConsumptionRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -31,52 +80,6 @@ WHERE {
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif .
-
-    {
-        ?match
-            pair:hasNodeBinding/pair:matchedElement ?loopSource ;
-            pair:hasNodeBinding/pair:matchedElement ?loopTarget .
-        VALUES ?motif {
-            pat:QueryRewritingMotif
-            pat:RetrievalAugmentedGenerationMotif
-        }
-        ?loopSource beam:inform+ ?loopTarget .
-        ?loopTarget beam:inform+ ?loopSource .
-        FILTER(STR(?loopSource) < STR(?loopTarget))
-
-        FILTER NOT EXISTS {
-            ?controlStep pair:playsRole/pair:subRoleOf* pair:RateLimitControlStep .
-            ?controlStep beam:inform* ?loopSource .
-        }
-    }
-    UNION
-    {
-     
-        VALUES ?motif { pat:DirectPromptingMotif }
-        ?match
-            pair:hasNodeBinding ?stepBinding ,
-                ?answerBinding .
-        ?stepBinding
-            pair:bindsPatternNode pat:DP_GenerationStepNode ;
-            pair:matchedElement ?loopSource .
-        ?answerBinding
-            pair:bindsPatternNode pat:DP_AnswerNode ;
-            pair:matchedElement ?loopTarget .
-
-        FILTER NOT EXISTS {
-            ?controlStep pair:playsRole/pair:subRoleOf* pair:RateLimitControlStep .
-            ?controlStep beam:inform* ?loopSource .
-        }
-    }
-    FILTER NOT EXISTS {
-        pat:UnboundedConsumptionRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?loopSource .
-    }
-
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",

@@ -24,6 +24,44 @@ CONSTRUCT {
             ?sourceRiskCondition .
 }
 WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding ?writeBinding , ?storeBinding , ?readBinding , ?recalledBinding .
+        ?writeBinding    pair:bindsPatternNode pat:AgentMemory_WriteStepNode ;       pair:matchedElement ?writeStep .
+        ?storeBinding    pair:bindsPatternNode pat:AgentMemory_StoreNode ;           pair:matchedElement ?memory .
+        ?readBinding     pair:bindsPatternNode pat:AgentMemory_ReadStepNode ;        pair:matchedElement ?readStep .
+        ?recalledBinding pair:bindsPatternNode pat:AgentMemory_RecalledContextNode ; pair:matchedElement ?recalledContext .
+
+        ?recalledContext (^beam:use/beam:produce)* ?contextForGeneration .
+        ?generationStep
+            beam:use ?contextForGeneration ;
+            pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+
+
+        FILTER NOT EXISTS {
+            ?validationStep pair:playsRole ?validationRole .
+            { ?validationRole pair:subRoleOf* pair:MemoryValidationStep }
+            UNION
+            { ?validationRole pair:subRoleOf* pair:InputGuardrailStep }
+            UNION
+            { ?validationRole pair:subRoleOf* pair:OutputValidationStep }
+            {
+                ?validationStep beam:inform ?writeStep .
+            }
+            UNION
+            {
+                ?writeStep beam:use ?screened .
+                ?validationStep beam:produce ?screened .
+            }
+        }
+        FILTER NOT EXISTS {
+            pat:MemoryPoisoningRiskPattern pair:suggestedControl ?implementedControl .
+            ?implementedControl beamr:associatedTo ?memory .
+        }
+    }
+
     pat:MemoryPoisoningRiskPattern
         pair:hasMechanism ?mechanism ;
         pair:hasApplicabilityCondition ?satisfiedCondition ;
@@ -32,43 +70,6 @@ WHERE {
 
     OPTIONAL {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
-    }
-
-    ?match
-        a pair:MotifMatch ;
-        pair:matchesMotif ?motif ;
-        pair:hasNodeBinding ?writeBinding , ?storeBinding , ?readBinding , ?recalledBinding .
-    ?writeBinding    pair:bindsPatternNode pat:AgentMemory_WriteStepNode ;       pair:matchedElement ?writeStep .
-    ?storeBinding    pair:bindsPatternNode pat:AgentMemory_StoreNode ;           pair:matchedElement ?memory .
-    ?readBinding     pair:bindsPatternNode pat:AgentMemory_ReadStepNode ;        pair:matchedElement ?readStep .
-    ?recalledBinding pair:bindsPatternNode pat:AgentMemory_RecalledContextNode ; pair:matchedElement ?recalledContext .
-
-    ?recalledContext (^beam:use/beam:produce)* ?contextForGeneration .
-    ?generationStep
-        beam:use ?contextForGeneration ;
-        pair:playsRole/pair:subRoleOf* pair:GenerationStep .
-
-    # Condition 1: nothing screens what is written. Closed-world over the
-    # submitted graph only (Rule R4) - absence means "not represented" here.
-    FILTER NOT EXISTS {
-        ?validationStep pair:playsRole ?validationRole .
-        { ?validationRole pair:subRoleOf* pair:MemoryValidationStep }
-        UNION
-        { ?validationRole pair:subRoleOf* pair:InputGuardrailStep }
-        UNION
-        { ?validationRole pair:subRoleOf* pair:OutputValidationStep }
-        {
-            ?validationStep beam:inform ?writeStep .
-        }
-        UNION
-        {
-            ?writeStep beam:use ?screened .
-            ?validationStep beam:produce ?screened .
-        }
-    }
-    FILTER NOT EXISTS {
-        pat:MemoryPoisoningRiskPattern pair:suggestedControl ?implementedControl .
-        ?implementedControl beamr:associatedTo ?memory .
     }
 
     BIND(IRI(CONCAT(

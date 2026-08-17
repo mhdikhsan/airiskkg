@@ -1,10 +1,6 @@
 "use strict";
 
-/* Live architecture graph preview: layered left-to-right layout of the BEAM
- * flow graph, boxology-style node shapes, pan/zoom, node details, and
- * evidence highlighting.
- * Exposes window.GraphView = { init, render, clear, setHighlight, fit }.
- */
+
 (function () {
   const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -12,8 +8,7 @@
   const LAYER_GAP = 110;
   const ROW_GAP = 34;
 
-  // Human-readable meaning of each BEAM flow edge, shown on hover so viewers
-  // can tell the three arrow kinds apart.
+  
   const EDGE_MEANINGS = {
     use:            { title: "uses",           dir: "process → resource", body: "The process reads this resource as input." },
     produce:        { title: "produces",       dir: "process → resource", body: "The process writes this resource as output." },
@@ -44,13 +39,88 @@
     return Math.max(130, Math.min(240, chars * 7.4 + 30));
   }
 
-  // ---- layout ---------------------------------------------------------------
+  
+  const COMPONENT_GAP = 70;
+
+ 
+  function naturalKey(id) {
+    const match = /^(.*?)(\d+)$/.exec(String(id));
+    return match ? [match[1], Number(match[2])] : [String(id), -1];
+  }
+
+  function compareIds(a, b) {
+    const [pa, na] = naturalKey(a);
+    const [pb, nb] = naturalKey(b);
+    return pa === pb ? na - nb : pa < pb ? -1 : 1;
+  }
+
+
+  function connectedComponents(nodes, flowEdges) {
+    const parent = new Map(nodes.map((n) => [n.id, n.id]));
+    const find = (id) => {
+      while (parent.get(id) !== id) {
+        parent.set(id, parent.get(parent.get(id)));
+        id = parent.get(id);
+      }
+      return id;
+    };
+    const union = (a, b) => {
+      const ra = find(a);
+      const rb = find(b);
+      if (ra !== rb) parent.set(ra, rb);
+    };
+    for (const e of flowEdges) union(e.source, e.target);
+
+    const groups = new Map();
+    for (const n of nodes) {
+      const root = find(n.id);
+      if (!groups.has(root)) groups.set(root, []);
+      groups.get(root).push(n);
+    }
+    const components = Array.from(groups.values()).map((groupNodes) => {
+      const memberIds = new Set(groupNodes.map((n) => n.id));
+      return {
+        nodes: groupNodes,
+        edges: flowEdges.filter((e) => memberIds.has(e.source)),
+        // Oldest element in the component decides where the band sits.
+        key: groupNodes.map((n) => n.id).sort(compareIds)[0],
+      };
+    });
+    components.sort((a, b) => compareIds(a.key, b.key));
+    return components;
+  }
+
   function layout(nodes, edges) {
-    const layer = new Map(nodes.map((n) => [n.id, 0]));
     const ids = new Set(nodes.map((n) => n.id));
     const flowEdges = edges.filter((e) => ids.has(e.source) && ids.has(e.target));
 
-    // longest-path layering with a relaxation cap so cycles terminate
+    positions = new Map();
+    let offsetY = 0;
+    for (const component of connectedComponents(nodes, flowEdges)) {
+      const local = layoutComponent(component.nodes, component.edges);
+      let minY = Infinity;
+      let maxY = -Infinity;
+      for (const p of local.values()) {
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y + p.h);
+      }
+      if (!isFinite(minY)) continue;
+      for (const [id, p] of local) positions.set(id, { ...p, y: p.y - minY + offsetY });
+      offsetY += maxY - minY + COMPONENT_GAP;
+    }
+
+    
+    for (const [id, p] of manualPositions) {
+      const cur = positions.get(id);
+      if (cur) positions.set(id, { ...cur, x: p.x, y: p.y });
+    }
+  }
+
+
+  function layoutComponent(nodes, flowEdges) {
+    const layer = new Map(nodes.map((n) => [n.id, 0]));
+
+
     for (let pass = 0; pass < nodes.length + 1; pass += 1) {
       let changed = false;
       for (const e of flowEdges) {
@@ -99,7 +169,7 @@
     sweep(preds); sweep(succs); sweep(preds);
 
     // coordinates: x by layer (widest node wins), y centered per layer
-    positions = new Map();
+    const placed = new Map();
     let x = 0;
     const totalHeight = Math.max(...layerKeys.map((l) => layers.get(l).length)) * (NODE_H + ROW_GAP);
     for (const l of layerKeys) {
@@ -108,36 +178,65 @@
       const rowHeight = row.length * (NODE_H + ROW_GAP) - ROW_GAP;
       let y = (totalHeight - rowHeight) / 2;
       for (const n of row) {
-        positions.set(n.id, { x: x + (w - nodeWidth(n)) / 2, y, w: nodeWidth(n), h: NODE_H });
+        placed.set(n.id, { x: x + (w - nodeWidth(n)) / 2, y, w: nodeWidth(n), h: NODE_H });
         y += NODE_H + ROW_GAP;
       }
       x += w + LAYER_GAP;
     }
-
-    // Re-apply manual drag positions on top of the computed layout, so a dragged
-    // node keeps its place across re-renders (positions are view-only state).
-    for (const [id, p] of manualPositions) {
-      const cur = positions.get(id);
-      if (cur) positions.set(id, { ...cur, x: p.x, y: p.y });
-    }
+    return placed;
   }
 
   // ---- rendering ------------------------------------------------------------
+
+  function sideAnchor(box, side) {
+    switch (side) {
+      case "right":  return { x: box.x + box.w,     y: box.y + box.h / 2, nx: 1,  ny: 0 };
+      case "left":   return { x: box.x,             y: box.y + box.h / 2, nx: -1, ny: 0 };
+      case "bottom": return { x: box.x + box.w / 2, y: box.y + box.h,     nx: 0,  ny: 1 };
+      default:       return { x: box.x + box.w / 2, y: box.y,             nx: 0,  ny: -1 };
+    }
+  }
+
+  /** Which sides face each other, from the gaps between the two boxes. */
+  function facingSides(s, t) {
+    
+    const gapX = Math.max(s.x - (t.x + t.w), t.x - (s.x + s.w));
+    const gapY = Math.max(s.y - (t.y + t.h), t.y - (s.y + s.h));
+    if (gapX >= gapY) {
+      return t.x + t.w / 2 >= s.x + s.w / 2 ? ["right", "left"] : ["left", "right"];
+    }
+    return t.y + t.h / 2 >= s.y + s.h / 2 ? ["bottom", "top"] : ["top", "bottom"];
+  }
+
+  /** A self-edge, drawn as a loop off the top-right so it stays visible. */
+  function selfLoopPath(box) {
+    const x = box.x + box.w;
+    const y = box.y + box.h / 2;
+    const r = Math.max(26, box.h * 0.7);
+    const topX = box.x + box.w * 0.72;
+    return `M ${x} ${y} C ${x + r} ${y}, ${x + r} ${box.y - r}, ${topX} ${box.y}`;
+  }
+
   function edgePath(e) {
     const s = positions.get(e.source);
     const t = positions.get(e.target);
     if (!s || !t) return null;
-    const x1 = s.x + s.w;
-    const y1 = s.y + s.h / 2;
-    const x2 = t.x;
-    const y2 = t.y + t.h / 2;
-    if (x2 >= x1) {
-      const dx = Math.max(30, (x2 - x1) / 2);
-      return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-    }
-    // back edge: route below both nodes
-    const yb = Math.max(y1, y2) + NODE_H * 1.4;
-    return `M ${s.x + s.w / 2} ${s.y + s.h} C ${s.x + s.w / 2} ${yb}, ${t.x + t.w / 2} ${yb}, ${t.x + t.w / 2} ${t.y + t.h}`;
+    if (e.source === e.target) return selfLoopPath(s);
+
+    const [sourceSide, targetSide] = facingSides(s, t);
+    const a1 = sideAnchor(s, sourceSide);
+    const a2 = sideAnchor(t, targetSide);
+
+    // Control-point reach scales with the span, clamped so short hops keep a
+    // visible curve and long ones do not balloon across the canvas.
+    const span = Math.hypot(a2.x - a1.x, a2.y - a1.y);
+    const reach = Math.max(30, Math.min(120, span * 0.4));
+
+    const c1x = a1.x + a1.nx * reach;
+    const c1y = a1.y + a1.ny * reach;
+    const c2x = a2.x + a2.nx * reach;
+    const c2y = a2.y + a2.ny * reach;
+    return `M ${a1.x} ${a1.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${a2.x} ${a2.y}`;
   }
 
   function nodeShape(group, node, pos) {
@@ -586,5 +685,112 @@
     return new Map(positions);
   }
 
-  window.GraphView = { init, render, clear, setHighlight, fit, layoutPositions, setAnnotation, placeNodeAt };
+  // ---- SVG export -----------------------------------------------------------
+
+ 
+
+  const EXPORT_STYLE_PREFIXES = [".edge", ".arrow", ".node", ".shape", "#viewport"];
+  const EXPORT_STRIPPED_CLASSES = [
+    "edge-hit", "port", "temp", "selected", "highlight", "node-detail", "edge-tip",
+  ];
+
+  function exportedStyleText() {
+    const rulesText = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      let rules;
+      try {
+        rules = sheet.cssRules; // same-origin only; a cross-origin sheet throws
+      } catch {
+        continue;
+      }
+      for (const rule of Array.from(rules || [])) {
+        if (!rule.selectorText || !rule.cssText) continue;
+        // Interaction states cannot fire in a static file, and :hover would
+        // otherwise override the base fill in some editors.
+        if (/:(hover|active|focus)/.test(rule.selectorText)) continue;
+        if (EXPORT_STRIPPED_CLASSES.some((cls) =>
+          new RegExp(`\\.${cls}\\b`).test(rule.selectorText))) continue;
+        const relevant = EXPORT_STYLE_PREFIXES.some((prefix) =>
+          rule.selectorText.split(",").some((sel) => sel.trim().startsWith(prefix)));
+        if (relevant) rulesText.push(rule.cssText);
+      }
+    }
+
+    const root = getComputedStyle(document.documentElement);
+    const referenced = new Set();
+    for (const text of rulesText) {
+      for (const match of text.matchAll(/var\((--[\w-]+)\)/g)) referenced.add(match[1]);
+    }
+    referenced.add("--canvas-bg"); // used by the background rect, not by a rule
+
+    const resolved = Array.from(referenced)
+      .sort()
+      .map((name) => [name, root.getPropertyValue(name).trim()])
+      .filter(([, value]) => value)
+      .map(([name, value]) => `  ${name}: ${value};`);
+
+    return [`:root {\n${resolved.join("\n")}\n}`, ...rulesText].join("\n");
+  }
+
+  /** Serialize the current graph as a standalone SVG document string. */
+  function toSvgDocument() {
+    if (!contentBox || !current.nodes.length) return null;
+
+    const clone = svg.cloneNode(true);
+    clone.removeAttribute("style");
+    // Strip interaction-only elements and transient state.
+    clone.querySelectorAll(".edge-hit, .port, .edge.temp").forEach((el) => el.remove());
+    clone.querySelectorAll("[data-port]").forEach((el) => el.removeAttribute("data-port"));
+    const clonedViewport = clone.querySelector("#viewport");
+    if (clonedViewport) {
+      // Export the whole graph, not the current pan/zoom.
+      clonedViewport.removeAttribute("transform");
+      clonedViewport.classList.remove("has-highlight");
+    }
+
+    const box = contentBox;
+    clone.setAttribute("xmlns", SVG_NS);
+    clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    clone.setAttribute("viewBox", `${box.x} ${box.y} ${box.w} ${box.h}`);
+    clone.setAttribute("width", Math.round(box.w));
+    clone.setAttribute("height", Math.round(box.h));
+
+    const style = document.createElementNS(SVG_NS, "style");
+    style.textContent = exportedStyleText();
+    clone.insertBefore(style, clone.firstChild);
+    const bg = document.createElementNS(SVG_NS, "rect");
+    const canvasBg = getComputedStyle(document.documentElement)
+      .getPropertyValue("--canvas-bg").trim() || "#ffffff";
+    bg.setAttribute("x", box.x);
+    bg.setAttribute("y", box.y);
+    bg.setAttribute("width", box.w);
+    bg.setAttribute("height", box.h);
+    bg.setAttribute("fill", canvasBg);
+    clone.insertBefore(bg, style.nextSibling);
+
+    const serialized = new XMLSerializer().serializeToString(clone);
+    return `<?xml version="1.0" encoding="UTF-8"?>\n${serialized}`;
+  }
+
+  /** Download the current graph as an .svg file. Returns false if empty. */
+  function exportSvg(filename = "architecture.svg") {
+    const doc = toSvgDocument();
+    if (!doc) return false;
+    const blob = new Blob([doc], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+   
+    requestAnimationFrame(() => URL.revokeObjectURL(url));
+    return true;
+  }
+
+  window.GraphView = {
+    init, render, clear, setHighlight, fit, layoutPositions, setAnnotation, placeNodeAt,
+    exportSvg, toSvgDocument,
+  };
 })();

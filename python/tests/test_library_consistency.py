@@ -534,6 +534,11 @@ def test_specific_roles_are_subroles_of_the_role_their_motif_queries(libraries) 
         # role -> the role its motif's pattern node requires
         PAIR.RewrittenQuery: PAIR.UserInput,
         PAIR.RerankedContext: PAIR.RetrievedContext,
+        # A foundation LLM generates content by definition, so a graph naming
+        # only the precise role must still satisfy the motifs that ask for a
+        # generative model. Sitting under Model instead forced every example to
+        # double-tag, and any that did not silently lost generation-side matches.
+        PAIR.FoundationLLM: PAIR.GenerativeModel,
     }
     for role, parent in expected_parents.items():
         ancestors = set(libraries.transitive_objects(role, PAIR.subRoleOf))

@@ -33,6 +33,47 @@
     return api(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   }
 
+  /* Download endpoints answer with a file on success and JSON on failure, so
+   * they cannot go through api() - it parses every response as JSON and would
+   * turn a perfectly good Turtle download into a parse error. */
+  async function postForFile(url, body) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Request failed (${res.status})`);
+    }
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = /filename="([^"]+)"/.exec(disposition);
+    return {
+      blob: await res.blob(),
+      findings: res.headers.get("X-PAIR-AI-Findings") || "0",
+      matches: res.headers.get("X-PAIR-AI-Matches") || "0",
+      filename: match ? match[1] : null,
+    };
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    requestAnimationFrame(() => URL.revokeObjectURL(url));
+  }
+
+  /** Name exports after the loaded example, so several downloads stay apart. */
+  function exportBaseName() {
+    const selected = $("#example-select");
+    const name = selected && selected.value ? selected.value : "";
+    return (name || "architecture").replace(/\.(ttl|turtle|nt)$/i, "");
+  }
+
   // ---- status bar ------------------------------------------------------------
   function setStatus(state, message, stats) {
     const dot = $("#status-dot");
@@ -143,6 +184,38 @@
     ];
   }
 
+  /* Taxonomy chips, with the overflow actually reachable.
+   *
+   * The row used to cut off at four and render a dead "+3" that named nothing
+   * and could not be opened, so the anchors a finding carries - which are the
+   * whole point of anchoring to external taxonomies - were unreadable. The
+   * counter is now a button that reveals the rest in place. */
+  const TAXONOMY_CHIP_LIMIT = 4;
+
+  function taxonomyChips(finding) {
+    const entries = finding.taxonomyEntries || [];
+    const row = el("div", { class: "finding-meta" });
+    if (finding.mechanism) {
+      row.appendChild(el("span", { class: "chip mech", title: finding.mechanism.id }, finding.mechanism.label));
+    }
+    const chipFor = (t) => el("span", { class: "chip tax", title: t.definition || t.id }, t.label);
+    entries.slice(0, TAXONOMY_CHIP_LIMIT).forEach((t) => row.appendChild(chipFor(t)));
+
+    const hidden = entries.slice(TAXONOMY_CHIP_LIMIT);
+    if (!hidden.length) return row;
+
+    const more = el("button",
+      { type: "button", class: "chip tax chip-more", title: "Show the remaining taxonomy entries" },
+      `+${hidden.length}`);
+    more.addEventListener("click", (ev) => {
+      ev.stopPropagation(); // the card itself selects the finding
+      hidden.forEach((t) => row.insertBefore(chipFor(t), more));
+      more.remove();
+    });
+    row.appendChild(more);
+    return row;
+  }
+
   function findingCard(finding) {
     const evidenceIds = finding.evidence.map((e) => e.id);
     const card = el("div", { class: "finding-card", tabindex: "0" }, [
@@ -151,11 +224,7 @@
         finding.motif ? el("span", { class: "chip" }, finding.motif.label) : null,
       ]),
       finding.description ? el("p", { class: "finding-desc" }, finding.description) : null,
-      el("div", { class: "finding-meta" }, [
-        finding.mechanism ? el("span", { class: "chip mech", title: finding.mechanism.id }, finding.mechanism.label) : null,
-        ...finding.taxonomyEntries.slice(0, 4).map((t) => el("span", { class: "chip tax", title: t.definition || t.id }, t.label)),
-        finding.taxonomyEntries.length > 4 ? el("span", { class: "chip tax" }, `+${finding.taxonomyEntries.length - 4}`) : null,
-      ]),
+      taxonomyChips(finding),
       el("details", {}, [
         el("summary", {}, `Suggested controls (${finding.suggestedControls.length}) · evidence (${finding.evidence.length})`),
         ...controlSections(finding.suggestedControls),
@@ -245,6 +314,133 @@
     list.appendChild(el("div", { class: "gap-section-head" },
       "Almost matched — what's missing"));
     near.forEach((g) => list.appendChild(gapCard(g)));
+  }
+
+  /* Why does this element carry that category?
+   *
+   * A propagated category is the engine's claim, not the modeler's, and one they
+   * cannot check from the graph alone - the annotation that caused it may be
+   * several hops upstream. Each hop is grouped under the element it landed on
+   * and the chain is walked back to the element nobody derived, which is the one
+   * a human actually annotated. Clicking a row highlights the whole path in the
+   * diagram, so the claim can be read off the picture.
+   */
+  function renderDerivedCategories(rows) {
+    const list = $("#derived-list");
+    const empty = $("#derived-empty");
+    const count = $("#derived-count");
+    list.innerHTML = "";
+    if (!rows || !rows.length) {
+      empty.textContent = "No category travelled: every data category in this graph sits where you annotated it.";
+      empty.classList.remove("hidden");
+      count.textContent = "";
+      return;
+    }
+    empty.classList.add("hidden");
+    // The badge counts inferred FACTS - one per element/category the panel
+    // lists - not the hops that carried them. An element can pick up the same
+    // category by several routes, so counting hops advertised more findings
+    // than the list contains.
+    count.textContent = String(
+      new Set(rows.map((r) => `${r.element.id}|${r.category.id}`)).size
+    );
+    list.appendChild(el("div", { class: "derived-section-head" }, [
+      el("span", {}, "Categories the engine inferred — traced back to the annotation each came from"),
+      el("span", { class: "derived-section-hint" },
+        "Categories you annotated yourself are not listed. Click a row to highlight its route on the diagram."),
+    ]));
+
+    /* Hop lookup: "element|category" -> EVERY hop that put the category there.
+     * An element can acquire the same category from several upstream elements,
+     * so keeping one per key silently hid alternative provenance. */
+    const hopsBy = new Map();
+    rows.forEach((r) => {
+      const key = `${r.element.id}|${r.category.id}`;
+      if (!hopsBy.has(key)) hopsBy.set(key, []);
+      hopsBy.get(key).push(r);
+    });
+
+    /* Trace back to the annotation the category actually came from.
+     *
+     * Following hops backwards and reporting wherever you stop is wrong when the
+     * flow contains a loop - a conversation store written at the end of a turn
+     * and read at the start of the next is a loop - because the category
+     * circulates and there is no last hop. Whatever the walk reported as the
+     * "origin" was then an artefact of traversal order, which is how a structured
+     * response ended up blamed on the context-update step it feeds rather than
+     * on the store it came from.
+     *
+     * Breadth-first back to the nearest ANNOTATED source instead: the element a
+     * human tagged is a real endpoint, and searching for it terminates a cycle on
+     * a meaningful criterion. If no annotated source is reachable the trail is
+     * genuinely circular, and the row says so rather than inventing a start.
+     */
+    const traceFor = (row) => {
+      const queue = [[row]];
+      const visited = new Set([row.element.id]);
+      let deepest = [row];
+      while (queue.length) {
+        const path = queue.shift();
+        const last = path[path.length - 1];
+        if (path.length > deepest.length) deepest = path;
+        if (!last.from) return { path, origin: null, circular: false };
+        if (last.fromAnnotated) return { path, origin: last.from, circular: false };
+        if (visited.has(last.from.id)) continue;
+        visited.add(last.from.id);
+        for (const next of hopsBy.get(`${last.from.id}|${row.category.id}`) || []) {
+          queue.push([...path, next]);
+        }
+      }
+      return { path: deepest, origin: null, circular: true };
+    };
+
+    // One entry per (element, category) the modeler sees on an element.
+    const byElement = new Map();
+    rows.forEach((r) => {
+      const key = r.element.id;
+      if (!byElement.has(key)) byElement.set(key, { element: r.element, categories: new Map() });
+      byElement.get(key).categories.set(r.category.id, r);
+    });
+
+    [...byElement.values()]
+      .sort((a, b) => a.element.label.localeCompare(b.element.label))
+      .forEach((group) => {
+        const block = el("div", { class: "derived-group" });
+        block.appendChild(el("div", { class: "derived-element" }, group.element.label));
+        [...group.categories.values()]
+          .sort((a, b) => a.category.label.localeCompare(b.category.label))
+          .forEach((row) => {
+            const { path: chain, origin, circular } = traceFor(row);
+            // Read the trail forwards, the direction the data actually moved.
+            const steps = chain.map((hop) => hop.via && hop.via.label).filter(Boolean).reverse();
+            const alternatives =
+              (hopsBy.get(`${row.element.id}|${row.category.id}`) || []).length - 1;
+
+            let why;
+            if (circular) {
+              why = `circulates through ${chain[chain.length - 1].from.label}` +
+                (steps.length ? ` · via ${steps.join(" → ")}` : "");
+            } else {
+              why = `annotated on ${origin ? origin.label : "an upstream element"}` +
+                (steps.length ? ` · via ${steps.join(" → ")}` : "");
+            }
+            if (alternatives > 0) why += ` · +${alternatives} other source${alternatives > 1 ? "s" : ""}`;
+
+            const line = el("div", { class: "derived-row", title: "Click to highlight this path in the diagram" }, [
+              el("span", { class: "derived-cat" }, row.category.label),
+              el("span", { class: "derived-why" }, why),
+            ]);
+            const path = [row.element.id, ...chain.map((h) => h.from && h.from.id), ...chain.map((h) => h.via && h.via.id)]
+              .filter(Boolean);
+            line.addEventListener("click", () => {
+              $$("#derived-list .derived-row").forEach((n) => n.classList.remove("active"));
+              line.classList.add("active");
+              GraphView.setHighlight(path);
+            });
+            block.appendChild(line);
+          });
+        list.appendChild(block);
+      });
   }
 
   function renderMotifs(matches, gaps) {
@@ -608,7 +804,19 @@ ex:Generate a beam:Transform ;
     try {
       const examples = await api("/api/examples");
       const select = $("#example-select");
-      examples.forEach((ex) => select.appendChild(el("option", { value: ex.name }, ex.name)));
+      // Local graphs go under their own heading. They may be confidential, and
+      // the one thing you must be able to see at a glance is whether what you
+      // just loaded is yours or one the project ships.
+      const groups = [
+        ["Bundled", examples.filter((ex) => !ex.local)],
+        ["Local (not in the repository)", examples.filter((ex) => ex.local)],
+      ];
+      for (const [label, items] of groups) {
+        if (!items.length) continue;
+        const group = el("optgroup", { label });
+        items.forEach((ex) => group.appendChild(el("option", { value: ex.name }, ex.name)));
+        select.appendChild(group);
+      }
     } catch (_) { /* non-fatal */ }
 
     $("#example-select").addEventListener("change", async (ev) => {
@@ -694,8 +902,36 @@ ex:Generate a beam:Transform ;
         const data = await postJson("/api/assess", { ttl });
         renderFindings(data);
         renderMotifs(data.motifMatches, data.motifGaps); // Motifs tab (each match carries nodeIds)
+        renderDerivedCategories(data.derivedCategories);
         openDrawer("findings");
         setStatus("ok", `Assessment finished`, `${data.summary.riskFindingCount} findings · ${data.summary.motifMatchCount} matches`);
+      } catch (error) {
+        setStatus("error", error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $("#btn-export-svg").addEventListener("click", () => {
+      const ok = GraphView.exportSvg(`${exportBaseName()}.svg`);
+      if (ok) setStatus("ok", "Diagram exported as SVG.");
+      else setStatus("error", "Nothing to export - the diagram is empty.");
+    });
+
+    $("#btn-export-kg").addEventListener("click", async () => {
+      const ttl = Editor.getValue().trim();
+      if (!ttl) { setStatus("error", "Nothing to export - the editor is empty."); return; }
+      const button = $("#btn-export-kg");
+      const format = $("#export-format").value;
+      button.disabled = true;
+      setStatus("busy", "Building the assessment knowledge graph…");
+      try {
+        const { blob, findings, matches, filename } = await postForFile(
+          "/api/export/assessment",
+          { ttl, format, sourceLabel: exportBaseName() },
+        );
+        downloadBlob(blob, filename || `${exportBaseName()}-assessment`);
+        setStatus("ok", "Assessment exported", `${findings} findings · ${matches} matches`);
       } catch (error) {
         setStatus("error", error.message);
       } finally {

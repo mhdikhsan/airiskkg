@@ -23,16 +23,6 @@ CONSTRUCT {
         pair:findingStatus "candidate" .
 }
 WHERE {
-    pat:DirectPromptingWithoutGroundingRiskPattern
-        pair:hasMechanism ?mechanism ;
-        pair:hasApplicabilityCondition ?satisfiedCondition ;
-        pair:mayIndicateRisk ?riskTaxonomyEntry ;
-        pair:suggestedControl ?suggestedControl .
-
-    OPTIONAL {
-        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
-    }
-
     ?match
         a pair:MotifMatch ;
         pair:matchesMotif pat:DirectPromptingMotif ;
@@ -67,6 +57,15 @@ WHERE {
         ?retrievedContext pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
     }
 
+    pat:DirectPromptingWithoutGroundingRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/",
