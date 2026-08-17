@@ -20,9 +20,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from airiskkg.paths import EXAMPLE_DIR  # noqa: E402
 
-# The IRI each example mints its elements under.
+# The IRI each bundled example mints its elements under. Only graphs the
+# repository ships belong here: ontology/example_local/ is the user's own,
+# absent from a fresh clone, and nothing in the suite may depend on it.
 ONYX_NS = "http://w3id.org/airiskkg/example/onyx-danswer#"
-MCP_NS = "http://tool4boxology.org/Boxology/mcp-example-action"
+GRAPH_RAG_NS = "http://tool4boxology.org/Boxology/graphrag-example"
 
 
 def example_path(namespace: str) -> Path:
@@ -52,6 +54,6 @@ def onyx_path() -> Path:
 
 
 @pytest.fixture(scope="session")
-def mcp_path() -> Path:
-    """The agentic MCP tool-use example."""
-    return example_path(MCP_NS)
+def graph_rag_path() -> Path:
+    """The minimal graph-RAG example."""
+    return example_path(GRAPH_RAG_NS)

@@ -9,8 +9,16 @@ Reading the graph
     ``GET  /api/vocabulary``         Pattern roles (grouped, with the element kind
                                      each applies to), data categories, BEAM
                                      element classes, edge kinds, motif templates.
-    ``GET  /api/examples``           Names of the bundled example graphs.
-    ``GET  /api/examples/<name>``    Raw Turtle for one bundled example.
+    ``GET  /api/examples``           Names of the example graphs on offer, each
+                                     flagged ``local`` or not.
+    ``GET  /api/examples/<name>``    Raw Turtle for one of them.
+
+Only the two bundled graphs in ``ontology/example/`` are offered by default.
+``ontology/example_local/`` — the user's own, possibly confidential graphs — is
+listed only when the app is created with ``local_examples=True`` (which is what
+``cli serve`` does) or ``PAIR_AI_LOCAL_EXAMPLES`` is set. Importing ``app`` for a
+WSGI server therefore never exposes it, and neither endpoint can read a file the
+listing would not show.
     ``POST /api/graph``              Turtle -> nodes/edges/systems for the canvas.
 
 Editing the graph — each returns the rewritten Turtle, which the editor adopts
@@ -35,10 +43,12 @@ exists.
 
 from __future__ import annotations
 
+import os
 import re
 import threading
 from datetime import datetime, timezone
 from functools import lru_cache
+from pathlib import Path
 
 from flask import Flask, Response, jsonify, request, send_from_directory
 from rdflib import RDF, RDFS, SKOS, Graph, Literal, Namespace, URIRef
@@ -53,7 +63,7 @@ from airiskkg.assessment_runner import (
 )
 from airiskkg.assessment_view import summarize_result
 from airiskkg.graph_view import graph_view
-from airiskkg.paths import CORE_DIR, EXAMPLE_DIR, SHACL_DIR
+from airiskkg.paths import CORE_DIR, EXAMPLE_DIR, EXAMPLE_LOCAL_DIR, SHACL_DIR
 
 # Element classes the guided builder offers, paired with the BEAM class they map to.
 RESOURCE_CLASSES = [
@@ -486,9 +496,31 @@ def _start_warmup() -> None:
     threading.Thread(target=_warm_query_cache, daemon=True).start()
 
 
-def create_app() -> Flask:
+def _local_examples_default() -> bool:
+    """Whether to offer ontology/example_local/ when the caller says nothing.
+
+    Off. That folder is where confidential and NDA-covered architectures live,
+    so exposure has to be something you asked for rather than something you
+    forgot to switch off: a WSGI server importing ``app`` gets the safe answer
+    without configuring anything, and `cli serve` opts in explicitly because it
+    is by definition a local run. ``PAIR_AI_LOCAL_EXAMPLES=1`` opts a WSGI
+    server in for the rare case where that is genuinely wanted."""
+    return os.environ.get("PAIR_AI_LOCAL_EXAMPLES", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def create_app(*, local_examples: bool | None = None) -> Flask:
     app = Flask(__name__, static_folder="static", static_url_path="/static")
+    app.config["LOCAL_EXAMPLES"] = (
+        _local_examples_default() if local_examples is None else local_examples
+    )
     _start_warmup()
+
+    def _example_dirs() -> list[tuple[Path, bool]]:
+        """Directories to offer examples from, each flagged local or not."""
+        dirs = [(EXAMPLE_DIR, False)]
+        if app.config["LOCAL_EXAMPLES"] and EXAMPLE_LOCAL_DIR.is_dir():
+            dirs.append((EXAMPLE_LOCAL_DIR, True))
+        return dirs
 
     @app.get("/")
     def index() -> object:
@@ -501,17 +533,21 @@ def create_app() -> Flask:
     @app.get("/api/examples")
     def examples() -> object:
         items = [
-            {"name": path.stem, "filename": path.name}
-            for path in sorted(EXAMPLE_DIR.glob("*.ttl"))
+            {"name": path.stem, "filename": path.name, "local": is_local}
+            for directory, is_local in _example_dirs()
+            for path in sorted(directory.glob("*.ttl"))
         ]
         return jsonify(items)
 
     @app.get("/api/examples/<name>")
     def example(name: str) -> object:
-        path = (EXAMPLE_DIR / f"{name}.ttl").resolve()
-        if EXAMPLE_DIR.resolve() not in path.parents or not path.is_file():
-            return jsonify({"error": "Example not found."}), 404
-        return jsonify({"name": name, "ttl": path.read_text(encoding="utf-8")})
+        # Same directories the listing offers, so a name the UI cannot see is a
+        # name this cannot read either.
+        for directory, _is_local in _example_dirs():
+            path = (directory / f"{name}.ttl").resolve()
+            if directory.resolve() in path.parents and path.is_file():
+                return jsonify({"name": name, "ttl": path.read_text(encoding="utf-8")})
+        return jsonify({"error": "Example not found."}), 404
 
     @app.post("/api/graph")
     def graph() -> object:

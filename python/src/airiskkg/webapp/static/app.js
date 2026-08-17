@@ -804,7 +804,19 @@ ex:Generate a beam:Transform ;
     try {
       const examples = await api("/api/examples");
       const select = $("#example-select");
-      examples.forEach((ex) => select.appendChild(el("option", { value: ex.name }, ex.name)));
+      // Local graphs go under their own heading. They may be confidential, and
+      // the one thing you must be able to see at a glance is whether what you
+      // just loaded is yours or one the project ships.
+      const groups = [
+        ["Bundled", examples.filter((ex) => !ex.local)],
+        ["Local (not in the repository)", examples.filter((ex) => ex.local)],
+      ];
+      for (const [label, items] of groups) {
+        if (!items.length) continue;
+        const group = el("optgroup", { label });
+        items.forEach((ex) => group.appendChild(el("option", { value: ex.name }, ex.name)));
+        select.appendChild(group);
+      }
     } catch (_) { /* non-fatal */ }
 
     $("#example-select").addEventListener("change", async (ev) => {

@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from airiskkg.assessment_runner import load_base_graph  # noqa: E402
 from airiskkg.paths import EXAMPLE_DIR, SHACL_DIR  # noqa: E402
-from conftest import ONYX_NS, MCP_NS, example_path  # noqa: E402
+from conftest import GRAPH_RAG_NS, ONYX_NS, example_path  # noqa: E402
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
 GUIDANCE_PATH = SHACL_DIR / "annotation_guidance.ttl"
@@ -186,8 +186,7 @@ def test_curated_examples_raise_no_guidance_warnings(shapes, ontology) -> None:
     offenders = []
     for path in (
         example_path(ONYX_NS),
-        EXAMPLE_DIR / "simple_graph_rag.ttl",
-        example_path(MCP_NS),
+        example_path(GRAPH_RAG_NS),
     ):
         data = Graph().parse(path, format="turtle")
         _conforms, results, _text = validate(

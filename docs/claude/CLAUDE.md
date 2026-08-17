@@ -252,13 +252,28 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - `ontology/visualization/` — standalone SPARQL run by hand; referenced by no declaration,
   unlike `patterns/implementation/`
 - `ontology/example/` — **every** architecture graph the repo ships: a RAG chatbot
-  (Onyx / Danswer), a minimal graph-RAG, and an agentic MCP tool-use system.
+  (Onyx / Danswer) and a minimal graph-RAG. Two, deliberately: enough for someone to
+  try the tool, and a set small enough to keep pinned.
   **Never name one of these files in a test.** They get renamed — `onyx_danswer.ttl`
-  became `onyx_danswer_rag_chatbot.ttl` became `ony_rag_chatbot.ttl` inside two days —
-  and each rename broke suites for reasons unrelated to what they test. Resolve one
-  through `tests/conftest.py::example_path(NAMESPACE)`, which finds the graph by the
-  IRI it mints elements under: renaming a file is a filing decision, changing a
-  namespace is a modelling one.
+  became `onyx_danswer_rag_chatbot.ttl` became `ony_rag_chatbot.ttl` became
+  `onyx_rag_chatbot.ttl` inside two days — and each rename broke suites for reasons
+  unrelated to what they test. Resolve one through
+  `tests/conftest.py::example_path(NAMESPACE)`, which finds the graph by the IRI it
+  mints elements under: renaming a file is a filing decision, changing a namespace is
+  a modelling one.
+- `ontology/example_local/` — **the user's own graphs: gitignored, and not in the
+  Docker image.** Confidential and NDA-covered architectures live here (the MCP
+  tool-use graph moved here 2026-08-17). Only its `README.md` is tracked. Nothing in
+  the test suite or the shipped library may read from it — a fresh clone has to pass —
+  and `test_private_examples.py` enforces that, plus the ignore rule, the
+  `.dockerignore` allow-list, and that a WSGI app neither lists nor serves the folder.
+  Serving it is opt-in: `create_app(local_examples=True)`, which only `cli serve` does.
+- **`.dockerignore` is an allow-list, and must stay one.** `COPY . /app` once shipped
+  `docs/example_UC/` — NDA-covered and carefully gitignored — because `.gitignore` and
+  `.dockerignore` are unrelated files and nobody updated the second. It now excludes
+  `*` and names what the app reads, so a new private directory is left out by default
+  rather than by vigilance. Never convert it back to a deny-list; when the app starts
+  reading a new path, add a `!` line and rebuild.
 - `docs/example_UC/` — **NDA-covered use-case graphs, gitignored.** Absent from a fresh
   clone, so nothing in the test suite or the library may depend on it. `paths.EXAMPLE_UC_DIR`
   resolves it for local runs only; never add a test or an example that reads from there.
@@ -288,8 +303,10 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   | Graph | Matches | Findings |
   | --- | --- | --- |
   | RAG chatbot, Onyx / Danswer (broadest: 7 distinct motifs) | 13 | 25 |
-  | Agentic MCP tool use (agentic layer: delegation, memory, tools) | 9 | 18 |
   | Minimal graph RAG | 3 | 11 |
+
+  The agentic layer is covered by `test_agentic_assessment.py`, which states its own
+  graph inline — the MCP example it used to read now lives in `example_local/`.
 
   Matches are `pair:MotifMatch` instances, not distinct motifs — nested motifs co-match
   by design, so the number is structural coverage. `test_propagation.py` asserts these

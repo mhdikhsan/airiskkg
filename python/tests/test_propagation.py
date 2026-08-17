@@ -18,7 +18,7 @@ from rdflib import RDF, RDFS, URIRef
 
 from airiskkg.assessment_runner import PAIR, run_assessment, run_assessment_from_text
 from airiskkg.paths import EXAMPLE_DIR
-from conftest import ONYX_NS, MCP_NS, example_path  # noqa: E402
+from conftest import GRAPH_RAG_NS, ONYX_NS, example_path  # noqa: E402
 
 EX = "http://example.org/"
 
@@ -285,9 +285,14 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     generation-side patterns."""
     expected = {
         example_path(ONYX_NS): (13, 25),
-        EXAMPLE_DIR / "simple_graph_rag.ttl": (3, 11),
-        example_path(MCP_NS): (9, 18),
+        example_path(GRAPH_RAG_NS): (3, 11),
     }
+    # Every graph the repo ships is pinned. Adding one without a baseline would
+    # otherwise leave it unwatched, which is how drift goes unnoticed.
+    assert set(expected) == set(EXAMPLE_DIR.glob("*.ttl")), (
+        "bundled examples without a baseline: "
+        + ", ".join(sorted(p.name for p in set(EXAMPLE_DIR.glob("*.ttl")) - set(expected)))
+    )
     for name, (motifs, findings) in expected.items():
         result = run_assessment(name, write_outputs=False)
         assert result.motif_match_count == motifs, name

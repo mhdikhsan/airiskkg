@@ -1,35 +1,31 @@
-# Keep the build context lean and the image reproducible.
-.git
-.gitignore
-.github
+# The image is published; the working tree is not. This file decides what a
+# published container carries.
+#
+# It is an allow-list on purpose. As a deny-list it shipped whatever nobody
+# remembered to add: .gitignore already kept docs/example_UC/ (NDA-covered) and
+# CHANGELOG_data_model.md out of the repository, but the build copied them into
+# the image regardless, because .dockerignore and .gitignore are unrelated
+# files. Excluding everything and naming what the app reads means a new private
+# folder is left out by default rather than by vigilance.
+*
 
-# Python caches / build artifacts
-**/__pycache__/
+# What the running app reads
+!python/src
+!ontology
+!shacl
+!external
+
+# Attribution and licence travel with the code
+!NOTICE.md
+!LICENSE
+!README.md
+
+# ...and what must never ship, even from inside those trees. The user's own
+# architecture graphs - confidential, NDA-covered, unfinished - are gitignored
+# too, so usually absent from a checkout; excluded here as well because a build
+# can run from a dirty tree.
+ontology/example_local
+**/__pycache__
 **/*.py[cod]
-**/*.egg-info/
-.pytest_cache/
-**/.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-# Virtualenvs
-.venv/
-venv/
-env/
-
-# Generated assessment outputs (recreated at runtime; not needed in the image)
-outputs/
-
-# Frozen prior-generation snapshot — the app reads ontology/, not v1/
-v1/
-
-# Editor / OS noise
-.idea/
-.vscode/
-*.log
-.DS_Store
-
-# Don't ship the build files into the image
-Dockerfile
-.dockerignore
-docker-compose.yml
+**/*.egg-info
+**/.pytest_cache
