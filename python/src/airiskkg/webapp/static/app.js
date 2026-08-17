@@ -805,8 +805,7 @@ ex:Generate a beam:Transform ;
         setStatus("ok", `Applied "${control.label}"`,
           `${data.summary.riskFindingCount} findings · ${data.summary.motifMatchCount} matches`);
       } catch (error) {
-        setStatus("error", "Could not apply the control: " + error.message.split("
-")[0]);
+        setStatus("error", "Could not apply the control: " + error.message.split("\n")[0]);
       }
     });
   }
