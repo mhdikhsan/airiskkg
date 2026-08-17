@@ -36,15 +36,21 @@ pat:Control_GroundingAndVerification
 pat:Control_Guardrails
     pair:controlNature pair:TechnicalControl ;
     rdfs:comment "Realized by GuardrailsMotif, which is itself risk-bearing (improper-output-handling, system-prompt-leakage); adding it constrains I/O but is not risk-free. Re-assess the amended architecture."@en ;
-    pair:realizedByMotif pat:GuardrailsMotif .
+    pair:realizedByMotif pat:GuardrailsMotif ,
+                         pat:InputScreeningMotif ,
+                         pat:OutputScreeningMotif .
 
+# One side each, not the whole guarded-generation topology. Pointing these at
+# GuardrailsMotif asked for 16 constraints to express a control that needs 5,
+# and the risk each addresses lives on one side: nothing about prompt injection
+# requires an output guardrail.
 pat:Control_InputValidationAndPromptIsolation
     pair:controlNature pair:TechnicalControl ;
-    pair:realizedByMotif pat:GuardrailsMotif .
+    pair:realizedByMotif pat:InputScreeningMotif .
 
 pat:Control_OutputValidationAndSanitization
     pair:controlNature pair:TechnicalControl ;
-    pair:realizedByMotif pat:GuardrailsMotif .
+    pair:realizedByMotif pat:OutputScreeningMotif .
 
 pat:Control_LoggingMonitoringAndEvals
     pair:controlNature pair:TechnicalControl ;

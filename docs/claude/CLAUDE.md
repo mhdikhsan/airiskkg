@@ -342,15 +342,30 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - Tool4Boxology export quirks the normalizer must handle: lowercase type URIs
   (`t4b:transform` vs `t4b:Transform`), ontology declares `patternProcess` but exports
   `hasProcess`, instances multi-typed with `t4b:Component`.
-- Current library size (2026-08-17, counted off the loaded graph): **29 motifs**,
+- Current library size (2026-08-17, counted off the loaded graph): **31 motifs**,
   **16 risk patterns**, **97 pattern roles**, **7 data categories**, **35 facet
-  concepts**, 21 applicability-condition attachments. Implementations: 29 match
+  concepts**, 21 applicability-condition attachments. Implementations: 31 match
   queries, 16 risk queries, 6 propagation rules.
   Every figure but the motif count had already drifted before anyone noticed, so
   re-count rather than edit by hand:
   `len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))` and its siblings.
   When any of these changes, update `docs/reference/catalogue.md` in the same commit —
   nothing regenerates it.
+- **A control clears a finding by being built, not by being asserted.** A risk query
+  whose only escape is `?control beamr:associatedTo ?element` cannot be cleared by
+  changing the architecture — `beamr:associatedTo` appears in no bundled example and no
+  UI writes it — so the finding is unfalsifiable by design work. Prompt injection was
+  fixed 2026-08-17 by testing for a screening step on the path; **7 of 16 risk queries
+  still have no structural check at all** (data_model_poisoning, excessive_agency,
+  sensitive_retrieval, supply_chain, system_prompt_leakage, vector_embedding_weakness,
+  and the annotation half of others). Some are legitimately unstructural — supply-chain
+  vetting has no shape — but audit before assuming.
+- **Control motifs are sized to the risk, not to the vocabulary.** `GuardrailsMotif` is
+  8 nodes and 8 edges; prompt injection needs an input screen and nothing else, so
+  `InputScreeningMotif` / `OutputScreeningMotif` are 3 nodes and 2 edges each and nest
+  inside it. A control whose `pair:realizedByMotif` points at a motif far larger than
+  the risk it addresses is not actionable — that motif is what the canvas offers to
+  insert.
 - Sweep motif labels against R9 whenever the library version changes: no *direct*, *only*,
   *pure*, *without*, *unmediated*, *standalone* in a motif name.
 - Write English comments/labels; APA 7th for any citation in docs.

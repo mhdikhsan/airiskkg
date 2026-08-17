@@ -1,0 +1,51 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Input screening motif match"@en ;
+        pair:matchesMotif pat:InputScreeningMotif ;
+        pair:hasNodeBinding ?inputBinding , ?screeningBinding , ?generationBinding .
+
+    ?inputBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:InputScreening_UserInputNode ;
+        pair:matchedElement ?userInput .
+
+    ?screeningBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:InputScreening_ScreeningStepNode ;
+        pair:matchedElement ?screeningStep .
+
+    ?generationBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:InputScreening_GenerationStepNode ;
+        pair:matchedElement ?generationStep .
+}
+WHERE {
+    ?screeningStep
+        a/rdfs:subClassOf* beam:Process ;
+        beam:use ?userInput ;
+        beam:inform ?generationStep ;
+        pair:playsRole/pair:subRoleOf* pair:InputGuardrailStep .
+
+    ?userInput a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
+
+    ?generationStep
+        a/rdfs:subClassOf* beam:Process ;
+        pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/input-screening/",
+        ENCODE_FOR_URI(STR(?screeningStep)), "/",
+        ENCODE_FOR_URI(STR(?userInput)), "/",
+        ENCODE_FOR_URI(STR(?generationStep))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/user-input")) AS ?inputBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/screening-step")) AS ?screeningBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/generation-step")) AS ?generationBinding)
+}

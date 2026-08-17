@@ -50,6 +50,36 @@ WHERE {
             ?generationStep beam:use ?derivedContext .
         }
 
+        # Nothing screens the untrusted content on its way to the prompt.
+        # Structural, not annotated: the control is a step in the graph, so a
+        # modeler who inserts one clears this finding by building it rather than
+        # by asserting that they did. Closed-world over the submitted graph only
+        # (Rule R4) - absence means no screen is represented, not that none
+        # exists.
+        #
+        # Only pair:InputGuardrailStep counts. Redaction is deliberately not
+        # accepted: it removes protected content, it does not make attacker-
+        # controlled text safe to prompt with, which is why untrusted_content.rq
+        # treats a guardrail as a taint barrier and a redaction step as not one.
+        #
+        # A guardrail wired as a transform already clears this upstream - its
+        # output never acquires the taint - so what this adds is the gate shape,
+        # where the screen informs the generation step instead of feeding it.
+        FILTER NOT EXISTS {
+            ?screeningStep pair:playsRole/pair:subRoleOf* pair:InputGuardrailStep .
+            {
+                ?screeningStep beam:use ?untrustedContent ;
+                    beam:inform ?generationStep .
+            }
+            UNION
+            {
+                ?screeningStep beam:use ?untrustedContent ;
+                    beam:produce ?screenedContent .
+                ?generationStep beam:use ?screenedContent .
+            }
+        }
+        # Retained for controls with no structural shape: an assessor may still
+        # record that one is in place.
         FILTER NOT EXISTS {
             pat:PromptInjectionRiskPattern pair:suggestedControl ?implementedControl .
             ?implementedControl beamr:associatedTo ?generationStep .

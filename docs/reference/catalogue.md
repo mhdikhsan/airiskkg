@@ -69,6 +69,8 @@ column lists the risk patterns **declared** on the motif via
 | **EmbeddingsMotif** | Source documents/data chunked and transformed into vectors stored in a vector index. | LLM04, LLM08 |
 | **QueryRewritingMotif** | An LLM reformulates a user query into alternative queries used for retrieval. | LLM01, LLM10 |
 | **RerankerMotif** | A candidate set of retrieved fragments is reranked by a model to select context. | LLM08 |
+| **InputScreeningMotif** | A step screens user input and informs the generation step it protects. Nests inside GuardrailsMotif; realizes input validation without requiring the whole guarded-generation topology. | — (clears LLM01) |
+| **OutputScreeningMotif** | A step screens a generated response before release. Nests inside GuardrailsMotif. | — |
 | **HybridRetrieverMotif** | Vector search and keyword/structured search combined and aggregated into a candidate context set. | — |
 
 ### Gen AI — controls & evaluation

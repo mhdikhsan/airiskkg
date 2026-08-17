@@ -781,6 +781,20 @@ pat:FineTune_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/fine_tuning.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
+pat:InputScreening_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Input Screening motif matching OQP"@en ;
+    pair:implementsMotif pat:InputScreeningMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/input_screening.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:OutputScreening_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Output Screening motif matching OQP"@en ;
+    pair:implementsMotif pat:OutputScreeningMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/output_screening.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
 pat:Guardrails_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Guardrails Motif matching OQP"@en ;
@@ -985,9 +999,7 @@ pat:InsecureAgentCommunicationOQP
     pair:producesOutputType pair:RiskFinding .
 
 
-#################################################################
 # Sensitive information reaching a user-facing sink, by any route
-#################################################################
 
 pat:SensitiveOutputExposureRiskPattern
     a pair:RiskPattern ;
@@ -997,23 +1009,6 @@ pat:SensitiveOutputExposureRiskPattern
     dct:description """
     Applies wherever content carrying a protected category reaches an element
     exposed to a user, with no represented control on the way out.
-
-    The library already had a sensitive-disclosure pattern, but it is scoped to
-    the Vector-based Information Retrieval motif and requires the store and the
-    retrieved result to be sensitive, so it only ever saw the retrieval route.
-    Sensitive content arriving any other way - typed by a user, returned by a
-    tool, recalled from agent memory - reached the output with nothing to
-    report it, even though the propagation rules had already derived and could
-    show the whole path. This pattern reads that derived fact directly, so the
-    engine's own conclusion is what raises the finding.
-
-    Deliberately motif-less, like the excessive-agency pattern: the risk is
-    about where content ends up, not about which configuration carried it, and
-    binding it to one motif is exactly what produced the blind spot.
-
-    Both applicability conditions are shared with the retrieval-scoped pattern
-    (glossary term 6 permits reuse where the structural gate is identical, and
-    it is: sensitive content in context, exposed at an output).
     """@en ;
     pair:hasMechanism owasp:mechanism-sensitive-data-propagation ;
     pair:hasApplicabilityCondition
