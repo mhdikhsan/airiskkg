@@ -1,14 +1,4 @@
-# The image is published; the working tree is not. This file decides what a
-# published container carries.
-#
-# It is an allow-list on purpose. As a deny-list it shipped whatever nobody
-# remembered to add: .gitignore already kept docs/example_UC/ (NDA-covered) and
-# CHANGELOG_data_model.md out of the repository, but the build copied them into
-# the image regardless, because .dockerignore and .gitignore are unrelated
-# files. Excluding everything and naming what the app reads means a new private
-# folder is left out by default rather than by vigilance.
 *
-
 # What the running app reads
 !python/src
 !ontology
@@ -20,10 +10,7 @@
 !LICENSE
 !README.md
 
-# ...and what must never ship, even from inside those trees. The user's own
-# architecture graphs - confidential, NDA-covered, unfinished - are gitignored
-# too, so usually absent from a checkout; excluded here as well because a build
-# can run from a dirty tree.
+
 ontology/example_local
 **/__pycache__
 **/*.py[cod]

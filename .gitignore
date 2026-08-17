@@ -14,18 +14,7 @@ dist/
 docs/notes/
 CHANGELOG_data_model.md
 
-# Use-case graphs covered by an NDA. These stay on disk for local assessment
-# runs but must never enter the repository. Nothing in the test suite or the
-# shipped library depends on them: the project's own example graphs live in
-# ontology/example/ and are tracked normally.
 docs/example_UC/
-
-# Your own architecture graphs. Drop anything here - confidential, NDA-covered,
-# half-finished - and the workbench will offer it in Load example when you run
-# it locally, while git ignores every file in the folder and the Docker build
-# leaves the folder out of the image entirely. Only the README is tracked, so
-# the folder still exists in a fresh clone to say what it is for.
-# test_local_examples.py fails if anything else here ever becomes tracked.
 ontology/example_local/*
 !ontology/example_local/README.md
 
