@@ -63,8 +63,9 @@ column lists the risk patterns **declared** on the motif via
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
 | **DirectPromptingMotif** | A user query handled directly by a generative-model step, producing a user-facing answer. | LLM09 (no grounding), LLM05, LLM01, LLM10 |
-| **RetrievalAugmentedGenerationMotif** | User query → query-driven retrieval of context from a vector store → build prompt → LLM → answer. Retrieval is *driven by* the query (it `beam:use`s it); context may pass reranking/aggregation on the way. | LLM09 (misinformation), LLM01, LLM08, LLM10 |
-| **VectorBasedInformationRetrievalMotif** | A retrieval step uses a vector store / knowledge source and produces retrieved context (the retrieval stage on its own). | LLM02 |
+| **RetrievalAugmentedGenerationMotif** | User query → query-driven retrieval of context from any knowledge source → build prompt → LLM → answer. Retrieval is *driven by* the query (it `beam:use`s it); context may pass reranking/aggregation on the way. | LLM09 (misinformation), LLM01, LLM10 |
+| **InformationRetrievalMotif** | A retrieval step uses a query and a knowledge source and produces retrieved context (the retrieval stage on its own). The source may be a vector store, keyword index, knowledge graph, or relational store. | LLM02 |
+| **VectorBasedInformationRetrievalMotif** | The same shape, specialized to a vector store. Nests inside InformationRetrievalMotif: a vector system matches both. | LLM08 |
 | **EmbeddingsMotif** | Source documents/data chunked and transformed into vectors stored in a vector index. | LLM04, LLM08 |
 | **QueryRewritingMotif** | An LLM reformulates a user query into alternative queries used for retrieval. | LLM01, LLM10 |
 | **RerankerMotif** | A candidate set of retrieved fragments is reranked by a model to select context. | LLM08 |

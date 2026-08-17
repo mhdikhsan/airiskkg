@@ -302,8 +302,8 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 
   | Graph | Matches | Findings |
   | --- | --- | --- |
-  | RAG chatbot, Onyx / Danswer (broadest: 7 distinct motifs) | 13 | 25 |
-  | Minimal graph RAG | 3 | 11 |
+  | RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 25 |
+  | Minimal graph RAG | 3 | 8 |
 
   The agentic layer is covered by `test_agentic_assessment.py`, which states its own
   graph inline — the MCP example it used to read now lives in `example_local/`.
@@ -342,9 +342,13 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - Tool4Boxology export quirks the normalizer must handle: lowercase type URIs
   (`t4b:transform` vs `t4b:Transform`), ontology declares `patternProcess` but exports
   `hasProcess`, instances multi-typed with `t4b:Component`.
-- Current library size (2026-08-06): **28 motifs**, **15 risk patterns**, **95 pattern
-  roles**, **7 data categories**, **35 facet concepts**, 16 applicability-condition
-  attachments. Implementations: 28 match queries, 15 risk queries, 4 propagation rules.
+- Current library size (2026-08-17, counted off the loaded graph): **29 motifs**,
+  **16 risk patterns**, **97 pattern roles**, **7 data categories**, **35 facet
+  concepts**, 21 applicability-condition attachments. Implementations: 29 match
+  queries, 16 risk queries, 6 propagation rules.
+  Every figure but the motif count had already drifted before anyone noticed, so
+  re-count rather than edit by hand:
+  `len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))` and its siblings.
   When any of these changes, update `docs/reference/catalogue.md` in the same commit —
   nothing regenerates it.
 - Sweep motif labels against R9 whenever the library version changes: no *direct*, *only*,

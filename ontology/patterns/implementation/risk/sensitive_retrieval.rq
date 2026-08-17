@@ -11,11 +11,11 @@ CONSTRUCT {
         rdfs:label "Candidate sensitive data retrieval exposure"@en ;
         dct:description "Sensitive retrieved context reaches an LLM generation step and user-facing output without a represented disclosure control."@en ;
         pair:generatedFromMatch ?match ;
-        pair:generatedByMotif pat:VectorBasedInformationRetrievalMotif ;
+        pair:generatedByMotif pat:InformationRetrievalMotif ;
         pair:hasDerivedMechanism ?mechanism ;
         pair:hasEvidence ?query ,
             ?retrievalStep ,
-            ?vectorStore ,
+            ?knowledgeSource ,
             ?retrievedResult ,
             ?generationStep ,
             ?llm ,
@@ -30,29 +30,29 @@ WHERE {
     {
         ?match
             a pair:MotifMatch ;
-            pair:matchesMotif pat:VectorBasedInformationRetrievalMotif ;
+            pair:matchesMotif pat:InformationRetrievalMotif ;
             pair:hasNodeBinding ?queryBinding ,
                 ?retrievalBinding ,
-                ?vectorStoreBinding ,
+                ?knowledgeSourceBinding ,
                 ?resultBinding .
 
         ?queryBinding
-            pair:bindsPatternNode pat:VectorIR_QueryNode ;
+            pair:bindsPatternNode pat:IR_QueryNode ;
             pair:matchedElement ?query .
 
         ?retrievalBinding
-            pair:bindsPatternNode pat:VectorIR_RetrievalStepNode ;
+            pair:bindsPatternNode pat:IR_RetrievalStepNode ;
             pair:matchedElement ?retrievalStep .
 
-        ?vectorStoreBinding
-            pair:bindsPatternNode pat:VectorIR_VectorStoreNode ;
-            pair:matchedElement ?vectorStore .
+        ?knowledgeSourceBinding
+            pair:bindsPatternNode pat:IR_KnowledgeSourceNode ;
+            pair:matchedElement ?knowledgeSource .
 
         ?resultBinding
-            pair:bindsPatternNode pat:VectorIR_RetrievedResultNode ;
+            pair:bindsPatternNode pat:IR_RetrievedContextNode ;
             pair:matchedElement ?retrievedResult .
 
-        ?vectorStore pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
+        ?knowledgeSource pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
         ?retrievedResult pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
 
         {
@@ -84,7 +84,7 @@ WHERE {
             ?implementedDisclosureControl beamr:associatedTo ?controlledElement .
             FILTER(?controlledElement IN (
                 ?retrievalStep,
-                ?vectorStore,
+                ?knowledgeSource,
                 ?retrievedResult,
                 ?generationStep,
                 ?llm,

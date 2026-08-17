@@ -23,7 +23,6 @@ WHERE {
     {
         VALUES ?motif {
             pat:VectorBasedInformationRetrievalMotif
-            pat:RetrievalAugmentedGenerationMotif
             pat:EmbeddingsMotif
             pat:RerankerMotif
         }

@@ -22,6 +22,81 @@
                 <http://w3id.org/airiskkg/pair-ai#> .
 
 
+# Motif 0: Information Retrieval
+#
+# The general shape: a retrieval step reads a query and a knowledge source and
+# produces retrieved context. What the source is - vector store, keyword index,
+# knowledge graph, relational store, API - is not part of the shape.
+#
+# Vector-based IR below is its specialization, and both match a vector system:
+# motifs nest here by design. Before this existed, the vector motif was the only
+# retrieval motif, so retrieval from a knowledge graph matched nothing and
+# simple_graph_rag had to call its Event KG a vector store to be assessable.
+pat:InformationRetrievalMotif
+    a pair:GraphMotif ;
+    rdfs:label "Information Retrieval Motif"@en ;
+    dct:description """
+    Architectural motif in which a retrieval process uses a query and a
+    knowledge source and produces retrieved context.
+    """@en ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:IR_QueryNode ,
+        pat:IR_KnowledgeSourceNode ,
+        pat:IR_RetrievalStepNode ,
+        pat:IR_RetrievedContextNode ;
+    pair:hasPatternEdge
+        pat:IR_RetrievalUsesQueryEdge ,
+        pat:IR_RetrievalUsesKnowledgeSourceEdge ,
+        pat:IR_RetrievalProducesContextEdge ;
+    pair:implementedBy pat:IR_MatchingOQP .
+
+pat:IR_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "Query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:IR_KnowledgeSourceNode
+    a pair:PatternNode ;
+    rdfs:label "Knowledge source node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:KnowledgeSource .
+
+pat:IR_RetrievalStepNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieval step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalStep .
+
+pat:IR_RetrievedContextNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieved context node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
+
+pat:IR_RetrievalUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses query"@en ;
+    pair:sourcePatternNode pat:IR_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IR_QueryNode .
+
+pat:IR_RetrievalUsesKnowledgeSourceEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses knowledge source"@en ;
+    pair:sourcePatternNode pat:IR_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IR_KnowledgeSourceNode .
+
+pat:IR_RetrievalProducesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval produces retrieved context"@en ;
+    pair:sourcePatternNode pat:IR_RetrievalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:IR_RetrievedContextNode .
+
+
 # Motif 1: Vector-based Information Retrieval
 pat:VectorBasedInformationRetrievalMotif
     a pair:GraphMotif ;
@@ -1643,7 +1718,7 @@ pat:RetrievalAugmentedGenerationMotif
     pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:hasPatternNode
         pat:RAG_QueryNode ,
-        pat:RAG_VectorStoreNode ,
+        pat:RAG_KnowledgeSourceNode ,
         pat:RAG_RetrievalStepNode ,
         pat:RAG_RetrievedContextNode ,
         pat:RAG_PromptConstructionStepNode ,
@@ -1669,11 +1744,11 @@ pat:RAG_QueryNode
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
-pat:RAG_VectorStoreNode
+pat:RAG_KnowledgeSourceNode
     a pair:PatternNode ;
-    rdfs:label "RAG vector store node"@en ;
+    rdfs:label "RAG knowledge source node"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:VectorStore .
+    pair:expectedRole pair:KnowledgeSource .
 
 pat:RAG_RetrievalStepNode
     a pair:PatternNode ;
@@ -1729,7 +1804,7 @@ pat:RAG_RetrievalUsesVectorStoreEdge
     rdfs:label "RAG retrieval uses vector store"@en ;
     pair:sourcePatternNode pat:RAG_RetrievalStepNode ;
     pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RAG_VectorStoreNode .
+    pair:targetPatternNode pat:RAG_KnowledgeSourceNode .
 
 pat:RAG_RetrievalProducesContextEdge
     a pair:PatternEdge ;

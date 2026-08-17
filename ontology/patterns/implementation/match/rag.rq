@@ -10,12 +10,12 @@ CONSTRUCT {
         rdfs:label "Retrieval Augmented Generation motif match"@en ;
         pair:matchesMotif pat:RetrievalAugmentedGenerationMotif ;
         pair:hasNodeBinding
-            ?queryB , ?vectorStoreB ,
+            ?queryB , ?knowledgeSourceB ,
             ?retrievalStepB , ?retrievedCtxB , ?promptConstructB ,
             ?promptB , ?llmB , ?genStepB , ?responseB .
 
     ?queryB          a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_QueryNode ;                pair:matchedElement ?query .
-    ?vectorStoreB    a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_VectorStoreNode ;          pair:matchedElement ?vectorStore .
+    ?knowledgeSourceB a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_KnowledgeSourceNode ;     pair:matchedElement ?knowledgeSource .
     ?retrievalStepB  a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_RetrievalStepNode ;        pair:matchedElement ?retrievalStep .
     ?retrievedCtxB   a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_RetrievedContextNode ;     pair:matchedElement ?retrievedCtx .
     ?promptConstructB a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_PromptConstructionStepNode ; pair:matchedElement ?promptConstruct .
@@ -28,15 +28,17 @@ WHERE {
     ?query a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
 
     # Retrieval is DRIVEN BY the user query (Martin Fowler: "user request -> retriever")
-    # and reads a vector store / index; retrieval that ignores the query is not RAG.
+    # and reads a knowledge source; retrieval that ignores the query is not RAG.
+    # The source is any pair:KnowledgeSource - vector store, keyword index,
+    # knowledge graph, relational store. What grounds the generation is that the
+    # content was retrieved, not how it was indexed, and requiring vectors here
+    # meant graph RAG was not RAG.
     ?retrievalStep pair:playsRole/pair:subRoleOf* pair:RetrievalStep ;
                    beam:use ?query ;
-                   beam:use ?vectorStore ;
+                   beam:use ?knowledgeSource ;
                    beam:produce ?retrievedCtx .
-    ?vectorStore a beam:Data .
-    { ?vectorStore pair:playsRole/pair:subRoleOf* pair:VectorStore }
-    UNION
-    { ?vectorStore pair:playsRole/pair:subRoleOf* pair:VectorIndex }
+    ?knowledgeSource a beam:Data ;
+                     pair:playsRole/pair:subRoleOf* pair:KnowledgeSource .
     ?retrievedCtx a beam:Data ; pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
 
     # Retrieved context may pass through intermediate steps (reranking, aggregation)
@@ -66,7 +68,7 @@ WHERE {
     )) AS ?match)
 
     BIND(IRI(CONCAT(STR(?match), "/binding/query"))             AS ?queryB)
-    BIND(IRI(CONCAT(STR(?match), "/binding/vector-store"))      AS ?vectorStoreB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/knowledge-source")) AS ?knowledgeSourceB)
     BIND(IRI(CONCAT(STR(?match), "/binding/retrieval-step"))    AS ?retrievalStepB)
     BIND(IRI(CONCAT(STR(?match), "/binding/retrieved-context")) AS ?retrievedCtxB)
     BIND(IRI(CONCAT(STR(?match), "/binding/prompt-construct"))  AS ?promptConstructB)

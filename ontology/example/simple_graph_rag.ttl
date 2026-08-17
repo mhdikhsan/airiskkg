@@ -28,7 +28,7 @@
 <http://tool4boxology.org/Component/event_kg> a beam:SemanticModel,
         beam:Data ;
     rdfs:label "Event KG" ;
-    pair:playsRole pair:VectorStore ;
+    pair:playsRole pair:KnowledgeSource ;
     beam:usedBy <http://tool4boxology.org/Component/kg_query> .
 
 <http://tool4boxology.org/Component/llm> a beam:StatisticalModel ;

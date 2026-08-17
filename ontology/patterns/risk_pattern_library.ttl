@@ -206,12 +206,14 @@ pat:DirectPromptingMotif
 pat:RetrievalAugmentedGenerationMotif
     pair:hasRiskPattern
         pat:PromptInjectionRiskPattern ,
-        pat:VectorAndEmbeddingWeaknessRiskPattern ,
         pat:MisinformationFromWeakGroundingRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
 
-pat:VectorBasedInformationRetrievalMotif
+pat:InformationRetrievalMotif
     pair:hasRiskPattern pat:SensitiveDataRetrievalExposureRiskPattern .
+
+pat:VectorBasedInformationRetrievalMotif
+    pair:hasRiskPattern pat:VectorAndEmbeddingWeaknessRiskPattern .
 
 pat:EmbeddingsMotif
     pair:hasRiskPattern
@@ -280,7 +282,7 @@ pat:SensitiveDataRetrievalExposureRiskPattern
     pair:derivedFrom owasp:llm02-sensitive-information-disclosure ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Sensitive data retrieval exposure risk pattern"@en ;
-    pair:hasMotif pat:VectorBasedInformationRetrievalMotif ;
+    pair:hasMotif pat:InformationRetrievalMotif ;
     pair:hasMechanism owasp:mechanism-sensitive-data-propagation ;
    
     pair:hasApplicabilityCondition
@@ -411,7 +413,7 @@ pat:VectorAndEmbeddingWeaknessRiskPattern
     pair:derivedFrom owasp:llm08-vector-and-embedding-weaknesses ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Vector and embedding weakness risk pattern"@en ;
-    pair:hasMotif pat:RetrievalAugmentedGenerationMotif ,
+    pair:hasMotif pat:VectorBasedInformationRetrievalMotif ,
         pat:EmbeddingsMotif ,
         pat:RerankerMotif ;
     pair:hasMechanism owasp:mechanism-vector-embedding-retrieval-weakness ;
@@ -500,6 +502,13 @@ pat:UnboundedConsumptionRiskPattern
     pair:implementedBy pat:UnboundedConsumptionOQP .
 
 # Executable OQP metadata
+
+pat:IR_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Information retrieval motif matching OQP"@en ;
+    pair:implementsMotif pat:InformationRetrievalMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/information_retrieval.rq" ;
+    pair:producesOutputType pair:MotifMatch .
 
 pat:VectorIR_MatchingOQP
     a pair:PatternImplementation ;

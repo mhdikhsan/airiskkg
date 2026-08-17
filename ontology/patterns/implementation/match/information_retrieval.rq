@@ -1,0 +1,63 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Information retrieval motif match"@en ;
+        pair:matchesMotif pat:InformationRetrievalMotif ;
+        pair:hasNodeBinding ?queryBinding ,
+            ?retrievalBinding ,
+            ?knowledgeSourceBinding ,
+            ?contextBinding .
+
+    ?queryBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:IR_QueryNode ;
+        pair:matchedElement ?query .
+
+    ?retrievalBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:IR_RetrievalStepNode ;
+        pair:matchedElement ?retrievalStep .
+
+    ?knowledgeSourceBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:IR_KnowledgeSourceNode ;
+        pair:matchedElement ?knowledgeSource .
+
+    ?contextBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:IR_RetrievedContextNode ;
+        pair:matchedElement ?retrievedContext .
+}
+WHERE {
+    ?retrievalStep
+        a/rdfs:subClassOf* beam:Process ;
+        beam:use ?query ;
+        beam:use ?knowledgeSource ;
+        beam:produce ?retrievedContext ;
+        pair:playsRole/pair:subRoleOf* pair:RetrievalStep .
+
+    ?query pair:playsRole/pair:subRoleOf* pair:UserInput .
+    ?knowledgeSource pair:playsRole/pair:subRoleOf* pair:KnowledgeSource .
+    ?retrievedContext pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/",
+        ENCODE_FOR_URI(STR(?retrievalStep)),
+        "/information-retrieval/",
+        ENCODE_FOR_URI(STR(?query)),
+        "/",
+        ENCODE_FOR_URI(STR(?knowledgeSource)),
+        "/",
+        ENCODE_FOR_URI(STR(?retrievedContext))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/query")) AS ?queryBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/retrieval-step")) AS ?retrievalBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/knowledge-source")) AS ?knowledgeSourceBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/retrieved-context")) AS ?contextBinding)
+}

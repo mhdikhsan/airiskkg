@@ -275,17 +275,25 @@ def test_derivation_records_do_not_break_the_fixed_point() -> None:
 def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     """The propagation rules must not silently re-tag the curated examples.
 
-    agentic_assistant went 5 -> 7 findings on 2026-08-06 and the change is
-    intended, not drift. Two causes, both deliberate: taint roots now carry
-    pair:UntrustedContent themselves rather than only what they flow into (see
-    propagation/untrusted_content.rq), which makes the agent's own public input
-    visible to conditions reading a step's direct input; and the ASI01 goal
-    hijack pattern was added, which is exactly such a condition. onyx is
-    unchanged, which is the check that the root-marking did not loosen the
-    generation-side patterns."""
+    Last moved 2026-08-17, when the retrieval layer stopped being vector-only,
+    and both changes are intended:
+
+      onyx 13 -> 14 matches, 25 findings unchanged. It gains the general
+      Information Retrieval match alongside the vector one - they nest by design
+      - and the findings net out: it picks up sensitive-data-retrieval from the
+      general motif and loses a duplicate vector-embedding-weakness that RAG
+      used to contribute.
+
+      graph RAG 11 -> 8 findings, 3 matches unchanged. Its Event KG is now
+      annotated pair:KnowledgeSource, which is what it is; it used to be called
+      a pair:VectorStore because that was the only way to match any retrieval
+      motif at all. All three vector-and-embedding-weakness findings go with it,
+      correctly - a knowledge graph has no embeddings to be weak - and prompt
+      injection drops from 5 to 3 because it is a per-match finding and the
+      vector match is gone. Fewer findings, none of them lost truthfully."""
     expected = {
-        example_path(ONYX_NS): (13, 25),
-        example_path(GRAPH_RAG_NS): (3, 11),
+        example_path(ONYX_NS): (14, 25),
+        example_path(GRAPH_RAG_NS): (3, 8),
     }
     # Every graph the repo ships is pinned. Adding one without a baseline would
     # otherwise leave it unwatched, which is how drift goes unnoticed.
