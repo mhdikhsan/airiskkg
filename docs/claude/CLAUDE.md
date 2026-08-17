@@ -360,6 +360,14 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   sensitive_retrieval, supply_chain, system_prompt_leakage, vector_embedding_weakness,
   and the annotation half of others). Some are legitimately unstructural — supply-chain
   vetting has no shape — but audit before assuming.
+- **A suggested control is inserted into the problem, not beside it.** The motif chip
+  on a finding posts that finding's evidence as `anchors` to `op=add-motif`, and each
+  pattern node binds an existing element that satisfies it (same class/role rule as the
+  gap report) before minting a new one. Unanchored, the motif lands as a disconnected
+  island and the risk fires again on the next run, because the screen is on no path —
+  `test_applying_a_suggested_control_clears_the_finding` and its unanchored twin keep
+  both behaviours visible. An anchor binds at most one pattern node, or the edge between
+  two nodes becomes a self-loop.
 - **Control motifs are sized to the risk, not to the vocabulary.** `GuardrailsMotif` is
   8 nodes and 8 edges; prompt injection needs an input screen and nothing else, so
   `InputScreeningMotif` / `OutputScreeningMotif` are 3 nodes and 2 edges each and nest

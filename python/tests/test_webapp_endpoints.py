@@ -373,3 +373,70 @@ def test_source_lines_ignore_continuations_and_comments() -> None:
     assert lines["http://example.org/x#other"] == 7, "object position must not win over the declaration"
     assert "http://example.org/x#decoy" not in lines
     assert "http://example.org/x#prop" not in lines, "a predicate is not a subject"
+
+
+_INJECTION_GRAPH = """
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ex:   <http://example.org/dp#> .
+ex:sys a beam:System ; rdfs:label "Chatbot" ;
+    beam:hasProcess ex:gen ; beam:hasResource ex:prompt, ex:llm, ex:answer .
+ex:prompt a beam:Data ; rdfs:label "User prompt" ; pair:playsRole pair:PublicUserInput .
+ex:llm a beam:StatisticalModel ; rdfs:label "LLM" ; pair:playsRole pair:FoundationLLM .
+ex:answer a beam:Data ; rdfs:label "Answer" ;
+    pair:playsRole pair:LLMResponse , pair:UserFacingOutput .
+ex:gen a beam:Process ; rdfs:label "Generate" ; pair:playsRole pair:GenerationStep ;
+    beam:use ex:prompt , ex:llm ; beam:produce ex:answer .
+"""
+
+
+def _finding(client, ttl, phrase):
+    data = client.post("/api/assess", json={"ttl": ttl}).get_json()
+    return next((f for f in data["findings"] if phrase in f["label"]), None)
+
+
+def test_applying_a_suggested_control_clears_the_finding(client) -> None:
+    """The point of suggesting a control is that applying it changes the answer.
+
+    Inserting a motif unanchored puts it beside the diagram, connected to
+    nothing, so the risk it was suggested for fires again on the next run - the
+    suggestion was a gesture. Anchored on the finding's own evidence, the
+    control lands on the path it is meant to guard."""
+    finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
+    assert finding is not None, "expected the bare graph to raise prompt injection"
+
+    edit = client.post("/api/graph-edit", json={
+        "ttl": _INJECTION_GRAPH,
+        "op": "add-motif",
+        "motif": "InputScreeningMotif",
+        "anchors": [e["id"] for e in finding["evidence"]],
+    }).get_json()
+
+    # It reuses what is already there rather than cloning it: one screening step.
+    assert len(edit["newIds"]) == 1, edit["newIds"]
+    assert len(edit["reusedIds"]) == 2, edit["reusedIds"]
+    assert _finding(client, edit["ttl"], "prompt injection") is None
+
+
+def test_an_unanchored_control_does_not_clear_anything(client) -> None:
+    """The behaviour that made this necessary, kept as a test so the difference
+    is visible rather than remembered."""
+    edit = client.post("/api/graph-edit", json={
+        "ttl": _INJECTION_GRAPH, "op": "add-motif", "motif": "InputScreeningMotif",
+    }).get_json()
+    assert edit["reusedIds"] == []
+    assert _finding(client, edit["ttl"], "prompt injection") is not None
+
+
+def test_one_anchor_cannot_stand_in_for_two_pattern_nodes(client) -> None:
+    """Two nodes collapsing onto the same element would turn the edge between
+    them into a self-loop, which is not the motif."""
+    finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
+    edit = client.post("/api/graph-edit", json={
+        "ttl": _INJECTION_GRAPH,
+        "op": "add-motif",
+        "motif": "InputScreeningMotif",
+        "anchors": [e["id"] for e in finding["evidence"]],
+    }).get_json()
+    assert len(set(edit["reusedIds"])) == len(edit["reusedIds"])

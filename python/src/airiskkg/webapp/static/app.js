@@ -158,19 +158,26 @@
   // ---- findings --------------------------------------------------------------
   let selectedFinding = null;
 
-  // One mitigation as a list item, with any suggested motif beneath it.
-  function controlItem(control) {
+  /* One mitigation as a list item, with any realizing motif beneath it.
+   *
+   * The motif chip carries this finding's evidence as anchors, so inserting it
+   * wires the control INTO the problem rather than dropping a copy beside the
+   * diagram. An unanchored insert is structurally present and connected to
+   * nothing, so the risk it was suggested for fires again on the next run -
+   * which made "apply this control" a gesture rather than an edit.
+   */
+  function controlItem(control, anchors) {
     const motifs = control.realizedByMotifs || [];
     const children = [el("span", { class: "ctrl-label" }, control.label)];
     if (motifs.length) {
       children.push(
         el("div", { class: "ctrl-motifs" }, [
-          el("span", { class: "ctrl-motifs-lead" }, "suggested mitigation: "),
+          el("span", { class: "ctrl-motifs-lead" }, "apply as: "),
           ...motifs.map((m) =>
             el("span", {
               class: "chip motif-suggest clickable",
-              title: "Click to add this motif to the canvas",
-              onclick: (ev) => { ev.stopPropagation(); addSuggestedMotif(m); },
+              title: "Click to insert this control, connected to this finding's elements",
+              onclick: (ev) => { ev.stopPropagation(); addSuggestedMotif(m, anchors); },
             }, m.label)
           ),
         ])
@@ -190,12 +197,12 @@
   }
 
   // All suggested controls under one "Mitigations" list.
-  function controlSections(controls) {
+  function controlSections(controls, anchors) {
     if (!controls.length) return [];
     return [
       el("div", { class: "ctrl-group" }, [
         el("div", { class: "ctrl-group-head" }, `Mitigations (${controls.length})`),
-        el("ul", { class: "ref-list" }, controls.map(controlItem)),
+        el("ul", { class: "ref-list" }, controls.map((c) => controlItem(c, anchors))),
       ]),
     ];
   }
@@ -243,7 +250,7 @@
       taxonomyChips(finding),
       el("details", {}, [
         el("summary", {}, `Suggested controls (${finding.suggestedControls.length}) · evidence (${finding.evidence.length})`),
-        ...controlSections(finding.suggestedControls),
+        ...controlSections(finding.suggestedControls, evidenceIds),
         groundedFamiliesSection(finding.groundedControlFamilies),
         el("div", { class: "evidence-note" }, "Evidence: " + finding.evidence.map((e) => e.label).join(", ")),
       ]),
@@ -767,10 +774,10 @@ ex:Generate a beam:Transform ;
   // ---- motif catalogue -------------------------------------------------------
   // Add a motif that a finding's control suggests as a structural mitigation
   // (the chips under "suggested mitigation"). motifRef.id is the motif URI.
-  function addSuggestedMotif(motifRef) {
+  function addSuggestedMotif(motifRef, anchors) {
     const shortId = String(motifRef.id || "").split(/[#/]/).pop();
     if (!shortId) return;
-    addMotif({ id: shortId, label: motifRef.label || shortId });
+    addMotif({ id: shortId, label: motifRef.label || shortId }, anchors);
   }
 
   function addMotif(item) {
