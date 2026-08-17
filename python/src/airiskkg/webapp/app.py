@@ -19,6 +19,9 @@ Assessing the graph
                                      split into violations / warnings / hints.
     ``POST /api/assess``             Findings, motif matches, derived categories,
                                      and the near-miss motif gap report.
+    ``POST /api/apply-control``      Insert a control onto the path a finding
+                                     cites, via the registered SPARQL rewrite,
+                                     and return the amended architecture.
     ``POST /api/export/assessment``  The whole run as a downloadable RDF graph
                                      (Turtle or JSON-LD).
 """
@@ -40,7 +43,9 @@ from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.assessment_runner import (
     BEAM,
     PAIR,
+    apply_control,
     load_base_graph,
+    mitigation_implementations,
     run_assessment_from_text,
 )
 from airiskkg.assessment_view import summarize_result
@@ -259,19 +264,6 @@ def _motif_gaps(ttl: str) -> list[dict]:
     # closest first: the motifs a small annotation fix would complete
     gaps.sort(key=lambda g: (-(g["satisfied"] / g["total"]), g["label"].lower()))
     return gaps
-
-
-def _element_satisfies(graph: Graph, element: URIRef, node: dict) -> bool:
-    """Whether an element already in the graph can stand in for a pattern node.
-
-    Same rule the gap report uses, so what the workbench offers to reuse is what
-    the match query will actually bind: process-family class check, and a role
-    under the expected one via pair:subRoleOf*."""
-    if element not in _elements_of_class(graph, node["cls"]):
-        return False
-    if not node["roles"]:
-        return True
-    return bool(set(graph.objects(element, PAIR.playsRole)) & _role_closure(graph, node["roles"][0]))
 
 
 def _label(graph: Graph, resource: URIRef) -> str:
@@ -726,42 +718,9 @@ def create_app(*, local_examples: bool | None = None) -> Flask:
                 counter[0] += 1
                 return node
 
-            # Anchors: elements the caller wants this motif wired INTO, in
-            # priority order - a finding's evidence, when the motif is being
-            # inserted as that finding's control.
-            #
-            # Without them a suggested control lands as an island beside the
-            # diagram: structurally present, connected to nothing, and the risk
-            # it was suggested for still fires on the next run because the
-            # screen is not on any path. Reusing what is already there is what
-            # makes "apply this control" mean something.
-            anchors = [URIRef(a) for a in (payload.get("anchors") or []) if a]
-            resolver = load_base_graph() if anchors else data
-            if anchors:
-                resolver += data
-
             key_to_uri: dict[str, URIRef] = {}
             new_ids: list[str] = []
-            reused_ids: list[str] = []
-            claimed: set[URIRef] = set()
-
             for node in template["nodes"]:
-                # An anchor may stand in for one pattern node only, or two nodes
-                # would collapse onto the same element and the edge between them
-                # would become a self-loop.
-                existing_match = next(
-                    (
-                        a for a in anchors
-                        if a not in claimed and _element_satisfies(resolver, a, node)
-                    ),
-                    None,
-                )
-                if existing_match is not None:
-                    key_to_uri[node["key"]] = existing_match
-                    claimed.add(existing_match)
-                    reused_ids.append(str(existing_match))
-                    continue
-
                 uri = _fresh()
                 key_to_uri[node["key"]] = uri
                 is_process = node["cls"] in _PROCESS_CLASS_NAMES
@@ -778,20 +737,13 @@ def create_app(*, local_examples: bool | None = None) -> Flask:
                 new_ids.append(str(uri))
 
             for src, edge, dst in template["edges"]:
-                triple = (key_to_uri[src], BEAM[edge], key_to_uri[dst])
-                if triple not in data:  # an anchor may already carry this flow
-                    data.add(triple)
+                data.add((key_to_uri[src], BEAM[edge], key_to_uri[dst]))
 
             data.bind("beam", BEAM)
             data.bind("pair", PAIR)
             data.bind("local", local)
             return jsonify(
-                {
-                    "ttl": data.serialize(format="turtle"),
-                    "newIds": new_ids,
-                    "reusedIds": reused_ids,
-                    "groupLabel": template["label"],
-                }
+                {"ttl": data.serialize(format="turtle"), "newIds": new_ids, "groupLabel": template["label"]}
             )
         elif op == "delete-element":
             element_id = payload.get("element")
@@ -831,6 +783,51 @@ def create_app(*, local_examples: bool | None = None) -> Flask:
         # is actionable instead of silent
         summary["motifGaps"] = gaps
         return jsonify(summary)
+
+    @app.post("/api/apply-control")
+    def apply_control_endpoint() -> object:
+        """Insert a control onto the path a finding cites, and hand back the
+        amended architecture.
+
+        The insertion is a registered SPARQL rewrite, not code here: it restates
+        the vulnerable shape the risk query found and constructs the step that
+        interrupts it, bound to the elements the finding already names. So the
+        knowledge of where a control belongs stays in the library beside the
+        rule that raised the finding.
+
+        Nothing is asserted about the risk being resolved. The response is a
+        graph; the assessor re-runs the assessment over it and the same rules
+        speak again (Rule R4)."""
+        payload = request.get_json(silent=True) or {}
+        ttl = (payload.get("ttl") or "").strip()
+        control = (payload.get("control") or "").strip()
+        finding = (payload.get("finding") or "").strip()
+        if not (ttl and control and finding):
+            return jsonify({"error": "Provide ttl, control, and finding."}), 400
+        try:
+            architecture = Graph().parse(data=ttl, format="turtle")
+            with _SPARQL_LOCK:
+                # The rewrite reads the finding, so it runs against an assessed
+                # graph - findings do not exist in the architecture alone.
+                result = run_assessment_from_text(ttl)
+                added = apply_control(result.combined_graph, URIRef(control), URIRef(finding))
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
+            return jsonify({"error": f"Could not apply the control: {error}"}), 400
+
+        new_ids = sorted({str(s) for s, _p, _o in added if (s, RDF.type, None) in added})
+        for triple in added:
+            architecture.add(triple)
+        architecture.bind("beam", BEAM)
+        architecture.bind("pair", PAIR)
+        return jsonify(
+            {
+                "ttl": architecture.serialize(format="turtle"),
+                "addedTriples": len(added),
+                "newIds": new_ids,
+            }
+        )
 
     @app.post("/api/export/assessment")
     def export_assessment() -> object:

@@ -58,6 +58,38 @@ pat:Control_LoggingMonitoringAndEvals
                          pat:PredictionMonitoringMotif ,
                          pat:EvalsMotif .
 
+
+# Executable rewrites: how a control is applied to a graph.
+#
+# A control says what should be true; these say which triples make it so. They
+# are to a control what a match query is to a motif, and they are registered the
+# same way - except that pair:MitigationApplication is a distinct output type,
+# so the assessment pipeline (which asks only for MotifMatch and RiskFinding)
+# never runs them. A mitigation query inside an assessment would mitigate every
+# finding it could see, and nothing would ever be reported.
+#
+# Each is bound to the risk pattern it answers, because it reads that finding's
+# evidence to know where the control belongs.
+
+pat:InputScreening_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Insert input screening on the path a prompt-injection finding cites"@en ;
+    pair:implementsControl pat:Control_InputValidationAndPromptIsolation ;
+    pair:realizesMotif pat:InputScreeningMotif ;
+    pair:mitigatesRiskPattern pat:PromptInjectionRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/input_screening.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:OutputScreening_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Insert output screening between a generation step and its response"@en ;
+    pair:implementsControl pat:Control_OutputValidationAndSanitization ;
+    pair:realizesMotif pat:OutputScreeningMotif ;
+    pair:mitigatesRiskPattern pat:ImproperOutputHandlingRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/output_screening.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+
 # --- technical (architectural footprint) but no motif in the library yet ---
 
 pat:Control_DataMinimizationAndRedaction  pair:controlNature pair:TechnicalControl .

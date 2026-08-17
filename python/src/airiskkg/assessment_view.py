@@ -1,6 +1,6 @@
 from __future__ import annotations
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
-from airiskkg.assessment_runner import PAIR, AssessmentResult
+from airiskkg.assessment_runner import PAIR, AssessmentResult, mitigation_implementations
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 PROV = Namespace("http://www.w3.org/ns/prov#")
@@ -96,6 +96,10 @@ def _control_ref(graph: Graph, control: URIRef) -> dict:
     architecture), and the MIT mitigation family it aligns with (provenance)."""
     ref = _ref(graph, control)
     ref["nature"] = _control_nature(graph, control)
+    # Whether a registered rewrite can insert this control, or it is advice the
+    # assessor has to act on themselves. Saying so is the difference between an
+    # actionable button and a chip that quietly does nothing useful.
+    ref["applicable"] = control in mitigation_implementations(graph)
     realizing_motifs = sorted(graph.objects(control, PAIR.realizedByMotif), key=str)
     ref["realizedByMotifs"] = [_element_ref(graph, motif) for motif in realizing_motifs]
     ref["mitAlignments"] = _mit_alignments(graph, control)

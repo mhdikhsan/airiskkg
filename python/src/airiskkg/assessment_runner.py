@@ -190,9 +190,14 @@ def _prepared_query(query_path_str: str):
         return prepareQuery(Path(query_path_str).read_text(encoding="utf-8"))
 
 
-def run_construct_query(graph: Graph, query_path: Path) -> Graph:
+def run_construct_query(graph: Graph, query_path: Path, **bindings: URIRef) -> Graph:
+    """Run a registered CONSTRUCT. `bindings` pins query variables to values -
+    used by mitigation rewrites, which act on the one finding an assessor
+    chose rather than on every finding the graph happens to contain."""
     constructed = _bind_prefixes(Graph())
-    for triple in graph.query(_prepared_query(str(query_path))):
+    query = _prepared_query(str(query_path))
+    results = graph.query(query, initBindings=bindings) if bindings else graph.query(query)
+    for triple in results:
         constructed.add(triple)
     return constructed
 
@@ -294,6 +299,38 @@ def run_assessment_from_text(ttl_text: str) -> AssessmentResult:
     working_graph = load_base_graph()
     working_graph.parse(data=ttl_text, format="turtle")
     return _run_assessment_on_graph(working_graph, write_outputs=False, output_dir=OUTPUTS_DIR)
+
+
+def mitigation_implementations(graph: Graph) -> dict[URIRef, Path]:
+    """Control -> the registered rewrite that applies it, for controls that have
+    one. A control with no rewrite is still a real suggestion; it just cannot be
+    inserted for you."""
+    found: dict[URIRef, Path] = {}
+    for implementation in graph.subjects(PAIR.producesOutputType, PAIR.MitigationApplication):
+        control = graph.value(implementation, PAIR.implementsControl)
+        path_value = graph.value(implementation, PAIR.implementationPath)
+        if control is not None and path_value is not None:
+            found[control] = REPO_ROOT / str(path_value)
+    return found
+
+
+def apply_control(architecture: Graph, control: URIRef, finding: URIRef) -> Graph:
+    """Construct the triples that insert `control` onto the path `finding` cites.
+
+    Returns what to add, and adds nothing itself - the caller decides whether to
+    amend the architecture, and re-runs the assessment over the amended graph to
+    see what actually changed. That separation is the point: the tool does not
+    declare the risk resolved, it edits the design and lets the same rules speak
+    again (Rule R4 - the finding disappears because the graph no longer
+    represents the gap, not because anything was proven safe).
+
+    The finding must exist in the graph this is run against, so callers pass an
+    assessed graph rather than a bare architecture."""
+    paths = mitigation_implementations(architecture)
+    query_path = paths.get(control)
+    if query_path is None:
+        raise ValueError(f"No registered mitigation rewrite for {control}")
+    return run_construct_query(architecture, query_path, finding=finding)
 
 
 def _label(graph: Graph, resource: URIRef) -> str:

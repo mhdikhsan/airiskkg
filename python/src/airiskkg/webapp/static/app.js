@@ -158,28 +158,34 @@
   // ---- findings --------------------------------------------------------------
   let selectedFinding = null;
 
-  /* One mitigation as a list item, with any realizing motif beneath it.
+  /* One mitigation as a list item.
    *
-   * The motif chip carries this finding's evidence as anchors, so inserting it
-   * wires the control INTO the problem rather than dropping a copy beside the
-   * diagram. An unanchored insert is structurally present and connected to
-   * nothing, so the risk it was suggested for fires again on the next run -
-   * which made "apply this control" a gesture rather than an edit.
+   * A control with a registered rewrite gets a button that inserts it onto the
+   * path THIS finding cites, and the assessment re-runs so the effect is
+   * visible rather than asserted. Everything else shows its realizing motif as
+   * a plain label: still worth knowing, but the tool cannot place it for you,
+   * and a button that quietly does nothing is worse than no button.
    */
-  function controlItem(control, anchors) {
+  function controlItem(control, finding) {
     const motifs = control.realizedByMotifs || [];
     const children = [el("span", { class: "ctrl-label" }, control.label)];
-    if (motifs.length) {
+    if (control.applicable) {
       children.push(
         el("div", { class: "ctrl-motifs" }, [
-          el("span", { class: "ctrl-motifs-lead" }, "apply as: "),
-          ...motifs.map((m) =>
-            el("span", {
-              class: "chip motif-suggest clickable",
-              title: "Click to insert this control, connected to this finding's elements",
-              onclick: (ev) => { ev.stopPropagation(); addSuggestedMotif(m, anchors); },
-            }, m.label)
-          ),
+          el("button", {
+            type: "button",
+            class: "chip motif-suggest clickable",
+            title: "Insert this control on the path this finding cites, then re-assess",
+            onclick: (ev) => { ev.stopPropagation(); applyControl(control, finding); },
+          }, "Apply to this finding"),
+          motifs.length ? el("span", { class: "ctrl-motifs-lead" }, ` inserts ${motifs[0].label}`) : null,
+        ])
+      );
+    } else if (motifs.length) {
+      children.push(
+        el("div", { class: "ctrl-motifs" }, [
+          el("span", { class: "ctrl-motifs-lead" }, "realized by: "),
+          ...motifs.map((m) => el("span", { class: "chip motif-suggest" }, m.label)),
         ])
       );
     }
@@ -197,12 +203,12 @@
   }
 
   // All suggested controls under one "Mitigations" list.
-  function controlSections(controls, anchors) {
+  function controlSections(controls, finding) {
     if (!controls.length) return [];
     return [
       el("div", { class: "ctrl-group" }, [
         el("div", { class: "ctrl-group-head" }, `Mitigations (${controls.length})`),
-        el("ul", { class: "ref-list" }, controls.map((c) => controlItem(c, anchors))),
+        el("ul", { class: "ref-list" }, controls.map((c) => controlItem(c, finding))),
       ]),
     ];
   }
@@ -250,7 +256,7 @@
       taxonomyChips(finding),
       el("details", {}, [
         el("summary", {}, `Suggested controls (${finding.suggestedControls.length}) · evidence (${finding.evidence.length})`),
-        ...controlSections(finding.suggestedControls, evidenceIds),
+        ...controlSections(finding.suggestedControls, finding),
         groundedFamiliesSection(finding.groundedControlFamilies),
         el("div", { class: "evidence-note" }, "Evidence: " + finding.evidence.map((e) => e.label).join(", ")),
       ]),
@@ -772,12 +778,37 @@ ex:Generate a beam:Transform ;
   }
 
   // ---- motif catalogue -------------------------------------------------------
-  // Add a motif that a finding's control suggests as a structural mitigation
-  // (the chips under "suggested mitigation"). motifRef.id is the motif URI.
-  function addSuggestedMotif(motifRef, anchors) {
-    const shortId = String(motifRef.id || "").split(/[#/]/).pop();
-    if (!shortId) return;
-    addMotif({ id: shortId, label: motifRef.label || shortId }, anchors);
+  /* Apply a control to the finding in front of you.
+   *
+   * The rewrite lives in the library beside the rule that raised the finding,
+   * so what lands is the structure that rule tests for. Re-assessing straight
+   * away is the point: the tool does not declare the risk resolved, it amends
+   * the design and lets the same rules speak again.
+   */
+  function applyControl(control, finding) {
+    return runMutation(async () => {
+      try {
+        const { ttl, addedTriples, newIds } = await postJson("/api/apply-control", {
+          ttl: Editor.getValue(), control: control.id, finding: finding.id,
+        });
+        if (!addedTriples) {
+          setStatus("ok", `"${control.label}" is already in place on this path.`);
+          return;
+        }
+        Editor.setValue(ttl);
+        GraphView.setHighlight(newIds || []);
+        setStatus("busy", `Applied "${control.label}" - re-assessing...`);
+        const data = await postJson("/api/assess", { ttl });
+        renderFindings(data);
+        renderMotifs(data.motifMatches, data.motifGaps);
+        renderDerivedCategories(data.derivedCategories);
+        setStatus("ok", `Applied "${control.label}"`,
+          `${data.summary.riskFindingCount} findings · ${data.summary.motifMatchCount} matches`);
+      } catch (error) {
+        setStatus("error", "Could not apply the control: " + error.message.split("
+")[0]);
+      }
+    });
   }
 
   function addMotif(item) {

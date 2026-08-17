@@ -396,47 +396,75 @@ def _finding(client, ttl, phrase):
     return next((f for f in data["findings"] if phrase in f["label"]), None)
 
 
-def test_applying_a_suggested_control_clears_the_finding(client) -> None:
+def test_applying_a_control_clears_the_finding_it_answers(client) -> None:
     """The point of suggesting a control is that applying it changes the answer.
 
-    Inserting a motif unanchored puts it beside the diagram, connected to
-    nothing, so the risk it was suggested for fires again on the next run - the
-    suggestion was a gesture. Anchored on the finding's own evidence, the
-    control lands on the path it is meant to guard."""
+    The insertion is a registered SPARQL rewrite that restates the vulnerable
+    shape and constructs the step interrupting it, so the screen lands on the
+    path the finding cites - not beside the diagram, where it would be
+    structurally present and on no path at all."""
     finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
     assert finding is not None, "expected the bare graph to raise prompt injection"
+    control = next(c for c in finding["suggestedControls"] if c["applicable"])
 
-    edit = client.post("/api/graph-edit", json={
-        "ttl": _INJECTION_GRAPH,
-        "op": "add-motif",
-        "motif": "InputScreeningMotif",
-        "anchors": [e["id"] for e in finding["evidence"]],
+    applied = client.post("/api/apply-control", json={
+        "ttl": _INJECTION_GRAPH, "control": control["id"], "finding": finding["id"],
     }).get_json()
-
-    # It reuses what is already there rather than cloning it: one screening step.
-    assert len(edit["newIds"]) == 1, edit["newIds"]
-    assert len(edit["reusedIds"]) == 2, edit["reusedIds"]
-    assert _finding(client, edit["ttl"], "prompt injection") is None
+    assert applied["addedTriples"] > 0
+    assert _finding(client, applied["ttl"], "prompt injection") is None
 
 
-def test_an_unanchored_control_does_not_clear_anything(client) -> None:
-    """The behaviour that made this necessary, kept as a test so the difference
-    is visible rather than remembered."""
-    edit = client.post("/api/graph-edit", json={
-        "ttl": _INJECTION_GRAPH, "op": "add-motif", "motif": "InputScreeningMotif",
-    }).get_json()
-    assert edit["reusedIds"] == []
-    assert _finding(client, edit["ttl"], "prompt injection") is not None
-
-
-def test_one_anchor_cannot_stand_in_for_two_pattern_nodes(client) -> None:
-    """Two nodes collapsing onto the same element would turn the edge between
-    them into a self-loop, which is not the motif."""
+def test_applying_the_same_control_twice_changes_nothing(client) -> None:
+    """The inserted step's IRI is derived from the pair it screens, and the
+    rewrite skips a path that is already screened, so a second application is a
+    no-op rather than a second identical filter."""
     finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
-    edit = client.post("/api/graph-edit", json={
-        "ttl": _INJECTION_GRAPH,
-        "op": "add-motif",
-        "motif": "InputScreeningMotif",
-        "anchors": [e["id"] for e in finding["evidence"]],
+    control = next(c for c in finding["suggestedControls"] if c["applicable"])
+    once = client.post("/api/apply-control", json={
+        "ttl": _INJECTION_GRAPH, "control": control["id"], "finding": finding["id"],
     }).get_json()
-    assert len(set(edit["reusedIds"])) == len(edit["reusedIds"])
+
+    # the finding is gone, so re-applying has nothing to bind and adds nothing
+    twice = client.post("/api/apply-control", json={
+        "ttl": once["ttl"], "control": control["id"], "finding": finding["id"],
+    }).get_json()
+    assert twice["addedTriples"] == 0
+    assert len(twice["ttl"]) == len(once["ttl"])
+
+
+def test_a_mitigation_rewrite_never_runs_during_an_assessment(client) -> None:
+    """The guard that makes this safe: mitigation queries produce their own
+    output type, and the pipeline asks only for MotifMatch and RiskFinding. Were
+    they run in the assessment loop, every finding would mitigate itself and
+    none would ever be reported."""
+    from airiskkg.assessment_runner import (
+        PAIR, implementation_paths_for_output_type, load_base_graph, mitigation_implementations,
+    )
+
+    graph = load_base_graph()
+    rewrites = set(mitigation_implementations(graph).values())
+    assert rewrites, "expected at least one registered rewrite"
+    for output_type in (PAIR.MotifMatch, PAIR.RiskFinding, PAIR.DataCategoryPropagation):
+        assert not (rewrites & set(implementation_paths_for_output_type(graph, output_type))), (
+            f"a mitigation rewrite is registered under {output_type}"
+        )
+    # and the finding it mitigates is still raised by a plain assessment
+    assert _finding(client, _INJECTION_GRAPH, "prompt injection") is not None
+
+
+def test_a_control_with_no_rewrite_is_reported_as_not_applicable(client) -> None:
+    """A control the tool cannot insert is still worth suggesting; the UI just
+    must not offer a button that does nothing."""
+    finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
+    flags = {c["label"]: c["applicable"] for c in finding["suggestedControls"]}
+    assert any(flags.values()) and not all(flags.values()), flags
+
+
+def test_applying_a_control_that_has_no_rewrite_is_refused(client) -> None:
+    finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
+    control = next(c for c in finding["suggestedControls"] if not c["applicable"])
+    response = client.post("/api/apply-control", json={
+        "ttl": _INJECTION_GRAPH, "control": control["id"], "finding": finding["id"],
+    })
+    assert response.status_code == 400
+    assert "mitigation rewrite" in response.get_json()["error"]

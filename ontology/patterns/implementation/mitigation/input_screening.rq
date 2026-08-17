@@ -1,0 +1,75 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Insert an input screening step onto the path a prompt-injection finding cites.
+#
+# The rewrite is the mirror of the risk query: it re-derives the vulnerable
+# shape - untrusted content reaching a generation step, directly or through one
+# intermediate step - and constructs the step that breaks it, bound to the very
+# elements the finding names. Nothing is guessed about which element is which,
+# because the same structural conditions that raised the finding also identify
+# where the screen belongs.
+#
+# ?finding is supplied by the caller, so applying a control acts on the one the
+# assessor clicked and leaves every other finding alone.
+#
+# The step's IRI is derived from the pair it screens, so applying twice
+# constructs the identical triples and the second application is a no-op.
+
+CONSTRUCT {
+    ?screeningStep
+        a beam:Process ;
+        rdfs:label "Input screening"@en ;
+        pair:playsRole pair:InputGuardrailStep ;
+        beam:use ?untrustedContent ;
+        beam:inform ?generationStep .
+
+    ?system beam:hasProcess ?screeningStep .
+}
+WHERE {
+    ?finding
+        a pair:RiskFinding ;
+        pair:hasEvidence ?untrustedContent , ?generationStep .
+
+    ?untrustedContent pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
+    ?generationStep pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+
+    {
+        ?generationStep beam:use ?untrustedContent .
+    }
+    UNION
+    {
+        ?intermediateStep
+            beam:use ?untrustedContent ;
+            beam:produce ?derivedContext .
+        ?generationStep beam:use ?derivedContext .
+    }
+
+    # Nothing screens it yet. Same test the risk query applies, so this
+    # constructs a step exactly where one is missing and nowhere else.
+    FILTER NOT EXISTS {
+        ?existingScreen pair:playsRole/pair:subRoleOf* pair:InputGuardrailStep .
+        {
+            ?existingScreen beam:use ?untrustedContent ;
+                beam:inform ?generationStep .
+        }
+        UNION
+        {
+            ?existingScreen beam:use ?untrustedContent ;
+                beam:produce ?alreadyScreened .
+            ?generationStep beam:use ?alreadyScreened .
+        }
+    }
+
+    OPTIONAL {
+        ?system a beam:System .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/input-screening/",
+        ENCODE_FOR_URI(STR(?untrustedContent)), "/",
+        ENCODE_FOR_URI(STR(?generationStep))
+    )) AS ?screeningStep)
+}
