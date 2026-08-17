@@ -1,5 +1,3 @@
-/* PAIR-AI Architecture Workbench — editor left, live graph preview right. */
-
 :root {
   --bg: #14161c;
   --bg-panel: #1c1f27;
@@ -764,6 +762,14 @@ label.btn { display: inline-flex; align-items: center; }
 .mp-show-all { font-style: italic; }
 
 /* ---- derived data categories ---- */
+.derived-section-head {
+  margin: 0 0 12px; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.06em; color: #8b95ab;
+}
+.derived-section-hint {
+  display: block; margin-top: 3px; text-transform: none; letter-spacing: 0;
+  font-size: 12px; color: var(--text-dim);
+}
 .derived-group { margin-bottom: 12px; }
 .derived-element {
   font-size: 12px; font-weight: 600; color: var(--text);

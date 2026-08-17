@@ -331,13 +331,24 @@
     const count = $("#derived-count");
     list.innerHTML = "";
     if (!rows || !rows.length) {
-      empty.textContent = "Nothing was inferred: every data category in this graph was annotated by hand.";
+      empty.textContent = "No category travelled: every data category in this graph sits where you annotated it.";
       empty.classList.remove("hidden");
       count.textContent = "";
       return;
     }
     empty.classList.add("hidden");
-    count.textContent = String(rows.length);
+    // The badge counts inferred FACTS - one per element/category the panel
+    // lists - not the hops that carried them. An element can pick up the same
+    // category by several routes, so counting hops advertised more findings
+    // than the list contains.
+    count.textContent = String(
+      new Set(rows.map((r) => `${r.element.id}|${r.category.id}`)).size
+    );
+    list.appendChild(el("div", { class: "derived-section-head" }, [
+      el("span", {}, "Categories the engine inferred — traced back to the annotation each came from"),
+      el("span", { class: "derived-section-hint" },
+        "Categories you annotated yourself are not listed. Click a row to highlight its route on the diagram."),
+    ]));
 
     /* Hop lookup: "element|category" -> EVERY hop that put the category there.
      * An element can acquire the same category from several upstream elements,

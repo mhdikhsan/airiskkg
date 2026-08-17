@@ -1,16 +1,10 @@
-"""Turn an AssessmentResult into JSON-friendly data for the web UI."""
-
 from __future__ import annotations
-
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
-
 from airiskkg.assessment_runner import PAIR, AssessmentResult
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 PROV = Namespace("http://www.w3.org/ns/prov#")
 _MITCTRL_PREFIX = "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#"
-# skos:*Match predicates by which a pat:Control_* points at the MIT mitigation
-# family it corresponds to (indicative bridge, not an audited SSSOM mapping).
 _MIT_MAPPING_PREDS = (
     SKOS.relatedMatch,
     SKOS.closeMatch,
@@ -251,12 +245,13 @@ def summarize_result(result: AssessmentResult) -> dict:
     findings = sorted(result.risk_findings.subjects(RDF.type, PAIR.RiskFinding), key=str)
     matches = sorted(result.motif_matches.subjects(RDF.type, PAIR.MotifMatch), key=str)
     derived = _derived_categories(result)
+    derived_facts = {(row["element"]["id"], row["category"]["id"]) for row in derived}
 
     return {
         "summary": {
             "riskFindingCount": len(findings),
             "motifMatchCount": len(matches),
-            "derivedCategoryCount": len(derived),
+            "derivedCategoryCount": len(derived_facts),
             "findingsByOwaspCategory": _findings_by_owasp_category(result.combined_graph, findings),
         },
         "findings": [_finding_view(result.combined_graph, finding) for finding in findings],

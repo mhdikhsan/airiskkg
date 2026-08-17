@@ -90,7 +90,7 @@
           <div class="drawer-tabs">
             <button type="button" class="drawer-tab active" data-drawer-tab="findings">Findings <span class="count" id="findings-count"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="motifs">Motifs <span class="count" id="motifs-count" title="matched motifs"></span></button>
-            <button type="button" class="drawer-tab" data-drawer-tab="derived">Derived <span class="count" id="derived-count" title="data categories the engine inferred"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="derived">Data flow <span class="count" id="derived-count" title="data categories the engine inferred by following the flow — annotated ones are not counted"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="annotate">Annotate <span class="count" id="annotate-count" title="elements without a role"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="validation">Input contract <span class="count" id="validation-count"></span></button>
           </div>
@@ -107,7 +107,7 @@
             <div id="motifs-list"></div>
           </div>
           <div class="drawer-panel hidden" data-drawer-panel="derived">
-            <p class="drawer-empty" id="derived-empty">Run an assessment to see which data categories were inferred rather than annotated, and the path each one travelled.</p>
+            <p class="drawer-empty" id="derived-empty">Run an assessment to follow protected content through the system: which elements ended up carrying a data category you did not annotate, and the route it took to get there.</p>
             <div id="derived-list"></div>
           </div>
           <div class="drawer-panel hidden" data-drawer-panel="annotate">
