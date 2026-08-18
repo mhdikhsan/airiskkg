@@ -27,11 +27,12 @@
 
 pat:Control_GroundingAndVerification
     pair:controlNature pair:TechnicalControl ;
-    rdfs:comment "Realizing motifs (RAG, Vector IR, Hybrid Retriever, Reranker) are themselves risk-bearing motifs in this library; adding them mitigates ungrounded generation but introduces retrieval-side candidate risks (LLM01/02/08). Re-assess the amended architecture."@en ;
+    rdfs:comment "Realizing motifs split along the control's own name. The retrieval motifs (RAG, Vector IR, Hybrid Retriever, Reranker) realize GROUNDING, and are themselves risk-bearing here - adding them mitigates ungrounded generation but introduces retrieval-side candidate risks (LLM01/02/08). EvalsMotif realizes VERIFICATION, and that is the half which answers misinformation-from-weak-grounding: the pattern only fires on a RAG match, so grounding is already present by construction and more retrieval cannot clear it. Listing only the retrieval motifs left the control looking applicable while none of its realizations could change the finding. Re-assess the amended architecture either way."@en ;
     pair:realizedByMotif pat:RetrievalAugmentedGenerationMotif ,
                          pat:VectorBasedInformationRetrievalMotif ,
                          pat:HybridRetrieverMotif ,
-                         pat:RerankerMotif .
+                         pat:RerankerMotif ,
+                         pat:EvalsMotif .
 
 pat:Control_Guardrails
     pair:controlNature pair:TechnicalControl ;
@@ -128,6 +129,15 @@ pat:ResponseVerification_MitigationOQP
     a pair:PatternImplementation ;
     rdfs:label "Verify a generated response against its evidence"@en ;
     pair:implementsControl pat:Control_LoggingMonitoringAndEvals ;
+    pair:realizesMotif pat:EvalsMotif ;
+    pair:mitigatesRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/response_verification.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:GroundingVerification_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Verify a generated response, the verification half of grounding and verification"@en ;
+    pair:implementsControl pat:Control_GroundingAndVerification ;
     pair:realizesMotif pat:EvalsMotif ;
     pair:mitigatesRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/mitigation/response_verification.rq" ;
