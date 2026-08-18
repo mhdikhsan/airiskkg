@@ -38,12 +38,32 @@ WHERE {
             pair:hasNodeBinding/pair:matchedElement ?matchedElement .
         FILTER(?matchedElement IN (?systemPrompt, ?generationStep, ?userFacingOutput))
 
+
+        # Nothing screens the output that the system prompt fed. The control is
+        # an output-side screen: the two controls this pattern suggests beyond
+        # prompt secrecy itself are guardrails and output validation.
+        # Closed-world over the submitted graph only (Rule R4).
         FILTER NOT EXISTS {
-            pat:SystemPromptLeakageRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?systemPrompt .
+            ?outputControl pair:playsRole ?outputControlRole .
+            {
+                ?outputControlRole pair:subRoleOf* pair:OutputValidationStep .
+            }
+            UNION
+            {
+                ?outputControlRole pair:subRoleOf* pair:OutputGuardrailStep .
+            }
+            UNION
+            {
+                ?outputControlRole pair:subRoleOf* pair:RedactionStep .
+            }
+            {
+                ?outputControl beam:use ?userFacingOutput .
+            }
+            UNION
+            {
+                ?outputControl beam:produce ?userFacingOutput .
+            }
         }
-
-
     }
 
     pat:SystemPromptLeakageRiskPattern

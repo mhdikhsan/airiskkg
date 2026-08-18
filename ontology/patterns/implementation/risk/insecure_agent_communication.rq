@@ -53,11 +53,6 @@ WHERE {
                 ?mediatingStep beam:inform ?receivingStep .
             }
         }
-        FILTER NOT EXISTS {
-            pat:InsecureAgentCommunicationRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?message .
-        }
-
 
     }
 

@@ -52,10 +52,7 @@ WHERE {
                 ?planningStep beam:inform ?mediatingStep .
             }
         }
-        FILTER NOT EXISTS {
-            pat:ToolMisuseRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?actionStep .
-        }
+
     }
 
     pat:ToolMisuseRiskPattern

@@ -27,7 +27,6 @@ WHERE {
         ?sink pair:containsDataCategory/pair:subDataCategoryOf* ?category .
         VALUES ?category { pair:SensitiveInformation pair:ConfidentialInformation }
 
-
         ?producingStep beam:produce ?sink .
 
         ?match a pair:MotifMatch ;
@@ -43,10 +42,7 @@ WHERE {
             { ?controlRole pair:subRoleOf* pair:OutputGuardrailStep }
             { ?control beam:use ?sink } UNION { ?control beam:produce ?sink }
         }
-        FILTER NOT EXISTS {
-            pat:SensitiveOutputExposureRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?sink .
-        }
+
     }
 
     pat:SensitiveOutputExposureRiskPattern

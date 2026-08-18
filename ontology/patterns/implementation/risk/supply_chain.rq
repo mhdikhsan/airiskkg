@@ -37,10 +37,6 @@ WHERE {
             pair:bindsPatternNode pat:ExtDep_UsingStepNode ;
             pair:matchedElement ?usingStep .
 
-        FILTER NOT EXISTS {
-            pat:SupplyChainCompromiseRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?externalResource .
-        }
     }
 
     pat:SupplyChainCompromiseRiskPattern

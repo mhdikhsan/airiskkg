@@ -351,6 +351,21 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   `len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))` and its siblings.
   When any of these changes, update `docs/reference/catalogue.md` in the same commit —
   nothing regenerates it.
+- **`beamr:associatedTo` is gone from the risk queries (2026-08-17).** Fifteen of them
+  carried `FILTER NOT EXISTS { pattern suggestedControl ?c . ?c beamr:associatedTo ?element }`
+  as an escape. Nothing ever wrote that triple — not an example, not a rewrite, not any
+  code path — so the escape could not fire, and removing all fifteen left the output on
+  both examples byte-identical. It was worse than dead: it made a finding *look*
+  falsifiable while the only thing that could clear it was unreachable. Do not reintroduce
+  an escape nothing can satisfy.
+- **Three risk patterns are unclearable by design, and that is correct.**
+  `DataAndModelPoisoning`, `SupplyChainCompromise` and `VectorAndEmbeddingWeakness` rest
+  on provenance and vetting — non-technical controls with no runtime shape — so no
+  structural escape exists to write. They fire whenever their structure is present, and
+  the answer is **finding-level triage**, not a query escape: `pair:findingStatus` is the
+  extension point, finding IRIs are deterministic so a judgement survives re-runs, and an
+  assessor's "accepted, handled by process" is a human act recorded against the finding
+  rather than a fabricated structural fact in the graph. Never conflate the two.
 - **A control clears a finding by being built, not by being asserted.** A risk query
   whose only escape is `?control beamr:associatedTo ?element` cannot be cleared by
   changing the architecture — `beamr:associatedTo` appears in no bundled example and no

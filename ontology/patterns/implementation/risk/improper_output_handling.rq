@@ -60,11 +60,6 @@ WHERE {
                 ?outputControlStep beam:produce ?userFacingOutput .
             }
         }
-        FILTER NOT EXISTS {
-            pat:ImproperOutputHandlingRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?userFacingOutput .
-        }
-
 
     }
 

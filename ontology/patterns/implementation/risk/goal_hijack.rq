@@ -55,11 +55,6 @@ WHERE {
                 ?screeningStep beam:inform ?planningStep .
             }
         }
-        FILTER NOT EXISTS {
-            pat:GoalHijackRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?planningStep .
-        }
-
 
     }
 

@@ -33,11 +33,6 @@ WHERE {
             pair:matchesMotif ?motif ;
             pair:hasNodeBinding/pair:matchedElement ?evidenceElement .
 
-        FILTER NOT EXISTS {
-            pat:VectorAndEmbeddingWeaknessRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?evidenceElement .
-        }
-
     }
 
     pat:VectorAndEmbeddingWeaknessRiskPattern

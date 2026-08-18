@@ -45,10 +45,6 @@ WHERE {
             }
         }
 
-        FILTER NOT EXISTS {
-            pat:DataAndModelPoisoningRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?untrustedSource .
-        }
     }
 
     pat:DataAndModelPoisoningRiskPattern

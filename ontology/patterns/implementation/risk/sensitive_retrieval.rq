@@ -79,20 +79,38 @@ WHERE {
             ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
         }
 
-        FILTER NOT EXISTS {
-            pat:SensitiveDataRetrievalExposureRiskPattern
-                pair:suggestedControl ?implementedDisclosureControl .
-            ?implementedDisclosureControl beamr:associatedTo ?controlledElement .
-            FILTER(?controlledElement IN (
-                ?retrievalStep,
-                ?knowledgeSource,
-                ?retrievedResult,
-                ?generationStep,
-                ?llm,
-                ?userFacingOutput
-            ))
-        }
     .
+
+        # Nothing constrains the sensitive content on its way out. Two places a
+        # control can sit, matching the two controls this pattern suggests:
+        # at retrieval, filtering or redacting what is read before it reaches
+        # generation; or at the exit, screening the user-facing output.
+        # Closed-world over the submitted graph only (Rule R4).
+        FILTER NOT EXISTS {
+            ?disclosureControl pair:playsRole ?disclosureRole .
+            {
+                ?disclosureRole pair:subRoleOf* pair:RedactionStep .
+            }
+            UNION
+            {
+                ?disclosureRole pair:subRoleOf* pair:OutputValidationStep .
+            }
+            UNION
+            {
+                ?disclosureRole pair:subRoleOf* pair:OutputGuardrailStep .
+            }
+            {
+                ?disclosureControl beam:use ?retrievedResult .
+            }
+            UNION
+            {
+                ?disclosureControl beam:use ?userFacingOutput .
+            }
+            UNION
+            {
+                ?disclosureControl beam:produce ?userFacingOutput .
+            }
+        }
     }
 
     pat:SensitiveDataRetrievalExposureRiskPattern

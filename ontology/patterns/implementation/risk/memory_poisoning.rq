@@ -40,7 +40,6 @@ WHERE {
             beam:use ?contextForGeneration ;
             pair:playsRole/pair:subRoleOf* pair:GenerationStep .
 
-
         FILTER NOT EXISTS {
             ?validationStep pair:playsRole ?validationRole .
             { ?validationRole pair:subRoleOf* pair:MemoryValidationStep }
@@ -57,10 +56,7 @@ WHERE {
                 ?validationStep beam:produce ?screened .
             }
         }
-        FILTER NOT EXISTS {
-            pat:MemoryPoisoningRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?memory .
-        }
+
     }
 
     pat:MemoryPoisoningRiskPattern

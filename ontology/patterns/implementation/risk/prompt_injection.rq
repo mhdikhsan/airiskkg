@@ -79,12 +79,7 @@ WHERE {
                 ?generationStep beam:use ?screenedContent .
             }
         }
-        # Retained for controls with no structural shape: an assessor may still
-        # record that one is in place.
-        FILTER NOT EXISTS {
-            pat:PromptInjectionRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?generationStep .
-        }
+
     }
 
     pat:PromptInjectionRiskPattern
