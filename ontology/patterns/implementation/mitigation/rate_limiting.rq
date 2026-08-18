@@ -1,0 +1,41 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Bound an unbounded loop or call path (LLM10).
+#
+# The reference document's boundary/proxy node: a step that enforces limits,
+# informing the step whose consumption is unbounded. The risk query clears on a
+# RateLimitControlStep reaching the loop source along beam:inform*, so the
+# control is placed as a gate ahead of it.
+
+CONSTRUCT {
+    ?controlStep
+        a beam:Process ;
+        rdfs:label "Rate and budget control"@en ;
+        pair:playsRole pair:RateLimitControlStep ;
+        beam:inform ?loopSource .
+
+    ?system beam:hasProcess ?controlStep .
+}
+WHERE {
+    ?finding
+        a pair:RiskFinding ;
+        pair:generatedByRiskPattern pat:UnboundedConsumptionRiskPattern ;
+        pair:hasEvidence ?loopSource .
+
+    ?loopSource a/rdfs:subClassOf* beam:Process .
+
+    FILTER NOT EXISTS {
+        ?existing pair:playsRole/pair:subRoleOf* pair:RateLimitControlStep .
+        ?existing beam:inform* ?loopSource .
+    }
+
+    OPTIONAL { ?system a beam:System . }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/rate-limiting/",
+        ENCODE_FOR_URI(STR(?loopSource))
+    )) AS ?controlStep)
+}

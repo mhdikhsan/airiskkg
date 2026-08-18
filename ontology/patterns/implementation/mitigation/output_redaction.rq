@@ -1,0 +1,62 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Redact protected content before it reaches a user-facing sink (LLM02).
+#
+# The reference document's transformation pipeline node, and the other control
+# the sensitive-output pattern suggests: where output screening blocks unsafe
+# content, redaction removes the protected content itself. Both satisfy that
+# pattern's escape clause, and which one an assessor wants is their choice, so
+# both are offered rather than one being picked for them.
+#
+# A redaction step is also a barrier in content_categories.rq, so what leaves it
+# no longer carries the category that entered - which is why this changes the
+# Data flow tab as well as the finding.
+
+CONSTRUCT {
+    ?redactionStep
+        a beam:Process ;
+        rdfs:label "Redaction"@en ;
+        pair:playsRole pair:RedactionStep ;
+        beam:use ?sink ;
+        beam:produce ?redactedOutput .
+
+    ?redactedOutput
+        a beam:Data ;
+        rdfs:label "Redacted output"@en ;
+        pair:playsRole pair:SanitizedOutput .
+
+    ?system beam:hasProcess ?redactionStep ;
+        beam:hasResource ?redactedOutput .
+}
+WHERE {
+    ?finding
+        a pair:RiskFinding ;
+        pair:generatedByRiskPattern pat:SensitiveOutputExposureRiskPattern ;
+        pair:hasEvidence ?sink .
+
+    ?sink pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+
+    FILTER NOT EXISTS {
+        ?existing pair:playsRole ?existingRole .
+        { ?existingRole pair:subRoleOf* pair:RedactionStep }
+        UNION
+        { ?existingRole pair:subRoleOf* pair:OutputValidationStep }
+        UNION
+        { ?existingRole pair:subRoleOf* pair:OutputGuardrailStep }
+        { ?existing beam:use ?sink } UNION { ?existing beam:produce ?sink }
+    }
+
+    OPTIONAL { ?system a beam:System . }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/output-redaction/",
+        ENCODE_FOR_URI(STR(?sink))
+    )) AS ?redactionStep)
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/output-redaction/",
+        ENCODE_FOR_URI(STR(?sink)), "/redacted"
+    )) AS ?redactedOutput)
+}

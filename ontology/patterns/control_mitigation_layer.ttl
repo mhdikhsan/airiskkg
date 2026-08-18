@@ -116,6 +116,32 @@ pat:ToolMediation_MitigationOQP
     pair:producesOutputType pair:MitigationApplication .
 
 
+pat:OutputRedaction_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Redact protected content before a user-facing sink"@en ;
+    pair:implementsControl pat:Control_DataMinimizationAndRedaction ;
+    pair:mitigatesRiskPattern pat:SensitiveOutputExposureRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/output_redaction.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:ResponseVerification_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Verify a generated response against its evidence"@en ;
+    pair:implementsControl pat:Control_LoggingMonitoringAndEvals ;
+    pair:realizesMotif pat:EvalsMotif ;
+    pair:mitigatesRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/response_verification.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:RateLimiting_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Bound an unbounded loop or call path"@en ;
+    pair:implementsControl pat:Control_RateLimitBudgetAndLoopControl ;
+    pair:mitigatesRiskPattern pat:UnboundedConsumptionRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/rate_limiting.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+
 # --- technical (architectural footprint) but no motif in the library yet ---
 
 pat:Control_DataMinimizationAndRedaction  pair:controlNature pair:TechnicalControl .

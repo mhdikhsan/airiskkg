@@ -381,6 +381,11 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   `pair:generatedByRiskPattern` so a finding can be routed to the rewrite written for it.
   A control with no rewrite *for that finding's pattern* reports `applicable: false`
   rather than offering a button that does nothing.
+  **A control barrier must be earned, not assumed.** Widening the
+  `content_categories.rq` barrier to output guardrails was right — a screened output
+  inheriting the categories the screen exists to stop made inserting one *grow* the
+  derived set — but adding pseudonymisation to it was wrong and a test caught it:
+  `dpv:PseudonymisedData` is a kind of `dpv:PersonalData`, so sensitivity must survive it.
   **A risk that fires on several paths needs a control on each**: prompt injection is per
   untrusted-content/generation pair, so onyx takes three separate applications.
 - **Control motifs are sized to the risk, not to the vocabulary.** `GuardrailsMotif` is
