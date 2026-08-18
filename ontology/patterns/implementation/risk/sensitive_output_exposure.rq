@@ -59,9 +59,14 @@ WHERE {
         ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
     }
 
+    # One finding per sink, deliberately not per (sink, category). The category
+    # is what the query tests, but it appears nowhere in the finding - not in the
+    # label, the description, or the evidence - so a sink carrying both sensitive
+    # and confidential content produced two cards an assessor could not tell
+    # apart, for one problem with one fix. Dropping the category from the IRI
+    # makes the repeated construction collapse into one finding.
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/risk-finding/sensitive-output-exposure/",
-        ENCODE_FOR_URI(STR(?sink)), "/",
-        ENCODE_FOR_URI(STR(?category))
+        ENCODE_FOR_URI(STR(?sink))
     )) AS ?riskFinding)
 }

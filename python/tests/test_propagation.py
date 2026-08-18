@@ -275,6 +275,13 @@ def test_derivation_records_do_not_break_the_fixed_point() -> None:
 def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     """The propagation rules must not silently re-tag the curated examples.
 
+    Both lost one sensitive-output finding when that pattern stopped keying its
+    IRI on the data category. It emitted one finding per (sink, category) while
+    the category appears nowhere in the finding, so a sink carrying both
+    sensitive and confidential content produced two cards nobody could tell
+    apart, for one problem with one fix. Each example has exactly one
+    user-facing sink holding protected content, so the collapse loses nothing.
+
     onyx lost one finding when the unbounded-consumption pattern stopped firing
     on direct prompting alone. That branch had no loop and no reachability test,
     so it asked only whether an LLM call existed without a rate limiter - true of
@@ -301,8 +308,8 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
       injection drops from 5 to 3 because it is a per-match finding and the
       vector match is gone. Fewer findings, none of them lost truthfully."""
     expected = {
-        example_path(ONYX_NS): (14, 24),
-        example_path(GRAPH_RAG_NS): (3, 8),
+        example_path(ONYX_NS): (14, 23),
+        example_path(GRAPH_RAG_NS): (3, 7),
     }
     # Every graph the repo ships is pinned. Adding one without a baseline would
     # otherwise leave it unwatched, which is how drift goes unnoticed.

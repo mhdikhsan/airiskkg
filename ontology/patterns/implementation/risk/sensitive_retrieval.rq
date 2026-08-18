@@ -9,7 +9,7 @@ CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
         rdfs:label "Candidate sensitive data retrieval exposure"@en ;
-        dct:description "Sensitive retrieved context reaches an LLM generation step and user-facing output without a represented disclosure control."@en ;
+        dct:description "A retrieval step reads a knowledge source that holds sensitive content, and what it retrieves reaches a generation step and a user-facing output with no represented disclosure control. Distinct from sensitive output exposure, which is anchored on the sink and fires whatever route the content took: this one is anchored on the source, so its remedy is at retrieval - constrain what may be retrieved - rather than at the exit."@en ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif pat:InformationRetrievalMotif ;
         pair:hasDerivedMechanism ?mechanism ;
