@@ -47,17 +47,34 @@ WHERE {
         }
         UNION
         {
-
+            # Direct prompting has no loop, so what makes its consumption
+            # unbounded is that anyone can drive it: a generation step reachable
+            # from public input, with nothing bounding the rate. Without that
+            # test this branch asked only "is there an LLM call and no rate
+            # limiter", which is true of nearly every unmitigated GenAI system -
+            # a finding that fires on everything says nothing, and noise is what
+            # breaks candidate framing.
+            #
+            # Positive and on a bound element of the match (Rule R10): the graph
+            # has to state that the input is public. Where it does not, the
+            # honest reading is that no publicly reachable path is represented,
+            # not that none exists (Rule R4).
             VALUES ?motif { pat:DirectPromptingMotif }
             ?match
                 pair:hasNodeBinding ?stepBinding ,
+                    ?queryBinding ,
                     ?answerBinding .
             ?stepBinding
                 pair:bindsPatternNode pat:DP_GenerationStepNode ;
                 pair:matchedElement ?loopSource .
+            ?queryBinding
+                pair:bindsPatternNode pat:DP_QueryNode ;
+                pair:matchedElement ?publicInput .
             ?answerBinding
                 pair:bindsPatternNode pat:DP_AnswerNode ;
                 pair:matchedElement ?loopTarget .
+
+            ?publicInput pair:playsRole/pair:subRoleOf* pair:PublicUserInput .
 
             FILTER NOT EXISTS {
                 ?controlStep pair:playsRole/pair:subRoleOf* pair:RateLimitControlStep .

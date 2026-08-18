@@ -194,6 +194,12 @@ pat:UnboundedConsumption_UnboundedUseCondition
     rdfs:label "Prompt, retrieval, tool, or model use is not bounded"@en ;
     pair:operationalizesRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
 
+pat:UnboundedConsumption_RepeatablePathCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "The consuming path can be driven repeatedly"@en ;
+    rdfs:comment "Either the flow loops - a step informs a step that informs it back, in query rewriting or RAG - or it is reachable from public input, so volume is not the system's own choice. Direct prompting has no loop, so without this the branch asked only whether an LLM call existed without a rate limiter, which is true of nearly every unmitigated GenAI system."@en ;
+    pair:operationalizesRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
+
 # risk patterns
 
 pat:DirectPromptingMotif
@@ -489,7 +495,8 @@ pat:UnboundedConsumptionRiskPattern
         pat:RetrievalAugmentedGenerationMotif ,
         pat:QueryRewritingMotif ;
     pair:hasMechanism owasp:mechanism-unbounded-resource-consumption ;
-    pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ;
+    pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ,
+        pat:UnboundedConsumption_RepeatablePathCondition ;
     pair:mayIndicateRisk
         owasp:llm10-unbounded-consumption ,
         atlas:redundant-actions-agentic ,

@@ -275,6 +275,15 @@ def test_derivation_records_do_not_break_the_fixed_point() -> None:
 def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     """The propagation rules must not silently re-tag the curated examples.
 
+    onyx lost one finding when the unbounded-consumption pattern stopped firing
+    on direct prompting alone. That branch had no loop and no reachability test,
+    so it asked only whether an LLM call existed without a rate limiter - true of
+    nearly every unmitigated GenAI system. It now requires the prompting path to
+    be reachable from pair:PublicUserInput. onyx's input is an "Employee chat
+    question" on an internal platform, so the silence is discrimination rather
+    than a miss; annotation guidance says so at Info level where an input is not
+    marked public.
+
     Last moved 2026-08-17, when the retrieval layer stopped being vector-only,
     and both changes are intended:
 
@@ -292,7 +301,7 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
       injection drops from 5 to 3 because it is a per-match finding and the
       vector match is gone. Fewer findings, none of them lost truthfully."""
     expected = {
-        example_path(ONYX_NS): (14, 25),
+        example_path(ONYX_NS): (14, 24),
         example_path(GRAPH_RAG_NS): (3, 8),
     }
     # Every graph the repo ships is pinned. Adding one without a baseline would
