@@ -797,7 +797,7 @@ def create_app(*, local_examples: bool | None = None) -> Flask:
 
         Nothing is asserted about the risk being resolved. The response is a
         graph; the assessor re-runs the assessment over it and the same rules
-        speak again (Rule R4)."""
+        speak again."""
         payload = request.get_json(silent=True) or {}
         ttl = (payload.get("ttl") or "").strip()
         control = (payload.get("control") or "").strip()
@@ -807,8 +807,6 @@ def create_app(*, local_examples: bool | None = None) -> Flask:
         try:
             architecture = Graph().parse(data=ttl, format="turtle")
             with _SPARQL_LOCK:
-                # The rewrite reads the finding, so it runs against an assessed
-                # graph - findings do not exist in the architecture alone.
                 result = run_assessment_from_text(ttl)
                 added = apply_control(result.combined_graph, URIRef(control), URIRef(finding))
         except ValueError as error:
