@@ -490,11 +490,12 @@ def test_apply_is_offered_only_where_a_rewrite_targets_that_risk(client) -> None
 
     output_validation = offers.get("Output validation and sanitization", set())
     assert output_validation, "expected output validation to be applicable somewhere"
-    # Sensitive data retrieval suggests this control but no rewrite targets that
-    # pattern - it has no structural escape at all - so it must not be offered.
-    assert not any("sensitive data retrieval" in f for f in output_validation), (
-        "offered on a finding no rewrite can clear: " + ", ".join(sorted(output_validation))
-    )
+    # Every finding that offers it must have a rewrite targeting its own risk
+    # pattern; the check below proves each offer inserts something.
+    assert output_validation <= {
+        "Candidate improper LLM output handling",
+        "Candidate sensitive information disclosure",
+    }, "offered on a finding no rewrite targets: " + ", ".join(sorted(output_validation))
 
     # And every offer must actually do something when taken.
     for finding in data["findings"]:

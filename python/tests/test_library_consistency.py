@@ -243,7 +243,7 @@ NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 SKOS_NS = Namespace("http://www.w3.org/2004/02/skos/core#")
 
 CONDITION_EXCEPTIONS = {
-    (PAT.SensitiveDataRetrievalExposureRiskPattern,
+    (PAT.SensitiveInformationDisclosureRiskPattern,
      PAT.VectorEmbeddingWeakness_RetrievalCondition),
 }
 

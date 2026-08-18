@@ -97,7 +97,7 @@ def test_propagation_alone_satisfies_the_sensitive_retrieval_condition() -> None
         str(result.risk_findings.value(f, RDFS.label))
         for f in result.risk_findings.subjects(RDF.type, PAIR.RiskFinding)
     }
-    assert "Candidate sensitive data retrieval exposure" in labels
+    assert "Candidate sensitive information disclosure" in labels
 
 
 def test_trust_taint_and_content_categories_propagate_independently() -> None:
@@ -275,6 +275,13 @@ def test_derivation_records_do_not_break_the_fixed_point() -> None:
 def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     """The propagation rules must not silently re-tag the curated examples.
 
+    onyx lost one more when sensitive output exposure and sensitive data
+    retrieval were merged: they reported one disclosure from two ends - the exit
+    and the source - so a RAG system raised both for the same content reaching
+    the same sink. The merged pattern keeps the retrieval branch, because it
+    contributes the store and the retrieval step as evidence the exit branch
+    cannot see, but emits one finding per sink.
+
     Both lost one sensitive-output finding when that pattern stopped keying its
     IRI on the data category. It emitted one finding per (sink, category) while
     the category appears nowhere in the finding, so a sink carrying both
@@ -308,7 +315,7 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
       injection drops from 5 to 3 because it is a per-match finding and the
       vector match is gone. Fewer findings, none of them lost truthfully."""
     expected = {
-        example_path(ONYX_NS): (14, 23),
+        example_path(ONYX_NS): (14, 22),
         example_path(GRAPH_RAG_NS): (3, 7),
     }
     # Every graph the repo ships is pinned. Adding one without a baseline would
@@ -362,7 +369,7 @@ def test_a_finding_fires_from_the_facet_alone() -> None:
         str(result.risk_findings.value(f, RDFS.label))
         for f in result.risk_findings.subjects(RDF.type, PAIR.RiskFinding)
     }
-    assert "Candidate sensitive data retrieval exposure" in labels
+    assert "Candidate sensitive information disclosure" in labels
 
 
 def test_the_bridge_is_one_directional() -> None:

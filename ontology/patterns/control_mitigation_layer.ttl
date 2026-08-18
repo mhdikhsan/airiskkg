@@ -96,7 +96,7 @@ pat:SensitiveOutputScreening_MitigationOQP
     rdfs:label "Screen a user-facing sink that carries protected content"@en ;
     pair:implementsControl pat:Control_OutputValidationAndSanitization ;
     pair:realizesMotif pat:OutputScreeningMotif ;
-    pair:mitigatesRiskPattern pat:SensitiveOutputExposureRiskPattern ;
+    pair:mitigatesRiskPattern pat:SensitiveInformationDisclosureRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/mitigation/sensitive_output_screening.rq" ;
     pair:producesOutputType pair:MitigationApplication .
 
@@ -121,7 +121,7 @@ pat:OutputRedaction_MitigationOQP
     a pair:PatternImplementation ;
     rdfs:label "Redact protected content before a user-facing sink"@en ;
     pair:implementsControl pat:Control_DataMinimizationAndRedaction ;
-    pair:mitigatesRiskPattern pat:SensitiveOutputExposureRiskPattern ;
+    pair:mitigatesRiskPattern pat:SensitiveInformationDisclosureRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/mitigation/output_redaction.rq" ;
     pair:producesOutputType pair:MitigationApplication .
 

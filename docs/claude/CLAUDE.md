@@ -302,8 +302,8 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 
   | Graph | Matches | Findings |
   | --- | --- | --- |
-  | RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 25 |
-  | Minimal graph RAG | 3 | 8 |
+  | RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 22 |
+  | Minimal graph RAG | 3 | 7 |
 
   The agentic layer is covered by `test_agentic_assessment.py`, which states its own
   graph inline — the MCP example it used to read now lives in `example_local/`.
@@ -343,9 +343,9 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   (`t4b:transform` vs `t4b:Transform`), ontology declares `patternProcess` but exports
   `hasProcess`, instances multi-typed with `t4b:Component`.
 - Current library size (2026-08-17, counted off the loaded graph): **31 motifs**,
-  **16 risk patterns**, **97 pattern roles**, **7 data categories**, **35 facet
+  **15 risk patterns**, **97 pattern roles**, **7 data categories**, **35 facet
   concepts**, 21 applicability-condition attachments. Implementations: 31 match
-  queries, 16 risk queries, 6 propagation rules.
+  queries, 15 risk queries, 6 propagation rules.
   Every figure but the motif count had already drifted before anyone noticed, so
   re-count rather than edit by hand:
   `len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))` and its siblings.
@@ -370,7 +370,7 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   whose only escape is `?control beamr:associatedTo ?element` cannot be cleared by
   changing the architecture — `beamr:associatedTo` appears in no bundled example and no
   UI writes it — so the finding is unfalsifiable by design work. Prompt injection was
-  fixed 2026-08-17 by testing for a screening step on the path; **7 of 16 risk queries
+  fixed 2026-08-17 by testing for a screening step on the path; **3 of 15 risk queries
   still have no structural check at all** (data_model_poisoning, excessive_agency,
   sensitive_retrieval, supply_chain, system_prompt_leakage, vector_embedding_weakness,
   and the annotation half of others). Some are legitimately unstructural — supply-chain

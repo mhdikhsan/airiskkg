@@ -34,7 +34,7 @@ CONSTRUCT {
 WHERE {
     ?finding
         a pair:RiskFinding ;
-        pair:generatedByRiskPattern pat:SensitiveOutputExposureRiskPattern ;
+        pair:generatedByRiskPattern pat:SensitiveInformationDisclosureRiskPattern ;
         pair:hasEvidence ?sink .
 
     ?sink pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .

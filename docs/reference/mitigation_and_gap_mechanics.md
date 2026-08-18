@@ -38,7 +38,7 @@ A control used to change nothing. Applying an input guardrail to a
 prompt-injection finding left the finding exactly where it was, because the only
 escape was an annotation nothing writes.
 
-- Risk queries now test for the control **structurally**. 13 of 16 risk patterns
+- Risk queries now test for the control **structurally**. 12 of 15 risk patterns
   have a structural escape, up from 9.
 - `beamr:associatedTo` is gone from all 15 queries that carried it. Removing it
   left both examples byte-identical, which is the proof it was never satisfiable.
@@ -48,7 +48,7 @@ escape was an annotation nothing writes.
 
 ### Findings say which rule raised them
 
-`pair:generatedByRiskPattern` is emitted by all 16 risk queries. Without it a
+`pair:generatedByRiskPattern` is emitted by every risk query. Without it a
 finding could not be routed to the rewrite written for it, and a control
 suggested by four patterns offered the same rewrite to all of them.
 
@@ -65,7 +65,7 @@ is a kind of `dpv:PersonalData`, so sensitivity must survive it.
 | | |
 | --- | --- |
 | Unbounded consumption | The direct-prompting branch had no loop test and no reachability test, so it fired on the mere presence of an LLM call. It now requires a path reachable from `pair:PublicUserInput`. |
-| Sensitive output exposure | Keyed its finding IRI on (sink, category), so one sink carrying two protected categories raised two indistinguishable findings. Now one per sink. |
+| Sensitive information disclosure | Merged from two patterns that reported one disclosure from two ends, and keyed on (sink, category) so one sink raised several indistinguishable findings. Now one per sink, carrying evidence from both routes. |
 | Grounding and verification | Realized only by retrieval motifs while the risk it answers clears on *verification*. `EvalsMotif` joins its realizations. |
 | Performance | A run went from ~1.8s to ~0.33s: risk queries reordered for rdflib's left-to-right evaluation, knowledge base parsed once per process. |
 | Canvas → source | Clicking a node, motif or finding marks and scrolls to the line that declares it. |
@@ -296,10 +296,6 @@ replace it). For screening and redaction it is a known approximation.
    protocol, where a gate is structural and the protocol behind it is not.
    Avoid SHACL shapes demanding governance annotations — those fire on every
    under-annotated graph.
-5. **`sensitive_retrieval` and `sensitive_output_exposure` overlap** on RAG
-   systems, reporting one incident from two ends. They are distinct claims with
-   different remedies (source versus exit), but an assessor triages twice.
-   Decide whether that is nesting worth keeping.
 6. **Findings duplicate per match.** A risk that binds `?match` with an unbound
    `?motif` fires once per match containing the element, so inserting any motif
    can multiply a finding without changing the architecture's risk. Presentation
