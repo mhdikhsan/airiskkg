@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate prompt injection exposure"@en ;
         dct:description "Untrusted user or retrieved content can enter LLM prompt or generation context."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:PromptInjectionRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;

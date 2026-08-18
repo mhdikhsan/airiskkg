@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate system prompt leakage exposure"@en ;
         dct:description "A system prompt or hidden instruction is used in an LLM generation path that produces user-facing output."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:SystemPromptLeakageRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;

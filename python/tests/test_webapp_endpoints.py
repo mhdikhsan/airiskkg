@@ -468,3 +468,65 @@ def test_applying_a_control_that_has_no_rewrite_is_refused(client) -> None:
     })
     assert response.status_code == 400
     assert "mitigation rewrite" in response.get_json()["error"]
+
+
+def test_apply_is_offered_only_where_a_rewrite_targets_that_risk(client) -> None:
+    """The bug this exists for: one control, several risks, one rewrite.
+
+    Output validation is suggested by improper-output-handling, sensitive
+    disclosure and system-prompt-leakage, but a rewrite is written against one
+    vulnerable shape. Keyed on the control alone, every one of those findings
+    offered an Apply button that ran the improper-output-handling rewrite: it
+    found its own screen already in place, added nothing, reported "already in
+    place on this path", and left the risk untouched."""
+    ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
+    data = client.post("/api/assess", json={"ttl": ttl}).get_json()
+
+    offers: dict[str, set[str]] = {}
+    for finding in data["findings"]:
+        for control in finding["suggestedControls"]:
+            if control["applicable"]:
+                offers.setdefault(control["label"], set()).add(finding["label"])
+
+    output_validation = offers.get("Output validation and sanitization", set())
+    assert output_validation, "expected output validation to be applicable somewhere"
+    # Sensitive data retrieval suggests this control but no rewrite targets that
+    # pattern - it has no structural escape at all - so it must not be offered.
+    assert not any("sensitive data retrieval" in f for f in output_validation), (
+        "offered on a finding no rewrite can clear: " + ", ".join(sorted(output_validation))
+    )
+
+    # And every offer must actually do something when taken.
+    for finding in data["findings"]:
+        for control in finding["suggestedControls"]:
+            if not control["applicable"]:
+                continue
+            applied = client.post("/api/apply-control", json={
+                "ttl": ttl, "control": control["id"], "finding": finding["id"],
+            }).get_json()
+            assert applied.get("addedTriples"), (
+                f"{control['label']} offered on {finding['label']} but inserted nothing"
+            )
+
+
+def test_a_risk_firing_on_several_paths_needs_a_control_on_each(client) -> None:
+    """Applying once does not always clear a label. Prompt injection is raised
+    per untrusted-content/generation pair, so a system with three such paths
+    needs three screens - the count falls each time rather than in one step."""
+    ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
+    counts = []
+    for _ in range(3):
+        data = client.post("/api/assess", json={"ttl": ttl}).get_json()
+        counts.append(data["summary"]["riskFindingCount"])
+        todo = [
+            (f, c) for f in data["findings"]
+            for c in f["suggestedControls"]
+            if c["applicable"] and "prompt injection" in f["label"]
+        ]
+        if not todo:
+            break
+        finding, control = todo[0]
+        ttl = client.post("/api/apply-control", json={
+            "ttl": ttl, "control": control["id"], "finding": finding["id"],
+        }).get_json()["ttl"]
+    assert counts == sorted(counts, reverse=True) and counts[0] > counts[-1], counts

@@ -3,12 +3,6 @@ PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
 PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-# Insert an output screening step between a generation step and what it
-# releases, on the path an improper-output-handling finding cites.
-#
-# Same shape as the input rewrite: re-derive the structure the finding rests on,
-# construct the step that interrupts it, bind it to the elements the finding
-# already names, and derive the step's IRI from them so re-applying is a no-op.
 
 CONSTRUCT {
     ?screeningStep

@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate sensitive information exposure at a user-facing output"@en ;
         dct:description "Content carrying a protected data category reaches an element exposed to a user, with no represented redaction, sanitization, or guardrail on the way out."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:SensitiveOutputExposureRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;

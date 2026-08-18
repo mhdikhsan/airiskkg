@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate agent goal hijack"@en ;
         dct:description "Content of untrusted provenance reaches the step that decides the agent's next action, with no represented validation or guardrail on the way."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:GoalHijackRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;

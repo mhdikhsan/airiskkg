@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate external model or dependency supply chain exposure"@en ;
         dct:description "The architecture uses an external model, provider credential, package, artifact, or dependency in an LLM application path."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:SupplyChainCompromiseRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;

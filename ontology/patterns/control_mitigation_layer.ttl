@@ -90,6 +90,32 @@ pat:OutputScreening_MitigationOQP
     pair:producesOutputType pair:MitigationApplication .
 
 
+pat:SensitiveOutputScreening_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Screen a user-facing sink that carries protected content"@en ;
+    pair:implementsControl pat:Control_OutputValidationAndSanitization ;
+    pair:realizesMotif pat:OutputScreeningMotif ;
+    pair:mitigatesRiskPattern pat:SensitiveOutputExposureRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/sensitive_output_screening.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:MemoryValidation_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Validate what is written to agent memory"@en ;
+    pair:implementsControl pat:Control_InputValidationAndPromptIsolation ;
+    pair:mitigatesRiskPattern pat:MemoryPoisoningRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/memory_validation.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:ToolMediation_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Mediate an agent tool action with policy enforcement"@en ;
+    pair:implementsControl pat:Control_ToolPermissionBoundaries ;
+    pair:mitigatesRiskPattern pat:ToolMisuseRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/tool_mediation.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+
 # --- technical (architectural footprint) but no motif in the library yet ---
 
 pat:Control_DataMinimizationAndRedaction  pair:controlNature pair:TechnicalControl .

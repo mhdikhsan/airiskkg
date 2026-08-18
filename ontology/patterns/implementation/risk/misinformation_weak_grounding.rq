@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate misinformation from weak grounding"@en ;
         dct:description "A retrieval-augmented generation step produces a response from retrieved context, but no verification, evaluation, or scoring step over the response is represented in the architecture graph."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif pat:RetrievalAugmentedGenerationMotif ;
         pair:hasDerivedMechanism ?mechanism ;

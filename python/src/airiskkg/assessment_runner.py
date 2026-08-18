@@ -301,17 +301,43 @@ def run_assessment_from_text(ttl_text: str) -> AssessmentResult:
     return _run_assessment_on_graph(working_graph, write_outputs=False, output_dir=OUTPUTS_DIR)
 
 
-def mitigation_implementations(graph: Graph) -> dict[URIRef, Path]:
-    """Control -> the registered rewrite that applies it, for controls that have
-    one. A control with no rewrite is still a real suggestion; it just cannot be
-    inserted for you."""
-    found: dict[URIRef, Path] = {}
+def mitigation_implementations(graph: Graph) -> dict[tuple[URIRef, URIRef], Path]:
+    """(control, risk pattern) -> the rewrite that applies that control to that
+    finding.
+
+    Keyed on the pair, not the control alone. The same control is suggested by
+    several risk patterns - output validation answers improper output handling,
+    sensitive disclosure and system prompt leakage - and a rewrite is written
+    against one vulnerable shape. Offering one control's only rewrite for every
+    finding that names it meant clicking Apply on a sensitive-retrieval finding
+    ran the improper-output-handling rewrite, which found its own screen already
+    in place, added nothing, and left the risk untouched."""
+    found: dict[tuple[URIRef, URIRef], Path] = {}
     for implementation in graph.subjects(PAIR.producesOutputType, PAIR.MitigationApplication):
         control = graph.value(implementation, PAIR.implementsControl)
+        pattern = graph.value(implementation, PAIR.mitigatesRiskPattern)
         path_value = graph.value(implementation, PAIR.implementationPath)
-        if control is not None and path_value is not None:
-            found[control] = REPO_ROOT / str(path_value)
+        if control is not None and pattern is not None and path_value is not None:
+            found[(control, pattern)] = REPO_ROOT / str(path_value)
     return found
+
+
+def risk_pattern_of(graph: Graph, finding: URIRef) -> URIRef | None:
+    """Which rule raised this finding."""
+    value = graph.value(finding, PAIR.generatedByRiskPattern)
+    return value if isinstance(value, URIRef) else None
+
+
+def applicable_controls(graph: Graph, finding: URIRef) -> set[URIRef]:
+    """Controls this finding can actually be answered with by a rewrite.
+
+    A control with no rewrite for THIS finding's risk pattern is still a real
+    suggestion; it just cannot be inserted for you, and offering a button that
+    silently does nothing is worse than offering none."""
+    pattern = risk_pattern_of(graph, finding)
+    if pattern is None:
+        return set()
+    return {c for (c, p) in mitigation_implementations(graph) if p == pattern}
 
 
 def apply_control(architecture: Graph, control: URIRef, finding: URIRef) -> Graph:
@@ -326,10 +352,17 @@ def apply_control(architecture: Graph, control: URIRef, finding: URIRef) -> Grap
 
     The finding must exist in the graph this is run against, so callers pass an
     assessed graph rather than a bare architecture."""
-    paths = mitigation_implementations(architecture)
-    query_path = paths.get(control)
+    pattern = risk_pattern_of(architecture, finding)
+    if pattern is None:
+        # The finding is not in this graph, which normally means an earlier
+        # application already resolved it. Nothing to insert, and no error:
+        # asking to fix something already fixed is not a failure.
+        return _bind_prefixes(Graph())
+    query_path = mitigation_implementations(architecture).get((control, pattern))
     if query_path is None:
-        raise ValueError(f"No registered mitigation rewrite for {control}")
+        raise ValueError(
+            f"No registered mitigation rewrite applies {control} to {pattern}"
+        )
     return run_construct_query(architecture, query_path, finding=finding)
 
 

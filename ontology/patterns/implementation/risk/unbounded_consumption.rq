@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate unbounded LLM or retrieval consumption"@en ;
         dct:description "A query rewriting, retrieval, tool, or generation loop is represented without an explicit budget, rate, or loop control."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:UnboundedConsumptionRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;

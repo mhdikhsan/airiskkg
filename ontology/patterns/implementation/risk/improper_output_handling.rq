@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate improper LLM output handling"@en ;
         dct:description "A user-facing LLM output is produced without a represented output validation, sanitization, or guardrail step."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:ImproperOutputHandlingRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;

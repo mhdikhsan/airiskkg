@@ -372,8 +372,17 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   every finding would mitigate itself and none would ever be reported.
   `test_a_mitigation_rewrite_never_runs_during_an_assessment` enforces that. Inserted
   IRIs are derived from the elements they screen, so re-applying is a no-op.
-  A control with no rewrite reports `applicable: false` rather than offering a button
-  that does nothing.
+  **Rewrites are keyed on (control, risk pattern), never on the control alone.** The
+  same control answers several patterns — output validation is suggested by improper
+  output handling, sensitive disclosure and system prompt leakage — while a rewrite is
+  written against one vulnerable shape. Keyed on the control, every one of those findings
+  offered an Apply button that ran the wrong rewrite, found its own screen already in
+  place, added nothing and reported "already in place on this path". Findings now carry
+  `pair:generatedByRiskPattern` so a finding can be routed to the rewrite written for it.
+  A control with no rewrite *for that finding's pattern* reports `applicable: false`
+  rather than offering a button that does nothing.
+  **A risk that fires on several paths needs a control on each**: prompt injection is per
+  untrusted-content/generation pair, so onyx takes three separate applications.
 - **Control motifs are sized to the risk, not to the vocabulary.** `GuardrailsMotif` is
   8 nodes and 8 edges; prompt injection needs an input screen and nothing else, so
   `InputScreeningMotif` / `OutputScreeningMotif` are 3 nodes and 2 edges each and nest

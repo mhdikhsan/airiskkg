@@ -1,6 +1,6 @@
 from __future__ import annotations
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
-from airiskkg.assessment_runner import PAIR, AssessmentResult, mitigation_implementations
+from airiskkg.assessment_runner import PAIR, AssessmentResult, applicable_controls
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 PROV = Namespace("http://www.w3.org/ns/prov#")
@@ -89,17 +89,18 @@ def _mit_alignments(graph: Graph, control: URIRef) -> list[dict]:
     return [_element_ref(graph, family) for family in sorted(families, key=str)]
 
 
-def _control_ref(graph: Graph, control: URIRef) -> dict:
+def _control_ref(graph: Graph, control: URIRef, applicable: set[URIRef]) -> dict:
     """A suggested control, extended with its technical/non-technical nature, the
     motif(s) that can structurally realize it (candidate structural mitigations -
     the control stays the mitigation plan; the motif is how to realize it in the
     architecture), and the MIT mitigation family it aligns with (provenance)."""
     ref = _ref(graph, control)
     ref["nature"] = _control_nature(graph, control)
-    # Whether a registered rewrite can insert this control, or it is advice the
-    # assessor has to act on themselves. Saying so is the difference between an
-    # actionable button and a chip that quietly does nothing useful.
-    ref["applicable"] = control in mitigation_implementations(graph)
+    # Whether a rewrite can insert this control FOR THIS FINDING. The same
+    # control answers several risk patterns, and a rewrite is written against
+    # one of them, so applicability is a property of the pair - not of the
+    # control alone.
+    ref["applicable"] = control in applicable
     realizing_motifs = sorted(graph.objects(control, PAIR.realizedByMotif), key=str)
     ref["realizedByMotifs"] = [_element_ref(graph, motif) for motif in realizing_motifs]
     ref["mitAlignments"] = _mit_alignments(graph, control)
@@ -132,6 +133,7 @@ def _finding_view(graph: Graph, finding: URIRef) -> dict:
         graph.objects(finding, PAIR.hasCandidateRiskTaxonomyEntry), key=str
     )
     suggested_controls = sorted(graph.objects(finding, PAIR.hasSuggestedControl), key=str)
+    applicable = applicable_controls(graph, finding)
     evidence = sorted(graph.objects(finding, PAIR.hasEvidence), key=str)
 
     return {
@@ -142,7 +144,7 @@ def _finding_view(graph: Graph, finding: URIRef) -> dict:
         "mechanism": _element_ref(graph, mechanism) if mechanism is not None else None,
         "status": str(status) if status else None,
         "taxonomyEntries": [_ref(graph, entry) for entry in taxonomy_entries],
-        "suggestedControls": [_control_ref(graph, control) for control in suggested_controls],
+        "suggestedControls": [_control_ref(graph, c, applicable) for c in suggested_controls],
         "groundedControlFamilies": _grounded_control_families(graph, taxonomy_entries),
         "evidence": [_element_ref(graph, element) for element in evidence],
     }

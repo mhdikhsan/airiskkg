@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate excessive agency exposure"@en ;
         dct:description "An LLM generation step can inform a tool invocation or state-changing process."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:ExcessiveAgencyRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;

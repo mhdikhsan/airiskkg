@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate unmediated agent tool use"@en ;
         dct:description "A planning step's decision reaches a tool invocation or state change with no represented policy enforcement, human approval, or rate/budget control in between."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:ToolMisuseRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;

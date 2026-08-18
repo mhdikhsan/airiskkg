@@ -1,0 +1,46 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Screen a user-facing sink that carries protected content.
+#
+# Written against the sensitive-output-exposure shape, which is anchored on the
+# sink rather than on a generation step: what matters is where the content ends
+# up, not which configuration carried it there. The step is attached to the sink
+# the finding cites, which is what that pattern's own escape clause tests for.
+
+CONSTRUCT {
+    ?screeningStep
+        a beam:Process ;
+        rdfs:label "Output screening"@en ;
+        pair:playsRole pair:OutputGuardrailStep ;
+        beam:use ?sink .
+
+    ?system beam:hasProcess ?screeningStep .
+}
+WHERE {
+    ?finding
+        a pair:RiskFinding ;
+        pair:generatedByRiskPattern pat:SensitiveOutputExposureRiskPattern ;
+        pair:hasEvidence ?sink .
+
+    ?sink pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+
+    FILTER NOT EXISTS {
+        ?existing pair:playsRole ?existingRole .
+        { ?existingRole pair:subRoleOf* pair:RedactionStep }
+        UNION
+        { ?existingRole pair:subRoleOf* pair:OutputValidationStep }
+        UNION
+        { ?existingRole pair:subRoleOf* pair:OutputGuardrailStep }
+        { ?existing beam:use ?sink } UNION { ?existing beam:produce ?sink }
+    }
+
+    OPTIONAL { ?system a beam:System . }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/sensitive-output-screening/",
+        ENCODE_FOR_URI(STR(?sink))
+    )) AS ?screeningStep)
+}
