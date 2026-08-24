@@ -154,3 +154,71 @@ def test_bundled_example_exports_and_stays_small() -> None:
     assert len(export.graph) < len(result.working_graph) / 2, (
         "export should be a fraction of the working graph, not a dump of it"
     )
+
+
+# --- what the run ran on -----------------------------------------------------
+#
+# An export said when it happened and what it produced, but not what it ran on.
+# Three inputs decide a result - the library, the submitted graph, and later the
+# business process - and a set of results a month apart could not be told apart
+# from a set produced by different rules over different graphs.
+
+
+def _fingerprint(export) -> str:
+    value = export.graph.value(export.activity, PAIR.assessmentFingerprint)
+    assert value is not None, "the run does not say what it ran on"
+    return str(value)
+
+
+def test_the_run_names_the_inputs_it_used() -> None:
+    _result, export = _export()
+    used = set(export.graph.objects(export.activity, PROV.used))
+
+    kinds = {str(entity).split(":")[2] for entity in used if str(entity).startswith("urn:pair-ai:")}
+    assert kinds == {"architecture", "knowledge-base"}
+
+    for entity in used:
+        if str(entity).startswith("urn:pair-ai:"):
+            assert (entity, RDF.type, PROV.Entity) in export.graph
+            assert export.graph.value(entity, PAIR.contentFingerprint) is not None
+
+
+def test_an_input_entity_is_named_by_its_own_fingerprint() -> None:
+    """So two runs over the same input point at one node, not two nodes that
+    happen to describe the same thing."""
+    _result, export = _export()
+    for entity in export.graph.subjects(RDF.type, PROV.Entity):
+        fingerprint = export.graph.value(entity, PAIR.contentFingerprint)
+        assert str(entity).endswith(str(fingerprint))
+
+
+def test_the_same_question_asked_twice_gets_the_same_fingerprint() -> None:
+    assert _fingerprint(_export()[1]) == _fingerprint(_export()[1])
+
+
+def test_reformatting_the_input_does_not_change_the_fingerprint() -> None:
+    """Whitespace, prefixes and triple order are not modelling decisions. Hashing
+    the raw text would report a reindented file as a different architecture.
+
+    Rewritten as N-Triples with the statements shuffled: same graph, nothing
+    textually in common with the original."""
+    lines = Graph().parse(data=GRAPH, format="turtle").serialize(format="nt").splitlines()
+    shuffled = "\n".join(reversed([line for line in lines if line.strip()]))
+
+    assert shuffled != GRAPH
+    assert _fingerprint(_export()[1]) == _fingerprint(_export(shuffled)[1])
+
+
+def test_changing_the_architecture_changes_the_fingerprint() -> None:
+    edited = GRAPH.replace('rdfs:label "Answer"', 'rdfs:label "Renamed answer"')
+    assert _fingerprint(_export()[1]) != _fingerprint(_export(edited)[1])
+
+
+def test_two_runs_stay_two_activities_even_when_nothing_changed() -> None:
+    """PROV correctness. Two assessments at different times genuinely are two
+    events, and collapsing their IRIs would assert they were one. The fingerprint
+    answers 'same question'; the activity answers 'same occasion'."""
+    _r1, first = _export()
+    _r2, second = _export()
+    assert first.activity != second.activity
+    assert _fingerprint(first) == _fingerprint(second)

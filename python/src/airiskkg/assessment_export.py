@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -7,6 +8,7 @@ from datetime import datetime, timezone
 from rdflib import DCTERMS, RDF, RDFS, XSD, Graph, Literal, Namespace, URIRef
 
 from airiskkg.assessment_runner import AssessmentResult, _bind_prefixes
+from airiskkg.knowledge_base import graph_fingerprint
 
 PROV = Namespace("http://www.w3.org/ns/prov#")
 BEAM = Namespace("http://w3id.org/beam/core#")
@@ -35,6 +37,49 @@ class AssessmentExport:
         if export_format == "json-ld":
             return self.graph.serialize(format="json-ld", auto_compact=True)
         return self.graph.serialize(format=export_format)
+
+
+def _input_entity(
+    graph: Graph,
+    activity: URIRef,
+    *,
+    kind: str,
+    label: str,
+    fingerprint: str,
+    revision: str | None = None,
+) -> URIRef:
+    """Record one input the run consumed, as the prov:Entity it used.
+
+    The entity's IRI *is* its fingerprint, so two runs over the same input point
+    at the same node instead of two nodes that happen to describe the same thing
+    - which is what makes a set of exports answerable by query rather than by
+    reading timestamps.
+
+    Modelled as entities rather than as flat properties on the activity because
+    the number of inputs grows. A business process layer adds a third, and under
+    this shape that costs a call, not a new predicate.
+    """
+    entity = URIRef(f"urn:pair-ai:{kind}:{fingerprint}")
+    graph.add((entity, RDF.type, PROV.Entity))
+    graph.add((entity, RDFS.label, Literal(label, lang="en")))
+    graph.add((entity, PAIR.contentFingerprint, Literal(fingerprint)))
+    if revision:
+        graph.add((entity, PAIR.sourceRevision, Literal(revision)))
+    graph.add((activity, PROV.used, entity))
+    return entity
+
+
+def _assessment_fingerprint(fingerprints: list[str]) -> str:
+    """One value over every input, so two runs can be compared at a glance.
+
+    Sorted before hashing: which input was recorded first is an implementation
+    detail, and letting it reach the hash would report two identical runs as
+    different."""
+    digest = hashlib.sha256()
+    for fingerprint in sorted(fingerprints):
+        digest.update(fingerprint.encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
 
 
 def _architecture_graph(result: AssessmentResult, architecture: Graph | None) -> Graph:
@@ -70,8 +115,9 @@ def build_export(
     graph.bind("prov", PROV)
     graph.bind("dct", DCTERMS)
 
+    submitted = _architecture_graph(result, architecture)
     for part in (
-        _architecture_graph(result, architecture),
+        submitted,
         result.motif_matches,
         result.risk_findings,
         result.inferred_annotations,
@@ -96,6 +142,32 @@ def build_export(
     graph.add((activity, DCTERMS.conformsTo, OUTPUT_CONTRACT))
     if source_label:
         graph.add((activity, DCTERMS.title, Literal(source_label)))
+
+    # What the run consumed. Until now an export said when it happened and what
+    # it produced, but not what it ran on - so two sets of results a month apart
+    # could not be told apart from two sets produced by different rules over
+    # different graphs.
+    consumed = [graph_fingerprint(submitted)]
+    _input_entity(
+        graph,
+        activity,
+        kind="architecture",
+        label="Submitted architecture graph",
+        fingerprint=consumed[0],
+    )
+    if result.version is not None:
+        consumed.append(result.version.fingerprint)
+        _input_entity(
+            graph,
+            activity,
+            kind="knowledge-base",
+            label="PAIR-AI knowledge base",
+            fingerprint=result.version.fingerprint,
+            revision=result.version.revision,
+        )
+    graph.add(
+        (activity, PAIR.assessmentFingerprint, Literal(_assessment_fingerprint(consumed)))
+    )
     for system in set(graph.subjects(RDF.type, BEAM.System)):
         graph.add((activity, PROV.used, system))
     for generated_type in (PAIR.RiskFinding, PAIR.MotifMatch):

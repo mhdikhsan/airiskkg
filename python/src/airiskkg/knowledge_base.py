@@ -30,6 +30,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from rdflib import RDF, Graph, Namespace
+from rdflib.compare import to_canonical_graph
 
 from airiskkg.paths import (
     CORE_DIR,
@@ -113,6 +114,35 @@ def _digest(paths: list[Path]) -> str:
         outer.update(b"\0")
         outer.update(hashlib.sha256(body).digest())
     return outer.hexdigest()
+
+
+def graph_fingerprint(graph: Graph) -> str:
+    """A content hash of a graph, stable across parses, orderings and runs.
+
+    The companion to `_digest`, which identifies the library by its files. An
+    input graph reaches an assessment as triples in memory - typed into the
+    editor, imported from a drawing tool, rewritten by a control - so there may
+    be no file to hash, and two files that differ only in whitespace or triple
+    order describe the same architecture.
+
+    Blank nodes are canonicalized first, so two parses of the same document
+    agree even though rdflib labels their blank nodes differently each time.
+    Then N-Triples lines are sorted and hashed.
+
+    Deliberately not `to_isomorphic(graph).graph_digest()`, which is the obvious
+    one-liner: it returns rdflib's own hash, so an rdflib upgrade that changed
+    the algorithm would silently make every fingerprint already written to an
+    export incomparable with every fingerprint written after it. Canonicalize
+    with rdflib, but hash with sha256 ourselves.
+    """
+    canonical = to_canonical_graph(graph)
+    digest = hashlib.sha256()
+    for line in sorted(canonical.serialize(format="nt").splitlines()):
+        stripped = line.strip()
+        if stripped:
+            digest.update(stripped.encode("utf-8"))
+            digest.update(b"\n")
+    return digest.hexdigest()
 
 
 def _git(*args: str) -> str | None:

@@ -334,6 +334,18 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   runtime and changes nothing about the result. Never hoist the metadata back to the top,
   and keep the structural braces: without them the filters leave that group and fire once
   per metadata row again.
+- **A run records what it ran on, not only what it produced.** `build_export` mints a
+  `prov:Activity` and, beside it, one `prov:Entity` per input — the submitted graph and the
+  knowledge base — each carrying `pair:contentFingerprint`, plus `pair:sourceRevision` on the
+  library when a repository is present (the container has none; `.dockerignore` is an
+  allow-list that does not name `.git`). **Inputs are entities, not properties on the
+  activity**: adding a third input — the business process layer — then costs a call rather
+  than a new predicate. An entity's IRI *is* its fingerprint, so two runs over the same input
+  reference one node. `pair:assessmentFingerprint` on the activity answers "same question?";
+  the activity IRI stays a fresh UUID because two runs at different times genuinely are two
+  events, and collapsing them would assert they were one. Graph fingerprints canonicalize
+  blank nodes and sort N-Triples before hashing — never `to_isomorphic(...).graph_digest()`,
+  whose value is rdflib's own and would break comparability across an rdflib upgrade.
 - **The knowledge base is parsed once per process** and copied per call
   (`assessment_runner._base_knowledge`). Turtle parsing was the largest single cost in
   every entry point. `load_base_graph()` still hands back a fresh writable graph — callers

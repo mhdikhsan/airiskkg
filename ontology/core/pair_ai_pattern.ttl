@@ -333,6 +333,47 @@ pair:hasSatisfiedCondition a owl:ObjectProperty ;
 
 # Data properties
 
+pair:contentFingerprint a owl:DatatypeProperty ;
+    rdfs:label "content fingerprint"@en ;
+    rdfs:comment """A content hash identifying one input an assessment ran on: the
+knowledge base, or a submitted graph. Carried by the prov:Entity the run used, so
+two runs over the same input reference the same entity rather than two entities
+that happen to describe the same thing.
+
+Its job is to make a result reconstructable. A run already recorded when it
+happened and what it produced; without this it did not record what it ran on, and
+a set of results a month apart could not be told apart from a set produced by
+different rules over different graphs.
+
+For a graph, computed over the canonical form so it survives reparsing, triple
+reordering, whitespace, and rdflib's per-parse blank node labels."""@en ;
+    rdfs:domain prov:Entity ;
+    rdfs:range xsd:string .
+
+pair:sourceRevision a owl:DatatypeProperty ;
+    rdfs:label "source revision"@en ;
+    rdfs:comment """The version control revision an input came from, when there is
+one. Optional by design and never a substitute for pair:contentFingerprint: the
+shipped container has no repository to ask, because .dockerignore is an allow-list
+that does not name .git. The fingerprint identifies; the revision is a convenience
+for finding the code again."""@en ;
+    rdfs:domain prov:Entity ;
+    rdfs:range xsd:string .
+
+pair:assessmentFingerprint a owl:DatatypeProperty ;
+    rdfs:label "assessment fingerprint"@en ;
+    rdfs:comment """One value over every input a run consumed: equal fingerprints
+mean the same rules ran over the same graphs and the result is the same by
+construction.
+
+Distinct from the run's own IRI, which stays unique per run. Two assessments at
+different times genuinely are two prov:Activity instances and collapsing them
+would assert they were one event - but leaving only the timestamps made 'did
+anything actually change between these two exports' unanswerable. The activity
+says what happened; this says whether it was the same question."""@en ;
+    rdfs:domain prov:Activity ;
+    rdfs:range xsd:string .
+
 pair:implementationPath a owl:DatatypeProperty ;
     rdfs:label "implementation path"@en ;
     rdfs:domain pair:PatternImplementation ;
