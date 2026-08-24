@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import threading
 from collections.abc import Iterable
@@ -10,12 +11,13 @@ from pathlib import Path
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 from rdflib.plugins.sparql import prepareQuery
 
+from airiskkg.knowledge_base import (
+    KnowledgeBaseVersion,
+    knowledge_base_version,
+    ontology_files,
+)
 from airiskkg.paths import (
-    CORE_DIR,
-    FACETS_DIR,
     OUTPUTS_DIR,
-    PATTERNS_DIR,
-    TAXONOMY_DIR,
     REPO_ROOT,
 )
 
@@ -30,20 +32,6 @@ MIT = Namespace("http://w3id.org/airiskkg/taxonomy/mit-ai-risk#")
 MITCTRL = Namespace("http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#")
 NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 
-CORE_FILES = [
-    CORE_DIR / "beam_core.ttl",
-    CORE_DIR / "beam_core_risk.ttl",
-    CORE_DIR / "imports.ttl",
-    CORE_DIR / "pair_ai_pattern.ttl",
-]
-
-PATTERN_FILES = [
-    PATTERNS_DIR / "motif.ttl",
-    PATTERNS_DIR / "risk_pattern_library.ttl",
-    PATTERNS_DIR / "control_mitigation_layer.ttl",
-]
-
-
 @dataclass(frozen=True)
 class AssessmentResult:
     working_graph: Graph
@@ -51,6 +39,9 @@ class AssessmentResult:
     risk_findings: Graph
     output_dir: Path | None = None
     inferred_annotations: Graph = field(default_factory=Graph)
+    # Which library produced this. Optional so a result assembled by hand in a
+    # test stays cheap to build; every result the pipeline returns carries one.
+    version: KnowledgeBaseVersion | None = None
 
     @property
     def combined_graph(self) -> Graph:
@@ -145,15 +136,24 @@ def _base_knowledge() -> Graph:
     next. See reload_knowledge_base() for editing the .ttl files in a live
     process."""
     graph = _bind_prefixes(Graph())
-    for path in CORE_FILES:
-        _load_turtle(graph, path)
-    for path in PATTERN_FILES:
-        _load_turtle(graph, path)
-    for path in sorted(FACETS_DIR.glob("*.ttl")):
-        _load_turtle(graph, path)
-    for path in sorted(TAXONOMY_DIR.glob("*.ttl")):
+    for path in ontology_files():
         _load_turtle(graph, path)
     return graph
+
+
+@lru_cache(maxsize=1)
+def _cached_version() -> KnowledgeBaseVersion:
+    """Identify the knowledge base once per process.
+
+    Cached beside the parse it describes, and invalidated with it: a live server
+    that reported the fingerprint it started with after an ontology edit would be
+    lying about the very thing the fingerprint exists to pin down."""
+    return knowledge_base_version(_base_knowledge())
+
+
+def knowledge_base_fingerprint() -> KnowledgeBaseVersion:
+    """The identity of the loaded library, for recording alongside results."""
+    return _cached_version()
 
 
 def reload_knowledge_base() -> None:
@@ -162,6 +162,7 @@ def reload_knowledge_base() -> None:
     Flask's reloader watches Python sources only, so a live server keeps serving
     the ontology it started with until this is called or the process restarts."""
     _base_knowledge.cache_clear()
+    _cached_version.cache_clear()
 
 
 def load_base_graph() -> Graph:
@@ -267,6 +268,8 @@ def _run_assessment_on_graph(
         _merge(risk_findings, constructed)
         _merge(working_graph, constructed)
 
+    version = knowledge_base_fingerprint()
+
     run_output_dir: Path | None = None
     if write_outputs:
         run_output_dir = _next_output_run_dir(_resolve_output_dir(output_dir))
@@ -275,6 +278,12 @@ def _run_assessment_on_graph(
         motif_matches.serialize(run_output_dir / "motif_matches.ttl", format="turtle")
         risk_findings.serialize(run_output_dir / "risk_findings.ttl", format="turtle")
         working_graph.serialize(run_output_dir / "combined_assessment_graph.ttl", format="turtle")
+        # Written beside the graphs rather than into them: this describes the run,
+        # and a finding must not be able to cite the library's own identity as
+        # evidence.
+        (run_output_dir / "knowledge_base_version.json").write_text(
+            json.dumps(version.as_dict(), indent=2) + "\n", encoding="utf-8"
+        )
 
     return AssessmentResult(
         working_graph=working_graph,
@@ -282,6 +291,7 @@ def _run_assessment_on_graph(
         risk_findings=risk_findings,
         output_dir=run_output_dir,
         inferred_annotations=inferred_annotations,
+        version=version,
     )
 
 
@@ -372,6 +382,8 @@ def _label(graph: Graph, resource: URIRef) -> str:
 
 
 def print_assessment_summary(result: AssessmentResult) -> None:
+    if result.version is not None:
+        print(result.version.summary())
     if len(result.inferred_annotations) > 0:
         print(f"Inferred data-category annotations: {len(result.inferred_annotations)}")
     print(f"Motif matches: {result.motif_match_count}")

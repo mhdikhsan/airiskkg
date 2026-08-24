@@ -1,6 +1,11 @@
 import argparse
+import json
 
-from airiskkg.assessment_runner import print_assessment_summary, run_assessment
+from airiskkg.assessment_runner import (
+    knowledge_base_fingerprint,
+    print_assessment_summary,
+    run_assessment,
+)
 from airiskkg.paths import (
     DOCS_REFERENCE_DIR,
     EXAMPLE_DIR,
@@ -18,6 +23,18 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("info", help="Print project paths.")
+
+    version_parser = subparsers.add_parser(
+        "kb-version",
+        help="Print the identity of the loaded knowledge base: a content "
+        "fingerprint over every ontology and query file that decides what an "
+        "assessment produces, plus the git revision when there is one.",
+    )
+    version_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit the full record as JSON, for recording alongside a set of results.",
+    )
 
     assess_parser = subparsers.add_parser("assess", help="Run PAIR-AI assessment for architecture graph TTL files.")
     assess_parser.add_argument(
@@ -58,6 +75,12 @@ def main() -> None:
         print(f"example: {EXAMPLE_DIR}")
         print(f"outputs: {OUTPUTS_DIR}")
         print(f"docs reference: {DOCS_REFERENCE_DIR}")
+    elif args.command == "kb-version":
+        version = knowledge_base_fingerprint()
+        if args.json:
+            print(json.dumps(version.as_dict(), indent=2))
+        else:
+            print(version.summary())
     elif args.command == "assess":
         result = run_assessment(
             args.architecture_graph,
