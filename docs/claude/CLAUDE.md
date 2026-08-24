@@ -288,6 +288,14 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - `python/src/airiskkg/`, `python/scripts/`, `python/tests/` — pipeline code, CLI, webapp, and
   maintenance scripts. The Python package root is `python/`, not the repo root; `airiskkg.paths`
   resolves back to the knowledge base by walking up until it finds both `ontology/` and `python/`.
+  **The web layer holds no library knowledge.** `webapp/routes/` is three blueprints that parse a
+  payload, call in, and shape a response; `webapp/runtime.py` holds the process-wide SPARQL lock
+  and the start-up warm-up. Anything that *decides* something about the library — motif templates,
+  the motif gap report, the role/category vocabulary, SHACL report shaping — lives in
+  `airiskkg/workbench/`, importable without Flask. This was extracted from a 878-line `app.py`
+  where roughly 365 lines had nothing to do with HTTP; putting any of it back is a regression.
+  `assessment_runner` and `paths` keep their import paths on purpose: the evaluation harness in
+  the gitignored `docs/evaluation/` imports them and cannot be updated from a clone.
 - `outputs/` — generated motif matches and findings (assessment output, not knowledge; untracked)
 - `v1/` — frozen snapshot of the prior ontology generation (do not edit; see `v1/legacy/` for the
   earlier pre-BEAM flat layout)
