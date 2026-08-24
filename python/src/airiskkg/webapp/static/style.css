@@ -828,3 +828,44 @@ label.btn { display: inline-flex; align-items: center; }
 
 .summary-row .delta { color: var(--good); }
 .summary-row .delta.raised { color: var(--warn); }
+
+/* ---- version history ------------------------------------------------------ */
+
+.history-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.history-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+
+.hist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.hist-row.current { background: rgba(79, 140, 255, 0.08); }
+.hist-v {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: var(--accent);
+  font-weight: 600;
+  min-width: 34px;
+}
+.hist-at { color: var(--text-dim); font-size: 11.5px; min-width: 150px; }
+.hist-counts { font-variant-numeric: tabular-nums; min-width: 190px; }
+.hist-delta {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  min-width: 64px;
+}
+.hist-delta.cleared { color: var(--good); }
+.hist-delta.raised { color: var(--warn); }
+.hist-cause { color: var(--text-dim); flex: 1 1 auto; }
+.hist-row .btn { flex: 0 0 auto; }

@@ -104,6 +104,16 @@
   let lastRun = null; // { fingerprint, findingIds: Set }
   let staleTimer = null;
 
+  /* What changed the graph since the last assessment. The server sees only a
+   * different Turtle document and cannot tell an applied control from a hand
+   * edit, so the label has to be set where the action happens. It is the part
+   * that makes a history readable rather than a column of numbers. */
+  let pendingCause = null;
+
+  function noteChange(cause) {
+    pendingCause = cause;
+  }
+
   function setStale(isStale) {
     $("#findings-stale").classList.toggle("hidden", !isStale);
   }
@@ -140,6 +150,66 @@
     badge.textContent = parts.join(" · ");
     badge.classList.toggle("dirty", Boolean(kb.dirty));
     badge.classList.remove("hidden");
+  }
+
+  // ---- version history -------------------------------------------------------
+
+  function shortTime(iso) {
+    const at = new Date(iso);
+    return Number.isNaN(at.getTime()) ? "" : at.toLocaleString();
+  }
+
+  function deltaChip(delta) {
+    if (!delta) return el("span", { class: "hist-delta" }, "first run");
+    if (!delta.cleared && !delta.raised) return el("span", { class: "hist-delta" }, "no change");
+    const parts = [];
+    if (delta.cleared) parts.push(`−${delta.cleared}`);
+    if (delta.raised) parts.push(`+${delta.raised}`);
+    return el(
+      "span",
+      { class: delta.raised ? "hist-delta raised" : "hist-delta cleared" },
+      parts.join(" ")
+    );
+  }
+
+  function renderHistory() {
+    const versions = VersionHistory.list();
+    const list = $("#history-list");
+    const empty = $("#history-empty");
+    list.innerHTML = "";
+    $("#history-count").textContent = versions.length ? String(versions.length) : "";
+    empty.classList.toggle("hidden", versions.length > 0);
+
+    versions.forEach((version) => {
+      const current = lastRun && lastRun.fingerprint === version.fingerprint;
+      const row = el("div", { class: current ? "hist-row current" : "hist-row" }, [
+        el("span", { class: "hist-v" }, `v${version.v}`),
+        el("span", { class: "hist-at" }, shortTime(version.at)),
+        el("span", { class: "hist-counts" },
+          `${version.counts.findings ?? "?"} findings · ${version.counts.matches ?? "?"} matches`),
+        deltaChip(version.delta),
+        el("span", { class: "hist-cause" }, version.cause || ""),
+      ]);
+
+      /* Restoring puts the graph back and leaves it there. It deliberately does
+       * not re-assess: an assessment is ~2.6 s and re-running one the user did
+       * not ask for would make browsing the history feel like work. The stale
+       * badge then says exactly what is true - these findings are from a run,
+       * and this graph is that run's graph. */
+      if (version.ttl && !current) {
+        const restore = el("button", { class: "btn small", type: "button" }, "Restore");
+        restore.addEventListener("click", () => {
+          noteChange(`restored v${version.v}`);
+          Editor.setValue(version.ttl);
+          setStatus("ok", `Restored v${version.v}`,
+            `${version.counts.findings ?? "?"} findings when it was assessed`);
+        });
+        row.appendChild(restore);
+      } else if (!version.ttl) {
+        row.appendChild(el("span", { class: "hint" }, "graph dropped to save space"));
+      }
+      list.appendChild(row);
+    });
   }
 
   // ---- live preview ----------------------------------------------------------
@@ -368,6 +438,20 @@
         findingIds: new Set(data.findings.map((f) => f.id)),
       };
       setStale(false);
+      VersionHistory.record({
+        fingerprint: data.run.inputFingerprint,
+        knowledgeBase: data.run.knowledgeBase,
+        counts: {
+          findings: data.summary.riskFindingCount,
+          matches: data.summary.motifMatchCount,
+          derived: data.summary.derivedCategoryCount,
+        },
+        findingIds: data.findings.map((f) => f.id),
+        ttl: Editor.getValue(),
+        cause: pendingCause,
+      });
+      pendingCause = null;
+      renderHistory();
     }
     renderKnowledgeBaseBadge(data.run);
 
@@ -727,6 +811,7 @@ ex:Generate a beam:Transform ;
         const { ttl } = await postJson("/api/graph-edit", {
           ttl: Editor.getValue(), op: "edit-element", element: elementId, ...edit,
         });
+        noteChange("edited an element");
         Editor.setValue(ttl);
         setStatus("ok", "Element updated — Run assessment to see findings");
       } catch (error) {
@@ -742,6 +827,7 @@ ex:Generate a beam:Transform ;
         const { ttl } = await postJson("/api/graph-edit", {
           ttl: Editor.getValue(), op: "delete-element", element: elementId,
         });
+        noteChange("deleted an element");
         Editor.setValue(ttl);
         setStatus("ok", "Element deleted");
       } catch (error) {
@@ -758,6 +844,7 @@ ex:Generate a beam:Transform ;
         const { ttl } = await postJson("/api/graph-edit", {
           ttl: Editor.getValue(), op: "add-edge", ...triple,
         });
+        noteChange(`connected: ${triple.predicate}`);
         Editor.setValue(ttl);
         setStatus("ok", `Connected: ${triple.predicate}`);
       } catch (error) {
@@ -786,6 +873,7 @@ ex:Generate a beam:Transform ;
           op: "add-element", classUri: BEAM_NS + item.cls, category: item.cat, label: item.label,
         });
         if (newId && clientX != null) GraphView.placeNodeAt(newId, clientX, clientY);
+        noteChange(`added ${item.label}`);
         Editor.setValue(ttl);
         setStatus("ok", `Added ${item.label} — click it to edit, drag its ▸ port to connect`);
       } catch (error) {
@@ -879,6 +967,7 @@ ex:Generate a beam:Transform ;
           setStatus("ok", `"${control.label}" is already in place on this path.`);
           return;
         }
+        noteChange(`applied ${control.label}`);
         Editor.setValue(ttl);
         GraphView.setHighlight(newIds || []);
         setStatus("busy", `Applied "${control.label}" - re-assessing...`);
@@ -901,6 +990,7 @@ ex:Generate a beam:Transform ;
           ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
           op: "add-motif", motif: item.id,
         });
+        noteChange(`added motif: ${item.label}`);
         Editor.setValue(ttl);
         setStatus("ok", `Added "${item.label}" — already annotated; Run assessment for findings`);
       } catch (error) {
@@ -943,6 +1033,29 @@ ex:Generate a beam:Transform ;
 
     initPalette();
     initMotifPalette(vocabulary.motifTemplates || []);
+    renderHistory();
+
+    $("#btn-history-clear").addEventListener("click", () => {
+      if (!VersionHistory.list().length) return;
+      if (!window.confirm("Delete every recorded version from this browser? This cannot be undone.")) return;
+      VersionHistory.clear();
+      renderHistory();
+      setStatus("ok", "History cleared");
+    });
+
+    $("#btn-history-export").addEventListener("click", () => {
+      const versions = VersionHistory.list();
+      if (!versions.length) { setStatus("error", "No history to export."); return; }
+      /* JSON, not RDF. The per-run "Export assessment" already produces the RDF
+       * record, and because an input entity's IRI is its fingerprint, several of
+       * those exports loaded together compare by construction - that is the
+       * durable, shareable form. This is the working log beside it. */
+      downloadBlob(
+        new Blob([JSON.stringify(versions, null, 2)], { type: "application/json" }),
+        `${exportBaseName()}-history.json`
+      );
+      setStatus("ok", `Exported ${versions.length} versions`);
+    });
 
     try {
       const examples = await api("/api/examples");
@@ -967,6 +1080,7 @@ ex:Generate a beam:Transform ;
       if (!name) return;
       try {
         const { ttl } = await api(`/api/examples/${encodeURIComponent(name)}`);
+        noteChange(`loaded example: ${name}`);
         Editor.setValue(ttl);
         setStatus("ok", `Loaded example: ${name}`);
       } catch (error) {
@@ -985,6 +1099,7 @@ ex:Generate a beam:Transform ;
       reader.onload = async () => {
         const text = String(reader.result);
         if (!text.includes("tool4boxology.org")) {
+          noteChange(`opened file: ${file.name}`);
           Editor.setValue(text);
           setStatus("ok", `Loaded file: ${file.name}`);
           return;
@@ -993,6 +1108,7 @@ ex:Generate a beam:Transform ;
         try {
           const fmt = /\.nt$/i.test(file.name) ? "nt" : "turtle";
           const { ttl, warnings } = await postJson("/api/import/t4b", { data: text, format: fmt });
+          noteChange(`imported Tool4Boxology export: ${file.name}`);
           Editor.setValue(ttl);
           setStatus("ok", `Imported ${file.name} — ${(warnings || []).length} normalization note(s). ` +
             "The export carries no roles: use the Annotate tab so motifs can match.");
@@ -1005,6 +1121,7 @@ ex:Generate a beam:Transform ;
     });
 
     $("#btn-starter").addEventListener("click", () => {
+      noteChange("starter graph");
       Editor.setValue(STARTER_TTL);
       setStatus("ok", "Starter graph loaded");
     });
