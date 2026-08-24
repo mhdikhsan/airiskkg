@@ -795,3 +795,36 @@ label.btn { display: inline-flex; align-items: center; }
 /* Overflow counter on the taxonomy chip row: a real control, not a label. */
 .chip.chip-more { cursor: pointer; font: inherit; }
 .chip.chip-more:hover { border-color: var(--accent); color: var(--text); }
+
+/* ---- run identity ---------------------------------------------------------
+ * Which library answered, and whether the answer still describes the graph on
+ * screen. Both are invisible without this: the drawer keeps showing the last
+ * run's findings while the editor moves on, and a .ttl edited on disk is not
+ * reloaded by Flask's reloader, which watches Python only. */
+
+.kb-badge {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.kb-badge.dirty { border-color: var(--warn); color: var(--warn); }
+
+.drawer-tab .stale {
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--warn);
+  border: 1px solid var(--warn);
+  border-radius: 3px;
+  padding: 0 4px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+
+.summary-row .delta { color: var(--good); }
+.summary-row .delta.raised { color: var(--warn); }

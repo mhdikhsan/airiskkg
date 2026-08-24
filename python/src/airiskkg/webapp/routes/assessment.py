@@ -43,6 +43,7 @@ def assess() -> object:
     if not ttl:
         return jsonify({"error": "Provide an architecture graph (Turtle) to assess."}), 400
     try:
+        architecture = Graph().parse(data=ttl, format="turtle")
         with SPARQL_LOCK:
             result = run_assessment_from_text(ttl)
         # Outside the lock on purpose: the gap report runs no SPARQL, it walks
@@ -51,7 +52,7 @@ def assess() -> object:
         gaps = motif_gaps(ttl)
     except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
         return jsonify({"error": f"Could not run assessment: {error}"}), 400
-    summary = summarize_result(result)
+    summary = summarize_result(result, architecture=architecture)
     # why the near-miss motifs did not match, so an empty or thin result set
     # is actionable instead of silent
     summary["motifGaps"] = gaps

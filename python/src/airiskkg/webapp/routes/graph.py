@@ -7,6 +7,7 @@ from rdflib import RDF, RDFS, Graph, Literal, Namespace, URIRef
 
 from airiskkg.assessment_runner import BEAM, PAIR
 from airiskkg.graph_view import graph_view
+from airiskkg.knowledge_base import graph_fingerprint
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.workbench.templates import motif_templates
 from airiskkg.workbench.terms import PROCESS_CLASS_NAMES
@@ -39,6 +40,26 @@ def read_graph() -> object:
         return jsonify(graph_view(ttl))
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
+
+
+@graph_routes.post("/api/fingerprint")
+def fingerprint() -> object:
+    """The canonical fingerprint of a graph, without assessing it.
+
+    So the UI can tell whether the findings on screen still describe the graph in
+    the editor. Comparing the Turtle as text would not do: every canvas edit and
+    every annotation re-serializes the whole document through rdflib, so the text
+    changes constantly while the graph often does not - and a staleness warning
+    that cries wolf after each click is one people learn to ignore."""
+    payload = request.get_json(silent=True) or {}
+    ttl = (payload.get("ttl") or "").strip()
+    if not ttl:
+        return jsonify({"error": "Provide an architecture graph (Turtle) to fingerprint."}), 400
+    try:
+        parsed = _parsed(ttl)
+    except Exception as error:  # noqa: BLE001 - surface parse errors to the UI
+        return jsonify({"error": f"Could not parse the graph: {error}"}), 400
+    return jsonify({"fingerprint": graph_fingerprint(parsed), "tripleCount": len(parsed)})
 
 
 @graph_routes.post("/api/import/t4b")

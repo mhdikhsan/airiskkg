@@ -1,6 +1,7 @@
 from __future__ import annotations
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 from airiskkg.assessment_runner import PAIR, AssessmentResult, applicable_controls
+from airiskkg.knowledge_base import graph_fingerprint
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 PROV = Namespace("http://www.w3.org/ns/prov#")
@@ -247,7 +248,29 @@ def _derived_categories(result: AssessmentResult) -> list[dict]:
     )
 
 
-def summarize_result(result: AssessmentResult) -> dict:
+def _run_view(result: AssessmentResult, architecture: Graph | None) -> dict:
+    """What this run ran on, in the shape the UI needs.
+
+    The same identity the export records, surfaced live. Without it the drawer
+    shows findings for whatever graph was last submitted, while the editor beside
+    it has moved on - and nothing on screen says so. The export endpoint already
+    works around that by re-running rather than caching; this lets the UI notice
+    instead."""
+    view: dict = {}
+    if architecture is not None:
+        view["inputFingerprint"] = graph_fingerprint(architecture)
+    if result.version is not None:
+        view["knowledgeBase"] = {
+            "fingerprint": result.version.short,
+            "revision": (result.version.revision or "")[:7] or None,
+            "dirty": result.version.dirty,
+            "motifs": result.version.motifs,
+            "riskPatterns": result.version.risk_patterns,
+        }
+    return view
+
+
+def summarize_result(result: AssessmentResult, *, architecture: Graph | None = None) -> dict:
     findings = sorted(result.risk_findings.subjects(RDF.type, PAIR.RiskFinding), key=str)
     matches = sorted(result.motif_matches.subjects(RDF.type, PAIR.MotifMatch), key=str)
     derived = _derived_categories(result)
@@ -263,4 +286,5 @@ def summarize_result(result: AssessmentResult) -> dict:
         "findings": [_finding_view(result.combined_graph, finding) for finding in findings],
         "motifMatches": [_motif_match_view(result.combined_graph, match) for match in matches],
         "derivedCategories": derived,
+        "run": _run_view(result, architecture),
     }

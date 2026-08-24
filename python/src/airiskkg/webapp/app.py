@@ -8,6 +8,10 @@ Reading the graph
                                      flagged ``local`` or not.
     ``GET  /api/examples/<name>``    Raw Turtle for one of them.
     ``POST /api/graph``              Turtle -> nodes/edges/systems for the canvas.
+    ``POST /api/fingerprint``        Canonical fingerprint of a graph, without
+                                     assessing it — so the UI can tell whether
+                                     the findings on screen still describe the
+                                     graph in the editor.
 Editing the graph — each returns the rewritten Turtle, which the editor adopts
     ``POST /api/annotate``           Replace roles/categories on named elements.
     ``POST /api/graph-edit``         One structural edit: add-element, add-edge,

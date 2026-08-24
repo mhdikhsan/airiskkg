@@ -11,6 +11,7 @@
     <div class="brand">
       <h1>PAIR-AI</h1>
       <span class="subtitle">Architecture workbench &mdash; edit the graph on the left, preview it live on the right</span>
+      <span class="kb-badge hidden" id="kb-badge" title="The library that produced the findings on screen. Editing a .ttl while the server runs does not reload it, so this is how you tell which version answered."></span>
     </div>
     <div class="toolbar">
       <select id="example-select" title="Load a bundled example">
@@ -88,7 +89,7 @@
       <div class="drawer collapsed" id="drawer">
         <div class="drawer-head" id="drawer-head">
           <div class="drawer-tabs">
-            <button type="button" class="drawer-tab active" data-drawer-tab="findings">Findings <span class="count" id="findings-count"></span></button>
+            <button type="button" class="drawer-tab active" data-drawer-tab="findings">Findings <span class="count" id="findings-count"></span><span class="stale hidden" id="findings-stale" title="The graph in the editor has changed since these findings were produced. Run the assessment again.">stale</span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="motifs">Motifs <span class="count" id="motifs-count" title="matched motifs"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="derived">Data flow <span class="count" id="derived-count" title="data categories the engine inferred by following the flow — annotated ones are not counted"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="annotate">Annotate <span class="count" id="annotate-count" title="elements without a role"></span></button>

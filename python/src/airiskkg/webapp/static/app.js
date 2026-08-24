@@ -87,6 +87,61 @@
     return match ? Number(match[1]) : null;
   }
 
+  /* ---- run identity ---------------------------------------------------------
+   *
+   * Two things about an assessment are invisible while you work, and both
+   * mislead. The drawer keeps showing the last run's findings while the editor
+   * beside it moves on, so you can read findings that describe a graph you have
+   * since changed. And a .ttl edited on disk is not picked up by a running
+   * server - Flask's reloader watches Python only - so the answer may come from
+   * a library you think you replaced.
+   *
+   * The staleness check asks the server for a canonical fingerprint rather than
+   * comparing the Turtle as text. Every canvas edit and every annotation
+   * re-serializes the whole document through rdflib, so the text changes
+   * constantly while the graph often does not, and a warning that cries wolf
+   * after each click is one people learn to ignore. */
+  let lastRun = null; // { fingerprint, findingIds: Set }
+  let staleTimer = null;
+
+  function setStale(isStale) {
+    $("#findings-stale").classList.toggle("hidden", !isStale);
+  }
+
+  function scheduleStaleCheck(ttl) {
+    if (!lastRun) return;
+    clearTimeout(staleTimer);
+    staleTimer = setTimeout(async () => {
+      try {
+        const { fingerprint } = await postJson("/api/fingerprint", { ttl });
+        setStale(fingerprint !== lastRun.fingerprint);
+      } catch (error) {
+        // A graph that will not parse cannot be compared. Say nothing rather
+        // than claim staleness: the parse error is already on screen.
+      }
+    }, 400);
+  }
+
+  function runDelta(findings) {
+    if (!lastRun) return null;
+    const now = new Set(findings.map((f) => f.id));
+    const cleared = [...lastRun.findingIds].filter((id) => !now.has(id)).length;
+    const raised = [...now].filter((id) => !lastRun.findingIds.has(id)).length;
+    return { cleared, raised };
+  }
+
+  function renderKnowledgeBaseBadge(run) {
+    const badge = $("#kb-badge");
+    const kb = run && run.knowledgeBase;
+    if (!kb) { badge.classList.add("hidden"); return; }
+    const parts = [`library ${kb.fingerprint}`];
+    if (kb.revision) parts.push(kb.dirty ? `${kb.revision}+` : kb.revision);
+    parts.push(`${kb.motifs} motifs · ${kb.riskPatterns} risk patterns`);
+    badge.textContent = parts.join(" · ");
+    badge.classList.toggle("dirty", Boolean(kb.dirty));
+    badge.classList.remove("hidden");
+  }
+
   // ---- live preview ----------------------------------------------------------
   let previewSeq = 0;
 
@@ -98,6 +153,7 @@
       setStatus("ok", "Ready");
       return;
     }
+    scheduleStaleCheck(ttl);
     try {
       const data = await postJson("/api/graph", { ttl });
       if (seq !== previewSeq) return; // a newer edit is already in flight
@@ -281,11 +337,39 @@
     $("#findings-empty").classList.add("hidden");
     const summary = $("#findings-summary");
     summary.innerHTML = "";
-    summary.appendChild(el("div", { class: "summary-row" }, [
+
+    /* Against the previous run, by finding id. Finding IRIs are deterministic
+     * by design - so a triage judgement survives a re-run - which also makes
+     * "did the control I just applied actually work" a set difference rather
+     * than a matter of counting rows and hoping. */
+    const delta = runDelta(data.findings);
+    const row = [
       el("span", { class: "stat" }, `${data.summary.riskFindingCount} candidate findings`),
       el("span", { class: "stat" }, `${data.summary.motifMatchCount} motif matches`),
-      el("span", { class: "hint" }, "Click a finding to highlight its evidence in the graph."),
-    ]));
+    ];
+    if (delta && (delta.cleared || delta.raised)) {
+      if (delta.cleared) {
+        row.push(el("span", { class: "stat delta" },
+          `${delta.cleared} cleared since the last run`));
+      }
+      if (delta.raised) {
+        row.push(el("span", { class: "stat delta raised" },
+          `${delta.raised} newly raised`));
+      }
+    } else if (delta) {
+      row.push(el("span", { class: "stat" }, "unchanged since the last run"));
+    }
+    row.push(el("span", { class: "hint" }, "Click a finding to highlight its evidence in the graph."));
+    summary.appendChild(el("div", { class: "summary-row" }, row));
+
+    if (data.run && data.run.inputFingerprint) {
+      lastRun = {
+        fingerprint: data.run.inputFingerprint,
+        findingIds: new Set(data.findings.map((f) => f.id)),
+      };
+      setStale(false);
+    }
+    renderKnowledgeBaseBadge(data.run);
 
     const list = $("#findings-list");
     list.innerHTML = "";

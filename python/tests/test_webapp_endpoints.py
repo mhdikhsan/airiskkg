@@ -531,3 +531,91 @@ def test_a_risk_firing_on_several_paths_needs_a_control_on_each(client) -> None:
             "ttl": ttl, "control": control["id"], "finding": finding["id"],
         }).get_json()["ttl"]
     assert counts == sorted(counts, reverse=True) and counts[0] > counts[-1], counts
+
+
+# --- run identity in the UI ---------------------------------------------------
+#
+# Two things about an assessment are invisible while you work, and both mislead:
+# the drawer keeps showing the last run's findings while the editor moves on,
+# and a .ttl edited on disk is not reloaded by a running server.
+
+
+def _onyx_ttl() -> str:
+    return example_path(ONYX_NS).read_text(encoding="utf-8")
+
+
+def test_an_assessment_says_what_it_ran_on(client) -> None:
+    response = client.post("/api/assess", json={"ttl": _onyx_ttl()})
+    run = response.get_json()["run"]
+
+    assert run["inputFingerprint"]
+    assert run["knowledgeBase"]["motifs"] > 0
+    assert run["knowledgeBase"]["riskPatterns"] > 0
+    assert run["knowledgeBase"]["fingerprint"]
+
+
+def test_the_fingerprint_endpoint_agrees_with_the_run(client) -> None:
+    """Otherwise the staleness check compares two different things and either
+    never fires or never stops firing."""
+    ttl = _onyx_ttl()
+    assessed = client.post("/api/assess", json={"ttl": ttl}).get_json()
+    probed = client.post("/api/fingerprint", json={"ttl": ttl}).get_json()
+
+    assert probed["fingerprint"] == assessed["run"]["inputFingerprint"]
+    assert probed["tripleCount"] > 0
+
+
+def test_reserializing_the_graph_does_not_look_like_an_edit(client) -> None:
+    """Every canvas edit and every annotation re-serializes the whole document
+    through rdflib, so the Turtle changes constantly while the graph does not. A
+    staleness warning that fires on each click is one people learn to ignore."""
+    ttl = _onyx_ttl()
+    reserialized = flask.json.loads(
+        client.post(
+            "/api/graph-edit",
+            json={"ttl": ttl, "op": "add-edge", "subject": "urn:x", "predicate": "inform", "object": "urn:y"},
+        ).data
+    )["ttl"]
+
+    before = client.post("/api/fingerprint", json={"ttl": ttl}).get_json()["fingerprint"]
+    after = client.post("/api/fingerprint", json={"ttl": reserialized}).get_json()["fingerprint"]
+    assert before != after, "adding an edge is a real change and must register"
+
+    round_tripped = flask.json.loads(
+        client.post(
+            "/api/annotate", json={"ttl": ttl, "annotations": {}}
+        ).data
+    )["ttl"]
+    unchanged = client.post("/api/fingerprint", json={"ttl": round_tripped}).get_json()["fingerprint"]
+    assert unchanged == before, "a no-op annotation reserialized the text but changed no triple"
+
+
+def test_applying_a_control_moves_the_input_fingerprint_and_clears_findings(client) -> None:
+    """The loop the drawer reports on: what did the control I just applied do?
+    Answerable as a set difference because finding IRIs are deterministic."""
+    ttl = _onyx_ttl()
+    first = client.post("/api/assess", json={"ttl": ttl}).get_json()
+    before = {finding["id"] for finding in first["findings"]}
+
+    choice = next(
+        (finding, control)
+        for finding in first["findings"]
+        for control in finding["suggestedControls"]
+        if control.get("applicable")
+    )
+    finding, control = choice
+    amended = client.post(
+        "/api/apply-control",
+        json={"ttl": ttl, "control": control["id"], "finding": finding["id"]},
+    ).get_json()["ttl"]
+
+    second = client.post("/api/assess", json={"ttl": amended}).get_json()
+    after = {item["id"] for item in second["findings"]}
+
+    assert second["run"]["inputFingerprint"] != first["run"]["inputFingerprint"]
+    assert before - after, "applying a control cleared nothing"
+    assert second["run"]["knowledgeBase"]["fingerprint"] == first["run"]["knowledgeBase"]["fingerprint"]
+
+
+def test_fingerprinting_nothing_is_refused(client) -> None:
+    assert client.post("/api/fingerprint", json={"ttl": "  "}).status_code == 400
