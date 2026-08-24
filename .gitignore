@@ -12,6 +12,7 @@ pytest-cache-files-*/
 build/
 dist/
 docs/notes/
+docs/evaluation/
 CHANGELOG_data_model.md
 
 docs/example_UC/
