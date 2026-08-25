@@ -439,3 +439,47 @@ def test_a_version_can_be_read_without_being_restored(page) -> None:
     assert opened["before"] == opened["after"], (
         "reading a version changed the graph - that is restoring, not reading"
     )
+
+
+def test_clicking_a_plain_activity_opens_an_editor_for_it(page) -> None:
+    """The popup existed and was unreachable.
+
+    A rule meant to keep the architecture's node popup off the business canvas
+    matched on `.node-detail`, and the process popup is one - so every BPMN
+    activity opened a panel with `display: none`. Nothing threw, nothing
+    logged, and the only way to attach data to an activity was to write three
+    BPMN nodes into the Turtle by hand.
+    """
+    loop, handle = page
+    _back_to_business(loop, handle)
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const plain = [...document.querySelectorAll('.pc-activity')]
+            .filter((b) => !b.classList.contains('refined'))[0];
+        if (!plain) return null;
+        const r = plain.querySelector('.pc-box').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 12) };
+    })()"""))
+    assert at, "no plain activity on the business canvas to click"
+
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const panel = document.querySelector('#process-detail');
+        return {
+            hidden: panel.classList.contains('hidden'),
+            display: getComputedStyle(panel).display,
+            fields: ['#pd-name', '#pd-refines', '#pd-data-add'].filter((s) => panel.querySelector(s)),
+            dataRows: panel.querySelectorAll('.pd-data').length,
+            classes: panel.querySelectorAll('#pd-data-class option').length,
+        };
+    })()"""))
+
+    assert not seen["hidden"], "clicking the activity did not open its editor"
+    assert seen["display"] != "none", (
+        "the editor opened but CSS hides it on the business level - which is the bug"
+    )
+    assert len(seen["fields"]) == 3, f"the editor is missing controls: {seen['fields']}"
+    assert seen["classes"] > 0, "the data classification picker has no options"
+
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#process-detail").classList.add("hidden")'))

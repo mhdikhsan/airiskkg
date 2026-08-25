@@ -722,6 +722,82 @@ label.btn { display: inline-flex; align-items: center; }
 .node-detail .mp-x { color: #8a93a5; }
 .node-detail .mp-x:hover { color: #c0392b; }
 
+/* The activity popup. Never styled before now, because a rule meant to hide
+   the architecture's popup on the business level was hiding this one too - so
+   editing a BPMN activity was unreachable rather than missing. */
+#process-detail { width: min(330px, calc(100% - 24px)); }
+#process-detail .nd-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7c8698;
+  margin-bottom: 8px;
+}
+#process-detail .nd-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+#process-detail .nd-row > span { flex: none; width: 84px; color: #7c8698; font-size: 11.5px; }
+#process-detail .nd-row input,
+#process-detail .nd-row select {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid #c6ccd8;
+  border-radius: 5px;
+  padding: 3px 5px;
+  font-size: 12px;
+  background: #fff;
+  color: #2a2f38;
+}
+#process-detail .nd-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+/* The data an activity reads and writes, in the activity's own popup. */
+.pd-section {
+  margin: 10px 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7c8698;
+}
+.pd-empty { color: #8a93a5; font-size: 11.5px; padding: 2px 0 4px; }
+.pd-data { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+.pd-dir {
+  flex: none;
+  width: 40px;
+  font-size: 10.5px;
+  color: #9a6b1f;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.pd-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pd-class, .pd-add select, .pd-add input {
+  border: 1px solid #c6ccd8;
+  border-radius: 5px;
+  padding: 2px 4px;
+  font-size: 11px;
+  background: #fff;
+  color: #2a2f38;
+  max-width: 108px;
+}
+.pd-drop {
+  flex: none;
+  border: none;
+  background: none;
+  color: #8a93a5;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.pd-drop:hover { color: #c0392b; }
+.pd-add { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+.pd-add input { flex: 1 1 auto; min-width: 0; }
+
 .validation-row {
   display: flex;
   align-items: baseline;
@@ -1011,7 +1087,7 @@ label.btn { display: inline-flex; align-items: center; }
 .canvas-wrap.business .canvas-empty,
 .canvas-wrap.business .legend,
 .canvas-wrap.business .system-badge,
-.canvas-wrap.business .node-detail { display: none !important; }
+.canvas-wrap.business .node-detail:not(#process-detail) { display: none !important; }
 
 /* ---- drawing the business layer ------------------------------------------- */
 

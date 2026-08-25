@@ -7,7 +7,7 @@ from airiskkg.assessment_runner import BEAM, PAIR
 from airiskkg.graph_view import graph_view
 from airiskkg.knowledge_base import graph_fingerprint
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
-from airiskkg.workbench.process_view import process_view
+from airiskkg.workbench.process_view import DATA_CLASSES, process_view
 from airiskkg.workbench.templates import motif_templates
 from airiskkg.workbench.terms import PROCESS_CLASS_NAMES
 
@@ -272,6 +272,9 @@ ACTIVITY_KINDS = {
 }
 
 
+DPV = Namespace("https://w3id.org/dpv#")
+
+
 def _fresh(data: Graph, prefix: str) -> URIRef:
     existing = {str(s) for s in data.subjects()}
     index = 1
@@ -298,7 +301,8 @@ def process_edit() -> object:
     """Structural edits to the business layer, mirroring /api/graph-edit.
 
     Body: {ttl, op, ...}. Ops: add-pool, add-activity, connect, set-refines,
-    rename, delete. Returns the rewritten Turtle, which the editor adopts.
+    add-data, classify-data, detach-data, rename, delete. Returns the rewritten
+    Turtle, which the editor adopts.
     """
     payload = request.get_json(silent=True) or {}
     ttl = (payload.get("ttl") or "").strip()
@@ -365,6 +369,104 @@ def process_edit() -> object:
         if system:
             data.add((URIRef(activity), PAIR.refinedBy, URIRef(system)))
         new_id = activity
+
+    elif op == "add-data":
+        activity = payload.get("activity")
+        direction = payload.get("direction")
+        if not activity or direction not in ("in", "out"):
+            return jsonify({"error": "add-data needs an activity and a direction."}), 400
+        classification = payload.get("classification") or ""
+        if classification and classification not in DATA_CLASSES:
+            return jsonify({"error": f"Unknown data classification: {classification}"}), 400
+
+        node = URIRef(activity)
+        label = (payload.get("label") or "Data").strip()
+        obj = _fresh(data, "data")
+        reference = _fresh(data, "dataref")
+        data.add((obj, RDF.type, BPMN.dataObject))
+        data.add((obj, BP.name, Literal(label)))
+        data.add((reference, RDF.type, BPMN.dataObjectReference))
+        data.add((reference, BP.dataObjectRef, obj))
+        if payload.get("collection"):
+            data.add((obj, BP.isCollection, Literal(True)))
+        if classification:
+            item = _fresh(data, "item")
+            data.add((item, RDF.type, BPMN.itemDefinition))
+            data.add((item, BP.structureRef, DPV[classification]))
+            data.add((obj, BP.itemSubjectRef, item))
+
+        # BPMN puts the association on the activity and gives it both ends; the
+        # bridge query reads sourceRef/targetRef, so writing only one side would
+        # draw an arrow that derives nothing.
+        association = _fresh(data, "dassoc")
+        if direction == "in":
+            data.add((association, RDF.type, BPMN.dataInputAssociation))
+            data.add((association, BP.sourceRef, reference))
+            data.add((association, BP.targetRef, node))
+            data.add((node, BP.dataInputAssociation, association))
+        else:
+            data.add((association, RDF.type, BPMN.dataOutputAssociation))
+            data.add((association, BP.sourceRef, node))
+            data.add((association, BP.targetRef, reference))
+            data.add((node, BP.dataOutputAssociation, association))
+        new_id = str(reference)
+
+    elif op == "classify-data":
+        reference = payload.get("reference")
+        classification = payload.get("classification") or ""
+        if not reference:
+            return jsonify({"error": "classify-data needs a data reference."}), 400
+        if classification and classification not in DATA_CLASSES:
+            return jsonify({"error": f"Unknown data classification: {classification}"}), 400
+        ref = URIRef(reference)
+        obj = data.value(ref, BP.dataObjectRef) or data.value(ref, BP.dataStoreRef) or ref
+        item = data.value(obj, BP.itemSubjectRef)
+        if classification and item is None:
+            item = _fresh(data, "item")
+            data.add((item, RDF.type, BPMN.itemDefinition))
+            data.add((obj, BP.itemSubjectRef, item))
+        if item is not None:
+            data.remove((item, BP.structureRef, None))
+            if classification:
+                data.add((item, BP.structureRef, DPV[classification]))
+        new_id = str(ref)
+
+    elif op == "detach-data":
+        reference = payload.get("reference")
+        activity = payload.get("activity")
+        if not (reference and activity):
+            return jsonify({"error": "detach-data needs a reference and an activity."}), 400
+        ref, node = URIRef(reference), URIRef(activity)
+        for prop in (BP.dataInputAssociation, BP.dataOutputAssociation):
+            for association in list(data.objects(node, prop)):
+                ends = set(data.objects(association, BP.sourceRef)) | set(
+                    data.objects(association, BP.targetRef)
+                )
+                if ref not in ends:
+                    continue
+                data.remove((node, prop, association))
+                for triple in list(data.triples((association, None, None))):
+                    data.remove(triple)
+        # The object itself goes only when nothing else reads or writes it: a
+        # data object reference is shared on purpose, and removing it from one
+        # activity must not take it away from another.
+        still_used = any(
+            ref in (set(data.objects(a, BP.sourceRef)) | set(data.objects(a, BP.targetRef)))
+            for a in data.subjects(RDF.type, BPMN.dataInputAssociation)
+        ) or any(
+            ref in (set(data.objects(a, BP.sourceRef)) | set(data.objects(a, BP.targetRef)))
+            for a in data.subjects(RDF.type, BPMN.dataOutputAssociation)
+        )
+        if not still_used:
+            obj = data.value(ref, BP.dataObjectRef)
+            item = data.value(obj, BP.itemSubjectRef) if obj is not None else None
+            for victim in [ref, obj, item]:
+                if victim is None:
+                    continue
+                for triple in list(data.triples((victim, None, None))):
+                    data.remove(triple)
+                for triple in list(data.triples((None, None, victim))):
+                    data.remove(triple)
 
     elif op == "rename":
         element = payload.get("element")

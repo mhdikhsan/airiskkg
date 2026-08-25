@@ -24,6 +24,7 @@ let expanded = new Set();   // subprocesses opened in place
 let onOpenArchitecture = null;
 let onEdit = null;            // (op, payload) -> Promise, applied server-side
 let systems = [];             // architectures a activity may be refined by
+let dataClasses = [];         // what a data object may be classified as
 let selectedPool = null;      // where a new activity lands
 let connecting = null;        // drag in progress: { from, line }
 let swallowNextClick = false; // a pan ends in a click the reader did not mean
@@ -491,27 +492,83 @@ function closeDetail() {
   if (panel) panel.classList.add("hidden");
 }
 
+function escapeHtml(value) {
+  return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+}
+
+function classOptions(selected) {
+  return ['<option value="">— not classified —</option>']
+    .concat(dataClasses.map((c) =>
+      `<option value="${c.id}"${c.id === selected ? " selected" : ""}>${escapeHtml(c.label)}</option>`))
+    .join("");
+}
+
+/* The data rows are why this panel exists at all now: a classification on a
+ * data object is what business_data_bridge.rq turns into a data category on the
+ * architecture, and it was previously only reachable by hand-writing three
+ * BPMN nodes in Turtle. */
+function dataRows(activity) {
+  const items = dataOf(activity);
+  if (!items.length) return '<div class="pd-empty">No data attached yet.</div>';
+  return items.map((item) => `
+    <div class="pd-data" data-ref="${escapeHtml(item.id)}">
+      <span class="pd-dir">${item.direction === "in" ? "reads" : "writes"}</span>
+      <span class="pd-name" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</span>
+      <select class="pd-class">${classOptions(item.kinds[0] || "")}</select>
+      <button type="button" class="pd-drop" title="Detach this data from the activity">×</button>
+    </div>`).join("");
+}
+
 function showDetail(activity, ev) {
   const panel = document.querySelector("#process-detail");
   if (!panel) return;
   const options = ['<option value="">— not an AI activity —</option>']
     .concat(systems.map((s) =>
-      `<option value="${s.id}"${activity.refines.includes(s.id) ? " selected" : ""}>${s.label}</option>`))
+      `<option value="${s.id}"${activity.refines.includes(s.id) ? " selected" : ""}>${escapeHtml(s.label)}</option>`))
     .join("");
   panel.innerHTML = `
     <div class="nd-head">${activity.kind}</div>
     <label class="nd-row"><span>Name</span>
-      <input type="text" id="pd-name" value="${activity.label.replace(/"/g, "&quot;")}" /></label>
+      <input type="text" id="pd-name" value="${escapeHtml(activity.label)}" /></label>
     <label class="nd-row"><span>Carried out by</span>
       <select id="pd-refines">${options}</select></label>
+    <div class="pd-section">Data</div>
+    ${dataRows(activity)}
+    <div class="pd-add">
+      <select id="pd-dir"><option value="in">reads</option><option value="out">writes</option></select>
+      <input type="text" id="pd-data-name" placeholder="name of the data" />
+      <select id="pd-data-class">${classOptions("")}</select>
+      <button type="button" class="btn small" id="pd-data-add">Add</button>
+    </div>
     <div class="nd-actions">
       <button type="button" class="btn small primary" id="pd-apply">Apply</button>
       <button type="button" class="btn small" id="pd-delete">Delete</button>
     </div>`;
   panel.classList.remove("hidden");
   const rect = svg.getBoundingClientRect();
-  panel.style.left = `${Math.min(ev.clientX - rect.left + 12, rect.width - 260)}px`;
-  panel.style.top = `${Math.min(ev.clientY - rect.top + 12, rect.height - 200)}px`;
+  panel.style.left = `${Math.min(ev.clientX - rect.left + 12, rect.width - 300)}px`;
+  panel.style.top = `${Math.max(8, Math.min(ev.clientY - rect.top + 12, rect.height - 300))}px`;
+
+  panel.querySelectorAll(".pd-data").forEach((row) => {
+    const reference = row.dataset.ref;
+    row.querySelector(".pd-class").addEventListener("change", async (event) => {
+      closeDetail();
+      await onEdit("classify-data", { reference, classification: event.target.value });
+    });
+    row.querySelector(".pd-drop").addEventListener("click", async () => {
+      closeDetail();
+      await onEdit("detach-data", { reference, activity: activity.id });
+    });
+  });
+
+  panel.querySelector("#pd-data-add").addEventListener("click", async () => {
+    const label = panel.querySelector("#pd-data-name").value.trim();
+    if (!label) return;
+    const direction = panel.querySelector("#pd-dir").value;
+    const classification = panel.querySelector("#pd-data-class").value;
+    closeDetail();
+    await onEdit("add-data", { activity: activity.id, direction, label, classification });
+  });
 
   panel.querySelector("#pd-apply").addEventListener("click", async () => {
     const name = panel.querySelector("#pd-name").value.trim();
@@ -736,6 +793,7 @@ function init(options) {
 }
 
 function setSystems(list) { systems = list || []; }
+function setDataClasses(list) { dataClasses = list || []; }
 
 /** Candidate risks per business activity, from the last assessment. */
 function setFindings(rows) {
@@ -760,4 +818,4 @@ function hasProcess() {
   return Boolean(data && data.stats && data.stats.activities);
 }
 
-export const ProcessCanvas = { init, render, fit, hasProcess, setSystems, setFindings, svgRoot: () => svg };
+export const ProcessCanvas = { init, render, fit, hasProcess, setSystems, setDataClasses, setFindings, svgRoot: () => svg };

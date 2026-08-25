@@ -70,6 +70,7 @@ async function init() {
     onEdit: applyEdit, onDelete: applyDelete, onConnect: applyConnect, onStatus: setStatus,
     onSelect: (id) => revealInSource([id]),
   });
+  ProcessCanvas.setDataClasses(vocabulary.dataClasses || []);
   Annotate.init({ vocabulary, onStatus: setStatus });
 
   initPalette();

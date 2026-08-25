@@ -23,6 +23,25 @@ BPMN = "https://sBPMN.github.io/2.0/classes#"
 BP = "https://sBPMN.github.io/2.0/properties#"
 
 
+# What the data classification picker offers, and nothing beyond it.
+#
+# business_data_bridge.rq derives pair:SensitiveInformation from any
+# bp:structureRef except the two that mean "not personal", so both halves of
+# this list are load-bearing: the first four raise a category on the
+# architecture, and the last two are how a modeller says the data was checked
+# and is not personal. Leaving those out would make "no classification" and
+# "deliberately not personal" the same statement, and only one of them is a
+# claim anybody made.
+DATA_CLASSES = {
+    "PersonalData": "Personal data",
+    "SensitivePersonalData": "Sensitive personal data",
+    "SpecialCategoryPersonalData": "Special category personal data",
+    "PseudonymisedData": "Pseudonymised (still personal)",
+    "AnonymisedData": "Anonymised - not personal",
+    "NonPersonalData": "Not personal",
+}
+
+
 def _cls(name: str) -> URIRef:
     return URIRef(BPMN + name)
 
