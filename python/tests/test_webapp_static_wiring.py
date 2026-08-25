@@ -54,8 +54,8 @@ def test_graph_view_exposes_the_export_api_the_app_calls() -> None:
     # The last assignment, not the first mention: a header comment describing
     # the API would otherwise be matched, and a stale comment would then decide
     # what the test believes is exported.
-    assignments = re.findall(r"window\.GraphView\s*=\s*\{([^}]*)\}", graph, re.S)
-    assert assignments, "graph.js no longer assigns window.GraphView"
+    assignments = re.findall(r"export const GraphView\s*=\s*\{([^}]*)\}", graph, re.S)
+    assert assignments, "graph.js no longer exports GraphView"
     names = {name.strip() for name in assignments[-1].replace("\n", " ").split(",")}
     for called in re.findall(r"GraphView\.(\w+)\(", app):
         assert called in names, f"app.js calls GraphView.{called}, which graph.js does not expose"

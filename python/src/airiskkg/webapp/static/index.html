@@ -178,12 +178,8 @@
     </div>
   </div>
 
-  <script src="/static/editor.js"></script>
-  <script src="/static/multipicker.js"></script>
-  <script src="/static/graph.js"></script>
-  <script src="/static/annotate.js"></script>
-  <script src="/static/process_canvas.js"></script>
-  <script src="/static/history.js"></script>
-  <script src="/static/app.js"></script>
+  <!-- One entry point. Modules declare what they need, so load order is a
+       consequence of the imports rather than of this list. -->
+  <script type="module" src="/static/app.js"></script>
 </body>
 </html>

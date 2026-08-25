@@ -23,6 +23,8 @@ from airiskkg.paths import REPO_ROOT
 HISTORY_JS = REPO_ROOT / "python" / "src" / "airiskkg" / "webapp" / "static" / "history.js"
 
 HARNESS = """
+import { pathToFileURL } from "node:url";
+
 const store = {};
 let budget = Number(process.env.BUDGET || 1e9);
 global.window = {
@@ -35,8 +37,9 @@ global.window = {
     removeItem: (k) => { delete store[k]; },
   },
 };
-require(process.env.HISTORY_JS);
-const H = global.window.VersionHistory;
+// Imported dynamically, not with a static import: the stub above has to be in
+// place before the module runs, and static imports are hoisted above it.
+const { VersionHistory: H } = await import(pathToFileURL(process.env.HISTORY_JS).href);
 
 const failures = [];
 const check = (label, cond) => { if (!cond) failures.push(label); };
@@ -84,7 +87,7 @@ console.log("ok");
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not available")
 def test_history_records_versions_computes_deltas_and_sheds_under_quota(tmp_path) -> None:
-    harness = tmp_path / "harness.js"
+    harness = tmp_path / "harness.mjs"
     harness.write_text(HARNESS, encoding="utf-8")
 
     completed = subprocess.run(

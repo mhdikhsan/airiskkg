@@ -121,7 +121,7 @@ def rendered(served):
   window.addEventListener("load", async () => {
     const a = await (await fetch("/api/examples/simple_graph_rag")).json();
     const p = await (await fetch("/api/examples/energy_customer_service")).json();
-    window.Editor.setValue(a.ttl + String.fromCharCode(10,10) + p.ttl);
+    window.PairAI.Editor.setValue(a.ttl + String.fromCharCode(10,10) + p.ttl);
     setTimeout(() => document.querySelector("#level-business").click(), 2500);
   });
   </script>

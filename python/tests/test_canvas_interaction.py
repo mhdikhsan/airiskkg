@@ -45,7 +45,7 @@ def _load_example_probe() -> str:
     const a = await (await fetch("/api/examples/simple_graph_rag")).json();
     const m = await (await fetch("/api/examples/meter_anomaly_scoring")).json();
     const p = await (await fetch("/api/examples/energy_customer_service")).json();
-    window.Editor.setValue(a.ttl + nl + m.ttl + nl + p.ttl);
+    window.PairAI.Editor.setValue(a.ttl + nl + m.ttl + nl + p.ttl);
   });
   </script>
 """
@@ -406,7 +406,7 @@ def test_a_version_can_be_read_without_being_restored(page) -> None:
     # Self-sufficient: a version only exists once something has been assessed,
     # and depending on another test having done it makes this one pass or fail
     # by ordering rather than by behaviour.
-    recorded = loop.run_until_complete(handle.js("window.VersionHistory.list().length"))
+    recorded = loop.run_until_complete(handle.js("window.PairAI.VersionHistory.list().length"))
     if not recorded:
         loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
         time.sleep(9)
@@ -417,7 +417,7 @@ def test_a_version_can_be_read_without_being_restored(page) -> None:
         tab.click();
         const row = document.querySelector('.hist-row');
         if (!row) return { error: "no version rows" };
-        const before = window.Editor.getValue().length;
+        const before = window.PairAI.Editor.getValue().length;
         /* A listener that throws reports as an uncaught error, not to the
          * caller, so try/catch around .click() sees nothing. Trap it. */
         window.__err = null;
@@ -428,7 +428,7 @@ def test_a_version_can_be_read_without_being_restored(page) -> None:
         return {
             error: window.__err,
             before: before,
-            after: window.Editor.getValue().length,
+            after: window.PairAI.Editor.getValue().length,
             preview: !document.querySelector('#history-preview').classList.contains('hidden'),
         };
     })()"""))
