@@ -1316,21 +1316,46 @@ ex:Generate a beam:Transform ;
       try {
         const example = await api(`/api/examples/${encodeURIComponent(name)}`);
         if (example.kind === "process") {
-          /* A process is not an architecture, it is the context one sits in,
-           * and an assessment reads both together. Replacing the editor would
-           * throw away the system the process refers to and leave dangling
-           * references behind. */
-          const current = Editor.getValue().trimEnd();
-          noteChange(`added business process: ${name}`);
-          Editor.setValue(current ? `${current}
+          /* A process names the systems its activities are carried out by and
+           * does not contain them. Loaded on its own it draws a diagram
+           * pointing at architectures that are not there: no nodes, no motifs,
+           * no findings, and nothing on screen saying why.
+           *
+           * So bring what it needs - but only what is not already loaded, so
+           * adding context to a graph someone is working on stays an addition
+           * rather than a reset. */
+          const present = new Set((lastGraph && lastGraph.systems ? lastGraph.systems : []).map((s) => s.id));
+          const wanted = (example.requires || []).filter((r) => r.example && !present.has(r.system));
+          const parts = [];
+          for (const requirement of wanted) {
+            const architecture = await api(`/api/examples/${encodeURIComponent(requirement.example)}`);
+            parts.push(architecture.ttl);
+          }
 
-${example.ttl}` : example.ttl);
+          const current = Editor.getValue().trimEnd();
+          if (current) parts.unshift(current);
+          parts.push(example.ttl);
+
+          noteChange(wanted.length
+            ? `loaded scene: ${name}`
+            : `added business process: ${name}`);
+          Editor.setValue(parts.join(String.fromCharCode(10, 10)));
           openDrawer("process");
+
+          const orphans = example.missing || [];
+          if (orphans.length) {
+            setStatus("error",
+              `${orphans.length} activity target(s) have no bundled architecture`,
+              "the process will draw, but there is nothing to assess for them");
+          } else {
+            setStatus("ok", `Loaded ${name}`,
+              wanted.length ? `with ${wanted.length} architecture(s) it refines` : "added to the current graph");
+          }
         } else {
           noteChange(`loaded example: ${name}`);
           Editor.setValue(example.ttl);
+          setStatus("ok", `Loaded example: ${name}`);
         }
-        setStatus("ok", `Loaded example: ${name}`);
       } catch (error) {
         setStatus("error", error.message);
       }

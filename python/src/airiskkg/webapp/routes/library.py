@@ -2,6 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from flask import Blueprint, current_app, jsonify
 from airiskkg.paths import CONTEXT_EXAMPLE_DIR, EXAMPLE_DIR, EXAMPLE_LOCAL_DIR
+from airiskkg.workbench.scenes import scene_for
 from airiskkg.workbench.vocabulary import vocabulary
 
 library_routes = Blueprint("library", __name__)
@@ -44,7 +45,13 @@ def get_example(name: str) -> object:
     for directory, _is_local, kind in example_dirs():
         path = (directory / f"{name}.ttl").resolve()
         if directory.resolve() in path.parents and path.is_file():
-            return jsonify(
-                {"name": name, "kind": kind, "ttl": path.read_text(encoding="utf-8")}
-            )
+            body = {"name": name, "kind": kind, "ttl": path.read_text(encoding="utf-8")}
+            if kind == "process":
+                # A process names the systems its activities are carried out by
+                # and does not contain them. Loaded on its own it draws a
+                # diagram referring to architectures that are not there - no
+                # nodes, no findings, and nothing saying why - so it says what
+                # it needs and the caller can bring them.
+                body.update(scene_for(path))
+            return jsonify(body)
     return jsonify({"error": "Example not found."}), 404

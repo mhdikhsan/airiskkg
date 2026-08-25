@@ -725,3 +725,23 @@ def test_an_architecture_with_no_process_attributes_nothing(client) -> None:
         "/api/assess", json={"ttl": example_path(ONYX_NS).read_text(encoding="utf-8")}
     ).get_json()
     assert assessed["findingsByActivity"] == []
+
+
+def test_a_process_example_says_which_architectures_it_needs(client) -> None:
+    """A process names the systems its activities are carried out by and does
+    not contain them. Loaded alone it draws a diagram pointing at architectures
+    that are not there - no nodes, no findings, and nothing saying why."""
+    body = client.get("/api/examples/energy_customer_service").get_json()
+
+    assert body["kind"] == "process"
+    assert {row["example"] for row in body["requires"]} == {
+        "simple_graph_rag",
+        "meter_anomaly_scoring",
+    }
+    assert body["missing"] == [], "the shipped process refines something we do not ship"
+
+
+def test_an_architecture_example_needs_nothing(client) -> None:
+    """Only a process depends on other graphs. An architecture is complete."""
+    body = client.get("/api/examples/simple_graph_rag").get_json()
+    assert "requires" not in body

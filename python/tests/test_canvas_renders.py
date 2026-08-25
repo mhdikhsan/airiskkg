@@ -85,7 +85,10 @@ def served():
     return port
 
 
-def _dump_dom(browser: str, url: str) -> str:
+def _dump_dom(browser: str, url: str, budget: int = 15000) -> str:
+    """Virtual time fast-forwards timers, but not the work behind a fetch - an
+    assessment takes a couple of real seconds, so a probe that runs one needs a
+    budget that accounts for it."""
     completed = subprocess.run(
         [
             browser,
@@ -93,7 +96,7 @@ def _dump_dom(browser: str, url: str) -> str:
             "--disable-gpu",
             "--no-sandbox",
             "--window-size=1400,900",
-            "--virtual-time-budget=15000",
+            f"--virtual-time-budget={budget}",
             "--dump-dom",
             url,
         ],
@@ -168,3 +171,57 @@ def test_nothing_threw_while_the_page_wired_itself_up(rendered) -> None:
 # name it at, so it proved nothing while a real one was being retargeted by
 # pointer capture and reaching no handler at all. Interaction is tested with
 # real input in test_canvas_interaction.py.
+
+
+def test_picking_the_process_example_gives_something_assessable(served) -> None:
+    """The whole scene, from one choice in the dropdown.
+
+    Selecting the process used to load the process alone: the business diagram
+    drew, the architecture canvas stayed empty, and Run assessment finished with
+    nothing - which reads as a broken tool rather than a missing dependency."""
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+
+    probe = STATIC / "_scene_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = """
+  <div id="probe-log"></div>
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      const sel = document.querySelector("#example-select");
+      sel.value = "energy_customer_service";
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+      setTimeout(() => {
+        document.querySelector("#btn-assess").click();
+        setTimeout(() => {
+          log("nodes=" + document.querySelectorAll(".node").length);
+          log("findings=" + (document.querySelector("#findings-count").textContent || "0"));
+          log("activities=" + (document.querySelector("#process-count").textContent || "0"));
+        }, 9000);
+      }, 4500);
+    }, 2500);
+  });
+  </script>
+"""
+    probe.write_text(source.replace("</body>", driver + "</body>"), encoding="utf-8")
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_scene_probe.html", budget=45000)
+    finally:
+        probe.unlink(missing_ok=True)
+
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    report = found.group(1).strip() if found else ""
+
+    # An empty report must fail, not pass. Asserting only that "nodes=0" is
+    # absent is true of a probe that never ran, and a check that passes when
+    # nothing happened is worse than no check. 
+    counts = dict(re.findall(r"(\w+)=(\d+)", report))
+    assert {"nodes", "findings", "activities"} <= counts.keys(), (
+        f"the probe did not report: {report!r}"
+    )
+    assert int(counts["activities"]) > 0, "the process itself did not load"
+    assert int(counts["nodes"]) > 0, "the architectures did not come with the process"
+    assert int(counts["findings"]) > 0, "nothing was assessable"
