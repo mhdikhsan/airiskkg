@@ -249,3 +249,154 @@ def graph_edit() -> object:
         return jsonify({"error": f"Unknown edit op: {op}"}), 400
 
     return _serialized(data, newId=new_id)
+
+
+# --- authoring the business layer --------------------------------------------
+
+BPMN = Namespace("https://sBPMN.github.io/2.0/classes#")
+BP = Namespace("https://sBPMN.github.io/2.0/properties#")
+
+# What the palette offers. Deliberately short: these are the constructs a risk
+# assessment reads. Gateways and events draw well and say nothing this method
+# can use, so offering them would invite effort that changes no finding.
+ACTIVITY_KINDS = {
+    "task": "Task",
+    "userTask": "User task",
+    "serviceTask": "Service task",
+    "sendTask": "Send task",
+    "receiveTask": "Receive task",
+    "subProcess": "Sub-process",
+}
+
+
+def _fresh(data: Graph, prefix: str) -> URIRef:
+    existing = {str(s) for s in data.subjects()}
+    index = 1
+    while str(LOCAL[f"{prefix}{index}"]) in existing:
+        index += 1
+    return LOCAL[f"{prefix}{index}"]
+
+
+def _process_of(data: Graph, node: URIRef) -> URIRef | None:
+    """The process that contains a flow node - which is also what decides
+    whether a connection between two nodes is a sequence flow or a message.
+
+    In BPMN that is not a preference: sequence flow cannot leave a process, and
+    a message flow only exists between participants. Reading the containment and
+    deciding from it means the modeller never has to know the rule."""
+    for process in data.subjects(BP.contains, node):
+        if (process, RDF.type, BPMN.process) in data:
+            return process
+    return None
+
+
+@graph_routes.post("/api/process-edit")
+def process_edit() -> object:
+    """Structural edits to the business layer, mirroring /api/graph-edit.
+
+    Body: {ttl, op, ...}. Ops: add-pool, add-activity, connect, set-refines,
+    rename, delete. Returns the rewritten Turtle, which the editor adopts.
+    """
+    payload = request.get_json(silent=True) or {}
+    ttl = (payload.get("ttl") or "").strip()
+    op = payload.get("op")
+    try:
+        data = _parsed(ttl) if ttl else Graph()
+    except Exception as error:  # noqa: BLE001 - surface parse errors to the UI
+        return jsonify({"error": f"Could not parse the graph: {error}"}), 400
+
+    new_id = None
+
+    if op == "add-pool":
+        label = (payload.get("label") or "New participant").strip()
+        participant = _fresh(data, "pool")
+        process = _fresh(data, "proc")
+        data.add((participant, RDF.type, BPMN.participant))
+        data.add((participant, BP.name, Literal(label)))
+        data.add((participant, BP.processRef, process))
+        data.add((process, RDF.type, BPMN.process))
+        data.add((process, BP.name, Literal(f"{label} process")))
+        new_id = str(participant)
+
+    elif op == "add-activity":
+        kind = payload.get("kind")
+        if kind not in ACTIVITY_KINDS:
+            return jsonify({"error": f"Unknown activity kind: {kind}"}), 400
+        pool = payload.get("pool")
+        if not pool:
+            return jsonify({"error": "add-activity needs a pool."}), 400
+        process = data.value(URIRef(pool), BP.processRef)
+        if process is None:
+            return jsonify({"error": "That participant has no process."}), 400
+        activity = _fresh(data, "act")
+        data.add((activity, RDF.type, BPMN[kind]))
+        data.add((activity, BP.name, Literal((payload.get("label") or ACTIVITY_KINDS[kind]).strip())))
+        data.add((process, BP.contains, activity))
+        new_id = str(activity)
+
+    elif op == "connect":
+        source = payload.get("source")
+        target = payload.get("target")
+        if not (source and target):
+            return jsonify({"error": "connect needs a source and a target."}), 400
+        if source == target:
+            return jsonify({"error": "An activity cannot flow to itself."}), 400
+        source_ref, target_ref = URIRef(source), URIRef(target)
+        same_process = _process_of(data, source_ref) == _process_of(data, target_ref)
+        flow = _fresh(data, "sflow" if same_process else "mflow")
+        data.add((flow, RDF.type, BPMN.sequenceFlow if same_process else BPMN.messageFlow))
+        data.add((flow, BP.sourceRef, source_ref))
+        data.add((flow, BP.targetRef, target_ref))
+        if not same_process:
+            data.add((flow, BP.name, Literal("sends")))
+        data.add((source_ref, BP.outgoing, flow))
+        data.add((target_ref, BP.incoming, flow))
+        new_id = str(flow)
+
+    elif op == "set-refines":
+        activity = payload.get("activity")
+        system = payload.get("system")
+        if not activity:
+            return jsonify({"error": "set-refines needs an activity."}), 400
+        data.remove((URIRef(activity), PAIR.refinedBy, None))
+        if system:
+            data.add((URIRef(activity), PAIR.refinedBy, URIRef(system)))
+        new_id = activity
+
+    elif op == "rename":
+        element = payload.get("element")
+        if not element:
+            return jsonify({"error": "rename needs an element."}), 400
+        data.remove((URIRef(element), BP.name, None))
+        if payload.get("label"):
+            data.add((URIRef(element), BP.name, Literal(payload["label"].strip())))
+
+    elif op == "delete":
+        element = payload.get("element")
+        if not element:
+            return jsonify({"error": "delete needs an element."}), 400
+        node = URIRef(element)
+        # A participant owns its process; deleting the pool without it would
+        # leave a process nothing runs and activities nobody performs.
+        doomed = {node}
+        process = data.value(node, BP.processRef)
+        if process is not None:
+            doomed.add(process)
+            doomed.update(data.objects(process, BP.contains))
+        # Any connector that touched what is going.
+        for flow in list(data.subjects(BP.sourceRef, None)) + list(data.subjects(BP.targetRef, None)):
+            ends = set(data.objects(flow, BP.sourceRef)) | set(data.objects(flow, BP.targetRef))
+            if ends & doomed:
+                doomed.add(flow)
+        for victim in doomed:
+            for triple in list(data.triples((victim, None, None))):
+                data.remove(triple)
+            for triple in list(data.triples((None, None, victim))):
+                data.remove(triple)
+
+    else:
+        return jsonify({"error": f"Unknown process edit op: {op}"}), 400
+
+    data.bind("bpmn", BPMN)
+    data.bind("bp", BP)
+    return _serialized(data, newId=new_id)

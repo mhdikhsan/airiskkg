@@ -6,6 +6,9 @@ Reading the graph
     ``GET  /api/examples``           Names of the example graphs on offer.
     ``GET  /api/examples/<name>``    Raw Turtle for one of them.
     ``POST /api/graph``              Turtle for the canvas.
+    ``POST /api/process-edit``       One structural edit to the business layer:
+                                     add-pool, add-activity, connect,
+                                     set-refines, rename, delete.
     ``POST /api/process``            The business process layer, if the graph
                                      carries one: lanes, activities in flow
                                      order, which activity an AI system refines.

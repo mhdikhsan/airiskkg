@@ -148,6 +148,10 @@
     $("#level-business").classList.toggle("active", next === "business");
     $("#level-architecture").classList.toggle("active", next === "architecture");
     $("#canvas-hint").classList.toggle("hidden", next === "business");
+    $("#process-palette").classList.toggle("hidden", next !== "business");
+    $("#palette").classList.toggle("hidden", next !== "architecture");
+    $("#motif-palette").classList.toggle("hidden", next !== "architecture");
+    $("#process-detail").classList.add("hidden");
     renderBreadcrumb();
     if (next === "business") ProcessCanvas.fit();
     else GraphView.fit();
@@ -189,6 +193,10 @@
       return; // an unparseable graph already says so in the status bar
     }
 
+    ProcessCanvas.setSystems(
+      (lastGraph && lastGraph.systems ? lastGraph.systems : []).map((s) => ({ id: s.id, label: s.label }))
+    );
+    lastProcess = data;
     ProcessCanvas.render(data);
     const hasProcess = data.stats.activities > 0;
     $("#level-switch").classList.toggle("hidden", !hasProcess);
@@ -259,6 +267,112 @@
       }
       list.appendChild(row);
     });
+  }
+
+
+  /* ---- stakeholder overview -------------------------------------------------
+   *
+   * One page, read-only, meant to be shown rather than edited: the business
+   * process as a picture, and what the assessment found in it, attributed to
+   * the activity it arises under.
+   *
+   * The diagram is a clone of the business canvas rather than a second
+   * rendering of it. Two renderers of the same thing drift, and the one people
+   * put in a slide deck must be the one they were just looking at. */
+  let lastProcess = null;
+  let lastAssessment = null;
+
+  function overviewDiagram() {
+    const source = ProcessCanvas.svgRoot();
+    if (!source) return null;
+    const copy = source.cloneNode(true);
+    copy.removeAttribute("id");
+    copy.classList.remove("hidden");
+    /* Interaction affordances are noise on a page nobody can interact with. */
+    copy.querySelectorAll(".pc-port, .pc-marker").forEach((n) => n.remove());
+    const root = copy.querySelector("#pc-root");
+    if (root) {
+      root.removeAttribute("transform");
+      root.removeAttribute("id");
+    }
+    copy.setAttribute("width", "100%");
+    return copy;
+  }
+
+  function openOverview() {
+    const panel = $("#overview");
+    const diagram = $("#overview-diagram");
+    const side = $("#overview-side");
+    diagram.innerHTML = "";
+    side.innerHTML = "";
+
+    const process = lastProcess;
+    if (!process || !process.stats.activities) {
+      diagram.appendChild(el("p", { class: "drawer-empty" },
+        "No business process in this graph yet. Draw one on the Business canvas, or load one from Load example."));
+    } else {
+      const svg = overviewDiagram();
+      if (svg) {
+        diagram.appendChild(svg);
+        /* The clone carries the live canvas's pan/zoom-less sizing, so give
+         * it a viewBox: the page should scale the drawing, not crop it. */
+        const drawn = svg.querySelector("g");
+        if (drawn && drawn.getBBox) {
+          const box = drawn.getBBox();
+          svg.setAttribute("viewBox",
+            `${box.x - 20} ${box.y - 20} ${box.width + 40} ${box.height + 40}`);
+          svg.setAttribute("height", Math.min(box.height + 40, 520));
+        }
+      }
+      $("#overview-title").textContent =
+        process.processes.map((p) => p.participant || p.label).join(" · ") || "Business context";
+
+      side.appendChild(el("h3", {}, "Who is involved"));
+      process.participants.forEach((actor) =>
+        side.appendChild(el("div", { class: "ov-row" }, actor.label)));
+
+      side.appendChild(el("h3", {}, "AI capability"));
+      const ai = process.activities.filter((a) => a.refines.length);
+      if (!ai.length) {
+        side.appendChild(el("div", { class: "ov-row dim" }, "No activity is carried out by an AI system."));
+      }
+      ai.forEach((activity) => {
+        side.appendChild(el("div", { class: "ov-row" }, [
+          el("strong", {}, activity.label),
+          el("span", { class: "dim" }, ` · ${activity.lane || "no lane"}`),
+        ]));
+      });
+    }
+
+    if (lastAssessment) {
+      side.appendChild(el("h3", {}, "What was found, by activity"));
+      const rows = lastAssessment.findingsByActivity || [];
+      if (!rows.length) {
+        side.appendChild(el("div", { class: "ov-row dim" },
+          "Run an assessment to attribute findings to the activities they arise under."));
+      }
+      rows.forEach((row) => {
+        side.appendChild(el("div", { class: "ov-row" }, [
+          el("span", { class: "ov-count" }, String(row.findings)),
+          el("span", {}, row.label),
+        ]));
+      });
+      /* Findings are attributed, not partitioned - a finding whose evidence
+       * spans two systems is counted under each - so a total here would be
+       * wrong in exactly the case that matters. Say what they are instead. */
+      side.appendChild(el("p", { class: "ov-note" },
+        `${lastAssessment.summary.riskFindingCount} candidate findings in total. These are candidates for triage, not confirmed failures.`));
+      if (lastAssessment.run && lastAssessment.run.knowledgeBase) {
+        const kb = lastAssessment.run.knowledgeBase;
+        side.appendChild(el("p", { class: "ov-note dim" },
+          `Assessed with library ${kb.fingerprint} — ${kb.motifs} motifs, ${kb.riskPatterns} risk patterns.`));
+      }
+    } else {
+      side.appendChild(el("p", { class: "ov-note dim" },
+        "Run an assessment to see what was found in this context."));
+    }
+
+    panel.classList.remove("hidden");
   }
 
   //version history
@@ -538,6 +652,21 @@
 
     ProcessCanvas.init({
       svg: "#process-canvas",
+      /* Every edit is a server-side rewrite of the graph, exactly like the
+       * architecture canvas: the Turtle in the editor stays the single source
+       * of truth, and nothing about the process lives only in the browser. */
+      onEdit: (op, payload) => runMutation(async () => {
+        try {
+          const { ttl } = await postJson("/api/process-edit", {
+            ttl: Editor.getValue(), op, ...payload,
+          });
+          noteChange(`business process: ${op.replace(/-/g, " ")}`);
+          Editor.setValue(ttl);
+          setStatus("ok", `Business process updated (${op})`);
+        } catch (error) {
+          setStatus("error", "Could not edit the process: " + error.message.split(String.fromCharCode(10))[0]);
+        }
+      }),
       /* Descending is the whole point of the two levels: one box up here, a
        * whole architecture down there. Highlight what was opened so the reader
        * lands on it rather than on the graph in general. */
@@ -548,10 +677,23 @@
         setStatus("ok", `Opened ${activity.label}`, "click the breadcrumb to go back");
       },
     });
+    $("#btn-overview").addEventListener("click", openOverview);
+    $("#btn-overview-close").addEventListener("click", () => $("#overview").classList.add("hidden"));
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") $("#overview").classList.add("hidden");
+    });
+    $("#btn-overview-svg").addEventListener("click", () => {
+      const svg = $("#overview-diagram").querySelector("svg");
+      if (!svg) { setStatus("error", "No diagram to export."); return; }
+      const markup = new XMLSerializer().serializeToString(svg);
+      downloadBlob(new Blob([markup], { type: "image/svg+xml" }), `${exportBaseName()}-context.svg`);
+      setStatus("ok", "Diagram exported");
+    });
     $("#level-business").addEventListener("click", () => setLevel("business"));
     $("#level-architecture").addEventListener("click", () => setLevel("architecture"));
 
     }
+    lastAssessment = data;
     renderKnowledgeBaseBadge(data.run);
 
     const list = $("#findings-list");

@@ -5,6 +5,8 @@ from airiskkg.knowledge_base import graph_fingerprint
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 PROV = Namespace("http://www.w3.org/ns/prov#")
+_BP_NAME = Namespace("https://sBPMN.github.io/2.0/properties#").name
+BEAM = Namespace("http://w3id.org/beam/core#")
 _MITCTRL_PREFIX = "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#"
 _MIT_MAPPING_PREDS = (
     SKOS.relatedMatch,
@@ -248,6 +250,47 @@ def _derived_categories(result: AssessmentResult) -> list[dict]:
     )
 
 
+def _findings_by_activity(result: AssessmentResult, findings: list) -> list[dict]:
+    """Candidate findings attributed to the business activity they arise under.
+
+    The thing that makes a finding communicable. "Three findings on Draft an
+    answer" is a sentence a process owner acts on; "three findings on
+    GenerateAnswer" is not, because nobody outside the architecture knows what
+    that is.
+
+    Attribution goes activity -> refined system -> the elements that system
+    holds -> the findings citing them as evidence. A finding whose evidence
+    spans two systems is counted under each, because it genuinely arises in
+    both; the counts are therefore an attribution, not a partition, and must
+    never be summed into a total."""
+    system_of_element: dict = {}
+    for system in result.working_graph.subjects(RDF.type, BEAM.System):
+        for predicate in (BEAM.hasProcess, BEAM.hasResource, BEAM.contain):
+            for element in result.working_graph.objects(system, predicate):
+                system_of_element.setdefault(element, set()).add(system)
+
+    rows = []
+    for activity in result.working_graph.subjects(PAIR.refinedBy, None):
+        systems = set(result.working_graph.objects(activity, PAIR.refinedBy))
+        attributed = []
+        for finding in findings:
+            evidence = set(result.risk_findings.objects(finding, PAIR.hasEvidence))
+            if any(system_of_element.get(element, set()) & systems for element in evidence):
+                attributed.append(finding)
+        name = result.working_graph.value(activity, _BP_NAME) or result.working_graph.value(
+            activity, RDFS.label
+        )
+        rows.append(
+            {
+                "id": str(activity),
+                "label": str(name) if name else str(activity).rsplit("#", 1)[-1],
+                "systems": [str(s) for s in sorted(systems, key=str)],
+                "findings": len(attributed),
+            }
+        )
+    return sorted(rows, key=lambda row: (-row["findings"], row["label"]))
+
+
 def _run_view(result: AssessmentResult, architecture: Graph | None) -> dict:
     """What this run ran on, in the shape the UI needs.
 
@@ -287,4 +330,5 @@ def summarize_result(result: AssessmentResult, *, architecture: Graph | None = N
         "motifMatches": [_motif_match_view(result.combined_graph, match) for match in matches],
         "derivedCategories": derived,
         "run": _run_view(result, architecture),
+        "findingsByActivity": _findings_by_activity(result, findings),
     }

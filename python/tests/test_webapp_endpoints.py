@@ -619,3 +619,108 @@ def test_applying_a_control_moves_the_input_fingerprint_and_clears_findings(clie
 
 def test_fingerprinting_nothing_is_refused(client) -> None:
     assert client.post("/api/fingerprint", json={"ttl": "  "}).status_code == 400
+
+
+# --- drawing the business layer ----------------------------------------------
+#
+# BEAM cannot express a pool, a lane, or a message between two organisations, so
+# the business layer is authored with its own vocabulary and its own endpoint.
+
+
+def _draw(client, ttl, **payload):
+    response = client.post("/api/process-edit", json={"ttl": ttl, **payload})
+    assert response.status_code == 200, response.get_json()
+    body = response.get_json()
+    return body["ttl"], body["newId"]
+
+
+def test_a_process_can_be_drawn_from_nothing(client) -> None:
+    ttl = ""
+    ttl, customer = _draw(client, ttl, op="add-pool", label="Customer")
+    ttl, retailer = _draw(client, ttl, op="add-pool", label="Northwind Energy")
+    ttl, ask = _draw(client, ttl, op="add-activity", pool=customer, kind="task", label="Ask")
+    ttl, receive = _draw(client, ttl, op="add-activity", pool=retailer, kind="receiveTask", label="Receive")
+
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+    assert view["stats"]["participants"] == 2
+    assert {a["label"] for a in view["activities"]} == {"Ask", "Receive"}
+    assert ask and receive
+
+
+def test_whether_a_connection_is_a_message_follows_from_the_pools(client) -> None:
+    """Not a preference the modeller has to know. Sequence flow cannot leave a
+    process and a message flow only exists between participants, so the server
+    reads the containment and decides."""
+    ttl = ""
+    ttl, customer = _draw(client, ttl, op="add-pool", label="Customer")
+    ttl, retailer = _draw(client, ttl, op="add-pool", label="Retailer")
+    ttl, ask = _draw(client, ttl, op="add-activity", pool=customer, kind="task", label="Ask")
+    ttl, receive = _draw(client, ttl, op="add-activity", pool=retailer, kind="receiveTask", label="Receive")
+    ttl, reply = _draw(client, ttl, op="add-activity", pool=retailer, kind="sendTask", label="Reply")
+
+    ttl, _ = _draw(client, ttl, op="connect", source=ask, target=receive)      # across pools
+    ttl, _ = _draw(client, ttl, op="connect", source=receive, target=reply)    # within one
+
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+    assert len(view["messageFlows"]) == 1, "crossing a boundary must produce a message flow"
+    assert view["messageFlows"][0]["source"] == ask
+
+
+def test_deleting_a_participant_takes_its_process_and_connectors(client) -> None:
+    """A pool owns its process. Removing the pool alone would leave a process
+    nothing runs, activities nobody performs, and a message from nowhere."""
+    ttl = ""
+    ttl, customer = _draw(client, ttl, op="add-pool", label="Customer")
+    ttl, retailer = _draw(client, ttl, op="add-pool", label="Retailer")
+    ttl, ask = _draw(client, ttl, op="add-activity", pool=customer, kind="task", label="Ask")
+    ttl, receive = _draw(client, ttl, op="add-activity", pool=retailer, kind="receiveTask", label="Receive")
+    ttl, _ = _draw(client, ttl, op="connect", source=ask, target=receive)
+
+    ttl, _ = _draw(client, ttl, op="delete", element=customer)
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+
+    assert view["stats"]["participants"] == 1
+    assert [a["label"] for a in view["activities"]] == ["Receive"]
+    assert view["messageFlows"] == []
+
+
+def test_an_activity_can_be_pointed_at_an_architecture(client) -> None:
+    ttl = ""
+    ttl, pool = _draw(client, ttl, op="add-pool", label="Retailer")
+    ttl, activity = _draw(client, ttl, op="add-activity", pool=pool, kind="subProcess", label="Chatbot")
+    system = "http://tool4boxology.org/Boxology/graphrag-example"
+    ttl, _ = _draw(client, ttl, op="set-refines", activity=activity, system=system)
+
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+    assert view["activities"][0]["refines"] == [system]
+
+    ttl, _ = _draw(client, ttl, op="set-refines", activity=activity, system="")
+    cleared = client.post("/api/process", json={"ttl": ttl}).get_json()
+    assert cleared["activities"][0]["refines"] == []
+
+
+def test_an_unknown_activity_kind_is_refused(client) -> None:
+    assert client.post(
+        "/api/process-edit", json={"ttl": "", "op": "add-activity", "pool": "x", "kind": "gateway"}
+    ).status_code == 400
+
+
+def test_findings_are_attributed_to_the_activity_they_arise_under(client) -> None:
+    """What makes a finding communicable. "Three findings on Draft an answer" is
+    a sentence a process owner acts on; the name of an inference step is not."""
+    architecture = example_path(ONYX_NS).read_text(encoding="utf-8")
+    process = (EXAMPLE_DIR / "context" / "onyx_support_process.ttl").read_text(encoding="utf-8")
+
+    assessed = client.post("/api/assess", json={"ttl": architecture + "\n" + process}).get_json()
+    rows = assessed["findingsByActivity"]
+
+    assert rows, "no findings were attributed to any activity"
+    assert rows[0]["label"] == "Draft an answer"
+    assert rows[0]["findings"] == assessed["summary"]["riskFindingCount"]
+
+
+def test_an_architecture_with_no_process_attributes_nothing(client) -> None:
+    assessed = client.post(
+        "/api/assess", json={"ttl": example_path(ONYX_NS).read_text(encoding="utf-8")}
+    ).get_json()
+    assert assessed["findingsByActivity"] == []

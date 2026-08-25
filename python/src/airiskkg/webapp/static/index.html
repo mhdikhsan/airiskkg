@@ -32,6 +32,7 @@
         <option value="json-ld">JSON-LD</option>
         <option value="nt">N-Triples</option>
       </select>
+      <button type="button" class="btn" id="btn-overview" title="A one-page view of the business context and what was found in it — for showing to people who are not editing the graph">Overview</button>
       <button type="button" class="btn" id="btn-export-kg" title="Download this assessment as an RDF knowledge graph, with a PROV record of the run">Export assessment</button>
     </div>
   </header>
@@ -69,6 +70,8 @@
       <div class="canvas-wrap" id="canvas-wrap">
         <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
         <svg id="process-canvas" class="hidden" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="process-palette hidden" id="process-palette" title="Click a pool to select it, then click a shape to add one"></div>
+        <div class="node-detail hidden" id="process-detail"></div>
         <div class="palette" id="palette" title="Drag a symbol onto the canvas"></div>
         <div class="motif-palette" id="motif-palette" title="Drag a motif onto the canvas to add its elements"></div>
         <div class="canvas-controls">
@@ -152,6 +155,21 @@
       </div>
     </section>
   </main>
+
+  <!-- Stakeholder overview: read-only, one page, meant to be shown rather than edited -->
+  <div class="overview hidden" id="overview">
+    <div class="overview-head">
+      <h2 id="overview-title">Business context</h2>
+      <span class="overview-actions">
+        <button type="button" class="btn small" id="btn-overview-svg" title="Download this page's diagram as an SVG">Export diagram</button>
+        <button type="button" class="btn small" id="btn-overview-close">Close</button>
+      </span>
+    </div>
+    <div class="overview-body">
+      <div class="overview-diagram" id="overview-diagram"></div>
+      <div class="overview-side" id="overview-side"></div>
+    </div>
+  </div>
 
   <script src="/static/editor.js"></script>
   <script src="/static/multipicker.js"></script>

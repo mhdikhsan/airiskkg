@@ -33,6 +33,10 @@
   let data = null;
   let expanded = new Set();   // subprocesses opened in place
   let onOpenArchitecture = null;
+  let onEdit = null;            // (op, payload) -> Promise, applied server-side
+  let systems = [];             // architectures a activity may be refined by
+  let selectedPool = null;      // where a new activity lands
+  let connecting = null;        // drag in progress: { from, line }
   let view = { x: 0, y: 0, k: 1 };
 
   function node(tag, attrs = {}, parent = null) {
@@ -206,7 +210,104 @@
       const title = node("title", {}, chip);
       title.textContent = "Open the AI architecture that carries out this activity";
     }
+    if (onEdit) {
+      /* Drag from the port to another activity. Whether that becomes a sequence
+       * flow or a message is not asked: it follows from whether the two sit in
+       * the same process, which is what BPMN says and what the server decides. */
+      const port = node("g", { class: "pc-port", cursor: "crosshair" }, group);
+      node("circle", {
+        cx: slot.x + slot.w, cy: slot.y + BOX_H / 2, r: 7, class: "pc-port-dot",
+      }, port);
+      port.addEventListener("pointerdown", (ev) => {
+        ev.stopPropagation();
+        startConnect(ev, activity, slot);
+      });
+      const portTitle = node("title", {}, port);
+      portTitle.textContent = "Drag onto another activity to connect";
+
+      group.addEventListener("click", (ev) => {
+        if (ev.target.closest(".pc-open, .pc-marker, .pc-port")) return;
+        ev.stopPropagation();
+        showDetail(activity, ev);
+      });
+      group.setAttribute("cursor", "pointer");
+    }
     return group;
+  }
+
+  function svgPoint(clientX, clientY) {
+    const rect = svg.getBoundingClientRect();
+    return { x: (clientX - rect.left - view.x) / view.k, y: (clientY - rect.top - view.y) / view.k };
+  }
+
+  function startConnect(ev, activity, slot) {
+    const line = node("path", { class: "pc-flow pending" }, root);
+    connecting = { from: activity, slot, line };
+    svg.setPointerCapture(ev.pointerId);
+  }
+
+  function moveConnect(ev) {
+    if (!connecting) return;
+    const to = svgPoint(ev.clientX, ev.clientY);
+    const x1 = connecting.slot.x + connecting.slot.w;
+    const y1 = connecting.slot.y + BOX_H / 2;
+    connecting.line.setAttribute("d", `M ${x1} ${y1} L ${to.x} ${to.y}`);
+  }
+
+  async function endConnect(ev) {
+    if (!connecting) return;
+    const { from, line } = connecting;
+    connecting = null;
+    line.remove();
+    const dropped = document.elementFromPoint(ev.clientX, ev.clientY);
+    const group = dropped && dropped.closest(".pc-activity");
+    if (!group) return;
+    const target = [...root.querySelectorAll(".pc-activity")].indexOf(group);
+    const targetId = drawnOrder[target];
+    if (!targetId || targetId === from.id) return;
+    await onEdit("connect", { source: from.id, target: targetId });
+  }
+
+  let drawnOrder = [];
+
+  function closeDetail() {
+    const panel = document.querySelector("#process-detail");
+    if (panel) panel.classList.add("hidden");
+  }
+
+  function showDetail(activity, ev) {
+    const panel = document.querySelector("#process-detail");
+    if (!panel) return;
+    const options = ['<option value="">— not an AI activity —</option>']
+      .concat(systems.map((s) =>
+        `<option value="${s.id}"${activity.refines.includes(s.id) ? " selected" : ""}>${s.label}</option>`))
+      .join("");
+    panel.innerHTML = `
+      <div class="nd-head">${activity.kind}</div>
+      <label class="nd-row"><span>Name</span>
+        <input type="text" id="pd-name" value="${activity.label.replace(/"/g, "&quot;")}" /></label>
+      <label class="nd-row"><span>Carried out by</span>
+        <select id="pd-refines">${options}</select></label>
+      <div class="nd-actions">
+        <button type="button" class="btn small primary" id="pd-apply">Apply</button>
+        <button type="button" class="btn small" id="pd-delete">Delete</button>
+      </div>`;
+    panel.classList.remove("hidden");
+    const rect = svg.getBoundingClientRect();
+    panel.style.left = `${Math.min(ev.clientX - rect.left + 12, rect.width - 260)}px`;
+    panel.style.top = `${Math.min(ev.clientY - rect.top + 12, rect.height - 200)}px`;
+
+    panel.querySelector("#pd-apply").addEventListener("click", async () => {
+      const name = panel.querySelector("#pd-name").value.trim();
+      const system = panel.querySelector("#pd-refines").value;
+      closeDetail();
+      if (name && name !== activity.label) await onEdit("rename", { element: activity.id, label: name });
+      await onEdit("set-refines", { activity: activity.id, system });
+    });
+    panel.querySelector("#pd-delete").addEventListener("click", async () => {
+      closeDetail();
+      await onEdit("delete", { element: activity.id });
+    });
   }
 
   function draw() {
@@ -223,6 +324,7 @@
     });
 
     root = node("g", { id: "pc-root" }, svg);
+    drawnOrder = [];
     const { pools, placed } = layout();
 
     pools.forEach((pool) => {
@@ -233,6 +335,13 @@
       node("rect", {
         x: pool.x, y: pool.y, width: POOL_LABEL_W, height: pool.h, rx: 6, class: "pc-pool-strip",
       }, group);
+      if (pool.participant.id === selectedPool) group.classList.add("selected");
+      group.addEventListener("click", (ev) => {
+        if (ev.target.closest(".pc-activity")) return;
+        selectedPool = pool.participant.id;
+        draw();
+        renderPalette();
+      });
       const label = text(group, 0, 0, truncate(pool.participant.label, 24), "pc-pool-label");
       label.setAttribute("text-anchor", "middle");
       label.setAttribute(
@@ -245,7 +354,10 @@
         const next = pool.activities[index + 1];
         if (next) arrow(group, placed.get(activity.id), placed.get(next.id), false, null);
       });
-      pool.activities.forEach((activity) => drawActivity(group, placed.get(activity.id)));
+      pool.activities.forEach((activity) => {
+        drawnOrder.push(activity.id);
+        drawActivity(group, placed.get(activity.id));
+      });
     });
 
     // message flow: what crosses a boundary between actors
@@ -279,17 +391,22 @@
   function initPanZoom() {
     let panning = null;
     svg.addEventListener("pointerdown", (ev) => {
-      if (ev.target.closest(".pc-open, .pc-marker")) return;
+      if (ev.target.closest(".pc-open, .pc-marker, .pc-port")) return;
+      closeDetail();
       panning = { x: ev.clientX - view.x, y: ev.clientY - view.y };
       svg.setPointerCapture(ev.pointerId);
     });
     svg.addEventListener("pointermove", (ev) => {
+      if (connecting) { moveConnect(ev); return; }
       if (!panning) return;
       view.x = ev.clientX - panning.x;
       view.y = ev.clientY - panning.y;
       applyView();
     });
-    svg.addEventListener("pointerup", () => { panning = null; });
+    svg.addEventListener("pointerup", (ev) => {
+      panning = null;
+      if (connecting) endConnect(ev);
+    });
     svg.addEventListener("wheel", (ev) => {
       ev.preventDefault();
       const factor = ev.deltaY < 0 ? 1.1 : 0.9;
@@ -303,23 +420,71 @@
     }, { passive: false });
   }
 
+  const PALETTE = [
+    { op: "add-pool", label: "Participant", hint: "A pool: an actor with a boundary" },
+    { kind: "receiveTask", label: "Receive", hint: "Waits for a message" },
+    { kind: "task", label: "Task", hint: "A step of work" },
+    { kind: "userTask", label: "User task", hint: "A person does it - and can review what an AI produced" },
+    { kind: "serviceTask", label: "Service task", hint: "Automated: where an AI capability usually sits" },
+    { kind: "subProcess", label: "Sub-process", hint: "Has a flow of its own, and may name an architecture" },
+    { kind: "sendTask", label: "Send", hint: "Sends a message" },
+  ];
+
+  function renderPalette() {
+    const host = document.querySelector("#process-palette");
+    if (!host || !onEdit) return;
+    host.innerHTML = "";
+    const pool = data && data.participants.find((p) => p.id === selectedPool);
+    PALETTE.forEach((item) => {
+      const needsPool = !item.op;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "pp-item";
+      button.textContent = item.label;
+      button.title = needsPool && !pool
+        ? `${item.hint} — click a participant first`
+        : item.hint;
+      button.disabled = needsPool && !pool;
+      button.addEventListener("click", async () => {
+        if (item.op === "add-pool") {
+          const label = window.prompt("Name of the participant (an organisation, a customer, a team):");
+          if (label) await onEdit("add-pool", { label });
+          return;
+        }
+        await onEdit("add-activity", { pool: selectedPool, kind: item.kind, label: item.label });
+      });
+      host.appendChild(button);
+    });
+    const note = document.createElement("span");
+    note.className = "pp-note";
+    note.textContent = pool ? `adding to: ${pool.label}` : "click a participant to add steps to it";
+    host.appendChild(note);
+    host.classList.remove("hidden");
+  }
+
   function init(options) {
     svg = document.querySelector(options.svg);
     onOpenArchitecture = options.onOpenArchitecture || null;
+    onEdit = options.onEdit || null;
     if (svg) initPanZoom();
   }
+
+  function setSystems(list) { systems = list || []; }
 
   function render(next) {
     data = next;
     // Keep an activity open across a re-render, but forget one that is gone.
     const ids = new Set(next.activities.map((a) => a.id));
     expanded = new Set([...expanded].filter((id) => ids.has(id)));
+    const pools = new Set(next.participants.map((p) => p.id));
+    if (!pools.has(selectedPool)) selectedPool = next.participants.length ? next.participants[0].id : null;
     draw();
+    renderPalette();
   }
 
   function hasProcess() {
     return Boolean(data && data.stats && data.stats.activities);
   }
 
-  window.ProcessCanvas = { init, render, fit, hasProcess };
+  window.ProcessCanvas = { init, render, fit, hasProcess, setSystems, svgRoot: () => svg };
 })();
