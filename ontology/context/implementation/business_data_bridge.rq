@@ -1,0 +1,72 @@
+# Carry a data annotation made in the business model across to the architecture
+# that activity is carried out by.
+#
+# The point of the whole layer. Data categories otherwise have to be hand-tagged
+# on beam:Data nodes inside the architecture, which asks an architecture
+# modeller to know that the meter readings identify a household. The person who
+# knows that is the process owner, and the artefact they already maintain is the
+# process model.
+#
+# The shape deliberately mirrors the shipped personal_data_category.rq: a
+# personal data kind, minus the two DPV values that mean "not personal", yields
+# pair:SensitiveInformation. Only the place the annotation was made differs.
+#
+# R8 is intact. What is annotated stays annotated - on the item definition, by a
+# human - and what is derived is the data category, exactly as before. No facet
+# is propagated as a facet, and no BPMN triple enters the architecture.
+#
+# Scope, and its honest limit. Nothing in the business layer names an
+# architecture element; that is the point, since the analyst does not know them.
+# So the mapping goes by role: the input-playing elements of the system this
+# activity refines. Where a system has several, all of them are reached - and
+# the prov:Derivation is emitted so a modeller can see which business annotation
+# produced which category and disagree with it.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX dpv:  <https://w3id.org/dpv#>
+PREFIX bpmn: <https://sBPMN.github.io/2.0/classes#>
+PREFIX bp:   <https://sBPMN.github.io/2.0/properties#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?input pair:containsDataCategory pair:SensitiveInformation .
+
+    ?derivation
+        a prov:Derivation ;
+        rdfs:label "Personal data declared on the business process"@en ;
+        prov:entity ?dataObject ;
+        prov:hadActivity ?activity ;
+        pair:derivedCategory pair:SensitiveInformation .
+    ?input prov:qualifiedDerivation ?derivation .
+}
+WHERE {
+    ?activity
+        pair:refinedBy ?system ;
+        bp:dataInputAssociation ?association .
+
+    ?association
+        bp:targetRef ?activity ;
+        bp:sourceRef ?dataReference .
+
+    ?dataReference bp:dataObjectRef ?dataObject .
+    ?dataObject bp:itemSubjectRef ?item .
+    ?item bp:structureRef ?personalDataKind .
+
+    # The same exclusion the shipped rule applies, and only that. No subclass
+    # guard: DPV is referenced by URI and never copied in, so its hierarchy is
+    # absent from the loaded graph and `?kind rdfs:subClassOf* dpv:PersonalData`
+    # would match nothing and silently disable the whole rule.
+    FILTER (?personalDataKind NOT IN (dpv:AnonymisedData, dpv:NonPersonalData))
+
+    ?system beam:hasResource ?input .
+    ?input pair:playsRole/pair:subRoleOf* ?inputRole .
+    VALUES ?inputRole { pair:UserInput pair:PredictionRequest }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/derivation/business-data/",
+        ENCODE_FOR_URI(STR(?input)), "/",
+        ENCODE_FOR_URI(STR(?dataObject))
+    )) AS ?derivation)
+}

@@ -1115,3 +1115,10 @@ label.btn { display: inline-flex; align-items: center; }
 .pc-activity:hover .pc-edit-box, .pc-activity:hover .pc-edit-nib { opacity: 1; }
 .pc-edit:hover .pc-edit-box { stroke: #4a72c4; }
 #process-canvas.panning { cursor: grabbing; }
+
+/* Candidate risks, per business activity. Folded by default: a count alone is a
+ * number nobody can act on, and the whole list at once is a wall. */
+.pc-risk-box { fill: #fdf1e7; stroke: #d08a45; stroke-width: 1.2; }
+.pc-risk-label { fill: #8a4f19; font-size: 9.5px; font-weight: 600; }
+.pc-risk:hover .pc-risk-box { fill: #f9e3d0; }
+.pc-risk-item { fill: #8a4f19; font-size: 10.5px; }

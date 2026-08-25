@@ -683,6 +683,9 @@
 
     }
     lastAssessment = data;
+    /* The business canvas learns what was found where, so an activity box can
+     * say how many candidate risks it carries and unfold them on request. */
+    ProcessCanvas.setFindings(data.findingsByActivity);
     renderKnowledgeBaseBadge(data.run);
 
     const list = $("#findings-list");

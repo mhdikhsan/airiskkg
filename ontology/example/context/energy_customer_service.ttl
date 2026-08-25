@@ -16,6 +16,7 @@
 @prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
 @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
 @prefix sgr:  <http://tool4boxology.org/Boxology/> .
+@prefix mas:  <http://w3id.org/airiskkg/example/meter-anomaly#> .
 @prefix ec:   <http://w3id.org/airiskkg/example/energy-cs#> .
 @prefix dpv:  <https://w3id.org/dpv#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -58,7 +59,7 @@ ec:ServiceProcess a bpmn:process ;
     bp:name "Answer a customer enquiry" ;
     bp:isExecutable true ;
     bp:laneSet ec:ServiceLanes ;
-    bp:contains ec:ReceiveEnquiry , ec:CustomerService , ec:ReviewReply ,
+    bp:contains ec:ReceiveEnquiry , ec:CheckReading , ec:CustomerService , ec:ReviewReply ,
                 ec:SendReply , ec:LogInteraction .
 
 ec:ServiceLanes a bpmn:laneSet ;
@@ -66,7 +67,8 @@ ec:ServiceLanes a bpmn:laneSet ;
 
 ec:AutomatedLane a bpmn:lane ;
     bp:name "Self-service channel" ;
-    bp:flowNodeRef ec:ReceiveEnquiry , ec:CustomerService , ec:ReviewReply , ec:SendReply .
+    bp:flowNodeRef ec:ReceiveEnquiry , ec:CheckReading , ec:CustomerService ,
+                   ec:ReviewReply , ec:SendReply .
 
 ec:SupportLane a bpmn:lane ;
     bp:name "Support operations" ;
@@ -75,7 +77,18 @@ ec:SupportLane a bpmn:lane ;
 ec:ReceiveEnquiry a bpmn:receiveTask ;
     bp:name "Receive the enquiry" ;
     bp:dataInputAssociation ec:EnquiryIn ;
-    bp:outgoing ec:SFlow1 .
+    bp:outgoing ec:SFlow0 .
+
+# The second AI capability, and a different kind of one. A billing enquiry is
+# checked against the meter before anyone answers it, and that check is a
+# scoring service rather than a chatbot - so the same process runs two systems
+# whose risks have almost nothing in common.
+ec:CheckReading a bpmn:subProcess ;
+    bp:name "Check the meter reading for anomalies" ;
+    pair:refinedBy mas:AnomalySystem ;
+    bp:incoming ec:SFlow0 ;
+    bp:outgoing ec:SFlow1 ;
+    bp:dataInputAssociation ec:ReadingToCheck .
 
 # The AI capability. A subProcess, because the chatbot carries the whole
 # exchange rather than one step of it - and refined by the architecture that
@@ -145,8 +158,10 @@ ec:SupportAgent a bpmn:humanPerformer ;
 ec:SupportRole a bpmn:resource ;
     bp:name "Customer support agent" .
 
+ec:SFlow0 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ReceiveEnquiry ;  bp:targetRef ec:CheckReading .
 ec:SFlow1 a bpmn:sequenceFlow ;
-    bp:sourceRef ec:ReceiveEnquiry ;  bp:targetRef ec:CustomerService .
+    bp:sourceRef ec:CheckReading ;    bp:targetRef ec:CustomerService .
 ec:SFlow2 a bpmn:sequenceFlow ;
     bp:sourceRef ec:CustomerService ; bp:targetRef ec:ReviewReply .
 ec:SFlow2b a bpmn:sequenceFlow ;
@@ -194,6 +209,23 @@ ec:EnquiryIn a bpmn:dataInputAssociation ;
 
 ec:EnquiryToService a bpmn:dataInputAssociation ;
     bp:sourceRef ec:EnquiryRef ; bp:targetRef ec:CustomerService .
+
+# Consumption data says when a household is in and when it is empty, so it
+# names a person as surely as the enquiry does. Stated here, once, by whoever
+# owns the process - the scoring architecture never said it.
+ec:MeterReadingRef a bpmn:dataObjectReference ;
+    bp:name "Smart meter reading" ;
+    bp:dataObjectRef ec:MeterReading .
+
+ec:MeterReading a bpmn:dataObject ;
+    bp:name "Smart meter reading" ;
+    bp:itemSubjectRef ec:MeterReadingItem .
+
+ec:MeterReadingItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:PersonalData .
+
+ec:ReadingToCheck a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:MeterReadingRef ; bp:targetRef ec:CheckReading .
 
 ec:DraftRef a bpmn:dataObjectReference ;
     bp:name "Drafted reply" .

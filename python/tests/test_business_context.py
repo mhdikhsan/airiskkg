@@ -217,7 +217,11 @@ def test_the_ai_activity_is_a_subprocess_that_expands_two_ways(energy_view) -> N
     """Both are true and they answer different questions: the inner flow says
     what the service does as business steps, pair:refinedBy says which AI system
     carries them out."""
-    chatbot = next(a for a in energy_view["activities"] if a["kind"] == "subProcess")
+    # Two sub-processes now - one per AI system - so name the one under test
+    # rather than taking whichever comes first.
+    chatbot = next(
+        a for a in energy_view["activities"] if a["label"] == "Customer service chatbot"
+    )
 
     assert chatbot["refines"], "the subprocess names no architecture"
     assert len(chatbot["children"]) == 3, "the subprocess has no business steps of its own"
@@ -294,3 +298,104 @@ def test_the_example_only_uses_sbpmn_terms_sbpmn_declares() -> None:
                 if obj_types and not any(any(r in ancestors(t) for r in ranges) for t in obj_types):
                     violations.append(f"range: {predicate} -> {obj}")
     assert not violations, "sBPMN violations:\n" + "\n".join(sorted(violations))
+
+
+# --- one process, two AI systems ---------------------------------------------
+#
+# The case the layer exists for. A business process usually runs more than one
+# AI capability, they are rarely the same kind of thing, and their risks have
+# almost nothing in common - which nobody can see while each architecture is
+# assessed in a window of its own.
+
+ANOMALY_NS_LOCAL = "http://w3id.org/airiskkg/example/meter-anomaly#"
+
+
+def test_the_process_points_two_activities_at_two_different_systems() -> None:
+    from airiskkg.workbench.process_view import process_view
+
+    graph = Graph()
+    graph.parse(example_path(GRAPH_RAG_NS), format="turtle")
+    graph.parse(example_path(ANOMALY_NS_LOCAL), format="turtle")
+    graph.parse(PROCESS, format="turtle")
+    view = process_view(graph)
+
+    refined = {a["label"]: a["refines"] for a in view["activities"] if a["refines"]}
+    assert len(refined) == 2, f"expected two AI activities, got {sorted(refined)}"
+    systems = {system for targets in refined.values() for system in targets}
+    assert len(systems) == 2, "both activities point at the same architecture"
+
+
+def test_each_architecture_still_assesses_on_its_own() -> None:
+    """Refinement adds context; it does not make an architecture dependent on the
+    process. Either one alone is still a complete, assessable graph."""
+    chatbot = run_assessment(example_path(GRAPH_RAG_NS), write_outputs=False)
+    anomaly = run_assessment(example_path(ANOMALY_NS_LOCAL), write_outputs=False)
+
+    assert (chatbot.motif_match_count, chatbot.risk_finding_count) == (3, 7)
+    assert (anomaly.motif_match_count, anomaly.risk_finding_count) == (4, 1)
+
+
+def test_the_two_systems_carry_different_risks() -> None:
+    """An ML serving shape and a generative one are not the same problem, and a
+    reader who sees them side by side should not have to be told so."""
+    chatbot = _findings_by_pattern(run_assessment(example_path(GRAPH_RAG_NS), write_outputs=False))
+    anomaly = _findings_by_pattern(run_assessment(example_path(ANOMALY_NS_LOCAL), write_outputs=False))
+
+    assert "PromptInjectionRiskPattern" in chatbot
+    assert "PromptInjectionRiskPattern" not in anomaly
+    assert set(anomaly) == {"SupplyChainCompromiseRiskPattern"}
+
+
+# --- context declared once, in the business model -----------------------------
+
+
+def test_a_business_data_annotation_reaches_the_architecture_it_refines() -> None:
+    """Route 1, and the reason the layer is worth having. Consumption data says
+    when a household is in and when it is empty, so it names a person - but the
+    scoring architecture never said so, and no architecture modeller would know
+    to. It is stated once, on the process, by whoever owns it."""
+    architectures = [example_path(GRAPH_RAG_NS), example_path(ANOMALY_NS_LOCAL)]
+
+    alone = run_assessment(architectures, write_outputs=False)
+    with_context = run_assessment(architectures + [PROCESS], write_outputs=False)
+
+    def sensitive(result):
+        return {
+            _short(e)
+            for e in result.working_graph.subjects(PAIR.containsDataCategory, PAIR.SensitiveInformation)
+        }
+
+    gained = sensitive(with_context) - sensitive(alone)
+    assert "Reading" in gained, "the meter reading never became sensitive"
+    assert "Score_Result" in gained, "sensitivity did not travel to what the scorer produces"
+
+
+def test_the_bridge_records_where_the_annotation_came_from() -> None:
+    """A derived category with no trace is a claim the modeller cannot argue
+    with. The derivation names the business data object it came from."""
+    from rdflib import Namespace
+
+    prov = Namespace("http://www.w3.org/ns/prov#")
+    result = run_assessment(
+        [example_path(GRAPH_RAG_NS), example_path(ANOMALY_NS_LOCAL), PROCESS], write_outputs=False
+    )
+
+    derivations = list(result.working_graph.subjects(RDF.type, prov.Derivation))
+    business = [
+        d for d in derivations
+        if any("energy-cs" in str(e) for e in result.working_graph.objects(d, prov.entity))
+    ]
+    assert business, "no derivation points back at a business data object"
+
+
+def test_context_both_clears_and_raises() -> None:
+    """The honest shape of it. A human review in the process clears an
+    output-handling finding; a data annotation in the same process raises a
+    disclosure the architecture could not have known about. Reporting only the
+    total would hide both."""
+    architectures = [example_path(GRAPH_RAG_NS), example_path(ANOMALY_NS_LOCAL)]
+    before = _findings_by_pattern(run_assessment(architectures, write_outputs=False))
+    after = _findings_by_pattern(run_assessment(architectures + [PROCESS], write_outputs=False))
+
+    assert before[IMPROPER_OUTPUT] == 1 and after[IMPROPER_OUTPUT] == 0
+    assert after["SensitiveInformationDisclosureRiskPattern"] > before["SensitiveInformationDisclosureRiskPattern"]

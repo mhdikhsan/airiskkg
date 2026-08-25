@@ -35,15 +35,17 @@ CDP_PORT_TRIES = 6
 
 
 def _load_example_probe() -> str:
-    """A copy of the app that loads both graphs on its own, so the driver only
-    has to click."""
+    """A copy of the app that loads the whole scene on its own - two
+    architectures and the process that runs both - so the driver only clicks."""
     source = (STATIC / "index.html").read_text(encoding="utf-8")
     driver = """
   <script>
   window.addEventListener("load", async () => {
+    const nl = String.fromCharCode(10,10);
     const a = await (await fetch("/api/examples/simple_graph_rag")).json();
+    const m = await (await fetch("/api/examples/meter_anomaly_scoring")).json();
     const p = await (await fetch("/api/examples/energy_customer_service")).json();
-    window.Editor.setValue(a.ttl + String.fromCharCode(10,10) + p.ttl);
+    window.Editor.setValue(a.ttl + nl + m.ttl + nl + p.ttl);
   });
   </script>
 """
@@ -222,3 +224,31 @@ def test_dragging_the_canvas_is_not_a_click(page) -> None:
 
     loop.run_until_complete(handle.drag(target_x - 140, target_y, target_x, target_y))
     assert not _on_architecture(loop, handle), "a drag was treated as a click"
+
+
+def test_the_risk_badge_folds_the_findings_it_counts(page) -> None:
+    """A count alone is a number nobody can act on; the whole list at once is a
+    wall. The badge folds, so a reader opens the one activity they are asking
+    about - and the box grows to hold it rather than the list spilling over the
+    diagram."""
+    loop, handle = page
+
+    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    time.sleep(9)
+    loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
+    time.sleep(2)
+
+    badge = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('.pc-risk .pc-risk-box');
+        if (!b) return null;
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert badge, "no activity reported any candidate risk"
+
+    before = loop.run_until_complete(handle.js('document.querySelectorAll(".pc-risk-item").length'))
+    loop.run_until_complete(handle.click(badge["x"], badge["y"]))
+    after = loop.run_until_complete(handle.js('document.querySelectorAll(".pc-risk-item").length'))
+
+    assert after != before, "the badge did not fold or unfold anything"
+    assert max(before, after) > 0, "unfolding showed no findings"

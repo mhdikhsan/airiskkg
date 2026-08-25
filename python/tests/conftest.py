@@ -25,6 +25,7 @@ from airiskkg.paths import EXAMPLE_DIR  # noqa: E402
 # absent from a fresh clone, and nothing in the suite may depend on it.
 ONYX_NS = "http://w3id.org/airiskkg/example/onyx-danswer#"
 GRAPH_RAG_NS = "http://tool4boxology.org/Boxology/graphrag-example"
+ANOMALY_NS = "http://w3id.org/airiskkg/example/meter-anomaly#"
 
 
 def example_path(namespace: str) -> Path:

@@ -22,7 +22,7 @@
 
   const POOL_LABEL_W = 34;   // the vertical name strip down a pool's left edge
   const POOL_PAD = 20;
-  const BOX_W = 190;
+  const BOX_W = 220;
   const BOX_H = 58;
   const BOX_GAP = 52;        // room for an arrow between two activities
   const CHILD_H = 30;
@@ -38,6 +38,8 @@
   let selectedPool = null;      // where a new activity lands
   let connecting = null;        // drag in progress: { from, line }
   let swallowNextClick = false; // a pan ends in a click the reader did not mean
+  let findingsByActivity = new Map();  // activity id -> { findings, items }
+  let openRisks = new Set();           // activities whose risk list is unfolded
   let view = { x: 0, y: 0, k: 1 };
 
   function node(tag, attrs = {}, parent = null) {
@@ -71,9 +73,22 @@
     return activity.children.map((id) => byId.get(id)).filter(Boolean);
   }
 
+  const RISK_ROW_H = 17;
+
+  function riskOf(activity) {
+    return findingsByActivity.get(activity.id) || null;
+  }
+
   function boxHeight(activity) {
-    if (!expanded.has(activity.id) || !activity.children.length) return BOX_H;
-    return BOX_H + activity.children.length * CHILD_H + 10;
+    let height = BOX_H;
+    if (expanded.has(activity.id) && activity.children.length) {
+      height += activity.children.length * CHILD_H + 10;
+    }
+    const risk = riskOf(activity);
+    if (risk && openRisks.has(activity.id)) {
+      height += risk.items.length * RISK_ROW_H + 12;
+    }
+    return height;
   }
 
   function layout() {
@@ -188,7 +203,11 @@
       : (activity.children.length ? "Click + to show the steps inside" : "Edit this activity");
 
     typeMarker(group, activity.kind, slot.x + 8, slot.y + 7);
-    text(group, slot.x + 26, slot.y + 17, truncate(activity.label, 22), "pc-label");
+    /* The risk badge sits at the top right, so the name has to give way to it
+     * rather than run underneath. Measured in characters because the label is
+     * the thing that gets cut, and cutting it visibly beats overlapping. */
+    const nameRoom = riskOf(activity) && riskOf(activity).findings ? 18 : 26;
+    text(group, slot.x + 26, slot.y + 17, truncate(activity.label, nameRoom), "pc-label");
 
     if (activity.performers.length) {
       const row = activity.refines.length ? 48 : 34;
@@ -230,6 +249,42 @@
       });
     }
 
+    /* How many candidate risks this activity carries, and which. A count alone
+     * is a number nobody can act on; the whole list at once is a wall. So the
+     * badge folds - the same idiom the sub-process marker already uses - and a
+     * reader opens the one activity they are asking about. */
+    const risk = riskOf(activity);
+    if (risk && risk.findings) {
+      const open = openRisks.has(activity.id);
+      const badge = node("g", { class: "pc-risk", cursor: "pointer" }, group);
+      const width = 54;
+      node("rect", {
+        x: slot.x + slot.w - width - 10, y: slot.y + 8,
+        width, height: 17, rx: 8, class: "pc-risk-box",
+      }, badge);
+      const caption = text(badge, slot.x + slot.w - width / 2 - 10, slot.y + 20,
+        `${risk.findings} risk${risk.findings === 1 ? "" : "s"} ${open ? "⌃" : "⌄"}`,
+        "pc-risk-label");
+      caption.setAttribute("text-anchor", "middle");
+      badge.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        if (open) openRisks.delete(activity.id); else openRisks.add(activity.id);
+        draw();
+      });
+      const riskTitle = node("title", {}, badge);
+      riskTitle.textContent = open
+        ? "Hide the candidate risks found here"
+        : "Show the candidate risks found here";
+
+      if (open) {
+        let rowY = slot.y + slot.h - risk.items.length * RISK_ROW_H - 6;
+        risk.items.forEach((item) => {
+          text(group, slot.x + 26, rowY + 11, "• " + truncate(item.label, 34), "pc-risk-item");
+          rowY += RISK_ROW_H;
+        });
+      }
+    }
+
     if (activity.refines.length) {
       /* A badge, not a button. The box itself opens the architecture - a pill
        * with 9.5px type was the only way in, and nobody aims for it when the
@@ -264,7 +319,7 @@
        * editor. The pencil is there when you want to edit a refined one. */
       group.addEventListener("click", (ev) => {
         if (swallowNextClick) { swallowNextClick = false; return; }
-        if (ev.target.closest(".pc-marker, .pc-port, .pc-edit")) return;
+        if (ev.target.closest(".pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
         ev.stopPropagation();
         if (activity.refines.length && onOpenArchitecture) onOpenArchitecture(activity);
         else showDetail(activity, ev);
@@ -469,7 +524,7 @@
     let pan = null;
 
     svg.addEventListener("pointerdown", (ev) => {
-      if (ev.target.closest(".pc-open, .pc-marker, .pc-port, .pc-edit")) return;
+      if (ev.target.closest(".pc-open, .pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
       closeDetail();
       pan = {
         id: ev.pointerId,
@@ -577,6 +632,14 @@
 
   function setSystems(list) { systems = list || []; }
 
+  /** Candidate risks per business activity, from the last assessment. */
+  function setFindings(rows) {
+    findingsByActivity = new Map((rows || []).map((row) => [row.id, row]));
+    const known = new Set(findingsByActivity.keys());
+    openRisks = new Set([...openRisks].filter((id) => known.has(id)));
+    if (data) draw();
+  }
+
   function render(next) {
     data = next;
     // Keep an activity open across a re-render, but forget one that is gone.
@@ -592,5 +655,5 @@
     return Boolean(data && data.stats && data.stats.activities);
   }
 
-  window.ProcessCanvas = { init, render, fit, hasProcess, setSystems, svgRoot: () => svg };
+  window.ProcessCanvas = { init, render, fit, hasProcess, setSystems, setFindings, svgRoot: () => svg };
 })();

@@ -286,6 +286,20 @@ def _findings_by_activity(result: AssessmentResult, findings: list) -> list[dict
                 "label": str(name) if name else str(activity).rsplit("#", 1)[-1],
                 "systems": [str(s) for s in sorted(systems, key=str)],
                 "findings": len(attributed),
+                # The findings themselves, so the business canvas can show which
+                # risks an activity carries rather than only how many. Ordered by
+                # label so a re-run does not reshuffle a list someone is reading.
+                "items": sorted(
+                    (
+                        {
+                            "id": str(finding),
+                            "label": _label(result.combined_graph, finding),
+                            "status": str(result.risk_findings.value(finding, PAIR.findingStatus) or ""),
+                        }
+                        for finding in attributed
+                    ),
+                    key=lambda row: row["label"],
+                ),
             }
         )
     return sorted(rows, key=lambda row: (-row["findings"], row["label"]))

@@ -77,6 +77,12 @@ motif is matched."""@en .
 
 ### Registration
 
+<http://w3id.org/airiskkg/patterns#BusinessDataBridge_DerivationOQP>
+    a pair:PatternImplementation ;
+    rdfs:label "Carry a business data annotation into the architecture it refines"@en ;
+    pair:implementationPath "ontology/context/implementation/business_data_bridge.rq" ;
+    pair:producesOutputType pair:DataCategoryPropagation .
+
 <http://w3id.org/airiskkg/patterns#BusinessFlow_DerivationOQP>
     a pair:PatternImplementation ;
     rdfs:label "Typed reachability over BPMN sequence flow"@en ;
