@@ -459,7 +459,9 @@
     note.className = "pp-note";
     note.textContent = pool ? `adding to: ${pool.label}` : "click a participant to add steps to it";
     host.appendChild(note);
-    host.classList.remove("hidden");
+    /* Visibility belongs to the level switch, not here. Un-hiding on every
+     * render put the BPMN palette on top of the architecture canvas, over the
+     * BEAM one, whichever level the reader had chosen. */
   }
 
   function init(options) {

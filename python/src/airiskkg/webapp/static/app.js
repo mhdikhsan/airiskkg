@@ -681,59 +681,6 @@
       pendingCause = null;
       renderHistory();
 
-    ProcessCanvas.init({
-      svg: "#process-canvas",
-      /* Every edit is a server-side rewrite of the graph, exactly like the
-       * architecture canvas: the Turtle in the editor stays the single source
-       * of truth, and nothing about the process lives only in the browser. */
-      onEdit: (op, payload) => runMutation(async () => {
-        try {
-          const { ttl } = await postJson("/api/process-edit", {
-            ttl: Editor.getValue(), op, ...payload,
-          });
-          noteChange(`business process: ${op.replace(/-/g, " ")}`);
-          Editor.setValue(ttl);
-          setStatus("ok", `Business process updated (${op})`);
-        } catch (error) {
-          setStatus("error", "Could not edit the process: " + error.message.split(String.fromCharCode(10))[0]);
-        }
-      }),
-      /* Descending is the whole point of the two levels: one box up here, a
-       * whole architecture down there. Highlight what was opened so the reader
-       * lands on it rather than on the graph in general. */
-      onOpenArchitecture: (activity) => {
-        setLevel("architecture", activity);
-        GraphView.setHighlight(activity.refines);
-        revealInSource(activity.refines);
-        setStatus("ok", `Opened ${activity.label}`, "click the breadcrumb to go back");
-      },
-    });
-    $("#btn-overview").addEventListener("click", openOverview);
-    $("#btn-overview-close").addEventListener("click", () => $("#overview").classList.add("hidden"));
-    document.addEventListener("keydown", (ev) => {
-      if (ev.key === "Escape") $("#overview").classList.add("hidden");
-    });
-    $("#btn-overview-svg").addEventListener("click", () => {
-      const svg = $("#overview-diagram").querySelector("svg");
-      if (!svg) { setStatus("error", "No diagram to export."); return; }
-      const markup = new XMLSerializer().serializeToString(svg);
-      downloadBlob(new Blob([markup], { type: "image/svg+xml" }), `${exportBaseName()}-context.svg`);
-      setStatus("ok", "Diagram exported");
-    });
-    $("#level-business").addEventListener("click", () => {
-      levelChosenByHand = true;
-      setLevel("business");
-    });
-    $("#level-architecture").addEventListener("click", () => {
-      levelChosenByHand = true;
-      setLevel("architecture");
-    });
-
-    /* Put the canvases and palettes into a known state once, rather than
-     * leaving them on whatever the markup happened to say until the first
-     * click. That gap is what made a freshly loaded process show nothing. */
-    setLevel(level);
-
     }
     lastAssessment = data;
     renderKnowledgeBaseBadge(data.run);
@@ -1267,6 +1214,59 @@ ex:Generate a beam:Transform ;
     initPalette();
     initMotifPalette(vocabulary.motifTemplates || []);
     renderHistory();
+
+    ProcessCanvas.init({
+      svg: "#process-canvas",
+      /* Every edit is a server-side rewrite of the graph, exactly like the
+       * architecture canvas: the Turtle in the editor stays the single source
+       * of truth, and nothing about the process lives only in the browser. */
+      onEdit: (op, payload) => runMutation(async () => {
+        try {
+          const { ttl } = await postJson("/api/process-edit", {
+            ttl: Editor.getValue(), op, ...payload,
+          });
+          noteChange(`business process: ${op.replace(/-/g, " ")}`);
+          Editor.setValue(ttl);
+          setStatus("ok", `Business process updated (${op})`);
+        } catch (error) {
+          setStatus("error", "Could not edit the process: " + error.message.split(String.fromCharCode(10))[0]);
+        }
+      }),
+      /* Descending is the whole point of the two levels: one box up here, a
+       * whole architecture down there. Highlight what was opened so the reader
+       * lands on it rather than on the graph in general. */
+      onOpenArchitecture: (activity) => {
+        setLevel("architecture", activity);
+        GraphView.setHighlight(activity.refines);
+        revealInSource(activity.refines);
+        setStatus("ok", `Opened ${activity.label}`, "click the breadcrumb to go back");
+      },
+    });
+    $("#btn-overview").addEventListener("click", openOverview);
+    $("#btn-overview-close").addEventListener("click", () => $("#overview").classList.add("hidden"));
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") $("#overview").classList.add("hidden");
+    });
+    $("#btn-overview-svg").addEventListener("click", () => {
+      const svg = $("#overview-diagram").querySelector("svg");
+      if (!svg) { setStatus("error", "No diagram to export."); return; }
+      const markup = new XMLSerializer().serializeToString(svg);
+      downloadBlob(new Blob([markup], { type: "image/svg+xml" }), `${exportBaseName()}-context.svg`);
+      setStatus("ok", "Diagram exported");
+    });
+    $("#level-business").addEventListener("click", () => {
+      levelChosenByHand = true;
+      setLevel("business");
+    });
+    $("#level-architecture").addEventListener("click", () => {
+      levelChosenByHand = true;
+      setLevel("architecture");
+    });
+
+    /* Put the canvases and palettes into a known state once, rather than
+     * leaving them on whatever the markup happened to say until the first
+     * click. That gap is what made a freshly loaded process show nothing. */
+    setLevel(level);
 
     $("#btn-history-clear").addEventListener("click", () => {
       if (!VersionHistory.list().length) return;
