@@ -7,11 +7,15 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 const POOL_LABEL_W = 34;   // the vertical name strip down a pool's left edge
 const POOL_PAD = 20;
-const BOX_W = 220;
+const BOX_W = 244;
 const BOX_H = 58;
 const BOX_GAP = 52;        // room for an arrow between two activities
 const CHILD_H = 30;
 const POOL_GAP = 34;
+const LINE_H = 14;         // a wrapped second line of an activity name
+const DATA_W = 30;         // the folded page / cylinder itself
+const DATA_H = 36;
+const DATA_BAND = 92;      // the strip above a pool's activities, when it has data
 
 let svg = null;
 let root = null;
@@ -46,6 +50,53 @@ function truncate(value, max) {
   return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
 
+/* Wrap on words instead of cutting. A name reading "Check the meter r..." tells
+ * a reader nothing about which of several meter activities they are looking
+ * at; the full text also goes on the <title> so nothing is lost. */
+function wrap(value, max, maxLines) {
+  const words = String(value || "").split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = "";
+  words.forEach((word) => {
+    const candidate = line ? `${line} ${word}` : word;
+    if (candidate.length <= max || !line) { line = candidate; return; }
+    lines.push(line);
+    line = word;
+  });
+  if (line) lines.push(line);
+  if (lines.length <= maxLines) return lines;
+  const kept = lines.slice(0, maxLines);
+  kept[maxLines - 1] = truncate(`${kept[maxLines - 1]} ${lines.slice(maxLines).join(" ")}`, max);
+  return kept;
+}
+
+function nameRoomOf(activity) {
+  return riskOf(activity) && riskOf(activity).findings ? 19 : 28;
+}
+
+/* The block above the sub-process marker: type icon, name, chip, performers.
+ * Everything inside a box is placed relative to this rather than to BOX_H, so
+ * a name that needs two lines pushes the rest down instead of colliding. */
+function headHeight(activity) {
+  const lines = wrap(activity.label, nameRoomOf(activity), 2).length;
+  return BOX_H + (lines - 1) * LINE_H;
+}
+
+function dataOf(activity) {
+  return [
+    ...activity.reads.map((d) => ({ ...d, direction: "in" })),
+    ...activity.writes.map((d) => ({ ...d, direction: "out" })),
+  ];
+}
+
+/* dpv:PersonalData reads as "Personal data" to someone who does not write RDF;
+ * the prefixed form stays on the tooltip. */
+function humanKind(kind) {
+  const local = String(kind).split(/[#:/]/).pop();
+  const spaced = local.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+}
+
 /** Activities of one pool, outermost only - children are drawn nested. */
 function topLevelOf(participant) {
   return data.activities.filter(
@@ -65,7 +116,7 @@ function riskOf(activity) {
 }
 
 function boxHeight(activity) {
-  let height = BOX_H;
+  let height = headHeight(activity);
   if (expanded.has(activity.id) && activity.children.length) {
     height += activity.children.length * CHILD_H + 10;
   }
@@ -85,13 +136,19 @@ function layout() {
     const activities = topLevelOf(participant);
     let x = POOL_LABEL_W + POOL_PAD;
     let tallest = BOX_H;
+    // Data objects sit in a strip above the activities, so a pool with none
+    // does not carry an empty band.
+    const band = activities.some((a) => dataOf(a).length) ? DATA_BAND : 0;
     activities.forEach((activity) => {
       const h = boxHeight(activity);
       tallest = Math.max(tallest, h);
-      placed.set(activity.id, { x, y: y + POOL_PAD, w: BOX_W, h, activity });
+      placed.set(activity.id, {
+        x, y: y + POOL_PAD + band, w: BOX_W, h,
+        head: headHeight(activity), band, activity,
+      });
       x += BOX_W + BOX_GAP;
     });
-    const poolH = tallest + POOL_PAD * 2;
+    const poolH = tallest + band + POOL_PAD * 2;
     pools.push({
       participant,
       x: 0,
@@ -108,9 +165,9 @@ function layout() {
 
 function arrow(parent, from, to, dashed, label) {
   const x1 = from.x + from.w;
-  const y1 = from.y + BOX_H / 2;
+  const y1 = from.y + (from.head || BOX_H) / 2;
   const x2 = to.x;
-  const y2 = to.y + BOX_H / 2;
+  const y2 = to.y + (to.head || BOX_H) / 2;
   const sameRow = Math.abs(y1 - y2) < 2;
   const d = sameRow
     ? `M ${x1} ${y1} L ${x2} ${y2}`
@@ -170,6 +227,79 @@ function typeMarker(parent, kind, x, y) {
   return g;
 }
 
+/* A data object is a folded page and a data store a cylinder, which is what
+ * BPMN 2.0 draws and what a reader of a process model already recognises. The
+ * classification underneath is the point of showing them at all: dpv:PersonalData
+ * on the item definition is what business_data_bridge.rq turns into a data
+ * category on the architecture, so an invisible annotation is an invisible
+ * cause of findings. */
+function dataGlyph(parent, x, y, item) {
+  const g = node("g", { class: "pc-data" }, parent);
+  if (item.store) {
+    node("path", {
+      d: `M ${x} ${y + 6} a ${DATA_W / 2} 6 0 0 1 ${DATA_W} 0 v 24 a ${DATA_W / 2} 6 0 0 1 ${-DATA_W} 0 z`,
+      class: "pc-data-shape",
+    }, g);
+    node("path", {
+      d: `M ${x} ${y + 6} a ${DATA_W / 2} 6 0 0 0 ${DATA_W} 0`, class: "pc-data-fold",
+    }, g);
+  } else {
+    const fold = 9;
+    node("path", {
+      d: `M ${x} ${y} h ${DATA_W - fold} l ${fold} ${fold} v ${DATA_H - fold} h ${-DATA_W} z`,
+      class: "pc-data-shape",
+    }, g);
+    node("path", { d: `M ${x + DATA_W - fold} ${y} v ${fold} h ${fold}`, class: "pc-data-fold" }, g);
+  }
+  if (item.collection) {
+    node("path", {
+      d: `M ${x + DATA_W / 2 - 3} ${y + DATA_H - 7} v 6 M ${x + DATA_W / 2} ${y + DATA_H - 7} v 6 M ${x + DATA_W / 2 + 3} ${y + DATA_H - 7} v 6`,
+      class: "pc-data-fold",
+    }, g);
+  }
+  return g;
+}
+
+/* A data association: dashed, with an open head, and pointing the way the data
+ * moves - into the activity for a read, out of it for a write. */
+function dataAssociation(parent, x1, y1, x2, y2) {
+  node("path", {
+    d: `M ${x1} ${y1} L ${x2} ${y2}`,
+    class: "pc-data-link",
+    "marker-end": "url(#pc-arrow-data)",
+  }, parent);
+}
+
+function drawData(parent, slot) {
+  const items = dataOf(slot.activity);
+  if (!items.length || !slot.band) return;
+  const spread = Math.min(slot.w / items.length, 92);
+  items.forEach((item, index) => {
+    const cx = slot.x + spread * (index + 0.5) + (slot.w - spread * items.length) / 2;
+    const top = slot.y - slot.band + 6;
+    const g = dataGlyph(parent, cx - DATA_W / 2, top, item);
+    if (item.direction === "in") {
+      dataAssociation(g, cx, top + DATA_H + 2, cx, slot.y - 4);
+    } else {
+      dataAssociation(g, cx, slot.y - 4, cx, top + DATA_H + 2);
+    }
+    wrap(item.label, 16, 2).forEach((line, row) => {
+      const label = text(g, cx, top + DATA_H + 13 + row * 11, line, "pc-data-label");
+      label.setAttribute("text-anchor", "middle");
+    });
+    if (item.kinds.length) {
+      const chip = text(g, cx, top - 4, item.kinds.map(humanKind).join(", "), "pc-data-kind");
+      chip.setAttribute("text-anchor", "middle");
+    }
+    const title = node("title", {}, g);
+    title.textContent = `${item.label} — ${item.direction === "in" ? "read by" : "written by"} `
+      + `${slot.activity.label}`
+      + (item.kinds.length
+        ? `\nClassified: ${item.kinds.join(", ")}`
+        : "\nNot classified");
+  });
+}
+
 function drawActivity(parent, slot) {
   const { activity } = slot;
   const group = node("g", {
@@ -180,18 +310,21 @@ function drawActivity(parent, slot) {
     x: slot.x, y: slot.y, width: slot.w, height: slot.h, rx: 8, class: "pc-box",
   }, group);
   const hint = node("title", {}, group);
-  hint.textContent = activity.refines.length
+  hint.textContent = `${activity.label}\n` + (activity.refines.length
     ? "Open the AI architecture that carries out this activity"
-    : (activity.children.length ? "Click + to show the steps inside" : "Edit this activity");
+    : (activity.children.length ? "Click + to show the steps inside" : "Edit this activity"));
 
   typeMarker(group, activity.kind, slot.x + 8, slot.y + 7);
-  // The risk badge owns the top right, so the label gives way to it.
-  const nameRoom = riskOf(activity) && riskOf(activity).findings ? 18 : 26;
-  text(group, slot.x + 26, slot.y + 17, truncate(activity.label, nameRoom), "pc-label");
+  // The risk badge owns the top right, so the name wraps under it.
+  const lines = wrap(activity.label, nameRoomOf(activity), 2);
+  lines.forEach((line, index) => {
+    text(group, slot.x + 26, slot.y + 17 + index * LINE_H, line, "pc-label");
+  });
+  const afterName = slot.y + 17 + (lines.length - 1) * LINE_H;
 
   if (activity.performers.length) {
-    const row = activity.refines.length ? 48 : 34;
-    text(group, slot.x + 26, slot.y + row, truncate(activity.performers.join(", "), 24), "pc-by");
+    const row = afterName + (activity.refines.length ? 31 : 17);
+    text(group, slot.x + 26, row, truncate(activity.performers.join(", "), 26), "pc-by");
   }
 
   // Two ways in: the inner flow, and the architecture that carries it.
@@ -219,7 +352,7 @@ function drawActivity(parent, slot) {
 
   if (expanded.has(activity.id) && activity.children.length) {
     childrenOf(activity).forEach((child, index) => {
-      const cy = slot.y + BOX_H + index * CHILD_H;
+      const cy = slot.y + slot.head + index * CHILD_H;
       node("rect", {
         x: slot.x + 12, y: cy, width: slot.w - 24, height: CHILD_H - 6, rx: 4, class: "pc-child",
       }, group);
@@ -265,16 +398,16 @@ function drawActivity(parent, slot) {
     const chip = node("g", { class: "pc-open" }, group);
     const chipW = 74;
     node("rect", {
-      x: slot.x + 26, y: slot.y + 23, width: chipW, height: 15, rx: 7, class: "pc-open-box",
+      x: slot.x + 26, y: afterName + 6, width: chipW, height: 15, rx: 7, class: "pc-open-box",
     }, chip);
-    const badge = text(chip, slot.x + 26 + chipW / 2, slot.y + 34, "AI system ›", "pc-open-label");
+    const badge = text(chip, slot.x + 26 + chipW / 2, afterName + 17, "AI system ›", "pc-open-label");
     badge.setAttribute("text-anchor", "middle");
   }
   if (onEdit) {
     // Sequence flow or message flow follows from the pools; the server decides.
     const port = node("g", { class: "pc-port", cursor: "crosshair" }, group);
     node("circle", {
-      cx: slot.x + slot.w, cy: slot.y + BOX_H / 2, r: 7, class: "pc-port-dot",
+      cx: slot.x + slot.w, cy: slot.y + slot.head / 2, r: 7, class: "pc-port-dot",
     }, port);
     port.addEventListener("pointerdown", (ev) => {
       ev.stopPropagation();
@@ -331,7 +464,7 @@ function moveConnect(ev) {
   if (!connecting) return;
   const to = svgPoint(ev.clientX, ev.clientY);
   const x1 = connecting.slot.x + connecting.slot.w;
-  const y1 = connecting.slot.y + BOX_H / 2;
+  const y1 = connecting.slot.y + connecting.slot.head / 2;
   connecting.line.setAttribute("d", `M ${x1} ${y1} L ${to.x} ${to.y}`);
 }
 
@@ -398,6 +531,11 @@ function draw() {
   svg.innerHTML = "";
 
   const defs = node("defs", {}, svg);
+  const dataHead = node("marker", {
+    id: "pc-arrow-data", viewBox: "0 0 10 10", refX: 9, refY: 5,
+    markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse",
+  }, defs);
+  node("path", { d: "M 0 0 L 10 5 L 0 10", class: "pc-arrow-head open" }, dataHead);
   [["pc-arrow", "pc-arrow-head"], ["pc-arrow-msg", "pc-arrow-head message"]].forEach(([id, cls]) => {
     // the message head is hollow; only sequence flow is filled
     const marker = node("marker", {
@@ -440,6 +578,7 @@ function draw() {
     });
     pool.activities.forEach((activity) => {
       drawnOrder.push(activity.id);
+      drawData(group, placed.get(activity.id));
       drawActivity(group, placed.get(activity.id));
     });
   });

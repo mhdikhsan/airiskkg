@@ -73,14 +73,22 @@ def _data_around(graph: Graph, activity: URIRef) -> tuple[list[dict], list[dict]
     """
 
     def resolve(reference: URIRef) -> dict:
-        target = graph.value(reference, _prop("dataObjectRef")) or graph.value(
-            reference, _prop("dataStoreRef")
-        ) or reference
+        store = graph.value(reference, _prop("dataStoreRef"))
+        target = store or graph.value(reference, _prop("dataObjectRef")) or reference
+        types = {short(t) for t in graph.objects(reference, RDF.type)} | {
+            short(t) for t in graph.objects(target, RDF.type)
+        }
         item = graph.value(target, _prop("itemSubjectRef"))
         kinds = [short(k) for k in graph.objects(item, _prop("structureRef"))] if item else []
+        collection = graph.value(target, _prop("isCollection"))
         return {
             "id": str(reference),
             "label": _label_of(graph, target),
+            # A store is drawn as a cylinder and an object as a folded page, so
+            # the shape has to survive the trip rather than be guessed here.
+            "store": bool(store) or "dataStore" in types or "dataStoreReference" in types,
+            "collection": bool(collection and collection.toPython()),
+            "item": str(item) if item is not None else None,
             "kinds": sorted(kinds),
         }
 

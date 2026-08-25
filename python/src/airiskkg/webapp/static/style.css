@@ -987,6 +987,15 @@ label.btn { display: inline-flex; align-items: center; }
 .pc-flow.message { stroke-dasharray: 5 4; stroke: #b07a2e; }
 .pc-flow.pending { stroke: #4a72c4; stroke-dasharray: 4 3; }
 .pc-flow-label { fill: #7c8698; font-size: 10px; }
+
+/* BPMN data objects: a folded page, a cylinder for a store, and a dashed
+   association carrying an open arrowhead. */
+.pc-data-shape { fill: #fffdf6; stroke: #b3a06b; stroke-width: 1.3; }
+.pc-data-fold { fill: none; stroke: #b3a06b; stroke-width: 1.3; }
+.pc-data-link { fill: none; stroke: #b3a06b; stroke-width: 1.2; stroke-dasharray: 4 3; }
+.pc-arrow-head.open { fill: none; stroke: #b3a06b; stroke-width: 1.3; }
+.pc-data-label { fill: #6f6444; font-size: 10px; }
+.pc-data-kind { fill: #9a6b1f; font-size: 9.5px; font-weight: 600; }
 .pc-arrow-head { fill: #7c8698; }
 .pc-arrow-head.message { fill: #ffffff; stroke: #b07a2e; stroke-width: 1.4; }
 .pc-msg-start { fill: #ffffff; stroke: #b07a2e; stroke-width: 1.4; }

@@ -145,6 +145,35 @@ def test_the_business_canvas_draws_its_pools_and_activities(rendered) -> None:
     assert "Northwind Energy" in markup and "Customer" in markup
 
 
+def test_the_business_canvas_draws_the_data_and_what_it_is(rendered) -> None:
+    """dpv:PersonalData on an item definition is what business_data_bridge.rq
+    turns into a data category on the architecture, so leaving it off the
+    diagram hides the cause of the findings it produces."""
+    canvas = re.search(r'<svg id="process-canvas".*?</svg>', rendered, re.S)
+    assert canvas, "the business canvas is not in the page at all"
+    markup = canvas.group(0)
+
+    assert "pc-data-shape" in markup, "no data objects were drawn"
+    assert "pc-data-link" in markup, "data objects are drawn but not associated with any activity"
+    assert "Smart meter reading" in markup, "the meter reading data object is not labelled"
+    assert "Personal data" in markup, (
+        "the data object carries dpv:PersonalData and the diagram does not say so"
+    )
+
+
+def test_a_long_activity_name_wraps_rather_than_being_cut(rendered) -> None:
+    """"Check the meter r..." reads as a different activity from the one it is."""
+    canvas = re.search(r'<svg id="process-canvas".*?</svg>', rendered, re.S)
+    # Only what is painted on the box. The full name is also on the <title>,
+    # and reading the whole markup let a truncated label pass on the strength
+    # of its own tooltip.
+    painted = " ".join(re.findall(r'<text[^>]*class="pc-label"[^>]*>([^<]*)</text>', canvas.group(0)))
+    assert "anomalies" in painted, (
+        "the second half of \"Check the meter reading for anomalies\" never made it onto the box; "
+        "the labels drawn were: " + painted
+    )
+
+
 def test_the_architecture_canvas_still_draws_beside_it(rendered) -> None:
     """Adding a business layer must not cost the layer that was already there."""
     assert 'class="node' in rendered, "no architecture nodes were drawn"
