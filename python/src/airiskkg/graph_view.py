@@ -263,8 +263,10 @@ def graph_view(ttl_text: str, scope: str | None = None) -> dict:
     # rendering one: beam:hasProcess / hasResource is what says an element
     # belongs to a system.
     claimed: set[URIRef] = set()
+    members_by_system: dict[str, set[URIRef]] = {}
     for entry in systems:
-        claimed |= _members_of(graph, URIRef(entry["id"]))
+        members_by_system[entry["id"]] = _members_of(graph, URIRef(entry["id"]))
+        claimed |= members_by_system[entry["id"]]
     unclaimed = sorted(n["id"] for n in nodes if URIRef(n["id"]) not in claimed)
 
     scoped_to = None
@@ -281,7 +283,22 @@ def graph_view(ttl_text: str, scope: str | None = None) -> dict:
     edges = [e for e in edges if e["source"] in node_set and e["target"] in node_set]
 
     return {
-        "systems": [{"id": s["id"], "label": s["label"], "line": s["line"]} for s in systems],
+        # Which elements each system holds, so the canvas can draw a boundary
+        # round them. Two architectures loaded together used to arrive as one
+        # undifferentiated cloud of nodes, and which cluster was which was left
+        # to the reader to infer from the labels.
+        "systems": [
+            {
+                "id": s["id"],
+                "label": s["label"],
+                "line": s["line"],
+                "members": sorted(
+                    str(m) for m in members_by_system.get(s["id"], set())
+                    if str(m) in {n["id"] for n in nodes}
+                ),
+            }
+            for s in systems
+        ],
         "nodes": nodes,
         "edges": edges,
         "scopedTo": scoped_to,

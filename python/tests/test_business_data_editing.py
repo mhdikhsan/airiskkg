@@ -139,3 +139,40 @@ def test_the_picker_offers_exactly_what_the_writer_accepts(client) -> None:
 
     offered = {row["id"] for row in client.get("/api/vocabulary").get_json()["dataClasses"]}
     assert offered == set(DATA_CLASSES)
+
+
+def test_each_architecture_says_which_elements_are_its_own(scene) -> None:
+    """Two architectures in one document arrived as one field of nodes, and
+    which cluster was which was left to the reader to infer from the labels.
+
+    Membership is not a layout guess: beam:hasProcess / hasResource / hasAgent /
+    contain already say what belongs to what, so the boundary the canvas draws
+    is read off the graph."""
+    from airiskkg.graph_view import graph_view
+
+    view = graph_view(scene)
+    systems = {s["label"]: s for s in view["systems"]}
+    assert len(systems) >= 2, f"expected both architectures, got {list(systems)}"
+    for label, system in systems.items():
+        assert system["members"], f"{label} claims no elements"
+
+    drawn = {n["id"] for n in view["nodes"]}
+    claimed = [m for s in view["systems"] for m in s["members"]]
+    assert set(claimed) <= drawn, "a system claims an element the canvas does not draw"
+    assert len(claimed) == len(set(claimed)), (
+        "an element is claimed by two systems; the boundaries would overlap"
+    )
+    assert not view["unclaimed"], f"elements belong to no system: {view['unclaimed']}"
+
+
+def test_a_narrowed_canvas_reports_only_the_system_it_shows(scene) -> None:
+    """Scoped to one architecture there is nothing to tell apart, and a boundary
+    round everything on screen would say nothing."""
+    from airiskkg.graph_view import graph_view
+
+    everything = graph_view(scene)
+    one = everything["systems"][0]
+    scoped = graph_view(scene, scope=one["id"])
+    assert scoped["scopedTo"] == one["id"]
+    drawn = {n["id"] for n in scoped["nodes"]}
+    assert drawn == set(one["members"]), "narrowing did not leave exactly that system's elements"

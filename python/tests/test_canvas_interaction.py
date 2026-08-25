@@ -483,3 +483,35 @@ def test_clicking_a_plain_activity_opens_an_editor_for_it(page) -> None:
 
     loop.run_until_complete(handle.js(
         'document.querySelector("#process-detail").classList.add("hidden")'))
+
+
+def test_two_architectures_are_drawn_as_two_named_areas(page) -> None:
+    """The scene holds a GraphRAG chatbot and a meter-anomaly scorer because one
+    business process runs both. They used to arrive as one undifferentiated
+    field of nodes with nothing saying where one ended and the other began."""
+    loop, handle = page
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(2)
+
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const bounds = [...document.querySelectorAll('.system-bound')];
+        return {
+            count: bounds.length,
+            names: bounds.map((b) => (b.querySelector('.system-bound-label') || {}).textContent),
+            boxes: bounds.map((b) => {
+                const r = b.querySelector('.system-bound-box');
+                return { w: Number(r.getAttribute('width')), h: Number(r.getAttribute('height')) };
+            }),
+        };
+    })()"""))
+
+    assert seen["count"] >= 2, (
+        f"expected a boundary per architecture, drew {seen['count']}"
+    )
+    assert all(name and name.strip() for name in seen["names"]), (
+        f"a boundary was drawn with no name on it: {seen['names']}"
+    )
+    assert all(b["w"] > 0 and b["h"] > 0 for b in seen["boxes"]), (
+        f"a boundary has no area: {seen['boxes']}"
+    )
+    _back_to_business(loop, handle)

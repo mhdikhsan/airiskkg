@@ -1089,6 +1089,29 @@ label.btn { display: inline-flex; align-items: center; }
 .canvas-wrap.business .system-badge,
 .canvas-wrap.business .node-detail:not(#process-detail) { display: none !important; }
 
+/* A dashed boundary round each architecture, when more than one is loaded.
+   Transparent on purpose: it groups what is already drawn rather than becoming
+   another thing to read. */
+.system-bound-box {
+  fill: rgba(74, 114, 196, 0.035);
+  stroke: #9aa4b8;
+  stroke-width: 1.2;
+  stroke-dasharray: 7 5;
+}
+.system-bound-label {
+  fill: #6b7488;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.system-bound.s1 .system-bound-box { fill: rgba(79, 154, 106, 0.04); stroke: #8fb39c; }
+.system-bound.s1 .system-bound-label { fill: #5d8a6f; }
+.system-bound.s2 .system-bound-box { fill: rgba(179, 160, 107, 0.05); stroke: #bfae83; }
+.system-bound.s2 .system-bound-label { fill: #8a7a4f; }
+.system-bound.s3 .system-bound-box { fill: rgba(160, 106, 160, 0.04); stroke: #b394b3; }
+.system-bound.s3 .system-bound-label { fill: #8a6b8a; }
+
 /* ---- drawing the business layer ------------------------------------------- */
 
 .process-palette {

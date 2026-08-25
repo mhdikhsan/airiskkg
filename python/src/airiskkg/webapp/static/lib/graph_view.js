@@ -40,7 +40,9 @@ function nodeWidth(node) {
 }
 
 
-const COMPONENT_GAP = 70;
+// Wide enough that a system boundary drawn round one component clears the
+// next one: SYS_PAD twice, plus the room its name sits in.
+const COMPONENT_GAP = 110;
 
  
 function naturalKey(id) {
@@ -282,6 +284,47 @@ function placeNodeAt(id, clientX, clientY) {
   suppressFitOnce = true;
 }
 
+const SYS_PAD = 22;        // room between the outermost node and the boundary
+const SYS_LABEL_H = 20;
+
+/* A dashed boundary round each beam:System, with its name on it.
+ *
+ * One document can hold two architectures - a business process that runs both
+ * is exactly why - and they arrived as one undifferentiated field of nodes.
+ * Which cluster was which was left to the reader to infer from the labels,
+ * which is not something a diagram should ask.
+ *
+ * Membership comes from the server: beam:hasProcess / hasResource / hasAgent /
+ * contain already say what belongs to what, so this is drawn from the graph
+ * rather than from how the layout happened to cluster things. Nothing is drawn
+ * when only one system is on screen, or when the canvas is already narrowed to
+ * one - a box round everything says nothing. */
+function drawSystemBounds(layer) {
+  const systems = (current.systems || []).filter((s) => (s.members || []).length);
+  if (current.scopedTo || systems.length < 2) return;
+
+  systems.forEach((system, index) => {
+    const boxes = system.members.map((id) => positions.get(id)).filter(Boolean);
+    if (!boxes.length) return;
+    const left = Math.min(...boxes.map((b) => b.x)) - SYS_PAD;
+    const top = Math.min(...boxes.map((b) => b.y)) - SYS_PAD - SYS_LABEL_H;
+    const right = Math.max(...boxes.map((b) => b.x + b.w)) + SYS_PAD;
+    const bottom = Math.max(...boxes.map((b) => b.y + b.h)) + SYS_PAD;
+
+    const group = svgEl("g", { class: `system-bound s${index % 4}`, "data-id": system.id }, layer);
+    svgEl("rect", {
+      x: left, y: top, width: right - left, height: bottom - top, rx: 10,
+      class: "system-bound-box",
+    }, group);
+    const name = svgEl("text", {
+      x: left + 12, y: top + 14, class: "system-bound-label",
+    }, group);
+    name.textContent = system.label;
+    svgEl("title", {}, group).textContent =
+      `${system.label} — ${system.members.length} element(s)`;
+  });
+}
+
 function draw() {
   svg.innerHTML = "";
   const defs = svgEl("defs", {}, svg);
@@ -294,8 +337,10 @@ function draw() {
   }
 
   viewport = svgEl("g", { id: "viewport" }, svg);
+  const systemLayer = svgEl("g", { class: "systems" }, viewport);
   const edgeLayer = svgEl("g", { class: "edges" }, viewport);
   const nodeLayer = svgEl("g", { class: "nodes" }, viewport);
+  drawSystemBounds(systemLayer);
 
   for (const e of current.edges) {
     const d = edgePath(e);
