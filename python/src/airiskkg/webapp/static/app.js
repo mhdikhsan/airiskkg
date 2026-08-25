@@ -88,6 +88,15 @@
     pendingCause = cause;
   }
 
+  function setTabVisible(name, visible) {
+    const tab = document.querySelector(`[data-drawer-tab="${name}"]`);
+    if (!tab) return;
+    tab.classList.toggle("hidden", !visible);
+    /* Hiding the tab someone is reading would leave the drawer showing a panel
+     * with no tab above it, which looks like the app lost its place. */
+    if (!visible && tab.classList.contains("active")) openDrawer("findings");
+  }
+
   function setStale(isStale) {
     $("#findings-stale").classList.toggle("hidden", !isStale);
   }
@@ -157,9 +166,18 @@
     $("#palette").classList.toggle("hidden", next !== "architecture");
     $("#motif-palette").classList.toggle("hidden", next !== "architecture");
     $("#process-detail").classList.add("hidden");
+    /* Architecture furniture - the empty-state overlay, the legend, the system
+     * badge - is absolutely positioned across the whole wrap, so it painted
+     * over a perfectly good business diagram. One class, hidden in CSS. */
+    $("#canvas-wrap").classList.toggle("business", next === "business");
     renderBreadcrumb();
-    if (next === "business") ProcessCanvas.fit();
-    else GraphView.fit();
+    /* After the browser has actually laid the newly shown surface out. Fitting
+     * synchronously measured an element that was display:none a statement ago
+     * and produced a drawing the size of a full stop. */
+    requestAnimationFrame(() => {
+      if (next === "business") ProcessCanvas.fit();
+      else GraphView.fit();
+    });
   }
 
   function renderBreadcrumb() {
@@ -205,6 +223,7 @@
     ProcessCanvas.render(data);
     const hasProcess = data.stats.activities > 0;
     $("#level-switch").classList.toggle("hidden", !hasProcess);
+    setTabVisible("process", hasProcess);
 
     /* Land where there is something to see. A process loaded on its own leaves
      * the architecture canvas legitimately empty - there are no BEAM elements -
@@ -221,25 +240,20 @@
     empty.classList.toggle("hidden", count > 0);
     if (!count) return;
 
-    data.processes.forEach((process) => {
-      summary.appendChild(el("div", { class: "summary-row" }, [
-        el("span", { class: "stat" }, process.label),
-        process.participant ? el("span", { class: "stat" }, process.participant) : null,
-        el("span", { class: "stat" }, `${data.stats.refined} of ${count} activities are AI`),
-        el("span", { class: "stat" }, `${data.stats.humanSteps} human steps`),
-        process.isExecutable === false
-          ? el("span", { class: "hint" }, "not marked executable - a description, not a deployment")
-          : null,
-      ]));
-    });
-
-    /* A system nothing claims is assessed with no business context at all,
-     * which is the case this whole layer exists to improve. Say so rather than
-     * leaving the absence silent. */
-    data.unrefinedSystems.forEach((system) => {
-      summary.appendChild(el("div", { class: "proc-warn" },
-        `${system.label} is not carried out by any activity here - it is assessed without business context.`));
-    });
+    /* One line. It used to print a row per process, each repeating the same
+     * global counts, so a two-pool collaboration claimed twice that "1 of 10
+     * activities are AI" - both noisier and wrong. */
+    const actors = data.participants.map((a) => a.label).join(" · ");
+    const descriptive = data.processes.filter((x) => x.isExecutable === false).length;
+    summary.appendChild(el("div", { class: "summary-row" }, [
+      actors ? el("span", { class: "stat" }, actors) : null,
+      el("span", { class: "stat" }, `${count} activities`),
+      data.stats.refined ? el("span", { class: "stat" }, `${data.stats.refined} AI`) : null,
+      data.stats.humanSteps ? el("span", { class: "stat" }, `${data.stats.humanSteps} human`) : null,
+      descriptive
+        ? el("span", { class: "hint" }, `${descriptive} not marked executable`)
+        : null,
+    ]));
 
     let lane = null;
     data.activities.forEach((activity) => {
@@ -413,6 +427,7 @@
     const empty = $("#history-empty");
     list.innerHTML = "";
     $("#history-count").textContent = versions.length ? String(versions.length) : "";
+    setTabVisible("history", versions.length > 0);
     empty.classList.toggle("hidden", versions.length > 0);
 
     versions.forEach((version) => {

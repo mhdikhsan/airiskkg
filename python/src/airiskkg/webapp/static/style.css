@@ -955,33 +955,53 @@ label.btn { display: inline-flex; align-items: center; }
 #process-canvas.hidden { display: none; }
 #canvas.hidden { display: none; }
 
-.pc-pool-box { fill: rgba(255, 255, 255, 0.02); stroke: var(--border); stroke-width: 1; }
-.pc-pool-strip { fill: rgba(255, 255, 255, 0.04); stroke: var(--border); stroke-width: 1; }
-.pc-pool-label { fill: var(--text); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+/* The business canvas shares the architecture canvas's light ground
+ * (--canvas-bg), not the dark chrome around it. Painted with the same ink the
+ * BEAM shapes use: the first version reached for the UI tokens and produced a
+ * dark box on a white page. */
 
-.pc-box { fill: var(--bg-panel); stroke: var(--border); stroke-width: 1.5; }
-.pc-activity.refined .pc-box { stroke: var(--accent); stroke-width: 2; }
-.pc-activity.human .pc-box { stroke: var(--good); }
-.pc-kind { fill: var(--text-dim); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; }
-.pc-label { fill: var(--text); font-size: 13px; }
-.pc-by { fill: var(--text-dim); font-size: 10.5px; }
+.pc-pool-box { fill: #ffffff; stroke: #c9cfdb; stroke-width: 1.2; }
+.pc-pool-strip { fill: #eef1f6; stroke: #c9cfdb; stroke-width: 1.2; }
+.pc-pool-label { fill: #48505f; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
 
-.pc-child { fill: rgba(255, 255, 255, 0.03); stroke: var(--border); stroke-width: 1; }
-.pc-child-label { fill: var(--text-dim); font-size: 11px; }
+.pc-box { fill: #f8f9fc; stroke: #9aa4b8; stroke-width: 1.4; }
+.pc-activity.refined .pc-box { fill: #eef3ff; stroke: #4a72c4; stroke-width: 2; }
+.pc-activity.human .pc-box { stroke: #4f9a6a; }
+.pc-activity:hover .pc-box { filter: brightness(0.97); }
+.pc-kind { fill: #7c8698; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.pc-label { fill: #2a2f38; font-size: 13px; font-weight: 600; }
+.pc-by { fill: #7c8698; font-size: 10.5px; }
 
-.pc-marker-box { fill: var(--bg-panel); stroke: var(--border); stroke-width: 1; }
-.pc-marker-sign { fill: var(--text-dim); font-size: 13px; }
-.pc-marker:hover .pc-marker-box { stroke: var(--accent); }
+.pc-child { fill: #ffffff; stroke: #c9cfdb; stroke-width: 1; }
+.pc-child-label { fill: #48505f; font-size: 11px; }
 
-.pc-open-box { fill: var(--accent-dim); }
-.pc-open-label { fill: #fff; font-size: 9.5px; }
-.pc-open:hover .pc-open-box { fill: var(--accent); }
+.pc-marker-box { fill: #ffffff; stroke: #9aa4b8; stroke-width: 1.2; }
+.pc-marker-sign { fill: #48505f; font-size: 13px; font-weight: 600; }
+.pc-marker:hover .pc-marker-box { stroke: #4a72c4; }
 
-.pc-flow { fill: none; stroke: var(--text-dim); stroke-width: 1.4; }
-.pc-flow.message { stroke-dasharray: 5 4; stroke: var(--warn); }
-.pc-flow-label { fill: var(--text-dim); font-size: 10px; }
-.pc-arrow-head { fill: var(--text-dim); }
-.pc-arrow-head.message { fill: var(--warn); }
+.pc-open-box { fill: #4a72c4; }
+.pc-open-label { fill: #ffffff; font-size: 9.5px; font-weight: 600; }
+.pc-open:hover .pc-open-box { fill: #3a5da8; }
+
+.pc-flow { fill: none; stroke: #7c8698; stroke-width: 1.5; }
+.pc-flow.message { stroke-dasharray: 5 4; stroke: #b07a2e; }
+.pc-flow.pending { stroke: #4a72c4; stroke-dasharray: 4 3; }
+.pc-flow-label { fill: #7c8698; font-size: 10px; }
+.pc-arrow-head { fill: #7c8698; }
+.pc-arrow-head.message { fill: #b07a2e; }
+
+.pc-pool.selected .pc-pool-strip { fill: #dce6fb; }
+.pc-pool.selected .pc-pool-label { fill: #2f4d94; }
+.pc-port-dot { fill: #ffffff; stroke: #4a72c4; stroke-width: 1.5; opacity: 0; }
+.pc-activity:hover .pc-port-dot { opacity: 1; }
+
+/* Architecture-only furniture must not paint over the business canvas: the
+ * "live preview appears here" overlay is absolutely positioned across the whole
+ * wrap, so on the business level it covered a perfectly good diagram. */
+.canvas-wrap.business .canvas-empty,
+.canvas-wrap.business .legend,
+.canvas-wrap.business .system-badge,
+.canvas-wrap.business .node-detail { display: none !important; }
 
 /* ---- drawing the business layer ------------------------------------------- */
 
@@ -1015,11 +1035,6 @@ label.btn { display: inline-flex; align-items: center; }
 .pp-item:disabled { opacity: 0.4; cursor: not-allowed; }
 .pp-note { font-size: 10.5px; color: var(--text-dim); padding-left: 4px; }
 
-.pc-pool.selected .pc-pool-strip { fill: var(--accent-dim); }
-.pc-pool.selected .pc-pool-label { fill: #fff; }
-.pc-port-dot { fill: var(--bg-panel); stroke: var(--accent); stroke-width: 1.5; opacity: 0; }
-.pc-activity:hover .pc-port-dot { opacity: 1; }
-.pc-flow.pending { stroke: var(--accent); stroke-dasharray: 4 3; }
 
 /* ---- stakeholder overview -------------------------------------------------
  * Read-only, one page, meant to be shown rather than edited. */
