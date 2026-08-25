@@ -1,28 +1,12 @@
-"""Why a motif did *not* match: the near-miss report.
-
-A thin or empty result set is otherwise silent, and silence reads as "nothing to
-worry about" when it usually means "the annotation is incomplete". This says
-which pattern nodes and edges the submitted graph leaves unsatisfied, closest
-motifs first.
-"""
-
 from __future__ import annotations
 
 from rdflib import RDF, Graph, URIRef
-
 from airiskkg.assessment_runner import BEAM, PAIR, load_base_graph
 from airiskkg.workbench.templates import motif_templates
 from airiskkg.workbench.terms import PROCESS_CLASS_NAMES, label
 
 
 def _elements_of_class(graph: Graph, class_name: str) -> set[URIRef]:
-    """Elements satisfying a pattern node's expected class, matching what the
-    queries accept.
-
-    Step nodes ask for `a/rdfs:subClassOf* beam:Process`, so any process-family
-    typing qualifies - beam:Infer, beam:Transform, beam:Train, beam:Generate, or
-    beam:Process itself. The gap report must use the same rule or it will claim a
-    node is unsatisfied while the assessment matches it."""
     if class_name in PROCESS_CLASS_NAMES:
         elements: set[URIRef] = set()
         for name in PROCESS_CLASS_NAMES:
@@ -32,8 +16,6 @@ def _elements_of_class(graph: Graph, class_name: str) -> set[URIRef]:
 
 
 def _role_closure(graph: Graph, role_name: str) -> set[URIRef]:
-    """A role plus every role beneath it: match queries traverse
-    pair:playsRole/pair:subRoleOf*, so a sub-role satisfies its parent."""
     root = PAIR[role_name]
     closure = {root}
     frontier = [root]
@@ -47,13 +29,6 @@ def _role_closure(graph: Graph, role_name: str) -> set[URIRef]:
 
 
 def motif_gaps(ttl: str) -> list[dict]:
-    """Explain why motifs did NOT match: per motif, which pattern nodes and edges
-    the submitted graph leaves unsatisfied.
-
-    Mirrors the match queries deliberately - explicit rdf:type (no subclass
-    inference, exactly like the queries) and pair:subRoleOf* for roles - so the
-    report can never disagree with the assessment. Fully matched motifs are left
-    out; they are already reported as matches."""
     graph = load_base_graph()
     graph.parse(data=ttl, format="turtle")
 

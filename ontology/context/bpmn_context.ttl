@@ -1,0 +1,84 @@
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+
+<http://w3id.org/airiskkg/context>
+    a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:title "PAIR-AI Business Context Bridge"@en ;
+    dct:description """Joins a business process model to the AI architectures it
+uses. Three layers, joined by refinement and never by subsumption: the business
+layer says what the organisation does, the architecture layer says how one AI
+capability is built, and the pattern layer matches motifs over the second.
+
+A BPMN activity is NOT a beam:Process and must never be aligned to one. Every
+match query types its step node as `?step a/rdfs:subClassOf* beam:Process`, so
+subsuming activities under it would make every business activity a candidate
+motif node - and the input contract, which requires each beam:Process to use or
+produce a resource, would reject every process model outright."""@en ;
+    dct:source <https://sbpmn.github.io/2.0/> ;
+    vann:preferredNamespacePrefix "pair" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/pair-ai#" ;
+    owl:imports <http://w3id.org/beam/core#> .
+
+### The bridge
+
+pair:refinedBy a owl:ObjectProperty ;
+    rdfs:label "refined by"@en ;
+    rdfs:comment """The AI system that carries out this business activity: one box
+in the process diagram, expanded into an architecture graph.
+
+PAIR owns this rather than reusing sbpmn:calledElement, whose range is
+unconstrained and which would therefore accept it. Reusing it would hard-code the
+sBPMN namespace into every submitted architecture and foreclose swapping the
+process ontology later; the bridge belongs to whichever project spans both layers,
+and that is this one.
+
+Attach it to the activity that invokes the capability. A bpmn:serviceTask is the
+ordinary case - one activity, one system. A bpmn:callActivity or bpmn:subProcess
+is the agentic case, where the capability is itself a process."""@en ;
+    rdfs:domain bpmn:activity ;
+    rdfs:range beam:System ;
+    rdfs:seeAlso bp:calledElement .
+
+pair:businessFollows a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:label "business follows"@en ;
+    rdfs:comment """Derived, never annotated: one flow node is reachable from
+another along BPMN sequence flow.
+
+It exists because bp:sourceRef and bp:targetRef are declared on five classes -
+sequenceFlow, messageFlow, dataAssociation, association and conversationLink. A
+property path written straight over them walks out of control flow, through a
+data association, and back in somewhere unrelated, and the result looks like
+evidence. Materializing one typed hop means every condition downstream can use a
+plain transitive path and cannot make that mistake.
+
+Transitive so a gateway, a wait, or an intervening activity between the AI step
+and a later control does not hide it."""@en ;
+    rdfs:domain bpmn:flowNode ;
+    rdfs:range bpmn:flowNode .
+
+pair:BusinessFlowDerivation a owl:Class ;
+    rdfs:label "Business Flow Derivation"@en ;
+    skos:definition """Marker output type for implementations that derive
+relations over the business process layer rather than over the architecture.
+
+A distinct type from pair:DataCategoryPropagation because these carry no data
+category and assert nothing about content - the same reason mitigation rewrites
+have their own type. Both run in the pipeline's derivation phase, before any
+motif is matched."""@en .
+
+### Registration
+
+<http://w3id.org/airiskkg/patterns#BusinessFlow_DerivationOQP>
+    a pair:PatternImplementation ;
+    rdfs:label "Typed reachability over BPMN sequence flow"@en ;
+    pair:implementationPath "ontology/context/implementation/business_flow.rq" ;
+    pair:producesOutputType pair:BusinessFlowDerivation .

@@ -33,10 +33,12 @@ from rdflib import RDF, Graph, Namespace
 from rdflib.compare import to_canonical_graph
 
 from airiskkg.paths import (
+    CONTEXT_DIR,
     CORE_DIR,
     FACETS_DIR,
     PATTERNS_DIR,
     REPO_ROOT,
+    SBPMN_DIR,
     TAXONOMY_DIR,
 )
 
@@ -73,6 +75,13 @@ def ontology_files() -> list[Path]:
         *PATTERN_FILES,
         *sorted(FACETS_DIR.glob("*.ttl")),
         *sorted(TAXONOMY_DIR.glob("*.ttl")),
+        # The business context layer, and the BPMN vocabulary it reads. Loaded
+        # unconditionally rather than behind a flag: it is inert until an
+        # architecture actually carries pair:refinedBy, and both bundled examples
+        # produce byte-identical results with it present. A flag would buy
+        # nothing and put a branch on the path every assessment takes.
+        *sorted(CONTEXT_DIR.glob("*.ttl")),
+        *sorted(SBPMN_DIR.glob("*.ttl")),
     ]
 
 

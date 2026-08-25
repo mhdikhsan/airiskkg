@@ -1,8 +1,5 @@
 "use strict";
 
-/* Workbench wiring: editor <-> live preview <-> assessment.
- * Requires editor.js (window.Editor) and graph.js (window.GraphView).
- */
 (function () {
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -33,9 +30,6 @@
     return api(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   }
 
-  /* Download endpoints answer with a file on success and JSON on failure, so
-   * they cannot go through api() - it parses every response as JSON and would
-   * turn a perfectly good Turtle download into a parse error. */
   async function postForFile(url, body) {
     const res = await fetch(url, {
       method: "POST",
@@ -67,14 +61,13 @@
     requestAnimationFrame(() => URL.revokeObjectURL(url));
   }
 
-  /** Name exports after the loaded example, so several downloads stay apart. */
   function exportBaseName() {
     const selected = $("#example-select");
     const name = selected && selected.value ? selected.value : "";
     return (name || "architecture").replace(/\.(ttl|turtle|nt)$/i, "");
   }
 
-  // ---- status bar ------------------------------------------------------------
+  //status bar
   function setStatus(state, message, stats) {
     const dot = $("#status-dot");
     dot.className = `status-dot ${state}`;
@@ -87,27 +80,8 @@
     return match ? Number(match[1]) : null;
   }
 
-  /* ---- run identity ---------------------------------------------------------
-   *
-   * Two things about an assessment are invisible while you work, and both
-   * mislead. The drawer keeps showing the last run's findings while the editor
-   * beside it moves on, so you can read findings that describe a graph you have
-   * since changed. And a .ttl edited on disk is not picked up by a running
-   * server - Flask's reloader watches Python only - so the answer may come from
-   * a library you think you replaced.
-   *
-   * The staleness check asks the server for a canonical fingerprint rather than
-   * comparing the Turtle as text. Every canvas edit and every annotation
-   * re-serializes the whole document through rdflib, so the text changes
-   * constantly while the graph often does not, and a warning that cries wolf
-   * after each click is one people learn to ignore. */
   let lastRun = null; // { fingerprint, findingIds: Set }
   let staleTimer = null;
-
-  /* What changed the graph since the last assessment. The server sees only a
-   * different Turtle document and cannot tell an applied control from a hand
-   * edit, so the label has to be set where the action happens. It is the part
-   * that makes a history readable rather than a column of numbers. */
   let pendingCause = null;
 
   function noteChange(cause) {
@@ -126,8 +100,6 @@
         const { fingerprint } = await postJson("/api/fingerprint", { ttl });
         setStale(fingerprint !== lastRun.fingerprint);
       } catch (error) {
-        // A graph that will not parse cannot be compared. Say nothing rather
-        // than claim staleness: the parse error is already on screen.
       }
     }, 400);
   }
@@ -152,7 +124,94 @@
     badge.classList.remove("hidden");
   }
 
-  // ---- version history -------------------------------------------------------
+  /* ---- business process -----------------------------------------------------
+   *
+   * The layer above the architecture: what the organisation does, and which of
+   * its activities this system carries out. Rendered as a list rather than a
+   * diagram on purpose - what a risk assessment needs from a process is which
+   * activity, in whose lane, reading what, performed by whom, and a row answers
+   * each of those at least as well as a shape would.
+   *
+   * Activities arrive in flow order from the server, so this renders them as
+   * given and never re-sorts. */
+  async function refreshProcess(ttl) {
+    const list = $("#process-list");
+    const summary = $("#process-summary");
+    const empty = $("#process-empty");
+    let data;
+    try {
+      data = await postJson("/api/process", { ttl });
+    } catch (error) {
+      return; // an unparseable graph already says so in the status bar
+    }
+
+    list.innerHTML = "";
+    summary.innerHTML = "";
+    const count = data.stats.activities;
+    $("#process-count").textContent = count ? String(count) : "";
+    empty.classList.toggle("hidden", count > 0);
+    if (!count) return;
+
+    data.processes.forEach((process) => {
+      summary.appendChild(el("div", { class: "summary-row" }, [
+        el("span", { class: "stat" }, process.label),
+        process.participant ? el("span", { class: "stat" }, process.participant) : null,
+        el("span", { class: "stat" }, `${data.stats.refined} of ${count} activities are AI`),
+        el("span", { class: "stat" }, `${data.stats.humanSteps} human steps`),
+        process.isExecutable === false
+          ? el("span", { class: "hint" }, "not marked executable - a description, not a deployment")
+          : null,
+      ]));
+    });
+
+    /* A system nothing claims is assessed with no business context at all,
+     * which is the case this whole layer exists to improve. Say so rather than
+     * leaving the absence silent. */
+    data.unrefinedSystems.forEach((system) => {
+      summary.appendChild(el("div", { class: "proc-warn" },
+        `${system.label} is not carried out by any activity here - it is assessed without business context.`));
+    });
+
+    let lane = null;
+    data.activities.forEach((activity) => {
+      if (activity.lane !== lane) {
+        lane = activity.lane;
+        list.appendChild(el("div", { class: "proc-lane" }, lane || "no lane"));
+      }
+      const badges = [];
+      if (activity.refines.length) badges.push(el("span", { class: "proc-badge ai" }, "AI system"));
+      if (activity.human) badges.push(el("span", { class: "proc-badge human" }, "human"));
+      activity.reads.forEach((item) => {
+        item.kinds.forEach((kind) =>
+          badges.push(el("span", { class: "proc-badge data" }, `reads ${kind}`)));
+      });
+
+      const row = el("div", { class: "proc-row" }, [
+        el("span", { class: "proc-kind" }, activity.kind),
+        el("span", { class: "proc-name" }, activity.label),
+        el("span", { class: "proc-badges" }, badges),
+        activity.performers.length
+          ? el("span", { class: "proc-by" }, activity.performers.join(", "))
+          : null,
+      ]);
+
+      /* Expand: the AI activity is one box here and a whole architecture when
+       * opened. Clicking it highlights the system that carries it and puts the
+       * cursor on its source, which is as far as one editor pane can take the
+       * idea. */
+      if (activity.refines.length) {
+        row.classList.add("refined");
+        row.addEventListener("click", () => {
+          GraphView.setHighlight(activity.refines);
+          revealInSource(activity.refines);
+        });
+        row.title = "Show the AI system this activity is carried out by";
+      }
+      list.appendChild(row);
+    });
+  }
+
+  //version history
 
   function shortTime(iso) {
     const at = new Date(iso);
@@ -191,11 +250,6 @@
         el("span", { class: "hist-cause" }, version.cause || ""),
       ]);
 
-      /* Restoring puts the graph back and leaves it there. It deliberately does
-       * not re-assess: an assessment is ~2.6 s and re-running one the user did
-       * not ask for would make browsing the history feel like work. The stale
-       * badge then says exactly what is true - these findings are from a run,
-       * and this graph is that run's graph. */
       if (version.ttl && !current) {
         const restore = el("button", { class: "btn small", type: "button" }, "Restore");
         restore.addEventListener("click", () => {
@@ -212,7 +266,7 @@
     });
   }
 
-  // ---- live preview ----------------------------------------------------------
+  //  live preview 
   let previewSeq = 0;
 
   async function refreshPreview(ttl) {
@@ -224,11 +278,11 @@
       return;
     }
     scheduleStaleCheck(ttl);
+    refreshProcess(ttl);
     try {
       const data = await postJson("/api/graph", { ttl });
-      if (seq !== previewSeq) return; // a newer edit is already in flight
+      if (seq !== previewSeq) return;
       GraphView.render(data);
-      // Rebuilt on every parse, so it can never point into a stale buffer.
       sourceLines = new Map(
         [...data.nodes, ...data.systems]
           .filter((n) => n.line)
@@ -249,13 +303,10 @@
       Editor.markErrorLine(line);
       const firstLine = error.message.split("\n").find((l) => l.trim()) || "Parse error";
       setStatus("error", line ? `Line ${line}: ${firstLine}` : firstLine);
-      // keep the last good graph on screen while the user is mid-edit
     }
   }
 
-  /* Element id -> the line of the editor buffer that declares it, from the
-   * last successful parse. Clicking anything that names elements - a node, a
-   * motif match, a finding - can then put the cursor on the source. */
+ 
   let sourceLines = new Map();
 
   function revealInSource(ids) {
@@ -263,7 +314,7 @@
     if (lines.length) Editor.revealLines(lines);
   }
 
-  // ---- drawer ----------------------------------------------------------------
+  //  drawer 
   function openDrawer(tab) {
     $("#drawer").classList.remove("collapsed");
     $("#drawer-toggle").innerHTML = "&#9660;";
@@ -281,17 +332,9 @@
     $$(".drawer-panel").forEach((p) => p.classList.toggle("hidden", p.dataset.drawerPanel !== name));
   }
 
-  // ---- findings --------------------------------------------------------------
+  // findings 
   let selectedFinding = null;
 
-  /* One mitigation as a list item.
-   *
-   * A control with a registered rewrite gets a button that inserts it onto the
-   * path THIS finding cites, and the assessment re-runs so the effect is
-   * visible rather than asserted. Everything else shows its realizing motif as
-   * a plain label: still worth knowing, but the tool cannot place it for you,
-   * and a button that quietly does nothing is worse than no button.
-   */
   function controlItem(control, finding) {
     const motifs = control.realizedByMotifs || [];
     const children = [el("span", { class: "ctrl-label" }, control.label)];
@@ -318,7 +361,7 @@
     return el("li", { title: control.definition || "" }, children);
   }
 
-  // MIT taxonomy-grounded mitigations for this finding's risks.
+  // 
   function groundedFamiliesSection(families) {
     if (!families || !families.length) return null;
     return el("div", { class: "ctrl-group evidence" }, [
@@ -339,12 +382,6 @@
     ];
   }
 
-  /* Taxonomy chips, with the overflow actually reachable.
-   *
-   * The row used to cut off at four and render a dead "+3" that named nothing
-   * and could not be opened, so the anchors a finding carries - which are the
-   * whole point of anchoring to external taxonomies - were unreadable. The
-   * counter is now a button that reveals the rest in place. */
   const TAXONOMY_CHIP_LIMIT = 4;
 
   function taxonomyChips(finding) {
@@ -408,10 +445,6 @@
     const summary = $("#findings-summary");
     summary.innerHTML = "";
 
-    /* Against the previous run, by finding id. Finding IRIs are deterministic
-     * by design - so a triage judgement survives a re-run - which also makes
-     * "did the control I just applied actually work" a set difference rather
-     * than a matter of counting rows and hoping. */
     const delta = runDelta(data.findings);
     const row = [
       el("span", { class: "stat" }, `${data.summary.riskFindingCount} candidate findings`),
@@ -466,11 +499,10 @@
     $("#findings-count").textContent = data.findings.length ? String(data.findings.length) : "";
   }
 
-  // ---- matched motifs tab ----------------------------------------------------
+  // matched motifs tab 
   let selectedMotifRow = null;
 
-  // "Almost matched" motifs: what the graph is missing for each one. Turns a
-  // thin or empty result into a checklist instead of a silent non-match.
+
   function gapCard(gap) {
     const items = [];
     gap.missingNodes.forEach((n) => {
@@ -493,7 +525,6 @@
       ]),
       el("ul", { class: "gap-list" }, items),
     ]);
-    // clicking highlights the elements that are the likeliest fix
     const candidateIds = gap.missingNodes.flatMap((n) => n.candidates.map((c) => c.id));
     if (candidateIds.length) {
       card.classList.add("clickable");
@@ -514,15 +545,6 @@
     near.forEach((g) => list.appendChild(gapCard(g)));
   }
 
-  /* Why does this element carry that category?
-   *
-   * A propagated category is the engine's claim, not the modeler's, and one they
-   * cannot check from the graph alone - the annotation that caused it may be
-   * several hops upstream. Each hop is grouped under the element it landed on
-   * and the chain is walked back to the element nobody derived, which is the one
-   * a human actually annotated. Clicking a row highlights the whole path in the
-   * diagram, so the claim can be read off the picture.
-   */
   function renderDerivedCategories(rows) {
     const list = $("#derived-list");
     const empty = $("#derived-empty");
@@ -535,10 +557,7 @@
       return;
     }
     empty.classList.add("hidden");
-    // The badge counts inferred FACTS - one per element/category the panel
-    // lists - not the hops that carried them. An element can pick up the same
-    // category by several routes, so counting hops advertised more findings
-    // than the list contains.
+    
     count.textContent = String(
       new Set(rows.map((r) => `${r.element.id}|${r.category.id}`)).size
     );
@@ -548,9 +567,6 @@
         "Categories you annotated yourself are not listed. Click a row to highlight its route on the diagram."),
     ]));
 
-    /* Hop lookup: "element|category" -> EVERY hop that put the category there.
-     * An element can acquire the same category from several upstream elements,
-     * so keeping one per key silently hid alternative provenance. */
     const hopsBy = new Map();
     rows.forEach((r) => {
       const key = `${r.element.id}|${r.category.id}`;
@@ -558,21 +574,6 @@
       hopsBy.get(key).push(r);
     });
 
-    /* Trace back to the annotation the category actually came from.
-     *
-     * Following hops backwards and reporting wherever you stop is wrong when the
-     * flow contains a loop - a conversation store written at the end of a turn
-     * and read at the start of the next is a loop - because the category
-     * circulates and there is no last hop. Whatever the walk reported as the
-     * "origin" was then an artefact of traversal order, which is how a structured
-     * response ended up blamed on the context-update step it feeds rather than
-     * on the store it came from.
-     *
-     * Breadth-first back to the nearest ANNOTATED source instead: the element a
-     * human tagged is a real endpoint, and searching for it terminates a cycle on
-     * a meaningful criterion. If no annotated source is reachable the trail is
-     * genuinely circular, and the row says so rather than inventing a start.
-     */
     const traceFor = (row) => {
       const queue = [[row]];
       const visited = new Set([row.element.id]);
@@ -592,7 +593,7 @@
       return { path: deepest, origin: null, circular: true };
     };
 
-    // One entry per (element, category) the modeler sees on an element.
+  
     const byElement = new Map();
     rows.forEach((r) => {
       const key = r.element.id;
@@ -642,8 +643,6 @@
   }
 
   function renderMotifs(matches, gaps) {
-    // Collapse repeated matches of the same motif into one row (a motif can match
-    // several times with different elements — e.g. External Dependency per source).
     const byName = new Map();
     (matches || []).forEach((m) => {
       const label = (m.label || (m.motif && m.motif.label) || "Motif").replace(/\s+Motif$/, "");
@@ -664,7 +663,7 @@
       empty.textContent = "No motifs matched. Add roles so motifs can bind, then Run assessment.";
       empty.classList.remove("hidden");
       $("#motifs-count").textContent = "";
-      renderMotifGaps(gaps); // say what is missing, not just that nothing matched
+      renderMotifGaps(gaps); 
       return;
     }
     empty.classList.add("hidden");
@@ -691,7 +690,7 @@
     $("#motifs-count").textContent = String(rows.length);
   }
 
-  // ---- validation ------------------------------------------------------------
+  // validation 
   function validationRow(item, severity) {
     const row = el("div", { class: `validation-row ${severity}` }, [
       el("span", { class: "sev" }, severity === "violation" ? "Violation" : "Warning"),
@@ -720,7 +719,7 @@
     $("#validation-count").textContent = total ? String(total) : "";
   }
 
-  // ---- split divider ---------------------------------------------------------
+  //split divider
   function initDivider() {
     const divider = $("#divider");
     const editorPane = $("#editor-pane");
@@ -744,7 +743,7 @@
     });
   }
 
-  // ---- starter graph ---------------------------------------------------------
+  // starter graph 
   const STARTER_TTL = `@prefix ex:   <http://example.org/my-system#> .
 @prefix beam: <http://w3id.org/beam/core#> .
 @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
@@ -792,11 +791,6 @@ ex:Generate a beam:Transform ;
     beam:produce ex:Answer .
 `;
 
-  // ---- in-canvas annotation --------------------------------------------------
-  // ---- diagram -> code edits (serialized) ------------------------------------
-  // Every structural edit runs through one queue, so rapid actions (add several
-  // components, connect, delete in a row) never race on the editor value: each
-  // reads the latest code only after the previous edit has written it back.
   let mutating = Promise.resolve();
   function runMutation(task) {
     const next = mutating.then(task, task);
@@ -804,7 +798,7 @@ ex:Generate a beam:Transform ;
     return next;
   }
 
-  // Edit an element (label / name / type / role / category) from the popup.
+  // Edit an element from the popup.
   function applyEdit(elementId, edit) {
     return runMutation(async () => {
       try {
@@ -836,8 +830,7 @@ ex:Generate a beam:Transform ;
     });
   }
 
-  // Add a BEAM flow edge from a canvas port-drag. use = resource→process,
-  // produce = process→resource, inform = process→process.
+  // Add a BEAM flow edge from a canvas port-drag.
   function applyConnect(triple) {
     return runMutation(async () => {
       try {
@@ -882,9 +875,7 @@ ex:Generate a beam:Transform ;
     });
   }
 
-  // Build a collapsible tray: a clickable header (title + chevron) that toggles a
-  // `collapsed` class on the tray, hiding its body. Used by both symbol palette
-  // and motif catalogue.
+  // Build a collapsible tray
   function buildTray(container, title, body, startCollapsed) {
     const toggle = el("span", { class: "tray-toggle" }, startCollapsed ? "▸" : "▾");
     const head = el("div", { class: "tray-head", title: "Show / hide" }, [el("span", {}, title), toggle]);
@@ -913,9 +904,7 @@ ex:Generate a beam:Transform ;
     buildTray(palette, "Symbols", body);
   }
 
-  // Click a tray item to add it (at center); or drag it onto the canvas to drop
-  // at a point, then invoke onDrop(x, y) (both null on a plain click). Pointer-
-  // based because native HTML5 DnD fought the canvas pan / pointer capture.
+  // Click a tray item to add it (at center)
   function startTrayDrag(ev, chip, wrap, onDrop) {
     ev.preventDefault();
     ev.stopPropagation();
@@ -949,14 +938,8 @@ ex:Generate a beam:Transform ;
     window.addEventListener("pointerup", up);
   }
 
-  // ---- motif catalogue -------------------------------------------------------
-  /* Apply a control to the finding in front of you.
-   *
-   * The rewrite lives in the library beside the rule that raised the finding,
-   * so what lands is the structure that rule tests for. Re-assessing straight
-   * away is the point: the tool does not declare the risk resolved, it amends
-   * the design and lets the same rules speak again.
-   */
+  // motif catalogue 
+
   function applyControl(control, finding) {
     return runMutation(async () => {
       try {
@@ -1010,10 +993,10 @@ ex:Generate a beam:Transform ;
       chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, () => addMotif(item)));
       body.appendChild(chip);
     });
-    buildTray(panel, "Motifs", body, true); // 24 items - start collapsed, expand on demand
+    buildTray(panel, "Motifs", body, true); 
   }
 
-  // ---- init ------------------------------------------------------------------
+  //  init 
   async function init() {
     GraphView.init();
     Editor.init({ onChange: refreshPreview });
@@ -1046,10 +1029,6 @@ ex:Generate a beam:Transform ;
     $("#btn-history-export").addEventListener("click", () => {
       const versions = VersionHistory.list();
       if (!versions.length) { setStatus("error", "No history to export."); return; }
-      /* JSON, not RDF. The per-run "Export assessment" already produces the RDF
-       * record, and because an input entity's IRI is its fingerprint, several of
-       * those exports loaded together compare by construction - that is the
-       * durable, shareable form. This is the working log beside it. */
       downloadBlob(
         new Blob([JSON.stringify(versions, null, 2)], { type: "application/json" }),
         `${exportBaseName()}-history.json`
@@ -1060,9 +1039,6 @@ ex:Generate a beam:Transform ;
     try {
       const examples = await api("/api/examples");
       const select = $("#example-select");
-      // Local graphs go under their own heading. They may be confidential, and
-      // the one thing you must be able to see at a glance is whether what you
-      // just loaded is yours or one the project ships.
       const groups = [
         ["Bundled", examples.filter((ex) => !ex.local)],
         ["Local (not in the repository)", examples.filter((ex) => ex.local)],
@@ -1079,19 +1055,29 @@ ex:Generate a beam:Transform ;
       const name = ev.target.value;
       if (!name) return;
       try {
-        const { ttl } = await api(`/api/examples/${encodeURIComponent(name)}`);
-        noteChange(`loaded example: ${name}`);
-        Editor.setValue(ttl);
+        const example = await api(`/api/examples/${encodeURIComponent(name)}`);
+        if (example.kind === "process") {
+          /* A process is not an architecture, it is the context one sits in,
+           * and an assessment reads both together. Replacing the editor would
+           * throw away the system the process refers to and leave dangling
+           * references behind. */
+          const current = Editor.getValue().trimEnd();
+          noteChange(`added business process: ${name}`);
+          Editor.setValue(current ? `${current}
+
+${example.ttl}` : example.ttl);
+          openDrawer("process");
+        } else {
+          noteChange(`loaded example: ${name}`);
+          Editor.setValue(example.ttl);
+        }
         setStatus("ok", `Loaded example: ${name}`);
       } catch (error) {
         setStatus("error", error.message);
       }
     });
 
-    // Open a graph file. A Tool4Boxology / t4b-beam export carries its own
-    // vocabulary, so loading it verbatim would leave BEAM queries with nothing
-    // to match; route those through the normalizer instead of the editor. Any
-    // other Turtle is already BEAM and loads as-is.
+    // Open a graph file.
     $("#file-input").addEventListener("change", (ev) => {
       const file = ev.target.files[0];
       if (!file) return;

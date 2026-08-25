@@ -221,15 +221,31 @@ def _merge(target: Graph, source: Graph) -> None:
 
 _MAX_PROPAGATION_ITERATIONS = 20
 
+# Everything derived before any motif is matched. Two kinds today, kept as
+# separate output types rather than one because they assert different things:
+# a data category is a claim about content and travels along data flow, while a
+# business flow relation is a claim about ordering in a process and carries no
+# content at all. They share this loop because both must be complete before
+# matching starts, and both can feed each other's next pass.
+_DERIVED_OUTPUT_TYPES = (PAIR.DataCategoryPropagation, PAIR.BusinessFlowDerivation)
 
-def _propagate_data_categories(working_graph: Graph) -> Graph:
-    """Infer pair:containsDataCategory facts (e.g. untrusted-content taint) from
-    roles and data flow, so architects don't have to hand-tag every element
-    derived from an untrusted source. Runs registered propagation queries to a
-    fixed point: each pass can surface new elements that satisfy the next
-    pass's conditions, so this repeats until nothing new is inferred."""
+
+def _derive_facts(working_graph: Graph) -> Graph:
+    """Infer the facts a match or a condition may rely on: data categories
+    propagated along the flow (so architects need not hand-tag every element
+    derived from an untrusted source), and typed reachability over a business
+    process.
+
+    Runs registered derivation queries to a fixed point: each pass can surface
+    facts that satisfy the next pass's conditions - transitive closure over
+    business flow is expressed exactly that way - so this repeats until nothing
+    new is inferred."""
     inferred = _bind_prefixes(Graph())
-    propagation_paths = implementation_paths_for_output_type(working_graph, PAIR.DataCategoryPropagation)
+    propagation_paths = [
+        path
+        for output_type in _DERIVED_OUTPUT_TYPES
+        for path in implementation_paths_for_output_type(working_graph, output_type)
+    ]
     if not propagation_paths:
         return inferred
 
@@ -253,7 +269,7 @@ def _run_assessment_on_graph(
     write_outputs: bool,
     output_dir: Path | str,
 ) -> AssessmentResult:
-    inferred_annotations = _propagate_data_categories(working_graph)
+    inferred_annotations = _derive_facts(working_graph)
 
     motif_matches = _bind_prefixes(Graph())
     risk_findings = _bind_prefixes(Graph())

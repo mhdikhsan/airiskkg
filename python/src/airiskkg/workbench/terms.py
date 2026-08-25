@@ -1,11 +1,3 @@
-"""Naming primitives: how an element or concept is labelled, and which BEAM
-classes the guided builder offers.
-
-The bottom of the workbench import graph - nothing here imports anything else in
-the package, so templates, gaps and vocabulary can all rely on it without a
-cycle.
-"""
-
 from __future__ import annotations
 
 import re
@@ -14,7 +6,6 @@ from rdflib import RDFS, SKOS, Graph, URIRef
 
 from airiskkg.assessment_runner import BEAM
 
-# Element classes the guided builder offers, paired with the BEAM class they map to.
 RESOURCE_CLASSES = [
     (BEAM.Data, "Data"),
     (BEAM.StatisticalModel, "Statistical Model"),
@@ -34,8 +25,6 @@ EDGE_KINDS = [
     {"id": "inform", "label": "informs (process → process)", "target": "process"},
 ]
 
-# BEAM process classes (everything else is a resource) - used to attach a
-# templated node to its system via hasProcess vs hasResource.
 PROCESS_CLASS_NAMES = {"Transform", "Infer", "Train", "Generate", "Process"}
 
 
@@ -56,10 +45,6 @@ _ACRONYM_BOUNDARY = re.compile(r"(?<=[A-Z])(?=[A-Z][a-z])")
 
 
 def display_label(text: str) -> str:
-    """Humanize identifier-style names so role/category labels read uniformly.
-    Labels that already contain a space are curated and kept as-is; spaceless
-    camelCase / underscore names are split ('GenerativeModel' -> 'Generative
-    Model', 'LLMResponse' -> 'LLM Response')."""
     if " " in text:
         return text
     spaced = text.replace("_", " ").replace("-", " ")

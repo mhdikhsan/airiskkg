@@ -1,9 +1,5 @@
 "use strict";
 
-/* Lightweight Turtle editor: a textarea with a syntax-highlight overlay,
- * a line-number gutter, and a debounced change callback.
- * Exposes window.Editor = { init, getValue, setValue, markErrorLine, revealLines }.
- */
 (function () {
   let textarea, highlightCode, gutter, codeScroll;
   let changeHandler = null;
@@ -52,7 +48,6 @@
 
   function refresh() {
     const text = textarea.value;
-    // trailing newline keeps the <pre> height in sync with the textarea
     highlightCode.innerHTML = highlightTurtle(text) + "\n";
     const lineCount = text.split("\n").length;
     const rows = [];
@@ -129,15 +124,7 @@
     refresh();
     if (line !== null) scrollLineIntoView(line);
   }
-
-  /* Show where something on the canvas lives in the source.
-   *
-   * The diagram and the Turtle are two views of one document, and until now
-   * there was no way across: you read a label off a box and searched for it.
-   * Several lines at once because a motif match is a set of elements, and the
-   * first one is what gets scrolled to - scrolling to each in turn would just
-   * land on the last.
-   */
+  
   function revealLines(lines) {
     markedLines = (lines || []).filter((n) => Number.isInteger(n) && n > 0).sort((a, b) => a - b);
     refresh();

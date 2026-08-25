@@ -94,6 +94,7 @@
             <button type="button" class="drawer-tab" data-drawer-tab="derived">Data flow <span class="count" id="derived-count" title="data categories the engine inferred by following the flow — annotated ones are not counted"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="annotate">Annotate <span class="count" id="annotate-count" title="elements without a role"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="validation">Input contract <span class="count" id="validation-count"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="process">Process <span class="count" id="process-count" title="business activities in the submitted process"></span></button>
             <button type="button" class="drawer-tab" data-drawer-tab="history">History <span class="count" id="history-count" title="assessments recorded in this browser"></span></button>
           </div>
           <button type="button" class="drawer-toggle" id="drawer-toggle" title="Expand / collapse">&#9650;</button>
@@ -124,6 +125,11 @@
           <div class="drawer-panel hidden" data-drawer-panel="validation">
             <p class="drawer-empty" id="validation-empty">Validate the graph against the SHACL input contract.</p>
             <div id="validation-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="process">
+            <p class="drawer-empty" id="process-empty">No business process in this graph. Load one from <em>Load example</em> &mdash; it is added to the architecture rather than replacing it, and the assessment reads both together.</p>
+            <div id="process-summary"></div>
+            <div id="process-list"></div>
           </div>
           <div class="drawer-panel hidden" data-drawer-panel="history">
             <div class="history-head">

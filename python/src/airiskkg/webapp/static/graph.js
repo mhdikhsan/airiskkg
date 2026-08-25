@@ -1,6 +1,5 @@
 "use strict";
 
-
 (function () {
   const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -186,7 +185,7 @@
     return placed;
   }
 
-  // ---- rendering ------------------------------------------------------------
+  // rendering 
 
   function sideAnchor(box, side) {
     switch (side) {
@@ -197,7 +196,6 @@
     }
   }
 
-  /** Which sides face each other, from the gaps between the two boxes. */
   function facingSides(s, t) {
     
     const gapX = Math.max(s.x - (t.x + t.w), t.x - (s.x + s.w));
@@ -208,7 +206,6 @@
     return t.y + t.h / 2 >= s.y + s.h / 2 ? ["bottom", "top"] : ["top", "bottom"];
   }
 
-  /** A self-edge, drawn as a loop off the top-right so it stays visible. */
   function selfLoopPath(box) {
     const x = box.x + box.w;
     const y = box.y + box.h / 2;
@@ -226,9 +223,7 @@
     const [sourceSide, targetSide] = facingSides(s, t);
     const a1 = sideAnchor(s, sourceSide);
     const a2 = sideAnchor(t, targetSide);
-
-    // Control-point reach scales with the span, clamped so short hops keep a
-    // visible curve and long ones do not balloon across the canvas.
+    
     const span = Math.hypot(a2.x - a1.x, a2.y - a1.y);
     const reach = Math.max(30, Math.min(120, span * 0.4));
 
@@ -273,24 +268,19 @@
     emptyBox.classList.add("hidden");
     layout(data.nodes, data.edges);
     draw();
-    // Refit only when the set of elements changes (new graph, add/remove
-    // element) - not on annotate/connect/drag, so a hand-arranged view is kept.
     const ids = data.nodes.map((n) => n.id).sort().join("|");
     if (ids !== lastNodeIds && !suppressFitOnce) fit();
     suppressFitOnce = false;
     lastNodeIds = ids;
   }
 
-  // Place a just-added element at a screen point (converted to graph coords) and
-  // skip the next auto-fit so it stays where it was dropped.
+  // Place a just-added element at a screen point (converted to graph coords) 
   function placeNodeAt(id, clientX, clientY) {
     const pt = toSvgPoint(clientX, clientY);
     manualPositions.set(id, { x: Math.round(pt.x - 65), y: Math.round(pt.y - 22) });
     suppressFitOnce = true;
   }
 
-  // Rebuild the SVG from `current` + `positions` (no layout, no fit). Also used
-  // by drag, so a move repaints in place without re-running layout or refitting.
   function draw() {
     svg.innerHTML = "";
     const defs = svgEl("defs", {}, svg);
@@ -343,12 +333,10 @@
         }, group);
         type.textContent = node.typeLabel + (node.roles.length ? ` · ${node.roles.length} role${node.roles.length > 1 ? "s" : ""}` : "");
       }
-      // right-edge port: drag from here onto another node to connect them
       const port = svgEl("circle", {
         cx: pos.x + pos.w, cy: pos.y + pos.h / 2, r: 6, class: "port", "data-port": node.id,
       }, group);
       port.addEventListener("pointerdown", (ev) => startConnect(ev, node));
-      // node body: drag to move, or click (no drag) to open the role popup
       group.addEventListener("pointerdown", (ev) => {
         if (ev.target.classList.contains("port")) return;
         ev.stopPropagation();
@@ -372,8 +360,7 @@
     return pt.matrixTransform(svg.getScreenCTM().inverse());
   }
 
-  // Drag a node to reposition it (view-only; never edits the graph). A
-  // pointerdown released without moving is treated as a click -> role popup.
+  // Drag a node to reposition it (view-only; never edits the graph).
   function startDrag(ev, node) {
     const startPt = toSvgPoint(ev.clientX, ev.clientY);
     const base = positions.get(node.id);
@@ -399,7 +386,6 @@
         setHighlight([node.id]);
         selectedId = node.id;
         showDetail(node, uv);
-        // a click is also a request to see where this element is written
         if (annotationCfg.onSelect) annotationCfg.onSelect(node.id);
       }
     };
@@ -407,8 +393,6 @@
     window.addEventListener("pointerup", up);
   }
 
-  // BEAM flow triple for a connection dragged source -> target, or null if
-  // invalid (resource -> resource has no direct BEAM flow).
   function edgeTriple(source, target) {
     const sp = source.kind === "process";
     const tp = target.kind === "process";
@@ -437,7 +421,6 @@
       if (!group || group.dataset.id === sourceNode.id) return;
       const target = current.nodes.find((n) => n.id === group.dataset.id);
       if (!target) return;
-      // read the source's current kind (it may be stale after re-renders)
       const src = current.nodes.find((n) => n.id === sourceNode.id) || sourceNode;
       const triple = edgeTriple(src, target);
       if (!triple) {
@@ -469,10 +452,7 @@
     return text.length > max ? text.slice(0, Math.max(1, max - 1)) + "…" : text;
   }
 
-  // ---- element popover ------------------------------------------------------
-  // Click a node -> highlight it -> edit its label / name / type / role / data
-  // category here and Apply. onEdit delegates the write to the host (which calls
-  // /api/graph-edit and updates the editor); onConnect handles port-drag edges.
+  //  element popover 
   let annotationCfg = { vocabulary: { roles: [], dataCategories: [] }, classes: [], onEdit: null, onConnect: null, onDelete: null, onStatus: null, onSelect: null };
   function setAnnotation(cfg) { annotationCfg = { ...annotationCfg, ...cfg }; }
   function escapeAttr(text) { return escape(text).replace(/"/g, "&quot;"); }
@@ -552,7 +532,7 @@
     return div.innerHTML;
   }
 
-  // ---- pan / zoom -----------------------------------------------------------
+  // pan / zoom 
   function applyView() {
     svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
   }
@@ -605,15 +585,14 @@
     document.getElementById("btn-fit").addEventListener("click", fit);
   }
 
-  // ---- evidence highlighting ------------------------------------------------
+  // evidence highlighting 
   function setHighlight(ids) {
     selectedId = null;
     highlighted = new Set(ids || []);
     paintHighlight();
   }
 
-  // Delete / Backspace removes the clicked element, unless focus is in a text
-  // field (the code editor or a popup input) so typing is never hijacked.
+  // Delete / Backspace removes the clicked element
   function onKeyDown(ev) {
     if (ev.key !== "Delete" && ev.key !== "Backspace") return;
     if (!selectedId || !annotationCfg.onDelete) return;
@@ -635,7 +614,7 @@
     detailBox.classList.add("hidden");
   }
 
-  // ---- edge hover tooltip ---------------------------------------------------
+  //  edge hover tooltip 
   function positionTip(ev) {
     const pad = 14;
     let x = ev.clientX + pad;
@@ -685,13 +664,12 @@
     document.addEventListener("keydown", onKeyDown);
   }
 
-  /** Run the layered layout standalone (used by Draw mode's "From code"). */
   function layoutPositions(nodes, edges) {
     layout(nodes, edges);
     return new Map(positions);
   }
 
-  // ---- SVG export -----------------------------------------------------------
+  // SVG export 
 
  
 
@@ -738,7 +716,6 @@
     return [`:root {\n${resolved.join("\n")}\n}`, ...rulesText].join("\n");
   }
 
-  /** Serialize the current graph as a standalone SVG document string. */
   function toSvgDocument() {
     if (!contentBox || !current.nodes.length) return null;
 

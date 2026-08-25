@@ -10,7 +10,7 @@
     dct:title "PAIR-AI Assessment Output Contract"@en ;
     dct:description """
     SHACL shapes over the graph an assessment run PRODUCES, as opposed to the
-    architecture graph it consumes (that is shacl/architecture_input_contract.ttl).
+    architecture graph it consumes.
     Kept in a separate file so input validation never targets output classes:
     both are loaded by explicit filename, never by globbing shacl/.
     """@en .

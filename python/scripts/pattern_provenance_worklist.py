@@ -1,5 +1,3 @@
-
-
 from __future__ import annotations
 
 import csv
@@ -15,14 +13,10 @@ from airiskkg.paths import PATTERNS_DIR  # noqa: E402
 
 DEFAULT_OUTPUT = Path("/tmp/pattern_provenance_worklist.csv")
 
-# Where each entry type is declared, so `notes` can cite a real file path.
 DECLARING_FILE = {
     "GraphMotif": PATTERNS_DIR / "motif.ttl",
     "RiskPattern": PATTERNS_DIR / "risk_pattern_library.ttl",
 }
-
-# A source string that only asserts in-house judgement is not independently
-# traceable: flag it so a human can add an external citation.
 UNTRACEABLE_MARKERS = ("expert curation",)
 
 
@@ -41,15 +35,11 @@ def _repo_relative(path: Path) -> str:
 
 
 def _is_traceable(source: str) -> bool:
-    """A source is traceable when it points at something outside this repo: a URL,
-    or a named external document. 'expert curation' alone does not qualify."""
     if not source:
         return False
     stripped = source.strip()
     if stripped.startswith("http://") or stripped.startswith("https://"):
         return True
-    # A composite string ("expert curation; OWASP ... 2025, LLM03") still names an
-    # external document, so it is traceable; a bare marker is not.
     return stripped.lower() not in UNTRACEABLE_MARKERS
 
 
@@ -69,10 +59,6 @@ def build_rows(graph: Graph) -> list[dict[str, str]]:
                 if not _is_traceable(source):
                     notes.append("NOT independently traceable - needs an external citation")
             else:
-                # dct:source is deliberately absent on entries whose origin is a
-                # document rather than a semantic resource (OECD, OWASP, pattern
-                # catalogues). pair:derivedFrom carries the origin for those, so
-                # it counts as provenance here rather than as a gap to fill.
                 if derived:
                     notes.append(f'origin via pair:derivedFrom in {declared_in}: "{derived}"')
                 elif comment:
@@ -109,9 +95,6 @@ def main() -> int:
 
     motifs = [r for r in rows if r["type"] == "GraphMotif"]
     patterns = [r for r in rows if r["type"] == "RiskPattern"]
-    # An entry needs a traceable origin, from either predicate. dct:source is not
-    # required: it is reserved for semantic resources, and an entry derived from a
-    # document states its origin with pair:derivedFrom instead.
     untraceable = [
         r
         for r in rows

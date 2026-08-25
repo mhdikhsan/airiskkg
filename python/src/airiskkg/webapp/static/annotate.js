@@ -1,15 +1,4 @@
 "use strict";
-
-/* Role/data-category tagging table (Approach A).
- *
- * Imported graphs (Tool4Boxology / t4b-beam) carry BEAM structure but no
- * pattern roles, so motifs never match. This panel lists every element of the
- * current editor graph and lets you assign a pair:playsRole (and optional
- * pair:containsDataCategory) from the ontology vocabulary; "Apply" writes those
- * annotations back into the editor via /api/annotate. Then Run assessment.
- *
- * Exposes window.Annotate = { init, refresh }.
- */
 (function () {
   const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -38,10 +27,6 @@
     if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
     return data;
   }
-
-  // Roles split cleanly into process roles and resource roles (the backend
-  // derives this from each role family's expectedClass), so the picker can offer
-  // the ones that fit the element. Anything not a BEAM process is a resource.
   const roleKindFor = (node) => (node.kind === "process" ? "process" : "resource");
 
   let vocab = { roles: [], dataCategories: [] };

@@ -869,3 +869,61 @@ label.btn { display: inline-flex; align-items: center; }
 .hist-delta.raised { color: var(--warn); }
 .hist-cause { color: var(--text-dim); flex: 1 1 auto; }
 .hist-row .btn { flex: 0 0 auto; }
+
+/* ---- business process ------------------------------------------------------
+ * A list, not a diagram. What a risk assessment needs from a process is which
+ * activity, in whose lane, reading what, performed by whom. */
+
+.proc-lane {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 12px 8px 5px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.proc-lane:first-child { padding-top: 4px; }
+
+.proc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px 7px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.proc-row.refined { cursor: pointer; border-left: 2px solid var(--accent); padding-left: 16px; }
+.proc-row.refined:hover { background: rgba(79, 140, 255, 0.08); }
+
+.proc-kind {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  min-width: 108px;
+}
+.proc-name { flex: 1 1 auto; }
+.proc-badges { display: flex; gap: 5px; flex-wrap: wrap; flex: 0 1 auto; }
+.proc-by { color: var(--text-dim); font-size: 11.5px; flex: 0 0 auto; }
+
+.proc-badge {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  border-radius: 3px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.proc-badge.ai { border-color: var(--accent); color: var(--accent); }
+.proc-badge.human { border-color: var(--good); color: var(--good); }
+.proc-badge.data { border-color: var(--warn); color: var(--warn); }
+
+.proc-warn {
+  font-size: 12px;
+  color: var(--warn);
+  border-left: 2px solid var(--warn);
+  padding: 6px 10px;
+  margin: 6px 0;
+}

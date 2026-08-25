@@ -1,12 +1,3 @@
-"""Validating a submitted graph against the architecture input contract, and
-shaping the report into the three severities the UI shows.
-
-Two shapes files ride together here: `architecture_input_contract.ttl` asks
-whether the graph is acceptable at all, and `annotation_guidance.ttl` asks
-whether the annotation will actually match anything. Guidance is always Info or
-Warning and never Violation, so it can never change whether a graph conforms.
-"""
-
 from __future__ import annotations
 
 from functools import lru_cache
@@ -40,11 +31,6 @@ def shacl_report(ttl: str) -> dict:
     data = Graph()
     data.parse(data=ttl, format="turtle")
     shapes, ontology = shapes_and_ontology()
-    # The ontology is merged into the data graph, not passed as ont_graph. The
-    # guidance shapes walk pair:subRoleOf* inside sh:sparql constraints, and
-    # those constraints only see the data graph: with ont_graph the role
-    # hierarchy is invisible to them and every Info-level hint silently
-    # disappears (onyx_danswer drops from 8 hints to 0).
     _conforms, results_graph, _text = shacl_validate(
         data_graph=data + ontology,
         shacl_graph=shapes,

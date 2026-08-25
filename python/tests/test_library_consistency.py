@@ -23,6 +23,8 @@ from pathlib import Path
 import pytest
 from rdflib import DCTERMS, RDF, Graph, Namespace, URIRef
 
+from airiskkg.knowledge_base import ontology_files  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CORE = REPO_ROOT / "ontology" / "core"
 PATTERNS = REPO_ROOT / "ontology" / "patterns"
@@ -50,15 +52,15 @@ _BINDS_RE = re.compile(r"bindsPatternNode\s+pat:(\w+)")
 
 @pytest.fixture(scope="module")
 def libraries() -> Graph:
+    """Everything the runner loads, resolved the way the runner resolves it.
+
+    This used to name six files by hand, and drifted the moment a module was
+    added: the business context bridge declared pair:refinedBy, the risk queries
+    used it, and this fixture reported it undeclared because it had never heard
+    of the directory. `ontology_files()` is the loader's own list, so the two
+    cannot disagree again."""
     g = Graph()
-    for path in (
-        CORE / "pair_ai_pattern.ttl",
-        CORE / "beam_core.ttl",
-        CORE / "beam_core_risk.ttl",
-        PATTERNS / "motif.ttl",
-        PATTERNS / "risk_pattern_library.ttl",
-        PATTERNS / "control_mitigation_layer.ttl",
-    ):
+    for path in ontology_files():
         g.parse(path, format="turtle")
     return g
 
@@ -447,12 +449,18 @@ def test_every_motif_and_risk_pattern_states_its_source(libraries) -> None:
 
 
 def test_every_pattern_role_states_its_provenance(libraries) -> None:
-    """Rule R6 reaches the role vocabulary too.
+    """Rule R6 reaches the role vocabulary too: every role traces to an origin.
 
-    59 roles once carried neither a dct:source nor a SKOS mapping. Provenance is
-    now stated for all of them - derived from the motif or risk pattern whose
-    query traverses the role, or declared as a refinement introduced for
-    annotation precision. A new role added without either regresses this."""
+    Three ways to state it, and the third is why this walks rather than looks.
+    A role may cite a source, or carry a SKOS mapping into an external
+    vocabulary; a role introduced to refine another states neither, because its
+    grounding is the one it specializes. `pair:subRoleOf` already says which
+    role that is, so the chain is followed rather than restated - a prose note
+    saying "it inherits the grounding of pair:ExternalDependency" duplicated the
+    triple beside it, and only the triple can be checked.
+
+    What still regresses this: a new role with no source, no mapping, and no
+    parent that has either."""
     mapping_predicates = (
         SKOS_NS.exactMatch,
         SKOS_NS.closeMatch,
@@ -460,14 +468,31 @@ def test_every_pattern_role_states_its_provenance(libraries) -> None:
         SKOS_NS.narrowMatch,
         SKOS_NS.relatedMatch,
     )
+
+    def states_its_own(role) -> bool:
+        return libraries.value(role, DCTERMS.source) is not None or any(
+            libraries.value(role, predicate) for predicate in mapping_predicates
+        )
+
+    def traces_to_an_origin(role, seen=None) -> bool:
+        seen = seen if seen is not None else set()
+        if role in seen:
+            return False  # a cycle grounds nothing
+        seen.add(role)
+        if states_its_own(role):
+            return True
+        return any(
+            traces_to_an_origin(parent, seen)
+            for parent in libraries.objects(role, PAIR.subRoleOf)
+        )
+
     unsourced = [
         str(role).rsplit("#", 1)[-1]
         for role in sorted(libraries.subjects(RDF.type, PAIR.PatternRole), key=str)
-        if libraries.value(role, DCTERMS.source) is None
-        and not any(libraries.value(role, predicate) for predicate in mapping_predicates)
+        if not traces_to_an_origin(role)
     ]
     assert not unsourced, (
-        f"{len(unsourced)} pattern roles state no provenance: " + ", ".join(unsourced)
+        f"{len(unsourced)} pattern roles trace to no origin: " + ", ".join(unsourced)
     )
 
 

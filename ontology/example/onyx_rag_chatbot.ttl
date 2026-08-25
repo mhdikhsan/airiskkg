@@ -11,16 +11,7 @@
     dct:title "Onyx  Enterprise RAG Use Case"@en ;
     dct:description """
     Architecture graph for Onyx, an open-source (MIT)
-    enterprise question-answering platform. Modeled workflow: connectors
-    ingest workspace documents (Google Drive, Slack, Confluence, ...);
-    documents are chunked, embedded with a locally served bi-encoder, and
-    indexed into a hybrid vector + keyword index; at query time the chat
-    question is rephrased by the generator LLM, embedded, matched against the
-    hybrid index, reranked with a cross-encoder, and the top sections are
-    assembled into a prompt for the LLM, which produces a cited answer in the
-    chat UI. Reranking sits between retrieval and prompt construction, so the
-    strict RAG motif chain is intentionally interrupted; the vector-IR, query
-    rewriting, reranker, embeddings, and direct prompting motifs apply.
+    enterprise question-answering platform.
     """@en ;
     dct:source <https://github.com/onyx-dot-app/onyx> ;
     dct:source <https://docs.onyx.app/> ;
@@ -51,7 +42,7 @@ onyx:LLMProviderCredential
 onyx:OnyxSystem
     a beam:System ;
     rdfs:label "Onyx enterprise RAG assistant"@en ;
-    beam:context "Open-source enterprise Q&A platform: 50+ connectors ingest workspace documents into a hybrid vector + keyword index; chat questions are LLM-rephrased, embedded, hybrid-searched, cross-encoder reranked, and answered by a configurable LLM provider with citations."@en ;
+    beam:context "Open-source enterprise Q&A platform: 50+ connectors ingest workspace documents into a hybrid vector plus keyword index; chat questions are LLM-rephrased, embedded, hybrid-searched, cross-encoder reranked, and answered by a configurable LLM provider with citations."@en ;
     beam:hasResource
         onyx:ConnectedSourceDocuments ,
         onyx:DocumentChunks ,
@@ -269,7 +260,7 @@ onyx:EmbedQuery
 
 onyx:HybridSearch
     a beam:Infer ;
-    rdfs:label "Hybrid vector + keyword search"@en ;
+    rdfs:label "Hybrid vector & keyword search"@en ;
     pair:playsRole pair:RetrievalStep ;
     pair:playsRole pair:VectorSearchStep ;
     pair:playsRole pair:KeywordSearchStep ;

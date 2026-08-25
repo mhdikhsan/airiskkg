@@ -28,7 +28,7 @@
 pair:PatternRole a owl:Class ;
     rdfs:subClassOf skos:Concept ;
     rdfs:label "Pattern Role"@en ;
-    rdfs:comment "An abstract functional role assigned to a concrete architecture element. A role labels one element's function; a motif is a structure over several roles. Roles are the semantic bridge that makes motifs reusable across heterogeneous systems."@en .
+    rdfs:comment "An abstract functional role assigned to a concrete architecture element. A role labels one element's function; a motif is a structure over several roles."@en .
 
 pair:DataCategory a owl:Class ;
     rdfs:subClassOf skos:Concept ;
@@ -66,7 +66,7 @@ pair:RiskMechanism a owl:Class ;
 
 pair:PatternImplementation a owl:Class ;
     rdfs:label "Pattern Implementation"@en ;
-    rdfs:comment "The executable SPARQL query that detects a motif or evaluates a risk pattern against an architecture graph (the OQP to the motif's ODP). One motif may have multiple implementations."@en .
+    rdfs:comment "The executable SPARQL query that detects a motif or evaluates a risk pattern against an architecture graph. One motif may have multiple implementations."@en .
 
 pair:MotifMatch a owl:Class ;
     rdfs:label "Motif Match"@en ;
@@ -85,8 +85,7 @@ pair:DataCategoryPropagation a owl:Class ;
     skos:definition "Marker output type for pattern implementations that infer pair:containsDataCategory facts (e.g. untrusted-content taint) from roles and data flow."@en .
 
 pair:MitigationApplication a owl:Class ;
-    rdfs:label "Mitigation Application"@en ;
-    skos:definition "Marker output type for pattern implementations that REWRITE an architecture: given a candidate risk finding, they construct the architecture triples that insert a control onto the path the finding cites, so a re-assessment of the amended graph no longer raises it. Deliberately a distinct output type: the assessment pipeline asks only for MotifMatch and RiskFinding, so a mitigation query is never run as part of an assessment. Were it run there, every finding would mitigate itself and none would ever be reported."@en .
+    rdfs:label "Mitigation Application"@en .
 
 # Object properties
 
@@ -107,7 +106,7 @@ pair:containsDataCategory a owl:ObjectProperty ;
 
 pair:derivedCategory a owl:ObjectProperty ;
     rdfs:label "derived category"@en ;
-    rdfs:comment "On a prov:Derivation emitted by the content-category propagation: which data category travelled along that hop. A derivation names the upstream element and the step, and this names what was carried, so the chain from an annotated source to a derived category on an output can be walked back and shown to the modeler."@en ;
+    rdfs:comment "On a prov:Derivation emitted by the content-category propagation."@en ;
     rdfs:domain prov:Derivation ;
     rdfs:range pair:DataCategory .
 
@@ -198,20 +197,20 @@ pair:realizedByMotif a owl:ObjectProperty ;
 
 pair:ControlNatureScheme a skos:ConceptScheme ;
     skos:prefLabel "Control Nature"@en ;
-    skos:definition "Whether a risk control is realized in the technical architecture or through organisational process. PAIR-AI interpretation; the stated rule and per-control assignments live in ontology/patterns/control_mitigation_layer.ttl."@en ;
-    dct:source "PAIR-AI supporting analysis: risk-to-mitigation connection reference (technical vs non-technical criterion)." .
+    skos:definition "Whether a risk control is realized in the technical architecture or through organisational process."@en ;
+    dct:source "PAIR-AI supporting analysis: risk-to-mitigation connection reference." .
 
 pair:TechnicalControl a skos:Concept ;
     skos:inScheme pair:ControlNatureScheme ;
     skos:topConceptOf pair:ControlNatureScheme ;
     skos:prefLabel "Technical control"@en ;
-    skos:definition "A control realized in the AI system's technical stack (model, data pipeline, infrastructure, or runtime), with an actual or possible footprint in the system architecture. A technical control may additionally be architecturally detectable, in which case a motif can realize it (pair:realizedByMotif)."@en .
+    skos:definition "A control realized in the AI system's technical stack (model, data pipeline, infrastructure, or runtime), with an actual or possible footprint in the system architecture."@en .
 
 pair:NonTechnicalControl a skos:Concept ;
     skos:inScheme pair:ControlNatureScheme ;
     skos:topConceptOf pair:ControlNatureScheme ;
     skos:prefLabel "Non-technical control"@en ;
-    skos:definition "A control realized through organisational structure, human process, governance, documentation, or disclosure, with no direct footprint in the technical architecture. It is surfaced as a taxonomy-level recommendation, not a situated structural suggestion."@en .
+    skos:definition "A control realized through organisational structure, human process, governance, documentation, or disclosure, with no direct footprint in the technical architecture."@en .
 
 pair:operationalizesRiskCondition a owl:ObjectProperty ;
     rdfs:label "operationalizes risk condition"@en ;
@@ -221,7 +220,7 @@ pair:operationalizesRiskCondition a owl:ObjectProperty ;
 
 pair:derivedFrom a owl:ObjectProperty ;
     rdfs:label "derived from"@en ;
-    rdfs:comment "Derivation provenance for curated pattern knowledge: links a graph motif or AI risk pattern to the resource it was derived from (e.g. a Boxology elementary pattern, a taxonomy entry such as an OWASP LLM Top 10 item, or a documented design-pattern source)."@en ;
+    rdfs:comment "Derivation provenance for curated pattern knowledge."@en ;
     rdfs:domain [
         a owl:Class ;
         owl:unionOf (pair:GraphMotif pair:RiskPattern)
@@ -248,18 +247,18 @@ pair:implementsRiskPattern a owl:ObjectProperty ;
 
 pair:implementsControl a owl:ObjectProperty ;
     rdfs:label "implements control"@en ;
-    rdfs:comment "Links an executable SPARQL rewrite to the control it applies. The rewrite is to a control what a match query is to a motif: the control says what should be true, the rewrite says which triples make it so on a given graph."@en ;
+    rdfs:comment "Links an executable SPARQL rewrite to the control it applies."@en ;
     rdfs:domain pair:PatternImplementation .
 
 pair:realizesMotif a owl:ObjectProperty ;
     rdfs:label "realizes motif"@en ;
-    rdfs:comment "The motif whose shape a mitigation rewrite constructs. Distinct from pair:implementsMotif, which names the query that DETECTS a motif: a rewrite produces the structure, a match query finds it, and conflating them makes a rewrite look like a motif's detector."@en ;
+    rdfs:comment "The motif whose shape a mitigation rewrite constructs."@en ;
     rdfs:domain pair:PatternImplementation ;
     rdfs:range pair:GraphMotif .
 
 pair:mitigatesRiskPattern a owl:ObjectProperty ;
     rdfs:label "mitigates risk pattern"@en ;
-    rdfs:comment "The risk pattern a mitigation rewrite is written against. It names the finding whose evidence the rewrite reads, and whose applicability condition the inserted structure is meant to falsify - not a claim that the risk is eliminated, only that this graph would no longer represent it (Rule R4)."@en ;
+    rdfs:comment "The risk pattern a mitigation rewrite is written against."@en ;
     rdfs:domain pair:PatternImplementation ;
     rdfs:range pair:RiskPattern .
 
@@ -295,7 +294,7 @@ pair:generatedFromMatch a owl:ObjectProperty ;
 
 pair:generatedByRiskPattern a owl:ObjectProperty ;
     rdfs:label "generated by risk pattern"@en ;
-    rdfs:comment "The AI risk pattern whose applicability conditions this finding satisfied. A finding recorded its motif, its mechanism and its conditions but not the rule that raised it, so nothing downstream could tell two findings apart by origin - which made it impossible to route a finding to the mitigation rewrite written for it."@en ;
+    rdfs:comment "The AI risk pattern whose applicability conditions this finding satisfied."@en ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range pair:RiskPattern .
 
@@ -306,13 +305,13 @@ pair:generatedByMotif a owl:ObjectProperty ;
 
 pair:hasEvidence a owl:ObjectProperty ;
     rdfs:label "has evidence"@en ;
-    rdfs:comment "Attaches the evidence of a candidate risk finding: the elements of the matched subgraph that triggered the finding. Evidence is retained for durable traceability."@en ;
+    rdfs:comment "Attaches the evidence of a candidate risk finding: the elements of the matched subgraph that triggered the finding."@en ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range rdfs:Resource .
 
 pair:hasDerivedMechanism a owl:ObjectProperty ;
     rdfs:label "has derived mechanism"@en ;
-    rdfs:comment "Links a candidate risk finding to the risk mechanism selected from the satisfied AI risk pattern. Mechanisms are selected at assessment time, never invented."@en ;
+    rdfs:comment "Links a candidate risk finding to the risk mechanism selected from the satisfied AI risk pattern."@en ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range pair:RiskMechanism .
 
@@ -336,27 +335,14 @@ pair:hasSatisfiedCondition a owl:ObjectProperty ;
 pair:contentFingerprint a owl:DatatypeProperty ;
     rdfs:label "content fingerprint"@en ;
     rdfs:comment """A content hash identifying one input an assessment ran on: the
-knowledge base, or a submitted graph. Carried by the prov:Entity the run used, so
-two runs over the same input reference the same entity rather than two entities
-that happen to describe the same thing.
-
-Its job is to make a result reconstructable. A run already recorded when it
-happened and what it produced; without this it did not record what it ran on, and
-a set of results a month apart could not be told apart from a set produced by
-different rules over different graphs.
-
-For a graph, computed over the canonical form so it survives reparsing, triple
-reordering, whitespace, and rdflib's per-parse blank node labels."""@en ;
+knowledge base, or a submitted graph. Carried by the prov:Entity."""@en ;
     rdfs:domain prov:Entity ;
     rdfs:range xsd:string .
 
 pair:sourceRevision a owl:DatatypeProperty ;
     rdfs:label "source revision"@en ;
     rdfs:comment """The version control revision an input came from, when there is
-one. Optional by design and never a substitute for pair:contentFingerprint: the
-shipped container has no repository to ask, because .dockerignore is an allow-list
-that does not name .git. The fingerprint identifies; the revision is a convenience
-for finding the code again."""@en ;
+one."""@en ;
     rdfs:domain prov:Entity ;
     rdfs:range xsd:string .
 
@@ -364,13 +350,7 @@ pair:assessmentFingerprint a owl:DatatypeProperty ;
     rdfs:label "assessment fingerprint"@en ;
     rdfs:comment """One value over every input a run consumed: equal fingerprints
 mean the same rules ran over the same graphs and the result is the same by
-construction.
-
-Distinct from the run's own IRI, which stays unique per run. Two assessments at
-different times genuinely are two prov:Activity instances and collapsing them
-would assert they were one event - but leaving only the timestamps made 'did
-anything actually change between these two exports' unanswerable. The activity
-says what happened; this says whether it was the same question."""@en ;
+construction."""@en ;
     rdfs:domain prov:Activity ;
     rdfs:range xsd:string .
 
@@ -381,24 +361,6 @@ pair:implementationPath a owl:DatatypeProperty ;
 
 pair:findingStatus a owl:DatatypeProperty ;
     rdfs:label "finding status"@en ;
-    rdfs:comment """Review state of a candidate risk finding. Exactly one value per finding, drawn
-from a closed set of five (enforced by shacl/assessment_output_contract.ttl):
-  "candidate" - the structure matched and the applicability conditions held. A
-                structural disposition, never a confirmed failure. THE ONLY VALUE
-                THE PIPELINE EVER WRITES: every risk query emits "candidate"
-                literally, by construction.
-  "confirmed" - a human or runtime evidence established the risk is real here;
-  "refuted"   - established the risk does not apply (e.g. a control exists that
-                the submitted graph did not represent);
-  "mitigated" - accepted as real and addressed by a control;
-  "accepted"  - acknowledged as real and knowingly tolerated.
-The four non-candidate values are an EXTENSION POINT for later human review or
-runtime evidence. Nothing in the assessment pipeline writes them, and nothing in
-it reads them: they exist so a verdict can be recorded without inventing new
-vocabulary or breaking the candidate framing (Rule R1). Kept as xsd:string rather
-than a SKOS scheme deliberately - the value set is closed and small, findings are
-generated output rather than curated knowledge, and existing tests assert the
-plain literal."""@en ;
     rdfs:domain pair:RiskFinding ;
     rdfs:range xsd:string .
 
@@ -429,13 +391,12 @@ pair:UserInput a pair:PatternRole ;
 pair:PublicUserInput a pair:PatternRole ;
     skos:prefLabel "Public User Input"@en ;
     pair:subRoleOf pair:UserInput ;
-    skos:definition "User input accepted from an open or public population (anonymous or self-registered users), as opposed to a closed, vetted user group. Treated as untrusted by the taint propagation query."@en ;
-    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM01 Prompt Injection (untrusted input scope)" .
+    skos:definition "User input accepted from an open or public population, as opposed to a closed, vetted user group. Treated as untrusted by the taint propagation query."@en .
 
 pair:UserFacingOutput a pair:PatternRole ;
     skos:prefLabel "UserFacingOutput"@en ;
     pair:subRoleOf pair:ResourceRole ;
-    skos:definition "Data exposed to a user or downstream consumer (a sink)."@en ;
+    skos:definition "Data exposed to a user or downstream consumer."@en ;
     skos:relatedMatch airo:Output .
 
 pair:PublicUserFacingOutput a pair:PatternRole ;
@@ -460,7 +421,7 @@ pair:VectorStore a pair:PatternRole ;
 pair:AgentMemory a pair:PatternRole ;
     skos:prefLabel "AgentMemory"@en ;
     pair:subRoleOf pair:KnowledgeSource ;
-    skos:definition "A store holding content the system retains across turns or sessions and reads back into later reasoning: conversation summaries, scratchpads, or a long-term memory store. A specialization of KnowledgeSource whose distinguishing property is that the system writes to it as well as reads from it, so its contents are shaped by the system's own history."@en.
+    skos:definition "A store holding content the system retains across turns or sessions and reads back into later reasoning: conversation summaries, scratchpads, or a long-term memory store."@en.
 
 pair:VectorIndex a pair:PatternRole ;
     skos:prefLabel "VectorIndex"@en ;
@@ -499,7 +460,7 @@ pair:PretrainedModel a pair:PatternRole ;
 pair:FoundationLLM a pair:PatternRole ;
     skos:prefLabel "Foundation LLM"@en ;
     pair:subRoleOf pair:GenerativeModel ;
-    skos:definition "A foundation large language model used directly for generation. A specialization of GenerativeModel: by its own definition it generates content, so tagging an element only as a foundation LLM must satisfy every motif that queries for a generative model. It sat directly under Model until 2026-08-12, which made the precise term inert - graphs had to double-tag with GenerativeModel to match anything, and one that named only the LLM silently missed every generation-side motif."@en ;
+    skos:definition "A foundation large language model used directly for generation. A specialization of GenerativeModel: by its own definition it generates content, so tagging an element only as a foundation LLM must satisfy every motif that queries for a generative model."@en ;
     skos:closeMatch ai:LLM ;
     skos:relatedMatch ai:GPAIModel .
 
@@ -533,7 +494,7 @@ pair:LoadedModel a pair:PatternRole ;
 pair:ModelArtifact a pair:PatternRole ;
     skos:prefLabel "Model Artifact"@en ;
     pair:subRoleOf pair:Model ;
-    skos:definition "A persisted model artifact (weights/checkpoint) produced or consumed by a workflow."@en ;
+    skos:definition "A persisted model artifact produced or consumed by a workflow."@en ;
     skos:relatedMatch ai:TrainedModel .
 
 ### Data/resource roles 
@@ -681,7 +642,7 @@ pair:ReleaseApproval a pair:PatternRole ;
 pair:ExternalDependency a pair:PatternRole ;
     skos:prefLabel "ExternalDependency"@en ;
     pair:subRoleOf pair:ResourceRole ;
-    skos:definition "A resource sourced from outside the modeled organization's control (model, package, credential, or service) whose provenance and integrity the submitted graph cannot vouch for."@en  .
+    skos:definition "A resource sourced from outside the modeled organization's control whose provenance and integrity the submitted graph cannot vouch for."@en  .
 
 pair:ExternalModel a pair:PatternRole ;
     skos:prefLabel "ExternalModel"@en ;
@@ -772,7 +733,7 @@ pair:ChunkingStep a pair:PatternRole ;
 pair:VectorSearchStep a pair:PatternRole ;
     skos:prefLabel "VectorSearchStep"@en ;
     pair:subRoleOf pair:RetrievalStep ;
-    skos:definition "A step performing vector similarity search. A specialization of RetrievalStep: it retrieves fragments from a knowledge source, by embedding proximity. It sat under ProcessingStep until 2026-08-17, which made the precise term inert - retrieval motifs walk pair:subRoleOf* from RetrievalStep, so a step tagged only VectorSearchStep matched nothing."@en ;
+    skos:definition "A step performing vector similarity search. A specialization of RetrievalStep: it retrieves fragments from a knowledge source, by embedding proximity."@en ;
     skos:relatedMatch ai:InformationRetrieval .
 
 pair:KeywordSearchStep a pair:PatternRole ;
@@ -838,7 +799,7 @@ pair:JobScheduler a pair:PatternRole ;
 pair:ToolInvocationStep a pair:PatternRole ;
     skos:prefLabel "ToolInvocationStep"@en ;
     pair:subRoleOf pair:ProcessingStep ;
-    skos:definition "A step that invokes an external tool, plugin, or API on behalf of the system (agentic tool use)."@en .
+    skos:definition "A step that invokes an external tool, plugin, or API on behalf of the system."@en .
 
 pair:StateChangingStep a pair:PatternRole ;
     skos:prefLabel "StateChangingStep"@en ;
@@ -865,13 +826,13 @@ pair:MemoryReadStep a pair:PatternRole ;
 pair:AgentHandoffStep a pair:PatternRole ;
     skos:prefLabel "AgentHandoffStep"@en ;
     pair:subRoleOf pair:ProcessingStep ;
-    skos:definition "A step that receives work from another agent and acts on it: the entry point on the receiving side of a delegation. Distinguished from an ordinary processing step by where its input comes from - another agent's decision rather than a user or a store - which is what makes the sender's authority, or the absence of any check on it, an architectural question."@en ;
+    skos:definition "A step that receives work from another agent and acts on it."@en ;
     dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi07-insecure-inter-agent-communication> .
 
 pair:AgentMessage a pair:PatternRole ;
     skos:prefLabel "AgentMessage"@en ;
     pair:subRoleOf pair:ResourceRole ;
-    skos:definition "Content passed from one agent to another to hand off a task, a result, or a request: the carrier of a delegation. A resource role rather than a step role, because what a validation step can inspect is the message, not the handoff."@en ;
+    skos:definition "Content passed from one agent to another to hand off a task, a result, or a request. A resource role rather than a step role, because what a validation step can inspect is the message, not the handoff."@en ;
     dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi07-insecure-inter-agent-communication> .
 
 ### Prediction-step specializations
@@ -916,7 +877,7 @@ pair:RateLimitControlStep a pair:PatternRole ;
 pair:PolicyEnforcementStep a pair:PatternRole ;
     skos:prefLabel "PolicyEnforcementStep"@en ;
     pair:subRoleOf pair:ControlStep ;
-    skos:definition "A step that evaluates a proposed action against a policy before it is carried out, and can narrow or refuse it. Deterministic mediation sitting between a model's decision and its effect, rather than an instruction asking the model to behave."@en  .
+    skos:definition "A step that evaluates a proposed action against a policy before it is carried out, and can narrow or refuse it."@en  .
 
 pair:HumanApprovalStep a pair:PatternRole ;
     skos:prefLabel "HumanApprovalStep"@en ;
@@ -926,18 +887,18 @@ pair:HumanApprovalStep a pair:PatternRole ;
 pair:RedactionStep a pair:PatternRole ;
     skos:prefLabel "RedactionStep"@en ;
     pair:subRoleOf pair:ControlStep ;
-    skos:definition "A step that removes, masks, tokenizes, or minimizes protected content before it is passed on, so what leaves the step no longer carries the content category that entered it. The barrier for content-category propagation: an element downstream of a redaction step does not inherit the upstream category."@en .
+    skos:definition "A step that removes, masks, tokenizes, or minimizes protected content before it is passed on, so what leaves the step no longer carries the content category that entered it."@en .
 
 pair:AnonymizationStep a pair:PatternRole ;
     skos:prefLabel "AnonymizationStep"@en ;
     pair:subRoleOf pair:RedactionStep ;
-    skos:definition "A step that renders data no longer attributable to a person, so what leaves it is not personal data. A specialization of RedactionStep, which makes it a barrier for content-category propagation without any change to the propagation rules."@en ;
+    skos:definition "A step that renders data no longer attributable to a person, so what leaves it is not personal data."@en ;
     skos:relatedMatch dpv:Anonymisation .
 
 pair:PseudonymizationStep a pair:PatternRole ;
     skos:prefLabel "PseudonymizationStep"@en ;
     pair:subRoleOf pair:ControlStep ;
-    skos:definition "A step that replaces identifiers with pseudonyms while the data remains attributable to a person given additional information. Deliberately NOT a sub-role of RedactionStep: pseudonymised data is still personal data, so the sensitivity category must survive the step. DPV states this directly - dpv:PseudonymisedData is a subclass of dpv:PersonalData, whereas dpv:AnonymisedData is a subclass of dpv:NonPersonalData - so treating the two alike would under-report exactly the disclosure risk this facet exists to surface."@en ;
+    skos:definition "A step that replaces identifiers with pseudonyms while the data remains attributable to a person given additional information."@en ;
     skos:relatedMatch dpv:Pseudonymisation .
 
 pair:MemoryValidationStep a pair:PatternRole ;
@@ -949,34 +910,33 @@ pair:MemoryValidationStep a pair:PatternRole ;
 
 pair:DataCategoryScheme a skos:ConceptScheme ;
     skos:prefLabel "Data Category"@en ;
-    skos:definition "Characterization facet classifying the content of data resources (glossary v1.2 A.3). Read by applicability conditions only; aligned to DPV data concepts where equivalents exist (Rule R3: referenced, never copied)."@en  .
+    skos:definition "Characterization facet classifying the content of data resources."@en  .
 
 pair:Information a pair:DataCategory ;
     skos:prefLabel "Information"@en ;
     skos:inScheme pair:DataCategoryScheme ;
     skos:topConceptOf pair:DataCategoryScheme ;
-    skos:definition "Root category for content-kind classification: informational content handled by the system. Use-case graphs subclass this for domain content (e.g. connected workspace content)."@en .
+    skos:definition "Root category for content-kind classification."@en .
 
 pair:SensitiveInformation a pair:DataCategory ;
     skos:prefLabel "Sensitive Information"@en ;
     skos:inScheme pair:DataCategoryScheme ;
     pair:subDataCategoryOf pair:Information ;
-    skos:definition "Content whose exposure can harm individuals or organizations (personal, medical, financial, or otherwise protection-worthy information). Root category traversed by sensitive-data applicability conditions."@en ;
+    skos:definition "Content whose exposure can harm individuals or organizations."@en ;
     skos:relatedMatch dpv:SensitivePersonalData .
 
 pair:ConfidentialInformation a pair:DataCategory ;
     skos:prefLabel "Confidential Information"@en ;
     skos:inScheme pair:DataCategoryScheme ;
     pair:subDataCategoryOf pair:Information ;
-    skos:definition "Content that must be kept secret for operational or business reasons (credentials, keys, internal configuration). Deliberately NOT a subcategory of SensitiveInformation: sensitive-data conditions target personal/organizational harm, not secrets management."@en ;
+    skos:definition "Content that must be kept secret for operational or business reasons."@en ;
     skos:relatedMatch dpv:ConfidentialData .
 
 pair:ExternalUserContent a pair:DataCategory ;
     skos:prefLabel "External User Content"@en ;
     skos:inScheme pair:DataCategoryScheme ;
     pair:subDataCategoryOf pair:Information ;
-    skos:definition "Content originating from a user outside the system boundary (queries, uploads, chat messages). Deliberately NOT a subcategory of UntrustedContent: untrusted-content taint is derived from roles and flow by the propagation queries, not implied by this category."@en ;
-    dct:source "expert curation" .
+    skos:definition "Content originating from a user outside the system boundary."@en .
 
 pair:GeneratedContent a pair:DataCategory ;
     skos:prefLabel "Generated Content"@en ;
@@ -989,76 +949,62 @@ pair:PromptInstruction a pair:DataCategory ;
     skos:prefLabel "Prompt Instruction"@en ;
     skos:inScheme pair:DataCategoryScheme ;
     skos:topConceptOf pair:DataCategoryScheme ;
-    skos:definition "Instructional content steering model behavior (system prompts, prompt templates, operational configuration). Root category traversed by system-prompt-leakage and embeddings-related conditions."@en  .
+    skos:definition "Instructional content steering model behavior."@en  .
 
 pair:UntrustedContent a pair:DataCategory ;
     skos:prefLabel "Untrusted Content"@en ;
     skos:inScheme pair:DataCategoryScheme ;
     skos:topConceptOf pair:DataCategoryScheme ;
-    skos:definition "Content whose integrity the system cannot vouch for within the submitted graph (public input, externally sourced documents, retrieved context). Root category traversed by prompt-injection and poisoning applicability conditions; also derived along data flow by the untrusted-content propagation query. Absence of this category means unknown, not trusted."@en ;
+    skos:definition "Content whose integrity the system cannot vouch for within the submitted graph."@en ;
     skos:relatedMatch dpv:UntrustedData  .
 
 # --- derived from the motif or risk pattern that traverses the role -------
 
-pair:AgentMemory dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   # via pat:AgentMemoryLoopMotif
-pair:AggregationStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:HybridRetrieverMotif
-pair:Alert dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   # via pat:PredictionMonitoringMotif
-pair:BatchDataset dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> .   # via pat:BatchPredictionMotif
-pair:EvaluationResult dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> .   # via pat:BatchTrainingMotif
-pair:EvaluationScore dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:EvalsMotif
-pair:ExpectedOutput dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:EvalsMotif
-pair:ExternalDependency dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .   # via pat:ExternalDependencyMotif
-pair:FastPredictionStep dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> .   # via pat:MultiStagePredictionMotif
-pair:GuardrailDecision dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:GuardrailsMotif
-pair:HumanApprovalStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   # via pat:ToolMisuseRiskPattern
-pair:ImageBuildStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> .   # via pat:ModelInImageMotif
-pair:InputGuardrailStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:GuardrailsMotif
-pair:JobScheduler dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> .   # via pat:BatchPredictionMotif
-pair:JudgeModel dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:EvalsMotif
-pair:LLMResponse dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:EvalsMotif
-pair:LoadedModel dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> .   # via pat:ModelLoadMotif
-pair:LoggingStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> .   # via pat:PredictionLoggingMotif
-pair:MemoryReadStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   # via pat:AgentMemoryLoopMotif
-pair:MemoryValidationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   # via pat:MemoryPoisoningRiskPattern
-pair:MemoryWriteStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   # via pat:AgentMemoryLoopMotif
-pair:ModelLoadStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> .   # via pat:ModelLoadMotif
-pair:MonitoringBaseline dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   # via pat:PredictionMonitoringMotif
-pair:MonitoringStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   # via pat:PredictionMonitoringMotif
-pair:OutputGuardrailStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:GuardrailsMotif
-pair:OutputValidationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm05-improper-output-handling> .   # via pat:ImproperOutputHandlingRiskPattern
-pair:PlanningStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   # via pat:ToolUsingAgentMotif
-pair:PolicyEnforcementStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   # via pat:ToolMisuseRiskPattern
-pair:PredictionLog dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> .   # via pat:PredictionLoggingMotif
-pair:PredictionQueue dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> .   # via pat:AsynchronousPredictionMotif
-pair:PredictionRequest dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> .   # via pat:AsynchronousPredictionMotif
-pair:PredictionResult dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> .   # via pat:AsynchronousPredictionMotif
-pair:PreprocessedData dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> .   # via pat:BatchTrainingMotif
-pair:PromptTemplate dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:RetrievalAugmentedGenerationMotif
-pair:RateLimitControlStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   # via pat:ToolMisuseRiskPattern
-pair:ReleaseApproval dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> .   # via pat:TrainThenServeMotif
-pair:RerankingStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:RerankerMotif
-pair:RetrievedCandidateSet dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:HybridRetrieverMotif
-pair:RetrievedContext dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   # via pat:AgentMemoryLoopMotif
-pair:SanitizedOutput dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:GuardrailsMotif
-pair:ScoringStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:EvalsMotif
-pair:ServingImage dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .   # via pat:ExternalDependencyMotif
-pair:SlowPredictionStep dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> .   # via pat:MultiStagePredictionMotif
-pair:SourceDocument dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   # via pat:EmbeddingsMotif
-pair:StateChangingStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   # via pat:ToolUsingAgentMotif
-pair:SystemPrompt dct:source <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm07-system-prompt-leakage> .   # via pat:SystemPromptLeakageRiskPattern
-pair:ToolInvocationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   # via pat:ToolUsingAgentMotif
-pair:TrainingPipeline dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> .   # via pat:TrainingToServingMotif
-
-# --- refinements introduced for annotation precision ----------------------
-
-pair:DocumentChunk dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:ResourceRole." .
-pair:ExternalModel dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:ExternalDependency." .
-pair:ExternalProviderCredential dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:ExternalDependency." .
-pair:GuardrailStep dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:ControlStep." .
-pair:PublicUserFacingOutput dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:UserFacingOutput." .
-pair:RedactionStep dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:ControlStep." .
-pair:RerankedContext dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:RetrievedContext." .
-pair:RerankerModel dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:Model." .
-pair:RetrievedResult dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:RetrievedContext." .
-pair:RewrittenQuery dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:UserInput." .
-pair:ThirdPartyPackage dct:source "Project curation: a refinement of the role vocabulary introduced for annotation precision. It inherits the grounding of pair:ExternalDependency." .
+pair:AgentMemory dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
+pair:AggregationStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:Alert dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
+pair:BatchDataset dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> .   
+pair:EvaluationResult dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> .   
+pair:EvaluationScore dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:ExpectedOutput dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:ExternalDependency dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .
+pair:FastPredictionStep dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> .   
+pair:GuardrailDecision dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:HumanApprovalStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   
+pair:ImageBuildStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> .   
+pair:InputGuardrailStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:JobScheduler dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> .   
+pair:JudgeModel dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:LLMResponse dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .  
+pair:LoadedModel dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> .   
+pair:LoggingStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> .   
+pair:MemoryReadStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
+pair:MemoryValidationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
+pair:MemoryWriteStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
+pair:ModelLoadStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> . 
+pair:MonitoringBaseline dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
+pair:MonitoringStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
+pair:OutputGuardrailStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:OutputValidationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm05-improper-output-handling> .   
+pair:PlanningStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .  
+pair:PolicyEnforcementStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .  
+pair:PredictionLog dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> .  
+pair:PredictionQueue dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> .   
+pair:PredictionRequest dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> .  
+pair:PredictionResult dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> .   
+pair:PreprocessedData dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> .   
+pair:PromptTemplate dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:RateLimitControlStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .  
+pair:ReleaseApproval dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> .  
+pair:RerankingStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .  
+pair:RetrievedCandidateSet dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:RetrievedContext dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
+pair:SanitizedOutput dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:ScoringStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:ServingImage dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .   
+pair:SlowPredictionStep dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> .  
+pair:SourceDocument dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .  
+pair:StateChangingStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   
+pair:SystemPrompt dct:source <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm07-system-prompt-leakage> .   
+pair:ToolInvocationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   
+pair:TrainingPipeline dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> .   

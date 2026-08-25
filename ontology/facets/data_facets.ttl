@@ -23,8 +23,7 @@ dataf:DataProvenance
     skos:prefLabel "Data Provenance"@en ;
     skos:definition "Origin of the data used or produced by the system: how the data came into existence relative to the system and its stakeholders."@en ;
     rdfs:seeAlso <https://w3id.org/dpv#Data> ;
-    dct:source <https://w3id.org/dpv> ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Data & Input dimension)." .
+    dct:source <https://w3id.org/dpv> .
 
 dataf:ProvidedData
     a skos:Concept ;
@@ -67,67 +66,57 @@ dataf:ExpertInput
     skos:inScheme dataf:DataProvenance ;
     skos:topConceptOf dataf:DataProvenance ;
     skos:prefLabel "Expert Input"@en ;
-    skos:definition "Data encoding human expert knowledge (e.g. rules, labels, curated knowledge) provided by domain experts."@en ;
-    skos:note "No verified counterpart in the alignment target vocabulary; the citation below is the only anchor."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Data & Input dimension)." .
+    skos:definition "Data encoding human expert knowledge (e.g. rules, labels, curated knowledge) provided by domain experts."@en .
 
 dataf:DataDynamism
     a skos:ConceptScheme ;
     skos:prefLabel "Data Dynamism"@en ;
-    skos:definition "Update behavior of a data resource: whether and how it changes after system deployment."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Data & Input dimension)." .
+    skos:definition "Update behavior of a data resource: whether and how it changes after system deployment."@en .
 
 dataf:Static
     a skos:Concept ;
     skos:inScheme dataf:DataDynamism ;
     skos:topConceptOf dataf:DataDynamism ;
     skos:prefLabel "Static"@en ;
-    skos:definition "The data resource is fixed after creation; it does not change during operation."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    skos:definition "The data resource is fixed after creation; it does not change during operation."@en.
 
 dataf:PeriodicallyUpdated
     a skos:Concept ;
     skos:inScheme dataf:DataDynamism ;
     skos:topConceptOf dataf:DataDynamism ;
     skos:prefLabel "Periodically Updated"@en ;
-    skos:definition "The data resource is refreshed at discrete intervals (e.g. nightly re-indexing, scheduled retraining data pulls)."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    skos:definition "The data resource is refreshed at discrete intervals (e.g. nightly re-indexing, scheduled retraining data pulls)."@en .
 
 dataf:RealTimeUpdated
     a skos:Concept ;
     skos:inScheme dataf:DataDynamism ;
     skos:topConceptOf dataf:DataDynamism ;
     skos:prefLabel "Real-Time Updated"@en ;
-    skos:definition "The data resource changes continuously during operation (e.g. live feeds, streaming ingestion, online learning input)."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    skos:definition "The data resource changes continuously during operation"@en .
 
 dataf:DataRights
     a skos:ConceptScheme ;
     skos:prefLabel "Data Rights"@en ;
-    skos:definition "Rights and ownership status of a data resource, constraining how it may be used."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems (Data & Input dimension)." .
+    skos:definition "Rights and ownership status of a data resource, constraining how it may be used."@en .
 
 dataf:Personal
     a skos:Concept ;
     skos:inScheme dataf:DataRights ;
     skos:topConceptOf dataf:DataRights ;
     skos:prefLabel "Personal"@en ;
-    skos:definition "Data relating to identified or identifiable natural persons, subject to data-protection law. This concept only flags the rights status; for the kind of personal data use DPV concepts directly via facet:hasPersonalDataCategory, and for the degree of identifiability via facet:hasIdentifiabilityLevel (Rule R3), not this scheme."@en ;
-    skos:relatedMatch dpv:PersonalData ;
-    dct:source <https://w3id.org/dpv> .
+    skos:definition "Data relating to identified or identifiable natural persons, subject to data-protection law."@en ;
+    skos:relatedMatch dpv:PersonalData  .
 
 dataf:Proprietary
     a skos:Concept ;
     skos:inScheme dataf:DataRights ;
     skos:topConceptOf dataf:DataRights ;
     skos:prefLabel "Proprietary"@en ;
-    skos:definition "Data owned or licensed by an organization with restricted use rights."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    skos:definition "Data owned or licensed by an organization with restricted use rights."@en .
 
 dataf:Public
     a skos:Concept ;
     skos:inScheme dataf:DataRights ;
     skos:topConceptOf dataf:DataRights ;
     skos:prefLabel "Public"@en ;
-    skos:definition "Data available for public use (e.g. open data, public web content), subject to its license terms."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." .
+    skos:definition "Data available for public use, subject to its license terms."@en .

@@ -68,7 +68,7 @@ facet:hasTaskCategory a owl:ObjectProperty ;
 
 facet:hasDomain a owl:ObjectProperty ;
     rdfs:label "has domain"@en ;
-    rdfs:comment "Intended values: DPV sector concepts, assigned directly (the ctx:Domain scheme is an anchor, not a value list)."@en ;
+    rdfs:comment "Intended values: DPV sector concepts, assigned directly."@en ;
     rdfs:domain beam:System ;
     rdfs:range skos:Concept ;
     dct:source <https://w3id.org/dpv/sector> .

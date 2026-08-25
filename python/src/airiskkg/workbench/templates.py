@@ -1,11 +1,3 @@
-"""Motif templates: a declared motif turned into something the canvas can drop in.
-
-Generated from the `pair:hasPatternNode` / `pair:hasPatternEdge` declaration, not
-from the match query, which is why a motif whose declaration drifts from its `.rq`
-produces a template that cannot match itself. The catalogue and the gap report are
-both built from these, so the two can never disagree with each other.
-"""
-
 from __future__ import annotations
 
 from functools import lru_cache
@@ -55,8 +47,6 @@ def motif_templates() -> dict:
             dst = graph.value(pedge, PAIR.targetPatternNode)
             if src is None or pred is None or dst is None:
                 continue
-            # BEAM flow edges (use/produce/inform) always originate at a process;
-            # drop declaration shortcuts that start at a resource node.
             if node_cls.get(short(src)) not in PROCESS_CLASS_NAMES:
                 continue
             edges.append([short(src), short(pred), short(dst)])
@@ -75,7 +65,6 @@ def motif_templates() -> dict:
 
 
 def motif_template_list() -> list[dict[str, str]]:
-    # Catalogue entries: motif name only (alphabetical), no description.
     return sorted(
         ({"id": key, "label": tpl["label"]} for key, tpl in motif_templates().items()),
         key=lambda item: item["label"].lower(),

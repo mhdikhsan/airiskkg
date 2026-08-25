@@ -1,16 +1,3 @@
-"""Generate docs/reference/risk_control_linkage.md - the single linkage reference.
-
-Supersedes motif_control_linkage.md and control_catalogue_table.md, which split
-the same picture across two files and neither of which reached the MIT action
-level.
-
-Everything here is computed from the graph and the cross-walk CSV. Regenerate
-after editing motif.ttl, risk_pattern_library.ttl, control_mitigation_layer.ttl,
-mit_air_risk_control.ttl, or the action layer.
-
-    python python/scripts/generate_risk_control_linkage.py
-"""
-
 from __future__ import annotations
 
 import csv
@@ -22,9 +9,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from rdflib import DCTERMS, Graph, Namespace, RDF, RDFS, SKOS  # noqa: E402
+from rdflib import DCTERMS, Graph, Namespace, RDF, RDFS, SKOS  
 
-from airiskkg.paths import REPO_ROOT  # noqa: E402
+from airiskkg.paths import REPO_ROOT  
 
 PAIR = Namespace("http://w3id.org/airiskkg/pair-ai#")
 NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")

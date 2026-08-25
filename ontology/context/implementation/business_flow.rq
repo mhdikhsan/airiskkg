@@ -1,0 +1,39 @@
+# Derive typed reachability over BPMN sequence flow.
+#
+# bp:sourceRef and bp:targetRef are declared on FIVE classes in sBPMN -
+# sequenceFlow, messageFlow, dataAssociation, association and conversationLink.
+# A property path written straight over them, (^bp:sourceRef/bp:targetRef)+,
+# leaves control flow, crosses a data association, and comes back somewhere
+# unrelated - and the result looks like evidence.
+#
+# SPARQL cannot constrain the type of the nodes a property path passes through,
+# so the closure is not computed with a path at all. The first branch emits one
+# typed hop; the second chains two derived hops into one. The runner re-runs
+# derivations to a fixed point, so the second branch closes the relation over
+# any number of steps and stops when nothing new appears. Every hop is therefore
+# checked to be a sequenceFlow individually, which a path could never do.
+#
+# Transitivity matters here: a gateway, a wait, or an intervening activity
+# between the AI step and a later control must not hide it.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX bpmn: <https://sBPMN.github.io/2.0/classes#>
+PREFIX bp:   <https://sBPMN.github.io/2.0/properties#>
+
+CONSTRUCT {
+    ?source pair:businessFollows ?target .
+}
+WHERE {
+    {
+        ?flow
+            a bpmn:sequenceFlow ;
+            bp:sourceRef ?source ;
+            bp:targetRef ?target .
+    }
+    UNION
+    {
+        ?source pair:businessFollows ?middle .
+        ?middle pair:businessFollows ?target .
+    }
+    FILTER(?source != ?target)
+}

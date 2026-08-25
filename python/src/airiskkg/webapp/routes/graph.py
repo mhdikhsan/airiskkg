@@ -1,5 +1,3 @@
-"""Reading and rewriting the architecture graph: view, import, annotate, edit."""
-
 from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
@@ -9,6 +7,7 @@ from airiskkg.assessment_runner import BEAM, PAIR
 from airiskkg.graph_view import graph_view
 from airiskkg.knowledge_base import graph_fingerprint
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
+from airiskkg.workbench.process_view import process_view
 from airiskkg.workbench.templates import motif_templates
 from airiskkg.workbench.terms import PROCESS_CLASS_NAMES
 
@@ -42,15 +41,28 @@ def read_graph() -> object:
         return jsonify({"error": str(error)}), 400
 
 
+@graph_routes.post("/api/process")
+def read_process() -> object:
+    """The business process layer of a submitted graph, if it carries one.
+
+    Separate from /api/graph because the two answer different questions and one
+    graph may hold both: /api/graph draws the architecture, this lists the
+    process the architecture sits in. A graph with no BPMN triples comes back
+    empty rather than as an error - most graphs have no process, and that is not
+    a fault."""
+    payload = request.get_json(silent=True) or {}
+    ttl = (payload.get("ttl") or "").strip()
+    if not ttl:
+        return jsonify(process_view(Graph()))
+    try:
+        parsed = _parsed(ttl)
+    except Exception as error:  # noqa: BLE001 - surface parse errors to the UI
+        return jsonify({"error": f"Could not parse the graph: {error}"}), 400
+    return jsonify(process_view(parsed))
+
+
 @graph_routes.post("/api/fingerprint")
 def fingerprint() -> object:
-    """The canonical fingerprint of a graph, without assessing it.
-
-    So the UI can tell whether the findings on screen still describe the graph in
-    the editor. Comparing the Turtle as text would not do: every canvas edit and
-    every annotation re-serializes the whole document through rdflib, so the text
-    changes constantly while the graph often does not - and a staleness warning
-    that cries wolf after each click is one people learn to ignore."""
     payload = request.get_json(silent=True) or {}
     ttl = (payload.get("ttl") or "").strip()
     if not ttl:
@@ -78,15 +90,6 @@ def import_t4b() -> object:
 
 @graph_routes.post("/api/annotate")
 def annotate() -> object:
-    """Apply pair:playsRole / pair:containsDataCategory annotations to the
-    elements of an architecture graph. This is the role-tagging step that
-    turns an imported, structure-only graph (e.g. from Tool4Boxology /
-    t4b-beam, which carry no pattern roles) into one motifs can match.
-
-    Body: {ttl, annotations: {elementId: {roles: [uri...], categories: [uri...]}}}.
-    Each element's existing role/category triples are replaced (idempotent),
-    so re-applying reflects exactly the current selection.
-    """
     payload = request.get_json(silent=True) or {}
     ttl = (payload.get("ttl") or "").strip()
     annotations = payload.get("annotations") or {}
@@ -113,15 +116,6 @@ def annotate() -> object:
 
 @graph_routes.post("/api/graph-edit")
 def graph_edit() -> object:
-    """Structural edits to the architecture graph from the interactive canvas:
-    add an element, or connect two elements with a BEAM flow edge. Element
-    identity/structure lives in the graph (rdflib keeps the Turtle clean);
-    node positions are a canvas-only concern and never touch the graph.
-
-    Body: {ttl, op, ...}. op="add-element" needs {classUri, category,
-    label}; op="add-edge" needs {subject, predicate in use/produce/inform,
-    object}. Returns {ttl, newId}.
-    """
     payload = request.get_json(silent=True) or {}
     ttl = (payload.get("ttl") or "").strip()
     op = payload.get("op")
@@ -129,7 +123,7 @@ def graph_edit() -> object:
         return jsonify({"error": "Provide a graph to edit."}), 400
     try:
         data = _parsed(ttl)
-    except Exception as error:  # noqa: BLE001 - surface parse errors to the UI
+    except Exception as error: 
         return jsonify({"error": f"Could not parse the graph: {error}"}), 400
 
     local = LOCAL
@@ -183,7 +177,6 @@ def graph_edit() -> object:
             data.remove((element, PAIR.containsDataCategory, None))
             for category in payload.get("categories") or []:
                 data.add((element, PAIR.containsDataCategory, URIRef(category)))
-        # optional URI rename: keep the namespace, swap the local part
         new_name = (payload.get("name") or "").strip()
         if new_name:
             old = str(element)

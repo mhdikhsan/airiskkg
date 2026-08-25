@@ -30,7 +30,6 @@ aut:NoActionAutonomy
     skos:topConceptOf aut:AutonomyLevel ;
     skos:prefLabel "No Action Autonomy"@en ;
     skos:definition "The system produces outputs (predictions, recommendations, content) but takes no actions itself; all actions are performed by humans."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
     skos:relatedMatch dpv:AssistiveAutomation .
 
 aut:LowActionAutonomy
@@ -40,7 +39,6 @@ aut:LowActionAutonomy
     skos:prefLabel "Low Action Autonomy (human-in-the-loop)"@en ;
     skos:altLabel "HITL"@en ;
     skos:definition "The system can propose or initiate actions, but each action requires explicit human approval before it takes effect (human-in-the-loop)."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
     skos:closeMatch dpv:PartialAutomation ;
     skos:relatedMatch dpv:HumanInvolvementForDecision .
 
@@ -51,7 +49,6 @@ aut:MediumActionAutonomy
     skos:prefLabel "Medium Action Autonomy (human-on-the-loop)"@en ;
     skos:altLabel "HOTL"@en ;
     skos:definition "The system executes actions autonomously while a human supervises and can intervene or override in near real time (human-on-the-loop)."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
     skos:closeMatch dpv:ConditionalAutomation ;
     skos:relatedMatch dpv:HumanInvolvementForOversight , dpv:HumanInvolvementForIntervention .
 
@@ -61,7 +58,6 @@ aut:HighActionAutonomy
     skos:topConceptOf aut:AutonomyLevel ;
     skos:prefLabel "High Action Autonomy (human-out-of-the-loop)"@en ;
     skos:altLabel "HOOTL"@en ;
-    skos:definition "The system executes actions autonomously without human supervision of individual actions (human-out-of-the-loop). Covers ISO/IEC 22989 levels 4-6, hence skos:narrowMatch to the finer DPV levels."@en ;
-    dct:source "OECD (2022). OECD Framework for the Classification of AI Systems." ;
+    skos:definition "The system executes actions autonomously without human supervision of individual actions (human-out-of-the-loop)."@en ;
     skos:narrowMatch dpv:HighAutomation , dpv:FullAutomation , dpv:Autonomous ;
     skos:relatedMatch dpv:HumanNotInvolved .

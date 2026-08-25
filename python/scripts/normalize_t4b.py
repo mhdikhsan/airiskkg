@@ -1,13 +1,3 @@
-"""Normalize a Tool4Boxology N-Triples export into a BEAM architecture graph.
-
-CLI wrapper around airiskkg.t4b_import (shared with the workbench's
-"Import Tool4Boxology" endpoint). See that module's docstring for the
-normalization steps.
-
-Usage:
-    python python/scripts/normalize_t4b.py <export.nt> [-o <out.ttl>] [--skip-validation]
-"""
-
 from __future__ import annotations
 
 import argparse
