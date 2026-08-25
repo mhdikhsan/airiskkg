@@ -10,7 +10,6 @@
   <header class="app-header">
     <div class="brand">
       <h1>PAIR-AI</h1>
-      <span class="subtitle">Architecture workbench &mdash; edit the graph on the left, preview it live on the right</span>
       <span class="kb-badge hidden" id="kb-badge" title="The library that produced the findings on screen. Editing a .ttl while the server runs does not reload it, so this is how you tell which version answered."></span>
     </div>
     <div class="toolbar">
@@ -65,7 +64,6 @@
           <button type="button" class="level active" id="level-architecture" title="How the AI system is built">Architecture</button>
         </span>
         <span class="breadcrumb hidden" id="breadcrumb"></span>
-        <span class="canvas-hint" id="canvas-hint">Drag a symbol onto the canvas to add · drag to move · click to edit · drag a node's ▸ port onto another to connect</span>
       </div>
       <div class="canvas-wrap" id="canvas-wrap">
         <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
@@ -89,8 +87,17 @@
         </div>
         <div class="node-detail hidden" id="node-detail"></div>
         <div class="canvas-empty" id="canvas-empty">
-          <p>The live preview appears here.</p>
-          <p class="hint">Load an example or start editing on the left.</p>
+          <p class="start-question">What are you describing?</p>
+          <div class="start-choice">
+            <button type="button" class="start-card" id="start-business">
+              <span class="start-title">A business process</span>
+              <span class="start-note">Who does what, and which activities an AI system carries out</span>
+            </button>
+            <button type="button" class="start-card" id="start-architecture">
+              <span class="start-title">An AI architecture</span>
+              <span class="start-note">How one system is built: its steps, models and data</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -142,7 +149,6 @@
           </div>
           <div class="drawer-panel hidden" data-drawer-panel="history">
             <div class="history-head">
-              <span class="hint" id="history-note">Each assessment of a changed graph is recorded here. Kept in this browser only &mdash; nothing is sent anywhere, and nothing is stored on the server.</span>
               <span class="history-actions">
                 <button type="button" class="btn small" id="btn-history-export" title="Download the whole history as JSON">Export history</button>
                 <button type="button" class="btn small" id="btn-history-clear" title="Delete every recorded version from this browser">Clear history</button>
@@ -150,6 +156,7 @@
             </div>
             <p class="drawer-empty" id="history-empty">No assessments recorded yet. Run one, change the graph, and run it again to see what moved.</p>
             <div id="history-list"></div>
+            <div class="history-preview hidden" id="history-preview"></div>
           </div>
         </div>
       </div>

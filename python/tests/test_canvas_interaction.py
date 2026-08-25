@@ -357,3 +357,85 @@ def test_a_pan_does_not_eat_the_click_after_it(page) -> None:
         "the click after a pan was swallowed - the flag outlived the pan"
     )
     _back_to_business(loop, handle)
+
+
+def test_the_findings_list_follows_the_architecture_on_screen(page) -> None:
+    """The assessment stays whole - the business process is what carries data
+    and controls between systems, so assessing one architecture alone would lose
+    the context the layer exists to supply. What narrows is the reading: someone
+    who opened one activity is asking about that activity."""
+    loop, handle = page
+    # Widen first: an earlier test may have left the canvas on one architecture,
+    # and a narrowed count compared against itself proves nothing.
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(2)
+
+    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    time.sleep(9)
+    loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
+    time.sleep(2)
+
+    everything = loop.run_until_complete(
+        handle.js('Number(document.querySelector("#findings-count").textContent || 0)')
+    )
+    assert everything > 0, "nothing was found to narrow"
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('.pc-activity.refined .pc-box');
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + 30), y: Math.round(r.top + 12) };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    narrowed = _settle(
+        loop, handle,
+        'Number(document.querySelector("#findings-count").textContent || 0)',
+        everything,
+    )
+
+    assert narrowed < everything, (
+        f"the findings list showed {narrowed} of {everything} - it did not follow the canvas"
+    )
+    _back_to_business(loop, handle)
+
+
+def test_a_version_can_be_read_without_being_restored(page) -> None:
+    """Restore replaces the graph on screen, which is a commitment. Asking what
+    a past assessment found should not require making it the present one."""
+    loop, handle = page
+
+    # Self-sufficient: a version only exists once something has been assessed,
+    # and depending on another test having done it makes this one pass or fail
+    # by ordering rather than by behaviour.
+    recorded = loop.run_until_complete(handle.js("window.VersionHistory.list().length"))
+    if not recorded:
+        loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+        time.sleep(9)
+
+    opened = loop.run_until_complete(handle.js("""(() => {
+        const tab = document.querySelector('[data-drawer-tab="history"]');
+        if (!tab) return { error: "no history tab" };
+        tab.click();
+        const row = document.querySelector('.hist-row');
+        if (!row) return { error: "no version rows" };
+        const before = window.Editor.getValue().length;
+        /* A listener that throws reports as an uncaught error, not to the
+         * caller, so try/catch around .click() sees nothing. Trap it. */
+        window.__err = null;
+        const onError = (e) => { window.__err = e.message; };
+        window.addEventListener("error", onError);
+        row.click();
+        window.removeEventListener("error", onError);
+        return {
+            error: window.__err,
+            before: before,
+            after: window.Editor.getValue().length,
+            preview: !document.querySelector('#history-preview').classList.contains('hidden'),
+        };
+    })()"""))
+
+    assert opened, "the page returned nothing"
+    assert not opened["error"], f"reading a version failed: {opened['error']}"
+    assert opened["preview"], "opening a version showed nothing"
+    assert opened["before"] == opened["after"], (
+        "reading a version changed the graph - that is restoring, not reading"
+    )

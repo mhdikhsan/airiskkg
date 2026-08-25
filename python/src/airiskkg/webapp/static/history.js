@@ -21,8 +21,13 @@
         window.localStorage.setItem(KEY, JSON.stringify(trimmed));
         return trimmed;
       } catch (error) {
+        const withLabels = trimmed.findIndex((v) => v.findings && v.findings.length);
         const withGraph = trimmed.findIndex((v) => v.ttl);
-        if (withGraph !== -1 && trimmed.length > 1) {
+        if (withLabels !== -1 && trimmed.length > 1) {
+          // Labels first: losing the ability to read v3 costs less than losing
+          // the ability to restore it, and both cost less than losing v3.
+          trimmed = trimmed.map((v, i) => (i === withLabels ? { ...v, findings: [] } : v));
+        } else if (withGraph !== -1 && trimmed.length > 1) {
           trimmed = trimmed.map((v, i) => (i === withGraph ? { ...v, ttl: null } : v));
         } else if (trimmed.length > 1) {
           trimmed = trimmed.slice(1);
@@ -34,7 +39,7 @@
     return trimmed;
   }
 
-  function record({ fingerprint, knowledgeBase, counts, findingIds, ttl, cause }) {
+  function record({ fingerprint, knowledgeBase, counts, findingIds, findings, ttl, cause }) {
     if (!fingerprint) return null;
     const versions = read();
     const latest = versions[versions.length - 1];
@@ -50,6 +55,11 @@
       knowledgeBase: knowledgeBase || null,
       counts: counts || {},
       findingIds: [...now],
+      /* The labels too, so a version can be read without being restored.
+       * Recording only ids meant the one way to see what a past assessment said
+       * was to replace the graph on screen with it - which is a commitment, and
+       * a poor way to answer "what changed". */
+      findings: (findings || []).slice(0, 60),
       delta: previous
         ? {
             cleared: [...previous].filter((id) => !now.has(id)).length,

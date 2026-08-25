@@ -152,6 +152,14 @@
    * a business activity. Null means the whole document, which is right when it
    * holds one architecture and misleading when it holds two. */
   let scopedSystem = null;
+  /* Nothing chosen and nothing loaded: the tools for both layers would be on
+   * screen before the reader has said which one they came for. */
+  let awaitingChoice = true;
+
+  function settleChoice() {
+    awaitingChoice = false;
+    $("#canvas-wrap").classList.remove("unstarted");
+  }
   let openedFrom = null; // the activity a reader descended through
 
   function architectureHasContent() {
@@ -165,7 +173,6 @@
     $("#process-canvas").classList.toggle("hidden", next !== "business");
     $("#level-business").classList.toggle("active", next === "business");
     $("#level-architecture").classList.toggle("active", next === "architecture");
-    $("#canvas-hint").classList.toggle("hidden", next === "business");
     $("#process-palette").classList.toggle("hidden", next !== "business");
     $("#palette").classList.toggle("hidden", next !== "architecture");
     $("#motif-palette").classList.toggle("hidden", next !== "architecture");
@@ -204,6 +211,7 @@
           scopedSystem = null;
           setLevel(part.to);
           refreshPreview(Editor.getValue());
+          reReadFindings();
         });
         crumb.appendChild(link);
       } else {
@@ -228,6 +236,7 @@
       (lastGraph && lastGraph.systems ? lastGraph.systems : []).map((s) => ({ id: s.id, label: s.label }))
     );
     lastProcess = data;
+    if (awaitingChoice && (data.stats.activities || architectureHasContent())) settleChoice();
     ProcessCanvas.render(data);
     const hasProcess = data.stats.activities > 0;
     $("#level-switch").classList.toggle("hidden", !hasProcess);
@@ -238,8 +247,13 @@
      * and with nothing saying to press Business, both surfaces read as broken.
      * Only ever chosen for the reader, never taken away from them: once they
      * have picked a level by hand, it stays picked. */
+    /* Land on the layer the graph is about. A process was opened to be looked
+     * at, so it is shown - previously the presence of an architecture won,
+     * which meant loading a business example dropped you into the architecture
+     * and the BPMN diagram had to be hunted for. A reader who has picked a
+     * level by hand keeps it. */
     if (!hasProcess && level === "business") setLevel("architecture");
-    else if (hasProcess && !levelChosenByHand && !architectureHasContent()) setLevel("business");
+    else if (hasProcess && !levelChosenByHand) setLevel("business");
 
     list.innerHTML = "";
     summary.innerHTML = "";
@@ -449,6 +463,15 @@
         el("span", { class: "hist-cause" }, version.cause || ""),
       ]);
 
+      /* Reading a version is not the same act as adopting one. Restore replaces
+       * the graph on screen, which is a commitment; opening a row only says what
+       * that assessment found, and what moved since the one before it. */
+      row.addEventListener("click", (ev) => {
+        if (ev.target.closest("button")) return;
+        previewVersion(version);
+      });
+      row.style.cursor = "pointer";
+
       if (version.ttl && !current) {
         const restore = el("button", { class: "btn small", type: "button" }, "Restore");
         restore.addEventListener("click", () => {
@@ -464,6 +487,68 @@
       list.appendChild(row);
     });
   }
+
+  /* What a past assessment said, without adopting it.
+   *
+   * Read-only by construction: it renders into the history panel and touches
+   * neither the editor nor the canvas, so looking costs nothing and there is
+   * nothing to undo afterwards. Restore stays a separate, deliberate act. */
+  function previewVersion(version) {
+    const panel = $("#history-preview");
+    panel.innerHTML = "";
+
+    const versions = VersionHistory.list();
+    const index = versions.findIndex((v) => v.fingerprint === version.fingerprint);
+    const earlier = versions[index + 1] || null;
+
+    panel.appendChild(el("div", { class: "hv-head" }, [
+      el("strong", {}, `v${version.v}`),
+      el("span", { class: "dim" }, shortTime(version.at)),
+      el("span", { class: "dim" }, version.cause || ""),
+      el("span", { class: "stat" },
+        `${version.counts.findings != null ? version.counts.findings : "?"} findings`),
+    ]));
+
+    const stored = version.findings || [];
+
+    /* What moved, by finding id - the same set difference the summary row uses,
+     * because a version is mostly interesting next to the one before it. */
+    if (earlier) {
+      const before = new Set(earlier.findingIds || []);
+      const now = new Set(version.findingIds || []);
+      const labelOf = new Map(
+        [...stored, ...(earlier.findings || [])].map((f) => [f.id, f.label])
+      );
+      const cleared = [...before].filter((id) => !now.has(id));
+      const raised = [...now].filter((id) => !before.has(id));
+
+      [[`cleared since v${earlier.v}`, cleared, "cleared"],
+       ["newly raised", raised, "raised"]].forEach((group) => {
+        const [title, ids, cls] = group;
+        if (!ids.length) return;
+        panel.appendChild(el("div", { class: `hv-group ${cls}` }, [
+          el("div", { class: "hv-group-title" }, `${ids.length} ${title}`),
+          ...ids.map((id) => el("div", { class: "hv-item" }, labelOf.get(id) || id)),
+        ]));
+      });
+      if (!cleared.length && !raised.length) {
+        panel.appendChild(el("p", { class: "hint" },
+          `Nothing moved between v${earlier.v} and v${version.v}.`));
+      }
+    }
+
+    if (stored.length) {
+      panel.appendChild(el("div", { class: "hv-group" }, [
+        el("div", { class: "hv-group-title" }, `all ${stored.length} findings in this version`),
+        ...stored.map((f) => el("div", { class: "hv-item dim" }, f.label)),
+      ]));
+    } else {
+      panel.appendChild(el("p", { class: "hint" },
+        "This version's findings were shed to save space; its counts are kept."));
+    }
+    panel.classList.remove("hidden");
+  }
+
 
   //  live preview 
   let previewSeq = 0;
@@ -652,14 +737,40 @@
     return card;
   }
 
+  /* Which findings belong to the architecture currently open.
+   *
+   * The assessment itself stays whole, and has to: the business process is what
+   * carries data and controls between systems, so assessing one architecture in
+   * isolation would lose exactly the context the layer exists to supply. What
+   * narrows is the reading. Someone who opened one activity is asking about that
+   * activity, and a list mixing in another system's risks answers a question
+   * they did not ask. */
+  function reReadFindings() {
+    // The scope changed, so the reading of the last assessment changed with it.
+    // Nothing is re-run: the findings are the same, the question is narrower.
+    if (lastAssessment) renderFindings(lastAssessment);
+  }
+
+  function findingsInScope(data) {
+    if (!scopedSystem) return data.findings;
+    const rows = (data.findingsByActivity || []).filter((row) => row.systems.includes(scopedSystem));
+    const wanted = new Set(rows.flatMap((row) => row.items.map((item) => item.id)));
+    return data.findings.filter((finding) => wanted.has(finding.id));
+  }
+
   function renderFindings(data) {
     $("#findings-empty").classList.add("hidden");
     const summary = $("#findings-summary");
     summary.innerHTML = "";
 
+    const shown = findingsInScope(data);
+    const narrowed = shown.length !== data.findings.length;
     const delta = runDelta(data.findings);
     const row = [
-      el("span", { class: "stat" }, `${data.summary.riskFindingCount} candidate findings`),
+      el("span", { class: "stat" },
+        narrowed
+          ? `${shown.length} of ${data.summary.riskFindingCount} candidate findings`
+          : `${data.summary.riskFindingCount} candidate findings`),
       el("span", { class: "stat" }, `${data.summary.motifMatchCount} motif matches`),
     ];
     if (delta && (delta.cleared || delta.raised)) {
@@ -674,7 +785,18 @@
     } else if (delta) {
       row.push(el("span", { class: "stat" }, "unchanged since the last run"));
     }
-    row.push(el("span", { class: "hint" }, "Click a finding to highlight its evidence in the graph."));
+    if (narrowed) {
+      const scopeLabel = (lastGraph && lastGraph.systems || [])
+        .filter((s) => s.id === scopedSystem).map((s) => s.label)[0] || "this architecture";
+      const clear = el("button", { type: "button", class: "crumb-link" }, `showing ${scopeLabel} — show all`);
+      clear.addEventListener("click", () => {
+        scopedSystem = null;
+        openedFrom = null;
+        renderFindings(data);
+        refreshPreview(Editor.getValue());
+      });
+      row.push(clear);
+    }
     summary.appendChild(el("div", { class: "summary-row" }, row));
 
     if (data.run && data.run.inputFingerprint) {
@@ -692,6 +814,7 @@
           derived: data.summary.derivedCategoryCount,
         },
         findingIds: data.findings.map((f) => f.id),
+        findings: data.findings.map((f) => ({ id: f.id, label: f.label })),
         ttl: Editor.getValue(),
         cause: pendingCause,
       });
@@ -709,11 +832,14 @@
     list.innerHTML = "";
     selectedFinding = null;
     GraphView.setHighlight([]);
-    if (!data.findings.length) {
-      list.appendChild(el("p", { class: "drawer-empty" }, "No candidate risk findings were produced for this architecture."));
+    if (!shown.length) {
+      list.appendChild(el("p", { class: "drawer-empty" },
+        narrowed
+          ? "Nothing was found in this architecture. Other systems in this graph may still carry risks."
+          : "No candidate risk findings were produced for this architecture."));
     }
-    data.findings.forEach((f) => list.appendChild(findingCard(f)));
-    $("#findings-count").textContent = data.findings.length ? String(data.findings.length) : "";
+    shown.forEach((f) => list.appendChild(findingCard(f)));
+    $("#findings-count").textContent = shown.length ? String(shown.length) : "";
   }
 
   // matched motifs tab 
@@ -1263,6 +1389,7 @@ ex:Generate a beam:Transform ;
         scopedSystem = activity.refines[0] || null;
         setLevel("architecture", activity);
         refreshPreview(Editor.getValue());
+        reReadFindings();
         /* Not setHighlight(activity.refines): those are system IRIs, and a
          * system is not a node on the canvas - the call highlighted nothing and
          * only looked like it did something. Descending shows the whole
@@ -1274,6 +1401,25 @@ ex:Generate a beam:Transform ;
         setStatus("ok", `Opened ${activity.label}`, "click the breadcrumb to go back");
       },
     });
+    /* An empty workbench asks rather than assuming. The two layers are
+     * different jobs - one describes what an organisation does, the other how a
+     * system is built - and which one someone came to do is not guessable. */
+    $("#canvas-wrap").classList.add("unstarted");
+
+    $("#start-business").addEventListener("click", () => {
+      settleChoice();
+      levelChosenByHand = true;
+      setLevel("business");
+      openDrawer("process");
+      setStatus("ok", "Business process", "add a participant, then steps inside it");
+    });
+    $("#start-architecture").addEventListener("click", () => {
+      settleChoice();
+      levelChosenByHand = true;
+      setLevel("architecture");
+      setStatus("ok", "AI architecture", "drag a symbol onto the canvas, or load an example");
+    });
+
     $("#btn-overview").addEventListener("click", openOverview);
     $("#btn-overview-close").addEventListener("click", () => $("#overview").classList.add("hidden"));
     document.addEventListener("keydown", (ev) => {
@@ -1298,7 +1444,10 @@ ex:Generate a beam:Transform ;
       scopedSystem = null;
       openedFrom = null;
       setLevel("architecture");
-      if (widening) refreshPreview(Editor.getValue());
+      if (widening) {
+        refreshPreview(Editor.getValue());
+        reReadFindings();
+      }
     });
 
     /* Put the canvases and palettes into a known state once, rather than

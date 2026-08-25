@@ -225,3 +225,63 @@ def test_picking_the_process_example_gives_something_assessable(served) -> None:
     assert int(counts["activities"]) > 0, "the process itself did not load"
     assert int(counts["nodes"]) > 0, "the architectures did not come with the process"
     assert int(counts["findings"]) > 0, "nothing was assessable"
+
+
+def _drive(served, script, budget=45000):
+    """Run a snippet against the real page and read back what it logged."""
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+    probe = STATIC / "_drive_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    probe.write_text(
+        source.replace("</body>", '<div id="probe-log"></div><script>' + script + "</script></body>"),
+        encoding="utf-8",
+    )
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_drive_probe.html", budget=budget)
+    finally:
+        probe.unlink(missing_ok=True)
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    report = found.group(1).strip() if found else ""
+    assert report, "the probe did not report - it may not have finished"
+    return report
+
+
+def test_an_empty_workbench_asks_which_layer_rather_than_guessing(served) -> None:
+    """The two layers are different jobs, and which one someone came to do is
+    not guessable. Before a choice, neither layer's tools are on screen."""
+    report = _drive(served, """
+    const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+    window.addEventListener("load", () => setTimeout(() => {
+      log("asks=" + !!document.querySelector("#start-business"));
+      log("unstarted=" + document.querySelector("#canvas-wrap").classList.contains("unstarted"));
+      document.querySelector("#start-architecture").click();
+      setTimeout(() => log("after=" + document.querySelector("#canvas-wrap").classList.contains("unstarted")), 800);
+    }, 2000));
+    """, budget=20000)
+
+    assert "asks=true|" in report
+    assert "unstarted=true|" in report, "both palettes were on screen before a choice"
+    assert "after=false|" in report, "choosing a layer did not start the workbench"
+
+
+def test_a_process_example_opens_on_the_business_layer(served) -> None:
+    """A process was opened to be looked at. The presence of an architecture
+    used to win, so loading a business example dropped the reader into the
+    architecture and the BPMN diagram had to be hunted for."""
+    report = _drive(served, """
+    const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+    window.addEventListener("load", () => setTimeout(() => {
+      const s = document.querySelector("#example-select");
+      s.value = "energy_customer_service";
+      s.dispatchEvent(new Event("change", { bubbles: true }));
+      setTimeout(() => {
+        log("business=" + document.querySelector("#level-business").classList.contains("active"));
+        log("activities=" + (document.querySelector("#process-count").textContent || "0"));
+      }, 6000);
+    }, 2000));
+    """)
+
+    assert "business=true|" in report, "the process example did not open on its own layer"
+    assert "activities=0|" not in report
