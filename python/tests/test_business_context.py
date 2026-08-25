@@ -174,3 +174,74 @@ def test_breaking_one_thing_the_escape_requires_brings_the_finding_back(descript
     assert _findings_by_pattern(result)[IMPROPER_OUTPUT] == 4, (
         f"the escape still fired after breaking: {description}"
     )
+
+
+# --- actors, messages, and nesting -------------------------------------------
+#
+# "The retailer answers the customer" is two participants exchanging messages,
+# not two lanes of one process. Modelled as lanes it would still draw, and the
+# arrow between the two organisations would be inexpressible.
+
+ENERGY_PROCESS = EXAMPLE_DIR / "context" / "energy_customer_service.ttl"
+GRAPH_RAG_NS = "http://tool4boxology.org/Boxology/graphrag-example"
+
+
+@pytest.fixture(scope="module")
+def energy_view():
+    from airiskkg.workbench.process_view import process_view
+
+    graph = Graph()
+    graph.parse(example_path(GRAPH_RAG_NS), format="turtle")
+    graph.parse(ENERGY_PROCESS, format="turtle")
+    return process_view(graph)
+
+
+def test_two_actors_each_with_their_own_process(energy_view) -> None:
+    labels = [p["label"] for p in energy_view["participants"]]
+    assert labels == ["Customer", "Northwind Energy"]
+    assert all(p["process"] for p in energy_view["participants"])
+
+
+def test_messages_cross_the_boundary_between_actors(energy_view) -> None:
+    """What a pool boundary is for. A message flow is the only way to say the
+    company answered the customer; sequence flow cannot leave a process."""
+    by_activity = {a["id"]: a["label"] for a in energy_view["activities"]}
+    pairs = {
+        (by_activity[m["source"]], by_activity[m["target"]])
+        for m in energy_view["messageFlows"]
+    }
+    assert ("Ask a question", "Receive the enquiry") in pairs
+    assert ("Send the reply", "Read the answer") in pairs
+
+
+def test_the_ai_activity_is_a_subprocess_that_expands_two_ways(energy_view) -> None:
+    """Both are true and they answer different questions: the inner flow says
+    what the service does as business steps, pair:refinedBy says which AI system
+    carries them out."""
+    chatbot = next(a for a in energy_view["activities"] if a["kind"] == "subProcess")
+
+    assert chatbot["refines"], "the subprocess names no architecture"
+    assert len(chatbot["children"]) == 3, "the subprocess has no business steps of its own"
+    for child in chatbot["children"]:
+        inner = next(a for a in energy_view["activities"] if a["id"] == child)
+        assert inner["parent"] == chatbot["id"]
+
+
+def test_the_customers_pool_is_not_confused_with_the_retailers(energy_view) -> None:
+    processes = {p["participant"]: p["id"] for p in energy_view["processes"]}
+    customer_side = [a for a in energy_view["activities"] if a["process"] == processes["Customer"]]
+
+    assert {a["label"] for a in customer_side} == {"Ask a question", "Read the answer"}
+
+
+def test_adding_the_process_leaves_the_architecture_assessment_alone() -> None:
+    """This process describes context and adds no control: the reply goes to the
+    customer as generated. Nothing should move, and the finding count saying so
+    is the honest reading - not a bug."""
+    alone = run_assessment(example_path(GRAPH_RAG_NS), write_outputs=False)
+    with_context = run_assessment(
+        [example_path(GRAPH_RAG_NS), ENERGY_PROCESS], write_outputs=False
+    )
+
+    assert alone.risk_finding_count == with_context.risk_finding_count == 7
+    assert alone.motif_match_count == with_context.motif_match_count == 3

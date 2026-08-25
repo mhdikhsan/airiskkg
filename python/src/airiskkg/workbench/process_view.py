@@ -148,8 +148,55 @@ def _ordered(graph: Graph, activities: list[URIRef]) -> list[URIRef]:
     return ordered
 
 
+def _participants(graph: Graph) -> list[dict]:
+    """The actors, each with the process it runs.
+
+    A pool is an actor with a boundary, and it is the unit that matters for a
+    reader who is not an engineer: "the retailer answers the customer" is two
+    pools, not two lanes of one. Modelled as lanes it would still draw, and the
+    arrow between the two organisations would be inexpressible - a message flow
+    only exists between participants."""
+    rows = []
+    for participant in graph.subjects(RDF.type, _cls("participant")):
+        process = graph.value(participant, _prop("processRef"))
+        rows.append(
+            {
+                "id": str(participant),
+                "label": _label_of(graph, participant),
+                "process": str(process) if process is not None else None,
+            }
+        )
+    return sorted(rows, key=lambda row: row["label"])
+
+
+def _message_flows(graph: Graph) -> list[dict]:
+    """What crosses a boundary between actors.
+
+    Typed on the way in, like sequence flow and for the same reason: bp:sourceRef
+    and bp:targetRef are shared by five classes, so an untyped read here would
+    pick up every data association in the graph and call it a message."""
+    flows = []
+    for flow in graph.subjects(RDF.type, _cls("messageFlow")):
+        source = graph.value(flow, _prop("sourceRef"))
+        target = graph.value(flow, _prop("targetRef"))
+        if source is None or target is None:
+            continue
+        message = graph.value(flow, _prop("messageRef"))
+        flows.append(
+            {
+                "id": str(flow),
+                "label": _label_of(graph, flow),
+                "source": str(source),
+                "target": str(target),
+                "message": _label_of(graph, message) if message is not None else None,
+            }
+        )
+    return sorted(flows, key=lambda row: row["label"])
+
+
 def process_view(graph: Graph) -> dict:
-    """Every process in the graph, with its lanes, activities and AI refinements."""
+    """Every process in the graph, with its actors, lanes, activities, the
+    messages between actors, and which activity an AI system carries out."""
     lane_of: dict[URIRef, str] = {}
     lanes: list[dict] = []
     for lane in graph.subjects(RDF.type, _cls("lane")):
@@ -169,11 +216,25 @@ def process_view(graph: Graph) -> dict:
         activities.extend(graph.subjects(RDF.type, _cls(name)))
     activities = _ordered(graph, sorted(set(activities), key=str))
 
+    # Which activities sit inside another. A subProcess that both contains a
+    # flow and names an architecture can be opened two ways, and they answer
+    # different questions: the inner flow says what the service does as business
+    # steps, pair:refinedBy says which AI system carries them out. The view
+    # reports both and lets the reader choose.
+    parent_of: dict[URIRef, URIRef] = {}
+    activity_set = set(activities)
+    for container in activities:
+        for child in graph.objects(container, _prop("contains")):
+            if child in activity_set and child != container:
+                parent_of[child] = container
+
     rows = []
     for activity in activities:
         kind = _activity_kind(graph, activity)
         reads, writes = _data_around(graph, activity)
         refines = [str(s) for s in graph.objects(activity, PAIR.refinedBy)]
+        children = [str(c) for c, p in parent_of.items() if p == activity]
+        parent = parent_of.get(activity)
         rows.append(
             {
                 "id": str(activity),
@@ -185,6 +246,16 @@ def process_view(graph: Graph) -> dict:
                 "reads": reads,
                 "writes": writes,
                 "refines": refines,
+                "parent": str(parent) if parent is not None else None,
+                "children": sorted(children),
+                "process": next(
+                    (
+                        str(p)
+                        for p in graph.subjects(_prop("contains"), activity)
+                        if (p, RDF.type, _cls("process")) in graph
+                    ),
+                    None,
+                ),
             }
         )
 
@@ -197,8 +268,12 @@ def process_view(graph: Graph) -> dict:
                 "label": _label_of(graph, process),
                 "participant": pool_of.get(process),
                 "isExecutable": None if executable is None else bool(executable.toPython()),
+                "activities": [
+                    str(a) for a in graph.objects(process, _prop("contains")) if a in set(activities)
+                ],
             }
         )
+    processes.sort(key=lambda p: (p["participant"] or "", p["label"]))
 
     refined_systems = {
         str(system): _label_of(graph, system)
@@ -215,11 +290,14 @@ def process_view(graph: Graph) -> dict:
     ]
 
     return {
+        "participants": _participants(graph),
         "processes": processes,
         "lanes": lanes,
         "activities": rows,
+        "messageFlows": _message_flows(graph),
         "unrefinedSystems": unrefined,
         "stats": {
+            "participants": len(_participants(graph)),
             "processes": len(processes),
             "activities": len(rows),
             "refined": sum(1 for r in rows if r["refines"]),

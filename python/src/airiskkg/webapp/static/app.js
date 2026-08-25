@@ -134,6 +134,50 @@
    *
    * Activities arrive in flow order from the server, so this renders them as
    * given and never re-sorts. */
+  /* Which layer the canvas is showing. "business" only becomes reachable once a
+   * process is actually submitted - offering a level with nothing on it reads
+   * as a broken feature rather than an empty one. */
+  let level = "architecture";
+  let openedFrom = null; // the activity a reader descended through
+
+  function setLevel(next, activity) {
+    level = next;
+    openedFrom = next === "architecture" ? activity || openedFrom : null;
+    $("#canvas").classList.toggle("hidden", next !== "architecture");
+    $("#process-canvas").classList.toggle("hidden", next !== "business");
+    $("#level-business").classList.toggle("active", next === "business");
+    $("#level-architecture").classList.toggle("active", next === "architecture");
+    $("#canvas-hint").classList.toggle("hidden", next === "business");
+    renderBreadcrumb();
+    if (next === "business") ProcessCanvas.fit();
+    else GraphView.fit();
+  }
+
+  function renderBreadcrumb() {
+    const crumb = $("#breadcrumb");
+    crumb.innerHTML = "";
+    if (!openedFrom || level !== "architecture") {
+      crumb.classList.add("hidden");
+      return;
+    }
+    const parts = [
+      { label: openedFrom.lane || "business process", to: "business" },
+      { label: openedFrom.label, to: "business" },
+      { label: "architecture", to: null },
+    ];
+    parts.forEach((part, index) => {
+      if (index) crumb.appendChild(el("span", { class: "crumb-sep" }, "›"));
+      if (part.to) {
+        const link = el("button", { type: "button", class: "crumb-link" }, part.label);
+        link.addEventListener("click", () => setLevel(part.to));
+        crumb.appendChild(link);
+      } else {
+        crumb.appendChild(el("span", { class: "crumb-here" }, part.label));
+      }
+    });
+    crumb.classList.remove("hidden");
+  }
+
   async function refreshProcess(ttl) {
     const list = $("#process-list");
     const summary = $("#process-summary");
@@ -144,6 +188,11 @@
     } catch (error) {
       return; // an unparseable graph already says so in the status bar
     }
+
+    ProcessCanvas.render(data);
+    const hasProcess = data.stats.activities > 0;
+    $("#level-switch").classList.toggle("hidden", !hasProcess);
+    if (!hasProcess && level === "business") setLevel("architecture");
 
     list.innerHTML = "";
     summary.innerHTML = "";
@@ -202,10 +251,11 @@
       if (activity.refines.length) {
         row.classList.add("refined");
         row.addEventListener("click", () => {
+          setLevel("architecture", activity);
           GraphView.setHighlight(activity.refines);
           revealInSource(activity.refines);
         });
-        row.title = "Show the AI system this activity is carried out by";
+        row.title = "Open the AI architecture this activity is carried out by";
       }
       list.appendChild(row);
     });
@@ -485,6 +535,22 @@
       });
       pendingCause = null;
       renderHistory();
+
+    ProcessCanvas.init({
+      svg: "#process-canvas",
+      /* Descending is the whole point of the two levels: one box up here, a
+       * whole architecture down there. Highlight what was opened so the reader
+       * lands on it rather than on the graph in general. */
+      onOpenArchitecture: (activity) => {
+        setLevel("architecture", activity);
+        GraphView.setHighlight(activity.refines);
+        revealInSource(activity.refines);
+        setStatus("ok", `Opened ${activity.label}`, "click the breadcrumb to go back");
+      },
+    });
+    $("#level-business").addEventListener("click", () => setLevel("business"));
+    $("#level-architecture").addEventListener("click", () => setLevel("architecture"));
+
     }
     renderKnowledgeBaseBadge(data.run);
 

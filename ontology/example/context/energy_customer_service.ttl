@@ -1,0 +1,182 @@
+# An energy retailer answering customer questions with the bundled GraphRAG
+# chatbot. Load it beside ontology/example/simple_graph_rag.ttl.
+#
+# Two participants, not one. A pool is an actor with a boundary, and what
+# crosses a boundary is a message - so "the company serves the customer" is two
+# pools and the message flows between them. Modelled as one pool with two lanes
+# it would still draw, and the arrow to the customer would be inexpressible.
+#
+# CustomerService is a subProcess: it has its own flow AND it is refined by an
+# architecture. Both are true and they answer different questions. The inner
+# flow says what the service does as business steps; pair:refinedBy says which
+# AI system carries them out. Expanding it can therefore go two ways, and a
+# reader chooses which they meant.
+
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix sgr:  <http://tool4boxology.org/Boxology/> .
+@prefix ec:   <http://w3id.org/airiskkg/example/energy-cs#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+### The collaboration: who is involved
+
+ec:ServiceCollaboration a bpmn:collaboration ;
+    bp:name "Customer energy service" ;
+    bp:contains ec:CustomerPool , ec:RetailerPool .
+
+ec:CustomerPool a bpmn:participant ;
+    bp:name "Customer" ;
+    bp:processRef ec:CustomerJourney .
+
+ec:RetailerPool a bpmn:participant ;
+    bp:name "Northwind Energy" ;
+    bp:processRef ec:ServiceProcess .
+
+### The customer's side, deliberately thin
+
+ec:CustomerJourney a bpmn:process ;
+    bp:name "Ask about my energy account" ;
+    bp:isExecutable false ;
+    bp:contains ec:AskQuestion , ec:ReadAnswer .
+
+ec:AskQuestion a bpmn:task ;
+    bp:name "Ask a question" ;
+    bp:outgoing ec:CFlow1 .
+
+ec:ReadAnswer a bpmn:task ;
+    bp:name "Read the answer" ;
+    bp:incoming ec:CFlow1 .
+
+ec:CFlow1 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:AskQuestion ; bp:targetRef ec:ReadAnswer .
+
+### The retailer's side
+
+ec:ServiceProcess a bpmn:process ;
+    bp:name "Answer a customer enquiry" ;
+    bp:isExecutable true ;
+    bp:laneSet ec:ServiceLanes ;
+    bp:contains ec:ReceiveEnquiry , ec:CustomerService , ec:SendReply , ec:LogInteraction .
+
+ec:ServiceLanes a bpmn:laneSet ;
+    bp:contains ec:AutomatedLane , ec:SupportLane .
+
+ec:AutomatedLane a bpmn:lane ;
+    bp:name "Self-service channel" ;
+    bp:flowNodeRef ec:ReceiveEnquiry , ec:CustomerService , ec:SendReply .
+
+ec:SupportLane a bpmn:lane ;
+    bp:name "Support operations" ;
+    bp:flowNodeRef ec:LogInteraction .
+
+ec:ReceiveEnquiry a bpmn:receiveTask ;
+    bp:name "Receive the enquiry" ;
+    bp:dataInputAssociation ec:EnquiryIn ;
+    bp:outgoing ec:SFlow1 .
+
+# The AI capability. A subProcess, because the chatbot carries the whole
+# exchange rather than one step of it - and refined by the architecture that
+# implements it.
+ec:CustomerService a bpmn:subProcess ;
+    bp:name "Customer service chatbot" ;
+    pair:refinedBy sgr:graphrag-example ;
+    bp:incoming ec:SFlow1 ;
+    bp:outgoing ec:SFlow2 ;
+    bp:dataInputAssociation ec:EnquiryToService ;
+    bp:dataOutputAssociation ec:DraftOut ;
+    bp:contains ec:UnderstandQuestion , ec:LookUpAccount , ec:ComposeReply .
+
+### Inside the chatbot, as business steps
+
+ec:UnderstandQuestion a bpmn:serviceTask ;
+    bp:name "Work out what is being asked" ;
+    bp:outgoing ec:IFlow1 .
+
+ec:LookUpAccount a bpmn:serviceTask ;
+    bp:name "Look up account and tariff information" ;
+    bp:incoming ec:IFlow1 ;
+    bp:outgoing ec:IFlow2 .
+
+ec:ComposeReply a bpmn:serviceTask ;
+    bp:name "Compose a reply" ;
+    bp:incoming ec:IFlow2 .
+
+ec:IFlow1 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:UnderstandQuestion ; bp:targetRef ec:LookUpAccount .
+ec:IFlow2 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:LookUpAccount ; bp:targetRef ec:ComposeReply .
+
+### Back on the outer flow
+
+ec:SendReply a bpmn:sendTask ;
+    bp:name "Send the reply" ;
+    bp:incoming ec:SFlow2 ;
+    bp:outgoing ec:SFlow3 .
+
+ec:LogInteraction a bpmn:userTask ;
+    bp:name "Log the interaction for quality review" ;
+    bp:incoming ec:SFlow3 ;
+    bp:resourceRole ec:SupportAgent .
+
+ec:SupportAgent a bpmn:humanPerformer ;
+    bp:name "Support agent" ;
+    bp:resourceRef ec:SupportRole .
+
+ec:SupportRole a bpmn:resource ;
+    bp:name "Customer support agent" .
+
+ec:SFlow1 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ReceiveEnquiry ;  bp:targetRef ec:CustomerService .
+ec:SFlow2 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:CustomerService ; bp:targetRef ec:SendReply .
+ec:SFlow3 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:SendReply ;       bp:targetRef ec:LogInteraction .
+
+### What crosses the boundary between the two pools
+
+ec:EnquiryMessage a bpmn:message ;
+    bp:name "Account enquiry" .
+
+ec:ReplyMessage a bpmn:message ;
+    bp:name "Answer" .
+
+ec:MFlow1 a bpmn:messageFlow ;
+    bp:name "asks" ;
+    bp:messageRef ec:EnquiryMessage ;
+    bp:sourceRef ec:AskQuestion ;
+    bp:targetRef ec:ReceiveEnquiry .
+
+ec:MFlow2 a bpmn:messageFlow ;
+    bp:name "answers" ;
+    bp:messageRef ec:ReplyMessage ;
+    bp:sourceRef ec:SendReply ;
+    bp:targetRef ec:ReadAnswer .
+
+### Data, annotated once, here
+
+ec:EnquiryRef a bpmn:dataObjectReference ;
+    bp:name "Customer enquiry" ;
+    bp:dataObjectRef ec:Enquiry .
+
+ec:Enquiry a bpmn:dataObject ;
+    bp:name "Customer enquiry" ;
+    bp:itemSubjectRef ec:EnquiryItem .
+
+# A question about someone's own energy account names them. The process owner
+# knows that; the architecture diagram never said it.
+ec:EnquiryItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:PersonalData .
+
+ec:EnquiryIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:EnquiryRef ; bp:targetRef ec:ReceiveEnquiry .
+
+ec:EnquiryToService a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:EnquiryRef ; bp:targetRef ec:CustomerService .
+
+ec:DraftRef a bpmn:dataObjectReference ;
+    bp:name "Drafted reply" .
+
+ec:DraftOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:CustomerService ; bp:targetRef ec:DraftRef .

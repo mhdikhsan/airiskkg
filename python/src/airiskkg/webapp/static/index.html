@@ -59,10 +59,16 @@
     <!-- Right: interactive graph canvas (preview + click-to-annotate) -->
     <section class="pane preview-pane" id="preview-pane">
       <div class="mode-bar">
-        <span class="canvas-hint">Drag a symbol onto the canvas to add · drag to move · click to edit · drag a node's ▸ port onto another to connect</span>
+        <span class="level-switch hidden" id="level-switch">
+          <button type="button" class="level" id="level-business" title="The business process this system sits in">Business</button>
+          <button type="button" class="level active" id="level-architecture" title="How the AI system is built">Architecture</button>
+        </span>
+        <span class="breadcrumb hidden" id="breadcrumb"></span>
+        <span class="canvas-hint" id="canvas-hint">Drag a symbol onto the canvas to add · drag to move · click to edit · drag a node's ▸ port onto another to connect</span>
       </div>
       <div class="canvas-wrap" id="canvas-wrap">
         <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="process-canvas" class="hidden" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="palette" id="palette" title="Drag a symbol onto the canvas"></div>
         <div class="motif-palette" id="motif-palette" title="Drag a motif onto the canvas to add its elements"></div>
         <div class="canvas-controls">
@@ -151,6 +157,7 @@
   <script src="/static/multipicker.js"></script>
   <script src="/static/graph.js"></script>
   <script src="/static/annotate.js"></script>
+  <script src="/static/process_canvas.js"></script>
   <script src="/static/history.js"></script>
   <script src="/static/app.js"></script>
 </body>
