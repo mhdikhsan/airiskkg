@@ -37,6 +37,7 @@
   let systems = [];             // architectures a activity may be refined by
   let selectedPool = null;      // where a new activity lands
   let connecting = null;        // drag in progress: { from, line }
+  let swallowNextClick = false; // a pan ends in a click the reader did not mean
   let view = { x: 0, y: 0, k: 1 };
 
   function node(tag, attrs = {}, parent = null) {
@@ -262,6 +263,7 @@
        * what "expand this sub-process" means here. Everything else opens its
        * editor. The pencil is there when you want to edit a refined one. */
       group.addEventListener("click", (ev) => {
+        if (swallowNextClick) { swallowNextClick = false; return; }
         if (ev.target.closest(".pc-marker, .pc-port, .pc-edit")) return;
         ev.stopPropagation();
         if (activity.refines.length && onOpenArchitecture) onOpenArchitecture(activity);
@@ -297,8 +299,11 @@
 
   function startConnect(ev, activity, slot) {
     const line = node("path", { class: "pc-flow pending" }, root);
-    connecting = { from: activity, slot, line };
-    svg.setPointerCapture(ev.pointerId);
+    connecting = { from: activity, slot, line, id: ev.pointerId };
+    // Held for the length of the drag so it survives leaving the port, and
+    // released in endConnect - a capture left standing swallows every later
+    // click on the canvas.
+    try { svg.setPointerCapture(ev.pointerId); } catch (error) { /* already gone */ }
   }
 
   function moveConnect(ev) {
@@ -311,9 +316,11 @@
 
   async function endConnect(ev) {
     if (!connecting) return;
-    const { from, line } = connecting;
+    const { from, line, id } = connecting;
     connecting = null;
     line.remove();
+    try { svg.releasePointerCapture(id); } catch (error) { /* already gone */ }
+    swallowNextClick = true;
     const dropped = document.elementFromPoint(ev.clientX, ev.clientY);
     const group = dropped && dropped.closest(".pc-activity");
     if (!group) return;
@@ -393,6 +400,7 @@
       }, group);
       if (pool.participant.id === selectedPool) group.classList.add("selected");
       group.addEventListener("click", (ev) => {
+        if (swallowNextClick) { swallowNextClick = false; return; }
         if (ev.target.closest(".pc-activity")) return;
         selectedPool = pool.participant.id;
         draw();
@@ -445,24 +453,64 @@
   }
 
   function initPanZoom() {
-    let panning = null;
+    /* Capture is taken only once a drag is really under way.
+     *
+     * Capturing on pointerdown - the obvious way to write this - retargets
+     * every later pointer event, and the click that follows, to the <svg>
+     * itself. So the click never reached the activity group and the canvas felt
+     * dead: press a box, nothing happens. It looked like a listener problem and
+     * was not.
+     *
+     * A movement threshold keeps a click a click. Past it, the gesture is a pan,
+     * capture is taken so the drag survives leaving the element, and the click
+     * that the browser fires afterwards is dropped - otherwise letting go over a
+     * box would open it. */
+    const DRAG_THRESHOLD = 4;
+    let pan = null;
+
     svg.addEventListener("pointerdown", (ev) => {
-      if (ev.target.closest(".pc-open, .pc-marker, .pc-port")) return;
+      if (ev.target.closest(".pc-open, .pc-marker, .pc-port, .pc-edit")) return;
       closeDetail();
-      panning = { x: ev.clientX - view.x, y: ev.clientY - view.y };
-      svg.setPointerCapture(ev.pointerId);
+      pan = {
+        id: ev.pointerId,
+        fromX: ev.clientX, fromY: ev.clientY,
+        originX: view.x, originY: view.y,
+        moved: false,
+      };
     });
+
     svg.addEventListener("pointermove", (ev) => {
       if (connecting) { moveConnect(ev); return; }
-      if (!panning) return;
-      view.x = ev.clientX - panning.x;
-      view.y = ev.clientY - panning.y;
+      if (!pan) return;
+      const dx = ev.clientX - pan.fromX;
+      const dy = ev.clientY - pan.fromY;
+      if (!pan.moved) {
+        if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+        pan.moved = true;
+        svg.classList.add("panning");
+        try { svg.setPointerCapture(pan.id); } catch (error) { /* already gone */ }
+      }
+      view.x = pan.originX + dx;
+      view.y = pan.originY + dy;
       applyView();
     });
-    svg.addEventListener("pointerup", (ev) => {
-      panning = null;
+
+    const release = (ev) => {
       if (connecting) endConnect(ev);
+      if (pan && pan.moved) {
+        svg.classList.remove("panning");
+        try { svg.releasePointerCapture(pan.id); } catch (error) { /* already gone */ }
+        swallowNextClick = true;
+      }
+      pan = null;
+    };
+    svg.addEventListener("pointerup", release);
+    svg.addEventListener("pointercancel", release);
+    svg.addEventListener("lostpointercapture", () => {
+      svg.classList.remove("panning");
+      pan = null;
     });
+
     svg.addEventListener("wheel", (ev) => {
       ev.preventDefault();
       const factor = ev.deltaY < 0 ? 1.1 : 0.9;

@@ -1114,3 +1114,4 @@ label.btn { display: inline-flex; align-items: center; }
 .pc-edit-nib { fill: #7c8698; opacity: 0; }
 .pc-activity:hover .pc-edit-box, .pc-activity:hover .pc-edit-nib { opacity: 1; }
 .pc-edit:hover .pc-edit-box { stroke: #4a72c4; }
+#process-canvas.panning { cursor: grabbing; }
