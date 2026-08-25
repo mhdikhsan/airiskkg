@@ -951,7 +951,7 @@ label.btn { display: inline-flex; align-items: center; }
 .crumb-sep { color: var(--text-dim); }
 .crumb-here { color: var(--text-dim); }
 
-#process-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#process-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 #process-canvas.hidden { display: none; }
 #canvas.hidden { display: none; }
 

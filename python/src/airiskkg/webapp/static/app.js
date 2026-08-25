@@ -138,7 +138,12 @@
    * process is actually submitted - offering a level with nothing on it reads
    * as a broken feature rather than an empty one. */
   let level = "architecture";
+  let levelChosenByHand = false;
   let openedFrom = null; // the activity a reader descended through
+
+  function architectureHasContent() {
+    return Boolean(lastGraph && lastGraph.nodes && lastGraph.nodes.length);
+  }
 
   function setLevel(next, activity) {
     level = next;
@@ -200,7 +205,14 @@
     ProcessCanvas.render(data);
     const hasProcess = data.stats.activities > 0;
     $("#level-switch").classList.toggle("hidden", !hasProcess);
+
+    /* Land where there is something to see. A process loaded on its own leaves
+     * the architecture canvas legitimately empty - there are no BEAM elements -
+     * and with nothing saying to press Business, both surfaces read as broken.
+     * Only ever chosen for the reader, never taken away from them: once they
+     * have picked a level by hand, it stays picked. */
     if (!hasProcess && level === "business") setLevel("architecture");
+    else if (hasProcess && !levelChosenByHand && !architectureHasContent()) setLevel("business");
 
     list.innerHTML = "";
     summary.innerHTML = "";
@@ -432,6 +444,7 @@
 
   //  live preview 
   let previewSeq = 0;
+  let lastGraph = null; // the parsed architecture, for the level decision and the picker
 
   async function refreshPreview(ttl) {
     const seq = ++previewSeq;
@@ -442,11 +455,14 @@
       return;
     }
     scheduleStaleCheck(ttl);
-    refreshProcess(ttl);
     try {
       const data = await postJson("/api/graph", { ttl });
       if (seq !== previewSeq) return;
+      lastGraph = data;
       GraphView.render(data);
+      /* After the architecture is known, so the level decision has something to
+       * go on rather than always believing the canvas is empty. */
+      refreshProcess(ttl);
       sourceLines = new Map(
         [...data.nodes, ...data.systems]
           .filter((n) => n.line)
@@ -689,8 +705,19 @@
       downloadBlob(new Blob([markup], { type: "image/svg+xml" }), `${exportBaseName()}-context.svg`);
       setStatus("ok", "Diagram exported");
     });
-    $("#level-business").addEventListener("click", () => setLevel("business"));
-    $("#level-architecture").addEventListener("click", () => setLevel("architecture"));
+    $("#level-business").addEventListener("click", () => {
+      levelChosenByHand = true;
+      setLevel("business");
+    });
+    $("#level-architecture").addEventListener("click", () => {
+      levelChosenByHand = true;
+      setLevel("architecture");
+    });
+
+    /* Put the canvases and palettes into a known state once, rather than
+     * leaving them on whatever the markup happened to say until the first
+     * click. That gap is what made a freshly loaded process show nothing. */
+    setLevel(level);
 
     }
     lastAssessment = data;

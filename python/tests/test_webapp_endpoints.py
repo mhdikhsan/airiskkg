@@ -8,7 +8,7 @@ flask = pytest.importorskip("flask")
 
 from airiskkg.paths import EXAMPLE_DIR, REPO_ROOT  # noqa: E402
 from airiskkg.webapp.app import create_app  # noqa: E402
-from conftest import ONYX_NS, example_path  # noqa: E402
+from conftest import GRAPH_RAG_NS, ONYX_NS, example_path  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -706,16 +706,17 @@ def test_an_unknown_activity_kind_is_refused(client) -> None:
 
 
 def test_findings_are_attributed_to_the_activity_they_arise_under(client) -> None:
-    """What makes a finding communicable. "Three findings on Draft an answer" is
-    a sentence a process owner acts on; the name of an inference step is not."""
-    architecture = example_path(ONYX_NS).read_text(encoding="utf-8")
-    process = (EXAMPLE_DIR / "context" / "onyx_support_process.ttl").read_text(encoding="utf-8")
+    """What makes a finding communicable. "Seven findings on Customer service
+    chatbot" is a sentence a process owner acts on; the name of an inference step
+    inside the architecture is not."""
+    architecture = example_path(GRAPH_RAG_NS).read_text(encoding="utf-8")
+    process = (EXAMPLE_DIR / "context" / "energy_customer_service.ttl").read_text(encoding="utf-8")
 
     assessed = client.post("/api/assess", json={"ttl": architecture + "\n" + process}).get_json()
     rows = assessed["findingsByActivity"]
 
     assert rows, "no findings were attributed to any activity"
-    assert rows[0]["label"] == "Draft an answer"
+    assert rows[0]["label"] == "Customer service chatbot"
     assert rows[0]["findings"] == assessed["summary"]["riskFindingCount"]
 
 

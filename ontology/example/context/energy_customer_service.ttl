@@ -58,14 +58,15 @@ ec:ServiceProcess a bpmn:process ;
     bp:name "Answer a customer enquiry" ;
     bp:isExecutable true ;
     bp:laneSet ec:ServiceLanes ;
-    bp:contains ec:ReceiveEnquiry , ec:CustomerService , ec:SendReply , ec:LogInteraction .
+    bp:contains ec:ReceiveEnquiry , ec:CustomerService , ec:ReviewReply ,
+                ec:SendReply , ec:LogInteraction .
 
 ec:ServiceLanes a bpmn:laneSet ;
     bp:contains ec:AutomatedLane , ec:SupportLane .
 
 ec:AutomatedLane a bpmn:lane ;
     bp:name "Self-service channel" ;
-    bp:flowNodeRef ec:ReceiveEnquiry , ec:CustomerService , ec:SendReply .
+    bp:flowNodeRef ec:ReceiveEnquiry , ec:CustomerService , ec:ReviewReply , ec:SendReply .
 
 ec:SupportLane a bpmn:lane ;
     bp:name "Support operations" ;
@@ -110,11 +111,28 @@ ec:IFlow2 a bpmn:sequenceFlow ;
 
 ### Back on the outer flow
 
+# The control the architecture cannot see. An agent reads what the chatbot
+# drafted before it goes out - not a step in the inference pipeline, and not one
+# anybody would put there.
+ec:ReviewReply a bpmn:userTask ;
+    bp:name "Check the reply before it goes out" ;
+    bp:incoming ec:SFlow2 ;
+    bp:outgoing ec:SFlow2b ;
+    bp:dataInputAssociation ec:DraftIn ;
+    bp:resourceRole ec:SupportAgent .
+
+ec:DraftIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:DraftRef ; bp:targetRef ec:ReviewReply .
+
 ec:SendReply a bpmn:sendTask ;
     bp:name "Send the reply" ;
-    bp:incoming ec:SFlow2 ;
+    bp:incoming ec:SFlow2b ;
     bp:outgoing ec:SFlow3 .
 
+# Also a human task, also downstream - and it reviews nothing. It reads no
+# drafted reply and happens after the customer already has the answer, so it
+# must NOT clear an output-handling finding. The two together are why the
+# condition tests for the data the reviewer reads, not merely for a person.
 ec:LogInteraction a bpmn:userTask ;
     bp:name "Log the interaction for quality review" ;
     bp:incoming ec:SFlow3 ;
@@ -130,7 +148,9 @@ ec:SupportRole a bpmn:resource ;
 ec:SFlow1 a bpmn:sequenceFlow ;
     bp:sourceRef ec:ReceiveEnquiry ;  bp:targetRef ec:CustomerService .
 ec:SFlow2 a bpmn:sequenceFlow ;
-    bp:sourceRef ec:CustomerService ; bp:targetRef ec:SendReply .
+    bp:sourceRef ec:CustomerService ; bp:targetRef ec:ReviewReply .
+ec:SFlow2b a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ReviewReply ;     bp:targetRef ec:SendReply .
 ec:SFlow3 a bpmn:sequenceFlow ;
     bp:sourceRef ec:SendReply ;       bp:targetRef ec:LogInteraction .
 

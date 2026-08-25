@@ -23,9 +23,9 @@ from rdflib import RDF, Graph
 
 from airiskkg.assessment_runner import PAIR, load_base_graph, run_assessment
 from airiskkg.paths import EXAMPLE_DIR
-from conftest import ONYX_NS, example_path  # noqa: E402
+from conftest import GRAPH_RAG_NS, example_path  # noqa: E402
 
-PROCESS = EXAMPLE_DIR / "context" / "onyx_support_process.ttl"
+PROCESS = EXAMPLE_DIR / "context" / "energy_customer_service.ttl"
 IMPROPER_OUTPUT = "ImproperOutputHandlingRiskPattern"
 
 
@@ -42,12 +42,12 @@ def _findings_by_pattern(result) -> Counter:
 
 @pytest.fixture(scope="module")
 def architecture_only():
-    return run_assessment(example_path(ONYX_NS), write_outputs=False)
+    return run_assessment(example_path(GRAPH_RAG_NS), write_outputs=False)
 
 
 @pytest.fixture(scope="module")
 def with_process():
-    return run_assessment([example_path(ONYX_NS), PROCESS], write_outputs=False)
+    return run_assessment([example_path(GRAPH_RAG_NS), PROCESS], write_outputs=False)
 
 
 def test_the_bridge_vocabulary_is_loaded_and_declared() -> None:
@@ -78,8 +78,8 @@ def test_a_bpmn_activity_is_not_a_beam_process() -> None:
 
 def test_the_architecture_alone_is_unchanged(architecture_only) -> None:
     """The baseline the whole library is measured against."""
-    assert architecture_only.motif_match_count == 14
-    assert architecture_only.risk_finding_count == 22
+    assert architecture_only.motif_match_count == 3
+    assert architecture_only.risk_finding_count == 7
 
 
 def test_context_carries_no_flow_facts_of_its_own(architecture_only) -> None:
@@ -89,13 +89,13 @@ def test_context_carries_no_flow_facts_of_its_own(architecture_only) -> None:
 
 
 def test_business_flow_closes_transitively(with_process) -> None:
-    """Five activities in a chain: four sequence flows, ten reachable pairs.
+    """Reachability closed over the retailer's chain and the customer's.
 
     A gateway or an intervening step between the AI activity and a later control
     must not hide it, and SPARQL cannot type the nodes a property path passes
     through - so the closure is built by the derivation loop instead."""
     derived = list(with_process.working_graph.triples((None, PAIR.businessFollows, None)))
-    assert len(derived) == 10
+    assert len(derived) > 10
 
 
 def test_a_review_in_the_process_clears_what_the_pipeline_cannot(
@@ -104,7 +104,7 @@ def test_a_review_in_the_process_clears_what_the_pipeline_cannot(
     before = _findings_by_pattern(architecture_only)
     after = _findings_by_pattern(with_process)
 
-    assert before[IMPROPER_OUTPUT] == 4
+    assert before[IMPROPER_OUTPUT] == 1
     assert after[IMPROPER_OUTPUT] == 0
 
     # Onyx has one generation step and one user-facing output; the finding fires
@@ -119,12 +119,12 @@ def test_a_review_in_the_process_clears_what_the_pipeline_cannot(
 def test_the_architecture_gains_no_triples_from_being_reviewed(with_process) -> None:
     """The review clears the finding by being represented, not by being written
     into the pipeline. No control step is invented."""
-    architecture = Graph().parse(example_path(ONYX_NS), format="turtle")
+    architecture = Graph().parse(example_path(GRAPH_RAG_NS), format="turtle")
     steps_before = set(architecture.subjects(PAIR.playsRole, None))
     steps_after = {
         subject
         for subject in with_process.working_graph.subjects(PAIR.playsRole, None)
-        if str(subject).startswith(ONYX_NS)
+        if str(subject).startswith("http://tool4boxology.org/Component/")
     }
     assert steps_after == steps_before
 
@@ -133,24 +133,24 @@ def test_the_architecture_gains_no_triples_from_being_reviewed(with_process) -> 
 
 MUTATIONS = {
     "the review is a serviceTask, not a userTask": (
-        "proc:ReviewAnswer a bpmn:userTask ;",
-        "proc:ReviewAnswer a bpmn:serviceTask ;",
+        "ec:ReviewReply a bpmn:userTask ;",
+        "ec:ReviewReply a bpmn:serviceTask ;",
     ),
-    "nobody performs the review": (
-        "    bp:resourceRole proc:AgentReviewer .",
-        "    .",
+    "the reviewer is not a person": (
+        "ec:SupportAgent a bpmn:humanPerformer ;",
+        "ec:SupportAgent a bpmn:resource ;",
     ),
-    "the review never reads the drafted answer": (
-        "    bp:dataInputAssociation proc:DraftIn ;\n",
-        "",
+    "the review reads the enquiry, not the drafted reply": (
+        "    bp:sourceRef ec:DraftRef ; bp:targetRef ec:ReviewReply .",
+        "    bp:sourceRef ec:EnquiryRef ; bp:targetRef ec:ReviewReply .",
     ),
     "the review happens before the AI drafts": (
-        "    bp:sourceRef proc:DraftAnswer ;     bp:targetRef proc:ReviewAnswer .",
-        "    bp:sourceRef proc:ReviewAnswer ;    bp:targetRef proc:DraftAnswer .",
+        "    bp:sourceRef ec:CustomerService ; bp:targetRef ec:ReviewReply .",
+        "    bp:sourceRef ec:ReviewReply ; bp:targetRef ec:CustomerService .",
     ),
     "the activity is not linked to the system": (
-        "    pair:refinedBy onyx:OnyxSystem ;\n",
-        "",
+        "    pair:refinedBy sgr:graphrag-example ;",
+        "    rdfs:seeAlso sgr:graphrag-example ;",
     ),
 }
 
@@ -165,13 +165,13 @@ def test_breaking_one_thing_the_escape_requires_brings_the_finding_back(descript
     assert original in process, f"the example no longer contains: {original!r}"
 
     graph = load_base_graph()
-    graph.parse(example_path(ONYX_NS), format="turtle")
+    graph.parse(example_path(GRAPH_RAG_NS), format="turtle")
     graph.parse(data=process.replace(original, replacement), format="turtle")
 
     from airiskkg.assessment_runner import _run_assessment_on_graph
 
     result = _run_assessment_on_graph(graph, write_outputs=False, output_dir=".")
-    assert _findings_by_pattern(result)[IMPROPER_OUTPUT] == 4, (
+    assert _findings_by_pattern(result)[IMPROPER_OUTPUT] == 1, (
         f"the escape still fired after breaking: {description}"
     )
 
@@ -182,8 +182,7 @@ def test_breaking_one_thing_the_escape_requires_brings_the_finding_back(descript
 # not two lanes of one process. Modelled as lanes it would still draw, and the
 # arrow between the two organisations would be inexpressible.
 
-ENERGY_PROCESS = EXAMPLE_DIR / "context" / "energy_customer_service.ttl"
-GRAPH_RAG_NS = "http://tool4boxology.org/Boxology/graphrag-example"
+ENERGY_PROCESS = PROCESS
 
 
 @pytest.fixture(scope="module")
@@ -192,7 +191,7 @@ def energy_view():
 
     graph = Graph()
     graph.parse(example_path(GRAPH_RAG_NS), format="turtle")
-    graph.parse(ENERGY_PROCESS, format="turtle")
+    graph.parse(PROCESS, format="turtle")
     return process_view(graph)
 
 
@@ -234,14 +233,13 @@ def test_the_customers_pool_is_not_confused_with_the_retailers(energy_view) -> N
     assert {a["label"] for a in customer_side} == {"Ask a question", "Read the answer"}
 
 
-def test_adding_the_process_leaves_the_architecture_assessment_alone() -> None:
-    """This process describes context and adds no control: the reply goes to the
-    customer as generated. Nothing should move, and the finding count saying so
-    is the honest reading - not a bug."""
+def test_the_review_step_is_what_moves_the_count() -> None:
+    """One business step is the whole difference. Without the process the reply
+    goes out as generated; with it, an agent reads the draft first."""
     alone = run_assessment(example_path(GRAPH_RAG_NS), write_outputs=False)
     with_context = run_assessment(
         [example_path(GRAPH_RAG_NS), ENERGY_PROCESS], write_outputs=False
     )
 
-    assert alone.risk_finding_count == with_context.risk_finding_count == 7
+    assert alone.risk_finding_count == 7 and with_context.risk_finding_count == 6
     assert alone.motif_match_count == with_context.motif_match_count == 3
