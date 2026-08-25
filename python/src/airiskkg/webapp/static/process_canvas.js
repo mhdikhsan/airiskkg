@@ -138,8 +138,38 @@
       class: "pc-flow message",
       "marker-end": "url(#pc-arrow-msg)",
     }, parent);
+    node("circle", { cx: x1, cy: y1, r: 3.5, class: "pc-msg-start" }, parent);
     const t = text(parent, (x1 + x2) / 2, mid - 4, label, "pc-flow-label");
     t.setAttribute("text-anchor", "middle");
+  }
+
+
+  /* BPMN draws what kind of work an activity is as a small marker in the
+   * top-left corner, not as a word. Anyone who has seen a process diagram reads
+   * the envelope and the little person without being told; the uppercase
+   * "RECEIVETASK" we printed instead was ours, not BPMN's. */
+  function typeMarker(parent, kind, x, y) {
+    const g = node("g", { class: "pc-icon", transform: `translate(${x} ${y})` }, parent);
+    if (kind === "userTask") {
+      node("circle", { cx: 6, cy: 3.5, r: 2.6 }, g);
+      node("path", { d: "M 1 11 a 5 5 0 0 1 10 0" }, g);
+    } else if (kind === "manualTask") {
+      node("path", { d: "M 2 10 v -4 a 1.4 1.4 0 0 1 2.8 0 v -2 a 1.4 1.4 0 0 1 2.8 0 v 1 a 1.4 1.4 0 0 1 2.8 0 v 5" }, g);
+    } else if (kind === "serviceTask") {
+      node("circle", { cx: 6, cy: 6, r: 4.4 }, g);
+      node("circle", { cx: 6, cy: 6, r: 1.6, class: "pc-icon-hole" }, g);
+    } else if (kind === "scriptTask") {
+      node("path", { d: "M 3 1 h 6 v 10 h -6 z M 4.6 4 h 2.8 M 4.6 6 h 2.8 M 4.6 8 h 2.8" }, g);
+    } else if (kind === "sendTask") {
+      node("path", { d: "M 1 2.5 h 10 v 7 h -10 z", class: "pc-icon-filled" }, g);
+      node("path", { d: "M 1 2.5 l 5 4 l 5 -4" }, g);
+    } else if (kind === "receiveTask") {
+      node("path", { d: "M 1 2.5 h 10 v 7 h -10 z" }, g);
+      node("path", { d: "M 1 2.5 l 5 4 l 5 -4" }, g);
+    } else if (kind === "businessRuleTask") {
+      node("path", { d: "M 1 2 h 10 v 8 h -10 z M 1 4.4 h 10 M 4.4 4.4 v 5.6" }, g);
+    }
+    return g;
   }
 
   function drawActivity(parent, slot) {
@@ -151,12 +181,17 @@
     node("rect", {
       x: slot.x, y: slot.y, width: slot.w, height: slot.h, rx: 8, class: "pc-box",
     }, group);
+    const hint = node("title", {}, group);
+    hint.textContent = activity.refines.length
+      ? "Open the AI architecture that carries out this activity"
+      : (activity.children.length ? "Click + to show the steps inside" : "Edit this activity");
 
-    text(group, slot.x + 12, slot.y + 20, activity.kind, "pc-kind");
-    text(group, slot.x + 12, slot.y + 39, truncate(activity.label, 24), "pc-label");
+    typeMarker(group, activity.kind, slot.x + 8, slot.y + 7);
+    text(group, slot.x + 26, slot.y + 17, truncate(activity.label, 22), "pc-label");
 
     if (activity.performers.length) {
-      text(group, slot.x + 12, slot.y + 53, truncate(activity.performers.join(", "), 26), "pc-by");
+      const row = activity.refines.length ? 48 : 34;
+      text(group, slot.x + 26, slot.y + row, truncate(activity.performers.join(", "), 24), "pc-by");
     }
 
     /* Two ways in, and they answer different questions: the inner flow says
@@ -195,20 +230,17 @@
     }
 
     if (activity.refines.length) {
-      const chip = node("g", { class: "pc-open", cursor: "pointer" }, group);
-      const chipW = 92;
+      /* A badge, not a button. The box itself opens the architecture - a pill
+       * with 9.5px type was the only way in, and nobody aims for it when the
+       * whole box looks like the thing they mean. On its own line, because
+       * sharing one with the label clipped both. */
+      const chip = node("g", { class: "pc-open" }, group);
+      const chipW = 74;
       node("rect", {
-        x: slot.x + slot.w - chipW - 10, y: slot.y + 8,
-        width: chipW, height: 18, rx: 9, class: "pc-open-box",
+        x: slot.x + 26, y: slot.y + 23, width: chipW, height: 15, rx: 7, class: "pc-open-box",
       }, chip);
-      const t = text(chip, slot.x + slot.w - chipW / 2 - 10, slot.y + 21, "⤢ architecture", "pc-open-label");
-      t.setAttribute("text-anchor", "middle");
-      chip.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        if (onOpenArchitecture) onOpenArchitecture(activity);
-      });
-      const title = node("title", {}, chip);
-      title.textContent = "Open the AI architecture that carries out this activity";
+      const badge = text(chip, slot.x + 26 + chipW / 2, slot.y + 34, "AI system ›", "pc-open-label");
+      badge.setAttribute("text-anchor", "middle");
     }
     if (onEdit) {
       /* Drag from the port to another activity. Whether that becomes a sequence
@@ -225,12 +257,35 @@
       const portTitle = node("title", {}, port);
       portTitle.textContent = "Drag onto another activity to connect";
 
+      /* One primary action per box, and it is the one the shape promises.
+       * An activity carried out by an AI system opens that system - which is
+       * what "expand this sub-process" means here. Everything else opens its
+       * editor. The pencil is there when you want to edit a refined one. */
       group.addEventListener("click", (ev) => {
-        if (ev.target.closest(".pc-open, .pc-marker, .pc-port")) return;
+        if (ev.target.closest(".pc-marker, .pc-port, .pc-edit")) return;
         ev.stopPropagation();
-        showDetail(activity, ev);
+        if (activity.refines.length && onOpenArchitecture) onOpenArchitecture(activity);
+        else showDetail(activity, ev);
       });
       group.setAttribute("cursor", "pointer");
+
+      if (activity.refines.length) {
+        const pencil = node("g", { class: "pc-edit", cursor: "pointer" }, group);
+        node("rect", {
+          x: slot.x + slot.w - 26, y: slot.y + slot.h - 24, width: 18, height: 18, rx: 3,
+          class: "pc-edit-box",
+        }, pencil);
+        node("path", {
+          d: `M ${slot.x + slot.w - 21} ${slot.y + slot.h - 10} l 0 -3 l 7 -7 l 3 3 l -7 7 z`,
+          class: "pc-edit-nib",
+        }, pencil);
+        pencil.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          showDetail(activity, ev);
+        });
+        const editTitle = node("title", {}, pencil);
+        editTitle.textContent = "Edit this activity";
+      }
     }
     return group;
   }
@@ -316,6 +371,7 @@
 
     const defs = node("defs", {}, svg);
     [["pc-arrow", "pc-arrow-head"], ["pc-arrow-msg", "pc-arrow-head message"]].forEach(([id, cls]) => {
+      // the message head is hollow; only sequence flow is filled
       const marker = node("marker", {
         id, viewBox: "0 0 10 10", refX: 9, refY: 5,
         markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse",

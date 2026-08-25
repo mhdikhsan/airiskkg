@@ -988,7 +988,8 @@ label.btn { display: inline-flex; align-items: center; }
 .pc-flow.pending { stroke: #4a72c4; stroke-dasharray: 4 3; }
 .pc-flow-label { fill: #7c8698; font-size: 10px; }
 .pc-arrow-head { fill: #7c8698; }
-.pc-arrow-head.message { fill: #b07a2e; }
+.pc-arrow-head.message { fill: #ffffff; stroke: #b07a2e; stroke-width: 1.4; }
+.pc-msg-start { fill: #ffffff; stroke: #b07a2e; stroke-width: 1.4; }
 
 .pc-pool.selected .pc-pool-strip { fill: #dce6fb; }
 .pc-pool.selected .pc-pool-label { fill: #2f4d94; }
@@ -1101,3 +1102,15 @@ label.btn { display: inline-flex; align-items: center; }
   min-width: 24px;
 }
 .ov-note { font-size: 12px; color: var(--text-dim); margin: 12px 0 0; line-height: 1.5; }
+
+/* BPMN type markers, drawn rather than named. */
+.pc-icon { fill: none; stroke: #48505f; stroke-width: 1.2; stroke-linejoin: round; }
+.pc-icon .pc-icon-filled { fill: #48505f; }
+.pc-icon .pc-icon-hole { fill: #f8f9fc; stroke: none; }
+
+/* Edit is secondary on a refined activity: the box itself opens the
+ * architecture, which is what expanding a sub-process means here. */
+.pc-edit-box { fill: #ffffff; stroke: #c9cfdb; stroke-width: 1; opacity: 0; }
+.pc-edit-nib { fill: #7c8698; opacity: 0; }
+.pc-activity:hover .pc-edit-box, .pc-activity:hover .pc-edit-nib { opacity: 1; }
+.pc-edit:hover .pc-edit-box { stroke: #4a72c4; }

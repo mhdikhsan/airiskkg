@@ -21,7 +21,6 @@ import re
 import shutil
 import socket
 import subprocess
-import sys
 import threading
 import time
 from pathlib import Path
@@ -163,3 +162,61 @@ def test_nothing_threw_while_the_page_wired_itself_up(rendered) -> None:
     """A silent failure is the failure mode: the canvas came up blank with no
     console error, because the initialiser simply never ran."""
     assert "Uncaught" not in rendered
+
+
+# --- descending from a business activity into the architecture ---------------
+
+
+@pytest.fixture(scope="module")
+def drilled(served):
+    """Click the sub-process the way a reader would - on the box, not on a
+    badge - and read what the page became."""
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+
+    probe = STATIC / "_drill_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = """
+  <div id="probe-log"></div>
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  window.addEventListener("load", async () => {
+    const a = await (await fetch("/api/examples/simple_graph_rag")).json();
+    const p = await (await fetch("/api/examples/energy_customer_service")).json();
+    window.Editor.setValue(a.ttl + String.fromCharCode(10,10) + p.ttl);
+    setTimeout(() => {
+      document.querySelector("#level-business").click();
+      setTimeout(() => {
+        const box = document.querySelector(".pc-activity.refined .pc-box");
+        log("box=" + !!box);
+        if (box) box.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+        setTimeout(() => {
+          log("arch=" + document.querySelector("#level-architecture").classList.contains("active"));
+          log("crumb=" + document.querySelector("#breadcrumb").textContent);
+        }, 700);
+      }, 2500);
+    }, 3000);
+  });
+  </script>
+"""
+    probe.write_text(source.replace("</body>", driver + "</body>"), encoding="utf-8")
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_drill_probe.html")
+    finally:
+        probe.unlink(missing_ok=True)
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    return found.group(1) if found else ""
+
+
+def test_clicking_the_subprocess_opens_the_architecture(drilled) -> None:
+    """What "expand this sub-process" means here: one box in the business
+    diagram, a whole BEAM architecture underneath it. The affordance used to be
+    a 92x18 pill nobody aimed for, so the box itself now carries the action."""
+    assert "box=true" in drilled, "no refined activity was drawn to click"
+    assert "arch=true" in drilled, "clicking the sub-process did not open the architecture"
+
+
+def test_the_breadcrumb_says_where_the_reader_came_from(drilled) -> None:
+    assert "Customer service chatbot" in drilled
+    assert "architecture" in drilled

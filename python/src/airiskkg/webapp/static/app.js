@@ -1237,7 +1237,13 @@ ex:Generate a beam:Transform ;
        * lands on it rather than on the graph in general. */
       onOpenArchitecture: (activity) => {
         setLevel("architecture", activity);
-        GraphView.setHighlight(activity.refines);
+        /* Not setHighlight(activity.refines): those are system IRIs, and a
+         * system is not a node on the canvas - the call highlighted nothing and
+         * only looked like it did something. Descending shows the whole
+         * architecture, which is the point; clear any evidence highlight left
+         * over from a finding so what is on screen is the system, not the last
+         * thing someone clicked. */
+        GraphView.setHighlight([]);
         revealInSource(activity.refines);
         setStatus("ok", `Opened ${activity.label}`, "click the breadcrumb to go back");
       },

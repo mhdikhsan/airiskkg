@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PAIR-AI Architecture Workbench</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>PAIR-AI</h1>
+      <span class="subtitle">Architecture workbench &mdash; edit the graph on the left, preview it live on the right</span>
+      <span class="kb-badge hidden" id="kb-badge" title="The library that produced the findings on screen. Editing a .ttl while the server runs does not reload it, so this is how you tell which version answered."></span>
+    </div>
+    <div class="toolbar">
+      <select id="example-select" title="Load a bundled example">
+        <option value="">Load example…</option>
+      </select>
+      <label class="btn" for="file-input" title="Upload a BEAM Turtle file, or a Tool4Boxology / t4b-beam export (.nt or .ttl) — exports are normalized to BEAM automatically">Open graph
+        <input type="file" id="file-input" accept=".ttl,.turtle,.nt" hidden />
+      </label>
+      <button type="button" class="btn" id="btn-starter" title="Replace the editor content with a minimal starter graph">Starter</button>
+      <button type="button" class="btn" id="btn-clear" title="Clear the code and the diagram">Clear</button>
+      <span class="toolbar-sep"></span>
+      <button type="button" class="btn" id="btn-validate" title="Validate against the SHACL input contract">Validate</button>
+      <button type="button" class="btn primary" id="btn-assess" title="Run the PAIR-AI candidate risk assessment">Run assessment</button>
+      <span class="toolbar-sep"></span>
+      <button type="button" class="btn" id="btn-export-svg" title="Download the diagram as a standalone SVG image">Export SVG</button>
+      <select id="export-format" title="RDF serialization for the assessment export">
+        <option value="turtle">Turtle</option>
+        <option value="json-ld">JSON-LD</option>
+        <option value="nt">N-Triples</option>
+      </select>
+      <button type="button" class="btn" id="btn-overview" title="A one-page view of the business context and what was found in it — for showing to people who are not editing the graph">Overview</button>
+      <button type="button" class="btn" id="btn-export-kg" title="Download this assessment as an RDF knowledge graph, with a PROV record of the run">Export assessment</button>
+    </div>
+  </header>
+
+  <main class="workbench">
+    <!-- Left: Turtle editor -->
+    <section class="pane editor-pane" id="editor-pane">
+      <div class="editor" id="editor">
+        <div class="gutter" id="gutter"></div>
+        <div class="code-scroll" id="code-scroll">
+          <pre class="highlight" id="highlight" aria-hidden="true"><code id="highlight-code"></code></pre>
+          <textarea id="ttl-source" spellcheck="false" autocomplete="off" autocapitalize="off"
+            placeholder="@prefix ex:   <http://example.org/my-system#> .&#10;@prefix beam: <http://w3id.org/beam/core#> .&#10;@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .&#10;&#10;# Start typing, or load an example from the toolbar…"></textarea>
+        </div>
+      </div>
+      <div class="statusbar" id="statusbar">
+        <span class="status-dot ok" id="status-dot"></span>
+        <span id="status-text">Ready</span>
+        <span class="status-right" id="status-stats"></span>
+      </div>
+    </section>
+
+    <div class="divider" id="divider" title="Drag to resize"></div>
+
+    <!-- Right: interactive graph canvas (preview + click-to-annotate) -->
+    <section class="pane preview-pane" id="preview-pane">
+      <div class="mode-bar">
+        <span class="level-switch hidden" id="level-switch">
+          <button type="button" class="level" id="level-business" title="The business process this system sits in">Business</button>
+          <button type="button" class="level active" id="level-architecture" title="How the AI system is built">Architecture</button>
+        </span>
+        <span class="breadcrumb hidden" id="breadcrumb"></span>
+        <span class="canvas-hint" id="canvas-hint">Drag a symbol onto the canvas to add · drag to move · click to edit · drag a node's ▸ port onto another to connect</span>
+      </div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="process-canvas" class="hidden" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="process-palette hidden" id="process-palette" title="Click a pool to select it, then click a shape to add one"></div>
+        <div class="node-detail hidden" id="process-detail"></div>
+        <div class="palette" id="palette" title="Drag a symbol onto the canvas"></div>
+        <div class="motif-palette" id="motif-palette" title="Drag a motif onto the canvas to add its elements"></div>
+        <div class="canvas-controls">
+          <button type="button" class="ctl" id="btn-zoom-in" title="Zoom in">+</button>
+          <button type="button" class="ctl" id="btn-zoom-out" title="Zoom out">&minus;</button>
+          <button type="button" class="ctl" id="btn-fit" title="Fit graph to view">&#8862;</button>
+        </div>
+        <div class="system-badge hidden" id="system-badge"></div>
+        <div class="legend">
+          <span class="legend-item"><span class="swatch process"></span>Process</span>
+          <span class="legend-item"><span class="swatch data"></span>Data</span>
+          <span class="legend-item"><span class="swatch symbol"></span>Symbol</span>
+          <span class="legend-item"><span class="swatch model"></span>Model</span>
+          <span class="legend-item"><span class="swatch agent"></span>Agent</span>
+        </div>
+        <div class="node-detail hidden" id="node-detail"></div>
+        <div class="canvas-empty" id="canvas-empty">
+          <p>The live preview appears here.</p>
+          <p class="hint">Load an example or start editing on the left.</p>
+        </div>
+      </div>
+
+      <!-- Bottom drawer: findings / validation -->
+      <div class="drawer collapsed" id="drawer">
+        <div class="drawer-head" id="drawer-head">
+          <div class="drawer-tabs">
+            <button type="button" class="drawer-tab active" data-drawer-tab="findings">Findings <span class="count" id="findings-count"></span><span class="stale hidden" id="findings-stale" title="The graph in the editor has changed since these findings were produced. Run the assessment again.">stale</span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="motifs">Motifs <span class="count" id="motifs-count" title="matched motifs"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="derived">Data flow <span class="count" id="derived-count" title="data categories the engine inferred by following the flow — annotated ones are not counted"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="annotate">Annotate <span class="count" id="annotate-count" title="elements without a role"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="validation">Input contract <span class="count" id="validation-count"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="process">Process <span class="count" id="process-count" title="business activities in the submitted process"></span></button>
+            <button type="button" class="drawer-tab" data-drawer-tab="history">History <span class="count" id="history-count" title="assessments recorded in this browser"></span></button>
+          </div>
+          <button type="button" class="drawer-toggle" id="drawer-toggle" title="Expand / collapse">&#9650;</button>
+        </div>
+        <div class="drawer-body" id="drawer-body">
+          <div class="drawer-panel" data-drawer-panel="findings">
+            <p class="drawer-empty" id="findings-empty">Run an assessment to see candidate risk findings. Selecting a finding highlights its evidence in the graph.</p>
+            <div id="findings-summary"></div>
+            <div id="findings-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="motifs">
+            <p class="drawer-empty" id="motifs-empty">Run an assessment to see which motifs matched. Selecting a motif highlights its elements in the graph.</p>
+            <div id="motifs-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="derived">
+            <p class="drawer-empty" id="derived-empty">Run an assessment to follow protected content through the system: which elements ended up carrying a data category you did not annotate, and the route it took to get there.</p>
+            <div id="derived-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="annotate">
+            <div class="annotate-head">
+              <span class="hint">Assign a role to each element, then Apply. Roles are what let motifs and risk patterns match graphs imported from Tool4Boxology / t4b-beam (which carry structure only).</span>
+              <button type="button" class="btn small primary" id="btn-annotate-apply" title="Write the selected roles into the editor graph">Apply annotations</button>
+            </div>
+            <div id="annotate-list">
+              <p class="drawer-empty">Load or import an architecture graph, then reopen this tab to tag its elements.</p>
+            </div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="validation">
+            <p class="drawer-empty" id="validation-empty">Validate the graph against the SHACL input contract.</p>
+            <div id="validation-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="process">
+            <p class="drawer-empty" id="process-empty">No business process in this graph. Load one from <em>Load example</em> &mdash; it is added to the architecture rather than replacing it, and the assessment reads both together.</p>
+            <div id="process-summary"></div>
+            <div id="process-list"></div>
+          </div>
+          <div class="drawer-panel hidden" data-drawer-panel="history">
+            <div class="history-head">
+              <span class="hint" id="history-note">Each assessment of a changed graph is recorded here. Kept in this browser only &mdash; nothing is sent anywhere, and nothing is stored on the server.</span>
+              <span class="history-actions">
+                <button type="button" class="btn small" id="btn-history-export" title="Download the whole history as JSON">Export history</button>
+                <button type="button" class="btn small" id="btn-history-clear" title="Delete every recorded version from this browser">Clear history</button>
+              </span>
+            </div>
+            <p class="drawer-empty" id="history-empty">No assessments recorded yet. Run one, change the graph, and run it again to see what moved.</p>
+            <div id="history-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Stakeholder overview: read-only, one page, meant to be shown rather than edited -->
+  <div class="overview hidden" id="overview">
+    <div class="overview-head">
+      <h2 id="overview-title">Business context</h2>
+      <span class="overview-actions">
+        <button type="button" class="btn small" id="btn-overview-svg" title="Download this page's diagram as an SVG">Export diagram</button>
+        <button type="button" class="btn small" id="btn-overview-close">Close</button>
+      </span>
+    </div>
+    <div class="overview-body">
+      <div class="overview-diagram" id="overview-diagram"></div>
+      <div class="overview-side" id="overview-side"></div>
+    </div>
+  </div>
+
+  <script src="/static/editor.js"></script>
+  <script src="/static/multipicker.js"></script>
+  <script src="/static/graph.js"></script>
+  <script src="/static/annotate.js"></script>
+  <script src="/static/process_canvas.js"></script>
+  <script src="/static/history.js"></script>
+  <script src="/static/app.js"></script>
+
+  <div id="probe-log" style="position:fixed;bottom:0;left:0;right:0;z-index:999;background:#000;color:#0f0;font:11px monospace;padding:6px"></div>
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + " | "; };
+  window.addEventListener("error", (e) => log("ERROR " + e.message));
+  window.addEventListener("load", async () => {
+    const a = await (await fetch("/api/examples/simple_graph_rag")).json();
+    const p = await (await fetch("/api/examples/energy_customer_service")).json();
+    window.Editor.setValue(a.ttl + String.fromCharCode(10,10) + p.ttl);
+    setTimeout(() => {
+      document.querySelector("#level-business").click();
+      setTimeout(() => {
+        const refined = document.querySelector(".pc-activity.refined");
+        log("refined box found=" + !!refined);
+        refined.querySelector(".pc-box").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+        setTimeout(() => {
+          log("arch active=" + document.querySelector("#level-architecture").classList.contains("active"));
+          log("crumb=" + document.querySelector("#breadcrumb").textContent);
+          log("highlighted=" + document.querySelectorAll(".node.highlight").length);
+        }, 700);
+      }, 2500);
+    }, 3000);
+  });
+  </script>
+</body>
+</html>

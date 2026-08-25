@@ -243,3 +243,54 @@ def test_the_review_step_is_what_moves_the_count() -> None:
 
     assert alone.risk_finding_count == 7 and with_context.risk_finding_count == 6
     assert alone.motif_match_count == with_context.motif_match_count == 3
+
+
+def test_the_example_only_uses_sbpmn_terms_sbpmn_declares() -> None:
+    """Conformance, checked rather than claimed.
+
+    A process model is only interoperable if it says things the ontology
+    actually defines - otherwise it is BPMN-shaped Turtle that no other tool
+    reads. Every property is checked against the domain and range sBPMN itself
+    declares, and every class against sBPMN's own class list."""
+    from rdflib import OWL, RDFS, URIRef
+
+    from airiskkg.paths import SBPMN_DIR
+
+    onto = Graph()
+    for path in sorted(SBPMN_DIR.glob("*.ttl")):
+        onto.parse(path, format="turtle")
+    example = Graph().parse(PROCESS, format="turtle")
+
+    classes_ns = "https://sBPMN.github.io/2.0/classes#"
+    props_ns = "https://sBPMN.github.io/2.0/properties#"
+
+    def ancestors(cls):
+        seen, frontier = {cls}, [cls]
+        while frontier:
+            for parent in onto.objects(frontier.pop(), RDFS.subClassOf):
+                if parent not in seen:
+                    seen.add(parent)
+                    frontier.append(parent)
+        return seen
+
+    undeclared_classes = [
+        str(o)
+        for _s, _p, o in example.triples((None, RDF.type, None))
+        if str(o).startswith(classes_ns) and (o, RDF.type, OWL.Class) not in onto
+    ]
+    assert not undeclared_classes, f"classes sBPMN does not define: {undeclared_classes}"
+
+    violations = []
+    for predicate in {p for _s, p, _o in example if str(p).startswith(props_ns)}:
+        assert (predicate, RDF.type, None) in onto, f"undeclared property: {predicate}"
+        domains = list(onto.objects(predicate, RDFS.domain))
+        ranges = list(onto.objects(predicate, RDFS.range))
+        for subject, _p, obj in example.triples((None, predicate, None)):
+            types = set(example.objects(subject, RDF.type))
+            if domains and not any(any(d in ancestors(t) for d in domains) for t in types):
+                violations.append(f"domain: {predicate} on {subject}")
+            if ranges and isinstance(obj, URIRef):
+                obj_types = set(example.objects(obj, RDF.type))
+                if obj_types and not any(any(r in ancestors(t) for r in ranges) for t in obj_types):
+                    violations.append(f"range: {predicate} -> {obj}")
+    assert not violations, "sBPMN violations:\n" + "\n".join(sorted(violations))
