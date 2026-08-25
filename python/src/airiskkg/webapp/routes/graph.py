@@ -34,9 +34,12 @@ def read_graph() -> object:
     payload = request.get_json(silent=True) or {}
     ttl = payload.get("ttl") or ""
     if not ttl.strip():
-        return jsonify({"systems": [], "nodes": [], "edges": [], "stats": {"nodes": 0, "edges": 0}})
+        return jsonify({"systems": [], "nodes": [], "edges": [],
+                        "scopedTo": None, "stats": {"nodes": 0, "edges": 0}})
     try:
-        return jsonify(graph_view(ttl))
+        # `scope` is a beam:System IRI: the architecture behind one business
+        # activity, rather than every architecture the document happens to hold.
+        return jsonify(graph_view(ttl, scope=(payload.get("scope") or None)))
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
 

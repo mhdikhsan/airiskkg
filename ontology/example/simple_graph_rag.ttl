@@ -9,13 +9,15 @@
     beam:description "The workflow describes a simplified event information chatbot based on the GraphRAG approach." ;
     beam:hasProcess <http://tool4boxology.org/Component/extraction>,
         <http://tool4boxology.org/Component/kg_query>,
-        <http://tool4boxology.org/Component/llm_prompt> ;
+        <http://tool4boxology.org/Component/llm_prompt>,
+        <http://tool4boxology.org/Component/prompt_build> ;
     beam:hasResource <http://tool4boxology.org/Component/event_id>,
         <http://tool4boxology.org/Component/event_kg>,
         <http://tool4boxology.org/Component/kg_subgraph>,
         <http://tool4boxology.org/Component/llm>,
         <http://tool4boxology.org/Component/nlq>,
         <http://tool4boxology.org/Component/sparql_tmpl>,
+        <http://tool4boxology.org/Component/assembled_prompt>,
         <http://tool4boxology.org/Component/summary>,
         <http://tool4boxology.org/Component/sys_prompt_tmpl> .
 

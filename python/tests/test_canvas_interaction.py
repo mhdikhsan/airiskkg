@@ -184,6 +184,20 @@ def _on_architecture(loop, handle):
     )
 
 
+def _settle(loop, handle, expression, unwanted, tries=20):
+    """Wait for the page to finish, rather than guessing how long it takes.
+
+    Descending fires a round trip, and a fixed sleep either wastes time or reads
+    the previous render - which is how this test first reported a canvas that
+    had narrowed correctly as one that had not."""
+    for _ in range(tries):
+        value = loop.run_until_complete(handle.js(expression))
+        if value != unwanted:
+            return value
+        time.sleep(0.4)
+    return loop.run_until_complete(handle.js(expression))
+
+
 def _back_to_business(loop, handle):
     loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
     time.sleep(1.5)
@@ -252,3 +266,94 @@ def test_the_risk_badge_folds_the_findings_it_counts(page) -> None:
 
     assert after != before, "the badge did not fold or unfold anything"
     assert max(before, after) > 0, "unfolding showed no findings"
+
+
+def test_descending_narrows_the_canvas_to_that_activitys_architecture(page) -> None:
+    """"Open this activity" means the architecture behind it, not the other tab.
+
+    A document that carries two architectures - which is the normal case once a
+    business process runs more than one AI system - used to draw both, so
+    descending from either activity showed the same picture. The relation is
+    already in the graph, so narrowing is a query and nothing needs storing:
+    pair:refinedBy names the system, beam:hasProcess and beam:hasResource say
+    what it holds."""
+    loop, handle = page
+
+    # Widen first, deliberately. Picking the architecture level by hand clears
+    # any scope a previous descent left behind, and measuring without doing so
+    # compares a narrowed canvas against itself.
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(2)
+    whole = loop.run_until_complete(handle.js('document.querySelectorAll(".node").length'))
+    loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
+    time.sleep(2)
+
+    def spot(index):
+        """Fresh coordinates each time: going back to the business level refits
+        the canvas, so positions read before a round trip are stale."""
+        return loop.run_until_complete(handle.js(f"""(() => {{
+            const boxes = document.querySelectorAll('.pc-activity.refined .pc-box');
+            if (boxes.length <= {index}) return null;
+            const r = boxes[{index}].getBoundingClientRect();
+            return {{ x: Math.round(r.left + 30), y: Math.round(r.top + 12), count: boxes.length }};
+        }})()"""))
+
+    first = spot(0)
+    assert first and first["count"] >= 2, "the scene should carry two AI activities"
+
+    seen = []
+    for index in range(2):
+        at = spot(index)
+        loop.run_until_complete(handle.click(at["x"], at["y"]))
+        nodes = _settle(loop, handle, 'document.querySelectorAll(".node").length', whole)
+        seen.append({
+            "nodes": nodes,
+            "badge": loop.run_until_complete(
+                handle.js('document.querySelector("#system-badge").textContent')
+            ),
+        })
+        _back_to_business(loop, handle)
+
+    narrowed = [view["nodes"] for view in seen]
+    assert max(narrowed) < whole, (
+        f"descending did not narrow the canvas: showed {narrowed} against {whole} unscoped"
+    )
+    assert seen[0]["badge"] != seen[1]["badge"], (
+        f"both activities showed the same architecture: {seen}"
+    )
+
+
+def test_a_pan_does_not_eat_the_click_after_it(page) -> None:
+    """The "it gets stuck" report, reduced.
+
+    A pan produces a click nobody meant, so one click is swallowed. That flag
+    used to be cleared only by a handler on an activity - so panning and then
+    releasing over empty canvas left it armed, and the next real click, whenever
+    it came, vanished. Here: pan over nothing, then click the sub-process, and
+    it must open."""
+    loop, handle = page
+    _back_to_business(loop, handle)
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('.pc-activity.refined .pc-box');
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + 30), y: Math.round(r.top + 12),
+                 emptyY: Math.round(r.bottom + 90) };
+    })()"""))
+
+    # A pan that ends over empty canvas, so no activity handler sees its click.
+    loop.run_until_complete(handle.drag(at["x"] - 150, at["emptyY"], at["x"], at["emptyY"]))
+    assert not _on_architecture(loop, handle), "the pan itself opened something"
+
+    # The pan moved everything, so read the box again rather than clicking where
+    # it used to be - which is a mistake this test made first.
+    moved = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('.pc-activity.refined .pc-box');
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + 30), y: Math.round(r.top + 12) };
+    })()"""))
+    loop.run_until_complete(handle.click(moved["x"], moved["y"]))
+    assert _on_architecture(loop, handle), (
+        "the click after a pan was swallowed - the flag outlived the pan"
+    )
+    _back_to_business(loop, handle)

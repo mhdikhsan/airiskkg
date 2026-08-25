@@ -148,6 +148,10 @@
    * as a broken feature rather than an empty one. */
   let level = "architecture";
   let levelChosenByHand = false;
+  /* Which architecture the canvas is narrowed to, when a reader descended from
+   * a business activity. Null means the whole document, which is right when it
+   * holds one architecture and misleading when it holds two. */
+  let scopedSystem = null;
   let openedFrom = null; // the activity a reader descended through
 
   function architectureHasContent() {
@@ -196,7 +200,11 @@
       if (index) crumb.appendChild(el("span", { class: "crumb-sep" }, "›"));
       if (part.to) {
         const link = el("button", { type: "button", class: "crumb-link" }, part.label);
-        link.addEventListener("click", () => setLevel(part.to));
+        link.addEventListener("click", () => {
+          scopedSystem = null;
+          setLevel(part.to);
+          refreshPreview(Editor.getValue());
+        });
         crumb.appendChild(link);
       } else {
         crumb.appendChild(el("span", { class: "crumb-here" }, part.label));
@@ -471,7 +479,7 @@
     }
     scheduleStaleCheck(ttl);
     try {
-      const data = await postJson("/api/graph", { ttl });
+      const data = await postJson("/api/graph", { ttl, scope: scopedSystem });
       if (seq !== previewSeq) return;
       lastGraph = data;
       GraphView.render(data);
@@ -486,7 +494,16 @@
       Editor.markErrorLine(null);
       const badge = $("#system-badge");
       if (data.systems.length) {
-        badge.textContent = data.systems.map((s) => s.label).join(" · ");
+        /* When the canvas is narrowed, name the one system on screen. Listing
+         * every system the document holds would caption a drawing that shows
+         * only one of them. */
+        const shown = data.scopedTo
+          ? data.systems.filter((s) => s.id === data.scopedTo)
+          : data.systems;
+        badge.textContent = shown.map((s) => s.label).join(" · ")
+          + (data.unclaimed && data.unclaimed.length
+              ? ` · ${data.unclaimed.length} element(s) belong to no system`
+              : "");
         badge.classList.remove("hidden");
       } else {
         badge.classList.add("hidden");
@@ -1239,7 +1256,13 @@ ex:Generate a beam:Transform ;
        * whole architecture down there. Highlight what was opened so the reader
        * lands on it rather than on the graph in general. */
       onOpenArchitecture: (activity) => {
+        /* Descending means "show me the architecture behind THIS activity", not
+         * "switch to the other tab". The relation is already in the graph -
+         * pair:refinedBy names the system, beam:hasProcess/hasResource say what
+         * it holds - so narrowing is a query, and nothing has to be stored. */
+        scopedSystem = activity.refines[0] || null;
         setLevel("architecture", activity);
+        refreshPreview(Editor.getValue());
         /* Not setHighlight(activity.refines): those are system IRIs, and a
          * system is not a node on the canvas - the call highlighted nothing and
          * only looked like it did something. Descending shows the whole
@@ -1269,7 +1292,13 @@ ex:Generate a beam:Transform ;
     });
     $("#level-architecture").addEventListener("click", () => {
       levelChosenByHand = true;
+      /* Picking the level by hand asks for the architecture layer, not the one
+       * activity someone descended through earlier. */
+      const widening = scopedSystem !== null;
+      scopedSystem = null;
+      openedFrom = null;
       setLevel("architecture");
+      if (widening) refreshPreview(Editor.getValue());
     });
 
     /* Put the canvases and palettes into a known state once, rather than

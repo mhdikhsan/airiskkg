@@ -318,7 +318,6 @@
        * what "expand this sub-process" means here. Everything else opens its
        * editor. The pencil is there when you want to edit a refined one. */
       group.addEventListener("click", (ev) => {
-        if (swallowNextClick) { swallowNextClick = false; return; }
         if (ev.target.closest(".pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
         ev.stopPropagation();
         if (activity.refines.length && onOpenArchitecture) onOpenArchitecture(activity);
@@ -455,7 +454,6 @@
       }, group);
       if (pool.participant.id === selectedPool) group.classList.add("selected");
       group.addEventListener("click", (ev) => {
-        if (swallowNextClick) { swallowNextClick = false; return; }
         if (ev.target.closest(".pc-activity")) return;
         selectedPool = pool.participant.id;
         draw();
@@ -524,6 +522,11 @@
     let pan = null;
 
     svg.addEventListener("pointerdown", (ev) => {
+      /* A new gesture spends whatever the last one armed. Waiting for the click
+       * a pan produces is not enough: the browser does not always deliver one,
+       * and a flag left standing eats the next real click - which is what "it
+       * gets stuck" was. Clearing here means it can never outlive one gesture. */
+      swallowNextClick = false;
       if (ev.target.closest(".pc-open, .pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
       closeDetail();
       pan = {
@@ -559,6 +562,18 @@
       }
       pan = null;
     };
+    /* The click a pan produces is consumed here, in the capture phase, so the
+     * flag cannot outlive it. It used to be checked inside each handler, which
+     * meant a pan followed by a click on anything else left it armed - and the
+     * NEXT real click, possibly minutes later, was silently eaten. That is what
+     * "it gets stuck" felt like. */
+    svg.addEventListener("click", (ev) => {
+      if (!swallowNextClick) return;
+      swallowNextClick = false;
+      ev.stopPropagation();
+      ev.preventDefault();
+    }, true);
+
     svg.addEventListener("pointerup", release);
     svg.addEventListener("pointercancel", release);
     svg.addEventListener("lostpointercapture", () => {

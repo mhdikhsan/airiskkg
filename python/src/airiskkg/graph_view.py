@@ -154,8 +154,37 @@ def source_lines(ttl_text: str) -> dict[str, int]:
     return lines
 
 
-def graph_view(ttl_text: str) -> dict:
-    """Parse architecture Turtle and return {system, nodes, edges}.
+def _members_of(graph: Graph, system: URIRef) -> set[URIRef]:
+    """Every element a system holds, followed transitively through containment.
+
+    The relation is already in the graph - beam:hasProcess, beam:hasResource,
+    beam:hasAgent and beam:contain say what belongs to what - so scoping a view
+    to one system is a traversal rather than anything that needs storing. That
+    matters when a graph carries two architectures because one business process
+    runs both: the canvas should show the one the reader asked for, not the
+    union of everything loaded.
+
+    beam:contain is transitive in BEAM but nothing infers it here, so the walk
+    is done explicitly."""
+    owned = {system}
+    frontier = [system]
+    while frontier:
+        current = frontier.pop()
+        for predicate in (BEAM.hasProcess, BEAM.hasResource, BEAM.hasAgent, BEAM.contain):
+            for member in graph.objects(current, predicate):
+                if isinstance(member, URIRef) and member not in owned:
+                    owned.add(member)
+                    frontier.append(member)
+    return owned
+
+
+def graph_view(ttl_text: str, scope: str | None = None) -> dict:
+    """Parse architecture Turtle and return {systems, nodes, edges}.
+
+    `scope` narrows the result to one beam:System and the elements it holds -
+    what a reader means when they open the architecture behind one business
+    activity. Without it the whole graph is returned, which is right when there
+    is one architecture and misleading when there are two.
 
     Raises ValueError with the parser message when the Turtle is invalid.
     """
@@ -228,12 +257,34 @@ def graph_view(ttl_text: str) -> dict:
         else:
             nodes.append(entry)
 
+    # Elements no system claims. Scoping would hide them without a word, and an
+    # architecture that draws two elements short looks complete - so the gap is
+    # reported instead of being absorbed. It is a modelling omission, not a
+    # rendering one: beam:hasProcess / hasResource is what says an element
+    # belongs to a system.
+    claimed: set[URIRef] = set()
+    for entry in systems:
+        claimed |= _members_of(graph, URIRef(entry["id"]))
+    unclaimed = sorted(n["id"] for n in nodes if URIRef(n["id"]) not in claimed)
+
+    scoped_to = None
+    if scope:
+        wanted = URIRef(scope)
+        if any(s["id"] == scope for s in systems):
+            members = _members_of(graph, wanted)
+            nodes = [n for n in nodes if URIRef(n["id"]) in members]
+            scoped_to = scope
+
     node_set = {n["id"] for n in nodes}
+    # An edge survives only when both ends do. A half-edge into a system the
+    # reader did not open would draw an arrow to nothing.
     edges = [e for e in edges if e["source"] in node_set and e["target"] in node_set]
 
     return {
         "systems": [{"id": s["id"], "label": s["label"], "line": s["line"]} for s in systems],
         "nodes": nodes,
         "edges": edges,
+        "scopedTo": scoped_to,
+        "unclaimed": unclaimed,
         "stats": {"nodes": len(nodes), "edges": len(edges)},
     }
