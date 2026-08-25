@@ -1,17 +1,16 @@
-/* Motif matches, the gap report, and the motif palette.
- */
+/* Motif matches, the gap report, and the motif palette. */
 
 import { postJson } from "../core/api.js";
 import { $, $$, el } from "../core/dom.js";
 import { revealInSource } from "../core/source.js";
 import { setStatus } from "../core/status.js";
-import { Editor } from "../editor.js";
-import { GraphView } from "../graph.js";
-import { runMutation } from "../panels/mutations.js";
-import { buildTray, startTrayDrag } from "../panels/palette.js";
-import { noteChange } from "../panels/run.js";
+import { Editor } from "../lib/editor.js";
+import { GraphView } from "../lib/graph_view.js";
+import { runMutation } from "./mutations.js";
+import { buildTray, startTrayDrag } from "./palette.js";
+import { noteChange } from "./run.js";
 
-// matched motifs tab 
+// ---- matches and gaps ----
 let selectedMotifRow = null;
 
 function gapCard(gap) {
@@ -47,8 +46,7 @@ function gapCard(gap) {
 
 function renderMotifGaps(gaps) {
   const list = $("#motifs-list");
-  // only the near misses are actionable; a motif sharing nothing with the
-  // graph would just be noise
+  // Only near misses are actionable.
   const near = (gaps || []).filter((g) => g.satisfied / g.total >= 0.5).slice(0, 5);
   if (!near.length) return;
   list.appendChild(el("div", { class: "gap-section-head" },
@@ -103,6 +101,8 @@ export function renderMotifs(matches, gaps) {
   renderMotifGaps(gaps);
   $("#motifs-count").textContent = String(rows.length);
 }
+
+// ---- motif palette ----
 
 function addMotif(item) {
   return runMutation(async () => {

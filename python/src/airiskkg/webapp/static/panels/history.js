@@ -1,15 +1,13 @@
-/* The version list, and previewing a version without restoring it.
- */
+/* The version list, and previewing a version without restoring it. */
 
 import { $, el } from "../core/dom.js";
 import { setTabVisible } from "../core/drawer.js";
 import { setStatus } from "../core/status.js";
-import { Editor } from "../editor.js";
-import { VersionHistory } from "../history.js";
-import { noteChange } from "../panels/run.js";
+import { Editor } from "../lib/editor.js";
+import { VersionHistory } from "../lib/version_history.js";
+import { noteChange } from "./run.js";
 import { state } from "../state.js";
 
-//version history
 
 function shortTime(iso) {
   const at = new Date(iso);
@@ -49,9 +47,7 @@ export function renderHistory() {
       el("span", { class: "hist-cause" }, version.cause || ""),
     ]);
 
-    /* Reading a version is not the same act as adopting one. Restore replaces
-     * the graph on screen, which is a commitment; opening a row only says what
-     * that assessment found, and what moved since the one before it. */
+    // Reading a version is not adopting it; Restore stays separate.
     row.addEventListener("click", (ev) => {
       if (ev.target.closest("button")) return;
       previewVersion(version);
@@ -74,11 +70,8 @@ export function renderHistory() {
   });
 }
 
-/* What a past assessment said, without adopting it.
- *
- * Read-only by construction: it renders into the history panel and touches
- * neither the editor nor the canvas, so looking costs nothing and there is
- * nothing to undo afterwards. Restore stays a separate, deliberate act. */
+/* What a past assessment said, without adopting it. Touches neither the
+ * editor nor the canvas. */
 function previewVersion(version) {
   const panel = $("#history-preview");
   panel.innerHTML = "";
@@ -97,8 +90,7 @@ function previewVersion(version) {
 
   const stored = version.findings || [];
 
-  /* What moved, by finding id - the same set difference the summary row uses,
-   * because a version is mostly interesting next to the one before it. */
+  // What moved, by finding id.
   if (earlier) {
     const before = new Set(earlier.findingIds || []);
     const now = new Set(version.findingIds || []);

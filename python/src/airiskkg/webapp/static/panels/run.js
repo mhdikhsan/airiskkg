@@ -1,6 +1,5 @@
-/* Run identity: whether what is on screen still matches what was
- * assessed, and what changed between one run and the next.
- */
+/* Run identity: is what is on screen still what was assessed, and what
+ * changed since the last run. */
 
 import { postJson } from "../core/api.js";
 import { $ } from "../core/dom.js";

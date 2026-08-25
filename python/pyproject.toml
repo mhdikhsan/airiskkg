@@ -29,7 +29,10 @@ airiskkg = "airiskkg.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"airiskkg.webapp" = ["static/*"]
+# Spelled out because the front end is a tree - app.js plus core/, lib/ and
+# panels/ - rather than relying on how the build backend happens to expand a
+# bare "static/*". A wheel missing one of those serves a page whose imports 404.
+"airiskkg.webapp" = ["static/**/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

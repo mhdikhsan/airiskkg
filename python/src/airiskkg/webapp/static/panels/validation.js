@@ -1,10 +1,8 @@
-/* The SHACL report, grouped by severity.
- */
+/* The SHACL report, grouped by severity. */
 
 import { $, el } from "../core/dom.js";
-import { GraphView } from "../graph.js";
+import { GraphView } from "../lib/graph_view.js";
 
-// validation 
 function validationRow(item, severity) {
   const row = el("div", { class: `validation-row ${severity}` }, [
     el("span", { class: "sev" }, severity === "violation" ? "Violation" : "Warning"),

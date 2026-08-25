@@ -22,8 +22,7 @@ function write(versions) {
       const withLabels = trimmed.findIndex((v) => v.findings && v.findings.length);
       const withGraph = trimmed.findIndex((v) => v.ttl);
       if (withLabels !== -1 && trimmed.length > 1) {
-        // Labels first: losing the ability to read v3 costs less than losing
-        // the ability to restore it, and both cost less than losing v3.
+        // Shed labels first, then graphs: losing a version entirely is worst.
         trimmed = trimmed.map((v, i) => (i === withLabels ? { ...v, findings: [] } : v));
       } else if (withGraph !== -1 && trimmed.length > 1) {
         trimmed = trimmed.map((v, i) => (i === withGraph ? { ...v, ttl: null } : v));
@@ -53,10 +52,7 @@ function record({ fingerprint, knowledgeBase, counts, findingIds, findings, ttl,
     knowledgeBase: knowledgeBase || null,
     counts: counts || {},
     findingIds: [...now],
-    /* The labels too, so a version can be read without being restored.
-     * Recording only ids meant the one way to see what a past assessment said
-     * was to replace the graph on screen with it - which is a commitment, and
-     * a poor way to answer "what changed". */
+    // Labels too, so a version can be read without being restored.
     findings: (findings || []).slice(0, 60),
     delta: previous
       ? {

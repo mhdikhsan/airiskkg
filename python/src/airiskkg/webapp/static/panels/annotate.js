@@ -1,7 +1,9 @@
+/* The annotate drawer tab: pick roles and categories for an element. */
 
-import { Editor } from "./editor.js";
-import { GraphView } from "./graph.js";
-import { MultiPicker } from "./multipicker.js";
+
+import { Editor } from "../lib/editor.js";
+import { GraphView } from "../lib/graph_view.js";
+import { MultiPicker } from "../lib/multipicker.js";
 "use strict";
 const $ = (sel, root = document) => root.querySelector(sel);
 

@@ -1,20 +1,7 @@
-/* The business layer, drawn.
- *
- * A second surface rather than a second mode of graph.js. The two draw
- * different things with different rules - BEAM has no notion of a pool and BPMN
- * has no notion of a flow port - and graph.js is 800 lines with no test around
- * it, so bending it into both shapes would put every existing behaviour at risk
- * to save a viewport.
- *
- * What it draws, and why only this much: pools as bands, activities left to
- * right in flow order, sequence flow inside a pool, message flow across the
- * boundary between pools. That is the vocabulary a stakeholder reads. Gateways,
- * events and boundary markers are deliberately absent - a faithful BPMN
- * renderer is a project of its own, and the one good off-the-shelf option puts
- * a permanent watermark in the page.
- *
- * Exposes window.ProcessCanvas.
- */
+/* The business layer, drawn: pools as bands, activities in flow order,
+ * sequence flow within a pool and message flow across pools. Gateways, events
+ * and boundary markers are deliberately absent. A separate surface from
+ * graph_view.js, not a second mode of it. */
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -158,10 +145,7 @@ function messageArrow(parent, from, to, label) {
 }
 
 
-/* BPMN draws what kind of work an activity is as a small marker in the
- * top-left corner, not as a word. Anyone who has seen a process diagram reads
- * the envelope and the little person without being told; the uppercase
- * "RECEIVETASK" we printed instead was ours, not BPMN's. */
+// BPMN marks the kind of work with a corner glyph, not a word.
 function typeMarker(parent, kind, x, y) {
   const g = node("g", { class: "pc-icon", transform: `translate(${x} ${y})` }, parent);
   if (kind === "userTask") {
@@ -201,9 +185,7 @@ function drawActivity(parent, slot) {
     : (activity.children.length ? "Click + to show the steps inside" : "Edit this activity");
 
   typeMarker(group, activity.kind, slot.x + 8, slot.y + 7);
-  /* The risk badge sits at the top right, so the name has to give way to it
-   * rather than run underneath. Measured in characters because the label is
-   * the thing that gets cut, and cutting it visibly beats overlapping. */
+  // The risk badge owns the top right, so the label gives way to it.
   const nameRoom = riskOf(activity) && riskOf(activity).findings ? 18 : 26;
   text(group, slot.x + 26, slot.y + 17, truncate(activity.label, nameRoom), "pc-label");
 
@@ -212,9 +194,7 @@ function drawActivity(parent, slot) {
     text(group, slot.x + 26, slot.y + row, truncate(activity.performers.join(", "), 24), "pc-by");
   }
 
-  /* Two ways in, and they answer different questions: the inner flow says
-   * what the service does as business steps, the architecture says which AI
-   * system carries them out. Offer both rather than guessing. */
+  // Two ways in: the inner flow, and the architecture that carries it.
   if (activity.children.length) {
     const marker = node("g", { class: "pc-marker" }, group);
     node("rect", {
@@ -247,10 +227,7 @@ function drawActivity(parent, slot) {
     });
   }
 
-  /* How many candidate risks this activity carries, and which. A count alone
-   * is a number nobody can act on; the whole list at once is a wall. So the
-   * badge folds - the same idiom the sub-process marker already uses - and a
-   * reader opens the one activity they are asking about. */
+  // Candidate risks for this activity; the badge folds the list.
   const risk = riskOf(activity);
   if (risk && risk.findings) {
     const open = openRisks.has(activity.id);
@@ -284,10 +261,7 @@ function drawActivity(parent, slot) {
   }
 
   if (activity.refines.length) {
-    /* A badge, not a button. The box itself opens the architecture - a pill
-     * with 9.5px type was the only way in, and nobody aims for it when the
-     * whole box looks like the thing they mean. On its own line, because
-     * sharing one with the label clipped both. */
+    // A badge, not a button: the box itself opens the architecture.
     const chip = node("g", { class: "pc-open" }, group);
     const chipW = 74;
     node("rect", {
@@ -297,9 +271,7 @@ function drawActivity(parent, slot) {
     badge.setAttribute("text-anchor", "middle");
   }
   if (onEdit) {
-    /* Drag from the port to another activity. Whether that becomes a sequence
-     * flow or a message is not asked: it follows from whether the two sit in
-     * the same process, which is what BPMN says and what the server decides. */
+    // Sequence flow or message flow follows from the pools; the server decides.
     const port = node("g", { class: "pc-port", cursor: "crosshair" }, group);
     node("circle", {
       cx: slot.x + slot.w, cy: slot.y + BOX_H / 2, r: 7, class: "pc-port-dot",
@@ -311,10 +283,7 @@ function drawActivity(parent, slot) {
     const portTitle = node("title", {}, port);
     portTitle.textContent = "Drag onto another activity to connect";
 
-    /* One primary action per box, and it is the one the shape promises.
-     * An activity carried out by an AI system opens that system - which is
-     * what "expand this sub-process" means here. Everything else opens its
-     * editor. The pencil is there when you want to edit a refined one. */
+    // One primary action per box: a refined activity opens its architecture.
     group.addEventListener("click", (ev) => {
       if (ev.target.closest(".pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
       ev.stopPropagation();
@@ -504,26 +473,14 @@ function fit() {
 }
 
 function initPanZoom() {
-  /* Capture is taken only once a drag is really under way.
-   *
-   * Capturing on pointerdown - the obvious way to write this - retargets
-   * every later pointer event, and the click that follows, to the <svg>
-   * itself. So the click never reached the activity group and the canvas felt
-   * dead: press a box, nothing happens. It looked like a listener problem and
-   * was not.
-   *
-   * A movement threshold keeps a click a click. Past it, the gesture is a pan,
-   * capture is taken so the drag survives leaving the element, and the click
-   * that the browser fires afterwards is dropped - otherwise letting go over a
-   * box would open it. */
+  /* Capture only once a drag is really under way: capturing on pointerdown
+   * retargets the following click to the <svg> and no box ever opens.
+   * Covered by test_canvas_interaction.py. */
   const DRAG_THRESHOLD = 4;
   let pan = null;
 
   svg.addEventListener("pointerdown", (ev) => {
-    /* A new gesture spends whatever the last one armed. Waiting for the click
-     * a pan produces is not enough: the browser does not always deliver one,
-     * and a flag left standing eats the next real click - which is what "it
-     * gets stuck" was. Clearing here means it can never outlive one gesture. */
+    // Clear here: a flag left armed eats the next real click.
     swallowNextClick = false;
     if (ev.target.closest(".pc-open, .pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
     closeDetail();
@@ -560,11 +517,7 @@ function initPanZoom() {
     }
     pan = null;
   };
-  /* The click a pan produces is consumed here, in the capture phase, so the
-   * flag cannot outlive it. It used to be checked inside each handler, which
-   * meant a pan followed by a click on anything else left it armed - and the
-   * NEXT real click, possibly minutes later, was silently eaten. That is what
-   * "it gets stuck" felt like. */
+  // Consumed in the capture phase, so the flag cannot outlive one gesture.
   svg.addEventListener("click", (ev) => {
     if (!swallowNextClick) return;
     swallowNextClick = false;
@@ -631,9 +584,7 @@ function renderPalette() {
   note.className = "pp-note";
   note.textContent = pool ? `adding to: ${pool.label}` : "click a participant to add steps to it";
   host.appendChild(note);
-  /* Visibility belongs to the level switch, not here. Un-hiding on every
-   * render put the BPMN palette on top of the architecture canvas, over the
-   * BEAM one, whichever level the reader had chosen. */
+  // Visibility belongs to the level switch, not to render.
 }
 
 function init(options) {
@@ -641,9 +592,7 @@ function init(options) {
   onOpenArchitecture = options.onOpenArchitecture || null;
   onEdit = options.onEdit || null;
   if (svg) initPanZoom();
-  /* Built now, not on first render. The palette is how an empty process gets
-   * its first participant, so waiting for a process to exist before drawing
-   * the tools that make one left a blank canvas with nothing to press. */
+  // Built now: the palette is how an empty process gets its first participant.
   renderPalette();
 }
 

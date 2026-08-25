@@ -20,7 +20,7 @@ import pytest
 
 from airiskkg.paths import REPO_ROOT
 
-HISTORY_JS = REPO_ROOT / "python" / "src" / "airiskkg" / "webapp" / "static" / "history.js"
+HISTORY_JS = REPO_ROOT / "python" / "src" / "airiskkg" / "webapp" / "static" / "lib" / "version_history.js"
 
 HARNESS = """
 import { pathToFileURL } from "node:url";

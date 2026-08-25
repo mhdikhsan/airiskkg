@@ -1,12 +1,9 @@
-/* Where each element was written, so clicking one puts the cursor on
- * the line that declares it.
- */
+/* Where each element was written, so clicking one puts the cursor on the
+ * line that declares it. */
 
-import { Editor } from "../editor.js";
+import { Editor } from "../lib/editor.js";
 
-/* Where each element was written, so clicking it on a canvas can put the
- * cursor on the line that declares it. Rebuilt rather than reassigned: the map
- * is what other code holds on to. */
+// Rebuilt, never reassigned: other modules hold this map.
 const sourceLines = new Map();
 
 export function mapSource(elements) {

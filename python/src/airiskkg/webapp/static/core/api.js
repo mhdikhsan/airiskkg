@@ -1,7 +1,6 @@
-/* Talking to the server: JSON in, JSON or a file out.
- */
+/* Talking to the server: JSON in, JSON or a file out. */
 
-import { $ } from "../core/dom.js";
+import { $ } from "./dom.js";
 
 export async function api(url, options) {
   const res = await fetch(url, options);

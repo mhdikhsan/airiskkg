@@ -1,9 +1,7 @@
-/* The stakeholder overview: one read-only page, meant to be shown
- * rather than edited.
- */
+/* The stakeholder overview: one read-only page, shown rather than edited. */
 
 import { $, el } from "../core/dom.js";
-import { ProcessCanvas } from "../process_canvas.js";
+import { ProcessCanvas } from "../lib/process_canvas.js";
 import { state } from "../state.js";
 
 function overviewDiagram() {
@@ -38,8 +36,7 @@ export function openOverview() {
     const svg = overviewDiagram();
     if (svg) {
       diagram.appendChild(svg);
-      /* The clone carries the live canvas's pan/zoom-less sizing, so give
-       * it a viewBox: the page should scale the drawing, not crop it. */
+      // A viewBox, so the page scales the drawing rather than cropping it.
       const drawn = svg.querySelector("g");
       if (drawn && drawn.getBBox) {
         const box = drawn.getBBox();
@@ -81,9 +78,7 @@ export function openOverview() {
         el("span", {}, row.label),
       ]));
     });
-    /* Findings are attributed, not partitioned - a finding whose evidence
-     * spans two systems is counted under each - so a total here would be
-     * wrong in exactly the case that matters. Say what they are instead. */
+    // Findings are attributed, not partitioned, so a total here would mislead.
     side.appendChild(el("p", { class: "ov-note" },
       `${state.lastAssessment.summary.riskFindingCount} candidate findings in total. These are candidates for triage, not confirmed failures.`));
     if (state.lastAssessment.run && state.lastAssessment.run.knowledgeBase) {

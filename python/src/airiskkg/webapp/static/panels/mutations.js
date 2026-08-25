@@ -1,10 +1,9 @@
-/* Edits to the graph. Serialized, because two edits to one source race.
- */
+/* Edits to the graph. Serialized, because two edits to one source race. */
 
 import { postJson } from "../core/api.js";
 import { setStatus } from "../core/status.js";
-import { Editor } from "../editor.js";
-import { noteChange } from "../panels/run.js";
+import { Editor } from "../lib/editor.js";
+import { noteChange } from "./run.js";
 
 let mutating = Promise.resolve();
 

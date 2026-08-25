@@ -6,18 +6,17 @@ import { emit } from "../core/bus.js";
 import { $, $$, el } from "../core/dom.js";
 import { revealInSource } from "../core/source.js";
 import { setStatus } from "../core/status.js";
-import { Editor } from "../editor.js";
-import { GraphView } from "../graph.js";
-import { VersionHistory } from "../history.js";
-import { renderDerivedCategories } from "../panels/dataflow.js";
-import { renderHistory } from "../panels/history.js";
-import { renderMotifs } from "../panels/motifs.js";
-import { runMutation } from "../panels/mutations.js";
-import { noteChange, renderKnowledgeBaseBadge, runDelta, setStale } from "../panels/run.js";
-import { ProcessCanvas } from "../process_canvas.js";
+import { Editor } from "../lib/editor.js";
+import { GraphView } from "../lib/graph_view.js";
+import { VersionHistory } from "../lib/version_history.js";
+import { renderDerivedCategories } from "./dataflow.js";
+import { renderHistory } from "./history.js";
+import { renderMotifs } from "./motifs.js";
+import { runMutation } from "./mutations.js";
+import { noteChange, renderKnowledgeBaseBadge, runDelta, setStale } from "./run.js";
+import { ProcessCanvas } from "../lib/process_canvas.js";
 import { state } from "../state.js";
 
-// findings 
 let selectedFinding = null;
 
 function controlItem(control, finding) {
@@ -46,7 +45,6 @@ function controlItem(control, finding) {
   return el("li", { title: control.definition || "" }, children);
 }
 
-// 
 function groundedFamiliesSection(families) {
   if (!families || !families.length) return null;
   return el("div", { class: "ctrl-group evidence" }, [
@@ -125,16 +123,9 @@ function findingCard(finding) {
   return card;
 }
 
-/* Which findings belong to the architecture currently open.
- *
- * The assessment itself stays whole, and has to: the business process is what
- * carries data and controls between systems, so assessing one architecture in
- * isolation would lose exactly the context the layer exists to supply. What
- * narrows is the reading. Someone who opened one activity is asking about that
- * activity, and a list mixing in another system's risks answers a question
- * they did not ask. */
+/* Which findings belong to the architecture currently open. The assessment
+ * stays whole; only the reading narrows. */
 export function reReadFindings() {
-  // The scope changed, so the reading of the last assessment changed with it.
   // Nothing is re-run: the findings are the same, the question is narrower.
   if (state.lastAssessment) renderFindings(state.lastAssessment);
 }
@@ -210,8 +201,7 @@ export function renderFindings(data) {
 
   }
   state.lastAssessment = data;
-  /* The business canvas learns what was found where, so an activity box can
-   * say how many candidate risks it carries and unfold them on request. */
+  // Tell the business canvas what was found where.
   ProcessCanvas.setFindings(data.findingsByActivity);
   renderKnowledgeBaseBadge(data.run);
 
@@ -229,7 +219,7 @@ export function renderFindings(data) {
   $("#findings-count").textContent = shown.length ? String(shown.length) : "";
 }
 
-// motif catalogue 
+// ---- applying a control ----
 
 function applyControl(control, finding) {
   return runMutation(async () => {

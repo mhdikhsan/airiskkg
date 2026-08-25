@@ -1,8 +1,7 @@
-/* Derived data categories, and where each of them came from.
- */
+/* Derived data categories, and where each of them came from. */
 
 import { $, $$, el } from "../core/dom.js";
-import { GraphView } from "../graph.js";
+import { GraphView } from "../lib/graph_view.js";
 
 export function renderDerivedCategories(rows) {
   const list = $("#derived-list");

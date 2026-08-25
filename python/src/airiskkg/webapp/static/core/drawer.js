@@ -1,18 +1,15 @@
-/* The results drawer and its tabs.
- */
+/* The results drawer and its tabs. */
 
-import { $, $$ } from "../core/dom.js";
+import { $, $$ } from "./dom.js";
 
 export function setTabVisible(name, visible) {
   const tab = document.querySelector(`[data-drawer-tab="${name}"]`);
   if (!tab) return;
   tab.classList.toggle("hidden", !visible);
-  /* Hiding the tab someone is reading would leave the drawer showing a panel
-   * with no tab above it, which looks like the app lost its place. */
+  // Never hide the tab being read.
   if (!visible && tab.classList.contains("active")) openDrawer("findings");
 }
 
-//  drawer 
 export function openDrawer(tab) {
   $("#drawer").classList.remove("collapsed");
   $("#drawer-toggle").innerHTML = "&#9660;";

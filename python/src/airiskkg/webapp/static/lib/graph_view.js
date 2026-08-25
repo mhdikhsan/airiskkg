@@ -561,10 +561,9 @@ function zoom(factor, cx, cy) {
 function initPanZoom() {
   let dragging = null;
   wrap.addEventListener("pointerdown", (ev) => {
-    /* The wrap now holds two canvases, and this pan belongs to one of them.
-     * Without this line every press on the business canvas captured the
-     * pointer here, which retargets the click that follows to the wrap - so
-     * the BPMN handlers never fired and the diagram felt dead. */
+    /* The wrap holds two canvases and this pan belongs to one. Without this,
+     * pointer capture here swallows every click on the business canvas.
+     * Covered by test_canvas_interaction.py. */
     if (wrap.classList.contains("business")) return;
     if (ev.target.closest(".node") || ev.target.closest(".canvas-controls") || ev.target.closest(".node-detail") || ev.target.closest(".palette") || ev.target.closest(".motif-palette")) return;
     dragging = { x: ev.clientX, y: ev.clientY };

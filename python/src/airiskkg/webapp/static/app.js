@@ -1,22 +1,16 @@
-/* Wiring.
- *
- * What this file does is connect things: it starts the editor and the two
- * canvases, hands each panel the callbacks it needs, and decides what a
- * scope change redraws. Rendering lives in panels/, shared plumbing in
- * core/, and the values more than one panel reads in state.js. Anything
- * here that draws belongs somewhere else.
- */
+/* Entry point: wiring only. Panels render, core/ is plumbing, state.js is
+ * what more than one panel reads. */
 
-import { Annotate } from "./annotate.js";
+import { Annotate } from "./panels/annotate.js";
 import { api, downloadBlob, exportBaseName, postForFile, postJson } from "./core/api.js";
 import { emit, on } from "./core/bus.js";
 import { $, $$, el } from "./core/dom.js";
 import { openDrawer, switchDrawerTab, toggleDrawer } from "./core/drawer.js";
 import { revealInSource } from "./core/source.js";
 import { setStatus } from "./core/status.js";
-import { Editor } from "./editor.js";
-import { GraphView } from "./graph.js";
-import { VersionHistory } from "./history.js";
+import { Editor } from "./lib/editor.js";
+import { GraphView } from "./lib/graph_view.js";
+import { VersionHistory } from "./lib/version_history.js";
 import { refreshPreview, setLevel, settleChoice } from "./panels/canvas.js";
 import { renderDerivedCategories } from "./panels/dataflow.js";
 import { reReadFindings, renderFindings } from "./panels/findings.js";
@@ -27,10 +21,10 @@ import { openOverview } from "./panels/overview.js";
 import { STARTER_BPMN, STARTER_TTL, initPalette } from "./panels/palette.js";
 import { noteChange } from "./panels/run.js";
 import { renderValidation } from "./panels/validation.js";
-import { ProcessCanvas } from "./process_canvas.js";
+import { ProcessCanvas } from "./lib/process_canvas.js";
 import { state } from "./state.js";
 
-//split divider
+// ---- split divider ----
 function initDivider() {
   const divider = $("#divider");
   const editorPane = $("#editor-pane");
@@ -54,15 +48,13 @@ function initDivider() {
   });
 }
 
-//  init 
+// ---- init ----
 async function init() {
   GraphView.init();
   Editor.init({ onChange: refreshPreview });
   initDivider();
 
-  /* Narrowing to one architecture, or widening back out, changes what both the
-   * canvas and the findings list should show. Whoever triggers it says so and
-   * stops there; the redraw is decided in one place, which is here. */
+  // A scope change redraws both the canvas and the findings list.
   on("scope:changed", () => {
     refreshPreview(Editor.getValue());
     reReadFindings();
@@ -86,9 +78,7 @@ async function init() {
 
   ProcessCanvas.init({
     svg: "#process-canvas",
-    /* Every edit is a server-side rewrite of the graph, exactly like the
-     * architecture canvas: the Turtle in the editor stays the single source
-     * of truth, and nothing about the process lives only in the browser. */
+    // Server-side rewrite: the Turtle in the editor stays the source of truth.
     onEdit: (op, payload) => runMutation(async () => {
       try {
         const { ttl } = await postJson("/api/process-edit", {
@@ -101,31 +91,19 @@ async function init() {
         setStatus("error", "Could not edit the process: " + error.message.split(String.fromCharCode(10))[0]);
       }
     }),
-    /* Descending is the whole point of the two levels: one box up here, a
-     * whole architecture down there. Highlight what was opened so the reader
-     * lands on it rather than on the graph in general. */
+    // Highlight what was opened, not the graph in general.
     onOpenArchitecture: (activity) => {
-      /* Descending means "show me the architecture behind THIS activity", not
-       * "switch to the other tab". The relation is already in the graph -
-       * pair:refinedBy names the system, beam:hasProcess/hasResource say what
-       * it holds - so narrowing is a query, and nothing has to be stored. */
+      // Narrowing is a query over pair:refinedBy; nothing is stored.
       state.scopedSystem = activity.refines[0] || null;
       setLevel("architecture", activity);
       emit("scope:changed");
-      /* Not setHighlight(activity.refines): those are system IRIs, and a
-       * system is not a node on the canvas - the call highlighted nothing and
-       * only looked like it did something. Descending shows the whole
-       * architecture, which is the point; clear any evidence highlight left
-       * over from a finding so what is on screen is the system, not the last
-       * thing someone clicked. */
+      // Not setHighlight(refines): those are system IRIs, not canvas nodes.
       GraphView.setHighlight([]);
       revealInSource(activity.refines);
       setStatus("ok", `Opened ${activity.label}`, "click the breadcrumb to go back");
     },
   });
-  /* An empty workbench asks rather than assuming. The two layers are
-   * different jobs - one describes what an organisation does, the other how a
-   * system is built - and which one someone came to do is not guessable. */
+  // An empty workbench asks which layer, rather than guessing.
   $("#canvas-wrap").classList.add("unstarted");
 
   $("#start-business").addEventListener("click", () => {
@@ -160,8 +138,7 @@ async function init() {
   });
   $("#level-architecture").addEventListener("click", () => {
     state.levelChosenByHand = true;
-    /* Picking the level by hand asks for the architecture layer, not the one
-     * activity someone descended through earlier. */
+    // By hand means the whole layer, not the activity descended through.
     const widening = state.scopedSystem !== null;
     state.scopedSystem = null;
     state.openedFrom = null;
@@ -172,9 +149,7 @@ async function init() {
     }
   });
 
-  /* Put the canvases and palettes into a known state once, rather than
-   * leaving them on whatever the markup happened to say until the first
-   * click. That gap is what made a freshly loaded process show nothing. */
+  // Known state once, rather than whatever the markup said until first click.
   setLevel(state.level);
 
   $("#btn-history-clear").addEventListener("click", () => {
@@ -216,14 +191,7 @@ async function init() {
     try {
       const example = await api(`/api/examples/${encodeURIComponent(name)}`);
       if (example.kind === "process") {
-        /* A process names the systems its activities are carried out by and
-         * does not contain them. Loaded on its own it draws a diagram
-         * pointing at architectures that are not there: no nodes, no motifs,
-         * no findings, and nothing on screen saying why.
-         *
-         * So bring what it needs - but only what is not already loaded, so
-         * adding context to a graph someone is working on stays an addition
-         * rather than a reset. */
+        // Bring the architectures it refines, minus what is already loaded.
         const present = new Set((state.lastGraph && state.lastGraph.systems ? state.lastGraph.systems : []).map((s) => s.id));
         const wanted = (example.requires || []).filter((r) => r.example && !present.has(r.system));
         const parts = [];
@@ -291,8 +259,7 @@ async function init() {
   });
 
   $("#btn-starter").addEventListener("click", () => {
-    /* Whichever layer is open. Handing someone a BEAM skeleton when they are
-     * drawing a process is the same unhelpfulness as the reverse. */
+    // Starter for whichever layer is open.
     const business = state.level === "business";
     settleChoice();
     noteChange(business ? "starter business process" : "starter architecture");
@@ -384,12 +351,4 @@ async function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
-
-/* The one deliberate global: a handle for automated drivers.
- *
- * Modules are scoped, which is the point, but the render and interaction tests
- * drive this page from outside and need somewhere to hold on to. One named
- * surface says so; six globals scattered across six files said nothing and
- * happened to work. `state` is here for the same reason: a render that came out
- * wrong is answered by reading what the page believed, not by guessing. */
 window.PairAI = { Editor, GraphView, ProcessCanvas, VersionHistory, state };

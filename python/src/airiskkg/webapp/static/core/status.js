@@ -1,11 +1,7 @@
-/* The status line under the editor, and reading a line number out of a
- * parser error so the editor can point at it.
- */
+/* The status line, and the line number read out of a parser error. */
 
-import { $ } from "../core/dom.js";
-import { state } from "../state.js";
+import { $ } from "./dom.js";
 
-//status bar
 export function setStatus(state, message, stats) {
   const dot = $("#status-dot");
   dot.className = `status-dot ${state}`;

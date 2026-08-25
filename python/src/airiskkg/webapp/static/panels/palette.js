@@ -1,19 +1,15 @@
-/* The element palette, and the starter graphs it drops onto the canvas.
- */
+/* The element palette, and the starter graphs it drops onto the canvas. */
 
 import { postJson } from "../core/api.js";
 import { $, el } from "../core/dom.js";
 import { setStatus } from "../core/status.js";
-import { Editor } from "../editor.js";
-import { GraphView } from "../graph.js";
-import { runMutation } from "../panels/mutations.js";
-import { noteChange } from "../panels/run.js";
+import { Editor } from "../lib/editor.js";
+import { GraphView } from "../lib/graph_view.js";
+import { runMutation } from "./mutations.js";
+import { noteChange } from "./run.js";
 
-// starter graph 
-/* A process to start from, for the layer that had none. The editor is one
- * Turtle document holding both layers, so authoring BPMN needed no new pane -
- * but it did need somewhere to begin, and the BEAM starter is no help when
- * the thing being described is who does what. */
+// ---- starter graphs ----
+// One Turtle document holds both layers, so BPMN needs a starter, not a pane.
 export const STARTER_BPMN = `@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
 @prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
 @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
@@ -116,6 +112,8 @@ ex:Generate a beam:Transform ;
 `;
 
 // Palette of BEAM symbols; click one to add it, or drag it onto the canvas.
+// ---- element palette ----
+
 const BEAM_NS = "http://w3id.org/beam/core#";
 
 const PALETTE = [
