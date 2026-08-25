@@ -285,3 +285,55 @@ def test_a_process_example_opens_on_the_business_layer(served) -> None:
 
     assert "business=true|" in report, "the process example did not open on its own layer"
     assert "activities=0|" not in report
+
+
+def test_choosing_a_layer_hands_over_the_tools_for_it(served) -> None:
+    """Choosing "a business process" on an empty workbench used to do nothing
+    visible: the palette that makes a process is built on first render, and
+    there was no process to render - so the answer led to a blank canvas with
+    nothing to press and no way back."""
+    report = _drive(served, """
+    const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+    window.addEventListener("load", () => setTimeout(() => {
+      document.querySelector("#start-business").click();
+      setTimeout(() => {
+        log("tools=" + document.querySelectorAll("#process-palette .pp-item").length);
+        log("wayback=" + !document.querySelector("#level-switch").classList.contains("hidden"));
+        log("started=" + document.querySelector("#canvas-wrap").classList.contains("started"));
+      }, 1500);
+    }, 2000));
+    """, budget=20000)
+
+    assert "tools=0|" not in report, "the business palette was empty after choosing it"
+    assert "wayback=true|" in report, "no way back to the architecture layer"
+    assert "started=true|" in report, "the opening question stayed on screen"
+
+
+def test_descending_is_not_dragged_back_to_the_business_layer(served) -> None:
+    """The landing rule ran on every refresh, and descending triggers one - so
+    the canvas switched to the architecture and was immediately pulled back. It
+    looked like a glitch and was a rule fighting the click that caused it."""
+    report = _drive(served, """
+    const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+    window.addEventListener("load", () => setTimeout(() => {
+      const s = document.querySelector("#example-select");
+      s.value = "energy_customer_service";
+      s.dispatchEvent(new Event("change", { bubbles: true }));
+      setTimeout(() => {
+        log("landed=" + (document.querySelector("#level-business").classList.contains("active") ? 1 : 0));
+        const box = document.querySelector(".pc-activity.refined .pc-box");
+        log("box=" + (box ? 1 : 0));
+        if (box) box.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        setTimeout(() => {
+          log("arch=" + (document.querySelector("#level-architecture").classList.contains("active") ? 1 : 0));
+          log("nodes=" + document.querySelectorAll(".node").length);
+        }, 4500);
+      }, 7000);
+    }, 2000));
+    """)
+
+    counts = dict(re.findall(r"(\w+)=(\d+)", report))
+    assert counts.get("landed") == "1", "the process example did not open on the business layer"
+    assert counts.get("box") == "1", "no AI activity was drawn to descend from"
+    assert counts.get("arch") == "1", "descending bounced back to the business layer"
+    assert int(counts.get("nodes", 0)) > 0, "the architecture did not draw after descending"

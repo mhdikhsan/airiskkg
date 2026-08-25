@@ -1174,3 +1174,65 @@ label.btn { display: inline-flex; align-items: center; }
 .canvas-wrap.unstarted .process-palette,
 .canvas-wrap.unstarted .legend,
 .canvas-wrap.unstarted .canvas-controls { display: none !important; }
+
+/* The opening question, once answered, is not a caption for an empty canvas. */
+.canvas-wrap.started .canvas-empty { display: none !important; }
+
+/* ---- smaller screens -------------------------------------------------------
+ * The workbench assumes a wide desktop: two panes side by side, a toolbar of
+ * ten controls, and seven drawer tabs. None of that survives a laptop at 1280
+ * or a split window, and the first thing to go is the canvas - the pane people
+ * came to look at. */
+
+/* Tabs and toolbars scroll rather than wrap into a second row that eats the
+ * canvas. A row that grows downward is worse than one that slides. */
+.drawer-tabs {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.drawer-tab { white-space: nowrap; flex: 0 0 auto; }
+
+@media (max-width: 1400px) {
+  .toolbar { flex-wrap: wrap; justify-content: flex-end; row-gap: 6px; }
+  .app-header { align-items: flex-start; }
+}
+
+@media (max-width: 1100px) {
+  /* The editor gives way first. It is the one surface with another way in -
+   * the canvas can be drawn on, the Turtle can be reached by widening. */
+  .editor-pane { flex: 0 0 34%; }
+  .process-palette { max-width: 92%; }
+  .kb-badge { display: none; }
+}
+
+@media (max-width: 820px) {
+  /* Below this the two panes cannot both be useful, so they stack and the
+   * canvas takes the larger half: it is what the tool is for. */
+  .workbench { flex-direction: column; }
+  .editor-pane { flex: 0 0 34vh; }
+  .preview-pane { flex: 1 1 auto; min-height: 46vh; }
+  .divider { flex: 0 0 6px; cursor: row-resize; width: 100%; }
+  .toolbar { gap: 6px; }
+  .toolbar select, .toolbar .btn { font-size: 12px; padding: 4px 8px; }
+  .start-choice { flex-direction: column; }
+  .start-card { width: 260px; }
+}
+
+@media (max-height: 700px) {
+  /* A short window: the drawer is a strip, so the canvas keeps its height
+   * until someone opens it deliberately. */
+  .drawer:not(.collapsed) .drawer-body { max-height: 40vh; }
+}
+
+/* The name is a name, not a paragraph - it wrapped to "P/ AI" the moment the
+ * toolbar needed room. */
+.brand h1 { white-space: nowrap; }
+.brand { flex: 0 0 auto; }
+
+@media (max-width: 1400px) {
+  /* The toolbar is what should give: it wraps onto a second row rather than
+   * pushing its last controls off the edge where nothing says they exist. */
+  .toolbar { flex: 1 1 auto; min-width: 0; }
+}

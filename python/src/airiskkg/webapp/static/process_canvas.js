@@ -643,6 +643,10 @@
     onOpenArchitecture = options.onOpenArchitecture || null;
     onEdit = options.onEdit || null;
     if (svg) initPanZoom();
+    /* Built now, not on first render. The palette is how an empty process gets
+     * its first participant, so waiting for a process to exist before drawing
+     * the tools that make one left a blank canvas with nothing to press. */
+    renderPalette();
   }
 
   function setSystems(list) { systems = list || []; }

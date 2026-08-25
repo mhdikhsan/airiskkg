@@ -155,10 +155,15 @@
   /* Nothing chosen and nothing loaded: the tools for both layers would be on
    * screen before the reader has said which one they came for. */
   let awaitingChoice = true;
+  let hadProcess = false; // so landing happens when a process arrives, not on every refresh
 
   function settleChoice() {
     awaitingChoice = false;
     $("#canvas-wrap").classList.remove("unstarted");
+    // The question has been answered; leaving it on screen behind an empty
+    // canvas reads as the answer having gone nowhere.
+    $("#canvas-wrap").classList.add("started");
+    $("#level-switch").classList.remove("hidden");
   }
   let openedFrom = null; // the activity a reader descended through
 
@@ -239,7 +244,10 @@
     if (awaitingChoice && (data.stats.activities || architectureHasContent())) settleChoice();
     ProcessCanvas.render(data);
     const hasProcess = data.stats.activities > 0;
-    $("#level-switch").classList.toggle("hidden", !hasProcess);
+    /* Visible once either layer has been chosen or loaded. Hiding it until a
+     * process existed meant choosing "a business process" on an empty workbench
+     * left no way back to the architecture. */
+    $("#level-switch").classList.toggle("hidden", awaitingChoice && !hasProcess);
     setTabVisible("process", hasProcess);
 
     /* Land where there is something to see. A process loaded on its own leaves
@@ -252,8 +260,13 @@
      * which meant loading a business example dropped you into the architecture
      * and the BPMN diagram had to be hunted for. A reader who has picked a
      * level by hand keeps it. */
+    /* Only when a process first appears. This ran on every refresh, and
+     * descending into an activity triggers one - so the canvas switched to the
+     * architecture and was immediately dragged back to the business layer. It
+     * looked like a glitch and was a rule fighting the click that caused it. */
     if (!hasProcess && level === "business") setLevel("architecture");
-    else if (hasProcess && !levelChosenByHand) setLevel("business");
+    else if (hasProcess && !hadProcess && !levelChosenByHand) setLevel("business");
+    hadProcess = hasProcess;
 
     list.innerHTML = "";
     summary.innerHTML = "";
@@ -1087,6 +1100,64 @@
   }
 
   // starter graph 
+  /* A process to start from, for the layer that had none. The editor is one
+   * Turtle document holding both layers, so authoring BPMN needed no new pane -
+   * but it did need somewhere to begin, and the BEAM starter is no help when
+   * the thing being described is who does what. */
+  const STARTER_BPMN = `@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix ex:   <http://example.org/my-process#> .
+
+ex:Customer a bpmn:participant ;
+    bp:name "Customer" ;
+    bp:processRef ex:CustomerSide .
+
+ex:CustomerSide a bpmn:process ;
+    bp:name "Ask for something" ;
+    bp:contains ex:Ask .
+
+ex:Ask a bpmn:task ;
+    bp:name "Ask a question" .
+
+ex:Company a bpmn:participant ;
+    bp:name "My organisation" ;
+    bp:processRef ex:Service .
+
+ex:Service a bpmn:process ;
+    bp:name "Answer the request" ;
+    bp:isExecutable true ;
+    bp:contains ex:Receive , ex:Answer , ex:Review .
+
+ex:Receive a bpmn:receiveTask ;
+    bp:name "Receive the request" ;
+    bp:outgoing ex:F1 .
+
+# The AI capability. Point pair:refinedBy at a beam:System in this document and
+# the box opens into that architecture.
+ex:Answer a bpmn:subProcess ;
+    bp:name "Draft an answer" ;
+    bp:incoming ex:F1 ;
+    bp:outgoing ex:F2 .
+
+# A human step is a control the architecture cannot see.
+ex:Review a bpmn:userTask ;
+    bp:name "Check it before it goes out" ;
+    bp:incoming ex:F2 ;
+    bp:resourceRole ex:Agent .
+
+ex:Agent a bpmn:humanPerformer ;
+    bp:name "Support agent" .
+
+ex:F1 a bpmn:sequenceFlow ; bp:sourceRef ex:Receive ; bp:targetRef ex:Answer .
+ex:F2 a bpmn:sequenceFlow ; bp:sourceRef ex:Answer ;  bp:targetRef ex:Review .
+
+ex:Msg a bpmn:messageFlow ;
+    bp:name "asks" ;
+    bp:sourceRef ex:Ask ; bp:targetRef ex:Receive .
+`;
+
   const STARTER_TTL = `@prefix ex:   <http://example.org/my-system#> .
 @prefix beam: <http://w3id.org/beam/core#> .
 @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
@@ -1569,8 +1640,12 @@ ex:Generate a beam:Transform ;
     });
 
     $("#btn-starter").addEventListener("click", () => {
-      noteChange("starter graph");
-      Editor.setValue(STARTER_TTL);
+      /* Whichever layer is open. Handing someone a BEAM skeleton when they are
+       * drawing a process is the same unhelpfulness as the reverse. */
+      const business = level === "business";
+      settleChoice();
+      noteChange(business ? "starter business process" : "starter architecture");
+      Editor.setValue(business ? STARTER_BPMN : STARTER_TTL);
       setStatus("ok", "Starter graph loaded");
     });
 
