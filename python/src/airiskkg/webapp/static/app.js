@@ -89,6 +89,26 @@ function parseErrorLine(message) {
   return match ? Number(match[1]) : null;
 }
 
+/* A very small publish/subscribe, so two panels can say what happened rather
+ * than call each other.
+ *
+ * It earns its place on one case: narrowing to an architecture has to redraw
+ * the canvas AND the findings list, and the two places a reader can do it from
+ * are those same two panels. Calling across made each of them depend on the
+ * other, which is a cycle in any file layout and was only invisible while
+ * everything lived in one file. They announce it now, and whoever wired the
+ * page up listens. */
+const listeners = new Map();
+
+function on(event, handler) {
+  if (!listeners.has(event)) listeners.set(event, []);
+  listeners.get(event).push(handler);
+}
+
+function emit(event, detail) {
+  (listeners.get(event) || []).forEach((handler) => handler(detail));
+}
+
 let lastRun = null; // { fingerprint, findingIds: Set }
 let staleTimer = null;
 let pendingCause = null;
@@ -224,8 +244,7 @@ function renderBreadcrumb() {
       link.addEventListener("click", () => {
         scopedSystem = null;
         setLevel(part.to);
-        refreshPreview(Editor.getValue());
-        reReadFindings();
+        emit("scope:changed");
       });
       crumb.appendChild(link);
     } else {
@@ -593,11 +612,7 @@ async function refreshPreview(ttl) {
     /* After the architecture is known, so the level decision has something to
      * go on rather than always believing the canvas is empty. */
     refreshProcess(ttl);
-    sourceLines = new Map(
-      [...data.nodes, ...data.systems]
-        .filter((n) => n.line)
-        .map((n) => [n.id, n.line])
-    );
+    mapSource([...data.nodes, ...data.systems]);
     Editor.markErrorLine(null);
     const badge = $("#system-badge");
     if (data.systems.length) {
@@ -626,7 +641,15 @@ async function refreshPreview(ttl) {
 }
 
  
-let sourceLines = new Map();
+/* Where each element was written, so clicking it on a canvas can put the
+ * cursor on the line that declares it. Rebuilt rather than reassigned: the map
+ * is what other code holds on to. */
+const sourceLines = new Map();
+
+function mapSource(elements) {
+  sourceLines.clear();
+  elements.filter((e) => e.line).forEach((e) => sourceLines.set(e.id, e.line));
+}
 
 function revealInSource(ids) {
   const lines = (ids || []).map((id) => sourceLines.get(id)).filter(Boolean);
@@ -814,8 +837,7 @@ function renderFindings(data) {
     clear.addEventListener("click", () => {
       scopedSystem = null;
       openedFrom = null;
-      renderFindings(data);
-      refreshPreview(Editor.getValue());
+      emit("scope:changed");
     });
     row.push(clear);
   }
@@ -1425,6 +1447,14 @@ async function init() {
   Editor.init({ onChange: refreshPreview });
   initDivider();
 
+  /* Narrowing to one architecture, or widening back out, changes what both the
+   * canvas and the findings list should show. Whoever triggers it says so and
+   * stops there; the redraw is decided in one place, which is here. */
+  on("scope:changed", () => {
+    refreshPreview(Editor.getValue());
+    reReadFindings();
+  });
+
   let vocabulary = { roles: [], dataCategories: [] };
   try {
     vocabulary = await api("/api/vocabulary");
@@ -1468,8 +1498,7 @@ async function init() {
        * it holds - so narrowing is a query, and nothing has to be stored. */
       scopedSystem = activity.refines[0] || null;
       setLevel("architecture", activity);
-      refreshPreview(Editor.getValue());
-      reReadFindings();
+      emit("scope:changed");
       /* Not setHighlight(activity.refines): those are system IRIs, and a
        * system is not a node on the canvas - the call highlighted nothing and
        * only looked like it did something. Descending shows the whole
