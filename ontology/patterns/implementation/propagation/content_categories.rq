@@ -18,24 +18,6 @@ WHERE {
     ?step beam:use ?upstream ;
           beam:produce ?downstream .
 
-
-    # Barriers: a step whose declared purpose is to remove or withhold protected
-    # content, so what leaves it no longer carries what entered.
-    #
-    # Redaction and anonymisation strip the content - pseudonymisation does not,
-    # and is deliberately absent: pseudonymised data is still personal
-    # (dpv:PseudonymisedData is a kind of dpv:PersonalData), so a category must
-    # survive it. An output guardrail or
-    # output validation step screens it before release, which is the whole
-    # reason a sanitized response is a distinct element - without this the
-    # screened output inherited exactly the categories the screen exists to
-    # stop, and inserting one grew the derived set instead of cutting it.
-    #
-    # This takes the annotation at face value, as the library does everywhere
-    # (Rule R8): tagging a step OutputGuardrailStep asserts that screening
-    # happens there. It does not verify that a given filter catches a given
-    # category - a toxicity classifier is not a DLP - so the honest reading
-    # stays "the graph represents a screen here", never "this content is safe".
     FILTER NOT EXISTS {
         ?step pair:playsRole ?stepRole .
         {
