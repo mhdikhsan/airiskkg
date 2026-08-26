@@ -20,7 +20,8 @@ CONSTRUCT {
         pair:hasSuggestedControl ?suggestedControl ;
         pair:hasSatisfiedCondition ?satisfiedCondition ,
             ?sourceRiskCondition ;
-        pair:findingStatus "candidate" .
+        pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:DirectPromptingWithoutGroundingRiskPattern .
 }
 WHERE {
     ?match

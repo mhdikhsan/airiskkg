@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate agent memory poisoning"@en ;
         dct:description "Content is committed to an agent memory store without a represented validation step, and the recalled context later reaches a generation step - so an unchecked write keeps shaping later turns."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:MemoryPoisoningRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
@@ -39,7 +40,6 @@ WHERE {
             beam:use ?contextForGeneration ;
             pair:playsRole/pair:subRoleOf* pair:GenerationStep .
 
-
         FILTER NOT EXISTS {
             ?validationStep pair:playsRole ?validationRole .
             { ?validationRole pair:subRoleOf* pair:MemoryValidationStep }
@@ -56,10 +56,7 @@ WHERE {
                 ?validationStep beam:produce ?screened .
             }
         }
-        FILTER NOT EXISTS {
-            pat:MemoryPoisoningRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?memory .
-        }
+
     }
 
     pat:MemoryPoisoningRiskPattern

@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate unvalidated inter-agent handoff"@en ;
         dct:description "A message passes from one agent to another and is acted on with no represented validation, guardrail, or policy step in between."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:InsecureAgentCommunicationRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
@@ -52,11 +53,6 @@ WHERE {
                 ?mediatingStep beam:inform ?receivingStep .
             }
         }
-        FILTER NOT EXISTS {
-            pat:InsecureAgentCommunicationRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?message .
-        }
-
 
     }
 

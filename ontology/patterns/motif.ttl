@@ -2112,6 +2112,118 @@ pat:Reranker_RerankingProducesContextEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:Reranker_RankedContextNode .
 
+# Input screening, and output screening, as motifs in their own right.
+#
+# GuardrailsMotif is 8 nodes and 8 edges: the whole guarded-generation
+# topology. Most systems screen on one side only, and most risks are addressed
+# by one side only - prompt injection needs something between the untrusted
+# content and the prompt, and nothing about that requires an output guardrail
+# or a sanitized-response node. Asking a modeler for 16 constraints to say
+# "we filter the input" was why the control layer had nothing insertable to
+# point at.
+#
+# These are 3 nodes and 2 edges each, and they nest inside GuardrailsMotif:
+# a fully guarded system matches all three.
+pat:InputScreeningMotif
+    a pair:GraphMotif ;
+    rdfs:label "Input Screening Motif"@en ;
+    dct:description """
+    Architectural motif in which a step screens user input and informs the
+    generation step it protects.
+    """@en ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:InputScreening_UserInputNode ,
+        pat:InputScreening_ScreeningStepNode ,
+        pat:InputScreening_GenerationStepNode ;
+    pair:hasPatternEdge
+        pat:InputScreening_ScreeningUsesInputEdge ,
+        pat:InputScreening_ScreeningInformsGenerationEdge ;
+    pair:implementedBy pat:InputScreening_MatchingOQP .
+
+pat:InputScreening_UserInputNode
+    a pair:PatternNode ;
+    rdfs:label "Screened user input node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:InputScreening_ScreeningStepNode
+    a pair:PatternNode ;
+    rdfs:label "Input screening step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:InputGuardrailStep .
+
+pat:InputScreening_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Protected generation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:GenerationStep .
+
+pat:InputScreening_ScreeningUsesInputEdge
+    a pair:PatternEdge ;
+    rdfs:label "screening step uses the user input"@en ;
+    pair:sourcePatternNode pat:InputScreening_ScreeningStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:InputScreening_UserInputNode .
+
+pat:InputScreening_ScreeningInformsGenerationEdge
+    a pair:PatternEdge ;
+    rdfs:label "screening step informs generation"@en ;
+    pair:sourcePatternNode pat:InputScreening_ScreeningStepNode ;
+    pair:patternPredicate beam:inform ;
+    pair:targetPatternNode pat:InputScreening_GenerationStepNode .
+
+
+pat:OutputScreeningMotif
+    a pair:GraphMotif ;
+    rdfs:label "Output Screening Motif"@en ;
+    dct:description """
+    Architectural motif in which a step screens a generated response before it
+    is released.
+    """@en ;
+    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:hasPatternNode
+        pat:OutputScreening_GenerationStepNode ,
+        pat:OutputScreening_ResponseNode ,
+        pat:OutputScreening_ScreeningStepNode ;
+    pair:hasPatternEdge
+        pat:OutputScreening_GenerationProducesResponseEdge ,
+        pat:OutputScreening_ScreeningUsesResponseEdge ;
+    pair:implementedBy pat:OutputScreening_MatchingOQP .
+
+pat:OutputScreening_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Generation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:GenerationStep .
+
+pat:OutputScreening_ResponseNode
+    a pair:PatternNode ;
+    rdfs:label "Screened response node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:LLMResponse .
+
+pat:OutputScreening_ScreeningStepNode
+    a pair:PatternNode ;
+    rdfs:label "Output screening step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:OutputGuardrailStep .
+
+pat:OutputScreening_GenerationProducesResponseEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation produces the response"@en ;
+    pair:sourcePatternNode pat:OutputScreening_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:OutputScreening_ResponseNode .
+
+pat:OutputScreening_ScreeningUsesResponseEdge
+    a pair:PatternEdge ;
+    rdfs:label "screening step uses the response"@en ;
+    pair:sourcePatternNode pat:OutputScreening_ScreeningStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:OutputScreening_ResponseNode .
+
+
 pat:GuardrailsMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:Guardrails_MatchingOQP ;

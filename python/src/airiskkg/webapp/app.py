@@ -19,6 +19,9 @@ Assessing the graph
                                      split into violations / warnings / hints.
     ``POST /api/assess``             Findings, motif matches, derived categories,
                                      and the near-miss motif gap report.
+    ``POST /api/apply-control``      Insert a control onto the path a finding
+                                     cites, via the registered SPARQL rewrite,
+                                     and return the amended architecture.
     ``POST /api/export/assessment``  The whole run as a downloadable RDF graph
                                      (Turtle or JSON-LD).
 """
@@ -40,7 +43,9 @@ from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.assessment_runner import (
     BEAM,
     PAIR,
+    apply_control,
     load_base_graph,
+    mitigation_implementations,
     run_assessment_from_text,
 )
 from airiskkg.assessment_view import summarize_result
@@ -730,8 +735,10 @@ def create_app(*, local_examples: bool | None = None) -> Flask:
                 predicate = BEAM.hasProcess if is_process else BEAM.hasResource
                 data.add((system, predicate, uri))
                 new_ids.append(str(uri))
+
             for src, edge, dst in template["edges"]:
                 data.add((key_to_uri[src], BEAM[edge], key_to_uri[dst]))
+
             data.bind("beam", BEAM)
             data.bind("pair", PAIR)
             data.bind("local", local)
@@ -776,6 +783,49 @@ def create_app(*, local_examples: bool | None = None) -> Flask:
         # is actionable instead of silent
         summary["motifGaps"] = gaps
         return jsonify(summary)
+
+    @app.post("/api/apply-control")
+    def apply_control_endpoint() -> object:
+        """Insert a control onto the path a finding cites, and hand back the
+        amended architecture.
+
+        The insertion is a registered SPARQL rewrite, not code here: it restates
+        the vulnerable shape the risk query found and constructs the step that
+        interrupts it, bound to the elements the finding already names. So the
+        knowledge of where a control belongs stays in the library beside the
+        rule that raised the finding.
+
+        Nothing is asserted about the risk being resolved. The response is a
+        graph; the assessor re-runs the assessment over it and the same rules
+        speak again."""
+        payload = request.get_json(silent=True) or {}
+        ttl = (payload.get("ttl") or "").strip()
+        control = (payload.get("control") or "").strip()
+        finding = (payload.get("finding") or "").strip()
+        if not (ttl and control and finding):
+            return jsonify({"error": "Provide ttl, control, and finding."}), 400
+        try:
+            architecture = Graph().parse(data=ttl, format="turtle")
+            with _SPARQL_LOCK:
+                result = run_assessment_from_text(ttl)
+                added = apply_control(result.combined_graph, URIRef(control), URIRef(finding))
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
+            return jsonify({"error": f"Could not apply the control: {error}"}), 400
+
+        new_ids = sorted({str(s) for s, _p, _o in added if (s, RDF.type, None) in added})
+        for triple in added:
+            architecture.add(triple)
+        architecture.bind("beam", BEAM)
+        architecture.bind("pair", PAIR)
+        return jsonify(
+            {
+                "ttl": architecture.serialize(format="turtle"),
+                "addedTriples": len(added),
+                "newIds": new_ids,
+            }
+        )
 
     @app.post("/api/export/assessment")
     def export_assessment() -> object:

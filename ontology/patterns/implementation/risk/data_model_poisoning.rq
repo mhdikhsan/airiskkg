@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate data or model poisoning exposure"@en ;
         dct:description "Untrusted content is used in an embedding, indexing, fine-tuning, or training path that can affect model or retrieval behavior."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:DataAndModelPoisoningRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
@@ -44,10 +45,6 @@ WHERE {
             }
         }
 
-        FILTER NOT EXISTS {
-            pat:DataAndModelPoisoningRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?untrustedSource .
-        }
     }
 
     pat:DataAndModelPoisoningRiskPattern

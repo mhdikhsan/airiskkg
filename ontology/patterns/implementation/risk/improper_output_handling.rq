@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate improper LLM output handling"@en ;
         dct:description "A user-facing LLM output is produced without a represented output validation, sanitization, or guardrail step."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:ImproperOutputHandlingRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
@@ -37,10 +38,13 @@ WHERE {
         ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
         ?userFacingOutput pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
 
+        # An output is handled when a control step reads it before release, or
+        # when a control step is what produced it - an interposed screen sits on
+        # the path rather than beside it, so it produces the user-facing output
+        # instead of consuming it. Accepting only the reading shape rewarded
+        # appending an observer while the unscreened text still travelled on.
         FILTER NOT EXISTS {
-            ?outputControlStep
-                beam:use ?userFacingOutput ;
-                pair:playsRole ?outputControlRole .
+            ?outputControlStep pair:playsRole ?outputControlRole .
             {
                 ?outputControlRole pair:subRoleOf* pair:OutputValidationStep .
             }
@@ -48,12 +52,14 @@ WHERE {
             {
                 ?outputControlRole pair:subRoleOf* pair:OutputGuardrailStep .
             }
+            {
+                ?outputControlStep beam:use ?userFacingOutput .
+            }
+            UNION
+            {
+                ?outputControlStep beam:produce ?userFacingOutput .
+            }
         }
-        FILTER NOT EXISTS {
-            pat:ImproperOutputHandlingRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?userFacingOutput .
-        }
-
 
     }
 

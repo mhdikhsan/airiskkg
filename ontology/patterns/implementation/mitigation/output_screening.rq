@@ -1,0 +1,51 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+
+CONSTRUCT {
+    ?screeningStep
+        a beam:Process ;
+        rdfs:label "Output screening"@en ;
+        pair:playsRole pair:OutputGuardrailStep ;
+        beam:use ?response ;
+        beam:produce ?screenedResponse .
+
+    ?screenedResponse
+        a beam:Data ;
+        rdfs:label "Screened response"@en ;
+        pair:playsRole pair:SanitizedOutput .
+
+    ?system beam:hasProcess ?screeningStep ;
+        beam:hasResource ?screenedResponse .
+}
+WHERE {
+    ?finding
+        a pair:RiskFinding ;
+        pair:hasEvidence ?generationStep , ?response .
+
+    ?generationStep
+        pair:playsRole/pair:subRoleOf* pair:GenerationStep ;
+        beam:produce ?response .
+    ?response pair:playsRole/pair:subRoleOf* pair:LLMResponse .
+
+    FILTER NOT EXISTS {
+        ?existingScreen
+            pair:playsRole/pair:subRoleOf* pair:OutputGuardrailStep ;
+            beam:use ?response .
+    }
+
+    OPTIONAL {
+        ?system a beam:System .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/output-screening/",
+        ENCODE_FOR_URI(STR(?response))
+    )) AS ?screeningStep)
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/output-screening/",
+        ENCODE_FOR_URI(STR(?response)), "/screened"
+    )) AS ?screenedResponse)
+}

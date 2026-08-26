@@ -27,30 +27,130 @@
 
 pat:Control_GroundingAndVerification
     pair:controlNature pair:TechnicalControl ;
-    rdfs:comment "Realizing motifs (RAG, Vector IR, Hybrid Retriever, Reranker) are themselves risk-bearing motifs in this library; adding them mitigates ungrounded generation but introduces retrieval-side candidate risks (LLM01/02/08). Re-assess the amended architecture."@en ;
+    rdfs:comment "Realizing motifs split along the control's own name. The retrieval motifs (RAG, Vector IR, Hybrid Retriever, Reranker) realize GROUNDING, and are themselves risk-bearing here - adding them mitigates ungrounded generation but introduces retrieval-side candidate risks (LLM01/02/08). EvalsMotif realizes VERIFICATION, and that is the half which answers misinformation-from-weak-grounding: the pattern only fires on a RAG match, so grounding is already present by construction and more retrieval cannot clear it. Listing only the retrieval motifs left the control looking applicable while none of its realizations could change the finding. Re-assess the amended architecture either way."@en ;
     pair:realizedByMotif pat:RetrievalAugmentedGenerationMotif ,
                          pat:VectorBasedInformationRetrievalMotif ,
                          pat:HybridRetrieverMotif ,
-                         pat:RerankerMotif .
+                         pat:RerankerMotif ,
+                         pat:EvalsMotif .
 
 pat:Control_Guardrails
     pair:controlNature pair:TechnicalControl ;
     rdfs:comment "Realized by GuardrailsMotif, which is itself risk-bearing (improper-output-handling, system-prompt-leakage); adding it constrains I/O but is not risk-free. Re-assess the amended architecture."@en ;
-    pair:realizedByMotif pat:GuardrailsMotif .
+    pair:realizedByMotif pat:GuardrailsMotif ,
+                         pat:InputScreeningMotif ,
+                         pat:OutputScreeningMotif .
 
+# One side each, not the whole guarded-generation topology. Pointing these at
+# GuardrailsMotif asked for 16 constraints to express a control that needs 5,
+# and the risk each addresses lives on one side: nothing about prompt injection
+# requires an output guardrail.
 pat:Control_InputValidationAndPromptIsolation
     pair:controlNature pair:TechnicalControl ;
-    pair:realizedByMotif pat:GuardrailsMotif .
+    pair:realizedByMotif pat:InputScreeningMotif .
 
 pat:Control_OutputValidationAndSanitization
     pair:controlNature pair:TechnicalControl ;
-    pair:realizedByMotif pat:GuardrailsMotif .
+    pair:realizedByMotif pat:OutputScreeningMotif .
 
 pat:Control_LoggingMonitoringAndEvals
     pair:controlNature pair:TechnicalControl ;
     pair:realizedByMotif pat:PredictionLoggingMotif ,
                          pat:PredictionMonitoringMotif ,
                          pat:EvalsMotif .
+
+
+# Executable rewrites: how a control is applied to a graph.
+#
+# A control says what should be true; these say which triples make it so. They
+# are to a control what a match query is to a motif, and they are registered the
+# same way - except that pair:MitigationApplication is a distinct output type,
+# so the assessment pipeline (which asks only for MotifMatch and RiskFinding)
+# never runs them. A mitigation query inside an assessment would mitigate every
+# finding it could see, and nothing would ever be reported.
+#
+# Each is bound to the risk pattern it answers, because it reads that finding's
+# evidence to know where the control belongs.
+
+pat:InputScreening_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Insert input screening on the path a prompt-injection finding cites"@en ;
+    pair:implementsControl pat:Control_InputValidationAndPromptIsolation ;
+    pair:realizesMotif pat:InputScreeningMotif ;
+    pair:mitigatesRiskPattern pat:PromptInjectionRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/input_screening.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:OutputScreening_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Insert output screening between a generation step and its response"@en ;
+    pair:implementsControl pat:Control_OutputValidationAndSanitization ;
+    pair:realizesMotif pat:OutputScreeningMotif ;
+    pair:mitigatesRiskPattern pat:ImproperOutputHandlingRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/output_screening.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+
+pat:SensitiveOutputScreening_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Screen a user-facing sink that carries protected content"@en ;
+    pair:implementsControl pat:Control_OutputValidationAndSanitization ;
+    pair:realizesMotif pat:OutputScreeningMotif ;
+    pair:mitigatesRiskPattern pat:SensitiveInformationDisclosureRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/sensitive_output_screening.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:MemoryValidation_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Validate what is written to agent memory"@en ;
+    pair:implementsControl pat:Control_InputValidationAndPromptIsolation ;
+    pair:mitigatesRiskPattern pat:MemoryPoisoningRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/memory_validation.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:ToolMediation_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Mediate an agent tool action with policy enforcement"@en ;
+    pair:implementsControl pat:Control_ToolPermissionBoundaries ;
+    pair:mitigatesRiskPattern pat:ToolMisuseRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/tool_mediation.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+
+pat:OutputRedaction_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Redact protected content before a user-facing sink"@en ;
+    pair:implementsControl pat:Control_DataMinimizationAndRedaction ;
+    pair:mitigatesRiskPattern pat:SensitiveInformationDisclosureRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/output_redaction.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:ResponseVerification_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Verify a generated response against its evidence"@en ;
+    pair:implementsControl pat:Control_LoggingMonitoringAndEvals ;
+    pair:realizesMotif pat:EvalsMotif ;
+    pair:mitigatesRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/response_verification.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:GroundingVerification_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Verify a generated response, the verification half of grounding and verification"@en ;
+    pair:implementsControl pat:Control_GroundingAndVerification ;
+    pair:realizesMotif pat:EvalsMotif ;
+    pair:mitigatesRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/response_verification.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
+pat:RateLimiting_MitigationOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Bound an unbounded loop or call path"@en ;
+    pair:implementsControl pat:Control_RateLimitBudgetAndLoopControl ;
+    pair:mitigatesRiskPattern pat:UnboundedConsumptionRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/mitigation/rate_limiting.rq" ;
+    pair:producesOutputType pair:MitigationApplication .
+
 
 # --- technical (architectural footprint) but no motif in the library yet ---
 

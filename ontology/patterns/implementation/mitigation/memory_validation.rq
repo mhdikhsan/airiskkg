@@ -1,0 +1,50 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Validate what is written to agent memory (ASI06).
+#
+# The gate shape: a validation step informs the write, so nothing reaches the
+# store unchecked. Bound to the write step the finding cites, which is the
+# element that pattern's escape clause tests.
+
+CONSTRUCT {
+    ?validationStep
+        a beam:Process ;
+        rdfs:label "Memory write validation"@en ;
+        pair:playsRole pair:MemoryValidationStep ;
+        beam:inform ?writeStep .
+
+    ?system beam:hasProcess ?validationStep .
+}
+WHERE {
+    ?finding
+        a pair:RiskFinding ;
+        pair:generatedByRiskPattern pat:MemoryPoisoningRiskPattern ;
+        pair:hasEvidence ?writeStep .
+
+    ?writeStep
+        pair:playsRole/pair:subRoleOf* pair:MemoryWriteStep ;
+        beam:produce ?memory .
+    ?memory pair:playsRole/pair:subRoleOf* pair:AgentMemory .
+
+    FILTER NOT EXISTS {
+        ?existing pair:playsRole ?existingRole .
+        { ?existingRole pair:subRoleOf* pair:MemoryValidationStep }
+        UNION
+        { ?existingRole pair:subRoleOf* pair:InputGuardrailStep }
+        UNION
+        { ?existingRole pair:subRoleOf* pair:OutputValidationStep }
+        { ?existing beam:inform ?writeStep }
+        UNION
+        { ?writeStep beam:use ?screened . ?existing beam:produce ?screened }
+    }
+
+    OPTIONAL { ?system a beam:System . }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/memory-validation/",
+        ENCODE_FOR_URI(STR(?writeStep))
+    )) AS ?validationStep)
+}

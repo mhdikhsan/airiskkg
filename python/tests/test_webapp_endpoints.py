@@ -333,3 +333,201 @@ def test_module_notes_list_every_registered_route(client) -> None:
     assert documented == routes, (
         "endpoints missing from the notes in app.py: " + ", ".join(sorted(routes - documented))
     )
+
+
+def test_graph_nodes_carry_the_line_that_declares_them(client) -> None:
+    """The canvas and the Turtle are two views of one document. Without a line
+    number the only way across is to read a label off a box and search for it,
+    which fails the moment two elements share a label."""
+    ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
+    data = client.post("/api/graph", json={"ttl": ttl}).get_json()
+    assert data["nodes"], "expected nodes"
+    missing = [n["label"] for n in data["nodes"] if not n.get("line")]
+    assert not missing, "nodes with no source line: " + ", ".join(missing)
+
+    # every reported line must actually declare that element
+    source = ttl.splitlines()
+    for node in data["nodes"]:
+        local = node["id"].rsplit("#", 1)[-1].rsplit("/", 1)[-1]
+        line = source[node["line"] - 1]
+        assert local in line, f"{node['label']} -> line {node['line']}: {line!r}"
+
+
+def test_source_lines_ignore_continuations_and_comments() -> None:
+    """A subject is where a statement starts. Indented predicate lines belong to
+    a subject already recorded, and a term inside a comment is not a
+    declaration."""
+    from airiskkg.graph_view import source_lines
+
+    ttl = (
+        "@prefix ex: <http://example.org/x#> .\n"   # 1
+        "# ex:decoy is only mentioned here\n"        # 2
+        "\n"                                         # 3
+        "ex:thing a <http://example.org/C> ;\n"      # 4
+        "    ex:prop ex:other .\n"                   # 5
+        "\n"                                         # 6
+        "ex:other a <http://example.org/C> .\n"      # 7
+    )
+    lines = source_lines(ttl)
+    assert lines["http://example.org/x#thing"] == 4
+    assert lines["http://example.org/x#other"] == 7, "object position must not win over the declaration"
+    assert "http://example.org/x#decoy" not in lines
+    assert "http://example.org/x#prop" not in lines, "a predicate is not a subject"
+
+
+_INJECTION_GRAPH = """
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ex:   <http://example.org/dp#> .
+ex:sys a beam:System ; rdfs:label "Chatbot" ;
+    beam:hasProcess ex:gen ; beam:hasResource ex:prompt, ex:llm, ex:answer .
+ex:prompt a beam:Data ; rdfs:label "User prompt" ; pair:playsRole pair:PublicUserInput .
+ex:llm a beam:StatisticalModel ; rdfs:label "LLM" ; pair:playsRole pair:FoundationLLM .
+ex:answer a beam:Data ; rdfs:label "Answer" ;
+    pair:playsRole pair:LLMResponse , pair:UserFacingOutput .
+ex:gen a beam:Process ; rdfs:label "Generate" ; pair:playsRole pair:GenerationStep ;
+    beam:use ex:prompt , ex:llm ; beam:produce ex:answer .
+"""
+
+
+def _finding(client, ttl, phrase):
+    data = client.post("/api/assess", json={"ttl": ttl}).get_json()
+    return next((f for f in data["findings"] if phrase in f["label"]), None)
+
+
+def test_applying_a_control_clears_the_finding_it_answers(client) -> None:
+    """The point of suggesting a control is that applying it changes the answer.
+
+    The insertion is a registered SPARQL rewrite that restates the vulnerable
+    shape and constructs the step interrupting it, so the screen lands on the
+    path the finding cites - not beside the diagram, where it would be
+    structurally present and on no path at all."""
+    finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
+    assert finding is not None, "expected the bare graph to raise prompt injection"
+    control = next(c for c in finding["suggestedControls"] if c["applicable"])
+
+    applied = client.post("/api/apply-control", json={
+        "ttl": _INJECTION_GRAPH, "control": control["id"], "finding": finding["id"],
+    }).get_json()
+    assert applied["addedTriples"] > 0
+    assert _finding(client, applied["ttl"], "prompt injection") is None
+
+
+def test_applying_the_same_control_twice_changes_nothing(client) -> None:
+    """The inserted step's IRI is derived from the pair it screens, and the
+    rewrite skips a path that is already screened, so a second application is a
+    no-op rather than a second identical filter."""
+    finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
+    control = next(c for c in finding["suggestedControls"] if c["applicable"])
+    once = client.post("/api/apply-control", json={
+        "ttl": _INJECTION_GRAPH, "control": control["id"], "finding": finding["id"],
+    }).get_json()
+
+    # the finding is gone, so re-applying has nothing to bind and adds nothing
+    twice = client.post("/api/apply-control", json={
+        "ttl": once["ttl"], "control": control["id"], "finding": finding["id"],
+    }).get_json()
+    assert twice["addedTriples"] == 0
+    assert len(twice["ttl"]) == len(once["ttl"])
+
+
+def test_a_mitigation_rewrite_never_runs_during_an_assessment(client) -> None:
+    """The guard that makes this safe: mitigation queries produce their own
+    output type, and the pipeline asks only for MotifMatch and RiskFinding. Were
+    they run in the assessment loop, every finding would mitigate itself and
+    none would ever be reported."""
+    from airiskkg.assessment_runner import (
+        PAIR, implementation_paths_for_output_type, load_base_graph, mitigation_implementations,
+    )
+
+    graph = load_base_graph()
+    rewrites = set(mitigation_implementations(graph).values())
+    assert rewrites, "expected at least one registered rewrite"
+    for output_type in (PAIR.MotifMatch, PAIR.RiskFinding, PAIR.DataCategoryPropagation):
+        assert not (rewrites & set(implementation_paths_for_output_type(graph, output_type))), (
+            f"a mitigation rewrite is registered under {output_type}"
+        )
+    # and the finding it mitigates is still raised by a plain assessment
+    assert _finding(client, _INJECTION_GRAPH, "prompt injection") is not None
+
+
+def test_a_control_with_no_rewrite_is_reported_as_not_applicable(client) -> None:
+    """A control the tool cannot insert is still worth suggesting; the UI just
+    must not offer a button that does nothing."""
+    finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
+    flags = {c["label"]: c["applicable"] for c in finding["suggestedControls"]}
+    assert any(flags.values()) and not all(flags.values()), flags
+
+
+def test_applying_a_control_that_has_no_rewrite_is_refused(client) -> None:
+    finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
+    control = next(c for c in finding["suggestedControls"] if not c["applicable"])
+    response = client.post("/api/apply-control", json={
+        "ttl": _INJECTION_GRAPH, "control": control["id"], "finding": finding["id"],
+    })
+    assert response.status_code == 400
+    assert "mitigation rewrite" in response.get_json()["error"]
+
+
+def test_apply_is_offered_only_where_a_rewrite_targets_that_risk(client) -> None:
+    """The bug this exists for: one control, several risks, one rewrite.
+
+    Output validation is suggested by improper-output-handling, sensitive
+    disclosure and system-prompt-leakage, but a rewrite is written against one
+    vulnerable shape. Keyed on the control alone, every one of those findings
+    offered an Apply button that ran the improper-output-handling rewrite: it
+    found its own screen already in place, added nothing, reported "already in
+    place on this path", and left the risk untouched."""
+    ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
+    data = client.post("/api/assess", json={"ttl": ttl}).get_json()
+
+    offers: dict[str, set[str]] = {}
+    for finding in data["findings"]:
+        for control in finding["suggestedControls"]:
+            if control["applicable"]:
+                offers.setdefault(control["label"], set()).add(finding["label"])
+
+    output_validation = offers.get("Output validation and sanitization", set())
+    assert output_validation, "expected output validation to be applicable somewhere"
+    # Every finding that offers it must have a rewrite targeting its own risk
+    # pattern; the check below proves each offer inserts something.
+    assert output_validation <= {
+        "Candidate improper LLM output handling",
+        "Candidate sensitive information disclosure",
+    }, "offered on a finding no rewrite targets: " + ", ".join(sorted(output_validation))
+
+    # And every offer must actually do something when taken.
+    for finding in data["findings"]:
+        for control in finding["suggestedControls"]:
+            if not control["applicable"]:
+                continue
+            applied = client.post("/api/apply-control", json={
+                "ttl": ttl, "control": control["id"], "finding": finding["id"],
+            }).get_json()
+            assert applied.get("addedTriples"), (
+                f"{control['label']} offered on {finding['label']} but inserted nothing"
+            )
+
+
+def test_a_risk_firing_on_several_paths_needs_a_control_on_each(client) -> None:
+    """Applying once does not always clear a label. Prompt injection is raised
+    per untrusted-content/generation pair, so a system with three such paths
+    needs three screens - the count falls each time rather than in one step."""
+    ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
+    counts = []
+    for _ in range(3):
+        data = client.post("/api/assess", json={"ttl": ttl}).get_json()
+        counts.append(data["summary"]["riskFindingCount"])
+        todo = [
+            (f, c) for f in data["findings"]
+            for c in f["suggestedControls"]
+            if c["applicable"] and "prompt injection" in f["label"]
+        ]
+        if not todo:
+            break
+        finding, control = todo[0]
+        ttl = client.post("/api/apply-control", json={
+            "ttl": ttl, "control": control["id"], "finding": finding["id"],
+        }).get_json()["ttl"]
+    assert counts == sorted(counts, reverse=True) and counts[0] > counts[-1], counts

@@ -223,3 +223,24 @@ ag:KnowledgeSourceDeclaresContentShape
             }
         """ ;
     ] .
+
+ag:UserInputDeclaresReachabilityShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf pair:playsRole ;
+    sh:severity sh:Info ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "This user input is not marked pair:PublicUserInput. Risks that depend on a path anyone can drive - unbounded consumption on a direct-prompting path - test for that role and will stay silent, which is correct for an internal assistant and a gap for a public endpoint. Say which it is." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            SELECT $this
+            WHERE {
+                $this pair:playsRole/pair:subRoleOf* pair:UserInput .
+                FILTER NOT EXISTS { $this pair:playsRole/pair:subRoleOf* pair:PublicUserInput . }
+                ?generationStep beam:use $this ;
+                    pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+            }
+        """ ;
+    ] .

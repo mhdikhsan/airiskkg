@@ -395,7 +395,13 @@
     const up = (uv) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
-      if (!moved) { setHighlight([node.id]); selectedId = node.id; showDetail(node, uv); }
+      if (!moved) {
+        setHighlight([node.id]);
+        selectedId = node.id;
+        showDetail(node, uv);
+        // a click is also a request to see where this element is written
+        if (annotationCfg.onSelect) annotationCfg.onSelect(node.id);
+      }
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
@@ -467,7 +473,7 @@
   // Click a node -> highlight it -> edit its label / name / type / role / data
   // category here and Apply. onEdit delegates the write to the host (which calls
   // /api/graph-edit and updates the editor); onConnect handles port-drag edges.
-  let annotationCfg = { vocabulary: { roles: [], dataCategories: [] }, classes: [], onEdit: null, onConnect: null, onDelete: null, onStatus: null };
+  let annotationCfg = { vocabulary: { roles: [], dataCategories: [] }, classes: [], onEdit: null, onConnect: null, onDelete: null, onStatus: null, onSelect: null };
   function setAnnotation(cfg) { annotationCfg = { ...annotationCfg, ...cfg }; }
   function escapeAttr(text) { return escape(text).replace(/"/g, "&quot;"); }
 

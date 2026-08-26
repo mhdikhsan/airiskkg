@@ -104,6 +104,9 @@ label.btn { display: inline-flex; align-items: center; }
 }
 .gutter div { padding-right: 10px; height: 19px; }
 .gutter .err-line { color: var(--error); background: rgba(255, 107, 107, 0.12); font-weight: 600; }
+/* Where the thing you clicked on the canvas is declared. Deliberately not the
+   error colour: this is navigation, not a problem. */
+.gutter .marked-line { color: var(--accent); background: rgba(79, 140, 255, 0.16); font-weight: 600; }
 
 .code-scroll { position: relative; flex: 1 1 auto; min-width: 0; }
 .highlight, #ttl-source {

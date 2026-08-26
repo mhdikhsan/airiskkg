@@ -10,12 +10,12 @@ CONSTRUCT {
         rdfs:label "Retrieval Augmented Generation motif match"@en ;
         pair:matchesMotif pat:RetrievalAugmentedGenerationMotif ;
         pair:hasNodeBinding
-            ?queryB , ?vectorStoreB ,
+            ?queryB , ?knowledgeSourceB ,
             ?retrievalStepB , ?retrievedCtxB , ?promptConstructB ,
             ?promptB , ?llmB , ?genStepB , ?responseB .
 
     ?queryB          a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_QueryNode ;                pair:matchedElement ?query .
-    ?vectorStoreB    a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_VectorStoreNode ;          pair:matchedElement ?vectorStore .
+    ?knowledgeSourceB a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_KnowledgeSourceNode ;     pair:matchedElement ?knowledgeSource .
     ?retrievalStepB  a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_RetrievalStepNode ;        pair:matchedElement ?retrievalStep .
     ?retrievedCtxB   a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_RetrievedContextNode ;     pair:matchedElement ?retrievedCtx .
     ?promptConstructB a pair:NodeBinding ; pair:bindsPatternNode pat:RAG_PromptConstructionStepNode ; pair:matchedElement ?promptConstruct .
@@ -60,7 +60,7 @@ WHERE {
     )) AS ?match)
 
     BIND(IRI(CONCAT(STR(?match), "/binding/query"))             AS ?queryB)
-    BIND(IRI(CONCAT(STR(?match), "/binding/vector-store"))      AS ?vectorStoreB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/knowledge-source")) AS ?knowledgeSourceB)
     BIND(IRI(CONCAT(STR(?match), "/binding/retrieval-step"))    AS ?retrievalStepB)
     BIND(IRI(CONCAT(STR(?match), "/binding/retrieved-context")) AS ?retrievedCtxB)
     BIND(IRI(CONCAT(STR(?match), "/binding/prompt-construct"))  AS ?promptConstructB)

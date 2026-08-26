@@ -1,0 +1,46 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Verify a generated response against its evidence (LLM09).
+#
+# Bound to Control_LoggingMonitoringAndEvals, not to Grounding and Verification,
+# and the difference is not cosmetic. The risk query clears on an evaluation or
+# scoring step reading the response - verification - while Grounding and
+# Verification is realized by retrieval motifs (RAG, Vector IR, Hybrid
+# Retriever, Reranker), and adding retrieval adds no verification step, so it
+# cannot clear this finding. The reference document reaches the same place from
+# the other side: its evaluator-node row maps to EvalsMotif.
+
+CONSTRUCT {
+    ?verificationStep
+        a beam:Process ;
+        rdfs:label "Response verification"@en ;
+        pair:playsRole pair:EvaluationStep ;
+        beam:use ?response .
+
+    ?system beam:hasProcess ?verificationStep .
+}
+WHERE {
+    ?finding
+        a pair:RiskFinding ;
+        pair:generatedByRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
+        pair:hasEvidence ?response .
+
+    ?response pair:playsRole/pair:subRoleOf* pair:LLMResponse .
+
+    FILTER NOT EXISTS {
+        ?existing beam:use ?response .
+        { ?existing pair:playsRole/pair:subRoleOf* pair:EvaluationStep }
+        UNION
+        { ?existing pair:playsRole/pair:subRoleOf* pair:ScoringStep }
+    }
+
+    OPTIONAL { ?system a beam:System . }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/response-verification/",
+        ENCODE_FOR_URI(STR(?response))
+    )) AS ?verificationStep)
+}

@@ -10,6 +10,7 @@ CONSTRUCT {
         rdfs:label "Candidate vector and embedding weakness"@en ;
         dct:description "A vector retrieval or embedding path is present and should be checked for retrieval filtering, ranking, provenance, and evaluation controls."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:VectorAndEmbeddingWeaknessRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
@@ -31,11 +32,6 @@ WHERE {
             a pair:MotifMatch ;
             pair:matchesMotif ?motif ;
             pair:hasNodeBinding/pair:matchedElement ?evidenceElement .
-
-        FILTER NOT EXISTS {
-            pat:VectorAndEmbeddingWeaknessRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?evidenceElement .
-        }
 
     }
 

@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import re
 
+import pytest
+
 from airiskkg.paths import REPO_ROOT
 
 STATIC = REPO_ROOT / "python" / "src" / "airiskkg" / "webapp" / "static"
@@ -91,3 +93,36 @@ def test_export_resolves_css_variables_rather_than_hardcoding_them() -> None:
     assert "matchAll(/var\\((--[\\w-]+)\\)/g)" in graph or "var\\((--" in graph, (
         "the exporter no longer derives its custom properties from the kept rules"
     )
+
+
+def test_every_script_parses() -> None:
+    """A syntax error anywhere in a file kills the whole file.
+
+    This is not hypothetical. An escaped newline that survived into the source
+    as a real line break left `app.js` unparsable, so nothing in the workbench
+    worked at all - no preview, no assessment, no buttons - while the entire
+    Python suite stayed green, because none of it loads the browser code. The
+    only visible symptom was 304s in the network tab, which are not an error and
+    sent the search in the wrong direction.
+
+    Node is used when present rather than required: the check is worth having on
+    any machine that can run it, and skipping is honest about the rest.
+    """
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node is not installed; cannot parse-check the browser code")
+
+    broken = []
+    scripts = sorted(STATIC.glob("*.js"))
+    assert scripts, "expected browser sources to check"
+    for path in scripts:
+        result = subprocess.run(
+            [node, "--check", str(path)], capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            first = (result.stderr.strip().splitlines() or ["parse error"])[0]
+            broken.append(f"{path.name}: {first}")
+    assert not broken, "browser sources that do not parse:\n" + "\n".join(broken)

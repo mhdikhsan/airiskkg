@@ -102,6 +102,12 @@
       const data = await postJson("/api/graph", { ttl });
       if (seq !== previewSeq) return; // a newer edit is already in flight
       GraphView.render(data);
+      // Rebuilt on every parse, so it can never point into a stale buffer.
+      sourceLines = new Map(
+        [...data.nodes, ...data.systems]
+          .filter((n) => n.line)
+          .map((n) => [n.id, n.line])
+      );
       Editor.markErrorLine(null);
       const badge = $("#system-badge");
       if (data.systems.length) {
@@ -119,6 +125,16 @@
       setStatus("error", line ? `Line ${line}: ${firstLine}` : firstLine);
       // keep the last good graph on screen while the user is mid-edit
     }
+  }
+
+  /* Element id -> the line of the editor buffer that declares it, from the
+   * last successful parse. Clicking anything that names elements - a node, a
+   * motif match, a finding - can then put the cursor on the source. */
+  let sourceLines = new Map();
+
+  function revealInSource(ids) {
+    const lines = (ids || []).map((id) => sourceLines.get(id)).filter(Boolean);
+    if (lines.length) Editor.revealLines(lines);
   }
 
   // ---- drawer ----------------------------------------------------------------
@@ -142,21 +158,34 @@
   // ---- findings --------------------------------------------------------------
   let selectedFinding = null;
 
-  // One mitigation as a list item, with any suggested motif beneath it.
-  function controlItem(control) {
+  /* One mitigation as a list item.
+   *
+   * A control with a registered rewrite gets a button that inserts it onto the
+   * path THIS finding cites, and the assessment re-runs so the effect is
+   * visible rather than asserted. Everything else shows its realizing motif as
+   * a plain label: still worth knowing, but the tool cannot place it for you,
+   * and a button that quietly does nothing is worse than no button.
+   */
+  function controlItem(control, finding) {
     const motifs = control.realizedByMotifs || [];
     const children = [el("span", { class: "ctrl-label" }, control.label)];
-    if (motifs.length) {
+    if (control.applicable) {
       children.push(
         el("div", { class: "ctrl-motifs" }, [
-          el("span", { class: "ctrl-motifs-lead" }, "suggested mitigation: "),
-          ...motifs.map((m) =>
-            el("span", {
-              class: "chip motif-suggest clickable",
-              title: "Click to add this motif to the canvas",
-              onclick: (ev) => { ev.stopPropagation(); addSuggestedMotif(m); },
-            }, m.label)
-          ),
+          el("button", {
+            type: "button",
+            class: "chip motif-suggest clickable",
+            title: "Insert this control on the path this finding cites, then re-assess",
+            onclick: (ev) => { ev.stopPropagation(); applyControl(control, finding); },
+          }, "Apply to this finding"),
+          motifs.length ? el("span", { class: "ctrl-motifs-lead" }, ` inserts ${motifs[0].label}`) : null,
+        ])
+      );
+    } else if (motifs.length) {
+      children.push(
+        el("div", { class: "ctrl-motifs" }, [
+          el("span", { class: "ctrl-motifs-lead" }, "realized by: "),
+          ...motifs.map((m) => el("span", { class: "chip motif-suggest" }, m.label)),
         ])
       );
     }
@@ -174,12 +203,12 @@
   }
 
   // All suggested controls under one "Mitigations" list.
-  function controlSections(controls) {
+  function controlSections(controls, finding) {
     if (!controls.length) return [];
     return [
       el("div", { class: "ctrl-group" }, [
         el("div", { class: "ctrl-group-head" }, `Mitigations (${controls.length})`),
-        el("ul", { class: "ref-list" }, controls.map(controlItem)),
+        el("ul", { class: "ref-list" }, controls.map((c) => controlItem(c, finding))),
       ]),
     ];
   }
@@ -227,7 +256,7 @@
       taxonomyChips(finding),
       el("details", {}, [
         el("summary", {}, `Suggested controls (${finding.suggestedControls.length}) · evidence (${finding.evidence.length})`),
-        ...controlSections(finding.suggestedControls),
+        ...controlSections(finding.suggestedControls, finding),
         groundedFamiliesSection(finding.groundedControlFamilies),
         el("div", { class: "evidence-note" }, "Evidence: " + finding.evidence.map((e) => e.label).join(", ")),
       ]),
@@ -243,6 +272,7 @@
       selectedFinding = card;
       card.classList.add("selected");
       GraphView.setHighlight(evidenceIds);
+      revealInSource(evidenceIds);
     });
     return card;
   }
@@ -485,6 +515,7 @@
         selectedMotifRow = row;
         row.classList.add("selected");
         GraphView.setHighlight(r.nodeIds);
+        revealInSource(r.nodeIds);
       });
       list.appendChild(row);
     });
@@ -747,12 +778,36 @@ ex:Generate a beam:Transform ;
   }
 
   // ---- motif catalogue -------------------------------------------------------
-  // Add a motif that a finding's control suggests as a structural mitigation
-  // (the chips under "suggested mitigation"). motifRef.id is the motif URI.
-  function addSuggestedMotif(motifRef) {
-    const shortId = String(motifRef.id || "").split(/[#/]/).pop();
-    if (!shortId) return;
-    addMotif({ id: shortId, label: motifRef.label || shortId });
+  /* Apply a control to the finding in front of you.
+   *
+   * The rewrite lives in the library beside the rule that raised the finding,
+   * so what lands is the structure that rule tests for. Re-assessing straight
+   * away is the point: the tool does not declare the risk resolved, it amends
+   * the design and lets the same rules speak again.
+   */
+  function applyControl(control, finding) {
+    return runMutation(async () => {
+      try {
+        const { ttl, addedTriples, newIds } = await postJson("/api/apply-control", {
+          ttl: Editor.getValue(), control: control.id, finding: finding.id,
+        });
+        if (!addedTriples) {
+          setStatus("ok", `"${control.label}" is already in place on this path.`);
+          return;
+        }
+        Editor.setValue(ttl);
+        GraphView.setHighlight(newIds || []);
+        setStatus("busy", `Applied "${control.label}" - re-assessing...`);
+        const data = await postJson("/api/assess", { ttl });
+        renderFindings(data);
+        renderMotifs(data.motifMatches, data.motifGaps);
+        renderDerivedCategories(data.derivedCategories);
+        setStatus("ok", `Applied "${control.label}"`,
+          `${data.summary.riskFindingCount} findings · ${data.summary.motifMatchCount} matches`);
+      } catch (error) {
+        setStatus("error", "Could not apply the control: " + error.message.split("\n")[0]);
+      }
+    });
   }
 
   function addMotif(item) {
@@ -795,7 +850,11 @@ ex:Generate a beam:Transform ;
       vocabulary = await api("/api/vocabulary");
     } catch (_) { /* annotation popups will just have empty pick lists */ }
     const classes = [...(vocabulary.resourceClasses || []), ...(vocabulary.processClasses || [])];
-    GraphView.setAnnotation({ vocabulary, classes, onEdit: applyEdit, onDelete: applyDelete, onConnect: applyConnect, onStatus: setStatus });
+    GraphView.setAnnotation({
+      vocabulary, classes,
+      onEdit: applyEdit, onDelete: applyDelete, onConnect: applyConnect, onStatus: setStatus,
+      onSelect: (id) => revealInSource([id]),
+    });
     Annotate.init({ vocabulary, onStatus: setStatus });
 
     initPalette();

@@ -1,0 +1,149 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+# Protected content reaching a user-facing element (LLM02).
+#
+# Merged from two patterns that reported one incident from two ends: an
+# exit-anchored one, firing wherever a sink carried a protected category by any
+# route, and a retrieval-anchored one, firing when a retrieval step read a store
+# holding sensitive content that then flowed to an output. On a RAG system both
+# fired, so an assessor triaged the same disclosure twice.
+#
+# One finding per sink now, whichever route the content took. The retrieval
+# branch is kept because it contributes evidence the exit branch cannot see -
+# the store, the retrieval step, the retrieved context - which is what makes the
+# remedy choosable: constrain what may be retrieved, or screen what leaves.
+# Both control sets ride on the one finding.
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate sensitive information disclosure"@en ;
+        dct:description "Content carrying a protected data category reaches an element exposed to a user, with no represented redaction, sanitization, or guardrail on the way out."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:SensitiveInformationDisclosureRiskPattern ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?sink ,
+            ?producingStep ,
+            ?knowledgeSource ,
+            ?retrievalStep ,
+            ?retrievedResult ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    {
+        # The sink carries protected content, however it got there. Matched
+        # through pair:subDataCategoryOf* rather than by exact value: a graph may
+        # declare its own kinds beneath the protected roots - onyx does exactly
+        # that - and an exact test would miss every one of them.
+        ?sink pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+        ?sink pair:containsDataCategory/pair:subDataCategoryOf* ?category .
+        VALUES ?category { pair:SensitiveInformation pair:ConfidentialInformation }
+
+        ?producingStep beam:produce ?sink .
+
+        # Bound in some motif match: motif-less means "not tied to one
+        # particular motif", not "detached from structure".
+        ?match a pair:MotifMatch ;
+               pair:matchesMotif ?motif ;
+               pair:hasNodeBinding/pair:matchedElement ?sink .
+
+        # Nothing screens the sink on the way out.
+        FILTER NOT EXISTS {
+            ?control pair:playsRole ?controlRole .
+            { ?controlRole pair:subRoleOf* pair:RedactionStep }
+            UNION
+            { ?controlRole pair:subRoleOf* pair:OutputValidationStep }
+            UNION
+            { ?controlRole pair:subRoleOf* pair:OutputGuardrailStep }
+            { ?control beam:use ?sink } UNION { ?control beam:produce ?sink }
+        }
+    }
+    UNION
+    {
+        # The retrieval route, which additionally names the source. Contributes
+        # the store and the retrieval step as evidence on the same finding, so
+        # the remedy at retrieval is visible alongside the one at the exit.
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif ;
+            pair:hasNodeBinding ?retrievalBinding ,
+                ?knowledgeSourceBinding ,
+                ?resultBinding .
+        VALUES ?motif { pat:InformationRetrievalMotif }
+
+        ?retrievalBinding
+            pair:bindsPatternNode pat:IR_RetrievalStepNode ;
+            pair:matchedElement ?retrievalStep .
+        ?knowledgeSourceBinding
+            pair:bindsPatternNode pat:IR_KnowledgeSourceNode ;
+            pair:matchedElement ?knowledgeSource .
+        ?resultBinding
+            pair:bindsPatternNode pat:IR_RetrievedContextNode ;
+            pair:matchedElement ?retrievedResult .
+
+        ?knowledgeSource pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
+        ?retrievedResult pair:containsDataCategory/pair:subDataCategoryOf* pair:SensitiveInformation .
+
+        {
+            ?producingStep
+                beam:use ?retrievedResult ;
+                beam:use ?llm ;
+                beam:produce ?sink ;
+                pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+        }
+        UNION
+        {
+            ?intermediateStep
+                beam:use ?retrievedResult ;
+                beam:produce ?enhancedContext .
+            ?producingStep
+                beam:use ?enhancedContext ;
+                beam:use ?llm ;
+                beam:produce ?sink ;
+                pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+        }
+        ?llm pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+        ?sink pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+
+        # Nothing constrains it at retrieval or at the exit.
+        FILTER NOT EXISTS {
+            ?disclosureControl pair:playsRole ?disclosureRole .
+            { ?disclosureRole pair:subRoleOf* pair:RedactionStep }
+            UNION
+            { ?disclosureRole pair:subRoleOf* pair:OutputValidationStep }
+            UNION
+            { ?disclosureRole pair:subRoleOf* pair:OutputGuardrailStep }
+            { ?disclosureControl beam:use ?retrievedResult }
+            UNION
+            { ?disclosureControl beam:use ?sink }
+            UNION
+            { ?disclosureControl beam:produce ?sink }
+        }
+    }
+
+    pat:SensitiveInformationDisclosureRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    # Keyed on the sink alone, so the two routes and every protected category on
+    # that sink collapse into one finding rather than one per combination.
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/sensitive-information-disclosure/",
+        ENCODE_FOR_URI(STR(?sink))
+    )) AS ?riskFinding)
+}

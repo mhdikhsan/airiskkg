@@ -1,0 +1,332 @@
+% Control applicability and application in PAIR-AI.
+%
+% Standalone so it can be compiled and checked on its own; the body from
+% \section{...} onward lifts directly into a thesis chapter.
+%
+% Figures are the two things a reader is most likely to doubt: that applying a
+% control is a query rather than code, and that doing so cannot quietly suppress
+% the findings it was not aimed at.
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{url}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\newtheorem{obligation}{Design obligation}
+
+\lstdefinelanguage{SPARQL}{
+  morekeywords={CONSTRUCT,WHERE,FILTER,NOT,EXISTS,UNION,OPTIONAL,BIND,VALUES,%
+                PREFIX,SELECT,IRI,CONCAT,STR,ENCODE_FOR_URI,AS,a},
+  sensitive=true,
+  morecomment=[l]{\#},
+  morestring=[b]",
+}
+\lstset{
+  language=SPARQL,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape,
+  columns=fullflexible,
+  breaklines=true,
+  frame=single,
+  framesep=4pt,
+  xleftmargin=6pt,
+}
+
+\newcommand{\Lib}{\mathcal{L}}
+\newcommand{\Arch}{G}
+\newcommand{\Match}{\mathsf{Match}}
+\newcommand{\Find}{\mathsf{Find}}
+\newcommand{\Prop}{\mathsf{Prop}}
+\newcommand{\Assess}{\mathsf{Assess}}
+\newcommand{\eval}[2]{[\![#1]\!]_{#2}}
+
+\begin{document}
+
+\section{Applying a control as a graph rewrite}
+\label{sec:control-applicability}
+
+An assessment that only reports is a description. What makes a design-time
+method actionable is that the analyst can change the design and see the analysis
+answer differently. This section defines how PAIR-AI decides that a control is
+\emph{applicable} to a particular candidate finding, and how applying it edits
+the architecture graph. Both are expressed as registered SPARQL
+\texttt{CONSTRUCT} queries, in the same form as motif matching and risk
+evaluation, so the knowledge of \emph{where a control belongs} lives beside the
+rule that raised the finding rather than in application code.
+
+\subsection{The assessment as a family of construct rules}
+
+\begin{definition}[Assessment state]
+Let $\Lib$ be the curated library: motifs, risk patterns, controls, and the
+declarations that register their implementations. Let $\Arch$ be a submitted
+architecture graph. Every executable rule is a \texttt{CONSTRUCT} query $q$,
+and $\eval{q}{H}$ denotes the set of triples $q$ constructs over a graph $H$.
+\end{definition}
+
+Rules are partitioned by a declared output type,
+$\mathsf{out}(q) \in \{\Prop, \Match, \Find, \mathsf{Mit}\}$, corresponding to
+\texttt{pair:DataCategoryPropagation}, \texttt{pair:MotifMatch},
+\texttt{pair:RiskFinding} and \texttt{pair:MitigationApplication}. Writing $Q_X$
+for the rules of type $X$, the pipeline is
+
+\begin{align}
+  \Prop(\Arch)  &= \operatorname{lfp}\Big(H \mapsto H \cup \textstyle\bigcup_{q \in Q_\Prop} \eval{q}{H}\Big)(\Lib \cup \Arch), \label{eq:prop}\\
+  \Match(\Arch) &= \textstyle\bigcup_{q \in Q_\Match} \eval{q}{\Prop(\Arch)}, \label{eq:match}\\
+  \Find(\Arch)  &= \textstyle\bigcup_{q \in Q_\Find} \eval{q}{\Prop(\Arch) \cup \Match(\Arch)}, \label{eq:find}\\
+  \Assess(\Arch) &= \Prop(\Arch) \cup \Match(\Arch) \cup \Find(\Arch). \label{eq:assess}
+\end{align}
+
+Equation~\eqref{eq:prop} is a least fixed point because a propagated data
+category can satisfy the precondition of another propagation rule; the
+implementation iterates to stability under a fixed bound. Rules of type
+$\mathsf{Mit}$ appear nowhere in \eqref{eq:prop}--\eqref{eq:assess}. That
+omission is deliberate and is the subject of
+Proposition~\ref{prop:no-self-mitigation}.
+
+\subsection{Monotonicity, and why a control can clear a finding}
+
+Motif matching is monotone: a motif asserts the presence of structure, never its
+absence, so extending the graph cannot destroy a match.
+
+\begin{proposition}[Monotone matching]
+\label{prop:monotone-match}
+If $\Arch \subseteq \Arch'$ then $\Match(\Arch) \subseteq \Match(\Arch')$.
+\end{proposition}
+
+\noindent Risk evaluation is different. An applicability condition may test for
+the \emph{absence} of a represented control, which in SPARQL is
+\texttt{FILTER NOT EXISTS} and is therefore closed-world over the submitted
+graph. Consequently $\Find$ is \emph{not} monotone in $\Arch$: adding triples
+can remove a finding.
+
+That non-monotonicity is not a defect to be tolerated; it is precisely the
+property a mitigation exploits. If risk evaluation were monotone, no addition to
+an architecture could ever discharge a finding, and the only way to clear one
+would be to assert that it had been handled --- which is a claim about the
+analyst, not about the design.
+
+\begin{obligation}[Closed-world reading]
+\label{obl:cwa}
+Because the negation is closed-world over $\Arch$, the disappearance of a
+finding means \emph{the amended graph no longer represents the gap}. It does not
+mean the risk has been eliminated. Every finding is a candidate throughout, and
+the wording of the tool must not drift from that reading.
+\end{obligation}
+
+\subsection{Applicability}
+
+Each finding records the rule that produced it, via
+\texttt{pair:\allowbreak generatedByRiskPattern}; write $\rho(f)$ for that risk
+pattern. Each mitigation rule $q$ declares the control it realises,
+$\mathsf{ctl}(q)$ via \texttt{pair:implementsControl}, and the risk pattern it
+answers, $\mathsf{rp}(q)$ via \texttt{pair:mitigatesRiskPattern}.
+
+\begin{definition}[Applicable control]
+\label{def:applicable}
+A control $c$ is \emph{applicable} to a finding $f$ iff
+\[
+  \exists\, q \in Q_{\mathsf{Mit}} \; : \;
+  \mathsf{ctl}(q) = c \;\wedge\; \mathsf{rp}(q) = \rho(f).
+\]
+\end{definition}
+
+Applicability is thus a property of the \emph{pair} $(c, \rho(f))$, not of the
+control alone. The distinction is load-bearing. A single control is suggested by
+several risk patterns --- output validation answers improper output handling and
+sensitive information disclosure --- while a rewrite is written against one
+vulnerable shape. Keyed on the control alone, every finding suggesting that
+control would offer the same rewrite; the rewrite would then evaluate against a
+shape it was not written for, construct nothing, and report that the control was
+already in place while the risk remained. Definition~\ref{def:applicable} is what
+prevents that.
+
+A control that is not applicable is still reported as a suggestion. Many
+controls are non-technical --- provenance, vetting, governance --- and have no
+runtime shape at all; for those, no rewrite exists and none should be invented.
+
+\subsection{Application}
+
+\begin{definition}[Application]
+\label{def:apply}
+Let $c$ be applicable to $f$ through rule $q$, and let
+$H = \Assess(\Arch)$ be the assessed graph, which is where $f$ exists. The
+\emph{insertion} is
+\[
+  \Delta(f, c) \;=\; \eval{q}{H}\big[\, \mathtt{?finding} \mapsto f \,\big],
+\]
+the substitution binding the query variable \texttt{?finding} to $f$ before
+evaluation. The amended architecture is $\Arch^{+} = \Arch \cup \Delta(f,c)$.
+\end{definition}
+
+Two aspects of Definition~\ref{def:apply} deserve comment.
+
+\paragraph{The insertion is scoped to one finding.} Binding \texttt{?finding}
+externally, rather than letting the rule range over all findings, is what makes
+this an analyst's action on a chosen problem instead of a blanket edit.
+
+\paragraph{The insertion lands in $\Arch$, not in $H$.} Only the architecture is
+amended; the library is never written to, and the derived facts of the previous
+run are discarded. The analyst then re-runs \eqref{eq:assess} over $\Arch^{+}$,
+and the same rules speak again. The tool does not declare the finding resolved:
+it edits the design and recomputes.
+
+\subsection{The shape of a mitigation rule}
+
+A mitigation rule restates the vulnerable configuration its
+$\mathsf{rp}(q)$ detected, and constructs the element that interrupts it, bound
+to the elements the finding already cites. Nothing is inferred about which
+evidence element plays which part, because the conditions that raised the
+finding also identify where the control belongs. The rule answering prompt
+injection is representative:
+
+\begin{lstlisting}
+CONSTRUCT {
+    ?screeningStep a beam:Process ;
+        pair:playsRole pair:InputGuardrailStep ;
+        beam:use    ?untrustedContent ;
+        beam:inform ?generationStep .
+    ?system beam:hasProcess ?screeningStep .
+}
+WHERE {
+    ?finding a pair:RiskFinding ;
+        pair:generatedByRiskPattern pat:PromptInjectionRiskPattern ;
+        pair:hasEvidence ?untrustedContent , ?generationStep .
+
+    # the vulnerable shape, restated
+    ?untrustedContent pair:containsDataCategory/pair:subDataCategoryOf*
+                      pair:UntrustedContent .
+    ?generationStep pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+    { ?generationStep beam:use ?untrustedContent }
+    UNION
+    { ?intermediateStep beam:use ?untrustedContent ;
+                        beam:produce ?derivedContext .
+      ?generationStep beam:use ?derivedContext }
+
+    # and only where no screen is represented yet
+    FILTER NOT EXISTS {
+        ?existingScreen pair:playsRole/pair:subRoleOf* pair:InputGuardrailStep .
+        { ?existingScreen beam:use ?untrustedContent ;
+                          beam:inform ?generationStep }
+        UNION
+        { ?existingScreen beam:use ?untrustedContent ;
+                          beam:produce ?screened .
+          ?generationStep beam:use ?screened }
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/input-screening/",
+        ENCODE_FOR_URI(STR(?untrustedContent)), "/",
+        ENCODE_FOR_URI(STR(?generationStep))
+    )) AS ?screeningStep)
+}
+\end{lstlisting}
+
+Applied to a direct-prompting architecture, this constructs six triples. Every
+subject and object other than the newly minted step is an element already
+present in $\Arch$, which is what distinguishes an edit from an unconnected
+addition: one new node, wired to the input it screens and the generation it
+informs.
+
+\subsection{Properties}
+
+\begin{proposition}[No self-mitigation]
+\label{prop:no-self-mitigation}
+For any $\Arch$, $\Assess(\Arch)$ is independent of $Q_{\mathsf{Mit}}$.
+\end{proposition}
+
+\begin{proof}
+Immediate from \eqref{eq:prop}--\eqref{eq:assess}: the pipeline selects rules by
+declared output type and requests only $\Prop$, $\Match$ and $\Find$. No rule of
+type $\mathsf{Mit}$ is evaluated.
+\end{proof}
+
+\noindent This separation is the safety catch of the design. Were mitigation
+rules evaluated inside the pipeline, each would construct the very structure its
+risk pattern tests for the absence of, every finding would discharge itself, and
+the assessment would report nothing. The property is enforced by a regression
+test rather than left to convention.
+
+\begin{proposition}[Idempotence]
+\label{prop:idempotent}
+$\Delta\big(f, c\big)$ recomputed over $\Assess(\Arch^{+})$ is empty.
+\end{proposition}
+
+\begin{proof}[Argument]
+Two independent reasons. First, the guard: the rule's
+\texttt{FILTER NOT EXISTS} tests for the same structure the rule constructs, so
+after insertion the guard fails and no solution survives. Second, minting: the
+inserted IRI is a deterministic function of the elements it is bound to, so even
+were the guard to admit a solution, the constructed triples would be identical
+to those already present and their union with $\Arch^{+}$ would add nothing.
+\end{proof}
+
+\begin{obligation}[Discharge]
+\label{obl:discharge}
+For each rule $q$, the structure $q$ constructs must satisfy the
+absence-condition of $\mathsf{rp}(q)$, so that $f \notin \Find(\Arch^{+})$.
+\end{obligation}
+
+\noindent Obligation~\ref{obl:discharge} is a property of each rule against its
+risk pattern, not a theorem about the framework, and is discharged by test per
+rule. It is stated separately because the converse failure is the one that
+matters: a rule may construct something plausible that does not satisfy the
+condition, in which case the analyst edits the design and the finding persists.
+
+\begin{obligation}[No collateral discharge]
+\label{obl:collateral}
+Applying a control must not remove findings other than by mitigating them.
+\end{obligation}
+
+\noindent This obligation is easy to violate. An interposing rewrite --- one
+that rewires a flow so the control sits \emph{on} the path rather than reading
+from it --- was implemented and withdrawn during development: inserting an
+output screen removed prompt-injection and system-prompt-leakage findings,
+because several risk patterns require a generation step to produce a user-facing
+output \emph{directly}, and interposition breaks that pattern rather than the
+risk. The untrusted content still reached the prompt; the analysis simply
+stopped reporting it. For a method whose outputs are candidate risks, a false
+negative introduced by a mitigation is worse than a coarse-grained one, and the
+prerequisite --- path-tolerant risk conditions --- is a separate change.
+
+\subsection{Coverage}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}llr@{}}
+\toprule
+Rule type & Declared output type & Count \\
+\midrule
+Propagation        & \texttt{pair:DataCategoryPropagation} & 6 \\
+Motif matching     & \texttt{pair:MotifMatch}              & 31 \\
+Risk evaluation    & \texttt{pair:RiskFinding}             & 15 \\
+Mitigation rewrite & \texttt{pair:MitigationApplication}   & 9 \\
+\bottomrule
+\end{tabular}
+\caption{Registered rules by declared output type. Only the first three are
+evaluated during an assessment (Proposition~\ref{prop:no-self-mitigation}).}
+\label{tab:rules}
+\end{table}
+
+Twelve of the fifteen risk patterns admit a structural discharge; the remaining
+three --- data and model poisoning, supply-chain compromise, and vector and
+embedding weakness --- rest on provenance and vetting, whose controls are
+non-technical and have no runtime shape. For those, no rewrite can exist, and
+the appropriate mechanism is analyst triage recorded against the finding rather
+than a fabricated structural fact in the graph. Conflating the two was a
+concrete defect in an earlier version: fifteen risk rules carried an escape
+clause satisfied by an annotation that no component of the system ever wrote, so
+findings appeared falsifiable while the only thing that could discharge them was
+unreachable.
+
+\end{document}

@@ -194,6 +194,12 @@ pat:UnboundedConsumption_UnboundedUseCondition
     rdfs:label "Prompt, retrieval, tool, or model use is not bounded"@en ;
     pair:operationalizesRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
 
+pat:UnboundedConsumption_RepeatablePathCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "The consuming path can be driven repeatedly"@en ;
+    rdfs:comment "Either the flow loops - a step informs a step that informs it back, in query rewriting or RAG - or it is reachable from public input, so volume is not the system's own choice. Direct prompting has no loop, so without this the branch asked only whether an LLM call existed without a rate limiter, which is true of nearly every unmitigated GenAI system."@en ;
+    pair:operationalizesRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
+
 # risk patterns
 
 pat:DirectPromptingMotif
@@ -208,9 +214,6 @@ pat:RetrievalAugmentedGenerationMotif
         pat:PromptInjectionRiskPattern ,
         pat:MisinformationFromWeakGroundingRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
-
-pat:InformationRetrievalMotif
-    pair:hasRiskPattern pat:SensitiveDataRetrievalExposureRiskPattern .
 
 pat:VectorBasedInformationRetrievalMotif
     pair:hasRiskPattern pat:VectorAndEmbeddingWeaknessRiskPattern .
@@ -277,28 +280,6 @@ pat:PromptInjectionRiskPattern
         pat:Control_LoggingMonitoringAndEvals ;
     pair:implementedBy pat:PromptInjectionOQP .
 
-pat:SensitiveDataRetrievalExposureRiskPattern
-    a pair:RiskPattern ;
-    pair:derivedFrom owasp:llm02-sensitive-information-disclosure ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
-    rdfs:label "Sensitive data retrieval exposure risk pattern"@en ;
-    pair:hasMotif pat:InformationRetrievalMotif ;
-    pair:hasMechanism owasp:mechanism-sensitive-data-propagation ;
-   
-    pair:hasApplicabilityCondition
-        pat:SensitiveInfo_SensitiveContextCondition ,
-        pat:SensitiveInfo_OutputExposureCondition ,
-        pat:VectorEmbeddingWeakness_RetrievalCondition ;
-    pair:mayIndicateRisk
-        owasp:llm02-sensitive-information-disclosure ,
-        atlas:exposing-personal-information ,
-        mit:subdomain-2-1 ;
-    pair:suggestedControl
-        pat:Control_DataMinimizationAndRedaction ,
-        pat:Control_RetrievalAccessControl ,
-        pat:Control_OutputValidationAndSanitization ,
-        pat:Control_Guardrails ;
-    pair:implementedBy pat:SensitiveDataRetrievalExposureOQP .
 
 pat:SupplyChainCompromiseRiskPattern
     a pair:RiskPattern ;
@@ -489,7 +470,8 @@ pat:UnboundedConsumptionRiskPattern
         pat:RetrievalAugmentedGenerationMotif ,
         pat:QueryRewritingMotif ;
     pair:hasMechanism owasp:mechanism-unbounded-resource-consumption ;
-    pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ;
+    pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ,
+        pat:UnboundedConsumption_RepeatablePathCondition ;
     pair:mayIndicateRisk
         owasp:llm10-unbounded-consumption ,
         atlas:redundant-actions-agentic ,
@@ -525,12 +507,6 @@ pat:DirectPrompting_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/direct_prompting.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:SensitiveDataRetrievalExposureOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Sensitive data retrieval exposure risk pattern OQP"@en ;
-    pair:implementsRiskPattern pat:SensitiveDataRetrievalExposureRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk/sensitive_retrieval.rq" ;
-    pair:producesOutputType pair:RiskFinding .
 
 pat:DirectPromptingWithoutGroundingOQP
     a pair:PatternImplementation ;
@@ -781,6 +757,20 @@ pat:FineTune_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/fine_tuning.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
+pat:InputScreening_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Input Screening motif matching OQP"@en ;
+    pair:implementsMotif pat:InputScreeningMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/input_screening.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:OutputScreening_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Output Screening motif matching OQP"@en ;
+    pair:implementsMotif pat:OutputScreeningMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/output_screening.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
 pat:Guardrails_MatchingOQP
     a pair:PatternImplementation ;
     rdfs:label "Guardrails Motif matching OQP"@en ;
@@ -985,53 +975,39 @@ pat:InsecureAgentCommunicationOQP
     pair:producesOutputType pair:RiskFinding .
 
 
-#################################################################
 # Sensitive information reaching a user-facing sink, by any route
-#################################################################
 
-pat:SensitiveOutputExposureRiskPattern
+pat:SensitiveInformationDisclosureRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm02-sensitive-information-disclosure ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
-    rdfs:label "Sensitive information exposure at a user-facing output risk pattern"@en ;
+    rdfs:label "Sensitive information disclosure risk pattern"@en ;
     dct:description """
     Applies wherever content carrying a protected category reaches an element
-    exposed to a user, with no represented control on the way out.
-
-    The library already had a sensitive-disclosure pattern, but it is scoped to
-    the Vector-based Information Retrieval motif and requires the store and the
-    retrieved result to be sensitive, so it only ever saw the retrieval route.
-    Sensitive content arriving any other way - typed by a user, returned by a
-    tool, recalled from agent memory - reached the output with nothing to
-    report it, even though the propagation rules had already derived and could
-    show the whole path. This pattern reads that derived fact directly, so the
-    engine's own conclusion is what raises the finding.
-
-    Deliberately motif-less, like the excessive-agency pattern: the risk is
-    about where content ends up, not about which configuration carried it, and
-    binding it to one motif is exactly what produced the blind spot.
-
-    Both applicability conditions are shared with the retrieval-scoped pattern
-    (glossary term 6 permits reuse where the structural gate is identical, and
-    it is: sensitive content in context, exposed at an output).
+    exposed to a user, with no represented control on the way out. Covers both
+    routes to that exposure: any path ending at the sink, and the retrieval
+    route, which additionally names the store the content was read from.
+    Merged 2026-08-17 from two patterns that reported one disclosure twice.
     """@en ;
     pair:hasMechanism owasp:mechanism-sensitive-data-propagation ;
     pair:hasApplicabilityCondition
         pat:SensitiveInfo_SensitiveContextCondition ,
-        pat:SensitiveInfo_OutputExposureCondition ;
+        pat:SensitiveInfo_OutputExposureCondition ,
+        pat:VectorEmbeddingWeakness_RetrievalCondition ;
     pair:mayIndicateRisk
         owasp:llm02-sensitive-information-disclosure ,
         atlas:exposing-personal-information ,
         mit:subdomain-2-1 ;
     pair:suggestedControl
         pat:Control_DataMinimizationAndRedaction ,
+        pat:Control_RetrievalAccessControl ,
         pat:Control_OutputValidationAndSanitization ,
         pat:Control_Guardrails ;
-    pair:implementedBy pat:SensitiveOutputExposureOQP .
+    pair:implementedBy pat:SensitiveInformationDisclosureOQP .
 
-pat:SensitiveOutputExposureOQP
+pat:SensitiveInformationDisclosureOQP
     a pair:PatternImplementation ;
     rdfs:label "Sensitive output exposure risk pattern OQP"@en ;
-    pair:implementsRiskPattern pat:SensitiveOutputExposureRiskPattern ;
-    pair:implementationPath "ontology/patterns/implementation/risk/sensitive_output_exposure.rq" ;
+    pair:implementsRiskPattern pat:SensitiveInformationDisclosureRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk/sensitive_information_disclosure.rq" ;
     pair:producesOutputType pair:RiskFinding .

@@ -1,0 +1,47 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Mediate an agent's tool action (ASI02).
+#
+# A policy enforcement step informs the action, so the action is no longer taken
+# on the planner's say-so alone. Bound to the action step the finding cites.
+# Policy enforcement rather than human approval: it is the mediation that is
+# structural, and requiring a human is a stronger commitment than the tool
+# should make on the assessor's behalf.
+
+CONSTRUCT {
+    ?mediatingStep
+        a beam:Process ;
+        rdfs:label "Tool policy enforcement"@en ;
+        pair:playsRole pair:PolicyEnforcementStep ;
+        beam:inform ?actionStep .
+
+    ?system beam:hasProcess ?mediatingStep .
+}
+WHERE {
+    ?finding
+        a pair:RiskFinding ;
+        pair:generatedByRiskPattern pat:ToolMisuseRiskPattern ;
+        pair:hasEvidence ?actionStep .
+
+    ?actionStep pair:playsRole/pair:subRoleOf* pair:ToolInvocationStep .
+
+    FILTER NOT EXISTS {
+        ?existing pair:playsRole ?existingRole .
+        { ?existingRole pair:subRoleOf* pair:PolicyEnforcementStep }
+        UNION
+        { ?existingRole pair:subRoleOf* pair:HumanApprovalStep }
+        UNION
+        { ?existingRole pair:subRoleOf* pair:RateLimitControlStep }
+        ?existing beam:inform ?actionStep .
+    }
+
+    OPTIONAL { ?system a beam:System . }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/mitigation/tool-mediation/",
+        ENCODE_FOR_URI(STR(?actionStep))
+    )) AS ?mediatingStep)
+}

@@ -11,6 +11,7 @@ CONSTRUCT {
         rdfs:label "Candidate excessive agency exposure"@en ;
         dct:description "An LLM generation step can inform a tool invocation or state-changing process."@en ;
         pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:ExcessiveAgencyRiskPattern ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
@@ -39,9 +40,32 @@ WHERE {
         }
         ?generationStep beam:inform+ ?toolOrActionStep .
 
+
+        # Nothing mediates the path from generation to the action. Same shape as
+        # tool misuse, which this overlaps by design: a policy gate, a human
+        # approval, or a rate control standing between the model's decision and
+        # the action it drives. Closed-world over the submitted graph only
+        # (Rule R4).
         FILTER NOT EXISTS {
-            pat:ExcessiveAgencyRiskPattern pair:suggestedControl ?implementedControl .
-            ?implementedControl beamr:associatedTo ?toolOrActionStep .
+            ?mediatingStep pair:playsRole ?mediatingRole .
+            {
+                ?mediatingRole pair:subRoleOf* pair:PolicyEnforcementStep .
+            }
+            UNION
+            {
+                ?mediatingRole pair:subRoleOf* pair:HumanApprovalStep .
+            }
+            UNION
+            {
+                ?mediatingRole pair:subRoleOf* pair:RateLimitControlStep .
+            }
+            {
+                ?mediatingStep beam:inform ?toolOrActionStep .
+            }
+            UNION
+            {
+                ?generationStep beam:inform ?mediatingStep .
+            }
         }
     }
 

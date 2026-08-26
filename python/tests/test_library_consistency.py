@@ -243,7 +243,7 @@ NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 SKOS_NS = Namespace("http://www.w3.org/2004/02/skos/core#")
 
 CONDITION_EXCEPTIONS = {
-    (PAT.SensitiveDataRetrievalExposureRiskPattern,
+    (PAT.SensitiveInformationDisclosureRiskPattern,
      PAT.VectorEmbeddingWeakness_RetrievalCondition),
 }
 
@@ -482,11 +482,16 @@ def test_queries_check_process_typing_one_way(query_texts) -> None:
 
     Every step-node class check is now `a/rdfs:subClassOf* beam:Process`, the
     same shape as the library's role idiom. A bare `a beam:Infer` reintroduces
-    the split, so it fails here."""
+    the split, so it fails here.
+
+    Only the WHERE clause is scanned. The rule is about what a query CHECKS: a
+    CONSTRUCT template asserts a type onto an element it creates, and a
+    mitigation rewrite has to state the class of the step it inserts."""
     offenders = []
     for fname, text in query_texts.items():
+        _, _, where = text.partition("WHERE")
         for leaf in ("Infer", "Transform", "Train", "Generate", "Process"):
-            for match in re.finditer(rf"\ba\s+beam:{leaf}\b", text):
+            for match in re.finditer(rf"\ba\s+beam:{leaf}\b", where):
                 offenders.append(f"{fname}: bare 'a beam:{leaf}'")
     assert not offenders, (
         "Step class checks must use 'a/rdfs:subClassOf* beam:Process' so any "

@@ -302,8 +302,8 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 
   | Graph | Matches | Findings |
   | --- | --- | --- |
-  | RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 25 |
-  | Minimal graph RAG | 3 | 8 |
+  | RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 22 |
+  | Minimal graph RAG | 3 | 7 |
 
   The agentic layer is covered by `test_agentic_assessment.py`, which states its own
   graph inline — the MCP example it used to read now lives in `example_local/`.
@@ -342,15 +342,73 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - Tool4Boxology export quirks the normalizer must handle: lowercase type URIs
   (`t4b:transform` vs `t4b:Transform`), ontology declares `patternProcess` but exports
   `hasProcess`, instances multi-typed with `t4b:Component`.
-- Current library size (2026-08-17, counted off the loaded graph): **29 motifs**,
-  **16 risk patterns**, **97 pattern roles**, **7 data categories**, **35 facet
-  concepts**, 21 applicability-condition attachments. Implementations: 29 match
-  queries, 16 risk queries, 6 propagation rules.
+- Current library size (2026-08-17, counted off the loaded graph): **31 motifs**,
+  **15 risk patterns**, **97 pattern roles**, **7 data categories**, **35 facet
+  concepts**, 21 applicability-condition attachments. Implementations: 31 match
+  queries, 15 risk queries, 6 propagation rules.
   Every figure but the motif count had already drifted before anyone noticed, so
   re-count rather than edit by hand:
   `len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))` and its siblings.
   When any of these changes, update `docs/reference/catalogue.md` in the same commit —
   nothing regenerates it.
+- **`beamr:associatedTo` is gone from the risk queries (2026-08-17).** Fifteen of them
+  carried `FILTER NOT EXISTS { pattern suggestedControl ?c . ?c beamr:associatedTo ?element }`
+  as an escape. Nothing ever wrote that triple — not an example, not a rewrite, not any
+  code path — so the escape could not fire, and removing all fifteen left the output on
+  both examples byte-identical. It was worse than dead: it made a finding *look*
+  falsifiable while the only thing that could clear it was unreachable. Do not reintroduce
+  an escape nothing can satisfy.
+- **Three risk patterns are unclearable by design, and that is correct.**
+  `DataAndModelPoisoning`, `SupplyChainCompromise` and `VectorAndEmbeddingWeakness` rest
+  on provenance and vetting — non-technical controls with no runtime shape — so no
+  structural escape exists to write. They fire whenever their structure is present, and
+  the answer is **finding-level triage**, not a query escape: `pair:findingStatus` is the
+  extension point, finding IRIs are deterministic so a judgement survives re-runs, and an
+  assessor's "accepted, handled by process" is a human act recorded against the finding
+  rather than a fabricated structural fact in the graph. Never conflate the two.
+- **A control clears a finding by being built, not by being asserted.** A risk query
+  whose only escape is `?control beamr:associatedTo ?element` cannot be cleared by
+  changing the architecture — `beamr:associatedTo` appears in no bundled example and no
+  UI writes it — so the finding is unfalsifiable by design work. Prompt injection was
+  fixed 2026-08-17 by testing for a screening step on the path; **3 of 15 risk queries
+  still have no structural check at all** (data_model_poisoning, excessive_agency,
+  sensitive_retrieval, supply_chain, system_prompt_leakage, vector_embedding_weakness,
+  and the annotation half of others). Some are legitimately unstructural — supply-chain
+  vetting has no shape — but audit before assuming.
+- **Applying a control is a registered SPARQL rewrite, not code.** A
+  `pair:MitigationApplication` implementation restates the vulnerable shape its
+  `pair:mitigatesRiskPattern` found and CONSTRUCTs the step that interrupts it, bound to
+  the elements the finding already cites — so nothing guesses which evidence element is
+  which, and the knowledge of where a control belongs lives beside the rule that raised
+  the finding. Registered like any other query (`pair:implementsControl` +
+  `implementationPath`) and run on demand via `apply_control()`, scoped to one finding by
+  `initBindings`. **The output type is the safety catch**: the pipeline asks only for
+  MotifMatch and RiskFinding, so a rewrite never runs inside an assessment — if it did,
+  every finding would mitigate itself and none would ever be reported.
+  `test_a_mitigation_rewrite_never_runs_during_an_assessment` enforces that. Inserted
+  IRIs are derived from the elements they screen, so re-applying is a no-op.
+  **Rewrites are keyed on (control, risk pattern), never on the control alone.** The
+  same control answers several patterns — output validation is suggested by improper
+  output handling, sensitive disclosure and system prompt leakage — while a rewrite is
+  written against one vulnerable shape. Keyed on the control, every one of those findings
+  offered an Apply button that ran the wrong rewrite, found its own screen already in
+  place, added nothing and reported "already in place on this path". Findings now carry
+  `pair:generatedByRiskPattern` so a finding can be routed to the rewrite written for it.
+  A control with no rewrite *for that finding's pattern* reports `applicable: false`
+  rather than offering a button that does nothing.
+  **A control barrier must be earned, not assumed.** Widening the
+  `content_categories.rq` barrier to output guardrails was right — a screened output
+  inheriting the categories the screen exists to stop made inserting one *grow* the
+  derived set — but adding pseudonymisation to it was wrong and a test caught it:
+  `dpv:PseudonymisedData` is a kind of `dpv:PersonalData`, so sensitivity must survive it.
+  **A risk that fires on several paths needs a control on each**: prompt injection is per
+  untrusted-content/generation pair, so onyx takes three separate applications.
+- **Control motifs are sized to the risk, not to the vocabulary.** `GuardrailsMotif` is
+  8 nodes and 8 edges; prompt injection needs an input screen and nothing else, so
+  `InputScreeningMotif` / `OutputScreeningMotif` are 3 nodes and 2 edges each and nest
+  inside it. A control whose `pair:realizedByMotif` points at a motif far larger than
+  the risk it addresses is not actionable — that motif is what the canvas offers to
+  insert.
 - Sweep motif labels against R9 whenever the library version changes: no *direct*, *only*,
   *pure*, *without*, *unmediated*, *standalone* in a motif name.
 - Write English comments/labels; APA 7th for any citation in docs.
