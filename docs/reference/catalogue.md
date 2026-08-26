@@ -44,7 +44,7 @@ Two properties of the library shape how to read the tables below:
 
 ---
 
-## 1. Motifs (28)
+## 1. Motifs (31)
 
 Motifs are risk-neutral: they describe *structure*, not danger. The **Feeds**
 column lists the risk patterns **declared** on the motif via
@@ -181,7 +181,7 @@ failures. Missing findings usually mean a missing role, not a safe system.*
 
 ---
 
-## 3. Annotation roles (95)
+## 3. Annotation roles (97)
 
 Assign with `pair:playsRole`. Roles are organised into sub-role hierarchies
 (shown by the groups below); a motif that asks for a parent role also matches its
@@ -354,6 +354,8 @@ sub-roles (`pair:subRoleOf*`). The four top-level roles are `ResourceRole`,
 | `OutputValidationStep` | Validates/encodes/sanitizes model output before downstream use. |
 | `RateLimitControlStep` | Enforces rate/budget/quota/loop bounds. |
 | `RedactionStep` | Removes, masks, tokenizes, or minimizes protected content before passing it on. **The barrier for content-category propagation**: elements downstream of it do not inherit the upstream category. |
+| `AnonymizationStep` | Renders data no longer attributable to a person, so what leaves it is not personal data. A `RedactionStep`, so it inherits the propagation barrier. |
+| `PseudonymizationStep` | Replaces identifiers with pseudonyms while the data stays attributable to a person given additional information. **Not** a `RedactionStep`: `dpv:PseudonymisedData` is a kind of `dpv:PersonalData`, so sensitivity has to survive it. |
 | `MemoryValidationStep` | Screens, attributes, or scores content before it is committed to agent memory, so what is retained is not simply whatever was produced. Its absence is what ASI06 checks. |
 | `PolicyEnforcementStep` | Evaluates a proposed action against a policy before it is carried out, and can narrow or refuse it — deterministic mediation between a model's decision and its effect, not an instruction asking the model to behave. |
 | `HumanApprovalStep` | A person must confirm an action before it proceeds (human in the loop). |
@@ -438,4 +440,5 @@ workbench and in `validate_graphs.py`. What it catches:
 - [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md) — terminology and modeling rules (R1–R10)
 - [PAIR-AI_method_and_construction.md](PAIR-AI_method_and_construction.md) — how the library was built
 - [risk_control_linkage.md](risk_control_linkage.md) — risk → control linkage, including the MIT evidence layer
+- [../notes/business_context_as_built.md](../notes/business_context_as_built.md) — the business (BPMN) layer: what it adds, and the two derivations that carry it into an assessment
 - [../../ontology/example/](../../ontology/example/) — worked annotation examples and the unannotated control graph
