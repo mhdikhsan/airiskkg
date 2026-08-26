@@ -955,8 +955,7 @@ pair:UntrustedContent a pair:DataCategory ;
     skos:prefLabel "Untrusted Content"@en ;
     skos:inScheme pair:DataCategoryScheme ;
     skos:topConceptOf pair:DataCategoryScheme ;
-    skos:definition "Content whose integrity the system cannot vouch for within the submitted graph."@en ;
-    skos:relatedMatch dpv:UntrustedData  .
+    skos:definition "Content whose integrity the system cannot vouch for within the submitted graph."@en .
 
 # --- derived from the motif or risk pattern that traverses the role -------
 
