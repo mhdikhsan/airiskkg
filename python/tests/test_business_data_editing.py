@@ -176,3 +176,34 @@ def test_a_narrowed_canvas_reports_only_the_system_it_shows(scene) -> None:
     assert scoped["scopedTo"] == one["id"]
     drawn = {n["id"] for n in scoped["nodes"]}
     assert drawn == set(one["members"]), "narrowing did not leave exactly that system's elements"
+
+
+def test_an_absent_architecture_is_reported_not_substituted(scene) -> None:
+    """Deleting one architecture from a two-system scene.
+
+    The chatbot activity still says which system carries it out. With that
+    system gone, narrowing to it used to be ignored and the canvas drew
+    everything left - so opening the chatbot landed the reader on the meter
+    scorer. That is not an empty answer, it is the wrong one.
+    """
+    from airiskkg.graph_view import graph_view
+
+    everything = graph_view(scene)
+    gone, kept = everything["systems"][0], everything["systems"][1]
+
+    without = graph_view(scene, scope=gone["id"])
+    assert without["scopedTo"] == gone["id"], "the system is present, so it should scope normally"
+
+    # Now the same request against a graph that no longer holds it.
+    trimmed = "\n\n".join(
+        line for line in scene.split("\n\n") if gone["id"].split("#")[-1] not in line
+    )
+    missing = graph_view(trimmed, scope=gone["id"])
+    assert missing["scopeMissing"] == gone["id"], (
+        "asking for an architecture the graph does not hold was reported as an ordinary view"
+    )
+    assert missing["nodes"] == [], (
+        f"{len(missing['nodes'])} nodes were drawn for a system that is not there - "
+        "they belong to some other architecture"
+    )
+    assert kept["id"] != gone["id"]

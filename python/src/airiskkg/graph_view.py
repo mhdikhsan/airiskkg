@@ -218,12 +218,21 @@ def graph_view(ttl_text: str, scope: str | None = None) -> dict:
     unclaimed = sorted(n["id"] for n in nodes if URIRef(n["id"]) not in claimed)
 
     scoped_to = None
+    scope_missing = None
     if scope:
         wanted = URIRef(scope)
         if any(s["id"] == scope for s in systems):
             members = _members_of(graph, wanted)
             nodes = [n for n in nodes if URIRef(n["id"]) in members]
             scoped_to = scope
+        else:
+            # Asked for an architecture this graph does not hold. Ignoring the
+            # scope and drawing everything was actively misleading: deleting the
+            # graph-RAG system from the energy scene and opening the chatbot
+            # activity landed the reader on the meter scorer, which is not what
+            # the activity says carries it out. Say it is absent instead.
+            nodes = []
+            scope_missing = scope
 
     node_set = {n["id"] for n in nodes}
     edges = [e for e in edges if e["source"] in node_set and e["target"] in node_set]
@@ -244,6 +253,8 @@ def graph_view(ttl_text: str, scope: str | None = None) -> dict:
         "nodes": nodes,
         "edges": edges,
         "scopedTo": scoped_to,
+        # The scope was asked for and is not in this graph.
+        "scopeMissing": scope_missing,
         "unclaimed": unclaimed,
         "stats": {"nodes": len(nodes), "edges": len(edges)},
     }

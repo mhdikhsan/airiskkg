@@ -103,7 +103,21 @@ async function init() {
       }
     }),
     onOpenArchitecture: (activity) => {
-      state.scopedSystem = activity.refines[0] || null;
+      /* Only descend into an architecture that is actually here. The activity
+       * names the system that carries it out; if that system is not in this
+       * graph, descending used to draw whatever else was loaded - delete the
+       * graph-RAG half of the energy scene and the chatbot activity opened the
+       * meter scorer. Saying it is absent is the whole point of the layer. */
+      const wanted = activity.refines[0] || null;
+      const here = (state.lastGraph && state.lastGraph.systems ? state.lastGraph.systems : [])
+        .some((s) => s.id === wanted);
+      if (wanted && !here) {
+        setStatus("error",
+          `${activity.label} is carried out by an architecture this graph does not contain`,
+          "load it, or point the activity at a system that is here");
+        return;
+      }
+      state.scopedSystem = wanted;
       setLevel("architecture", activity);
       emit("scope:changed");
       GraphView.setHighlight([]);
