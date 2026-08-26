@@ -1,0 +1,162 @@
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix isd:  <http://w3id.org/airiskkg/example/it-service-desk#> .
+@prefix its:  <http://w3id.org/airiskkg/example/it-support#> .
+
+# The second business example, and deliberately a different shape from the
+# energy one.
+#
+# Energy: two pools, two AI activities, two architectures - the case for
+# "one process runs several systems". This one: one AI activity carrying an
+# AGENT, which is the case the energy example cannot make, because an agent
+# plans and acts rather than answering a question.
+#
+# The control here is bp:humanPerformer on an approval step that sits between
+# the agent's decision and the change taking effect. Whether that approval
+# clears anything is a question for the assessment, not an assumption of the
+# model - see docs/notes/business_context_as_built.md on ec:LogInteraction,
+# which correctly clears nothing.
+
+isd:Collaboration a bpmn:collaboration ;
+    bp:name "IT service desk" .
+
+### Who is involved
+
+isd:EmployeePool a bpmn:participant ;
+    bp:name "Employee" ;
+    bp:processRef isd:EmployeeProcess .
+
+isd:ITPool a bpmn:participant ;
+    bp:name "Northwind IT" ;
+    bp:processRef isd:ITProcess .
+
+isd:EmployeeProcess a bpmn:process ;
+    bp:name "Getting access" ;
+    bp:isExecutable false ;
+    bp:contains isd:RaiseTicket, isd:ReadOutcome .
+
+isd:ITProcess a bpmn:process ;
+    bp:name "Resolving the request" ;
+    bp:isExecutable false ;
+    bp:contains isd:ReceiveTicket, isd:TriageAndResolve, isd:ApproveChange, isd:SendOutcome .
+
+isd:ITLaneSet a bpmn:laneSet ;
+    bp:name "Service desk" .
+
+isd:AgentLane a bpmn:lane ;
+    bp:name "Automated" ;
+    bp:flowNodeRef isd:ReceiveTicket, isd:TriageAndResolve, isd:SendOutcome .
+
+isd:EngineerLane a bpmn:lane ;
+    bp:name "Service engineer" ;
+    bp:flowNodeRef isd:ApproveChange .
+
+### What the employee does
+
+isd:RaiseTicket a bpmn:userTask ;
+    bp:name "Raise an access request" ;
+    bp:outgoing isd:EFlow0 .
+
+isd:ReadOutcome a bpmn:userTask ;
+    bp:name "Read what was done" ;
+    bp:incoming isd:EFlow0 .
+
+isd:EFlow0 a bpmn:sequenceFlow ;
+    bp:sourceRef isd:RaiseTicket ;
+    bp:targetRef isd:ReadOutcome .
+
+### What the service desk does
+
+isd:ReceiveTicket a bpmn:receiveTask ;
+    bp:name "Receive the request" ;
+    bp:dataInputAssociation isd:TicketToDesk ;
+    bp:outgoing isd:SFlow0 .
+
+# The AI activity. A sub-process because the agent runs a course of action
+# rather than one step, and refined by the architecture that carries it out.
+isd:TriageAndResolve a bpmn:subProcess ;
+    bp:name "Triage and resolve the request" ;
+    pair:refinedBy its:AgentSystem ;
+    bp:dataInputAssociation isd:TicketToAgent ;
+    bp:incoming isd:SFlow0 ;
+    bp:outgoing isd:SFlow1 .
+
+# The control that lives in the process rather than in the architecture: a
+# person signs off before the account change takes effect.
+isd:ApproveChange a bpmn:userTask ;
+    bp:name "Approve the account change" ;
+    bp:resourceRole isd:Engineer ;
+    bp:incoming isd:SFlow1 ;
+    bp:outgoing isd:SFlow2 .
+
+isd:Engineer a bpmn:humanPerformer ;
+    bp:name "Service engineer" .
+
+isd:SendOutcome a bpmn:sendTask ;
+    bp:name "Send the outcome" ;
+    bp:dataOutputAssociation isd:OutcomeFromDesk ;
+    bp:incoming isd:SFlow2 .
+
+isd:SFlow0 a bpmn:sequenceFlow ;
+    bp:sourceRef isd:ReceiveTicket ; bp:targetRef isd:TriageAndResolve .
+
+isd:SFlow1 a bpmn:sequenceFlow ;
+    bp:sourceRef isd:TriageAndResolve ; bp:targetRef isd:ApproveChange .
+
+isd:SFlow2 a bpmn:sequenceFlow ;
+    bp:sourceRef isd:ApproveChange ; bp:targetRef isd:SendOutcome .
+
+### Across the boundary
+
+isd:RequestMessage a bpmn:message ; bp:name "access request" .
+
+isd:MFlow0 a bpmn:messageFlow ;
+    bp:name "requests" ;
+    bp:sourceRef isd:RaiseTicket ;
+    bp:targetRef isd:ReceiveTicket ;
+    bp:messageRef isd:RequestMessage .
+
+isd:OutcomeMessage a bpmn:message ; bp:name "outcome" .
+
+isd:MFlow1 a bpmn:messageFlow ;
+    bp:name "answers" ;
+    bp:sourceRef isd:SendOutcome ;
+    bp:targetRef isd:ReadOutcome ;
+    bp:messageRef isd:OutcomeMessage .
+
+### The data, and what it is
+#
+# The claim that matters: an access request names the person asking and what
+# they may reach. business_data_bridge.rq turns that into a data category on
+# the agent's input, which is how a fact stated here changes a finding there.
+
+isd:AccessRequest a bpmn:dataObject ;
+    bp:name "Access request" ;
+    bp:itemSubjectRef isd:AccessRequestItem .
+
+isd:AccessRequestItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:PersonalData .
+
+isd:RequestRef a bpmn:dataObjectReference ;
+    bp:dataObjectRef isd:AccessRequest .
+
+isd:TicketToDesk a bpmn:dataInputAssociation ;
+    bp:sourceRef isd:RequestRef ; bp:targetRef isd:ReceiveTicket .
+
+isd:TicketToAgent a bpmn:dataInputAssociation ;
+    bp:sourceRef isd:RequestRef ; bp:targetRef isd:TriageAndResolve .
+
+# Written back out, and deliberately left unclassified: what the desk sends is
+# a statement of what was done, and nobody has said whether it repeats anything
+# personal. Silence here is honest - it is not the same as saying "not personal".
+isd:Outcome a bpmn:dataObject ;
+    bp:name "Resolution note" .
+
+isd:OutcomeRef a bpmn:dataObjectReference ;
+    bp:dataObjectRef isd:Outcome .
+
+isd:OutcomeFromDesk a bpmn:dataOutputAssociation ;
+    bp:sourceRef isd:SendOutcome ; bp:targetRef isd:OutcomeRef .

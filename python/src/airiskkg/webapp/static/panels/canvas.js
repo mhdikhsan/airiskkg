@@ -16,6 +16,17 @@ let awaitingChoice = true;
 
 let hadProcess = false; // so landing happens when a process arrives, not on every refresh
 
+/* A different document is on screen, so the narrowing from the last one means
+ * nothing. Leaving it set filtered every finding out of a graph that no longer
+ * holds that system: "0 of 18 candidate findings", with the breadcrumb still
+ * naming an activity from the example before. */
+export function resetScope() {
+  state.scopedSystem = null;
+  state.openedFrom = null;
+  // Redraw, or the trail keeps naming an activity of the example before.
+  renderBreadcrumb();
+}
+
 export function settleChoice() {
   awaitingChoice = false;
   $("#canvas-wrap").classList.remove("unstarted");

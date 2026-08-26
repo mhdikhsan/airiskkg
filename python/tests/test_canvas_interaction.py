@@ -604,3 +604,51 @@ def test_the_opening_choice_answers_a_real_click(empty_workbench) -> None:
     assert seen["business"], "choosing a business process landed on the other layer"
     assert seen["tools"] > 0, "no tools for the layer that was chosen"
     assert seen["wayBack"], "no way back to the architecture layer"
+
+
+def test_a_new_example_forgets_the_scope_of_the_last_one(page) -> None:
+    """Descend into an activity, then pick a plain architecture example.
+
+    The scope survived the change of document, so the findings list filtered
+    against a system the new graph does not contain and reported "0 of 18" with
+    the breadcrumb still naming an activity from the example before.
+    """
+    loop, handle = page
+    # Restored at the end: this test swaps the document out, and the page
+    # fixture is shared with every test after it.
+    loop.run_until_complete(handle.js("window.__scene = window.PairAI.Editor.getValue(), 1"))
+    _back_to_business(loop, handle)
+
+    at = _box(loop, handle)
+    assert at, "no refined activity to descend through"
+    loop.run_until_complete(handle.click(round(at["left"] + 30), round(at["top"] + 12)))
+    time.sleep(2)
+    scoped = loop.run_until_complete(handle.js("window.PairAI.state.scopedSystem"))
+    assert scoped, "descending did not narrow to anything, so there is no scope to forget"
+
+    loop.run_until_complete(handle.js("""(() => {
+        const s = document.querySelector("#example-select");
+        s.value = "simple_graph_rag";
+        s.dispatchEvent(new Event("change", { bubbles: true }));
+    })()"""))
+    time.sleep(4)
+
+    after = loop.run_until_complete(handle.js("""(() => ({
+        scoped: window.PairAI.state.scopedSystem,
+        openedFrom: window.PairAI.state.openedFrom ? window.PairAI.state.openedFrom.label : null,
+        crumb: !document.querySelector("#breadcrumb").classList.contains("hidden"),
+    }))()"""))
+
+    loop.run_until_complete(handle.send("Runtime.evaluate", {
+        "expression": "window.PairAI.Editor.setValue(window.__scene)",
+        "returnByValue": True,
+    }))
+    time.sleep(3)
+
+    assert after["scoped"] is None, (
+        f"the new example is still narrowed to {after['scoped']} from the previous one"
+    )
+    assert after["openedFrom"] is None, (
+        f"the breadcrumb still names {after['openedFrom']}, an activity of the previous example"
+    )
+    assert not after["crumb"], "the breadcrumb is still on screen for a graph that has no process"

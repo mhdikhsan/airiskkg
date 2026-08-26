@@ -8,7 +8,7 @@ import { setStatus } from "./core/status.js";
 import { Editor } from "./lib/editor.js";
 import { GraphView } from "./lib/graph_view.js";
 import { VersionHistory } from "./lib/version_history.js";
-import { refreshPreview, setLevel, settleChoice } from "./panels/canvas.js";
+import { refreshPreview, resetScope, setLevel, settleChoice } from "./panels/canvas.js";
 import { renderDerivedCategories } from "./panels/dataflow.js";
 import { reReadFindings, renderFindings } from "./panels/findings.js";
 import { renderHistory } from "./panels/history.js";
@@ -196,6 +196,7 @@ async function init() {
         }
         parts.push(example.ttl);
 
+        resetScope();
         noteChange(`loaded scene: ${name}`);
         Editor.setValue(parts.join(String.fromCharCode(10, 10)));
         openDrawer("process");
@@ -210,6 +211,7 @@ async function init() {
             wanted.length ? `with ${wanted.length} architecture(s) it refines` : "no architecture to bring");
         }
       } else {
+        resetScope();
         noteChange(`loaded example: ${name}`);
         Editor.setValue(example.ttl);
         setStatus("ok", `Loaded example: ${name}`);
@@ -226,6 +228,7 @@ async function init() {
     reader.onload = async () => {
       const text = String(reader.result);
       if (!text.includes("tool4boxology.org")) {
+        resetScope();
         noteChange(`opened file: ${file.name}`);
         Editor.setValue(text);
         setStatus("ok", `Loaded file: ${file.name}`);
@@ -235,6 +238,7 @@ async function init() {
       try {
         const fmt = /\.nt$/i.test(file.name) ? "nt" : "turtle";
         const { ttl, warnings } = await postJson("/api/import/t4b", { data: text, format: fmt });
+        resetScope();
         noteChange(`imported Tool4Boxology export: ${file.name}`);
         Editor.setValue(ttl);
         setStatus("ok", `Imported ${file.name} — ${(warnings || []).length} normalization note(s). ` +
@@ -250,6 +254,7 @@ async function init() {
   $("#btn-starter").addEventListener("click", () => {
     const business = state.level === "business";
     settleChoice();
+    resetScope();
     noteChange(business ? "starter business process" : "starter architecture");
     Editor.setValue(business ? STARTER_BPMN : STARTER_TTL);
     setStatus("ok", "Starter graph loaded");
@@ -258,6 +263,7 @@ async function init() {
   $("#btn-clear").addEventListener("click", () => {
     if (!Editor.getValue().trim()) return;
     if (!window.confirm("Clear the code and the diagram? This cannot be undone.")) return;
+    resetScope();
     Editor.setValue(""); // empty -> refreshPreview clears the canvas
     setStatus("ok", "Cleared");
   });

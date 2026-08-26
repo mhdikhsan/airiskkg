@@ -26,6 +26,7 @@ from airiskkg.paths import EXAMPLE_DIR  # noqa: E402
 ONYX_NS = "http://w3id.org/airiskkg/example/onyx-danswer#"
 GRAPH_RAG_NS = "http://tool4boxology.org/Boxology/graphrag-example"
 ANOMALY_NS = "http://w3id.org/airiskkg/example/meter-anomaly#"
+AGENT_NS = "http://w3id.org/airiskkg/example/it-support#"
 
 
 def example_path(namespace: str) -> Path:

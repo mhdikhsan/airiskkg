@@ -301,11 +301,17 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - `ontology/visualization/` — standalone SPARQL run by hand; referenced by no declaration,
   unlike `patterns/implementation/`
 - `ontology/example/` — **every** architecture graph the repo ships: a RAG chatbot
-  (Onyx / Danswer), a minimal graph-RAG, and a meter-anomaly scorer (ML serving, added
-  so the business example can refine two different architectures). Three, deliberately:
-  enough for someone to try the tool, and a set small enough to keep pinned.
-  `ontology/example/context/` holds the process models — one, `energy_customer_service.ttl`:
-  two pools, message flows, and two sub-processes refined onto the two architectures.
+  (Onyx / Danswer), a minimal graph-RAG, a meter-anomaly scorer (ML serving, added
+  so the business example can refine two different architectures), and an IT support
+  agent (synthetic; the only bundled graph that reaches the agentic layer, which
+  otherwise existed only inline in `test_agentic_assessment.py`). Four, and the set
+  stays small on purpose: every one is pinned by `test_propagation.py`, which fails if
+  a graph ships without a baseline.
+  `ontology/example/context/` holds the process models — two:
+  `energy_customer_service.ttl` (two pools, two sub-processes refined onto two different
+  architectures — the case for "one process runs several systems") and
+  `it_service_desk.ttl` (one AI activity carrying an agent, with a human approval between
+  the agent's decision and the change taking effect).
   **Never name one of these files in a test.** They get renamed — `onyx_danswer.ttl`
   became `onyx_danswer_rag_chatbot.ttl` became `ony_rag_chatbot.ttl` became
   `onyx_rag_chatbot.ttl` inside two days — and each rename broke suites for reasons
@@ -365,12 +371,16 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   | RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 22 |
   | Minimal graph RAG | 3 | 7 |
   | Meter anomaly scoring | 4 | 1 |
+  | IT support agent (agentic) | 4 | 8 |
   | Energy scene: both of the last two + the business process | 7 | 8 |
+  | IT service desk scene: the agent + its business process | 4 | 9 |
 
   The scene is not the sum of its parts, and that is the business layer working.
 
   The agentic layer is covered by `test_agentic_assessment.py`, which states its own
-  graph inline — the MCP example it used to read now lives in `example_local/`.
+  graph inline — the MCP example it used to read now lives in `example_local/` — and,
+  since 2026-08-26, by a bundled example: `it_support_agent.ttl` matches all three
+  agentic motifs and fires four ASI-derived patterns.
 
   Matches are `pair:MotifMatch` instances, not distinct motifs — nested motifs co-match
   by design, so the number is structural coverage. `test_propagation.py` asserts these
