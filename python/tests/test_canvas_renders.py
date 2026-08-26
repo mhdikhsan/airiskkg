@@ -320,7 +320,13 @@ def test_choosing_a_layer_hands_over_the_tools_for_it(served) -> None:
     """Choosing "a business process" on an empty workbench used to do nothing
     visible: the palette that makes a process is built on first render, and
     there was no process to render - so the answer led to a blank canvas with
-    nothing to press and no way back."""
+    nothing to press and no way back.
+
+    This drives the handler synthetically, so it checks what choosing a layer
+    *does*, never that the card can be clicked - and the card later stopped
+    being clickable while this stayed green. Reaching it with a real mouse is
+    test_canvas_interaction.py::test_the_opening_choice_answers_a_real_click.
+    """
     report = _drive(served, """
     const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
     window.addEventListener("load", () => setTimeout(() => {

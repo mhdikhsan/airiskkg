@@ -610,7 +610,13 @@ function initPanZoom() {
      * pointer capture here swallows every click on the business canvas.
      * Covered by test_canvas_interaction.py. */
     if (wrap.classList.contains("business")) return;
-    if (ev.target.closest(".node") || ev.target.closest(".canvas-controls") || ev.target.closest(".node-detail") || ev.target.closest(".palette") || ev.target.closest(".motif-palette")) return;
+    /* Never pan from a press on a control. The list below named only the
+     * overlays that existed when it was written, so the opening choice - added
+     * later, and living inside the wrap - armed the pan, capture retargeted the
+     * click that followed, and both cards looked dead. A control is a control,
+     * so test for one rather than adding to the list each time. */
+    if (ev.target.closest("button, select, input, textarea, a, label")) return;
+    if (ev.target.closest(".node, .canvas-controls, .node-detail, .palette, .motif-palette, .canvas-empty")) return;
     dragging = { x: ev.clientX, y: ev.clientY };
     wrap.setPointerCapture(ev.pointerId);
     detailBox.classList.add("hidden");

@@ -515,3 +515,92 @@ def test_two_architectures_are_drawn_as_two_named_areas(page) -> None:
         f"a boundary has no area: {seen['boxes']}"
     )
     _back_to_business(loop, handle)
+
+
+@pytest.fixture(scope="module")
+def empty_workbench(served):
+    """A browser on the real page with nothing loaded - the opening screen.
+
+    Its own page, because the shared `page` fixture loads three graphs before
+    anything else runs, and the question this is about is only on screen while
+    the workbench is empty."""
+    import asyncio
+
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to drive")
+
+    port = _free_port()
+    process = subprocess.Popen(
+        [browser, "--headless=new", "--disable-gpu", "--no-sandbox",
+         f"--remote-debugging-port={port}", "--window-size=1400,900", "about:blank"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    for _ in range(40):
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=1)
+            break
+        except OSError:
+            time.sleep(0.5)
+    else:
+        process.terminate()
+        pytest.skip("the browser did not expose a debugging port")
+
+    async def open_page():
+        import websockets
+
+        tabs = json.load(urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list"))
+        target = next(tab for tab in tabs if tab["type"] == "page")
+        connection = await websockets.connect(target["webSocketDebuggerUrl"], max_size=None)
+        handle = _Page(connection)
+        await handle.send("Page.navigate", {"url": f"http://127.0.0.1:{served}/"})
+        await asyncio.sleep(6)
+        return connection, handle
+
+    loop = asyncio.new_event_loop()
+    connection, handle = loop.run_until_complete(open_page())
+    yield loop, handle
+    loop.run_until_complete(connection.close())
+    loop.close()
+    process.terminate()
+
+
+def test_the_opening_choice_answers_a_real_click(empty_workbench) -> None:
+    """The first thing anyone sees, and it was dead.
+
+    `.canvas-empty` lives inside `#canvas-wrap`, whose pointerdown handler arms
+    the architecture pan and takes pointer capture - which retargets the click
+    that follows to the wrap, so the card's own handler never ran. Pressing
+    either card did nothing at all.
+
+    The suite stayed green because the test for this calls `.click()`, which
+    invokes the handler directly and can never see a click that does not
+    arrive. Only real input can.
+    """
+    loop, handle = empty_workbench
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const card = document.querySelector('#start-business');
+        if (!card || card.offsetParent === null) return null;
+        const r = card.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert at, "the opening question is not on screen on an empty workbench"
+
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const wrap = document.querySelector('#canvas-wrap');
+        return {
+            started: wrap.classList.contains('started'),
+            stillAsking: wrap.classList.contains('unstarted'),
+            business: document.querySelector('#level-business').classList.contains('active'),
+            tools: document.querySelectorAll('#process-palette .pp-item').length,
+            wayBack: !document.querySelector('#level-switch').classList.contains('hidden'),
+        };
+    })()"""))
+
+    assert seen["started"], "a real click on the opening choice did nothing"
+    assert not seen["stillAsking"], "the question stayed on screen after being answered"
+    assert seen["business"], "choosing a business process landed on the other layer"
+    assert seen["tools"] > 0, "no tools for the layer that was chosen"
+    assert seen["wayBack"], "no way back to the architecture layer"
