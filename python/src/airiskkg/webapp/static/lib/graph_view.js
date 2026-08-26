@@ -287,18 +287,6 @@ function placeNodeAt(id, clientX, clientY) {
 const SYS_PAD = 22;        // room between the outermost node and the boundary
 const SYS_LABEL_H = 20;
 
-/* A dashed boundary round each beam:System, with its name on it.
- *
- * One document can hold two architectures - a business process that runs both
- * is exactly why - and they arrived as one undifferentiated field of nodes.
- * Which cluster was which was left to the reader to infer from the labels,
- * which is not something a diagram should ask.
- *
- * Membership comes from the server: beam:hasProcess / hasResource / hasAgent /
- * contain already say what belongs to what, so this is drawn from the graph
- * rather than from how the layout happened to cluster things. Nothing is drawn
- * when only one system is on screen, or when the canvas is already narrowed to
- * one - a box round everything says nothing. */
 function drawSystemBounds(layer) {
   const systems = (current.systems || []).filter((s) => (s.members || []).length);
   if (current.scopedTo || systems.length < 2) return;
@@ -610,11 +598,8 @@ function initPanZoom() {
      * pointer capture here swallows every click on the business canvas.
      * Covered by test_canvas_interaction.py. */
     if (wrap.classList.contains("business")) return;
-    /* Never pan from a press on a control. The list below named only the
-     * overlays that existed when it was written, so the opening choice - added
-     * later, and living inside the wrap - armed the pan, capture retargeted the
-     * click that followed, and both cards looked dead. A control is a control,
-     * so test for one rather than adding to the list each time. */
+    /* Never pan from a press on a control: the opening choice lives inside the
+     * wrap, and capture here swallows the click that follows. */
     if (ev.target.closest("button, select, input, textarea, a, label")) return;
     if (ev.target.closest(".node, .canvas-controls, .node-detail, .palette, .motif-palette, .canvas-empty")) return;
     dragging = { x: ev.clientX, y: ev.clientY };

@@ -1,6 +1,3 @@
-/* Both canvases and the level between them: descending is a change of level,
- * not of screen, so one panel owns both. */
-
 import { postJson } from "../core/api.js";
 import { emit } from "../core/bus.js";
 import { $, el } from "../core/dom.js";
@@ -13,9 +10,8 @@ import { scheduleStaleCheck } from "./run.js";
 import { ProcessCanvas } from "../lib/process_canvas.js";
 import { state } from "../state.js";
 
-// Nothing chosen and nothing loaded.
-// ---- level switching ----
-
+/* Nothing chosen and nothing loaded: the tools for both layers would be on
+ * screen before the reader has said which one they came for. */
 let awaitingChoice = true;
 
 let hadProcess = false; // so landing happens when a process arrives, not on every refresh
@@ -23,7 +19,8 @@ let hadProcess = false; // so landing happens when a process arrives, not on eve
 export function settleChoice() {
   awaitingChoice = false;
   $("#canvas-wrap").classList.remove("unstarted");
-  // The question has been answered.
+  // The question has been answered; leaving it on screen behind an empty
+  // canvas reads as the answer having gone nowhere.
   $("#canvas-wrap").classList.add("started");
   $("#level-switch").classList.remove("hidden");
 }
@@ -43,10 +40,14 @@ export function setLevel(next, activity) {
   $("#palette").classList.toggle("hidden", next !== "architecture");
   $("#motif-palette").classList.toggle("hidden", next !== "architecture");
   $("#process-detail").classList.add("hidden");
-  // Architecture furniture is absolutely positioned; hide it via this class.
+  /* Architecture furniture - the empty-state overlay, the legend, the system
+   * badge - is absolutely positioned across the whole wrap, so it painted
+   * over a perfectly good business diagram. One class, hidden in CSS. */
   $("#canvas-wrap").classList.toggle("business", next === "business");
   renderBreadcrumb();
-  // After layout: fitting synchronously measures an element still display:none.
+  /* After the browser has actually laid the newly shown surface out. Fitting
+   * synchronously measured an element that was display:none a statement ago
+   * and produced a drawing the size of a full stop. */
   requestAnimationFrame(() => {
     if (next === "business") ProcessCanvas.fit();
     else GraphView.fit();
@@ -82,8 +83,6 @@ function renderBreadcrumb() {
   crumb.classList.remove("hidden");
 }
 
-// ---- business process ----
-
 async function refreshProcess(ttl) {
   const list = $("#process-list");
   const summary = $("#process-summary");
@@ -102,13 +101,26 @@ async function refreshProcess(ttl) {
   if (awaitingChoice && (data.stats.activities || architectureHasContent())) settleChoice();
   ProcessCanvas.render(data);
   const hasProcess = data.stats.activities > 0;
-  // Visible once either layer is chosen or loaded, so there is always a way back.
+  /* Visible once either layer has been chosen or loaded. Hiding it until a
+   * process existed meant choosing "a business process" on an empty workbench
+   * left no way back to the architecture. */
   $("#level-switch").classList.toggle("hidden", awaitingChoice && !hasProcess);
   setTabVisible("process", hasProcess);
 
-  // Land where there is something to see - unless a level was picked by hand.
-  // A process was opened to be looked at, so show it.
-  // Only when a process FIRST appears: on every refresh it fights the descent.
+  /* Land where there is something to see. A process loaded on its own leaves
+   * the architecture canvas legitimately empty - there are no BEAM elements -
+   * and with nothing saying to press Business, both surfaces read as broken.
+   * Only ever chosen for the reader, never taken away from them: once they
+   * have picked a level by hand, it stays picked. */
+  /* Land on the layer the graph is about. A process was opened to be looked
+   * at, so it is shown - previously the presence of an architecture won,
+   * which meant loading a business example dropped you into the architecture
+   * and the BPMN diagram had to be hunted for. A reader who has picked a
+   * level by hand keeps it. */
+  /* Only when a process first appears. This ran on every refresh, and
+   * descending into an activity triggers one - so the canvas switched to the
+   * architecture and was immediately dragged back to the business layer. It
+   * looked like a glitch and was a rule fighting the click that caused it. */
   if (!hasProcess && state.level === "business") setLevel("architecture");
   else if (hasProcess && !hadProcess && !state.levelChosenByHand) setLevel("business");
   hadProcess = hasProcess;
@@ -120,7 +132,9 @@ async function refreshProcess(ttl) {
   empty.classList.toggle("hidden", count > 0);
   if (!count) return;
 
-  // One line: the counts are global, so a row per process double-counts.
+  /* One line. It used to print a row per process, each repeating the same
+   * global counts, so a two-pool collaboration claimed twice that "1 of 10
+   * activities are AI" - both noisier and wrong. */
   const actors = data.participants.map((a) => a.label).join(" · ");
   const descriptive = data.processes.filter((x) => x.isExecutable === false).length;
   summary.appendChild(el("div", { class: "summary-row" }, [
@@ -156,7 +170,10 @@ async function refreshProcess(ttl) {
         : null,
     ]);
 
-    // One box here, a whole architecture when opened.
+    /* Expand: the AI activity is one box here and a whole architecture when
+     * opened. Clicking it highlights the system that carries it and puts the
+     * cursor on its source, which is as far as one editor pane can take the
+     * idea. */
     if (activity.refines.length) {
       row.classList.add("refined");
       row.addEventListener("click", () => {
@@ -170,7 +187,7 @@ async function refreshProcess(ttl) {
   });
 }
 
-// ---- live preview ----
+//  live preview 
 let previewSeq = 0;
 
 export async function refreshPreview(ttl) {
@@ -187,13 +204,16 @@ export async function refreshPreview(ttl) {
     if (seq !== previewSeq) return;
     state.lastGraph = data;
     GraphView.render(data);
-    // After the architecture is known, so the level decision has something to go on.
+    /* After the architecture is known, so the level decision has something to
+     * go on rather than always believing the canvas is empty. */
     refreshProcess(ttl);
     mapSource([...data.nodes, ...data.systems]);
     Editor.markErrorLine(null);
     const badge = $("#system-badge");
     if (data.systems.length) {
-      // Name only what is on screen, not every system in the document.
+      /* When the canvas is narrowed, name the one system on screen. Listing
+       * every system the document holds would caption a drawing that shows
+       * only one of them. */
       const shown = data.scopedTo
         ? data.systems.filter((s) => s.id === data.scopedTo)
         : data.systems;
