@@ -1,5 +1,3 @@
-/* The stakeholder overview: one read-only page, shown rather than edited. */
-
 import { $, el } from "../core/dom.js";
 import { ProcessCanvas } from "../lib/process_canvas.js";
 import { state } from "../state.js";

@@ -1,5 +1,3 @@
-/* The element palette, and the starter graphs it drops onto the canvas. */
-
 import { postJson } from "../core/api.js";
 import { $, el } from "../core/dom.js";
 import { setStatus } from "../core/status.js";
@@ -8,7 +6,7 @@ import { GraphView } from "../lib/graph_view.js";
 import { runMutation } from "./mutations.js";
 import { noteChange } from "./run.js";
 
-// ---- starter graphs ----
+// starter graphs
 // One Turtle document holds both layers, so BPMN needs a starter, not a pane.
 export const STARTER_BPMN = `@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
 @prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
@@ -111,8 +109,7 @@ ex:Generate a beam:Transform ;
   beam:produce ex:Answer .
 `;
 
-// Palette of BEAM symbols; click one to add it, or drag it onto the canvas.
-// ---- element palette ----
+// element palette
 
 const BEAM_NS = "http://w3id.org/beam/core#";
 

@@ -1,5 +1,3 @@
-/* Edits to the graph. Serialized, because two edits to one source race. */
-
 import { postJson } from "../core/api.js";
 import { setStatus } from "../core/status.js";
 import { Editor } from "../lib/editor.js";

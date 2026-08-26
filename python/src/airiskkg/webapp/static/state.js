@@ -1,5 +1,3 @@
-/* What more than one panel reads. One mutated object, not nine exports: an
- * imported binding is read-only for the importer. */
 export const state = {
   lastRun: null,  // { fingerprint, findingIds: Set }
 

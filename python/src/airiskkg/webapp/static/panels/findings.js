@@ -1,6 +1,3 @@
-/* Candidate findings, their evidence, and the controls suggested for them.
- */
-
 import { postJson } from "../core/api.js";
 import { emit } from "../core/bus.js";
 import { $, $$, el } from "../core/dom.js";
@@ -125,6 +122,22 @@ function findingCard(finding) {
 
 /* Which findings belong to the architecture currently open. The assessment
  * stays whole; only the reading narrows. */
+/* The last run described a document that is gone. Leaving its findings under
+ * a freshly loaded example reads as the new one having been assessed - the
+ * canvas redraws, the risk list does not, and nothing says which graph the
+ * numbers belong to. */
+export function clearFindings() {
+  state.lastAssessment = null;
+  state.lastRun = null;
+  $("#findings-list").innerHTML = "";
+  $("#findings-summary").innerHTML = "";
+  $("#findings-count").textContent = "";
+  $("#findings-empty").classList.remove("hidden");
+  setStale(false);
+  selectedFinding = null;
+  ProcessCanvas.setFindings([]);
+}
+
 export function reReadFindings() {
   // Nothing is re-run: the findings are the same, the question is narrower.
   if (state.lastAssessment) renderFindings(state.lastAssessment);

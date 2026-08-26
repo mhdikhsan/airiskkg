@@ -9,15 +9,15 @@ import { Editor } from "./lib/editor.js";
 import { GraphView } from "./lib/graph_view.js";
 import { VersionHistory } from "./lib/version_history.js";
 import { refreshPreview, resetScope, setLevel, settleChoice } from "./panels/canvas.js";
-import { renderDerivedCategories } from "./panels/dataflow.js";
-import { reReadFindings, renderFindings } from "./panels/findings.js";
+import { clearDerivedCategories, renderDerivedCategories } from "./panels/dataflow.js";
+import { clearFindings, reReadFindings, renderFindings } from "./panels/findings.js";
 import { renderHistory } from "./panels/history.js";
-import { initMotifPalette, renderMotifs } from "./panels/motifs.js";
+import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
 import { applyConnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
 import { openOverview } from "./panels/overview.js";
 import { STARTER_BPMN, STARTER_TTL, initPalette } from "./panels/palette.js";
 import { noteChange } from "./panels/run.js";
-import { renderValidation } from "./panels/validation.js";
+import { clearValidation, renderValidation } from "./panels/validation.js";
 import { ProcessCanvas } from "./lib/process_canvas.js";
 import { state } from "./state.js";
 
@@ -52,6 +52,20 @@ async function init() {
   initDivider();
 
   // A scope change redraws both the canvas and the findings list.
+  /* A different document means the results on screen describe something that
+   * is no longer there. Decided in one place so every route in - an example, a
+   * file, an import, the starter, Clear, a restored version - forgets the same
+   * things. */
+  const forgetTheLastDocument = () => {
+    resetScope();
+    clearFindings();
+    clearMotifs();
+    clearDerivedCategories();
+    clearValidation();
+  };
+
+  on("document:replaced", forgetTheLastDocument);
+
   on("scope:changed", () => {
     refreshPreview(Editor.getValue());
     reReadFindings();
@@ -196,7 +210,7 @@ async function init() {
         }
         parts.push(example.ttl);
 
-        resetScope();
+        forgetTheLastDocument();
         noteChange(`loaded scene: ${name}`);
         Editor.setValue(parts.join(String.fromCharCode(10, 10)));
         openDrawer("process");
@@ -211,7 +225,7 @@ async function init() {
             wanted.length ? `with ${wanted.length} architecture(s) it refines` : "no architecture to bring");
         }
       } else {
-        resetScope();
+        forgetTheLastDocument();
         noteChange(`loaded example: ${name}`);
         Editor.setValue(example.ttl);
         setStatus("ok", `Loaded example: ${name}`);
@@ -228,7 +242,7 @@ async function init() {
     reader.onload = async () => {
       const text = String(reader.result);
       if (!text.includes("tool4boxology.org")) {
-        resetScope();
+        forgetTheLastDocument();
         noteChange(`opened file: ${file.name}`);
         Editor.setValue(text);
         setStatus("ok", `Loaded file: ${file.name}`);
@@ -238,7 +252,7 @@ async function init() {
       try {
         const fmt = /\.nt$/i.test(file.name) ? "nt" : "turtle";
         const { ttl, warnings } = await postJson("/api/import/t4b", { data: text, format: fmt });
-        resetScope();
+        forgetTheLastDocument();
         noteChange(`imported Tool4Boxology export: ${file.name}`);
         Editor.setValue(ttl);
         setStatus("ok", `Imported ${file.name} — ${(warnings || []).length} normalization note(s). ` +
@@ -254,7 +268,7 @@ async function init() {
   $("#btn-starter").addEventListener("click", () => {
     const business = state.level === "business";
     settleChoice();
-    resetScope();
+    forgetTheLastDocument();
     noteChange(business ? "starter business process" : "starter architecture");
     Editor.setValue(business ? STARTER_BPMN : STARTER_TTL);
     setStatus("ok", "Starter graph loaded");
@@ -263,7 +277,7 @@ async function init() {
   $("#btn-clear").addEventListener("click", () => {
     if (!Editor.getValue().trim()) return;
     if (!window.confirm("Clear the code and the diagram? This cannot be undone.")) return;
-    resetScope();
+    forgetTheLastDocument();
     Editor.setValue(""); // empty -> refreshPreview clears the canvas
     setStatus("ok", "Cleared");
   });

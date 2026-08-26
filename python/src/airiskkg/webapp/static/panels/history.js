@@ -1,6 +1,6 @@
 
 import { $, el } from "../core/dom.js";
-import { resetScope } from "./canvas.js";
+import { emit } from "../core/bus.js";
 import { setTabVisible } from "../core/drawer.js";
 import { setStatus } from "../core/status.js";
 import { Editor } from "../lib/editor.js";
@@ -57,7 +57,9 @@ export function renderHistory() {
     if (version.ttl && !current) {
       const restore = el("button", { class: "btn small", type: "button" }, "Restore");
       restore.addEventListener("click", () => {
-        resetScope();
+        /* Emitted rather than called: findings.js imports this panel, so
+         * importing it back would be a cycle. */
+        emit("document:replaced");
         noteChange(`restored v${version.v}`);
         Editor.setValue(version.ttl);
         setStatus("ok", `Restored v${version.v}`,

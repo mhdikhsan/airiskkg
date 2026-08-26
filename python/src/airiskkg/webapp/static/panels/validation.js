@@ -1,5 +1,3 @@
-/* The SHACL report, grouped by severity. */
-
 import { $, el } from "../core/dom.js";
 import { GraphView } from "../lib/graph_view.js";
 
@@ -13,6 +11,12 @@ function validationRow(item, severity) {
     row.addEventListener("click", () => GraphView.setHighlight([item.focusNode]));
   }
   return row;
+}
+
+export function clearValidation() {
+  $("#validation-list").innerHTML = "";
+  $("#validation-count").textContent = "";
+  $("#validation-empty").classList.remove("hidden");
 }
 
 export function renderValidation(report) {

@@ -1,4 +1,3 @@
-/* Motif matches, the gap report, and the motif palette. */
 
 import { postJson } from "../core/api.js";
 import { $, $$, el } from "../core/dom.js";
@@ -52,6 +51,13 @@ function renderMotifGaps(gaps) {
   list.appendChild(el("div", { class: "gap-section-head" },
     "Almost matched — what's missing"));
   near.forEach((g) => list.appendChild(gapCard(g)));
+}
+
+export function clearMotifs() {
+  $("#motifs-list").innerHTML = "";
+  $("#motifs-count").textContent = "";
+  $("#motifs-empty").classList.remove("hidden");
+  selectedMotifRow = null;
 }
 
 export function renderMotifs(matches, gaps) {

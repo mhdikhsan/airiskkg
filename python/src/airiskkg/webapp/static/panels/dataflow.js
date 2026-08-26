@@ -1,7 +1,11 @@
-/* Derived data categories, and where each of them came from. */
-
 import { $, $$, el } from "../core/dom.js";
 import { GraphView } from "../lib/graph_view.js";
+
+export function clearDerivedCategories() {
+  $("#derived-list").innerHTML = "";
+  $("#derived-count").textContent = "";
+  $("#derived-empty").classList.remove("hidden");
+}
 
 export function renderDerivedCategories(rows) {
   const list = $("#derived-list");

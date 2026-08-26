@@ -438,3 +438,64 @@ def test_picking_a_scene_replaces_what_was_there(served) -> None:
     )
     for part in ("meter", "graphrag", "process"):
         assert seen[part] == 1, f"the scene is missing its {part} half: {report}"
+
+
+def test_loading_another_example_clears_the_last_run(served) -> None:
+    """The canvas redrew and the risk list did not.
+
+    Assess one example, load another, and the drawer still showed the previous
+    run's findings, motifs and derived categories - with no indication which
+    graph the numbers belonged to. Nothing cleared them: state.lastAssessment
+    was only ever assigned, never reset.
+    """
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+
+    probe = STATIC / "_stale_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = """
+  <div id="probe-log"></div>
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  const pick = (name) => {
+    const sel = document.querySelector("#example-select");
+    sel.value = name;
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  const drawerCounts = (tag) => {
+    log(tag + "findings=" + (document.querySelector("#findings-count").textContent || "0"));
+    log(tag + "motifs=" + (document.querySelector("#motifs-count").textContent || "0"));
+    log(tag + "derived=" + (document.querySelector("#derived-count").textContent || "0"));
+  };
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      pick("simple_graph_rag");
+      setTimeout(() => {
+        document.querySelector("#btn-assess").click();
+        setTimeout(() => {
+          drawerCounts("before");
+          pick("meter_anomaly_scoring");          // a different document
+          setTimeout(() => drawerCounts("after"), 4000);
+        }, 11000);
+      }, 4000);
+    }, 2500);
+  });
+  </script>
+"""
+    probe.write_text(source.replace("</body>", driver + "</body>"), encoding="utf-8")
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_stale_probe.html", budget=45000)
+    finally:
+        probe.unlink(missing_ok=True)
+
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    report = found.group(1).strip() if found else ""
+    seen = {k: int(v) for k, v in re.findall(r"(\w+)=(\d+)", report)}
+    assert seen.get("beforefindings", 0) > 0, f"the first example assessed to nothing: {report}"
+
+    for what in ("findings", "motifs", "derived"):
+        assert seen.get("after" + what, -1) == 0, (
+            f"{what} from the previous example survived loading a new one "
+            f"({seen.get('after' + what)} left): {report}"
+        )
