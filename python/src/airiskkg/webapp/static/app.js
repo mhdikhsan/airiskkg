@@ -1,6 +1,3 @@
-/* Entry point: wiring only. Panels render, core/ is plumbing, state.js is
- * what more than one panel reads. */
-
 import { Annotate } from "./panels/annotate.js";
 import { api, downloadBlob, exportBaseName, postForFile, postJson } from "./core/api.js";
 import { emit, on } from "./core/bus.js";
@@ -24,7 +21,7 @@ import { renderValidation } from "./panels/validation.js";
 import { ProcessCanvas } from "./lib/process_canvas.js";
 import { state } from "./state.js";
 
-// ---- split divider ----
+// split divider 
 function initDivider() {
   const divider = $("#divider");
   const editorPane = $("#editor-pane");
@@ -48,7 +45,7 @@ function initDivider() {
   });
 }
 
-// ---- init ----
+// init 
 async function init() {
   GraphView.init();
   Editor.init({ onChange: refreshPreview });
@@ -79,7 +76,6 @@ async function init() {
 
   ProcessCanvas.init({
     svg: "#process-canvas",
-    // Server-side rewrite: the Turtle in the editor stays the source of truth.
     onEdit: (op, payload) => runMutation(async () => {
       try {
         const { ttl } = await postJson("/api/process-edit", {
@@ -92,19 +88,15 @@ async function init() {
         setStatus("error", "Could not edit the process: " + error.message.split(String.fromCharCode(10))[0]);
       }
     }),
-    // Highlight what was opened, not the graph in general.
     onOpenArchitecture: (activity) => {
-      // Narrowing is a query over pair:refinedBy; nothing is stored.
       state.scopedSystem = activity.refines[0] || null;
       setLevel("architecture", activity);
       emit("scope:changed");
-      // Not setHighlight(refines): those are system IRIs, not canvas nodes.
       GraphView.setHighlight([]);
       revealInSource(activity.refines);
       setStatus("ok", `Opened ${activity.label}`, "click the breadcrumb to go back");
     },
   });
-  // An empty workbench asks which layer, rather than guessing.
   $("#canvas-wrap").classList.add("unstarted");
 
   $("#start-business").addEventListener("click", () => {
@@ -149,8 +141,6 @@ async function init() {
       reReadFindings();
     }
   });
-
-  // Known state once, rather than whatever the markup said until first click.
   setLevel(state.level);
 
   $("#btn-history-clear").addEventListener("click", () => {
@@ -192,22 +182,21 @@ async function init() {
     try {
       const example = await api(`/api/examples/${encodeURIComponent(name)}`);
       if (example.kind === "process") {
-        // Bring the architectures it refines, minus what is already loaded.
-        const present = new Set((state.lastGraph && state.lastGraph.systems ? state.lastGraph.systems : []).map((s) => s.id));
-        const wanted = (example.requires || []).filter((r) => r.example && !present.has(r.system));
+        /* Replaces, exactly like an architecture example does. It used to
+         * prepend whatever was already in the editor - so picking the process
+         * after onyx assessed the two together and reported 30 findings where
+         * the scene has 8. Picking from this dropdown is choosing what to look
+         * at, and a scene is self-contained: the process plus every
+         * architecture it refines. */
+        const wanted = (example.requires || []).filter((r) => r.example);
         const parts = [];
         for (const requirement of wanted) {
           const architecture = await api(`/api/examples/${encodeURIComponent(requirement.example)}`);
           parts.push(architecture.ttl);
         }
-
-        const current = Editor.getValue().trimEnd();
-        if (current) parts.unshift(current);
         parts.push(example.ttl);
 
-        noteChange(wanted.length
-          ? `loaded scene: ${name}`
-          : `added business process: ${name}`);
+        noteChange(`loaded scene: ${name}`);
         Editor.setValue(parts.join(String.fromCharCode(10, 10)));
         openDrawer("process");
 
@@ -218,7 +207,7 @@ async function init() {
             "the process will draw, but there is nothing to assess for them");
         } else {
           setStatus("ok", `Loaded ${name}`,
-            wanted.length ? `with ${wanted.length} architecture(s) it refines` : "added to the current graph");
+            wanted.length ? `with ${wanted.length} architecture(s) it refines` : "no architecture to bring");
         }
       } else {
         noteChange(`loaded example: ${name}`);
@@ -230,7 +219,6 @@ async function init() {
     }
   });
 
-  // Open a graph file.
   $("#file-input").addEventListener("change", (ev) => {
     const file = ev.target.files[0];
     if (!file) return;
@@ -260,7 +248,6 @@ async function init() {
   });
 
   $("#btn-starter").addEventListener("click", () => {
-    // Starter for whichever layer is open.
     const business = state.level === "business";
     settleChoice();
     noteChange(business ? "starter business process" : "starter architecture");

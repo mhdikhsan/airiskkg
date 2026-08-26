@@ -372,3 +372,69 @@ def test_descending_is_not_dragged_back_to_the_business_layer(served) -> None:
     assert counts.get("box") == "1", "no AI activity was drawn to descend from"
     assert counts.get("arch") == "1", "descending bounced back to the business layer"
     assert int(counts.get("nodes", 0)) > 0, "the architecture did not draw after descending"
+
+
+def test_picking_a_scene_replaces_what_was_there(served) -> None:
+    """Switching examples must not add up.
+
+    The process branch used to prepend whatever was already in the editor, so
+    loading onyx (22 findings) and then picking the energy process assessed the
+    two together and reported 30 where the scene has 8. Architecture examples
+    replaced all along; only this branch did not, and the existing scene test
+    could not see it because it picks the process on an empty workbench.
+
+    This reads the editor rather than the finding count. The count is the
+    symptom a reader notices; what went wrong is that the previous graph was
+    still there. Checking the cause is also the difference between a clear
+    failure and a browser timeout, because the aggregated graph is slow enough
+    to assess that the probe never finished.
+    """
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+
+    probe = STATIC / "_replace_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = """
+  <div id="probe-log"></div>
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  const pick = (name) => {
+    const sel = document.querySelector("#example-select");
+    sel.value = name;
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      pick("onyx_rag_chatbot");                       // an architecture first
+      setTimeout(() => {
+        pick("energy_customer_service");              // then the scene
+        setTimeout(() => {
+          const ttl = window.PairAI.Editor.getValue();
+          log("onyxleft=" + (ttl.includes("onyx") ? 1 : 0));
+          log("meter=" + (ttl.includes("meter-anomaly") ? 1 : 0));
+          log("graphrag=" + (ttl.includes("graphrag-example") ? 1 : 0));
+          log("process=" + (ttl.includes("energy-cs") ? 1 : 0));
+        }, 6000);
+      }, 5000);
+    }, 2500);
+  });
+  </script>
+"""
+    probe.write_text(source.replace("</body>", driver + "</body>"), encoding="utf-8")
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_replace_probe.html", budget=30000)
+    finally:
+        probe.unlink(missing_ok=True)
+
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    report = found.group(1).strip() if found else ""
+    seen = {k: int(v) for k, v in re.findall(r"(\w+)=(\d+)", report)}
+    assert "onyxleft" in seen, f"the probe never reported: {report!r}"
+
+    assert seen["onyxleft"] == 0, (
+        "the architecture loaded before the scene is still in the editor - it was "
+        "added, not replaced, and its findings will be counted alongside the scene's"
+    )
+    for part in ("meter", "graphrag", "process"):
+        assert seen[part] == 1, f"the scene is missing its {part} half: {report}"
