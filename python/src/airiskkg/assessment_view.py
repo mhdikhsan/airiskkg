@@ -69,8 +69,6 @@ _NON_TECHNICAL = URIRef("http://w3id.org/airiskkg/pair-ai#NonTechnicalControl")
 
 
 def _control_nature(graph: Graph, control: URIRef) -> str | None:
-    """'technical' / 'non-technical' from pair:controlNature, or None if the
-    control carries no classification (surfaced as 'unclassified' by the UI)."""
     nature = graph.value(control, PAIR.controlNature)
     if nature == _TECHNICAL:
         return "technical"
@@ -80,10 +78,6 @@ def _control_nature(graph: Graph, control: URIRef) -> str | None:
 
 
 def _mit_alignments(graph: Graph, control: URIRef) -> list[dict]:
-    """The MIT mitigation family(ies) this actionable control corresponds to,
-    via its skos:*Match bridge. Indicative provenance ('aligns with MIT: ...'),
-    not an audited mapping - kept on the control, not mixed into the suggestion
-    list itself."""
     families: set[URIRef] = set()
     for pred in _MIT_MAPPING_PREDS:
         for target in graph.objects(control, pred):
@@ -93,16 +87,8 @@ def _mit_alignments(graph: Graph, control: URIRef) -> list[dict]:
 
 
 def _control_ref(graph: Graph, control: URIRef, applicable: set[URIRef]) -> dict:
-    """A suggested control, extended with its technical/non-technical nature, the
-    motif(s) that can structurally realize it (candidate structural mitigations -
-    the control stays the mitigation plan; the motif is how to realize it in the
-    architecture), and the MIT mitigation family it aligns with (provenance)."""
     ref = _ref(graph, control)
     ref["nature"] = _control_nature(graph, control)
-    # Whether a rewrite can insert this control FOR THIS FINDING. The same
-    # control answers several risk patterns, and a rewrite is written against
-    # one of them, so applicability is a property of the pair - not of the
-    # control alone.
     ref["applicable"] = control in applicable
     realizing_motifs = sorted(graph.objects(control, PAIR.realizedByMotif), key=str)
     ref["realizedByMotifs"] = [_element_ref(graph, motif) for motif in realizing_motifs]
@@ -111,11 +97,6 @@ def _control_ref(graph: Graph, control: URIRef, applicable: set[URIRef]) -> dict
 
 
 def _grounded_control_families(graph: Graph, taxonomy_entries: list[URIRef]) -> list[dict]:
-    """The MIT control families the taxonomy grounds for this finding's risks
-    (each risk taxonomy entry -> nexus:hasRelatedControl). This is the EVIDENCE
-    layer - CSV-grounded / curated in taxonomy_mapping.ttl - surfaced distinctly
-    from PAIR-AI's own actionable pat:Control_* suggestions, never mixed into
-    them."""
     families: set[URIRef] = set()
     for entry in taxonomy_entries:
         families.update(graph.objects(entry, _NEXUS.hasRelatedControl))
@@ -199,23 +180,7 @@ def _findings_by_owasp_category(graph: Graph, findings: list[URIRef]) -> list[di
 
 
 def _derived_categories(result: AssessmentResult) -> list[dict]:
-    """Every data category the engine inferred, with the hop that produced it.
-
-    A derived fact the modeler cannot check is a fact they have to trust. The
-    propagation rules record, per hop, which element the category came from and
-    which step it passed through, so "the answer is sensitive" can be traced back
-    to the annotation a human actually made.
-
-    Each hop also says whether its source holds the category as an ANNOTATION
-    rather than by derivation. Without that the consumer cannot tell where a
-    trail ends, and in a graph with a memory loop there is no end to find: the
-    category circulates, so following hops backwards runs in a circle and any
-    "origin" picked from it is an artefact of traversal order rather than a fact
-    about the system. Knowing which sources are annotated gives the walk a
-    truthful place to stop - the element a human actually tagged."""
     graph = result.combined_graph
-    # A category is annotated when the modeler stated it: present in the working
-    # graph but not among the triples propagation added.
     inferred = {
         (subject, obj)
         for subject, obj in result.inferred_annotations.subject_objects(PAIR.containsDataCategory)
@@ -251,18 +216,6 @@ def _derived_categories(result: AssessmentResult) -> list[dict]:
 
 
 def _findings_by_activity(result: AssessmentResult, findings: list) -> list[dict]:
-    """Candidate findings attributed to the business activity they arise under.
-
-    The thing that makes a finding communicable. "Three findings on Draft an
-    answer" is a sentence a process owner acts on; "three findings on
-    GenerateAnswer" is not, because nobody outside the architecture knows what
-    that is.
-
-    Attribution goes activity -> refined system -> the elements that system
-    holds -> the findings citing them as evidence. A finding whose evidence
-    spans two systems is counted under each, because it genuinely arises in
-    both; the counts are therefore an attribution, not a partition, and must
-    never be summed into a total."""
     system_of_element: dict = {}
     for system in result.working_graph.subjects(RDF.type, BEAM.System):
         for predicate in (BEAM.hasProcess, BEAM.hasResource, BEAM.contain):
@@ -306,13 +259,6 @@ def _findings_by_activity(result: AssessmentResult, findings: list) -> list[dict
 
 
 def _run_view(result: AssessmentResult, architecture: Graph | None) -> dict:
-    """What this run ran on, in the shape the UI needs.
-
-    The same identity the export records, surfaced live. Without it the drawer
-    shows findings for whatever graph was last submitted, while the editor beside
-    it has moved on - and nothing on screen says so. The export endpoint already
-    works around that by re-running rather than caching; this lets the UI notice
-    instead."""
     view: dict = {}
     if architecture is not None:
         view["inputFingerprint"] = graph_fingerprint(architecture)

@@ -1,13 +1,3 @@
-"""Turn architecture Turtle into a nodes/edges structure for the live preview.
-
-The web editor posts the Turtle source on every (debounced) edit; this module
-parses it and returns a JSON-friendly view of the BEAM architecture graph:
-typed nodes (process / data / symbol / model / agent / system) with their
-pattern roles and data categories, and flow edges (use / produce / inform /
-participatedIn). Classification uses the BEAM class hierarchy plus the label
-vocabulary of the pattern module, both loaded once and cached.
-"""
-
 from __future__ import annotations
 
 import re
@@ -30,9 +20,6 @@ _KIND_ROOTS = [
     ("task", BEAM.Task),
     ("resource", BEAM.Resource),
 ]
-
-# Edges are emitted in DRAW direction (left-to-right data flow, boxology
-# style): inputs point into the process, the process points at its outputs.
 _FLOW_EDGES = [
     (BEAM.use, "use", True),            # beam:use is process->resource; drawn resource->process
     (BEAM.usedBy, "use", False),        # already resource->process
@@ -121,19 +108,6 @@ _PREFIX_RE = re.compile(r"^\s*@prefix\s+([A-Za-z][\w.-]*)?:\s*<([^>]*)>\s*\.", r
 
 
 def source_lines(ttl_text: str) -> dict[str, int]:
-    """Map each subject IRI to the 1-based line where it is first declared.
-
-    rdflib discards source positions, so this is a separate scan of the same
-    text. It exists so clicking an element on the canvas can put the cursor on
-    the triple that produced it - the diagram and the code are two views of one
-    document, and a reader who cannot get from one to the other has to search by
-    label and hope the label is unique.
-
-    Only statement-initial subjects count: a line whose first token is a term,
-    which is where rdflib's own serializer (the app rewrites the buffer with it
-    on every structural edit) puts them. Continuation lines under `;` and `,`
-    belong to a subject already recorded, and predicate positions are not what
-    the reader wants anyway."""
     prefixes = {name or "": iri for name, iri in _PREFIX_RE.findall(ttl_text)}
     lines: dict[str, int] = {}
 
@@ -155,17 +129,6 @@ def source_lines(ttl_text: str) -> dict[str, int]:
 
 
 def _members_of(graph: Graph, system: URIRef) -> set[URIRef]:
-    """Every element a system holds, followed transitively through containment.
-
-    The relation is already in the graph - beam:hasProcess, beam:hasResource,
-    beam:hasAgent and beam:contain say what belongs to what - so scoping a view
-    to one system is a traversal rather than anything that needs storing. That
-    matters when a graph carries two architectures because one business process
-    runs both: the canvas should show the one the reader asked for, not the
-    union of everything loaded.
-
-    beam:contain is transitive in BEAM but nothing infers it here, so the walk
-    is done explicitly."""
     owned = {system}
     frontier = [system]
     while frontier:
@@ -179,15 +142,6 @@ def _members_of(graph: Graph, system: URIRef) -> set[URIRef]:
 
 
 def graph_view(ttl_text: str, scope: str | None = None) -> dict:
-    """Parse architecture Turtle and return {systems, nodes, edges}.
-
-    `scope` narrows the result to one beam:System and the elements it holds -
-    what a reader means when they open the architecture behind one business
-    activity. Without it the whole graph is returned, which is right when there
-    is one architecture and misleading when there are two.
-
-    Raises ValueError with the parser message when the Turtle is invalid.
-    """
     graph = Graph()
     try:
         graph.parse(data=ttl_text, format="turtle")
@@ -256,12 +210,6 @@ def graph_view(ttl_text: str, scope: str | None = None) -> dict:
             systems.append(entry)
         else:
             nodes.append(entry)
-
-    # Elements no system claims. Scoping would hide them without a word, and an
-    # architecture that draws two elements short looks complete - so the gap is
-    # reported instead of being absorbed. It is a modelling omission, not a
-    # rendering one: beam:hasProcess / hasResource is what says an element
-    # belongs to a system.
     claimed: set[URIRef] = set()
     members_by_system: dict[str, set[URIRef]] = {}
     for entry in systems:
@@ -278,15 +226,9 @@ def graph_view(ttl_text: str, scope: str | None = None) -> dict:
             scoped_to = scope
 
     node_set = {n["id"] for n in nodes}
-    # An edge survives only when both ends do. A half-edge into a system the
-    # reader did not open would draw an arrow to nothing.
     edges = [e for e in edges if e["source"] in node_set and e["target"] in node_set]
 
     return {
-        # Which elements each system holds, so the canvas can draw a boundary
-        # round them. Two architectures loaded together used to arrive as one
-        # undifferentiated cloud of nodes, and which cluster was which was left
-        # to the reader to infer from the labels.
         "systems": [
             {
                 "id": s["id"],

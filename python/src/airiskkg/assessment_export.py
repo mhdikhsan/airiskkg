@@ -48,17 +48,6 @@ def _input_entity(
     fingerprint: str,
     revision: str | None = None,
 ) -> URIRef:
-    """Record one input the run consumed, as the prov:Entity it used.
-
-    The entity's IRI *is* its fingerprint, so two runs over the same input point
-    at the same node instead of two nodes that happen to describe the same thing
-    - which is what makes a set of exports answerable by query rather than by
-    reading timestamps.
-
-    Modelled as entities rather than as flat properties on the activity because
-    the number of inputs grows. A business process layer adds a third, and under
-    this shape that costs a call, not a new predicate.
-    """
     entity = URIRef(f"urn:pair-ai:{kind}:{fingerprint}")
     graph.add((entity, RDF.type, PROV.Entity))
     graph.add((entity, RDFS.label, Literal(label, lang="en")))
@@ -70,11 +59,6 @@ def _input_entity(
 
 
 def _assessment_fingerprint(fingerprints: list[str]) -> str:
-    """One value over every input, so two runs can be compared at a glance.
-
-    Sorted before hashing: which input was recorded first is an implementation
-    detail, and letting it reach the hash would report two identical runs as
-    different."""
     digest = hashlib.sha256()
     for fingerprint in sorted(fingerprints):
         digest.update(fingerprint.encode("utf-8"))
@@ -83,14 +67,6 @@ def _assessment_fingerprint(fingerprints: list[str]) -> str:
 
 
 def _architecture_graph(result: AssessmentResult, architecture: Graph | None) -> Graph:
-    """The submitted graph on its own, without the library.
-
-    Callers that still hold the parsed input pass it directly. Otherwise it is
-    recovered by subtracting the base graph from the working graph, because the
-    working graph is base + architecture + derived facts. Subtracting matters:
-    returning the working graph as-is would republish the whole motif, risk
-    pattern, and taxonomy layer into every export, which is the one thing this
-    module exists to avoid."""
     if architecture is not None:
         return architecture
     from airiskkg.assessment_runner import load_base_graph
@@ -142,11 +118,6 @@ def build_export(
     graph.add((activity, DCTERMS.conformsTo, OUTPUT_CONTRACT))
     if source_label:
         graph.add((activity, DCTERMS.title, Literal(source_label)))
-
-    # What the run consumed. Until now an export said when it happened and what
-    # it produced, but not what it ran on - so two sets of results a month apart
-    # could not be told apart from two sets produced by different rules over
-    # different graphs.
     consumed = [graph_fingerprint(submitted)]
     _input_entity(
         graph,

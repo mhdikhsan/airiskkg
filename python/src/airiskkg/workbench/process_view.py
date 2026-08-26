@@ -1,17 +1,3 @@
-"""A submitted BPMN process, in the shape the workbench renders.
-
-Deliberately not a diagram. sBPMN carries everything needed to draw one, but a
-faithful BPMN renderer is a second `graph.js` and the licence of the one good
-off-the-shelf option puts a permanent watermark in the page. What a risk
-assessment actually needs from a process is narrower and reads better as a
-list: which activity, in whose lane, what it reads and writes, what follows it,
-and which of them is an AI capability.
-
-Activities come back in flow order, so the reader sees the process rather than
-an alphabetical set. Order is derived from `pair:businessFollows` when the
-derivation has run, and falls back to declaration order when it has not.
-"""
-
 from __future__ import annotations
 
 from rdflib import RDF, RDFS, Graph, URIRef
@@ -21,17 +7,6 @@ from airiskkg.workbench.terms import display_label, short
 
 BPMN = "https://sBPMN.github.io/2.0/classes#"
 BP = "https://sBPMN.github.io/2.0/properties#"
-
-
-# What the data classification picker offers, and nothing beyond it.
-#
-# business_data_bridge.rq derives pair:SensitiveInformation from any
-# bp:structureRef except the two that mean "not personal", so both halves of
-# this list are load-bearing: the first four raise a category on the
-# architecture, and the last two are how a modeller says the data was checked
-# and is not personal. Leaving those out would make "no classification" and
-# "deliberately not personal" the same statement, and only one of them is a
-# claim anybody made.
 DATA_CLASSES = {
     "PersonalData": "Personal data",
     "SensitivePersonalData": "Sensitive personal data",
@@ -49,11 +24,6 @@ def _cls(name: str) -> URIRef:
 def _prop(name: str) -> URIRef:
     return URIRef(BP + name)
 
-
-# Task kinds the workbench distinguishes, and what each says about autonomy.
-# A userTask is a person doing the work; a serviceTask is an automated call.
-# That distinction is the per-activity autonomy signal the facet layer never
-# had a place to record.
 _ACTIVITY_CLASSES = (
     "userTask",
     "manualTask",
@@ -84,13 +54,6 @@ def _activity_kind(graph: Graph, activity: URIRef) -> str:
 
 
 def _data_around(graph: Graph, activity: URIRef) -> tuple[list[dict], list[dict]]:
-    """What the activity reads and writes, resolved through BPMN's two hops.
-
-    A data object reference points at a data object, which points at an item
-    definition, which is where a DPV concept is attached. The UI shows the last
-    of those, because that is the annotation a business analyst actually makes.
-    """
-
     def resolve(reference: URIRef) -> dict:
         store = graph.value(reference, _prop("dataStoreRef"))
         target = store or graph.value(reference, _prop("dataObjectRef")) or reference
@@ -136,21 +99,6 @@ def _performers(graph: Graph, activity: URIRef) -> list[str]:
 
 
 def _ordered(graph: Graph, activities: list[URIRef]) -> list[URIRef]:
-    """Flow order, computed here rather than read from `pair:businessFollows`.
-
-    The derived relation would do it, but only after an assessment has run, and
-    a view that reads correctly only once the pipeline has been invoked is a
-    view that reads wrongly the rest of the time - the first render would be
-    alphabetical, which looks like a process in no particular order.
-
-    Sequence flows are typed on the way in for the usual reason: bp:sourceRef
-    and bp:targetRef are declared on five classes, and following them untyped
-    would thread message flows and data associations into the ordering.
-
-    Kahn's algorithm, ties broken by label so the result is stable. Anything
-    left over - a cycle, or an activity no flow touches - keeps its place at the
-    end rather than disappearing.
-    """
     successors: dict[URIRef, set[URIRef]] = {a: set() for a in activities}
     incoming: dict[URIRef, int] = {a: 0 for a in activities}
     for flow in graph.subjects(RDF.type, _cls("sequenceFlow")):
@@ -176,13 +124,6 @@ def _ordered(graph: Graph, activities: list[URIRef]) -> list[URIRef]:
 
 
 def _participants(graph: Graph) -> list[dict]:
-    """The actors, each with the process it runs.
-
-    A pool is an actor with a boundary, and it is the unit that matters for a
-    reader who is not an engineer: "the retailer answers the customer" is two
-    pools, not two lanes of one. Modelled as lanes it would still draw, and the
-    arrow between the two organisations would be inexpressible - a message flow
-    only exists between participants."""
     rows = []
     for participant in graph.subjects(RDF.type, _cls("participant")):
         process = graph.value(participant, _prop("processRef"))
@@ -197,11 +138,6 @@ def _participants(graph: Graph) -> list[dict]:
 
 
 def _message_flows(graph: Graph) -> list[dict]:
-    """What crosses a boundary between actors.
-
-    Typed on the way in, like sequence flow and for the same reason: bp:sourceRef
-    and bp:targetRef are shared by five classes, so an untyped read here would
-    pick up every data association in the graph and call it a message."""
     flows = []
     for flow in graph.subjects(RDF.type, _cls("messageFlow")):
         source = graph.value(flow, _prop("sourceRef"))
@@ -222,8 +158,6 @@ def _message_flows(graph: Graph) -> list[dict]:
 
 
 def process_view(graph: Graph) -> dict:
-    """Every process in the graph, with its actors, lanes, activities, the
-    messages between actors, and which activity an AI system carries out."""
     lane_of: dict[URIRef, str] = {}
     lanes: list[dict] = []
     for lane in graph.subjects(RDF.type, _cls("lane")):
@@ -242,12 +176,6 @@ def process_view(graph: Graph) -> dict:
     for name in _ACTIVITY_CLASSES:
         activities.extend(graph.subjects(RDF.type, _cls(name)))
     activities = _ordered(graph, sorted(set(activities), key=str))
-
-    # Which activities sit inside another. A subProcess that both contains a
-    # flow and names an architecture can be opened two ways, and they answer
-    # different questions: the inner flow says what the service does as business
-    # steps, pair:refinedBy says which AI system carries them out. The view
-    # reports both and lets the reader choose.
     parent_of: dict[URIRef, URIRef] = {}
     activity_set = set(activities)
     for container in activities:
@@ -307,9 +235,6 @@ def process_view(graph: Graph) -> dict:
         for activity in activities
         for system in graph.objects(activity, PAIR.refinedBy)
     }
-    # A system present in the architecture that no activity claims. Worth saying:
-    # it is assessed with no business context at all, which is the case the whole
-    # layer exists to improve.
     unrefined = [
         {"id": str(system), "label": _label_of(graph, system)}
         for system in graph.subjects(RDF.type, BEAM.System)

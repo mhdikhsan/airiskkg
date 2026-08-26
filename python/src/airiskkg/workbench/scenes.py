@@ -1,16 +1,3 @@
-"""Which bundled graphs a process model needs in order to mean anything.
-
-A business process names the AI systems its activities are carried out by, but
-it does not contain them - that separation is the whole point of the layer, and
-it is also a trap for whoever loads one. Opening the process example on its own
-gives a diagram that refers to two architectures that are not there: no nodes,
-no motifs, no findings, and nothing on screen saying why.
-
-So a process says what it needs. The answer is derived, not listed: the process
-declares `pair:refinedBy` targets, and a bundled graph either declares that
-system or it does not.
-"""
-
 from __future__ import annotations
 
 from functools import lru_cache
@@ -24,11 +11,6 @@ from airiskkg.paths import CONTEXT_EXAMPLE_DIR, EXAMPLE_DIR
 
 @lru_cache(maxsize=1)
 def _systems_by_example() -> dict[str, list[str]]:
-    """Which bundled architecture declares which beam:System.
-
-    Only `ontology/example/` is scanned. A process may not depend on a graph in
-    `example_local/`: those are the user's own, absent from a fresh clone, and a
-    shipped example that needed one would be broken for everyone else."""
     found: dict[str, list[str]] = {}
     for path in sorted(EXAMPLE_DIR.glob("*.ttl")):
         graph = Graph()
@@ -40,12 +22,6 @@ def _systems_by_example() -> dict[str, list[str]]:
 
 
 def required_architectures(process_path: Path) -> list[dict]:
-    """The bundled architectures this process refines, in load order.
-
-    A refinement whose system no bundled graph declares is reported with no
-    example name rather than dropped: a process pointing at something that is
-    not there is a fault in the process, and swallowing it would hide the fault
-    behind an empty canvas."""
     process = Graph()
     process.parse(process_path, format="turtle")
 

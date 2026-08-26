@@ -39,19 +39,10 @@ class AssessmentResult:
     risk_findings: Graph
     output_dir: Path | None = None
     inferred_annotations: Graph = field(default_factory=Graph)
-    # Which library produced this. Optional so a result assembled by hand in a
-    # test stays cheap to build; every result the pipeline returns carries one.
     version: KnowledgeBaseVersion | None = None
 
     @property
     def combined_graph(self) -> Graph:
-        """Everything the run knows: library + architecture + every derived fact.
-
-        This *is* the working graph. Matches and findings are merged back into it
-        as they are constructed, so the two were always equal by the time a
-        caller saw them, and materializing a second copy cost a few thousand
-        triple insertions per run to hand back a graph nobody distinguished.
-        Kept as a named view because "combined" is what consumers mean."""
         return self.working_graph
 
     @property
@@ -126,15 +117,6 @@ def _next_output_run_dir(base_dir: Path) -> Path:
 
 @lru_cache(maxsize=1)
 def _base_knowledge() -> Graph:
-    """Parse the knowledge base once per process.
-
-    Turtle parsing dominates every entry point that touches the library - a full
-    load is ~0.2s against ~0.05s to copy the result - and the files do not change
-    while a process runs. Never hand this instance out: callers parse an
-    architecture into the graph they get back and the assessment writes derived
-    facts into it, so a shared instance would leak one run's findings into the
-    next. See reload_knowledge_base() for editing the .ttl files in a live
-    process."""
     graph = _bind_prefixes(Graph())
     for path in ontology_files():
         _load_turtle(graph, path)
@@ -143,11 +125,6 @@ def _base_knowledge() -> Graph:
 
 @lru_cache(maxsize=1)
 def _cached_version() -> KnowledgeBaseVersion:
-    """Identify the knowledge base once per process.
-
-    Cached beside the parse it describes, and invalidated with it: a live server
-    that reported the fingerprint it started with after an ontology edit would be
-    lying about the very thing the fingerprint exists to pin down."""
     return knowledge_base_version(_base_knowledge())
 
 
@@ -157,10 +134,6 @@ def knowledge_base_fingerprint() -> KnowledgeBaseVersion:
 
 
 def reload_knowledge_base() -> None:
-    """Drop the cached parse so the next load picks up edited .ttl files.
-
-    Flask's reloader watches Python sources only, so a live server keeps serving
-    the ontology it started with until this is called or the process restarts."""
     _base_knowledge.cache_clear()
     _cached_version.cache_clear()
 
@@ -184,17 +157,11 @@ _PARSE_LOCK = threading.Lock()
 
 @lru_cache(maxsize=None)
 def _prepared_query(query_path_str: str):
-    """Parse-and-compile a SPARQL query once and reuse it. Parsing (pyparsing) is
-    ~98% of a construct query's cost and the query text never changes at runtime,
-    so caching the prepared query cuts a full assessment from ~2s to ~0.1s."""
     with _PARSE_LOCK:
         return prepareQuery(Path(query_path_str).read_text(encoding="utf-8"))
 
 
 def run_construct_query(graph: Graph, query_path: Path, **bindings: URIRef) -> Graph:
-    """Run a registered CONSTRUCT. `bindings` pins query variables to values -
-    used by mitigation rewrites, which act on the one finding an assessor
-    chose rather than on every finding the graph happens to contain."""
     constructed = _bind_prefixes(Graph())
     query = _prepared_query(str(query_path))
     results = graph.query(query, initBindings=bindings) if bindings else graph.query(query)
@@ -220,26 +187,10 @@ def _merge(target: Graph, source: Graph) -> None:
 
 
 _MAX_PROPAGATION_ITERATIONS = 20
-
-# Everything derived before any motif is matched. Two kinds today, kept as
-# separate output types rather than one because they assert different things:
-# a data category is a claim about content and travels along data flow, while a
-# business flow relation is a claim about ordering in a process and carries no
-# content at all. They share this loop because both must be complete before
-# matching starts, and both can feed each other's next pass.
 _DERIVED_OUTPUT_TYPES = (PAIR.DataCategoryPropagation, PAIR.BusinessFlowDerivation)
 
 
 def _derive_facts(working_graph: Graph) -> Graph:
-    """Infer the facts a match or a condition may rely on: data categories
-    propagated along the flow (so architects need not hand-tag every element
-    derived from an untrusted source), and typed reachability over a business
-    process.
-
-    Runs registered derivation queries to a fixed point: each pass can surface
-    facts that satisfy the next pass's conditions - transitive closure over
-    business flow is expressed exactly that way - so this repeats until nothing
-    new is inferred."""
     inferred = _bind_prefixes(Graph())
     propagation_paths = [
         path
@@ -285,7 +236,6 @@ def _run_assessment_on_graph(
         _merge(working_graph, constructed)
 
     version = knowledge_base_fingerprint()
-
     run_output_dir: Path | None = None
     if write_outputs:
         run_output_dir = _next_output_run_dir(_resolve_output_dir(output_dir))
@@ -294,9 +244,7 @@ def _run_assessment_on_graph(
         motif_matches.serialize(run_output_dir / "motif_matches.ttl", format="turtle")
         risk_findings.serialize(run_output_dir / "risk_findings.ttl", format="turtle")
         working_graph.serialize(run_output_dir / "combined_assessment_graph.ttl", format="turtle")
-        # Written beside the graphs rather than into them: this describes the run,
-        # and a finding must not be able to cite the library's own identity as
-        # evidence.
+
         (run_output_dir / "knowledge_base_version.json").write_text(
             json.dumps(version.as_dict(), indent=2) + "\n", encoding="utf-8"
         )
@@ -328,16 +276,6 @@ def run_assessment_from_text(ttl_text: str) -> AssessmentResult:
 
 
 def mitigation_implementations(graph: Graph) -> dict[tuple[URIRef, URIRef], Path]:
-    """(control, risk pattern) -> the rewrite that applies that control to that
-    finding.
-
-    Keyed on the pair, not the control alone. The same control is suggested by
-    several risk patterns - output validation answers improper output handling,
-    sensitive disclosure and system prompt leakage - and a rewrite is written
-    against one vulnerable shape. Offering one control's only rewrite for every
-    finding that names it meant clicking Apply on a sensitive-retrieval finding
-    ran the improper-output-handling rewrite, which found its own screen already
-    in place, added nothing, and left the risk untouched."""
     found: dict[tuple[URIRef, URIRef], Path] = {}
     for implementation in graph.subjects(PAIR.producesOutputType, PAIR.MitigationApplication):
         control = graph.value(implementation, PAIR.implementsControl)
@@ -355,11 +293,6 @@ def risk_pattern_of(graph: Graph, finding: URIRef) -> URIRef | None:
 
 
 def applicable_controls(graph: Graph, finding: URIRef) -> set[URIRef]:
-    """Controls this finding can actually be answered with by a rewrite.
-
-    A control with no rewrite for THIS finding's risk pattern is still a real
-    suggestion; it just cannot be inserted for you, and offering a button that
-    silently does nothing is worse than offering none."""
     pattern = risk_pattern_of(graph, finding)
     if pattern is None:
         return set()
@@ -367,22 +300,8 @@ def applicable_controls(graph: Graph, finding: URIRef) -> set[URIRef]:
 
 
 def apply_control(architecture: Graph, control: URIRef, finding: URIRef) -> Graph:
-    """Construct the triples that insert `control` onto the path `finding` cites.
-
-    Returns what to add, and adds nothing itself - the caller decides whether to
-    amend the architecture, and re-runs the assessment over the amended graph to
-    see what actually changed. That separation is the point: the tool does not
-    declare the risk resolved, it edits the design and lets the same rules speak
-    again (Rule R4 - the finding disappears because the graph no longer
-    represents the gap, not because anything was proven safe).
-
-    The finding must exist in the graph this is run against, so callers pass an
-    assessed graph rather than a bare architecture."""
     pattern = risk_pattern_of(architecture, finding)
     if pattern is None:
-        # The finding is not in this graph, which normally means an earlier
-        # application already resolved it. Nothing to insert, and no error:
-        # asking to fix something already fixed is not a failure.
         return _bind_prefixes(Graph())
     query_path = mitigation_implementations(architecture).get((control, pattern))
     if query_path is None:
