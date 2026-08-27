@@ -52,12 +52,18 @@ function initDivider() {
    * canvases refit afterwards: they size to their container, and the container
    * just changed. */
   const toggle = $("#btn-editor-toggle");
-  toggle.addEventListener("click", () => {
-    const hidden = document.body.classList.toggle("editor-hidden");
-    toggle.innerHTML = hidden ? "&#8250;" : "&#8249;";
-    toggle.title = hidden ? "Show the editor" : "Hide the editor";
+  const setEditorFolded = (folded) => {
+    document.body.classList.toggle("editor-hidden", folded);
+    toggle.innerHTML = folded ? "&#8250;" : "&#8249;";
+    toggle.title = folded ? "Show the editor" : "Hide the editor";
+    // Both canvases size to their container, and the container just changed.
     requestAnimationFrame(() => { GraphView.fit(); ProcessCanvas.fit(); });
+  };
+  toggle.addEventListener("click", () => {
+    setEditorFolded(!document.body.classList.contains("editor-hidden"));
   });
+  // The rail is the whole pane when it is folded, so it is also the way back.
+  $("#editor-rail").addEventListener("click", () => setEditorFolded(false));
 }
 
 // init 

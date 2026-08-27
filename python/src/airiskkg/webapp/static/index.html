@@ -16,29 +16,41 @@
       <select id="example-select" title="Load a bundled example">
         <option value="">Load example…</option>
       </select>
-      <label class="btn" for="file-input" title="Open a graph (.ttl or .nt)">Open graph
+      <label class="btn" for="file-input" title="Open a graph (.ttl or .nt)"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12.5V4a1 1 0 0 1 1-1h3.2l1.3 1.6H13a1 1 0 0 1 1 1v1"/><path d="M2 12.5l1.7-5.1a1 1 0 0 1 1-.7h9.6a.6.6 0 0 1 .57.79L13.3 12.5a1 1 0 0 1-.95.7H3a1 1 0 0 1-1-.7z"/></svg><span>Open</span>
         <input type="file" id="file-input" accept=".ttl,.turtle,.nt" hidden />
       </label>
-      <button type="button" class="btn" id="btn-starter" title="Replace the editor content with a minimal starter graph">Starter</button>
-      <button type="button" class="btn" id="btn-clear" title="Clear the code and the diagram">Clear</button>
+      <button type="button" class="btn" id="btn-starter" title="Replace the editor content with a minimal starter graph"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.8H4.2a1 1 0 0 0-1 1v10.4a1 1 0 0 0 1 1h7.6a1 1 0 0 0 1-1V5.6z"/><path d="M9 1.8v3.8h3.8"/><line x1="8" y1="8.4" x2="8" y2="12"/><line x1="6.2" y1="10.2" x2="9.8" y2="10.2"/></svg><span>Starter</span></button>
+      <button type="button" class="btn" id="btn-clear" title="Clear the code and the diagram"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="2.6" y1="4.2" x2="13.4" y2="4.2"/><path d="M5.4 4.2V2.9a1 1 0 0 1 1-1h3.2a1 1 0 0 1 1 1v1.3"/><path d="M4 4.2l.7 9a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9l.7-9"/></svg><span>Clear</span></button>
       <span class="toolbar-sep"></span>
-      <button type="button" class="btn" id="btn-validate" title="Validate against the SHACL input contract">Validate</button>
-      <button type="button" class="btn primary" id="btn-assess" title="Run the PAIR-AI candidate risk assessment">Run assessment</button>
+      <button type="button" class="btn" id="btn-validate" title="Validate against the SHACL input contract"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.6l5 1.9v4.2c0 3-2.1 5.4-5 6.7-2.9-1.3-5-3.7-5-6.7V3.5z"/><path d="M5.9 7.9L7.4 9.4l3-3"/></svg><span>Validate</span></button>
+      <button type="button" class="btn primary" id="btn-assess" title="Run the PAIR-AI candidate risk assessment"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 2.7l8 5.3-8 5.3z"/></svg><span>Run assessment</span></button>
       <span class="toolbar-sep"></span>
-      <button type="button" class="btn" id="btn-export-svg" title="Download the diagram as a standalone SVG image">Export SVG</button>
+      <button type="button" class="btn" id="btn-export-svg" title="Download the diagram as a standalone SVG image"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="1.2"/><circle cx="5.6" cy="6.4" r="1.1"/><path d="M2.6 11.6L6 8.6l2.2 1.9L10.6 8l2.8 2.6"/></svg><span>Diagram</span></button>
       <select id="export-format" title="RDF serialization for the assessment export">
         <option value="turtle">Turtle</option>
         <option value="json-ld">JSON-LD</option>
         <option value="nt">N-Triples</option>
       </select>
-      <button type="button" class="btn" id="btn-overview" title="A one-page view of the business context and what was found in it — for showing to people who are not editing the graph">Overview</button>
-      <button type="button" class="btn" id="btn-export-kg" title="Download this assessment as an RDF knowledge graph, with a PROV record of the run">Export assessment</button>
+      <button type="button" class="btn" id="btn-overview" title="A one-page view of the business context and what was found in it — for showing to people who are not editing the graph"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.8" y="2.6" width="12.4" height="8.4" rx="1.2"/><line x1="8" y1="11" x2="8" y2="13.4"/><line x1="5.6" y1="13.4" x2="10.4" y2="13.4"/></svg><span>Overview</span></button>
+      <button type="button" class="btn" id="btn-export-kg" title="Download this assessment as an RDF knowledge graph, with a PROV record of the run"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2.2" x2="8" y2="9.6"/><path d="M5.2 7l2.8 2.8L10.8 7"/><path d="M2.8 11.2v1.6a1 1 0 0 0 1 1h8.4a1 1 0 0 0 1-1v-1.6"/></svg><span>Export</span></button>
     </div>
   </header>
 
   <main class="workbench">
     <!-- Left: Turtle editor -->
     <section class="pane editor-pane" id="editor-pane">
+      <!-- All that is left of this pane when it is folded: a rail that says the
+           editor is still here, and opens it again. -->
+      <button type="button" class="editor-rail" id="editor-rail" title="Show the editor">
+        <span class="editor-rail-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="14" height="14">
+            <rect x="1.5" y="2.5" width="13" height="11" rx="1.5"
+                  fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <line x1="6" y1="2.5" x2="6" y2="13.5" stroke="currentColor" stroke-width="1.3"/>
+          </svg>
+        </span>
+        <span class="editor-rail-label">Editor</span>
+      </button>
       <div class="editor" id="editor">
         <div class="gutter" id="gutter"></div>
         <div class="code-scroll" id="code-scroll">

@@ -780,10 +780,27 @@ def test_the_editor_folds_away_and_the_canvas_refits(page) -> None:
     time.sleep(1)
     hidden = loop.run_until_complete(handle.js("""(() => ({
         folded: document.body.classList.contains('editor-hidden'),
-        editorVisible: document.querySelector('#editor-pane').offsetParent !== null,
+        // The pane stays - as a rail. What must go is the code.
+        codeVisible: document.querySelector('#editor').offsetParent !== null,
+        paneWidth: Math.round(document.querySelector('#editor-pane').getBoundingClientRect().width),
     }))()"""))
     assert hidden["folded"], "a real click on the toggle did nothing - the divider ate it"
-    assert not hidden["editorVisible"], "the class is set but the editor is still on screen"
+    assert not hidden["codeVisible"], "the class is set but the editor is still on screen"
+    assert hidden["paneWidth"] < 60, (
+        f"the pane is {hidden['paneWidth']}px wide - it folded to a rail, not to a panel"
+    )
+
+    # Folded, not gone: a panel that leaves no trace is one nobody goes looking
+    # for. The rail says the editor is still there and is the way back.
+    rail = loop.run_until_complete(handle.js("""(() => {
+        const r = document.querySelector('#editor-rail');
+        const box = r.getBoundingClientRect();
+        return { shown: r.offsetParent !== null, width: Math.round(box.width),
+                 text: r.textContent.trim() };
+    })()"""))
+    assert rail["shown"], "the editor folded away completely, leaving nothing to click"
+    assert rail["width"] > 0, "the rail has no width"
+    assert "Editor" in rail["text"], f"the rail does not say what it is: {rail['text']!r}"
 
     # Read the position again: folding the editor moves the divider - and the
     # button on it - to the left edge.
@@ -793,8 +810,18 @@ def test_the_editor_folds_away_and_the_canvas_refits(page) -> None:
     })()"""))
     assert moved["x"] < at["x"], "the divider did not move, so the editor is still taking space"
 
-    loop.run_until_complete(handle.click(moved["x"], moved["y"]))
+    # Open it from the rail rather than the chevron: that is what a reader who
+    # folded it and forgot will click.
+    at_rail = loop.run_until_complete(handle.js("""(() => {
+        const r = document.querySelector('#editor-rail').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 60) };
+    })()"""))
+    loop.run_until_complete(handle.click(at_rail["x"], at_rail["y"]))
     time.sleep(1)
-    back = loop.run_until_complete(handle.js(
-        "document.querySelector('#editor-pane').offsetParent !== null"))
-    assert back, "the editor did not come back"
+    back = loop.run_until_complete(handle.js("""(() => ({
+        editor: document.querySelector('#editor-pane').offsetParent !== null,
+        railHidden: document.querySelector('#editor-rail').offsetParent === null,
+    }))()"""))
+    assert back["editor"], "clicking the rail did not bring the editor back"
+    assert back["railHidden"], "the rail is still showing beside the open editor"
+    assert moved["x"] < at["x"], "the divider did not move, so the editor kept its space"

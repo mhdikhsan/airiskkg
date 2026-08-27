@@ -1421,5 +1421,42 @@ label.btn { display: inline-flex; align-items: center; }
   z-index: 3;
 }
 .divider-toggle:hover { color: var(--text); border-color: var(--accent); }
-body.editor-hidden .editor-pane { display: none; }
+/* Folded, the pane keeps a rail rather than disappearing: nobody goes looking
+   for a panel that left no trace. The rail is the way back. */
+.editor-rail { display: none; }
+body.editor-hidden .editor-pane {
+  flex: 0 0 34px;
+  min-width: 34px;
+  overflow: hidden;
+}
+body.editor-hidden .editor,
+body.editor-hidden .statusbar { display: none; }
+body.editor-hidden .editor-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+body.editor-hidden .editor-rail:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.editor-rail-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
 body.editor-hidden .divider { cursor: default; }
+
+/* Toolbar icons, drawn inline: the page has no external URL of any kind and
+   this runs in a container with an allow-listed build context. */
+.btn { display: inline-flex; align-items: center; gap: 6px; }
+.ico { flex: none; opacity: 0.85; }
+.btn:hover .ico, .btn.primary .ico { opacity: 1; }
