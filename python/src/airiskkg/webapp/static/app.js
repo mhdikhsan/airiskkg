@@ -27,6 +27,10 @@ function initDivider() {
   const editorPane = $("#editor-pane");
   let dragging = false;
   divider.addEventListener("pointerdown", (ev) => {
+    /* The collapse button lives on the divider, and the drag takes pointer
+     * capture - which retargets the click that follows and would leave the
+     * button dead. Same trap as the canvas pan and the opening choice. */
+    if (ev.target.closest("button")) return;
     dragging = true;
     divider.setPointerCapture(ev.pointerId);
     document.body.classList.add("resizing");
@@ -42,6 +46,17 @@ function initDivider() {
   divider.addEventListener("pointerup", () => {
     dragging = false;
     document.body.classList.remove("resizing");
+  });
+
+  /* Fold the source away to read the diagram, and back to edit it. Both
+   * canvases refit afterwards: they size to their container, and the container
+   * just changed. */
+  const toggle = $("#btn-editor-toggle");
+  toggle.addEventListener("click", () => {
+    const hidden = document.body.classList.toggle("editor-hidden");
+    toggle.innerHTML = hidden ? "&#8250;" : "&#8249;";
+    toggle.title = hidden ? "Show the editor" : "Hide the editor";
+    requestAnimationFrame(() => { GraphView.fit(); ProcessCanvas.fit(); });
   });
 }
 
@@ -166,10 +181,10 @@ async function init() {
     state.scopedSystem = null;
     state.openedFrom = null;
     setLevel("architecture");
-    if (widening) {
-      refreshPreview(Editor.getValue());
-      reReadFindings();
-    }
+    /* Announced rather than done here. Widening by hand used to call the two
+     * redraws it knew about, so the annotate table - which learned to follow
+     * the scope later - stayed narrowed to the architecture just left. */
+    if (widening) emit("scope:changed");
   });
   setLevel(state.level);
 

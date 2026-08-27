@@ -690,3 +690,111 @@ def test_annotate_narrows_with_the_rest_of_the_workbench(page) -> None:
         f"is narrowed to one: {seen['groups']}"
     )
     _back_to_business(loop, handle)
+
+
+def test_widening_by_hand_also_widens_the_annotate_table(page) -> None:
+    """The breadcrumb reset it and the level switch did not.
+
+    Widening called the two redraws it knew about rather than announcing the
+    change, so the annotate table - which learned to follow the scope later -
+    stayed narrowed to the architecture just left.
+    """
+    loop, handle = page
+    _back_to_business(loop, handle)
+
+    at = _box(loop, handle)
+    assert at, "no refined activity to descend through"
+    loop.run_until_complete(handle.click(round(at["left"] + 30), round(at["top"] + 12)))
+    time.sleep(2)
+    assert loop.run_until_complete(handle.js("window.PairAI.state.scopedSystem")), "no scope to widen"
+
+    loop.run_until_complete(handle.js("""(() => {
+        document.querySelectorAll('.drawer-tab').forEach((t) => {
+            if (t.dataset.drawerTab === 'annotate') t.click();
+        });
+    })()"""))
+    time.sleep(3)
+    narrowed = loop.run_until_complete(handle.js(
+        "document.querySelectorAll('#annotate-list .annotate-group').length"))
+    assert narrowed == 0, "descending did not narrow the table, so widening proves nothing"
+
+    # Widen with the level switch, not the breadcrumb.
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(4)
+    after = loop.run_until_complete(handle.js("""(() => ({
+        scoped: window.PairAI.state.scopedSystem,
+        groups: document.querySelectorAll('#annotate-list .annotate-group').length,
+    }))()"""))
+
+    assert after["scoped"] is None, "the level switch did not widen the scope"
+    assert after["groups"] >= 2, (
+        "the annotate table is still showing one architecture after widening to all of them"
+    )
+    _back_to_business(loop, handle)
+
+
+def test_an_annotate_group_folds_away(page) -> None:
+    """Two architectures list forty-odd elements between them."""
+    loop, handle = page
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(2)
+    loop.run_until_complete(handle.js("""(() => {
+        document.querySelectorAll('.drawer-tab').forEach((t) => {
+            if (t.dataset.drawerTab === 'annotate') t.click();
+        });
+    })()"""))
+    time.sleep(4)
+
+    before = loop.run_until_complete(handle.js("""(() => {
+        const head = document.querySelector('#annotate-list .annotate-group');
+        if (!head) return null;
+        const r = head.getBoundingClientRect();
+        return {
+            rows: document.querySelectorAll('#annotate-list .annotate-row:not(.annotate-row-head)').length,
+            x: Math.round(r.left + 40), y: Math.round(r.top + r.height / 2),
+        };
+    })()"""))
+    assert before, "no architecture group heading to fold"
+    assert before["rows"] > 0
+
+    loop.run_until_complete(handle.click(before["x"], before["y"]))
+    time.sleep(1.5)
+    after = loop.run_until_complete(handle.js(
+        "document.querySelectorAll('#annotate-list .annotate-row:not(.annotate-row-head)').length"))
+    assert after < before["rows"], (
+        f"folding the group changed nothing ({after} rows, was {before['rows']})"
+    )
+
+
+def test_the_editor_folds_away_and_the_canvas_refits(page) -> None:
+    """A real click, because the toggle sits on the divider - which takes
+    pointer capture for its drag and would otherwise swallow it."""
+    loop, handle = page
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('#btn-editor-toggle');
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(1)
+    hidden = loop.run_until_complete(handle.js("""(() => ({
+        folded: document.body.classList.contains('editor-hidden'),
+        editorVisible: document.querySelector('#editor-pane').offsetParent !== null,
+    }))()"""))
+    assert hidden["folded"], "a real click on the toggle did nothing - the divider ate it"
+    assert not hidden["editorVisible"], "the class is set but the editor is still on screen"
+
+    # Read the position again: folding the editor moves the divider - and the
+    # button on it - to the left edge.
+    moved = loop.run_until_complete(handle.js("""(() => {
+        const r = document.querySelector('#btn-editor-toggle').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert moved["x"] < at["x"], "the divider did not move, so the editor is still taking space"
+
+    loop.run_until_complete(handle.click(moved["x"], moved["y"]))
+    time.sleep(1)
+    back = loop.run_until_complete(handle.js(
+        "document.querySelector('#editor-pane').offsetParent !== null"))
+    assert back, "the editor did not come back"

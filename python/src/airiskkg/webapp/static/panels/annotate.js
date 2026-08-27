@@ -1,4 +1,5 @@
 import { Editor } from "../lib/editor.js";
+import { revealInSource } from "../core/source.js";
 import { GraphView } from "../lib/graph_view.js";
 import { MultiPicker } from "../lib/multipicker.js";
 import { state } from "../state.js";
@@ -35,6 +36,7 @@ const roleKindFor = (node) => (node.kind === "process" ? "process" : "resource")
 let vocab = { roles: [], dataCategories: [] };
 let onStatus = () => {};
 let rows = []; // { id, rolePicker, catPicker }
+let collapsed = new Set();  // architecture groups the reader folded away
 
 function setCount(n) {
   const badge = $("#annotate-count");
@@ -47,7 +49,7 @@ function setCount(n) {
  * systems is the ordinary case - and a flat list of every element from all of
  * them gives no way to tell which is which. Membership comes from the server,
  * off beam:hasProcess / hasResource / hasAgent / contain. */
-function annotateRow(node, untagged) {
+function annotateRow(node) {
   const rolePicker = MultiPicker(vocab.roles, node.roleIds || [], {
     placeholder: "+ add role", grouped: true, filterKind: roleKindFor(node),
   });
@@ -60,7 +62,13 @@ function annotateRow(node, untagged) {
     title: `${node.typeLabel || node.kind} — click to highlight it on the diagram`,
     /* Was guarded on window.GraphView, which stopped existing when the front
      * end became modules: the row looked clickable and did nothing. */
-    onclick: () => GraphView.setHighlight([node.id]),
+    onclick: () => {
+      GraphView.setHighlight([node.id]);
+      // ...and put the cursor on the line that declares it, like the motif
+      // rows do. Highlighting a box you then have to find in the source is
+      // half an answer.
+      revealInSource([node.id]);
+    },
   }, [
     el("span", { class: "an-el" }, [
       // The kind, not the type label: five values that align, where
@@ -101,16 +109,37 @@ function renderTable(data) {
 
   let untagged = 0;
   for (const group of groups) {
-    // One architecture needs no heading; it is the only thing on screen.
-    if (group.label && groups.length > 1) {
-      body.push(el("div", { class: "annotate-group" }, group.label));
-    } else if (!group.label && groups.length > 1) {
-      body.push(el("div", { class: "annotate-group" }, "Belongs to no system"));
-    }
-    for (const node of group.nodes) {
+    const label = group.label || "Belongs to no system";
+    const rowsOfGroup = group.nodes.map((node) => {
       if (!(node.roleIds || []).length) untagged += 1;
-      body.push(annotateRow(node, untagged));
+      return annotateRow(node);
+    });
+
+    // One architecture needs no heading; it is the only thing on screen.
+    if (groups.length < 2) {
+      body.push(...rowsOfGroup);
+      continue;
     }
+
+    /* Foldable, the same idiom the risk badge uses. A scene with two
+     * architectures lists forty-odd elements, and someone annotating one of
+     * them should not have to scroll past the other. */
+    const open = !collapsed.has(label);
+    const head = el("div", {
+      class: `annotate-group${open ? "" : " collapsed"}`,
+      title: open ? "Hide these elements" : "Show these elements",
+      onclick: () => {
+        if (collapsed.has(label)) collapsed.delete(label);
+        else collapsed.add(label);
+        renderTable(data);
+      },
+    }, [
+      el("span", { class: "annotate-group-mark" }, open ? "–" : "+"),
+      el("span", {}, label),
+      el("span", { class: "annotate-group-count" }, `${group.nodes.length}`),
+    ]);
+    body.push(head);
+    if (open) body.push(...rowsOfGroup);
   }
   list.append(...body);
   setCount(untagged);
