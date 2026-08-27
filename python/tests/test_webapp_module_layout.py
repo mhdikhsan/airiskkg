@@ -103,10 +103,20 @@ def test_the_page_puts_exactly_one_thing_on_window() -> None:
     )
 
 
-@pytest.mark.parametrize("panel", ["panels/findings.js", "panels/canvas.js", "core/dom.js"])
-def test_a_panel_does_not_reach_for_globals_it_should_import(panel: str) -> None:
-    """A module that reads `window.Editor` instead of importing Editor still
-    works, right up until load order changes. There is no reason to allow it."""
-    source = (STATIC / panel).read_text(encoding="utf-8")
-    reached = re.findall(r"window\.(Editor|GraphView|ProcessCanvas|VersionHistory|Annotate)\b", source)
-    assert not reached, f"{panel} reaches window.{reached[0]} instead of importing it"
+def test_no_module_reaches_for_a_global_it_should_import() -> None:
+    """A module that reads `window.GraphView` instead of importing GraphView
+    stops working the moment that global goes away - and one did. The annotate
+    panel guarded its click on `window.GraphView`, so once the front end became
+    modules the row still looked clickable and silently did nothing.
+
+    This used to name three files, which is exactly why it missed the fourth.
+    """
+    offenders = []
+    for rel, source in modules().items():
+        # A comment may name the mistake; only code counts.
+        code = re.sub(r"/\*[\s\S]*?\*/|//[^\n]*", "", source)
+        for name in re.findall(
+            r"window\.(Editor|GraphView|ProcessCanvas|VersionHistory|Annotate|MultiPicker)\b", code
+        ):
+            offenders.append(f"{rel} reaches window.{name} instead of importing it")
+    assert not offenders, "\n".join(offenders)

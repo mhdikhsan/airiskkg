@@ -7,7 +7,7 @@ import { parseErrorLine, setStatus } from "../core/status.js";
 import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
 import { scheduleStaleCheck } from "./run.js";
-import { ProcessCanvas } from "../lib/process_canvas.js";
+import { ProcessCanvas, humanKind } from "../lib/process_canvas.js";
 import { state } from "../state.js";
 
 /* Nothing chosen and nothing loaded: the tools for both layers would be on
@@ -94,6 +94,26 @@ function renderBreadcrumb() {
   crumb.classList.remove("hidden");
 }
 
+/* BPMN task types read as identifiers in the model and as words on a diagram.
+ * The list beside the canvas showed "receiveTask" and "subProcess" while the
+ * canvas had been drawing the glyph for them all along. */
+const TASK_KINDS = {
+  task: "Task",
+  userTask: "User",
+  manualTask: "Manual",
+  serviceTask: "Service",
+  scriptTask: "Script",
+  sendTask: "Send",
+  receiveTask: "Receive",
+  businessRuleTask: "Business rule",
+  subProcess: "Sub-process",
+  callActivity: "Call activity",
+};
+
+function taskKind(kind) {
+  return TASK_KINDS[kind] || humanKind(kind);
+}
+
 async function refreshProcess(ttl) {
   const list = $("#process-list");
   const summary = $("#process-summary");
@@ -169,11 +189,11 @@ async function refreshProcess(ttl) {
     if (activity.human) badges.push(el("span", { class: "proc-badge human" }, "human"));
     activity.reads.forEach((item) => {
       item.kinds.forEach((kind) =>
-        badges.push(el("span", { class: "proc-badge data" }, `reads ${kind}`)));
+        badges.push(el("span", { class: "proc-badge data" }, `reads ${humanKind(kind)}`)));
     });
 
     const row = el("div", { class: "proc-row" }, [
-      el("span", { class: "proc-kind" }, activity.kind),
+      el("span", { class: "proc-kind", title: activity.kind }, taskKind(activity.kind)),
       el("span", { class: "proc-name" }, activity.label),
       el("span", { class: "proc-badges" }, badges),
       activity.performers.length

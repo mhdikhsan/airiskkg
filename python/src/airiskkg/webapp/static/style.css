@@ -689,8 +689,19 @@ label.btn { display: inline-flex; align-items: center; }
 .an-el { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .an-el-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kind-badge {
-  flex: none; font-size: 10px; padding: 1px 6px; border-radius: 10px;
-  border: 1px solid var(--border); color: var(--text);
+  /* Fixed width so the element column lines up. It used to carry the type
+     label, whose lengths run from "Data" to "StatisticalModel". */
+  flex: none;
+  width: 58px;
+  text-align: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 1px 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: #23262e;
 }
 .kind-badge.process { background: var(--node-process); border-color: var(--node-process-border); }
 .kind-badge.data    { background: var(--node-data);    border-color: var(--node-data-border); }
@@ -1358,3 +1369,18 @@ label.btn { display: inline-flex; align-items: center; }
 }
 .ctrl-nature.technical { background: rgba(74, 114, 196, 0.22); color: #9dc0ff; }
 .ctrl-nature.non-technical { background: rgba(160, 106, 160, 0.22); color: #d7a8d7; }
+
+/* Which architecture a block of rows belongs to, when a document holds more
+   than one. */
+.annotate-group {
+  margin: 10px 0 2px;
+  padding-left: 6px;
+  border-left: 3px solid var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.annotate-row { cursor: pointer; }
+.annotate-row.annotate-row-head { cursor: default; }

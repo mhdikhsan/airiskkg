@@ -40,8 +40,41 @@ function setCount(n) {
   if (badge) badge.textContent = n ? String(n) : "";
 }
 
-function renderTable(nodes) {
+/* One row per element, grouped by the architecture that holds it.
+ *
+ * A document can carry several architectures - a business process running two
+ * systems is the ordinary case - and a flat list of every element from all of
+ * them gives no way to tell which is which. Membership comes from the server,
+ * off beam:hasProcess / hasResource / hasAgent / contain. */
+function annotateRow(node, untagged) {
+  const rolePicker = MultiPicker(vocab.roles, node.roleIds || [], {
+    placeholder: "+ add role", grouped: true, filterKind: roleKindFor(node),
+  });
+  const catPicker = MultiPicker(vocab.dataCategories, node.categoryIds || [],
+    { placeholder: "+ add category" });
+  rows.push({ id: node.id, rolePicker, catPicker });
+
+  return el("div", {
+    class: "annotate-row",
+    title: `${node.typeLabel || node.kind} — click to highlight it on the diagram`,
+    /* Was guarded on window.GraphView, which stopped existing when the front
+     * end became modules: the row looked clickable and did nothing. */
+    onclick: () => GraphView.setHighlight([node.id]),
+  }, [
+    el("span", { class: "an-el" }, [
+      // The kind, not the type label: five values that align, where
+      // "StatisticalModel" and "Data" left the column ragged.
+      el("span", { class: `kind-badge ${node.kind}` }, node.kind),
+      el("span", { class: "an-el-label" }, node.label),
+    ]),
+    el("span", { class: "an-role" }, rolePicker.element),
+    el("span", { class: "an-cat" }, catPicker.element),
+  ]);
+}
+
+function renderTable(data) {
   rows = [];
+  const nodes = data.nodes || [];
   const list = $("#annotate-list");
   list.innerHTML = "";
   if (!nodes.length) {
@@ -51,39 +84,32 @@ function renderTable(nodes) {
     return;
   }
 
-  const head = el("div", { class: "annotate-row annotate-row-head" }, [
+  const body = [el("div", { class: "annotate-row annotate-row-head" }, [
     el("span", { class: "an-el" }, "Element"),
     el("span", { class: "an-role" }, "Roles"),
     el("span", { class: "an-cat" }, "Data categories (optional)"),
-  ]);
+  ])];
 
-  const body = [head];
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const systems = (data.systems || []).filter((s) => (s.members || []).length);
+  const claimed = new Set(systems.flatMap((s) => s.members));
+  const groups = systems
+    .map((s) => ({ label: s.label, nodes: s.members.map((id) => byId.get(id)).filter(Boolean) }))
+    .concat([{ label: null, nodes: nodes.filter((n) => !claimed.has(n.id)) }])
+    .filter((g) => g.nodes.length);
+
   let untagged = 0;
-  for (const node of nodes) {
-    const currentRoles = node.roleIds || [];
-    const currentCats = node.categoryIds || [];
-    if (!currentRoles.length) untagged += 1;
-
-    const rolePicker = MultiPicker(vocab.roles, currentRoles, {
-      placeholder: "+ add role", grouped: true, filterKind: roleKindFor(node),
-    });
-    const catPicker = MultiPicker(vocab.dataCategories, currentCats, { placeholder: "+ add category" });
-
-    rows.push({ id: node.id, rolePicker, catPicker });
-    body.push(
-      el("div", {
-        class: "annotate-row",
-        title: "Click to highlight this element in the canvas",
-        onclick: () => { if (window.GraphView) GraphView.setHighlight([node.id]); },
-      }, [
-        el("span", { class: "an-el" }, [
-          el("span", { class: `kind-badge ${node.kind}` }, node.typeLabel || node.kind),
-          el("span", { class: "an-el-label" }, node.label),
-        ]),
-        el("span", { class: "an-role" }, rolePicker.element),
-        el("span", { class: "an-cat" }, catPicker.element),
-      ])
-    );
+  for (const group of groups) {
+    // One architecture needs no heading; it is the only thing on screen.
+    if (group.label && groups.length > 1) {
+      body.push(el("div", { class: "annotate-group" }, group.label));
+    } else if (!group.label && groups.length > 1) {
+      body.push(el("div", { class: "annotate-group" }, "Belongs to no system"));
+    }
+    for (const node of group.nodes) {
+      if (!(node.roleIds || []).length) untagged += 1;
+      body.push(annotateRow(node, untagged));
+    }
   }
   list.append(...body);
   setCount(untagged);
@@ -101,7 +127,7 @@ async function refresh() {
   }
   try {
     const data = await postJson("/api/graph", { ttl });
-    renderTable(data.nodes);
+    renderTable(data);
   } catch (error) {
     list.innerHTML = "";
     list.appendChild(el("p", { class: "drawer-empty" },

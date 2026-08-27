@@ -92,7 +92,7 @@ function dataOf(activity) {
 
 /* dpv:PersonalData reads as "Personal data" to someone who does not write RDF;
  * the prefixed form stays on the tooltip. */
-function humanKind(kind) {
+export function humanKind(kind) {
   const local = String(kind).split(/[#:/]/).pop();
   const spaced = local.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
   return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
