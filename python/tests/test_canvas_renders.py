@@ -17,6 +17,7 @@ fail on a font change and teach everyone to ignore it.
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import socket
@@ -499,3 +500,75 @@ def test_loading_another_example_clears_the_last_run(served) -> None:
             f"{what} from the previous example survived loading a new one "
             f"({seen.get('after' + what)} left): {report}"
         )
+
+
+def test_the_motifs_tab_explains_an_annotation_that_cannot_bind(served) -> None:
+    """The two halves of "why did nothing match" used to sit in different tabs.
+
+    A step role on a beam:Data element is the case that shows why they belong
+    together. The gap report offers that element as a candidate - it is
+    Data-typed, so it fits any unfilled Data node - and every suggestion is
+    wrong. The SHACL guidance says the true thing in one line: it plays a step
+    role and carries no process class.
+
+    So the guidance now renders beside the gaps, and a candidate it flagged is
+    marked rather than dropped: hiding it would leave a reader wondering where
+    their element went.
+    """
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+
+    bad = (
+        (REPO_ROOT / "ontology" / "example" / "simple_graph_rag.ttl").read_text(encoding="utf-8")
+        + '\n@prefix exx: <http://example.org/xx#> .\n'
+        'exx:Screen a <http://w3id.org/beam/core#Data> ;\n'
+        '    <http://www.w3.org/2000/01/rdf-schema#label> "Screening" ;\n'
+        '    <http://w3id.org/airiskkg/pair-ai#playsRole> '
+        '<http://w3id.org/airiskkg/pair-ai#InputGuardrailStep> .\n'
+    )
+
+    probe = STATIC / "_guidance_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = """
+  <div id="probe-log"></div>
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  window.addEventListener("load", () => setTimeout(() => {
+    window.PairAI.Editor.setValue(BAD_TTL);
+    setTimeout(() => {
+      document.querySelector("#btn-assess").click();
+      setTimeout(() => {
+        log("flagged=" + document.querySelectorAll(".gap-candidate.flagged").length);
+        log("plain=" + document.querySelectorAll(".gap-candidate:not(.flagged)").length);
+        log("rows=" + document.querySelectorAll(".flagged-row").length);
+        const text = document.querySelector("#motifs-list").textContent;
+        log("saysWhy=" + (text.includes("process family") ? 1 : 0));
+        log("leafClassNoise=" + (text.includes("leaf class") ? 1 : 0));
+      }, 11000);
+    }, 3000);
+  }, 2000));
+  </script>
+""".replace("BAD_TTL", json.dumps(bad))
+    probe.write_text(source.replace("</body>", driver + "</body>"), encoding="utf-8")
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_guidance_probe.html", budget=40000)
+    finally:
+        probe.unlink(missing_ok=True)
+
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    report = found.group(1).strip() if found else ""
+    seen = {k: int(v) for k, v in re.findall(r"(\w+)=(\d+)", report)}
+    assert "rows" in seen, f"the probe never reported: {report!r}"
+
+    assert seen["rows"] >= 1, "the mis-annotated element is not explained in the Motifs tab"
+    assert seen["saysWhy"] == 1, "the explanation does not name the actual problem"
+    assert seen["flagged"] >= 1, (
+        "the element is still offered as a plain candidate, with no sign the "
+        f"annotation is what is wrong: {report}"
+    )
+    assert seen["plain"] > 0, "every candidate was flagged; the marking is not discriminating"
+    assert seen["leafClassNoise"] == 0, (
+        "the input contract's warnings leaked in - they fire on every plain "
+        "beam:Data and say nothing about anyone's annotation"
+    )

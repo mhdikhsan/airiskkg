@@ -14,6 +14,20 @@ def _sh(term: str) -> URIRef:
 
 
 @lru_cache(maxsize=1)
+def guidance_shape_ids() -> frozenset[str]:
+    """Which shapes come from annotation_guidance.ttl rather than the contract.
+
+    The two files answer different questions and the report merges them, so a
+    reader cannot tell them apart afterwards. That matters for anything that
+    acts on the result: the contract's "type this to a leaf class" warning
+    fires on every plain beam:Data and is not a statement about anyone's
+    annotation, while the guidance shapes are exactly that."""
+    guidance = Graph()
+    guidance.parse(SHACL_DIR / "annotation_guidance.ttl", format="turtle")
+    return frozenset(str(s) for s in set(guidance.subjects()))
+
+
+@lru_cache(maxsize=1)
 def shapes_and_ontology() -> tuple[Graph, Graph]:
     shapes = Graph()
     shapes.parse(SHACL_DIR / "architecture_input_contract.ttl", format="turtle")
@@ -40,13 +54,18 @@ def shacl_report(ttl: str) -> dict:
 
     def collect(severity: URIRef) -> list[dict]:
         items = []
+        guidance = guidance_shape_ids()
         for result in results_graph.subjects(_sh("resultSeverity"), severity):
             message = results_graph.value(result, _sh("resultMessage"))
             focus = results_graph.value(result, _sh("focusNode"))
+            shape = results_graph.value(result, _sh("sourceShape"))
             items.append(
                 {
                     "message": str(message) if message else "Constraint violated.",
                     "focusNode": str(focus) if focus else None,
+                    # Says which of the two questions this answers, so a caller
+                    # can act on one without acting on the other.
+                    "guidance": str(shape) in guidance if shape is not None else False,
                 }
             )
         return sorted(items, key=lambda item: (item["focusNode"] or "", item["message"]))

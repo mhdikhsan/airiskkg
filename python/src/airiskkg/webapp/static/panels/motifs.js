@@ -12,17 +12,57 @@ import { noteChange } from "./run.js";
 // ---- matches and gaps ----
 let selectedMotifRow = null;
 
+/* What the annotation guidance said about each element, keyed by IRI.
+ *
+ * The gap report and the SHACL guidance answer the same question - "why did no
+ * motif match?" - from opposite directions. The gap report reads structure:
+ * which pattern nodes and edges are satisfied. The guidance reads coherence:
+ * whether a role and a class agree. Neither can do the other's job, and until
+ * now they were in different tabs.
+ *
+ * The case that made it obvious: a `pair:RetrievalStep` role put on a
+ * `beam:Data` element. The gap report offered it as a candidate six times over
+ * - "make Retrieval a Vector Store", "a Prediction Request" - because it is
+ * Data-typed and those roles are unfilled. All six were the wrong advice. The
+ * guidance said the true thing in one line: it plays a step role and carries no
+ * process class.
+ *
+ * So a candidate the guidance flagged is marked rather than dropped. Hiding it
+ * would leave the reader wondering where their element went; saying why is the
+ * point. */
+let annotationHints = new Map();
+
+/* Only the role/class contradictions mark a candidate. Those are exactly the
+ * two Warning-level shapes; the Info ones are about missing structure, which
+ * is what the gap report itself is for. */
+function blockingHint(id) {
+  return (annotationHints.get(id) || []).find((h) => h.severity === "warning") || null;
+}
+
+function candidateItem(candidate) {
+  const bad = blockingHint(candidate.id);
+  if (!bad) return el("span", { class: "gap-candidate" }, candidate.label);
+  return el("span", { class: "gap-candidate flagged", title: bad.message }, [
+    el("span", {}, candidate.label),
+    el("span", { class: "gap-flag" }, "annotation problem"),
+  ]);
+}
+
 function gapCard(gap) {
   const items = [];
   gap.missingNodes.forEach((n) => {
-    const hint = n.candidates.length
-      ? ` — try: ${n.candidates.map((c) => c.label).join(", ")}`
-      : "";
-    items.push(el("li", { class: "gap-need-role" }, [
+    const need = [
       el("span", {}, "no element plays "),
       el("strong", {}, n.role),
-      el("span", { class: "gap-hint" }, hint),
-    ]));
+    ];
+    if (n.candidates.length) {
+      need.push(el("span", { class: "gap-hint" }, " — try: "));
+      n.candidates.forEach((c, index) => {
+        if (index) need.push(el("span", { class: "gap-hint" }, ", "));
+        need.push(candidateItem(c));
+      });
+    }
+    items.push(el("li", { class: "gap-need-role" }, need));
   });
   gap.missingEdges.forEach((e) => items.push(el("li", { class: "gap-need-edge" }, e.text)));
 
@@ -47,20 +87,84 @@ function renderMotifGaps(gaps) {
   const list = $("#motifs-list");
   // Only near misses are actionable.
   const near = (gaps || []).filter((g) => g.satisfied / g.total >= 0.5).slice(0, 5);
-  if (!near.length) return;
+  if (near.length) {
+    list.appendChild(el("div", { class: "gap-section-head" },
+      "Almost matched — what's missing"));
+    near.forEach((g) => list.appendChild(gapCard(g)));
+  }
+
+  /* Not gated on there being a near miss. An element whose role and class
+   * contradict each other is exactly the case where NOTHING comes close, so
+   * hiding the explanation behind a near miss withholds it when it matters
+   * most. */
+  const flagged = [...annotationHints.entries()]
+    .filter(([, hints]) => hints.some((h) => h.severity === "warning"));
+  if (!flagged.length) return;
   list.appendChild(el("div", { class: "gap-section-head" },
-    "Almost matched — what's missing"));
-  near.forEach((g) => list.appendChild(gapCard(g)));
+    "Annotations that cannot bind"));
+  flagged.forEach(([id, hints]) => {
+    const worst = hints.find((h) => h.severity === "warning");
+    const row = el("div", { class: "gap-row flagged-row", title: worst.message }, [
+      el("div", { class: "gap-head" }, [
+        el("span", { class: "motif-row-name" }, id.split(/[#/]/).pop()),
+      ]),
+      el("div", { class: "gap-flag-text" }, worst.message),
+    ]);
+    row.classList.add("clickable");
+    row.addEventListener("click", () => { GraphView.setHighlight([id]); revealInSource([id]); });
+    list.appendChild(row);
+  });
+}
+
+/* Fetched rather than carried on the assessment: pyshacl costs about 1.7s on
+ * the largest bundled example, which is half again what an assessment takes.
+ * The gaps draw immediately and the hints attach when they land. */
+async function loadAnnotationHints(ttl, gaps) {
+  try {
+    const report = await postJson("/api/validate", { ttl });
+    const next = new Map();
+    /* Guidance only. The input contract's warnings ride in the same report and
+     * are a different question - "type this to a leaf class" fires on every
+     * plain beam:Data and says nothing about how anyone annotated it. */
+    const add = (items, severity) => (items || []).forEach((item) => {
+      if (!item.focusNode || !item.guidance) return;
+      const list = next.get(item.focusNode) || [];
+      list.push({ severity, message: item.message });
+      next.set(item.focusNode, list);
+    });
+    add(report.warnings, "warning");
+    add(report.hints, "info");
+    const changed = next.size !== annotationHints.size
+      || [...next.keys()].some((k) => !annotationHints.has(k));
+    annotationHints = next;
+    if (changed && lastGaps) renderMotifsFromCache();
+  } catch (_) { /* hints are an extra; the gap report stands without them */ }
 }
 
 export function clearMotifs() {
+  annotationHints = new Map();
+  lastMatches = null;
+  lastGaps = null;
   $("#motifs-list").innerHTML = "";
   $("#motifs-count").textContent = "";
   $("#motifs-empty").classList.remove("hidden");
   selectedMotifRow = null;
 }
 
-export function renderMotifs(matches, gaps) {
+let lastMatches = null;
+let lastGaps = null;
+
+function renderMotifsFromCache() {
+  renderMotifs(lastMatches, lastGaps, { refetchHints: false });
+}
+
+export function renderMotifs(matches, gaps, options = {}) {
+  lastMatches = matches;
+  lastGaps = gaps;
+  if (options.refetchHints !== false) {
+    const ttl = Editor.getValue().trim();
+    if (ttl) loadAnnotationHints(ttl, gaps);
+  }
   const byName = new Map();
   (matches || []).forEach((m) => {
     const label = (m.label || (m.motif && m.motif.label) || "Motif").replace(/\s+Motif$/, "");

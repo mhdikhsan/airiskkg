@@ -1309,3 +1309,19 @@ label.btn { display: inline-flex; align-items: center; }
 @media (max-width: 1400px) {
   .toolbar { flex: 1 1 auto; min-width: 0; }
 }
+
+/* A candidate the annotation guidance flagged. Marked rather than dropped:
+   hiding it leaves the reader wondering where their element went. */
+.gap-candidate { color: var(--text, #2a2f38); }
+.gap-candidate.flagged { color: #b06a1f; }
+.gap-flag {
+  margin-left: 5px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgba(176, 106, 31, 0.14);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.flagged-row { border-left: 3px solid #b06a1f; }
+.gap-flag-text { color: #8a7a4f; font-size: 11.5px; padding: 2px 0 0 2px; }
