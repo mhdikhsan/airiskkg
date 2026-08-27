@@ -658,8 +658,6 @@ label.btn { display: inline-flex; align-items: center; }
   padding-left: 6px;
   margin: 6px 0 2px;
 }
-.ctrl-group.technical .ctrl-group-head { border-left-color: #4f7cc7; color: #9ec2f0; }
-.ctrl-group.non-technical .ctrl-group-head { border-left-color: #8a7f5a; color: #d3c79a; }
 .ctrl-label { color: var(--text); }
 .ctrl-motifs { margin: 2px 0 4px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 .ctrl-motifs-lead { font-size: 11px; color: var(--text-dim); font-style: italic; }
@@ -1338,3 +1336,25 @@ label.btn { display: inline-flex; align-items: center; }
   text-transform: uppercase;
   opacity: 0.85;
 }
+
+/* Which catalogue a control section came from, and whether a control is
+   something you can build or something an organisation has to do. */
+.ctrl-group-head { display: flex; align-items: baseline; gap: 8px; }
+.ctrl-group-source {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.ctrl-nature {
+  margin-left: 7px;
+  padding: 0 5px;
+  border-radius: 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.ctrl-nature.technical { background: rgba(74, 114, 196, 0.22); color: #9dc0ff; }
+.ctrl-nature.non-technical { background: rgba(160, 106, 160, 0.22); color: #d7a8d7; }

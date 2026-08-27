@@ -19,6 +19,12 @@ let selectedFinding = null;
 function controlItem(control, finding) {
   const motifs = control.realizedByMotifs || [];
   const children = [el("span", { class: "ctrl-label" }, control.label)];
+  /* Technical or not. pair:controlNature has always been carried in the payload
+   * and never shown, so the one distinction a reader needs - can this be built,
+   * or is it something an organisation has to do - was invisible. */
+  if (control.nature) {
+    children.push(el("span", { class: `ctrl-nature ${control.nature}` }, control.nature));
+  }
   if (control.applicable) {
     children.push(
       el("div", { class: "ctrl-motifs" }, [
@@ -42,10 +48,17 @@ function controlItem(control, finding) {
   return el("li", { title: control.definition || "" }, children);
 }
 
+/* A different list from a different place, and the two used to sit under
+ * headings that gave no clue of it. These are MIT control families the
+ * finding's taxonomy entries link to - corroboration that the risk maps onto
+ * recognised families, not controls anyone can insert here. */
 function groundedFamiliesSection(families) {
   if (!families || !families.length) return null;
   return el("div", { class: "ctrl-group evidence" }, [
-    el("div", { class: "ctrl-group-head" }, `MIT mitigations (${families.length})`),
+    el("div", { class: "ctrl-group-head" }, [
+      el("span", {}, `Related control families (${families.length})`),
+      el("span", { class: "ctrl-group-source" }, "MIT AI Risk Repository"),
+    ]),
     el("ul", { class: "ref-list grounded-list" },
       families.map((f) => el("li", { title: f.definition || "" }, el("span", { class: "chip tax-ground" }, f.label)))),
   ]);
@@ -56,7 +69,10 @@ function controlSections(controls, finding) {
   if (!controls.length) return [];
   return [
     el("div", { class: "ctrl-group" }, [
-      el("div", { class: "ctrl-group-head" }, `Mitigations (${controls.length})`),
+      el("div", { class: "ctrl-group-head" }, [
+        el("span", {}, `Suggested controls (${controls.length})`),
+        el("span", { class: "ctrl-group-source" }, "PAIR-AI"),
+      ]),
       el("ul", { class: "ref-list" }, controls.map((c) => controlItem(c, finding))),
     ]),
   ];
