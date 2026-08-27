@@ -207,3 +207,27 @@ def test_an_absent_architecture_is_reported_not_substituted(scene) -> None:
         "they belong to some other architecture"
     )
     assert kept["id"] != gone["id"]
+
+
+def test_every_taxonomy_entry_names_the_catalogue_it_came_from() -> None:
+    """A finding lists entries from several catalogues at once, and only OWASP
+    numbers its own ("LLM01:2025 Prompt Injection"). "Prompt injection attack"
+    and "AI system security vulnerabilities" gave no clue they are IBM and MIT.
+
+    Worse, a scheme missing from the table falls through to "Other" - which is
+    how every ASI entry was presented for as long as the agentic layer existed.
+    """
+    from rdflib import RDF, URIRef
+
+    from airiskkg.assessment_runner import load_base_graph
+    from airiskkg.assessment_view import _source
+
+    graph = load_base_graph()
+    entries = set(graph.subjects(RDF.type, URIRef("http://w3id.org/airiskkg/taxonomy/nexus#Risk")))
+    assert entries, "no taxonomy entries are loaded at all"
+
+    unnamed = sorted({str(e).rsplit("#", 1)[0] for e in entries if _source(e) == "Other"})
+    assert not unnamed, (
+        "these taxonomy schemes have no entry in _SOURCE_PREFIXES, so their risks "
+        "are shown as coming from \"Other\": " + ", ".join(unnamed)
+    )

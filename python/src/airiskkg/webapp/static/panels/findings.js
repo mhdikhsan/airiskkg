@@ -70,7 +70,18 @@ function taxonomyChips(finding) {
   if (finding.mechanism) {
     row.appendChild(el("span", { class: "chip mech", title: finding.mechanism.id }, finding.mechanism.label));
   }
-  const chipFor = (t) => el("span", { class: "chip tax", title: t.definition || t.id }, t.label);
+  /* Each entry says which catalogue it came from. Without it the list read as
+   * one undifferentiated set: "LLM01:2025 Prompt Injection" names its source
+   * because OWASP numbers its own entries, while "Prompt injection attack" and
+   * "AI system security vulnerabilities" gave no clue they are IBM and MIT. */
+  const chipFor = (t) => el("span", {
+    class: "chip tax",
+    title: `${t.source}
+${t.definition || t.id}`,
+  }, [
+    el("span", { class: "chip-source" }, t.sourceShort || t.source),
+    el("span", {}, t.label),
+  ]);
   entries.slice(0, TAXONOMY_CHIP_LIMIT).forEach((t) => row.appendChild(chipFor(t)));
 
   const hidden = entries.slice(TAXONOMY_CHIP_LIMIT);

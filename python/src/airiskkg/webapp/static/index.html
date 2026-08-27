@@ -16,7 +16,7 @@
       <select id="example-select" title="Load a bundled example">
         <option value="">Load example…</option>
       </select>
-      <label class="btn" for="file-input" title="Upload a BEAM Turtle file, or a Tool4Boxology / t4b-beam export (.nt or .ttl) — exports are normalized to BEAM automatically">Open graph
+      <label class="btn" for="file-input" title="Open a graph (.ttl or .nt)">Open graph
         <input type="file" id="file-input" accept=".ttl,.turtle,.nt" hidden />
       </label>
       <button type="button" class="btn" id="btn-starter" title="Replace the editor content with a minimal starter graph">Starter</button>
@@ -131,7 +131,7 @@
           </div>
           <div class="drawer-panel hidden" data-drawer-panel="annotate">
             <div class="annotate-head">
-              <span class="hint">Assign a role to each element, then Apply. Roles are what let motifs and risk patterns match graphs imported from Tool4Boxology / t4b-beam (which carry structure only).</span>
+              <span class="hint">Assign a role to each element, then Apply. Motifs match on roles.</span>
               <button type="button" class="btn small primary" id="btn-annotate-apply" title="Write the selected roles into the editor graph">Apply annotations</button>
             </div>
             <div id="annotate-list">

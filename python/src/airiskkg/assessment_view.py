@@ -16,12 +16,21 @@ _MIT_MAPPING_PREDS = (
     SKOS.narrowMatch,
 )
 
+# Every taxonomy the library links to must be named here. An entry whose scheme
+# is missing falls through to "Other", which is how ASI entries were presented
+# for as long as the agentic layer has existed: a reader saw the risk but not
+# which catalogue it came from, and "Other" reads as though nobody knew.
+# (full name, short badge). The short form is what a chip can carry beside the
+# entry's own label without pushing it off the row; the full name goes on the
+# tooltip.
 _SOURCE_PREFIXES = {
-    "http://w3id.org/airiskkg/taxonomy/owasp-llm#": "OWASP LLM Top 10",
-    "http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#": "IBM Risk Atlas",
-    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#": "MIT AI Risk Repository",
-    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#": "MIT AI Risk Control",
-    "http://w3id.org/airiskkg/patterns#": "PAIR-AI Pattern Library",
+    "http://w3id.org/airiskkg/taxonomy/owasp-llm#": ("OWASP LLM Top 10", "OWASP LLM"),
+    "http://w3id.org/airiskkg/taxonomy/owasp-asi#": ("OWASP Agentic Top 10", "OWASP ASI"),
+    "http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#": ("IBM AI Risk Atlas", "IBM"),
+    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#": ("MIT AI Risk Repository", "MIT"),
+    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#": ("MIT AI Risk Control", "MIT"),
+    "http://w3id.org/airiskkg/taxonomy/nist-genai#": ("NIST AI 600-1", "NIST"),
+    "http://w3id.org/airiskkg/patterns#": ("PAIR-AI Pattern Library", "PAIR-AI"),
 }
 
 
@@ -44,11 +53,15 @@ def _definition(graph: Graph, resource: URIRef) -> str | None:
 
 
 def _source(uri: URIRef) -> str:
+    return _source_pair(uri)[0]
+
+
+def _source_pair(uri: URIRef) -> tuple[str, str]:
     text = str(uri)
-    for prefix, label in _SOURCE_PREFIXES.items():
+    for prefix, names in _SOURCE_PREFIXES.items():
         if text.startswith(prefix):
-            return label
-    return "Other"
+            return names
+    return ("Other", "Other")
 
 
 def _ref(graph: Graph, resource: URIRef) -> dict:
@@ -57,6 +70,7 @@ def _ref(graph: Graph, resource: URIRef) -> dict:
         "label": _label(graph, resource),
         "definition": _definition(graph, resource),
         "source": _source(resource),
+        "sourceShort": _source_pair(resource)[1],
     }
 
 

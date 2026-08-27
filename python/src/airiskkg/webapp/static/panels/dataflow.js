@@ -24,9 +24,9 @@ export function renderDerivedCategories(rows) {
     new Set(rows.map((r) => `${r.element.id}|${r.category.id}`)).size
   );
   list.appendChild(el("div", { class: "derived-section-head" }, [
-    el("span", {}, "Categories the engine inferred — traced back to the annotation each came from"),
+    el("span", {}, "Inferred categories"),
     el("span", { class: "derived-section-hint" },
-      "Categories you annotated yourself are not listed. Click a row to highlight its route on the diagram."),
+      "Click a row to trace it on the diagram."),
   ]));
 
   const hopsBy = new Map();
