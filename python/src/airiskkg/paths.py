@@ -1,6 +1,4 @@
 from pathlib import Path
-
-
 def _find_repo_root(start: Path) -> Path:
     for candidate in [start, *start.parents]:
         if (candidate / "ontology").is_dir() and (candidate / "python").is_dir():
