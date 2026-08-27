@@ -69,6 +69,8 @@ async function init() {
   on("scope:changed", () => {
     refreshPreview(Editor.getValue());
     reReadFindings();
+    // The annotate table is a view of the same graph, so it narrows with it.
+    Annotate.refresh();
   });
 
   let vocabulary = { roles: [], dataCategories: [] };

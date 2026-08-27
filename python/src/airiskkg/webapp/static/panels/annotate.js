@@ -1,6 +1,7 @@
 import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
 import { MultiPicker } from "../lib/multipicker.js";
+import { state } from "../state.js";
 "use strict";
 const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -126,7 +127,11 @@ async function refresh() {
     return;
   }
   try {
-    const data = await postJson("/api/graph", { ttl });
+    /* Narrowed to the same architecture the rest of the workbench is showing.
+     * Descending into a business activity filtered the findings list and the
+     * canvas but not this tab, so someone annotating the meter scorer was
+     * handed every element of the chatbot as well. */
+    const data = await postJson("/api/graph", { ttl, scope: state.scopedSystem });
     renderTable(data);
   } catch (error) {
     list.innerHTML = "";

@@ -951,17 +951,19 @@ label.btn { display: inline-flex; align-items: center; }
 .hist-cause { color: var(--text-dim); flex: 1 1 auto; }
 .hist-row .btn { flex: 0 0 auto; }
 
-/*  business process  */
- * A list, not a diagram. What a risk assessment needs from a process is which
- * activity, in whose lane, reading what, performed by whom. */
+/* ---- business process ---- */
 
+/* A lane heading, in the same shape as every other section heading in the
+   drawer. It used to be monospace at a different size and letter-spacing from
+   the findings, motifs and annotate headings beside it. */
 .proc-lane {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-dim);
-  padding: 12px 8px 5px;
+  color: #8b95ab;
+  border-left: 3px solid var(--accent);
+  padding: 12px 8px 5px 9px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 2px;
 }
@@ -978,11 +980,16 @@ label.btn { display: inline-flex; align-items: center; }
 .proc-row.refined { cursor: pointer; border-left: 2px solid var(--accent); padding-left: 16px; }
 .proc-row.refined:hover { background: rgba(79, 140, 255, 0.08); }
 
+/* The task type, as a tag rather than an identifier: it stopped being one
+   ("receiveTask" -> "Receive") and monospace was saying it still was. */
 .proc-kind {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: 10.5px;
-  color: var(--text-dim);
-  min-width: 108px;
+  flex: none;
+  width: 88px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8b95ab;
 }
 .proc-name { flex: 1 1 auto; }
 .proc-badges { display: flex; gap: 5px; flex-wrap: wrap; flex: 0 1 auto; }
@@ -1009,9 +1016,7 @@ label.btn { display: inline-flex; align-items: center; }
   margin: 6px 0;
 }
 
-/*  level switch, breadcrumb, business canvas  */
- * Two levels of one thing: the process an organisation runs, and the
- * architecture that carries out one of its activities. */
+/* ---- level switch, breadcrumb, business canvas ---- */
 
 .level-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; flex: 0 0 auto; }
 .level {

@@ -652,3 +652,41 @@ def test_a_new_example_forgets_the_scope_of_the_last_one(page) -> None:
         f"the breadcrumb still names {after['openedFrom']}, an activity of the previous example"
     )
     assert not after["crumb"], "the breadcrumb is still on screen for a graph that has no process"
+
+
+def test_annotate_narrows_with_the_rest_of_the_workbench(page) -> None:
+    """Descending filtered the findings list and the canvas, but not this tab.
+
+    Someone opening the meter scorer to annotate it was handed every element of
+    the chatbot as well, in a table that had just learned to group by
+    architecture - so the grouping told them the elements were from somewhere
+    else without telling them why they were there at all.
+    """
+    loop, handle = page
+    _back_to_business(loop, handle)
+
+    at = _box(loop, handle)
+    assert at, "no refined activity to descend through"
+    loop.run_until_complete(handle.click(round(at["left"] + 30), round(at["top"] + 12)))
+    time.sleep(2)
+    scoped = loop.run_until_complete(handle.js("window.PairAI.state.scopedSystem"))
+    assert scoped, "descending narrowed to nothing, so there is no scope to follow"
+
+    loop.run_until_complete(handle.js("""(() => {
+        document.querySelectorAll('.drawer-tab').forEach((t) => {
+            if (t.dataset.drawerTab === 'annotate') t.click();
+        });
+    })()"""))
+    time.sleep(4)
+
+    seen = loop.run_until_complete(handle.js("""(() => ({
+        rows: document.querySelectorAll('#annotate-list .annotate-row:not(.annotate-row-head)').length,
+        groups: [...document.querySelectorAll('#annotate-list .annotate-group')].map((g) => g.textContent),
+    }))()"""))
+
+    assert seen["rows"] > 0, "the annotate table is empty for an architecture that has elements"
+    assert len(seen["groups"]) == 0, (
+        "elements from more than one architecture are listed while the workbench "
+        f"is narrowed to one: {seen['groups']}"
+    )
+    _back_to_business(loop, handle)

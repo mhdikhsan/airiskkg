@@ -135,3 +135,34 @@ def test_every_script_parses() -> None:
             first = (result.stderr.strip().splitlines() or ["parse error"])[0]
             broken.append(f"{path.name}: {first}")
     assert not broken, "browser sources that do not parse:\n" + "\n".join(broken)
+
+
+def test_the_stylesheet_is_not_broken_by_a_half_removed_comment() -> None:
+    """A comment sweep left two of these behind:
+
+        /*  business process  */
+         * A list, not a diagram. ...  */
+
+    The closing marker moved up, so the following lines became stray tokens and
+    the CSS parser dropped the rule after them. `.proc-lane` had no styling at
+    all - not the new one, not the old one - and the tab simply looked plain.
+    Nothing failed, because a stylesheet never reports anything.
+    """
+    css = (STATIC / "style.css").read_text(encoding="utf-8")
+
+    assert css.count("/*") == css.count("*/"), "unbalanced CSS comment markers"
+
+    outside = re.sub(r"/\*[\s\S]*?\*/", "", css)
+    assert outside.count("{") == outside.count("}"), "unbalanced braces outside comments"
+
+    dangling = [
+        (number, line.strip())
+        for number, line in enumerate(outside.split("\n"), 1)
+        # A line starting with `*` outside any comment is comment prose the
+        # parser will choke on - except the universal selector.
+        if line.lstrip().startswith("*") and not line.lstrip().startswith("* {")
+    ]
+    assert not dangling, (
+        "comment prose left outside a comment block: "
+        + "; ".join(f"line {n}: {text[:60]}" for n, text in dangling)
+    )

@@ -182,7 +182,7 @@ async function refreshProcess(ttl) {
   data.activities.forEach((activity) => {
     if (activity.lane !== lane) {
       lane = activity.lane;
-      list.appendChild(el("div", { class: "proc-lane" }, lane || "no lane"));
+      list.appendChild(el("div", { class: "proc-lane" }, lane || "No lane"));
     }
     const badges = [];
     if (activity.refines.length) badges.push(el("span", { class: "proc-badge ai" }, "AI system"));
