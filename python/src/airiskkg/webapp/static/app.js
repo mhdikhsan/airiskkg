@@ -8,7 +8,7 @@ import { setStatus } from "./core/status.js";
 import { Editor } from "./lib/editor.js";
 import { GraphView } from "./lib/graph_view.js";
 import { VersionHistory } from "./lib/version_history.js";
-import { refreshPreview, resetScope, setLevel, settleChoice } from "./panels/canvas.js";
+import { askAgain, refreshPreview, resetScope, setLevel, settleChoice } from "./panels/canvas.js";
 import { clearDerivedCategories, renderDerivedCategories } from "./panels/dataflow.js";
 import { clearFindings, reReadFindings, renderFindings } from "./panels/findings.js";
 import { renderHistory } from "./panels/history.js";
@@ -309,6 +309,20 @@ async function init() {
     noteChange(business ? "starter business process" : "starter architecture");
     Editor.setValue(business ? STARTER_BPMN : STARTER_TTL);
     setStatus("ok", "Starter graph loaded");
+  });
+
+  /* The brand is the way back to the opening question. It has to clear first:
+   * refreshProcess settles the choice again the moment there is anything to
+   * draw, so the question cannot stand over a canvas with content on it. */
+  $("#btn-home").addEventListener("click", () => {
+    const hasContent = Boolean(Editor.getValue().trim());
+    if (hasContent && !window.confirm(
+      "Start over? This clears the code and the diagram.")) return;
+    forgetTheLastDocument();
+    if (hasContent) Editor.setValue("");
+    askAgain();
+    setLevel("architecture");
+    setStatus("ok", "Start over", "choose what you are describing");
   });
 
   $("#btn-clear").addEventListener("click", () => {

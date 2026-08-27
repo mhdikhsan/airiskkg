@@ -856,3 +856,50 @@ def test_starter_still_works_from_its_new_home_on_the_editor(page) -> None:
     assert after, "Starter left the editor empty"
     assert len(after) != before, "a real click on Starter changed nothing - the handler is orphaned"
     assert "@prefix" in after, f"Starter did not load a graph: {after[:80]!r}"
+
+
+def test_the_brand_goes_back_to_the_opening_question(page) -> None:
+    """Clicking PAIR-AI starts over.
+
+    It has to clear the document to do it: refreshProcess settles the choice
+    again the moment there is anything to draw, so the question cannot stand
+    over a canvas with content on it. With content loaded the click is
+    confirmed, so this empties the editor first and presses it on a workbench
+    that is already started.
+    """
+    loop, handle = page
+
+    # Empty the document without going through the confirm dialog, which would
+    # block a headless browser.
+    loop.run_until_complete(handle.js("window.PairAI.Editor.setValue('')"))
+    time.sleep(3)
+    started = loop.run_until_complete(handle.js(
+        "document.querySelector('#canvas-wrap').classList.contains('started')"))
+    assert started, "the workbench is not in the started state, so there is nothing to undo"
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const r = document.querySelector('#btn-home').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(2)
+
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const wrap = document.querySelector('#canvas-wrap');
+        const card = document.querySelector('#start-business');
+        return {
+            asking: wrap.classList.contains('unstarted'),
+            started: wrap.classList.contains('started'),
+            choiceVisible: card ? card.offsetParent !== null : false,
+            levelSwitchHidden: document.querySelector('#level-switch').classList.contains('hidden'),
+        };
+    })()"""))
+
+    assert seen["asking"], "the opening question did not come back"
+    assert not seen["started"], "the workbench still thinks a choice has been made"
+    assert seen["choiceVisible"], "the question is set but its cards are not on screen"
+    assert seen["levelSwitchHidden"], "the level switch is still offered before a choice"
+
+    # Leave the page usable for anything that runs after this.
+    loop.run_until_complete(handle.js('document.querySelector("#start-architecture").click()'))
+    time.sleep(1)

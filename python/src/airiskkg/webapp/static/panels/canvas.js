@@ -27,6 +27,21 @@ export function resetScope() {
   renderBreadcrumb();
 }
 
+/* Back to the question the workbench opens with.
+ *
+ * The mirror of settleChoice. It only holds while the document is empty:
+ * refreshProcess settles the choice again as soon as there is anything to
+ * draw, and rightly so - a question over a canvas with content on it is not a
+ * question. So the caller clears first. */
+export function askAgain() {
+  awaitingChoice = true;
+  hadProcess = false;
+  state.levelChosenByHand = false;
+  $("#canvas-wrap").classList.remove("started");
+  $("#canvas-wrap").classList.add("unstarted");
+  $("#level-switch").classList.add("hidden");
+}
+
 export function settleChoice() {
   awaitingChoice = false;
   $("#canvas-wrap").classList.remove("unstarted");

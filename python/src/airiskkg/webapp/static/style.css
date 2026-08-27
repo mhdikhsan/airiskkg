@@ -1483,3 +1483,15 @@ body.editor-hidden .divider { cursor: default; }
 .pane-head-actions { margin-left: auto; display: flex; gap: 5px; }
 .btn.small { padding: 2px 7px; font-size: 11.5px; }
 body.editor-hidden .pane-head { display: none; }
+
+/* The brand doubles as "start over", so it has to look pressable. */
+.brand-home {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  border-radius: 4px;
+}
+.brand-home:hover { opacity: 0.75; }
+.brand-home:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
