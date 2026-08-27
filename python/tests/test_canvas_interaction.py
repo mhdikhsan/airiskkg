@@ -825,3 +825,34 @@ def test_the_editor_folds_away_and_the_canvas_refits(page) -> None:
     assert back["editor"], "clicking the rail did not bring the editor back"
     assert back["railHidden"], "the rail is still showing beside the open editor"
     assert moved["x"] < at["x"], "the divider did not move, so the editor kept its space"
+
+
+def test_starter_still_works_from_its_new_home_on_the_editor(page) -> None:
+    """Starter and Clear moved out of the toolbar and onto the editor pane,
+    because they act on what is in the pane rather than on the assessment.
+    Moving markup is where handlers get orphaned, so this presses the button
+    where it now lives."""
+    loop, handle = page
+
+    where = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('#btn-starter');
+        if (!b) return null;
+        const r = b.getBoundingClientRect();
+        return {
+            insidePane: !!b.closest('#editor-pane'),
+            inToolbar: !!b.closest('.toolbar'),
+            x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2),
+        };
+    })()"""))
+    assert where, "the Starter button is gone from the page entirely"
+    assert where["insidePane"], "Starter is not on the editor pane"
+    assert not where["inToolbar"], "Starter is still in the top toolbar as well"
+
+    before = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue().length"))
+    loop.run_until_complete(handle.click(where["x"], where["y"]))
+    time.sleep(2)
+    after = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+
+    assert after, "Starter left the editor empty"
+    assert len(after) != before, "a real click on Starter changed nothing - the handler is orphaned"
+    assert "@prefix" in after, f"Starter did not load a graph: {after[:80]!r}"
