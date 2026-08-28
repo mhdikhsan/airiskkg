@@ -1,9 +1,5 @@
-/* Where each element was written, so clicking one puts the cursor on the
- * line that declares it. */
-
 import { Editor } from "../lib/editor.js";
 
-// Rebuilt, never reassigned: other modules hold this map.
 const sourceLines = new Map();
 
 export function mapSource(elements) {

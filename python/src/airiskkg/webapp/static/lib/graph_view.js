@@ -594,12 +594,7 @@ function zoom(factor, cx, cy) {
 function initPanZoom() {
   let dragging = null;
   wrap.addEventListener("pointerdown", (ev) => {
-    /* The wrap holds two canvases and this pan belongs to one. Without this,
-     * pointer capture here swallows every click on the business canvas.
-     * Covered by test_canvas_interaction.py. */
     if (wrap.classList.contains("business")) return;
-    /* Never pan from a press on a control: the opening choice lives inside the
-     * wrap, and capture here swallows the click that follows. */
     if (ev.target.closest("button, select, input, textarea, a, label")) return;
     if (ev.target.closest(".node, .canvas-controls, .node-detail, .palette, .motif-palette, .canvas-empty")) return;
     dragging = { x: ev.clientX, y: ev.clientY };

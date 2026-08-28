@@ -1,4 +1,5 @@
 import { $, $$, el } from "../core/dom.js";
+import { groupBySystem, onScreen } from "../core/systems.js";
 import { GraphView } from "../lib/graph_view.js";
 
 export function clearDerivedCategories() {
@@ -7,11 +8,15 @@ export function clearDerivedCategories() {
   $("#derived-empty").classList.remove("hidden");
 }
 
-export function renderDerivedCategories(rows) {
+export function renderDerivedCategories(allRows) {
   const list = $("#derived-list");
   const empty = $("#derived-empty");
   const count = $("#derived-count");
   list.innerHTML = "";
+  /* Narrowed to the architecture on screen, like the findings list and the
+   * motifs tab. A category derived inside the chatbot said nothing to someone
+   * who had opened the meter scorer. */
+  const rows = onScreen(allRows || [], (r) => [r.element.id]);
   if (!rows || !rows.length) {
     empty.textContent = "No category travelled: every data category in this graph sits where you annotated it.";
     empty.classList.remove("hidden");
@@ -63,8 +68,15 @@ export function renderDerivedCategories(rows) {
     byElement.get(key).categories.set(r.category.id, r);
   });
 
-  [...byElement.values()]
-    .sort((a, b) => a.element.label.localeCompare(b.element.label))
+  const elements = [...byElement.values()]
+    .sort((a, b) => a.element.label.localeCompare(b.element.label));
+
+  groupBySystem(elements, (g) => [g.element.id]).forEach((systemGroup) => {
+    if (systemGroup.label) list.appendChild(el("div", { class: "annotate-group static" }, [
+      el("span", {}, systemGroup.label),
+      el("span", { class: "annotate-group-count" }, `${systemGroup.items.length}`),
+    ]));
+    systemGroup.items
     .forEach((group) => {
       const block = el("div", { class: "derived-group" });
       block.appendChild(el("div", { class: "derived-element" }, group.element.label));
@@ -102,4 +114,5 @@ export function renderDerivedCategories(rows) {
         });
       list.appendChild(block);
     });
+  });
 }

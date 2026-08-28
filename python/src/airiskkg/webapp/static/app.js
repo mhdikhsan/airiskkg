@@ -88,10 +88,21 @@ async function init() {
   on("document:replaced", forgetTheLastDocument);
 
   on("scope:changed", () => {
-    refreshPreview(Editor.getValue());
-    reReadFindings();
-    // The annotate table is a view of the same graph, so it narrows with it.
-    Annotate.refresh();
+    /* Awaited, because the panels below read state.lastGraph to decide what is
+     * on screen, and refreshPreview is what sets it. Re-rendering first showed
+     * the previous architecture's motifs under the new one's name. */
+    refreshPreview(Editor.getValue()).then(() => {
+      reReadFindings();
+      // Every panel that lists assessment output has to narrow its own reading:
+      // the assessment itself stays whole, because that is what the business
+      // layer is for.
+      if (state.lastAssessment) {
+        renderMotifs(state.lastAssessment.motifMatches, state.lastAssessment.motifGaps);
+        renderDerivedCategories(state.lastAssessment.derivedCategories);
+      }
+      // The annotate table is a view of the same graph, so it narrows with it.
+      Annotate.refresh();
+    });
   });
 
   let vocabulary = { roles: [], dataCategories: [] };

@@ -870,7 +870,9 @@ def test_the_brand_goes_back_to_the_opening_question(page) -> None:
     loop, handle = page
 
     # Empty the document without going through the confirm dialog, which would
-    # block a headless browser.
+    # block a headless browser. Kept first: the page fixture is shared, and a
+    # test that leaves the workbench empty breaks every test after it.
+    loop.run_until_complete(handle.js("window.__scene = window.PairAI.Editor.getValue(), 1"))
     loop.run_until_complete(handle.js("window.PairAI.Editor.setValue('')"))
     time.sleep(3)
     started = loop.run_until_complete(handle.js(
@@ -900,6 +902,76 @@ def test_the_brand_goes_back_to_the_opening_question(page) -> None:
     assert seen["choiceVisible"], "the question is set but its cards are not on screen"
     assert seen["levelSwitchHidden"], "the level switch is still offered before a choice"
 
-    # Leave the page usable for anything that runs after this.
+    # Put the scene back: usable is not enough, the next test needs a graph.
     loop.run_until_complete(handle.js('document.querySelector("#start-architecture").click()'))
-    time.sleep(1)
+    loop.run_until_complete(handle.send("Runtime.evaluate", {
+        "expression": "window.PairAI.Editor.setValue(window.__scene)",
+        "returnByValue": True,
+    }))
+    time.sleep(4)
+
+
+def test_motifs_and_data_flow_narrow_to_the_architecture_on_screen(page) -> None:
+    """Descending into the meter scorer left the RAG system's matches listed.
+
+    The assessment runs on the whole document - it has to, that is what the
+    business layer is for - so every panel that lists its output has to narrow
+    the reading itself. Findings did. The motifs tab and the data flow tab did
+    not, so opening the meter scorer showed "Information Retrieval", which
+    belongs to the chatbot, with nothing saying so.
+
+    The sequence mirrors test_the_findings_list_follows_the_architecture_on_screen
+    exactly, because that one is known to hold: assess from the architecture
+    level, then go back to business and descend.
+    """
+    loop, handle = page
+    # Load the scene itself rather than inheriting whatever the last test left.
+    # The page fixture is shared, and this one needs two architectures and the
+    # process that refines them.
+    loop.run_until_complete(handle.js("""(async () => {
+        const nl = String.fromCharCode(10, 10);
+        const get = async (n) => (await (await fetch('/api/examples/' + n)).json()).ttl;
+        const a = await get('simple_graph_rag');
+        const m = await get('meter_anomaly_scoring');
+        const p = await get('energy_customer_service');
+        window.PairAI.Editor.setValue(a + nl + m + nl + p);
+        return 1;
+    })()"""))
+    time.sleep(5)
+
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(2)
+    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    # Waited for, not slept through: this scene is three graphs and takes longer
+    # than a single example, and a fixed sleep reads the render before it.
+    _settle(loop, handle, "document.querySelectorAll('#motifs-list .motif-row-name').length", 0,
+            tries=40)
+    loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
+    time.sleep(2)
+
+    everything = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#motifs-list .motif-row-name')].map((n) => n.textContent)"))
+    assert any("Retrieval" in name or "RAG" in name for name in everything), (
+        f"the chatbot's retrieval motifs are not listed even unscoped: {everything}"
+    )
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('.pc-activity.refined .pc-box');
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + 30), y: Math.round(r.top + 12) };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(3)
+
+    seen = loop.run_until_complete(handle.js("""(() => ({
+        scoped: window.PairAI.state.scopedSystem,
+        motifs: [...document.querySelectorAll('#motifs-list .motif-row-name')].map((n) => n.textContent),
+    }))()"""))
+    assert seen["scoped"], "descending narrowed to nothing, so there is no scope to respect"
+    assert seen["motifs"], "the motifs tab lists nothing at all for the open architecture"
+
+    strays = [n for n in seen["motifs"] if "Retrieval" in n or "RAG" in n]
+    assert not strays, (
+        f"motifs from the other architecture are still listed while scoped: {strays}"
+    )
+    _back_to_business(loop, handle)

@@ -2,6 +2,7 @@
 import { postJson } from "../core/api.js";
 import { $, $$, el } from "../core/dom.js";
 import { revealInSource } from "../core/source.js";
+import { groupBySystem, onScreen } from "../core/systems.js";
 import { setStatus } from "../core/status.js";
 import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
@@ -11,30 +12,8 @@ import { noteChange } from "./run.js";
 
 // ---- matches and gaps ----
 let selectedMotifRow = null;
-
-/* What the annotation guidance said about each element, keyed by IRI.
- *
- * The gap report and the SHACL guidance answer the same question - "why did no
- * motif match?" - from opposite directions. The gap report reads structure:
- * which pattern nodes and edges are satisfied. The guidance reads coherence:
- * whether a role and a class agree. Neither can do the other's job, and until
- * now they were in different tabs.
- *
- * The case that made it obvious: a `pair:RetrievalStep` role put on a
- * `beam:Data` element. The gap report offered it as a candidate six times over
- * - "make Retrieval a Vector Store", "a Prediction Request" - because it is
- * Data-typed and those roles are unfilled. All six were the wrong advice. The
- * guidance said the true thing in one line: it plays a step role and carries no
- * process class.
- *
- * So a candidate the guidance flagged is marked rather than dropped. Hiding it
- * would leave the reader wondering where their element went; saying why is the
- * point. */
 let annotationHints = new Map();
 
-/* Only the role/class contradictions mark a candidate. Those are exactly the
- * two Warning-level shapes; the Info ones are about missing structure, which
- * is what the gap report itself is for. */
 function blockingHint(id) {
   return (annotationHints.get(id) || []).find((h) => h.severity === "warning") || null;
 }
@@ -86,17 +65,28 @@ function gapCard(gap) {
 function renderMotifGaps(gaps) {
   const list = $("#motifs-list");
   // Only near misses are actionable.
-  const near = (gaps || []).filter((g) => g.satisfied / g.total >= 0.5).slice(0, 5);
+  /* Candidates that are not on screen belong to another architecture; offering
+   * them under a scoped view suggests annotating something the reader cannot
+   * see. The gap itself is graph-wide and stays. */
+  const scopedGaps = (gaps || []).map((g) => {
+    const had = g.missingNodes.some((n) => (n.candidates || []).length);
+    const missingNodes = g.missingNodes.map((n) => ({
+      ...n,
+      candidates: onScreen(n.candidates || [], (c) => [c.id]),
+    }));
+    const has = missingNodes.some((n) => n.candidates.length);
+    /* A gap whose every candidate was elsewhere is a statement about the other
+     * architecture. Gaps are computed over the whole document - there is no
+     * per-system gap to ask for - so this is the honest reading of one under a
+     * narrowed view, and unscoped nothing is dropped. */
+    return { ...g, missingNodes, elsewhere: had && !has };
+  }).filter((g) => !g.elsewhere);
+  const near = scopedGaps.filter((g) => g.satisfied / g.total >= 0.5).slice(0, 5);
   if (near.length) {
     list.appendChild(el("div", { class: "gap-section-head" },
       "Almost matched — what's missing"));
     near.forEach((g) => list.appendChild(gapCard(g)));
   }
-
-  /* Not gated on there being a near miss. An element whose role and class
-   * contradict each other is exactly the case where NOTHING comes close, so
-   * hiding the explanation behind a near miss withholds it when it matters
-   * most. */
   const flagged = [...annotationHints.entries()]
     .filter(([, hints]) => hints.some((h) => h.severity === "warning"));
   if (!flagged.length) return;
@@ -116,16 +106,10 @@ function renderMotifGaps(gaps) {
   });
 }
 
-/* Fetched rather than carried on the assessment: pyshacl costs about 1.7s on
- * the largest bundled example, which is half again what an assessment takes.
- * The gaps draw immediately and the hints attach when they land. */
 async function loadAnnotationHints(ttl, gaps) {
   try {
     const report = await postJson("/api/validate", { ttl });
     const next = new Map();
-    /* Guidance only. The input contract's warnings ride in the same report and
-     * are a different question - "type this to a leaf class" fires on every
-     * plain beam:Data and says nothing about how anyone annotated it. */
     const add = (items, severity) => (items || []).forEach((item) => {
       if (!item.focusNode || !item.guidance) return;
       const list = next.get(item.focusNode) || [];
@@ -158,13 +142,10 @@ function renderMotifsFromCache() {
   renderMotifs(lastMatches, lastGaps, { refetchHints: false });
 }
 
-export function renderMotifs(matches, gaps, options = {}) {
-  lastMatches = matches;
-  lastGaps = gaps;
-  if (options.refetchHints !== false) {
-    const ttl = Editor.getValue().trim();
-    if (ttl) loadAnnotationHints(ttl, gaps);
-  }
+/* Aggregated per architecture, not across them. A motif matched in both
+ * systems used to collapse into one row reading "x2", which is the confusion
+ * the grouping exists to remove. */
+function motifRows(matches) {
   const byName = new Map();
   (matches || []).forEach((m) => {
     const label = (m.label || (m.motif && m.motif.label) || "Motif").replace(/\s+Motif$/, "");
@@ -173,9 +154,21 @@ export function renderMotifs(matches, gaps, options = {}) {
     g.count += 1;
     byName.set(label, g);
   });
-  const rows = [...byName.values()]
+  return [...byName.values()]
     .map((g) => ({ label: g.label, nodeIds: [...g.ids], count: g.count }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
+export function renderMotifs(matches, gaps, options = {}) {
+  lastMatches = matches;
+  lastGaps = gaps;
+  if (options.refetchHints !== false) {
+    const ttl = Editor.getValue().trim();
+    if (ttl) loadAnnotationHints(ttl, gaps);
+  }
+  const shown = onScreen(matches || [], (m) => m.nodeIds || []);
+  const groups = groupBySystem(shown, (m) => m.nodeIds || []);
+  const rows = motifRows(shown);
 
   const list = $("#motifs-list");
   const empty = $("#motifs-empty");
@@ -189,7 +182,7 @@ export function renderMotifs(matches, gaps, options = {}) {
     return;
   }
   empty.classList.add("hidden");
-  rows.forEach((r) => {
+  const draw = (r) => {
     const row = el("div", {
       class: "motif-row", tabindex: "0",
       title: `Matched ${r.count} time${r.count > 1 ? "s" : ""} · click to highlight ${r.nodeIds.length} elements`,
@@ -207,6 +200,14 @@ export function renderMotifs(matches, gaps, options = {}) {
       revealInSource(r.nodeIds);
     });
     list.appendChild(row);
+  };
+
+  groups.forEach((group) => {
+    if (group.label) list.appendChild(el("div", { class: "annotate-group static" }, [
+      el("span", {}, group.label),
+      el("span", { class: "annotate-group-count" }, `${group.items.length}`),
+    ]));
+    motifRows(group.items).forEach(draw);
   });
   renderMotifGaps(gaps);
   $("#motifs-count").textContent = String(rows.length);

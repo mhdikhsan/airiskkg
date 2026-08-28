@@ -43,12 +43,6 @@ function setCount(n) {
   if (badge) badge.textContent = n ? String(n) : "";
 }
 
-/* One row per element, grouped by the architecture that holds it.
- *
- * A document can carry several architectures - a business process running two
- * systems is the ordinary case - and a flat list of every element from all of
- * them gives no way to tell which is which. Membership comes from the server,
- * off beam:hasProcess / hasResource / hasAgent / contain. */
 function annotateRow(node) {
   const rolePicker = MultiPicker(vocab.roles, node.roleIds || [], {
     placeholder: "+ add role", grouped: true, filterKind: roleKindFor(node),
@@ -60,19 +54,12 @@ function annotateRow(node) {
   return el("div", {
     class: "annotate-row",
     title: `${node.typeLabel || node.kind} — click to highlight it on the diagram`,
-    /* Was guarded on window.GraphView, which stopped existing when the front
-     * end became modules: the row looked clickable and did nothing. */
     onclick: () => {
       GraphView.setHighlight([node.id]);
-      // ...and put the cursor on the line that declares it, like the motif
-      // rows do. Highlighting a box you then have to find in the source is
-      // half an answer.
       revealInSource([node.id]);
     },
   }, [
     el("span", { class: "an-el" }, [
-      // The kind, not the type label: five values that align, where
-      // "StatisticalModel" and "Data" left the column ragged.
       el("span", { class: `kind-badge ${node.kind}` }, node.kind),
       el("span", { class: "an-el-label" }, node.label),
     ]),
@@ -121,9 +108,6 @@ function renderTable(data) {
       continue;
     }
 
-    /* Foldable, the same idiom the risk badge uses. A scene with two
-     * architectures lists forty-odd elements, and someone annotating one of
-     * them should not have to scroll past the other. */
     const open = !collapsed.has(label);
     const head = el("div", {
       class: `annotate-group${open ? "" : " collapsed"}`,
@@ -156,10 +140,6 @@ async function refresh() {
     return;
   }
   try {
-    /* Narrowed to the same architecture the rest of the workbench is showing.
-     * Descending into a business activity filtered the findings list and the
-     * canvas but not this tab, so someone annotating the meter scorer was
-     * handed every element of the chatbot as well. */
     const data = await postJson("/api/graph", { ttl, scope: state.scopedSystem });
     renderTable(data);
   } catch (error) {
