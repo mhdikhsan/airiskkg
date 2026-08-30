@@ -1,0 +1,21 @@
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX bpmn: <https://sBPMN.github.io/2.0/classes#>
+PREFIX bp:   <https://sBPMN.github.io/2.0/properties#>
+
+CONSTRUCT {
+    ?source pair:businessFollows ?target .
+}
+WHERE {
+    {
+        ?flow
+            a bpmn:sequenceFlow ;
+            bp:sourceRef ?source ;
+            bp:targetRef ?target .
+    }
+    UNION
+    {
+        ?source pair:businessFollows ?middle .
+        ?middle pair:businessFollows ?target .
+    }
+    FILTER(?source != ?target)
+}

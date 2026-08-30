@@ -18,7 +18,7 @@ from rdflib import RDF, RDFS, URIRef
 
 from airiskkg.assessment_runner import PAIR, run_assessment, run_assessment_from_text
 from airiskkg.paths import EXAMPLE_DIR
-from conftest import GRAPH_RAG_NS, ONYX_NS, example_path  # noqa: E402
+from conftest import AGENT_NS, ANOMALY_NS, GRAPH_RAG_NS, ONYX_NS, example_path  # noqa: E402
 
 EX = "http://example.org/"
 
@@ -317,6 +317,14 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     expected = {
         example_path(ONYX_NS): (14, 22),
         example_path(GRAPH_RAG_NS): (3, 7),
+        # An ML serving shape rather than a generative one, so it exercises a
+        # different part of the library: prediction motifs, and a supply-chain
+        # finding from the external model rather than any GenAI risk.
+        example_path(ANOMALY_NS): (4, 1),
+        # The agentic shape, and the only bundled graph that reaches it: tool
+        # use, a memory loop and a delegation, with no control step anywhere -
+        # so all three agentic motifs match and four ASI-derived patterns fire.
+        example_path(AGENT_NS): (4, 8),
     }
     # Every graph the repo ships is pinned. Adding one without a baseline would
     # otherwise leave it unwatched, which is how drift goes unnoticed.

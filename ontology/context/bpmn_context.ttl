@@ -1,0 +1,51 @@
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+
+<http://w3id.org/airiskkg/context>
+    a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:title "PAIR-AI Business Context Bridge"@en ;
+    dct:description """Joins a business process model to the AI architectures it
+uses."""@en ;
+    dct:source <https://sbpmn.github.io/2.0/> ;
+    vann:preferredNamespacePrefix "pair" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/pair-ai#" ;
+    owl:imports <http://w3id.org/beam/core#> .
+
+##The bridge
+
+pair:refinedBy a owl:ObjectProperty ;
+    rdfs:label "refined by"@en ;
+    rdfs:comment """The AI system that carries out this business activity: one box
+in the process diagram, expanded into an architecture graph."""@en ;
+    rdfs:domain bpmn:activity ;
+    rdfs:range beam:System ;
+    rdfs:seeAlso bp:calledElement .
+
+pair:businessFollows a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:label "business follows"@en ;
+    rdfs:domain bpmn:flowNode ;
+    rdfs:range bpmn:flowNode .
+
+pair:BusinessFlowDerivation a owl:Class ;
+    rdfs:label "Business Flow Derivation"@en .
+
+## Registration
+
+<http://w3id.org/airiskkg/patterns#BusinessDataBridge_DerivationOQP>
+    a pair:PatternImplementation ;
+    rdfs:label "Carry a business data annotation into the architecture it refines"@en ;
+    pair:implementationPath "ontology/context/implementation/business_data_bridge.rq" ;
+    pair:producesOutputType pair:DataCategoryPropagation .
+
+<http://w3id.org/airiskkg/patterns#BusinessFlow_DerivationOQP>
+    a pair:PatternImplementation ;
+    rdfs:label "Typed reachability over BPMN sequence flow"@en ;
+    pair:implementationPath "ontology/context/implementation/business_flow.rq" ;
+    pair:producesOutputType pair:BusinessFlowDerivation .

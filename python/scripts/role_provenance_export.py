@@ -1,23 +1,3 @@
-"""Export the pattern-role vocabulary with its provenance, for review.
-
-One row per pair:PatternRole:
-
-    uri, label, parent_role, applies_to, definition, source, external_mappings,
-    used_by_motifs, used_by_queries
-
-Every column is read from triples already in the ontology (or, for the usage
-columns, from the motif declarations and the SPARQL implementation files).
-Nothing is inferred or invented: a role with no source is reported with an
-empty source rather than an attributed guess.
-
-`used_by_motifs` / `used_by_queries` show a role's operational reach - a role
-no motif or query can ever bind is documentation only, which is exactly the
-kind of thing a review should surface.
-
-Usage:  python python/scripts/role_provenance_export.py [OUTPUT_CSV]
-        (default output: /tmp/role_provenance.csv)
-"""
-
 from __future__ import annotations
 
 import csv

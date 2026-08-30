@@ -1,0 +1,44 @@
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX dpv:  <https://w3id.org/dpv#>
+PREFIX bpmn: <https://sBPMN.github.io/2.0/classes#>
+PREFIX bp:   <https://sBPMN.github.io/2.0/properties#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?input pair:containsDataCategory pair:SensitiveInformation .
+
+    ?derivation
+        a prov:Derivation ;
+        rdfs:label "Personal data declared on the business process"@en ;
+        prov:entity ?dataObject ;
+        prov:hadActivity ?activity ;
+        pair:derivedCategory pair:SensitiveInformation .
+    ?input prov:qualifiedDerivation ?derivation .
+}
+WHERE {
+    ?activity
+        pair:refinedBy ?system ;
+        bp:dataInputAssociation ?association .
+
+    ?association
+        bp:targetRef ?activity ;
+        bp:sourceRef ?dataReference .
+
+    ?dataReference bp:dataObjectRef ?dataObject .
+    ?dataObject bp:itemSubjectRef ?item .
+    ?item bp:structureRef ?personalDataKind .
+
+    FILTER (?personalDataKind NOT IN (dpv:AnonymisedData, dpv:NonPersonalData))
+
+    ?system beam:hasResource ?input .
+    ?input pair:playsRole/pair:subRoleOf* ?inputRole .
+    VALUES ?inputRole { pair:UserInput pair:PredictionRequest }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/derivation/business-data/",
+        ENCODE_FOR_URI(STR(?input)), "/",
+        ENCODE_FOR_URI(STR(?dataObject))
+    )) AS ?derivation)
+}

@@ -1,30 +1,3 @@
-"""Generate ontology/taxonomy/mit_mitigation_action.ttl from the cross-walk CSV.
-
-Until now the knowledge base modelled the MIT mitigation taxonomy only at the
-family level - 4 categories plus their sub-categories, 20 concepts. The 93-row
-cross-walk names 52 individual mitigation ACTIONS (A0897 Model Prompting, A0522
-AI Red-Teaming Resilience, ...), and the 2026-07-17 rollup collapsed every one of
-them into its sub-category before the data reached the graph. So the actions were
-referenced by the evidence and absent from the ontology, which is why the file
-count looked like "94 rows in, 36 concepts out".
-
-This adds the missing level. It does not replace the rollup: the existing
-risk -> sub-category links stay exactly as they are, and the actions hang beneath
-those sub-categories via skos:broader. Nothing that currently queries the graph
-changes behaviour; what changes is that a finding's control family can now be
-expanded to the concrete mitigations underneath it.
-
-Every action carries the primary source encoded in its own identifier - the
-"_UK Government2023" suffix on A0897 is the document MIT drew that mitigation
-from - so this layer inherits real citations rather than inventing them.
-
-LICENSING: this reproduces MIT AI Risk Mitigation Database action ids and names,
-the same unresolved item CLAUDE.md already records for mit_air_risk_control.ttl.
-Volume of an existing exposure, not a new kind. Resolve together.
-
-    python python/scripts/generate_mit_action_layer.py
-"""
-
 from __future__ import annotations
 
 import csv
@@ -38,9 +11,6 @@ from airiskkg.paths import REPO_ROOT  # noqa: E402
 
 SOURCE = REPO_ROOT / "data" / "mappings" / "Final_Mapped_Taxonomy_Table_Output.csv"
 TARGET = REPO_ROOT / "ontology" / "taxonomy" / "mit_mitigation_action.ttl"
-
-# Same three approximations the 2026-07-17 rollup used, kept identical so the
-# action layer hangs off exactly the sub-categories the rollup already targeted.
 SUBCATEGORY_ALIASES = {
     "model-alignment": "model-safety-engineering",
     "governance-disclosure": "risk-disclosure",

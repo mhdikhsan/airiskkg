@@ -74,6 +74,25 @@ constraint here. `ontology/taxonomy/nist_genai.ttl` uses the profile's category
 identifiers and short names; the definitions in that file are PAIR-AI summaries,
 not NIST text. The Atlas ↔ NIST mappings come from IBM AI Atlas Nexus above.
 
+## sBPMN 2.0 — CC BY 4.0
+
+The business-context layer reads process models expressed in the sBPMN ontology,
+an OWL formalization of the BPMN 2.0 core constructs.
+
+> Krause, F., Paulheim, H., Vázquez, A., & Espert, A. (2025). sBPMN: A framework
+> for capturing business process semantics in dynamic knowledge graphs.
+> *Proceedings of the 13th Knowledge Capture Conference (K-CAP '25)*.
+> <https://doi.org/10.1145/3731443.3771361>
+
+| File | What is derived |
+| --- | --- |
+| `external/sbpmn/sbpmn_2.0.ttl` | The published ontology, vendored unchanged from <https://sbpmn.github.io/2.0/ontology.ttl> |
+
+Licensed CC BY 4.0 — the same licence as this repository, so it may be vendored,
+extended and redistributed with attribution. PAIR-AI adds no terms to it and
+modifies no file in `external/sbpmn/`; the bridge vocabulary that connects a BPMN
+activity to a BEAM system is this project's own, in `ontology/context/`.
+
 ## Sources cited by the motif and role libraries
 
 These are cited as `dct:source` / `pair:derivedFrom` provenance on motifs, risk

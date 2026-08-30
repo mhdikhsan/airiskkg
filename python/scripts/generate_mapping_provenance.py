@@ -1,30 +1,3 @@
-"""Generate the queryable provenance layer for the cross-taxonomy mappings.
-
-Today a mapping's provenance lives in a section comment in taxonomy_mapping.ttl.
-A human reading the file can see that Section 1 came from an upstream SSSOM set
-and Section 2 is project curation, but nothing can *query* it: "show me only the
-manually curated mappings" has no answer, and neither does "which mappings rest
-on our own authority rather than someone else's". For a method whose credibility
-depends on how its alignments were produced, that distinction should be data.
-
-This script reads the mapping file block by block and emits one SSSOM-style
-reified mapping per triple, carrying the justification, confidence, date and
-upstream set that the surrounding comment already states in prose. Nothing new
-is asserted - it lifts what is written there into a form a query can reach.
-
-Generated rather than hand-written for two reasons: 83 reified mappings are
-tedious and error-prone by hand, and a generator can be re-run, which lets a
-test prove the provenance still matches the mappings it describes. Provenance
-that silently drifts from what it documents is worse than none.
-
-Why semapv:ManualMappingCuration is used for upstream rows: the curation was
-manual, it was simply performed by IBM rather than by us. The distinction that
-matters for trust is recorded separately, in the mapping set each row belongs
-to, so "curated by someone else and adopted verbatim" stays visible.
-
-Usage:  python python/scripts/generate_mapping_provenance.py
-"""
-
 from __future__ import annotations
 
 import re
@@ -244,22 +217,6 @@ _MIT_NS = "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#"
 
 
 def _chain_corroboration(records) -> dict:
-    """Which project-curated OWASP<->MIT links are backed by a chain through IBM.
-
-    No upstream mapping set links OWASP to MIT, so those rows are this project's
-    own curation. Some of them are triangulated: an IBM Atlas concept is mapped
-    upstream to the OWASP entry AND upstream to the MIT subdomain, so two
-    independently curated edges meet in the middle.
-
-    That is corroboration, NOT derivation, and the distinction is the point.
-    SSSOM's chaining rules decline to make skos:relatedMatch transitive, and
-    every upstream Atlas->MIT edge uses exactly that predicate, so no chain here
-    licenses the conclusion - it only shows someone else drew both halves. The
-    flag records which curations have that support and which rest on judgement
-    alone, so a reader can tell them apart without parsing section comments, and
-    so a link that quietly loses its support when upstream is revised shows up
-    as a diff instead of going unnoticed.
-    """
     atlas_to_owasp: dict = {}
     atlas_to_mit: dict = {}
     curated_pairs = []
@@ -303,13 +260,6 @@ def _chain_corroboration(records) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Regenerate the provenance layer.
-
-    Usage: generate_mapping_provenance.py [OUTPUT_PATH]
-
-    OUTPUT_PATH lets a caller write somewhere other than the tracked file, which
-    is how the sync test compares without mutating the working tree.
-    """
     argv = sys.argv[1:] if argv is None else argv
     target = Path(argv[0]) if argv else TARGET
 

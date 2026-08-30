@@ -27,35 +27,44 @@ def _read(name: str) -> str:
     return (STATIC / name).read_text(encoding="utf-8")
 
 
+def _all_modules() -> str:
+    """Every module the page loads, concatenated.
+
+    Reading app.js alone was right while app.js was the whole front end. It is
+    now the entry point, and most `$("#id")` calls live in panels/ - so a check
+    scoped to app.js would keep passing while covering almost nothing."""
+    return "\n".join(p.read_text(encoding="utf-8") for p in sorted(STATIC.rglob("*.js")))
+
+
 def test_every_element_id_the_app_wires_exists_in_the_page() -> None:
     """A `$("#id")` with no matching element throws at startup and silently
     kills every listener registered after it."""
     page_ids = set(re.findall(r'id="([\w-]+)"', _read("index.html")))
-    referenced = set(re.findall(r'\$\("#([\w-]+)"\)', _read("app.js")))
+    referenced = set(re.findall(r'\$\("#([\w-]+)"\)', _all_modules()))
     missing = sorted(referenced - page_ids)
-    assert not missing, "app.js wires ids that index.html does not define: " + ", ".join(missing)
+    assert not missing, "the front end wires ids that index.html does not define: " + ", ".join(missing)
 
 
 def test_export_controls_are_present_and_wired() -> None:
     """Both export entry points exist in the page and have a handler."""
-    html, app = _read("index.html"), _read("app.js")
+    html, app = _read("index.html"), _all_modules()
     for element_id in ("btn-export-svg", "btn-export-kg", "export-format"):
         assert f'id="{element_id}"' in html, f"{element_id} missing from index.html"
     for element_id in ("btn-export-svg", "btn-export-kg"):
         assert re.search(rf'\$\("#{element_id}"\)\.addEventListener', app), (
-            f"{element_id} has no click handler in app.js"
+            f"{element_id} has no click handler anywhere in the front end"
         )
     assert "/api/export/assessment" in app, "the KG export button calls no endpoint"
 
 
 def test_graph_view_exposes_the_export_api_the_app_calls() -> None:
     """app.js calls GraphView.exportSvg; graph.js must actually export it."""
-    graph, app = _read("graph.js"), _read("app.js")
+    graph, app = _read("lib/graph_view.js"), _all_modules()
     # The last assignment, not the first mention: a header comment describing
     # the API would otherwise be matched, and a stale comment would then decide
     # what the test believes is exported.
-    assignments = re.findall(r"window\.GraphView\s*=\s*\{([^}]*)\}", graph, re.S)
-    assert assignments, "graph.js no longer assigns window.GraphView"
+    assignments = re.findall(r"export const GraphView\s*=\s*\{([^}]*)\}", graph, re.S)
+    assert assignments, "graph.js no longer exports GraphView"
     names = {name.strip() for name in assignments[-1].replace("\n", " ").split(",")}
     for called in re.findall(r"GraphView\.(\w+)\(", app):
         assert called in names, f"app.js calls GraphView.{called}, which graph.js does not expose"
@@ -67,7 +76,7 @@ def test_svg_export_strips_classes_that_the_renderer_actually_emits() -> None:
     If a class is renamed in the drawing code but not in EXPORT_STRIPPED_CLASSES,
     interaction-only elements start appearing in exported files as invisible
     shapes - the kind of defect nobody notices until a designer opens the SVG."""
-    graph = _read("graph.js")
+    graph = _read("lib/graph_view.js")
     stripped = re.search(r"EXPORT_STRIPPED_CLASSES\s*=\s*\[(.*?)\]", graph, re.S)
     assert stripped, "EXPORT_STRIPPED_CLASSES is gone; the export would keep hit-areas"
     listed = set(re.findall(r'"([\w-]+)"', stripped.group(1)))
@@ -89,7 +98,7 @@ def test_export_resolves_css_variables_rather_than_hardcoding_them() -> None:
     properties by hand and missed --accent, so a kept rule referenced a variable
     the exported file never defined and rendered with no colour. The list is now
     derived from the rules themselves."""
-    graph = _read("graph.js")
+    graph = _read("lib/graph_view.js")
     assert "matchAll(/var\\((--[\\w-]+)\\)/g)" in graph or "var\\((--" in graph, (
         "the exporter no longer derives its custom properties from the kept rules"
     )
@@ -126,3 +135,34 @@ def test_every_script_parses() -> None:
             first = (result.stderr.strip().splitlines() or ["parse error"])[0]
             broken.append(f"{path.name}: {first}")
     assert not broken, "browser sources that do not parse:\n" + "\n".join(broken)
+
+
+def test_the_stylesheet_is_not_broken_by_a_half_removed_comment() -> None:
+    """A comment sweep left two of these behind:
+
+        /*  business process  */
+         * A list, not a diagram. ...  */
+
+    The closing marker moved up, so the following lines became stray tokens and
+    the CSS parser dropped the rule after them. `.proc-lane` had no styling at
+    all - not the new one, not the old one - and the tab simply looked plain.
+    Nothing failed, because a stylesheet never reports anything.
+    """
+    css = (STATIC / "style.css").read_text(encoding="utf-8")
+
+    assert css.count("/*") == css.count("*/"), "unbalanced CSS comment markers"
+
+    outside = re.sub(r"/\*[\s\S]*?\*/", "", css)
+    assert outside.count("{") == outside.count("}"), "unbalanced braces outside comments"
+
+    dangling = [
+        (number, line.strip())
+        for number, line in enumerate(outside.split("\n"), 1)
+        # A line starting with `*` outside any comment is comment prose the
+        # parser will choke on - except the universal selector.
+        if line.lstrip().startswith("*") and not line.lstrip().startswith("* {")
+    ]
+    assert not dangling, (
+        "comment prose left outside a comment block: "
+        + "; ".join(f"line {n}: {text[:60]}" for n, text in dangling)
+    )

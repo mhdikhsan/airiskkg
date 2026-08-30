@@ -135,8 +135,16 @@ def test_opting_in_offers_them_and_flags_them_as_local() -> None:
     listed = client.get("/api/examples").get_json()
     assert any(item["local"] for item in listed), "opting in offered nothing local"
     for item in listed:
-        expected = EXAMPLE_LOCAL_DIR if item["local"] else EXAMPLE_DIR
-        assert (expected / item["filename"]).is_file(), (
+        # Shipped graphs come from two directories now: architectures from
+        # example/, and the business processes that go with them from
+        # example/context/. The flag that matters is `local` - whose graph it is -
+        # so both shipped directories are acceptable homes for local=False.
+        homes = (
+            [EXAMPLE_LOCAL_DIR]
+            if item["local"]
+            else [EXAMPLE_DIR, EXAMPLE_DIR / "context"]
+        )
+        assert any((home / item["filename"]).is_file() for home in homes), (
             f"{item['name']} is flagged local={item['local']} but does not live there"
         )
 

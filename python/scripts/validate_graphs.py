@@ -1,20 +1,3 @@
-"""Validate architecture instance graphs against the PAIR-AI SHACL input contract.
-
-Usage:
-    python python/scripts/validate_graphs.py <graph.ttl> [<graph2.ttl> ...]
-    python python/scripts/validate_graphs.py          # validates ontology/example/*.ttl
-
-The contract (shacl/architecture_input_contract.ttl) operationalizes Rule R4:
-it makes explicit what the submitted graph must represent for candidate risk
-findings to be meaningful. Violations fail (exit code 1); Warnings are
-reported but do not fail.
-
-shacl/annotation_guidance.ttl is validated alongside it. Those shapes ask a
-different question - not "is this graph acceptable?" but "will this annotation
-actually match anything?" - and every one of them is Info or Warning, so they
-never affect the exit code.
-"""
-
 from __future__ import annotations
 
 import sys

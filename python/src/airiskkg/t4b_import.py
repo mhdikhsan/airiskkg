@@ -1,26 +1,3 @@
-"""Normalize a Tool4Boxology export into a BEAM architecture graph.
-
-Ports-and-adapters boundary for PAIR-AI: Tool4Boxology delivers architecture
-graphs in its own vocabulary (t4b: = http://tool4boxology.org/); this module
-normalizes them at ingestion so that assessment always runs against BEAM,
-the canonical internal model (Rule R5 - BEAM itself is never extended here).
-Shared by the CLI (python/scripts/normalize_t4b.py) and the workbench's
-"Import Tool4Boxology" endpoint.
-
-Steps:
-  (a) load a t4b export (N-Triples or Turtle)
-  (b) case-normalize type URIs (the export uses lowercase URIs such as
-      t4b:transform while the ontology declares t4b:Transform - verified
-      upstream data-quality issue; see external/tool4boxology/README.md)
-  (c) materialize beam:use / beam:produce triples and BEAM class types from
-      the alignment adapter (ontology/alignments/tool4boxology_alignment.ttl),
-      keeping all original t4b triples
-  (d) convert t4b:DesignPattern groupings into provenance: every contained
-      element gets dct:conformsTo pointing to the Boxology elementary pattern
-      parsed from the grouping's label (feeds motif derivation provenance,
-      pair:derivedFrom)
-"""
-
 from __future__ import annotations
 
 import re
@@ -37,8 +14,6 @@ BOXPAT = Namespace("http://w3id.org/airiskkg/boxology-elementary-pattern#")
 ALIGNMENT_PATH = ONTOLOGY_DIR / "alignments" / "tool4boxology_alignment.ttl"
 T4B_ONTOLOGY_PATH = REPO_ROOT / "external" / "tool4boxology" / "Tool4BoxologyOntology.ttl"
 
-# Verified export -> ontology type-URI fixes that plain capitalization cannot
-# recover (see external/tool4boxology/README.md).
 _TYPE_ALIASES = {
     T4B["training"]: T4B["Train"],
     T4B["engineering"]: T4B["Engineer"],
@@ -66,11 +41,7 @@ def _declared_classes(t4b_ontology: Graph) -> dict[str, URIRef]:
 
 
 def case_normalize_types(graph: Graph, t4b_ontology: Graph) -> int:
-    """Rewrite lowercase/misspelled export type URIs to the declared class URIs.
-
-    Original triples are replaced (not duplicated): the lowercase URIs are not
-    declared classes, so keeping them adds noise without information.
-    """
+  
     declared = _declared_classes(t4b_ontology)
     fixes = 0
     for subject, obj in list(graph.subject_objects(RDF.type)):
@@ -90,22 +61,20 @@ def case_normalize_types(graph: Graph, t4b_ontology: Graph) -> int:
 
 
 def materialize_beam(graph: Graph, alignment: Graph, t4b_ontology: Graph) -> int:
-    """Materialize BEAM flow triples and BEAM types (original t4b triples kept)."""
     added = 0
 
-    # Flow: artifact --inputRoleParticipatesInProcess--> process  =>  process beam:use artifact
+    
     for artifact, process in graph.subject_objects(T4B["inputRoleParticipatesInProcess"]):
         if (process, BEAM.use, artifact) not in graph:
             graph.add((process, BEAM.use, artifact))
             added += 1
-    # Flow: process --outputRoleParticipatesInProcess--> artifact  =>  process beam:produce artifact
+    
     for process, artifact in graph.subject_objects(T4B["outputRoleParticipatesInProcess"]):
         if (process, BEAM.produce, artifact) not in graph:
             graph.add((process, BEAM.produce, artifact))
             added += 1
 
-    # Types: walk each instance type up the t4b subclass hierarchy until an
-    # aligned BEAM superclass is found in the alignment adapter.
+  
     hierarchy = Graph()
     for g in (alignment, t4b_ontology):
         for triple in g.triples((None, RDFS.subClassOf, None)):
@@ -131,8 +100,7 @@ def materialize_beam(graph: Graph, alignment: Graph, t4b_ontology: Graph) -> int
                 graph.add((subject, RDF.type, beam_cls))
                 added += 1
 
-    # DESIGN DECISION: each t4b:Boxology instance represents one exported
-    # architecture; type it beam:System so the SHACL input contract holds.
+ 
     for boxology in list(graph.subjects(RDF.type, T4B["Boxology"])):
         if (boxology, RDF.type, BEAM.System) not in graph:
             graph.add((boxology, RDF.type, BEAM.System))
@@ -142,12 +110,6 @@ def materialize_beam(graph: Graph, alignment: Graph, t4b_ontology: Graph) -> int
 
 
 def annotate_pattern_provenance(graph: Graph) -> int:
-    """dct:conformsTo on every element grouped by a t4b:DesignPattern.
-
-    The grouping's rdfs:label carries the Boxology elementary pattern id
-    (e.g. "1d Extract Relevant Information"); this feeds pair:derivedFrom
-    motif provenance.
-    """
     added = 0
     member_predicates = (T4B["hasInput"], T4B["hasOutput"], T4B["hasProcess"])
     for pattern in graph.subjects(RDF.type, T4B["DesignPattern"]):
@@ -178,10 +140,6 @@ def _load_adapter_graphs() -> tuple[Graph, Graph]:
 
 
 def normalize_graph(graph: Graph) -> dict[str, int]:
-    """Run case-normalization + BEAM materialization + provenance in place.
-
-    Returns triple counts for each step, for CLI/UI reporting.
-    """
     graph.bind("t4b", T4B)
     graph.bind("beam", BEAM)
     graph.bind("dct", DCTERMS)
@@ -196,7 +154,6 @@ def normalize_graph(graph: Graph) -> dict[str, int]:
 
 
 def normalize(export_path: Path) -> Graph:
-    """Normalize a t4b export file (N-Triples). Used by the CLI script."""
     graph = Graph()
     graph.parse(export_path, format="nt")
     counts = normalize_graph(graph)
@@ -207,7 +164,7 @@ def normalize(export_path: Path) -> Graph:
 
 
 def normalize_text(text: str, fmt: str = "nt") -> tuple[Graph, dict[str, int]]:
-    """Normalize t4b export content already in memory (webapp import path)."""
+    
     graph = Graph()
     try:
         graph.parse(data=text, format=fmt)
@@ -220,7 +177,7 @@ def normalize_text(text: str, fmt: str = "nt") -> tuple[Graph, dict[str, int]]:
 
 
 def t4b_to_ttl(text: str, fmt: str = "nt") -> tuple[str, list[str]]:
-    """t4b export text -> (BEAM Turtle, human-readable import notes)."""
+   
     graph, counts = normalize_text(text, fmt=fmt)
     if not any(graph.subjects(RDF.type, BEAM.System)):
         raise T4bImportError(

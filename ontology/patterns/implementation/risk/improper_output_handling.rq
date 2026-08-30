@@ -4,6 +4,8 @@ PREFIX beam:  <http://w3id.org/beam/core#>
 PREFIX beamr: <http://w3id.org/beam/risk#>
 PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX dct:   <http://purl.org/dc/terms/>
+PREFIX bpmn:  <https://sBPMN.github.io/2.0/classes#>
+PREFIX bp:    <https://sBPMN.github.io/2.0/properties#>
 
 CONSTRUCT {
     ?riskFinding
@@ -59,6 +61,40 @@ WHERE {
             {
                 ?outputControlStep beam:produce ?userFacingOutput .
             }
+        }
+
+        # The same question asked of the business process, when one is submitted.
+        # A human task downstream of the activity this system refines, reading
+        # what the system produced before it travels on, is an output control -
+        # it just does not live in the inference pipeline, which is not where
+        # organisations put approvals. Without this the finding could only be
+        # cleared by inserting a control step into the architecture, and a review
+        # that genuinely exists went on being reported as absent.
+        #
+        # Nothing is asserted into the architecture and no facet is read: this is
+        # a positive structural claim over represented business structure,
+        # evaluated on elements the match already bound. Admissible under R10
+        # because an approval gate is a control, and graph-relative under R4 like
+        # every other absence here. Inert when no process is submitted.
+        FILTER NOT EXISTS {
+            ?activity
+                pair:refinedBy ?system ;
+                pair:businessFollows ?reviewTask .
+            ?system beam:hasResource ?userFacingOutput .
+
+            ?reviewTask
+                a/rdfs:subClassOf* bpmn:userTask ;
+                bp:resourceRole ?performer ;
+                bp:dataInputAssociation ?reviewInput .
+            ?performer a/rdfs:subClassOf* bpmn:humanPerformer .
+
+            # It must read what this activity produced. Without this any later
+            # human step clears the finding - "close the ticket" is also a
+            # userTask, and it reviews nothing.
+            ?reviewInput bp:sourceRef ?reviewedData .
+            ?producedData
+                bp:sourceRef ?activity ;
+                bp:targetRef ?reviewedData .
         }
 
     }

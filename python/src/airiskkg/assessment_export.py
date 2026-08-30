@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -7,6 +8,7 @@ from datetime import datetime, timezone
 from rdflib import DCTERMS, RDF, RDFS, XSD, Graph, Literal, Namespace, URIRef
 
 from airiskkg.assessment_runner import AssessmentResult, _bind_prefixes
+from airiskkg.knowledge_base import graph_fingerprint
 
 PROV = Namespace("http://www.w3.org/ns/prov#")
 BEAM = Namespace("http://w3id.org/beam/core#")
@@ -37,15 +39,34 @@ class AssessmentExport:
         return self.graph.serialize(format=export_format)
 
 
-def _architecture_graph(result: AssessmentResult, architecture: Graph | None) -> Graph:
-    """The submitted graph on its own, without the library.
+def _input_entity(
+    graph: Graph,
+    activity: URIRef,
+    *,
+    kind: str,
+    label: str,
+    fingerprint: str,
+    revision: str | None = None,
+) -> URIRef:
+    entity = URIRef(f"urn:pair-ai:{kind}:{fingerprint}")
+    graph.add((entity, RDF.type, PROV.Entity))
+    graph.add((entity, RDFS.label, Literal(label, lang="en")))
+    graph.add((entity, PAIR.contentFingerprint, Literal(fingerprint)))
+    if revision:
+        graph.add((entity, PAIR.sourceRevision, Literal(revision)))
+    graph.add((activity, PROV.used, entity))
+    return entity
 
-    Callers that still hold the parsed input pass it directly. Otherwise it is
-    recovered by subtracting the base graph from the working graph, because the
-    working graph is base + architecture + derived facts. Subtracting matters:
-    returning the working graph as-is would republish the whole motif, risk
-    pattern, and taxonomy layer into every export, which is the one thing this
-    module exists to avoid."""
+
+def _assessment_fingerprint(fingerprints: list[str]) -> str:
+    digest = hashlib.sha256()
+    for fingerprint in sorted(fingerprints):
+        digest.update(fingerprint.encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def _architecture_graph(result: AssessmentResult, architecture: Graph | None) -> Graph:
     if architecture is not None:
         return architecture
     from airiskkg.assessment_runner import load_base_graph
@@ -70,8 +91,9 @@ def build_export(
     graph.bind("prov", PROV)
     graph.bind("dct", DCTERMS)
 
+    submitted = _architecture_graph(result, architecture)
     for part in (
-        _architecture_graph(result, architecture),
+        submitted,
         result.motif_matches,
         result.risk_findings,
         result.inferred_annotations,
@@ -96,6 +118,27 @@ def build_export(
     graph.add((activity, DCTERMS.conformsTo, OUTPUT_CONTRACT))
     if source_label:
         graph.add((activity, DCTERMS.title, Literal(source_label)))
+    consumed = [graph_fingerprint(submitted)]
+    _input_entity(
+        graph,
+        activity,
+        kind="architecture",
+        label="Submitted architecture graph",
+        fingerprint=consumed[0],
+    )
+    if result.version is not None:
+        consumed.append(result.version.fingerprint)
+        _input_entity(
+            graph,
+            activity,
+            kind="knowledge-base",
+            label="PAIR-AI knowledge base",
+            fingerprint=result.version.fingerprint,
+            revision=result.version.revision,
+        )
+    graph.add(
+        (activity, PAIR.assessmentFingerprint, Literal(_assessment_fingerprint(consumed)))
+    )
     for system in set(graph.subjects(RDF.type, BEAM.System)):
         graph.add((activity, PROV.used, system))
     for generated_type in (PAIR.RiskFinding, PAIR.MotifMatch):

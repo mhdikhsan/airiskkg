@@ -1,0 +1,123 @@
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix its:  <http://w3id.org/airiskkg/example/it-support#> .
+
+# A synthetic IT service-desk agent: it reads a ticket, plans, calls a tool that
+# changes account state, keeps what it learned in memory, and writes a reply.
+#
+# Synthetic on purpose. The agentic layer had no bundled example at all - the
+# one that existed moved to example_local/ - so the four agentic risk patterns
+# could only be exercised by a graph stated inline in a test. This is small
+# enough to read in one screen and shaped to match the agentic motifs the
+# library actually has: tool-using agent, agent memory loop, agent delegation.
+#
+# It carries no control steps. That is the point of shipping it: an assessment
+# on it should have plenty to say, and the business process that refines it
+# (ontology/example/context/it_service_desk.ttl) is where a human approval sits.
+
+its:AgentSystem a beam:Element, beam:System ;
+    rdfs:label "IT Support Agent" ;
+    beam:context "An internal service desk assistant that resolves routine account and access requests end to end, escalating anything it cannot close." ;
+    beam:description "The agent reads the submitted ticket, plans a course of action, invokes account tools, records what it did in a running memory, and drafts the reply sent back to the employee." ;
+    beam:hasProcess its:Planning, its:ToolInvocation, its:AccountChange, its:MemoryWrite,
+                    its:MemoryRead, its:ReplyDrafting, its:Handoff ;
+    beam:hasResource its:Ticket, its:AgentLLM, its:ToolCatalogue, its:ToolResult,
+                     its:AgentMemory, its:RecalledHistory, its:DraftReply,
+                     its:HandoffRequest, its:EscalationNote .
+
+### What comes in
+
+its:Ticket a beam:Data ;
+    rdfs:label "Support ticket" ;
+    pair:playsRole pair:PublicUserInput .
+
+its:AgentLLM a beam:StatisticalModel ;
+    rdfs:label "Agent LLM" ;
+    pair:playsRole pair:GenerativeModel .
+
+its:ToolCatalogue a beam:Symbol ;
+    rdfs:label "Account tool catalogue" ;
+    pair:playsRole pair:PromptTemplate .
+
+### Plan, then act
+
+its:Planning a beam:Infer, beam:Process ;
+    rdfs:label "Decide what to do" ;
+    pair:playsRole pair:PlanningStep ;
+    beam:use its:Ticket, its:AgentLLM, its:ToolCatalogue ;
+    beam:inform its:ToolInvocation, its:AccountChange, its:Handoff ;
+    beam:produce its:HandoffRequest .
+
+its:ToolInvocation a beam:Process ;
+    rdfs:label "Look up the account" ;
+    pair:playsRole pair:ToolInvocationStep ;
+    beam:use its:Ticket ;
+    beam:produce its:ToolResult .
+
+its:ToolResult a beam:Data ;
+    rdfs:label "Account lookup result" ;
+    pair:playsRole pair:RetrievedContext .
+
+# The step with real-world effect: it resets credentials and grants access, and
+# nothing in this graph reviews the decision before it happens.
+its:AccountChange a beam:Process ;
+    rdfs:label "Apply the account change" ;
+    pair:playsRole pair:StateChangingStep ;
+    beam:use its:ToolResult ;
+    beam:produce its:DraftReply .
+
+### What it remembers
+
+its:MemoryWrite a beam:Process ;
+    rdfs:label "Record what was done" ;
+    pair:playsRole pair:MemoryWriteStep ;
+    beam:use its:ToolResult ;
+    beam:produce its:AgentMemory .
+
+its:AgentMemory a beam:Data ;
+    rdfs:label "Case memory" ;
+    pair:playsRole pair:AgentMemory .
+
+its:MemoryRead a beam:Process ;
+    rdfs:label "Recall earlier cases" ;
+    pair:playsRole pair:MemoryReadStep ;
+    beam:use its:AgentMemory ;
+    beam:produce its:RecalledHistory .
+
+its:RecalledHistory a beam:Data ;
+    rdfs:label "Recalled case history" ;
+    pair:playsRole pair:RetrievedContext .
+
+### What goes back
+
+its:ReplyDrafting a beam:Generate, beam:Process ;
+    rdfs:label "Draft the reply" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use its:RecalledHistory, its:AgentLLM ;
+    beam:produce its:DraftReply .
+
+its:DraftReply a beam:Data ;
+    rdfs:label "Drafted resolution" ;
+    pair:playsRole pair:PublicUserFacingOutput .
+
+### Handing over
+#
+# The planner decides to escalate and emits the request; the handoff step
+# consumes it. That direction is what AgentDelegationMotif is about - a message
+# passing between two steps - and it is also how it works: the thing that
+# decides is not the thing that carries it out.
+
+its:HandoffRequest a beam:Data ;
+    rdfs:label "Escalation request" ;
+    pair:playsRole pair:AgentMessage .
+
+its:Handoff a beam:Process ;
+    rdfs:label "Escalate to a human engineer" ;
+    pair:playsRole pair:AgentHandoffStep ;
+    beam:use its:HandoffRequest, its:RecalledHistory ;
+    beam:produce its:EscalationNote .
+
+its:EscalationNote a beam:Data ;
+    rdfs:label "Escalation note" ;
+    pair:playsRole pair:AgentMessage .

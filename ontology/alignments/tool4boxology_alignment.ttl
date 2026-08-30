@@ -21,11 +21,11 @@
 
 t4b:inputRoleParticipatesInProcess
     rdfs:subPropertyOf beam:usedBy ;
-    rdfs:comment "An input artifact participates in (is used by) a process. Verified direction: artifact -> process, matching beam:usedBy (Resource -> Process)."@en .
+    rdfs:comment "An input artifact participates in (is used by) a process."@en .
 
 t4b:outputRoleParticipatesInProcess
     rdfs:subPropertyOf beam:produce ;
-    rdfs:comment "A process produces an output artifact. Verified direction: process -> artifact, matching beam:produce (Process -> Resource)."@en .
+    rdfs:comment "A process produces an output artifact."@en .
 
 # Class alignments
 
@@ -57,11 +57,11 @@ t4b:Generate rdfs:subClassOf beam:Generate ;
     rdfs:comment "Tool4Boxology generation process aligned to BEAM Generate."@en .
 
 t4b:Deduce rdfs:subClassOf beam:Infer ;
-    rdfs:comment "DESIGN DECISION (review): t4b:Deduce has no direct BEAM equivalent; mapped to beam:Infer as the closest process type (deduction is symbolic inference)."@en .
+    rdfs:comment "Notes: t4b:Deduce has no direct BEAM equivalent; mapped to beam:Infer as the closest process type"@en .
 
 t4b:Embed rdfs:subClassOf beam:Transform ;
-    rdfs:comment "DESIGN DECISION (review): t4b:Embed has no direct BEAM equivalent; mapped to beam:Transform (embedding transforms data into a vector representation)."@en .
+    rdfs:comment "Notes: t4b:Embed has no direct BEAM equivalent; mapped to beam:Transform."@en .
 
 t4b:StatisticalModel rdfs:subClassOf beam:StatisticalModel ;
-    rdfs:comment "DESIGN DECISION (review): not in the originally agreed alignment list, but a verified t4b ontology class with an exact BEAM counterpart; added so statistical models normalize to a BEAM leaf type. The export's misspelled t4b:StatisticModel is case/spelling-normalized to this class first."@en .
+    rdfs:comment "Notes: not in the originally agreed alignment list, but a verified t4b ontology class with an exact BEAM counterpart; added so statistical models normalize to a BEAM leaf type."@en .
 

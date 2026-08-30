@@ -658,8 +658,6 @@ label.btn { display: inline-flex; align-items: center; }
   padding-left: 6px;
   margin: 6px 0 2px;
 }
-.ctrl-group.technical .ctrl-group-head { border-left-color: #4f7cc7; color: #9ec2f0; }
-.ctrl-group.non-technical .ctrl-group-head { border-left-color: #8a7f5a; color: #d3c79a; }
 .ctrl-label { color: var(--text); }
 .ctrl-motifs { margin: 2px 0 4px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 .ctrl-motifs-lead { font-size: 11px; color: var(--text-dim); font-style: italic; }
@@ -691,8 +689,19 @@ label.btn { display: inline-flex; align-items: center; }
 .an-el { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .an-el-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kind-badge {
-  flex: none; font-size: 10px; padding: 1px 6px; border-radius: 10px;
-  border: 1px solid var(--border); color: var(--text);
+  /* Fixed width so the element column lines up. It used to carry the type
+     label, whose lengths run from "Data" to "StatisticalModel". */
+  flex: none;
+  width: 58px;
+  text-align: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 1px 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: #23262e;
 }
 .kind-badge.process { background: var(--node-process); border-color: var(--node-process-border); }
 .kind-badge.data    { background: var(--node-data);    border-color: var(--node-data-border); }
@@ -721,6 +730,82 @@ label.btn { display: inline-flex; align-items: center; }
 .node-detail .mp-chip { background: #eef2fa; color: #2a2f38; border-color: #c6ccd8; }
 .node-detail .mp-x { color: #8a93a5; }
 .node-detail .mp-x:hover { color: #c0392b; }
+
+/* The activity popup. Never styled before now, because a rule meant to hide
+   the architecture's popup on the business level was hiding this one too - so
+   editing a BPMN activity was unreachable rather than missing. */
+#process-detail { width: min(330px, calc(100% - 24px)); }
+#process-detail .nd-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7c8698;
+  margin-bottom: 8px;
+}
+#process-detail .nd-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+#process-detail .nd-row > span { flex: none; width: 84px; color: #7c8698; font-size: 11.5px; }
+#process-detail .nd-row input,
+#process-detail .nd-row select {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid #c6ccd8;
+  border-radius: 5px;
+  padding: 3px 5px;
+  font-size: 12px;
+  background: #fff;
+  color: #2a2f38;
+}
+#process-detail .nd-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+/* The data an activity reads and writes, in the activity's own popup. */
+.pd-section {
+  margin: 10px 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7c8698;
+}
+.pd-empty { color: #8a93a5; font-size: 11.5px; padding: 2px 0 4px; }
+.pd-data { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+.pd-dir {
+  flex: none;
+  width: 40px;
+  font-size: 10.5px;
+  color: #9a6b1f;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.pd-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pd-class, .pd-add select, .pd-add input {
+  border: 1px solid #c6ccd8;
+  border-radius: 5px;
+  padding: 2px 4px;
+  font-size: 11px;
+  background: #fff;
+  color: #2a2f38;
+  max-width: 108px;
+}
+.pd-drop {
+  flex: none;
+  border: none;
+  background: none;
+  color: #8a93a5;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.pd-drop:hover { color: #c0392b; }
+.pd-add { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+.pd-add input { flex: 1 1 auto; min-width: 0; }
 
 .validation-row {
   display: flex;
@@ -795,3 +880,622 @@ label.btn { display: inline-flex; align-items: center; }
 /* Overflow counter on the taxonomy chip row: a real control, not a label. */
 .chip.chip-more { cursor: pointer; font: inherit; }
 .chip.chip-more:hover { border-color: var(--accent); color: var(--text); }
+
+/*  run identity  */
+
+.kb-badge {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.kb-badge.dirty { border-color: var(--warn); color: var(--warn); }
+
+.drawer-tab .stale {
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--warn);
+  border: 1px solid var(--warn);
+  border-radius: 3px;
+  padding: 0 4px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+
+.summary-row .delta { color: var(--good); }
+.summary-row .delta.raised { color: var(--warn); }
+
+/*  version history  */
+
+.history-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.history-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+
+.hist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.hist-row.current { background: rgba(79, 140, 255, 0.08); }
+.hist-v {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: var(--accent);
+  font-weight: 600;
+  min-width: 34px;
+}
+.hist-at { color: var(--text-dim); font-size: 11.5px; min-width: 150px; }
+.hist-counts { font-variant-numeric: tabular-nums; min-width: 190px; }
+.hist-delta {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  min-width: 64px;
+}
+.hist-delta.cleared { color: var(--good); }
+.hist-delta.raised { color: var(--warn); }
+.hist-cause { color: var(--text-dim); flex: 1 1 auto; }
+.hist-row .btn { flex: 0 0 auto; }
+
+/* ---- business process ---- */
+
+/* A lane heading, in the same shape as every other section heading in the
+   drawer. It used to be monospace at a different size and letter-spacing from
+   the findings, motifs and annotate headings beside it. */
+.proc-lane {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8b95ab;
+  border-left: 3px solid var(--accent);
+  padding: 12px 8px 5px 9px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.proc-lane:first-child { padding-top: 4px; }
+
+.proc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px 7px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.proc-row.refined { cursor: pointer; border-left: 2px solid var(--accent); padding-left: 16px; }
+.proc-row.refined:hover { background: rgba(79, 140, 255, 0.08); }
+
+/* The task type, as a tag rather than an identifier: it stopped being one
+   ("receiveTask" -> "Receive") and monospace was saying it still was. */
+.proc-kind {
+  flex: none;
+  width: 88px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8b95ab;
+}
+.proc-name { flex: 1 1 auto; }
+.proc-badges { display: flex; gap: 5px; flex-wrap: wrap; flex: 0 1 auto; }
+.proc-by { color: var(--text-dim); font-size: 11.5px; flex: 0 0 auto; }
+
+.proc-badge {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  border-radius: 3px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.proc-badge.ai { border-color: var(--accent); color: var(--accent); }
+.proc-badge.human { border-color: var(--good); color: var(--good); }
+.proc-badge.data { border-color: var(--warn); color: var(--warn); }
+
+.proc-warn {
+  font-size: 12px;
+  color: var(--warn);
+  border-left: 2px solid var(--warn);
+  padding: 6px 10px;
+  margin: 6px 0;
+}
+
+/* ---- level switch, breadcrumb, business canvas ---- */
+
+.level-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; flex: 0 0 auto; }
+.level {
+  background: transparent;
+  border: 0;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+.level.active { background: var(--accent-dim); color: #fff; }
+.level:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.breadcrumb { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; flex: 0 0 auto; }
+.crumb-link { background: none; border: 0; color: var(--accent); font: inherit; font-size: 12px; padding: 0; cursor: pointer; }
+.crumb-link:hover { text-decoration: underline; }
+.crumb-sep { color: var(--text-dim); }
+.crumb-here { color: var(--text-dim); }
+
+#process-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#process-canvas.hidden { display: none; }
+#canvas.hidden { display: none; }
+
+.pc-pool-box { fill: #ffffff; stroke: #c9cfdb; stroke-width: 1.2; }
+.pc-pool-strip { fill: #eef1f6; stroke: #c9cfdb; stroke-width: 1.2; }
+.pc-pool-label { fill: #48505f; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+
+.pc-box { fill: #f8f9fc; stroke: #9aa4b8; stroke-width: 1.4; }
+.pc-activity.refined .pc-box { fill: #eef3ff; stroke: #4a72c4; stroke-width: 2; }
+.pc-activity.human .pc-box { stroke: #4f9a6a; }
+.pc-activity:hover .pc-box { filter: brightness(0.97); }
+.pc-kind { fill: #7c8698; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.pc-label { fill: #2a2f38; font-size: 13px; font-weight: 600; }
+.pc-by { fill: #7c8698; font-size: 10.5px; }
+
+.pc-child { fill: #ffffff; stroke: #c9cfdb; stroke-width: 1; }
+.pc-child-label { fill: #48505f; font-size: 11px; }
+
+.pc-marker-box { fill: #ffffff; stroke: #9aa4b8; stroke-width: 1.2; }
+.pc-marker-sign { fill: #48505f; font-size: 13px; font-weight: 600; }
+.pc-marker:hover .pc-marker-box { stroke: #4a72c4; }
+
+.pc-open-box { fill: #4a72c4; }
+.pc-open-label { fill: #ffffff; font-size: 9.5px; font-weight: 600; }
+.pc-open:hover .pc-open-box { fill: #3a5da8; }
+
+.pc-flow { fill: none; stroke: #7c8698; stroke-width: 1.5; }
+.pc-flow.message { stroke-dasharray: 5 4; stroke: #b07a2e; }
+.pc-flow.pending { stroke: #4a72c4; stroke-dasharray: 4 3; }
+.pc-flow-label { fill: #7c8698; font-size: 10px; }
+
+/* BPMN data objects: a folded page, a cylinder for a store, and a dashed
+   association carrying an open arrowhead. */
+.pc-data-shape { fill: #fffdf6; stroke: #b3a06b; stroke-width: 1.3; }
+.pc-data-fold { fill: none; stroke: #b3a06b; stroke-width: 1.3; }
+.pc-data-link { fill: none; stroke: #b3a06b; stroke-width: 1.2; stroke-dasharray: 4 3; }
+.pc-arrow-head.open { fill: none; stroke: #b3a06b; stroke-width: 1.3; }
+.pc-data-label { fill: #6f6444; font-size: 10px; }
+.pc-data-kind { fill: #9a6b1f; font-size: 9.5px; font-weight: 600; }
+.pc-arrow-head { fill: #7c8698; }
+.pc-arrow-head.message { fill: #ffffff; stroke: #b07a2e; stroke-width: 1.4; }
+.pc-msg-start { fill: #ffffff; stroke: #b07a2e; stroke-width: 1.4; }
+
+.pc-pool.selected .pc-pool-strip { fill: #dce6fb; }
+.pc-pool.selected .pc-pool-label { fill: #2f4d94; }
+.pc-port-dot { fill: #ffffff; stroke: #4a72c4; stroke-width: 1.5; opacity: 0; }
+.pc-activity:hover .pc-port-dot { opacity: 1; }
+
+.canvas-wrap.business .canvas-empty,
+.canvas-wrap.business .legend,
+.canvas-wrap.business .system-badge,
+.canvas-wrap.business .node-detail:not(#process-detail) { display: none !important; }
+
+.system-bound-box {
+  fill: rgba(74, 114, 196, 0.035);
+  stroke: #9aa4b8;
+  stroke-width: 1.2;
+  stroke-dasharray: 7 5;
+}
+.system-bound-label {
+  fill: #6b7488;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.system-bound.s1 .system-bound-box { fill: rgba(79, 154, 106, 0.04); stroke: #8fb39c; }
+.system-bound.s1 .system-bound-label { fill: #5d8a6f; }
+.system-bound.s2 .system-bound-box { fill: rgba(179, 160, 107, 0.05); stroke: #bfae83; }
+.system-bound.s2 .system-bound-label { fill: #8a7a4f; }
+.system-bound.s3 .system-bound-box { fill: rgba(160, 106, 160, 0.04); stroke: #b394b3; }
+.system-bound.s3 .system-bound-label { fill: #8a6b8a; }
+
+/*  drawing the business layer */
+
+.process-palette {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  max-width: 62%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px;
+  z-index: 3;
+}
+.process-palette.hidden { display: none; }
+.pp-item {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font: inherit;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+.pp-item:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.pp-item:disabled { opacity: 0.4; cursor: not-allowed; }
+.pp-note { font-size: 10.5px; color: var(--text-dim); padding-left: 4px; }
+
+
+/* stakeholder overview. */
+
+.overview {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+.overview.hidden { display: none; }
+.overview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.overview-head h2 { margin: 0; font-size: 17px; font-weight: 500; }
+.overview-actions { display: flex; gap: 8px; }
+.overview-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  padding: 22px;
+  overflow: auto;
+}
+@media (max-width: 900px) { .overview-body { grid-template-columns: minmax(0, 1fr); } }
+.overview-diagram {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+  background: var(--bg-panel);
+}
+.overview-diagram svg { display: block; max-width: 100%; }
+.overview-side h3 {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 22px 0 8px;
+  font-weight: 600;
+}
+.overview-side h3:first-child { margin-top: 0; }
+.ov-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.ov-row .dim, .ov-note.dim { color: var(--text-dim); }
+.ov-count {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: var(--accent);
+  font-weight: 600;
+  min-width: 24px;
+}
+.ov-note { font-size: 12px; color: var(--text-dim); margin: 12px 0 0; line-height: 1.5; }
+
+/* BPMN type markers, drawn rather than named. */
+.pc-icon { fill: none; stroke: #48505f; stroke-width: 1.2; stroke-linejoin: round; }
+.pc-icon .pc-icon-filled { fill: #48505f; }
+.pc-icon .pc-icon-hole { fill: #f8f9fc; stroke: none; }
+
+/* Edit is secondary on a refined activity: the box itself opens the
+ * architecture, which is what expanding a sub-process means here. */
+.pc-edit-box { fill: #ffffff; stroke: #c9cfdb; stroke-width: 1; opacity: 0; }
+.pc-edit-nib { fill: #7c8698; opacity: 0; }
+.pc-activity:hover .pc-edit-box, .pc-activity:hover .pc-edit-nib { opacity: 1; }
+.pc-edit:hover .pc-edit-box { stroke: #4a72c4; }
+#process-canvas.panning { cursor: grabbing; }
+
+/* Candidate risks, per business activity. Folded by default: a count alone is a
+ * number nobody can act on, and the whole list at once is a wall. */
+.pc-risk-box { fill: #fdf1e7; stroke: #d08a45; stroke-width: 1.2; }
+.pc-risk-label { fill: #8a4f19; font-size: 9.5px; font-weight: 600; }
+.pc-risk:hover .pc-risk-box { fill: #f9e3d0; }
+.pc-risk-item { fill: #8a4f19; font-size: 10.5px; }
+
+/* The opening question. Two layers, two jobs, and which one someone came to do. */
+.start-question { font-size: 15px; color: #5a6273; margin: 0 0 14px; }
+.start-choice { display: flex; gap: 12px; pointer-events: auto; }
+.start-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 220px;
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid #c9cfdb;
+  border-radius: 8px;
+  padding: 14px 16px;
+  cursor: pointer;
+  font: inherit;
+}
+.start-card:hover { border-color: #4a72c4; background: #f7f9ff; }
+.start-card:focus-visible { outline: 2px solid #4a72c4; outline-offset: 2px; }
+.start-title { font-size: 14px; font-weight: 600; color: #2a2f38; }
+.start-note { font-size: 11.5px; color: #7c8698; line-height: 1.45; }
+
+/* Reading a version, which is not the same act as adopting one. */
+.history-preview {
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.history-preview.hidden { display: none; }
+.hv-head { display: flex; gap: 14px; align-items: baseline; font-size: 13px; margin-bottom: 10px; }
+.hv-head .dim { color: var(--text-dim); font-size: 12px; }
+.hv-group { margin: 10px 0; }
+.hv-group-title {
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.hv-group.cleared .hv-group-title { color: var(--good); }
+.hv-group.raised .hv-group-title { color: var(--warn); }
+.hv-item { font-size: 12.5px; padding: 2px 0 2px 12px; }
+.hv-item.dim { color: var(--text-dim); }
+.hist-row:hover { background: rgba(255,255,255,0.03); }
+
+/* Before a layer is chosen, neither layer's tools are on screen. */
+.canvas-wrap.unstarted .palette,
+.canvas-wrap.unstarted .motif-palette,
+.canvas-wrap.unstarted .process-palette,
+.canvas-wrap.unstarted .legend,
+.canvas-wrap.unstarted .canvas-controls { display: none !important; }
+
+/* The opening question, once answered, is not a caption for an empty canvas. */
+.canvas-wrap.started .canvas-empty { display: none !important; }
+
+/* smaller screens */
+.drawer-tabs {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.drawer-tab { white-space: nowrap; flex: 0 0 auto; }
+
+@media (max-width: 1400px) {
+  .toolbar { flex-wrap: wrap; justify-content: flex-end; row-gap: 6px; }
+  .app-header { align-items: flex-start; }
+}
+
+@media (max-width: 1100px) {
+  .editor-pane { flex: 0 0 34%; }
+  .process-palette { max-width: 92%; }
+  .kb-badge { display: none; }
+}
+
+@media (max-width: 820px) {
+  .workbench { flex-direction: column; }
+  .editor-pane { flex: 0 0 34vh; }
+  .preview-pane { flex: 1 1 auto; min-height: 46vh; }
+  .divider { flex: 0 0 6px; cursor: row-resize; width: 100%; }
+  .toolbar { gap: 6px; }
+  .toolbar select, .toolbar .btn { font-size: 12px; padding: 4px 8px; }
+  .start-choice { flex-direction: column; }
+  .start-card { width: 260px; }
+}
+
+@media (max-height: 700px) {
+  .drawer:not(.collapsed) .drawer-body { max-height: 40vh; }
+}
+.brand h1 { white-space: nowrap; }
+.brand { flex: 0 0 auto; }
+
+@media (max-width: 1400px) {
+  .toolbar { flex: 1 1 auto; min-width: 0; }
+}
+
+/* A candidate the annotation guidance flagged. Marked rather than dropped:
+   hiding it leaves the reader wondering where their element went. */
+.gap-candidate { color: var(--text, #2a2f38); }
+.gap-candidate.flagged { color: #b06a1f; }
+.gap-flag {
+  margin-left: 5px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgba(176, 106, 31, 0.14);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.flagged-row { border-left: 3px solid #b06a1f; }
+.gap-flag-text { color: #8a7a4f; font-size: 11.5px; padding: 2px 0 0 2px; }
+
+/* Which catalogue a taxonomy entry came from, inside its chip. */
+.chip-source {
+  margin-right: 5px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.10);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+/* Which catalogue a control section came from, and whether a control is
+   something you can build or something an organisation has to do. */
+.ctrl-group-head { display: flex; align-items: baseline; gap: 8px; }
+.ctrl-group-source {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.ctrl-nature {
+  margin-left: 7px;
+  padding: 0 5px;
+  border-radius: 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.ctrl-nature.technical { background: rgba(74, 114, 196, 0.22); color: #9dc0ff; }
+.ctrl-nature.non-technical { background: rgba(160, 106, 160, 0.22); color: #d7a8d7; }
+
+/* Which architecture a block of rows belongs to, when a document holds more
+   than one. */
+.annotate-group {
+  margin: 10px 0 2px;
+  padding-left: 6px;
+  border-left: 3px solid var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.annotate-row { cursor: pointer; }
+.annotate-row.annotate-row-head { cursor: default; }
+
+.annotate-group { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+.annotate-group:hover { color: var(--text); }
+.annotate-group-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px;
+  border: 1px solid var(--border); border-radius: 3px;
+  font-size: 11px; line-height: 1;
+}
+.annotate-group-count { color: var(--text-dim); font-weight: 400; opacity: 0.7; }
+.annotate-group.collapsed { opacity: 0.75; }
+
+/* Fold the editor away to read the diagram, Overleaf-style. */
+.divider { position: relative; }
+.divider-toggle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-panel);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  z-index: 3;
+}
+.divider-toggle:hover { color: var(--text); border-color: var(--accent); }
+/* Folded, the pane keeps a rail rather than disappearing: nobody goes looking
+   for a panel that left no trace. The rail is the way back. */
+.editor-rail { display: none; }
+body.editor-hidden .editor-pane {
+  flex: 0 0 34px;
+  min-width: 34px;
+  overflow: hidden;
+}
+body.editor-hidden .editor,
+body.editor-hidden .statusbar { display: none; }
+body.editor-hidden .editor-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+body.editor-hidden .editor-rail:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.editor-rail-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+body.editor-hidden .divider { cursor: default; }
+
+/* Toolbar icons, drawn inline: the page has no external URL of any kind and
+   this runs in a container with an allow-listed build context. */
+.btn { display: inline-flex; align-items: center; gap: 6px; }
+.ico { flex: none; opacity: 0.85; }
+.btn:hover .ico, .btn.primary .ico { opacity: 1; }
+
+/* The editor's own strip. Starter and Clear act on what is in the pane, so
+   they belong to it rather than to the toolbar that runs assessments. */
+.pane-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  min-height: 30px;
+}
+.pane-head-name {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.pane-head-actions { margin-left: auto; display: flex; gap: 5px; }
+.btn.small { padding: 2px 7px; font-size: 11.5px; }
+body.editor-hidden .pane-head { display: none; }
+
+/* The brand doubles as "start over", so it has to look pressable. */
+.brand-home {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  border-radius: 4px;
+}
+.brand-home:hover { opacity: 0.75; }
+.brand-home:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* The same architecture heading, in panels that only report - nothing to fold. */
+.annotate-group.static { cursor: default; }
+.annotate-group.static:hover { color: var(--text-dim); }

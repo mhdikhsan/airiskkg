@@ -4,6 +4,9 @@ This file is read automatically by Claude Code at the start of every session.
 It encodes the project context and the locked design decisions. Do not contradict it;
 if a task seems to require violating a rule here, stop and ask.
 
+## Development Rules
+Don't put long comments in the code block
+
 ## What this project is
 
 PAIR-AI is a design-time AI risk assessment method. It matches **architectural motifs**
@@ -46,6 +49,11 @@ framing instead of supporting it.
   loaded ontology, so it goes stale silently — re-check its counts whenever the library changes.
 - `docs/reference/risk_control_linkage.md` — how risk patterns reach controls, including the
   MIT mitigation/action evidence layer.
+- `docs/notes/business_context_as_built.md` — what the business layer actually is: the three
+  layers, the two derivations, the numbers they move, the canvas, and the traps that cost
+  time. Its companion `bpmn_business_context_integration.md` is the prior analysis, kept for
+  the options it weighs and explicitly marked superseded. **Local-only (`docs/notes/` is
+  gitignored)** — absent from a fresh clone, like `CHANGELOG_data_model.md`.
 - `CHANGELOG_data_model.md` — running record of data-model changes and past audits, including
   which layers were found to contain fabricated content and how each was fixed. Worth reading
   before touching the taxonomy or mapping layers. Local-only (gitignored).
@@ -144,6 +152,43 @@ framing instead of supporting it.
   into `pair:DataCategoryScheme`. Data Category is the one facet that lives in the pattern
   module rather than `ontology/facets/`, because its values are also *derived* along data
   flow by registered propagation queries (R8); every other facet is an annotated base fact.
+- **The business layer joins by refinement, never subsumption (added 2026-08-25).**
+  Three layers: business (sBPMN 2.0) → `pair:refinedBy` → architecture (BEAM) →
+  `pair:playsRole` → patterns. **A `bpmn:activity` is not a `beam:Process`** and must never
+  be aligned to one: every match query types its step node as
+  `?step a/rdfs:subClassOf* beam:Process`, so subsuming activities under it would make every
+  business activity a candidate motif node — and the input contract, which requires each
+  `beam:Process` to use or produce a resource, would reject every process model outright.
+  `pair:refinedBy` is PAIR's own rather than `sbpmn:calledElement`, whose unconstrained range
+  would accept it and hard-code the sBPMN namespace into every submitted architecture.
+- **The business layer reaches the assessment through one bridge, and R8 stays intact.**
+  `business_data_bridge.rq` reads a personal-data kind off a `bpmn:itemDefinition` and emits
+  `pair:SensitiveInformation` on the input-playing elements of the refined system, with a
+  `prov:Derivation` saying which annotation produced it. What is *annotated* stays annotated
+  (on the item definition, by a human); what is *derived* is the data category, exactly as
+  before. No facet is propagated as a facet and **no BPMN triple enters the architecture**.
+  The mapping goes by role, not by name, because nothing in the business layer names an
+  architecture element — that is the point, since the analyst does not know them.
+  The two DPV values meaning "not personal" (`dpv:AnonymisedData`, `dpv:NonPersonalData`) are
+  excluded and are offered in the UI on purpose: "checked, and not personal" is a claim, and
+  it must not collapse into the silence of never having said anything.
+- **`bp:sourceRef` / `bp:targetRef` are declared on five classes**, so a property path over
+  them walks out of control flow, through a data association, and back in somewhere
+  unrelated — and the result looks like evidence. `business_flow.rq` materialises one *typed*
+  hop as `pair:businessFollows` so every condition downstream can use a plain transitive path
+  and cannot make that mistake. Never write a raw path over `bp:sourceRef`.
+- **The BPMN canvas draws what a risk assessment reads, and no more.** Pools, activities with
+  their task-type glyphs, sequence and message flow, sub-process expansion, and data objects
+  with their classification. Gateways, events and boundary markers are deliberately absent:
+  no bundled example uses one and none of them changes a finding. Editing goes through
+  `/api/process-edit`, a server-side rewrite like `/api/graph-edit` — the Turtle in the editor
+  stays the single source of truth. Whether a connection is a sequence flow or a message flow
+  is read from the containment, never asked.
+- **Scoping to one architecture is a traversal, not stored state.** `pair:refinedBy` names the
+  system and `beam:hasProcess` / `hasResource` / `hasAgent` / `contain` say what it holds, so
+  `graph_view._members_of()` answers "the architecture behind THIS activity". There is no
+  database and there must not be one for this. The same membership draws the per-system
+  boundary on the canvas.
 - **Predicate economy**: no new flow predicates in BEAM core; node types carry edge
   semantics.
 - **Provenance everywhere**: `dct:source` on reused concepts; `pair:derivedFrom` on every
@@ -249,11 +294,27 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   cross-taxonomy mappings. Mappings are tiered by evidence: Section 1 reproduces upstream SSSOM
   rows exactly, Section 2 is project curation where no upstream row exists, Section 3 grounds
   risk to controls. Prefer adopting an upstream row over curating one.
+- `ontology/context/` — the **business layer bridge**: `bpmn_context.ttl` declares
+  `pair:refinedBy` (activity → `beam:System`), `pair:businessFollows` and
+  `pair:BusinessFlowDerivation`, and registers two derivations in
+  `context/implementation/` — `business_flow.rq` (typed reachability over sequence
+  flow) and `business_data_bridge.rq` (a data annotation made on the process becomes
+  a data category on the architecture). Registered like any other implementation, so
+  a moved `.rq` means a changed declaration.
 - `ontology/visualization/` — standalone SPARQL run by hand; referenced by no declaration,
   unlike `patterns/implementation/`
 - `ontology/example/` — **every** architecture graph the repo ships: a RAG chatbot
-  (Onyx / Danswer) and a minimal graph-RAG. Two, deliberately: enough for someone to
-  try the tool, and a set small enough to keep pinned.
+  (Onyx / Danswer), a minimal graph-RAG, a meter-anomaly scorer (ML serving, added
+  so the business example can refine two different architectures), and an IT support
+  agent (synthetic; the only bundled graph that reaches the agentic layer, which
+  otherwise existed only inline in `test_agentic_assessment.py`). Four, and the set
+  stays small on purpose: every one is pinned by `test_propagation.py`, which fails if
+  a graph ships without a baseline.
+  `ontology/example/context/` holds the process models — two:
+  `energy_customer_service.ttl` (two pools, two sub-processes refined onto two different
+  architectures — the case for "one process runs several systems") and
+  `it_service_desk.ttl` (one AI activity carrying an agent, with a human approval between
+  the agent's decision and the change taking effect).
   **Never name one of these files in a test.** They get renamed — `onyx_danswer.ttl`
   became `onyx_danswer_rag_chatbot.ttl` became `ony_rag_chatbot.ttl` became
   `onyx_rag_chatbot.ttl` inside two days — and each rename broke suites for reasons
@@ -288,6 +349,14 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - `python/src/airiskkg/`, `python/scripts/`, `python/tests/` — pipeline code, CLI, webapp, and
   maintenance scripts. The Python package root is `python/`, not the repo root; `airiskkg.paths`
   resolves back to the knowledge base by walking up until it finds both `ontology/` and `python/`.
+  **The web layer holds no library knowledge.** `webapp/routes/` is three blueprints that parse a
+  payload, call in, and shape a response; `webapp/runtime.py` holds the process-wide SPARQL lock
+  and the start-up warm-up. Anything that *decides* something about the library — motif templates,
+  the motif gap report, the role/category vocabulary, SHACL report shaping — lives in
+  `airiskkg/workbench/`, importable without Flask. This was extracted from a 878-line `app.py`
+  where roughly 365 lines had nothing to do with HTTP; putting any of it back is a regression.
+  `assessment_runner` and `paths` keep their import paths on purpose: the evaluation harness in
+  the gitignored `docs/evaluation/` imports them and cannot be updated from a clone.
 - `outputs/` — generated motif matches and findings (assessment output, not knowledge; untracked)
 - `v1/` — frozen snapshot of the prior ontology generation (do not edit; see `v1/legacy/` for the
   earlier pre-BEAM flat layout)
@@ -298,15 +367,23 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - Branch per feature; one labeled commit per task; never commit directly to main.
 - After every ontology change: parse all `.ttl` with RDFLib, run pyshacl where shapes
   exist, and re-run the assessment on the bundled examples — then explain any diff.
-  Current baseline (matches / findings, as of 2026-08-17):
+  Current baseline (matches / findings, measured 2026-08-25):
 
   | Graph | Matches | Findings |
   | --- | --- | --- |
   | RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 22 |
   | Minimal graph RAG | 3 | 7 |
+  | Meter anomaly scoring | 4 | 1 |
+  | IT support agent (agentic) | 4 | 8 |
+  | Energy scene: both of the last two + the business process | 7 | 8 |
+  | IT service desk scene: the agent + its business process | 4 | 9 |
+
+  The scene is not the sum of its parts, and that is the business layer working.
 
   The agentic layer is covered by `test_agentic_assessment.py`, which states its own
-  graph inline — the MCP example it used to read now lives in `example_local/`.
+  graph inline — the MCP example it used to read now lives in `example_local/` — and,
+  since 2026-08-26, by a bundled example: `it_support_agent.ttl` matches all three
+  agentic motifs and fires four ASI-derived patterns.
 
   Matches are `pair:MotifMatch` instances, not distinct motifs — nested motifs co-match
   by design, so the number is structural coverage. `test_propagation.py` asserts these
@@ -326,6 +403,18 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   runtime and changes nothing about the result. Never hoist the metadata back to the top,
   and keep the structural braces: without them the filters leave that group and fire once
   per metadata row again.
+- **A run records what it ran on, not only what it produced.** `build_export` mints a
+  `prov:Activity` and, beside it, one `prov:Entity` per input — the submitted graph and the
+  knowledge base — each carrying `pair:contentFingerprint`, plus `pair:sourceRevision` on the
+  library when a repository is present (the container has none; `.dockerignore` is an
+  allow-list that does not name `.git`). **Inputs are entities, not properties on the
+  activity**: adding a third input — the business process layer — then costs a call rather
+  than a new predicate. An entity's IRI *is* its fingerprint, so two runs over the same input
+  reference one node. `pair:assessmentFingerprint` on the activity answers "same question?";
+  the activity IRI stays a fresh UUID because two runs at different times genuinely are two
+  events, and collapsing them would assert they were one. Graph fingerprints canonicalize
+  blank nodes and sort N-Triples before hashing — never `to_isomorphic(...).graph_digest()`,
+  whose value is rdflib's own and would break comparability across an rdflib upgrade.
 - **The knowledge base is parsed once per process** and copied per call
   (`assessment_runner._base_knowledge`). Turtle parsing was the largest single cost in
   every entry point. `load_base_graph()` still hands back a fresh writable graph — callers
@@ -342,10 +431,12 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - Tool4Boxology export quirks the normalizer must handle: lowercase type URIs
   (`t4b:transform` vs `t4b:Transform`), ontology declares `patternProcess` but exports
   `hasProcess`, instances multi-typed with `t4b:Component`.
-- Current library size (2026-08-17, counted off the loaded graph): **31 motifs**,
+- Current library size (2026-08-25, counted off the loaded graph): **31 motifs**,
   **15 risk patterns**, **97 pattern roles**, **7 data categories**, **35 facet
-  concepts**, 21 applicability-condition attachments. Implementations: 31 match
-  queries, 15 risk queries, 6 propagation rules.
+  concepts**, **14 risk mechanisms**, 16 applicability conditions carried on 20 attachments.
+  Implementations: 31 match queries, 15 risk queries, 6 propagation rules, 8 mitigation
+  rewrites, and 2 business-context derivations (the last outside
+  `patterns/implementation/`, under `ontology/context/`).
   Every figure but the motif count had already drifted before anyone noticed, so
   re-count rather than edit by hand:
   `len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))` and its siblings.
@@ -409,6 +500,24 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   inside it. A control whose `pair:realizedByMotif` points at a motif far larger than
   the risk it addresses is not actionable — that motif is what the canvas offers to
   insert.
+- **The front end is native ES modules, and its shape is enforced.**
+  `webapp/static/` is `app.js` (entry: wiring only) + `state.js` + `core/` (plumbing that knows
+  nothing about the workbench) + `lib/` (self-contained renderers and widgets) + `panels/`
+  (one file per thing on screen). `test_webapp_module_layout.py` holds three rules: **no import
+  cycles**, **every imported name is actually exported**, and **exactly one browser global**
+  (`window.PairAI`, for the tests that drive the page from outside). `core/bus.js` exists for
+  one case — a scope change redraws both the canvas and the findings list, and the two panels
+  that trigger it are the two that draw it, so they emit rather than call across.
+  `state.js` is one mutated object, not exported variables: an imported binding is read-only
+  for the importer, so `scopedSystem = null` in a panel would not reach the canvas that draws
+  the scope, and would not even be legal.
+- **The canvases are only ever tested with real input.** `dispatchEvent(new MouseEvent(...))`
+  lands on whatever element you name it at, so it proved nothing while pointer capture was
+  retargeting every real click; the suite was green throughout.
+  `test_canvas_interaction.py` drives the DevTools protocol, and
+  `test_canvas_renders.py` loads the page in a headless browser and reads what came out.
+  Assert on what is *painted* — a wrap test once passed on the strength of the `<title>` it
+  had just been given.
 - Sweep motif labels against R9 whenever the library version changes: no *direct*, *only*,
   *pure*, *without*, *unmediated*, *standalone* in a motif name.
 - Write English comments/labels; APA 7th for any citation in docs.

@@ -10,28 +10,7 @@
 <http://w3id.org/airiskkg/shacl/annotation-guidance>
     a owl:Ontology ;
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
-    dct:title "PAIR-AI Annotation Guidance Shapes"@en ;
-    dct:description """
-    A third shapes file, alongside the two contracts, aimed at a different
-    question.
-
-    architecture_input_contract.ttl asks "is this graph well formed enough to
-    assess?". assessment_output_contract.ttl asks "is what we emitted well
-    formed?". Neither asks "will this annotation actually do anything?" - and
-    that is where real annotation effort is lost. A graph can satisfy the input
-    contract completely and still produce zero findings because a role sits on
-    the wrong kind of element, or a store nothing retrieves from, or a memory
-    written but never read. The assessment then reports nothing, and silence
-    reads as safety.
-
-    Every shape here is sh:Info or sh:Warning and NONE is sh:Violation. These
-    are not conditions of acceptance: an architecture is allowed to have a
-    dangling store, and a modeler is allowed to annotate partially. Reporting
-    them as violations would make the contract lie about what it requires.
-
-    Candidate framing applies here too, one level up: a warning says the
-    ANNOTATION looks incomplete, never that the system is unsafe.
-    """@en .
+    dct:title "PAIR-AI Annotation Guidance Shapes"@en .
 
 ag:StepRoleNeedsAProcessTypeShape
     a sh:NodeShape ;

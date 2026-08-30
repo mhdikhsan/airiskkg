@@ -38,9 +38,6 @@ beam:Element a owl:Class ;
             beam:Data a owl:Class ;
                 rdfs:label "Data" ;
                 rdfs:subClassOf beam:Instance .
-
-                # Boxology-derived Data subtypes (structural leaf classes;
-                # implementation types belong to the facet layer, not here)
                 beam:Number a owl:Class ;
                     rdfs:label "Number" ;
                     rdfs:subClassOf beam:Data ;
@@ -84,8 +81,6 @@ beam:Element a owl:Class ;
             beam:Symbol a owl:Class ;
                 rdfs:label "Symbol" ;
                 rdfs:subClassOf beam:Instance .
-
-                # Boxology-derived Symbol subtypes
                 beam:Database a owl:Class ;
                     rdfs:label "Database" ;
                     rdfs:subClassOf beam:Symbol ;

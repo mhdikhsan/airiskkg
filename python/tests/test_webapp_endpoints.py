@@ -8,7 +8,7 @@ flask = pytest.importorskip("flask")
 
 from airiskkg.paths import EXAMPLE_DIR, REPO_ROOT  # noqa: E402
 from airiskkg.webapp.app import create_app  # noqa: E402
-from conftest import ONYX_NS, example_path  # noqa: E402
+from conftest import GRAPH_RAG_NS, ONYX_NS, example_path  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -531,3 +531,217 @@ def test_a_risk_firing_on_several_paths_needs_a_control_on_each(client) -> None:
             "ttl": ttl, "control": control["id"], "finding": finding["id"],
         }).get_json()["ttl"]
     assert counts == sorted(counts, reverse=True) and counts[0] > counts[-1], counts
+
+
+# --- run identity in the UI ---------------------------------------------------
+#
+# Two things about an assessment are invisible while you work, and both mislead:
+# the drawer keeps showing the last run's findings while the editor moves on,
+# and a .ttl edited on disk is not reloaded by a running server.
+
+
+def _onyx_ttl() -> str:
+    return example_path(ONYX_NS).read_text(encoding="utf-8")
+
+
+def test_an_assessment_says_what_it_ran_on(client) -> None:
+    response = client.post("/api/assess", json={"ttl": _onyx_ttl()})
+    run = response.get_json()["run"]
+
+    assert run["inputFingerprint"]
+    assert run["knowledgeBase"]["motifs"] > 0
+    assert run["knowledgeBase"]["riskPatterns"] > 0
+    assert run["knowledgeBase"]["fingerprint"]
+
+
+def test_the_fingerprint_endpoint_agrees_with_the_run(client) -> None:
+    """Otherwise the staleness check compares two different things and either
+    never fires or never stops firing."""
+    ttl = _onyx_ttl()
+    assessed = client.post("/api/assess", json={"ttl": ttl}).get_json()
+    probed = client.post("/api/fingerprint", json={"ttl": ttl}).get_json()
+
+    assert probed["fingerprint"] == assessed["run"]["inputFingerprint"]
+    assert probed["tripleCount"] > 0
+
+
+def test_reserializing_the_graph_does_not_look_like_an_edit(client) -> None:
+    """Every canvas edit and every annotation re-serializes the whole document
+    through rdflib, so the Turtle changes constantly while the graph does not. A
+    staleness warning that fires on each click is one people learn to ignore."""
+    ttl = _onyx_ttl()
+    reserialized = flask.json.loads(
+        client.post(
+            "/api/graph-edit",
+            json={"ttl": ttl, "op": "add-edge", "subject": "urn:x", "predicate": "inform", "object": "urn:y"},
+        ).data
+    )["ttl"]
+
+    before = client.post("/api/fingerprint", json={"ttl": ttl}).get_json()["fingerprint"]
+    after = client.post("/api/fingerprint", json={"ttl": reserialized}).get_json()["fingerprint"]
+    assert before != after, "adding an edge is a real change and must register"
+
+    round_tripped = flask.json.loads(
+        client.post(
+            "/api/annotate", json={"ttl": ttl, "annotations": {}}
+        ).data
+    )["ttl"]
+    unchanged = client.post("/api/fingerprint", json={"ttl": round_tripped}).get_json()["fingerprint"]
+    assert unchanged == before, "a no-op annotation reserialized the text but changed no triple"
+
+
+def test_applying_a_control_moves_the_input_fingerprint_and_clears_findings(client) -> None:
+    """The loop the drawer reports on: what did the control I just applied do?
+    Answerable as a set difference because finding IRIs are deterministic."""
+    ttl = _onyx_ttl()
+    first = client.post("/api/assess", json={"ttl": ttl}).get_json()
+    before = {finding["id"] for finding in first["findings"]}
+
+    choice = next(
+        (finding, control)
+        for finding in first["findings"]
+        for control in finding["suggestedControls"]
+        if control.get("applicable")
+    )
+    finding, control = choice
+    amended = client.post(
+        "/api/apply-control",
+        json={"ttl": ttl, "control": control["id"], "finding": finding["id"]},
+    ).get_json()["ttl"]
+
+    second = client.post("/api/assess", json={"ttl": amended}).get_json()
+    after = {item["id"] for item in second["findings"]}
+
+    assert second["run"]["inputFingerprint"] != first["run"]["inputFingerprint"]
+    assert before - after, "applying a control cleared nothing"
+    assert second["run"]["knowledgeBase"]["fingerprint"] == first["run"]["knowledgeBase"]["fingerprint"]
+
+
+def test_fingerprinting_nothing_is_refused(client) -> None:
+    assert client.post("/api/fingerprint", json={"ttl": "  "}).status_code == 400
+
+
+# --- drawing the business layer ----------------------------------------------
+#
+# BEAM cannot express a pool, a lane, or a message between two organisations, so
+# the business layer is authored with its own vocabulary and its own endpoint.
+
+
+def _draw(client, ttl, **payload):
+    response = client.post("/api/process-edit", json={"ttl": ttl, **payload})
+    assert response.status_code == 200, response.get_json()
+    body = response.get_json()
+    return body["ttl"], body["newId"]
+
+
+def test_a_process_can_be_drawn_from_nothing(client) -> None:
+    ttl = ""
+    ttl, customer = _draw(client, ttl, op="add-pool", label="Customer")
+    ttl, retailer = _draw(client, ttl, op="add-pool", label="Northwind Energy")
+    ttl, ask = _draw(client, ttl, op="add-activity", pool=customer, kind="task", label="Ask")
+    ttl, receive = _draw(client, ttl, op="add-activity", pool=retailer, kind="receiveTask", label="Receive")
+
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+    assert view["stats"]["participants"] == 2
+    assert {a["label"] for a in view["activities"]} == {"Ask", "Receive"}
+    assert ask and receive
+
+
+def test_whether_a_connection_is_a_message_follows_from_the_pools(client) -> None:
+    """Not a preference the modeller has to know. Sequence flow cannot leave a
+    process and a message flow only exists between participants, so the server
+    reads the containment and decides."""
+    ttl = ""
+    ttl, customer = _draw(client, ttl, op="add-pool", label="Customer")
+    ttl, retailer = _draw(client, ttl, op="add-pool", label="Retailer")
+    ttl, ask = _draw(client, ttl, op="add-activity", pool=customer, kind="task", label="Ask")
+    ttl, receive = _draw(client, ttl, op="add-activity", pool=retailer, kind="receiveTask", label="Receive")
+    ttl, reply = _draw(client, ttl, op="add-activity", pool=retailer, kind="sendTask", label="Reply")
+
+    ttl, _ = _draw(client, ttl, op="connect", source=ask, target=receive)      # across pools
+    ttl, _ = _draw(client, ttl, op="connect", source=receive, target=reply)    # within one
+
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+    assert len(view["messageFlows"]) == 1, "crossing a boundary must produce a message flow"
+    assert view["messageFlows"][0]["source"] == ask
+
+
+def test_deleting_a_participant_takes_its_process_and_connectors(client) -> None:
+    """A pool owns its process. Removing the pool alone would leave a process
+    nothing runs, activities nobody performs, and a message from nowhere."""
+    ttl = ""
+    ttl, customer = _draw(client, ttl, op="add-pool", label="Customer")
+    ttl, retailer = _draw(client, ttl, op="add-pool", label="Retailer")
+    ttl, ask = _draw(client, ttl, op="add-activity", pool=customer, kind="task", label="Ask")
+    ttl, receive = _draw(client, ttl, op="add-activity", pool=retailer, kind="receiveTask", label="Receive")
+    ttl, _ = _draw(client, ttl, op="connect", source=ask, target=receive)
+
+    ttl, _ = _draw(client, ttl, op="delete", element=customer)
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+
+    assert view["stats"]["participants"] == 1
+    assert [a["label"] for a in view["activities"]] == ["Receive"]
+    assert view["messageFlows"] == []
+
+
+def test_an_activity_can_be_pointed_at_an_architecture(client) -> None:
+    ttl = ""
+    ttl, pool = _draw(client, ttl, op="add-pool", label="Retailer")
+    ttl, activity = _draw(client, ttl, op="add-activity", pool=pool, kind="subProcess", label="Chatbot")
+    system = "http://tool4boxology.org/Boxology/graphrag-example"
+    ttl, _ = _draw(client, ttl, op="set-refines", activity=activity, system=system)
+
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+    assert view["activities"][0]["refines"] == [system]
+
+    ttl, _ = _draw(client, ttl, op="set-refines", activity=activity, system="")
+    cleared = client.post("/api/process", json={"ttl": ttl}).get_json()
+    assert cleared["activities"][0]["refines"] == []
+
+
+def test_an_unknown_activity_kind_is_refused(client) -> None:
+    assert client.post(
+        "/api/process-edit", json={"ttl": "", "op": "add-activity", "pool": "x", "kind": "gateway"}
+    ).status_code == 400
+
+
+def test_findings_are_attributed_to_the_activity_they_arise_under(client) -> None:
+    """What makes a finding communicable. "Seven findings on Customer service
+    chatbot" is a sentence a process owner acts on; the name of an inference step
+    inside the architecture is not."""
+    architecture = example_path(GRAPH_RAG_NS).read_text(encoding="utf-8")
+    process = (EXAMPLE_DIR / "context" / "energy_customer_service.ttl").read_text(encoding="utf-8")
+
+    assessed = client.post("/api/assess", json={"ttl": architecture + "\n" + process}).get_json()
+    rows = assessed["findingsByActivity"]
+
+    assert rows, "no findings were attributed to any activity"
+    assert rows[0]["label"] == "Customer service chatbot"
+    assert rows[0]["findings"] == assessed["summary"]["riskFindingCount"]
+
+
+def test_an_architecture_with_no_process_attributes_nothing(client) -> None:
+    assessed = client.post(
+        "/api/assess", json={"ttl": example_path(ONYX_NS).read_text(encoding="utf-8")}
+    ).get_json()
+    assert assessed["findingsByActivity"] == []
+
+
+def test_a_process_example_says_which_architectures_it_needs(client) -> None:
+    """A process names the systems its activities are carried out by and does
+    not contain them. Loaded alone it draws a diagram pointing at architectures
+    that are not there - no nodes, no findings, and nothing saying why."""
+    body = client.get("/api/examples/energy_customer_service").get_json()
+
+    assert body["kind"] == "process"
+    assert {row["example"] for row in body["requires"]} == {
+        "simple_graph_rag",
+        "meter_anomaly_scoring",
+    }
+    assert body["missing"] == [], "the shipped process refines something we do not ship"
+
+
+def test_an_architecture_example_needs_nothing(client) -> None:
+    """Only a process depends on other graphs. An architecture is complete."""
+    body = client.get("/api/examples/simple_graph_rag").get_json()
+    assert "requires" not in body

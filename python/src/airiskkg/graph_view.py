@@ -1,13 +1,3 @@
-"""Turn architecture Turtle into a nodes/edges structure for the live preview.
-
-The web editor posts the Turtle source on every (debounced) edit; this module
-parses it and returns a JSON-friendly view of the BEAM architecture graph:
-typed nodes (process / data / symbol / model / agent / system) with their
-pattern roles and data categories, and flow edges (use / produce / inform /
-participatedIn). Classification uses the BEAM class hierarchy plus the label
-vocabulary of the pattern module, both loaded once and cached.
-"""
-
 from __future__ import annotations
 
 import re
@@ -19,7 +9,6 @@ from rdflib.namespace import OWL
 from airiskkg.assessment_runner import BEAM, PAIR
 from airiskkg.paths import CORE_DIR, FACETS_DIR
 
-# Node kind per BEAM top class, most specific wins via subclass closure.
 _KIND_ROOTS = [
     ("model", BEAM.Model),
     ("data", BEAM.Data),
@@ -30,9 +19,6 @@ _KIND_ROOTS = [
     ("task", BEAM.Task),
     ("resource", BEAM.Resource),
 ]
-
-# Edges are emitted in DRAW direction (left-to-right data flow, boxology
-# style): inputs point into the process, the process points at its outputs.
 _FLOW_EDGES = [
     (BEAM.use, "use", True),            # beam:use is process->resource; drawn resource->process
     (BEAM.usedBy, "use", False),        # already resource->process
@@ -121,19 +107,6 @@ _PREFIX_RE = re.compile(r"^\s*@prefix\s+([A-Za-z][\w.-]*)?:\s*<([^>]*)>\s*\.", r
 
 
 def source_lines(ttl_text: str) -> dict[str, int]:
-    """Map each subject IRI to the 1-based line where it is first declared.
-
-    rdflib discards source positions, so this is a separate scan of the same
-    text. It exists so clicking an element on the canvas can put the cursor on
-    the triple that produced it - the diagram and the code are two views of one
-    document, and a reader who cannot get from one to the other has to search by
-    label and hope the label is unique.
-
-    Only statement-initial subjects count: a line whose first token is a term,
-    which is where rdflib's own serializer (the app rewrites the buffer with it
-    on every structural edit) puts them. Continuation lines under `;` and `,`
-    belong to a subject already recorded, and predicate positions are not what
-    the reader wants anyway."""
     prefixes = {name or "": iri for name, iri in _PREFIX_RE.findall(ttl_text)}
     lines: dict[str, int] = {}
 
@@ -154,11 +127,20 @@ def source_lines(ttl_text: str) -> dict[str, int]:
     return lines
 
 
-def graph_view(ttl_text: str) -> dict:
-    """Parse architecture Turtle and return {system, nodes, edges}.
+def _members_of(graph: Graph, system: URIRef) -> set[URIRef]:
+    owned = {system}
+    frontier = [system]
+    while frontier:
+        current = frontier.pop()
+        for predicate in (BEAM.hasProcess, BEAM.hasResource, BEAM.hasAgent, BEAM.contain):
+            for member in graph.objects(current, predicate):
+                if isinstance(member, URIRef) and member not in owned:
+                    owned.add(member)
+                    frontier.append(member)
+    return owned
 
-    Raises ValueError with the parser message when the Turtle is invalid.
-    """
+
+def graph_view(ttl_text: str, scope: str | None = None) -> dict:
     graph = Graph()
     try:
         graph.parse(data=ttl_text, format="turtle")
@@ -227,13 +209,46 @@ def graph_view(ttl_text: str) -> dict:
             systems.append(entry)
         else:
             nodes.append(entry)
+    claimed: set[URIRef] = set()
+    members_by_system: dict[str, set[URIRef]] = {}
+    for entry in systems:
+        members_by_system[entry["id"]] = _members_of(graph, URIRef(entry["id"]))
+        claimed |= members_by_system[entry["id"]]
+    unclaimed = sorted(n["id"] for n in nodes if URIRef(n["id"]) not in claimed)
+
+    scoped_to = None
+    scope_missing = None
+    if scope:
+        wanted = URIRef(scope)
+        if any(s["id"] == scope for s in systems):
+            members = _members_of(graph, wanted)
+            nodes = [n for n in nodes if URIRef(n["id"]) in members]
+            scoped_to = scope
+        else:
+            nodes = []
+            scope_missing = scope
 
     node_set = {n["id"] for n in nodes}
     edges = [e for e in edges if e["source"] in node_set and e["target"] in node_set]
 
     return {
-        "systems": [{"id": s["id"], "label": s["label"], "line": s["line"]} for s in systems],
+        "systems": [
+            {
+                "id": s["id"],
+                "label": s["label"],
+                "line": s["line"],
+                "members": sorted(
+                    str(m) for m in members_by_system.get(s["id"], set())
+                    if str(m) in {n["id"] for n in nodes}
+                ),
+            }
+            for s in systems
+        ],
         "nodes": nodes,
         "edges": edges,
+        "scopedTo": scoped_to,
+        # The scope was asked for and is not in this graph.
+        "scopeMissing": scope_missing,
+        "unclaimed": unclaimed,
         "stats": {"nodes": len(nodes), "edges": len(edges)},
     }

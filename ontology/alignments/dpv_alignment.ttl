@@ -17,7 +17,7 @@
     vann:preferredNamespacePrefix "dpv" ;
     owl:imports <http://w3id.org/beam/core#> .
 
-# --- Class alignment (verified against DPV v2.3) ---------------------------
+# -Class alignment (verified against DPV v2.3) 
 
 beam:Agent rdfs:subClassOf dpv:Entity ;
     rdfs:comment "BEAM Agent aligned to DPV's Entity class "@en .

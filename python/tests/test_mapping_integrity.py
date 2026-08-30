@@ -459,14 +459,33 @@ def facets() -> Graph:
 def test_every_facet_concept_declares_a_source(facets: Graph) -> None:
     """A facet value with no stated origin is indistinguishable from one lifted
     from a published framework, which is the confusion the whole facet layer is
-    supposed to resolve."""
+    supposed to resolve.
+
+    Stated per concept or per module. A module whose values all come from one
+    place says so once in its owl:Ontology header, and repeating that on every
+    concept adds no checkable claim - the module IRI is the concept IRI without
+    its fragment, so the link needs no extra triple. What this still catches is
+    a concept in a module that names no source at all.
+
+    The cost, recorded because it is real: within a module that mixes origins,
+    concept-level sources were the only way to tell which value came from the
+    cited framework and which is project curation. That distinction now lives in
+    the module's own documentation rather than in the graph."""
+    def module_of(concept):
+        text = str(concept)
+        return URIRef(text.rsplit("#", 1)[0]) if "#" in text else None
+
+    def has_source(subject) -> bool:
+        return subject is not None and bool(list(facets.objects(subject, DCTERMS.source)))
+
     unsourced = [
         c
         for c in facets.subjects(SKOS.inScheme, None)
-        if not list(facets.objects(c, DCTERMS.source))
+        if not has_source(c) and not has_source(module_of(c))
     ]
-    assert not unsourced, "facet concepts with no dct:source: " + ", ".join(
-        sorted(_name(c) for c in unsourced)
+    assert not unsourced, (
+        "facet concepts whose module names no source either: "
+        + ", ".join(sorted(_name(c) for c in unsourced))
     )
 
 
