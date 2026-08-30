@@ -19,7 +19,6 @@ def _warm_query_cache() -> None:
     except Exception:  # noqa: BLE001 - warmup is best-effort; the lazy cache still works
         pass
 
-
 def start_warmup() -> None:
     global _WARMUP_STARTED
     if _WARMUP_STARTED:

@@ -9,7 +9,6 @@ from rdflib.namespace import OWL
 from airiskkg.assessment_runner import BEAM, PAIR
 from airiskkg.paths import CORE_DIR, FACETS_DIR
 
-# Node kind per BEAM top class, most specific wins via subclass closure.
 _KIND_ROOTS = [
     ("model", BEAM.Model),
     ("data", BEAM.Data),
@@ -226,11 +225,6 @@ def graph_view(ttl_text: str, scope: str | None = None) -> dict:
             nodes = [n for n in nodes if URIRef(n["id"]) in members]
             scoped_to = scope
         else:
-            # Asked for an architecture this graph does not hold. Ignoring the
-            # scope and drawing everything was actively misleading: deleting the
-            # graph-RAG system from the energy scene and opening the chatbot
-            # activity landed the reader on the meter scorer, which is not what
-            # the activity says carries it out. Say it is absent instead.
             nodes = []
             scope_missing = scope
 

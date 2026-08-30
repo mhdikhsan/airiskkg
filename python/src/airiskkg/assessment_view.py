@@ -16,13 +16,6 @@ _MIT_MAPPING_PREDS = (
     SKOS.narrowMatch,
 )
 
-# Every taxonomy the library links to must be named here. An entry whose scheme
-# is missing falls through to "Other", which is how ASI entries were presented
-# for as long as the agentic layer has existed: a reader saw the risk but not
-# which catalogue it came from, and "Other" reads as though nobody knew.
-# (full name, short badge). The short form is what a chip can carry beside the
-# entry's own label without pushing it off the row; the full name goes on the
-# tooltip.
 _SOURCE_PREFIXES = {
     "http://w3id.org/airiskkg/taxonomy/owasp-llm#": ("OWASP LLM Top 10", "OWASP LLM"),
     "http://w3id.org/airiskkg/taxonomy/owasp-asi#": ("OWASP Agentic Top 10", "OWASP ASI"),
@@ -253,9 +246,6 @@ def _findings_by_activity(result: AssessmentResult, findings: list) -> list[dict
                 "label": str(name) if name else str(activity).rsplit("#", 1)[-1],
                 "systems": [str(s) for s in sorted(systems, key=str)],
                 "findings": len(attributed),
-                # The findings themselves, so the business canvas can show which
-                # risks an activity carries rather than only how many. Ordered by
-                # label so a re-run does not reshuffle a list someone is reading.
                 "items": sorted(
                     (
                         {

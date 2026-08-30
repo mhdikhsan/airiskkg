@@ -85,11 +85,6 @@ def graph_fingerprint(graph: Graph) -> str:
 
 
 def _git(*args: str) -> str | None:
-    """Ask git something, or None if there is nothing to ask.
-
-    None is a supported answer, not a failure: the container ships without a
-    repository, and a source tarball has none either.
-    """
     if not (REPO_ROOT / ".git").exists():
         return None
     try:

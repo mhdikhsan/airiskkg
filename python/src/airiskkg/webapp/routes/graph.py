@@ -61,7 +61,7 @@ def read_process() -> object:
         parsed = _parsed(ttl)
     except Exception as error:  # noqa: BLE001 - surface parse errors to the UI
         return jsonify({"error": f"Could not parse the graph: {error}"}), 400
-    return jsonify(process_view(parsed))
+    return jsonify(process_view(parsed, ttl))
 
 
 @graph_routes.post("/api/fingerprint")
