@@ -3,6 +3,7 @@ from __future__ import annotations
 from rdflib import RDF, RDFS, Graph, URIRef
 
 from airiskkg.assessment_runner import BEAM, PAIR
+from airiskkg.graph_view import source_lines
 from airiskkg.workbench.terms import display_label, short
 
 BPMN = "https://sBPMN.github.io/2.0/classes#"
@@ -157,7 +158,29 @@ def _message_flows(graph: Graph) -> list[dict]:
     return sorted(flows, key=lambda row: row["label"])
 
 
-def process_view(graph: Graph) -> dict:
+def _stamp_lines(view: dict, ttl_text: str | None) -> dict:
+    """Say where each business element was written.
+
+    Without this a click on a pool or an activity had nowhere to go: the source
+    map is fed from /api/graph, which knows the architecture only, so selecting
+    anything on the business canvas quietly did nothing."""
+    if not ttl_text:
+        return view
+    lines = source_lines(ttl_text)
+    for key in ("participants", "processes", "activities", "lanes", "messageFlows"):
+        for row in view.get(key, []):
+            line = lines.get(row.get("id"))
+            if line:
+                row["line"] = line
+    for row in view.get("activities", []):
+        for reference in [*row.get("reads", []), *row.get("writes", [])]:
+            line = lines.get(reference.get("id"))
+            if line:
+                reference["line"] = line
+    return view
+
+
+def process_view(graph: Graph, ttl_text: str | None = None) -> dict:
     lane_of: dict[URIRef, str] = {}
     lanes: list[dict] = []
     for lane in graph.subjects(RDF.type, _cls("lane")):
@@ -241,7 +264,7 @@ def process_view(graph: Graph) -> dict:
         if str(system) not in refined_systems
     ]
 
-    return {
+    return _stamp_lines({
         "participants": _participants(graph),
         "processes": processes,
         "lanes": lanes,
@@ -255,4 +278,4 @@ def process_view(graph: Graph) -> dict:
             "refined": sum(1 for r in rows if r["refines"]),
             "humanSteps": sum(1 for r in rows if r["human"]),
         },
-    }
+    }, ttl_text)

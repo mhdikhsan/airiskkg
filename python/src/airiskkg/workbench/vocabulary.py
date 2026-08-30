@@ -96,9 +96,6 @@ def vocabulary() -> dict:
         "processClasses": class_terms(PROCESS_CLASSES),
         "edgeKinds": EDGE_KINDS,
         "motifTemplates": motif_template_list(),
-        # What a business analyst may say about a data object. Sourced from the
-        # route that writes it, so the picker cannot offer a term the server
-        # would reject.
         "dataClasses": [
             {"id": name, "label": label} for name, label in DATA_CLASSES.items()
         ],

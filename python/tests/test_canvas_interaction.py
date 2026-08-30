@@ -975,3 +975,159 @@ def test_motifs_and_data_flow_narrow_to_the_architecture_on_screen(page) -> None
         f"motifs from the other architecture are still listed while scoped: {strays}"
     )
     _back_to_business(loop, handle)
+
+
+def test_adding_the_first_participant_stays_on_the_business_layer(page) -> None:
+    """Drawing a process from nothing threw you to the architecture.
+
+    The landing rule read `stats.activities > 0`, so a participant with no
+    activities in it yet did not count as a process - and the first thing anyone
+    draws is a participant with no activities in it yet.
+    """
+    loop, handle = page
+    loop.run_until_complete(handle.js("window.PairAI.Editor.setValue('')"))
+    time.sleep(3)
+    loop.run_until_complete(handle.js('document.querySelector("#start-business").click()'))
+    time.sleep(2)
+
+    # The Participant button prompts for a name; answer it without a dialog.
+    loop.run_until_complete(handle.js("""(() => {
+        window.__realPrompt = window.prompt;
+        window.prompt = () => "Customer";
+    })()"""))
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = [...document.querySelectorAll('#process-palette .pp-item')]
+            .find((x) => x.textContent.trim() === 'Participant');
+        if (!b) return null;
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert at, "the business palette does not offer a Participant"
+
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(5)
+    loop.run_until_complete(handle.js("window.prompt = window.__realPrompt"))
+
+    seen = loop.run_until_complete(handle.js("""(() => ({
+        level: window.PairAI.state.level,
+        pools: document.querySelectorAll('#process-canvas .pc-pool').length,
+        businessActive: document.querySelector('#level-business').classList.contains('active'),
+    }))()"""))
+    assert seen["pools"] >= 1, "the participant was not drawn at all"
+    assert seen["level"] == "business", (
+        f"adding a participant moved the workbench to the {seen['level']} layer"
+    )
+    assert seen["businessActive"], "the level switch does not show business as current"
+
+
+def test_a_participant_can_be_deleted_from_the_canvas(page) -> None:
+    """The delete op has handled a participant all along - it takes the process
+    and its activities with it - but nothing on the canvas asked for it, so a
+    pool added by mistake could only be removed by editing Turtle."""
+    loop, handle = page
+    pools = loop.run_until_complete(handle.js(
+        "document.querySelectorAll('#process-canvas .pc-pool').length"))
+    assert pools >= 1, "no participant on the canvas to delete"
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const e = document.querySelector('#process-canvas .pc-pool-edit');
+        if (!e) return null;
+        const r = e.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert at, "a participant offers no way to rename or delete it"
+
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(1)
+    opened = loop.run_until_complete(handle.js("""(() => {
+        const p = document.querySelector('#process-detail');
+        return { shown: !p.classList.contains('hidden'),
+                 hasDelete: !!p.querySelector('#pd-pool-delete') };
+    })()"""))
+    assert opened["shown"], "the participant panel did not open"
+    assert opened["hasDelete"], "the participant panel offers no Delete"
+
+    loop.run_until_complete(handle.js('document.querySelector("#pd-pool-delete").click()'))
+    time.sleep(5)
+    after = loop.run_until_complete(handle.js(
+        "document.querySelectorAll('#process-canvas .pc-pool').length"))
+    assert after < pools, f"the participant is still on the canvas ({after} of {pools})"
+
+
+def test_clicking_a_business_element_reveals_its_line(page) -> None:
+    """A click on the business canvas had nowhere to go.
+
+    The source map was fed from /api/graph, which knows the architecture only,
+    so /api/process reported no line and selecting a pool or an activity marked
+    nothing - the reader had to find the element in the Turtle by eye. The map
+    is keyed by layer because the two endpoints answer at different times, and a
+    single map that cleared itself let whichever arrived second erase the other.
+    """
+    loop, handle = page
+    before = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+    try:
+        loop.run_until_complete(handle.js("""(async () => {
+            const nl = String.fromCharCode(10, 10);
+            const a = await (await fetch("/api/examples/meter_anomaly_scoring")).json();
+            const p = await (await fetch("/api/examples/energy_customer_service")).json();
+            window.PairAI.Editor.setValue(a.ttl + nl + p.ttl);
+        })()"""))
+        time.sleep(8)
+        loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
+        time.sleep(1)
+
+        at = loop.run_until_complete(handle.js("""(() => {
+            const a = document.querySelector('#process-canvas .pc-activity');
+            if (!a) return null;
+            const r = a.getBoundingClientRect();
+            return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 14) };
+        })()"""))
+        assert at, "no activity on the business canvas"
+
+        marked = "document.querySelectorAll('#gutter .marked-line').length"
+        # Start from no mark: an earlier test may have left one, and it would
+        # satisfy the assertion below without this click resolving anything.
+        loop.run_until_complete(handle.js("window.PairAI.Editor.revealLines([])"))
+        assert loop.run_until_complete(handle.js(marked)) == 0
+
+        loop.run_until_complete(handle.click(at["x"], at["y"]))
+        time.sleep(2)
+        business_marks = loop.run_until_complete(handle.js(marked))
+        assert business_marks > 0, "clicking an activity marked no line in the editor"
+
+        # And the architecture still resolves. One map that cleared itself on
+        # every call meant the business layer, answering second, erased the
+        # architecture's lines - so in a document carrying both, clicking a BEAM
+        # node stopped working the moment a process was added beside it.
+        loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+        time.sleep(1)
+        loop.run_until_complete(handle.js("window.PairAI.GraphView.fit()"))
+        time.sleep(1)
+        node_at = loop.run_until_complete(handle.js("""(() => {
+            const view = document.querySelector('#canvas').getBoundingClientRect();
+            const lined = new Set((window.PairAI.state.lastGraph.nodes || [])
+                .filter((x) => x.line).map((x) => x.id));
+            for (const n of document.querySelectorAll('#canvas g.node')) {
+                if (!lined.has(n.getAttribute('data-id'))) continue;
+                const r = n.getBoundingClientRect();
+                const x = Math.round(r.left + r.width / 2);
+                const y = Math.round(r.top + r.height / 2);
+                if (x > view.left + 4 && x < view.right - 4
+                    && y > view.top + 4 && y < view.bottom - 4) return { x, y };
+            }
+            return null;
+        })()"""))
+        assert node_at, "no architecture node on the canvas"
+        # Clear first: the business mark would otherwise satisfy the assertion
+        # below without the architecture click resolving anything at all.
+        loop.run_until_complete(handle.js("window.PairAI.Editor.revealLines([])"))
+        assert loop.run_until_complete(handle.js(marked)) == 0
+        loop.run_until_complete(handle.click(node_at["x"], node_at["y"]))
+        time.sleep(2)
+        assert loop.run_until_complete(handle.js(marked)) > 0, (
+            "clicking an architecture node marked no line once a process was present"
+        )
+    finally:
+        loop.run_until_complete(handle.js(
+            f"window.PairAI.Editor.setValue({json.dumps(before)})"))
+        time.sleep(4)
