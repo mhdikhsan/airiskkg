@@ -136,6 +136,7 @@ async function init() {
         setStatus("error", "Could not edit the process: " + error.message.split(String.fromCharCode(10))[0]);
       }
     }),
+    onSelect: (id) => revealInSource([id]),
     onOpenArchitecture: (activity) => {
       /* Only descend into an architecture that is actually here. The activity
        * names the system that carries it out; if that system is not in this

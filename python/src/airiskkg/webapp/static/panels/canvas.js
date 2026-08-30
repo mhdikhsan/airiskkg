@@ -122,7 +122,11 @@ async function refreshProcess(ttl) {
   state.lastProcess = data;
   if (awaitingChoice && (data.stats.activities || architectureHasContent())) settleChoice();
   ProcessCanvas.render(data);
-  const hasProcess = data.stats.activities > 0;
+  mapSource([...data.participants, ...data.activities], "business");
+  /* A participant with no activities yet is still a process model being
+   * drawn. Counting only activities threw the reader to the architecture level
+   * the moment they added their first pool. */
+  const hasProcess = data.stats.activities > 0 || (data.participants || []).length > 0;
   $("#level-switch").classList.toggle("hidden", awaitingChoice && !hasProcess);
   setTabVisible("process", hasProcess);
 
@@ -186,12 +190,34 @@ async function refreshProcess(ttl) {
 }
 
 //  live preview 
+/* An empty document has no business layer either. Clearing only the
+ * architecture left the last deleted participant drawn on a canvas whose
+ * source no longer mentions it - delete the one pool in a document and it
+ * stayed on screen. The level is left alone when the reader picked it: they
+ * said they were drawing a process, and an empty canvas is where that starts. */
+function resetProcess() {
+  const empty = {
+    participants: [], processes: [], activities: [], lanes: [], messageFlows: [],
+    stats: { activities: 0, participants: 0, processes: 0, refined: 0, humanSteps: 0 },
+  };
+  state.lastProcess = empty;
+  ProcessCanvas.render(empty);
+  setTabVisible("process", false);
+  hadProcess = false;
+  if (state.level === "business" && !state.levelChosenByHand) setLevel("architecture");
+  $("#process-list").innerHTML = "";
+  $("#process-summary").innerHTML = "";
+  $("#process-count").textContent = "";
+  $("#process-empty").classList.remove("hidden");
+}
+
 let previewSeq = 0;
 
 export async function refreshPreview(ttl) {
   const seq = ++previewSeq;
   if (!ttl.trim()) {
     GraphView.clear();
+    resetProcess();
     $("#system-badge").classList.add("hidden");
     setStatus("ok", "Ready");
     return;

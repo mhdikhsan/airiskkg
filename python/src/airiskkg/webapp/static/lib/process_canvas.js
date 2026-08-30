@@ -23,6 +23,7 @@ let data = null;
 let expanded = new Set();   // subprocesses opened in place
 let onOpenArchitecture = null;
 let onEdit = null;            // (op, payload) -> Promise, applied server-side
+let onSelect = null;          // (id) -> void, so a click can reach the source
 let systems = [];             // architectures a activity may be refined by
 let dataClasses = [];         // what a data object may be classified as
 let selectedPool = null;      // where a new activity lands
@@ -421,6 +422,7 @@ function drawActivity(parent, slot) {
     group.addEventListener("click", (ev) => {
       if (ev.target.closest(".pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
       ev.stopPropagation();
+      if (onSelect) onSelect(activity.id);
       if (activity.refines.length && onOpenArchitecture) onOpenArchitecture(activity);
       else showDetail(activity, ev);
     });
@@ -517,6 +519,38 @@ function dataRows(activity) {
       <select class="pd-class">${classOptions(item.kinds[0] || "")}</select>
       <button type="button" class="pd-drop" title="Detach this data from the activity">×</button>
     </div>`).join("");
+}
+
+/* The same panel an activity gets, with the two things a pool has: its name,
+ * and whether it should exist. */
+function showPoolDetail(participant, ev) {
+  const panel = document.querySelector("#process-detail");
+  if (!panel) return;
+  panel.innerHTML = `
+    <div class="nd-head">participant</div>
+    <label class="nd-row"><span>Name</span>
+      <input type="text" id="pd-pool-name" value="${escapeHtml(participant.label)}" /></label>
+    <div class="nd-actions">
+      <button type="button" class="btn small primary" id="pd-pool-apply">Apply</button>
+      <button type="button" class="btn small" id="pd-pool-delete">Delete</button>
+    </div>`;
+  panel.classList.remove("hidden");
+  const rect = svg.getBoundingClientRect();
+  panel.style.left = `${Math.min(ev.clientX - rect.left + 12, rect.width - 300)}px`;
+  panel.style.top = `${Math.max(8, Math.min(ev.clientY - rect.top + 12, rect.height - 200))}px`;
+
+  panel.querySelector("#pd-pool-apply").addEventListener("click", async () => {
+    const name = panel.querySelector("#pd-pool-name").value.trim();
+    closeDetail();
+    if (name && name !== participant.label) {
+      await onEdit("rename", { element: participant.id, label: name });
+    }
+  });
+  panel.querySelector("#pd-pool-delete").addEventListener("click", async () => {
+    closeDetail();
+    if (selectedPool === participant.id) selectedPool = null;
+    await onEdit("delete", { element: participant.id });
+  });
 }
 
 function showDetail(activity, ev) {
@@ -616,11 +650,31 @@ function draw() {
     }, group);
     if (pool.participant.id === selectedPool) group.classList.add("selected");
     group.addEventListener("click", (ev) => {
-      if (ev.target.closest(".pc-activity")) return;
+      if (ev.target.closest(".pc-activity, .pc-pool-edit")) return;
       selectedPool = pool.participant.id;
+      if (onSelect) onSelect(pool.participant.id);
       draw();
       renderPalette();
     });
+
+    /* A pool could be added and never removed: the delete op has handled a
+     * participant all along - it takes the process and its activities with it -
+     * but nothing on the canvas asked for it. */
+    if (onEdit) {
+      const edit = node("g", { class: "pc-pool-edit", cursor: "pointer" }, group);
+      node("rect", {
+        x: pool.x + pool.w - 26, y: pool.y + 6, width: 18, height: 18, rx: 3,
+        class: "pc-marker-box",
+      }, edit);
+      // The far corner: the near one carries the rotated pool name.
+      const glyph = text(edit, pool.x + pool.w - 17, pool.y + 19, "\u22ef", "pc-marker-sign");
+      glyph.setAttribute("text-anchor", "middle");
+      node("title", {}, edit).textContent = "Rename or delete this participant";
+      edit.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        showPoolDetail(pool.participant, ev);
+      });
+    }
     const label = text(group, 0, 0, truncate(pool.participant.label, 24), "pc-pool-label");
     label.setAttribute("text-anchor", "middle");
     label.setAttribute(
@@ -787,6 +841,7 @@ function init(options) {
   svg = document.querySelector(options.svg);
   onOpenArchitecture = options.onOpenArchitecture || null;
   onEdit = options.onEdit || null;
+  onSelect = options.onSelect || null;
   if (svg) initPanZoom();
   // Built now: the palette is how an empty process gets its first participant.
   renderPalette();
