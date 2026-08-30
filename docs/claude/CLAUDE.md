@@ -4,6 +4,9 @@ This file is read automatically by Claude Code at the start of every session.
 It encodes the project context and the locked design decisions. Do not contradict it;
 if a task seems to require violating a rule here, stop and ask.
 
+## Development Rules
+Don't put long comments in the code block
+
 ## What this project is
 
 PAIR-AI is a design-time AI risk assessment method. It matches **architectural motifs**
