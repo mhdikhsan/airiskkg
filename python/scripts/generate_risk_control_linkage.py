@@ -249,8 +249,14 @@ def main() -> int:
     add(f"2. **{len(silent)} of {len(motifs)} motifs reach no control** - by design for the "
         "risk-neutral ML-serving shapes.")
     orphan = [rp for rp in risk_patterns if not list(g.objects(rp, PAIR.hasMotif))]
-    add(f"3. **{len(orphan)} risk pattern declares no motif** "
-        f"({', '.join('`' + local(o) + '`' for o in orphan)}) so it can never fire.")
+    # These fire. A risk query evaluates its conditions over any pair:MotifMatch whose
+    # bindings carry the required roles, not only over matches of a declared motif, so a
+    # pattern with no pair:hasMotif is role-anchored rather than dead. This line used to
+    # say "so it can never fire", which was false of both of them.
+    add(f"3. **{len(orphan)} risk {'pattern declares' if len(orphan) == 1 else 'patterns declare'} "
+        f"no motif** ({', '.join('`' + local(o) + '`' for o in orphan)}) - deliberately "
+        f"role-anchored, so nothing appears in the Exposing-motif column even though they "
+        f"fire on the bundled examples.")
     circular = [
         (local(m), local(rp), local(c))
         for rp in risk_patterns

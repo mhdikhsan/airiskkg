@@ -1,17 +1,3 @@
-# An energy retailer answering customer questions with the bundled GraphRAG
-# chatbot. Load it beside ontology/example/simple_graph_rag.ttl.
-#
-# Two participants, not one. A pool is an actor with a boundary, and what
-# crosses a boundary is a message - so "the company serves the customer" is two
-# pools and the message flows between them. Modelled as one pool with two lanes
-# it would still draw, and the arrow to the customer would be inexpressible.
-#
-# CustomerService is a subProcess: it has its own flow AND it is refined by an
-# architecture. Both are true and they answer different questions. The inner
-# flow says what the service does as business steps; pair:refinedBy says which
-# AI system carries them out. Expanding it can therefore go two ways, and a
-# reader chooses which they meant.
-
 @prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
 @prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
 @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
@@ -21,7 +7,6 @@
 @prefix dpv:  <https://w3id.org/dpv#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-### The collaboration: who is involved
 
 ec:ServiceCollaboration a bpmn:collaboration ;
     bp:name "Customer energy service" ;
@@ -35,7 +20,6 @@ ec:RetailerPool a bpmn:participant ;
     bp:name "Northwind Energy" ;
     bp:processRef ec:ServiceProcess .
 
-### The customer's side, deliberately thin
 
 ec:CustomerJourney a bpmn:process ;
     bp:name "Ask about my energy account" ;
@@ -53,7 +37,7 @@ ec:ReadAnswer a bpmn:task ;
 ec:CFlow1 a bpmn:sequenceFlow ;
     bp:sourceRef ec:AskQuestion ; bp:targetRef ec:ReadAnswer .
 
-### The retailer's side
+
 
 ec:ServiceProcess a bpmn:process ;
     bp:name "Answer a customer enquiry" ;
@@ -79,10 +63,7 @@ ec:ReceiveEnquiry a bpmn:receiveTask ;
     bp:dataInputAssociation ec:EnquiryIn ;
     bp:outgoing ec:SFlow0 .
 
-# The second AI capability, and a different kind of one. A billing enquiry is
-# checked against the meter before anyone answers it, and that check is a
-# scoring service rather than a chatbot - so the same process runs two systems
-# whose risks have almost nothing in common.
+
 ec:CheckReading a bpmn:subProcess ;
     bp:name "Check the meter reading for anomalies" ;
     pair:refinedBy mas:AnomalySystem ;
@@ -90,9 +71,6 @@ ec:CheckReading a bpmn:subProcess ;
     bp:outgoing ec:SFlow1 ;
     bp:dataInputAssociation ec:ReadingToCheck .
 
-# The AI capability. A subProcess, because the chatbot carries the whole
-# exchange rather than one step of it - and refined by the architecture that
-# implements it.
 ec:CustomerService a bpmn:subProcess ;
     bp:name "Customer service chatbot" ;
     pair:refinedBy sgr:graphrag-example ;
@@ -102,7 +80,6 @@ ec:CustomerService a bpmn:subProcess ;
     bp:dataOutputAssociation ec:DraftOut ;
     bp:contains ec:UnderstandQuestion , ec:LookUpAccount , ec:ComposeReply .
 
-### Inside the chatbot, as business steps
 
 ec:UnderstandQuestion a bpmn:serviceTask ;
     bp:name "Work out what is being asked" ;
@@ -122,11 +99,6 @@ ec:IFlow1 a bpmn:sequenceFlow ;
 ec:IFlow2 a bpmn:sequenceFlow ;
     bp:sourceRef ec:LookUpAccount ; bp:targetRef ec:ComposeReply .
 
-### Back on the outer flow
-
-# The control the architecture cannot see. An agent reads what the chatbot
-# drafted before it goes out - not a step in the inference pipeline, and not one
-# anybody would put there.
 ec:ReviewReply a bpmn:userTask ;
     bp:name "Check the reply before it goes out" ;
     bp:incoming ec:SFlow2 ;
@@ -142,10 +114,6 @@ ec:SendReply a bpmn:sendTask ;
     bp:incoming ec:SFlow2b ;
     bp:outgoing ec:SFlow3 .
 
-# Also a human task, also downstream - and it reviews nothing. It reads no
-# drafted reply and happens after the customer already has the answer, so it
-# must NOT clear an output-handling finding. The two together are why the
-# condition tests for the data the reviewer reads, not merely for a person.
 ec:LogInteraction a bpmn:userTask ;
     bp:name "Log the interaction for quality review" ;
     bp:incoming ec:SFlow3 ;
@@ -169,7 +137,6 @@ ec:SFlow2b a bpmn:sequenceFlow ;
 ec:SFlow3 a bpmn:sequenceFlow ;
     bp:sourceRef ec:SendReply ;       bp:targetRef ec:LogInteraction .
 
-### What crosses the boundary between the two pools
 
 ec:EnquiryMessage a bpmn:message ;
     bp:name "Account enquiry" .
@@ -189,7 +156,7 @@ ec:MFlow2 a bpmn:messageFlow ;
     bp:sourceRef ec:SendReply ;
     bp:targetRef ec:ReadAnswer .
 
-### Data, annotated once, here
+
 
 ec:EnquiryRef a bpmn:dataObjectReference ;
     bp:name "Customer enquiry" ;
@@ -199,8 +166,7 @@ ec:Enquiry a bpmn:dataObject ;
     bp:name "Customer enquiry" ;
     bp:itemSubjectRef ec:EnquiryItem .
 
-# A question about someone's own energy account names them. The process owner
-# knows that; the architecture diagram never said it.
+
 ec:EnquiryItem a bpmn:itemDefinition ;
     bp:structureRef dpv:PersonalData .
 
@@ -210,9 +176,6 @@ ec:EnquiryIn a bpmn:dataInputAssociation ;
 ec:EnquiryToService a bpmn:dataInputAssociation ;
     bp:sourceRef ec:EnquiryRef ; bp:targetRef ec:CustomerService .
 
-# Consumption data says when a household is in and when it is empty, so it
-# names a person as surely as the enquiry does. Stated here, once, by whoever
-# owns the process - the scoring architecture never said it.
 ec:MeterReadingRef a bpmn:dataObjectReference ;
     bp:name "Smart meter reading" ;
     bp:dataObjectRef ec:MeterReading .

@@ -1,6 +1,6 @@
 # PAIR-AI — Method and Knowledge-Base Construction
 
-Status: current as of **2026-07-28**, branch `feature/characterization-layer`.
+Status: current as of **2026-08-30**, branch `feature/bpmn-business-context`.
 Authority on terminology and modeling rules: `docs/reference/PAIR-AI_glossary_v1_3.md`
 (rules R1–R10). Where this document and the glossary disagree, the glossary wins.
 
@@ -8,7 +8,8 @@ Authority on terminology and modeling rules: `docs/reference/PAIR-AI_glossary_v1
 *built* and how an assessment *runs*: where risk patterns come from, where the role
 vocabulary actually came from (§2 is deliberately blunt about this), how motifs are
 curated, how the ontology reuses and aligns external vocabularies, what the pipeline
-executes, and what the method currently cannot do.
+executes, what the method currently cannot do, and — since 2026-08 — how a business process
+model reaches the assessment (§7).
 
 **What this document is not.** Not a user guide (see `docs/user_guide.md` for the
 workbench), not an
@@ -50,21 +51,31 @@ only**.
 
 ### Current size of the knowledge base
 
+Counted off the loaded graph on 2026-08-30. Re-count rather than edit by hand — every
+figure but the motif count had drifted before anyone noticed.
+
 | Artifact | Count | File |
 | --- | --- | --- |
-| Architectural motifs (ODPs) | 24 | `ontology/patterns/motif.ttl` |
-| AI risk patterns | 11 | `ontology/patterns/risk_pattern_library.ttl` |
-| Applicability conditions | 11 | `ontology/patterns/risk_pattern_library.ttl` |
-| Risk mechanisms | 10 | `ontology/taxonomy/owasp_llm.ttl` |
-| Pattern roles | 85 | `ontology/core/pair_ai_pattern.ttl` |
-| Data categories | 8 | `ontology/core/pair_ai_pattern.ttl` |
+| Architectural motifs (ODPs) | 31 | `ontology/patterns/motif.ttl` |
+| AI risk patterns | 15 | `ontology/patterns/risk_pattern_library.ttl` |
+| Applicability conditions | 16 (on 20 attachments) | `ontology/patterns/risk_pattern_library.ttl` |
+| Risk mechanisms | 14 | `ontology/taxonomy/owasp_llm.ttl`, `owasp_asi.ttl` |
+| Pattern roles | 97 | `ontology/core/pair_ai_pattern.ttl` |
+| Data categories | 7 | `ontology/core/pair_ai_pattern.ttl` |
 | Actionable controls (`pat:Control_*`) | 12 | `ontology/patterns/control_mitigation_layer.ttl` |
-| Registered SPARQL implementations (OQPs) | 36 | `ontology/patterns/implementation/*.rq` |
-| — of which motif matchers | 24 | `match_*.rq` |
-| — of which risk-finding queries | 11 | `risk_*.rq` |
-| — of which facet propagation | 1 | `propagate_untrusted_content.rq` |
+| Facet concepts (project namespaces) | 35 | `ontology/facets/*.ttl` |
+| Registered SPARQL implementations (OQPs) | 63 | `ontology/patterns/implementation/`, `ontology/context/implementation/` |
+| — of which motif matchers | 31 | `match/*.rq` |
+| — of which risk-finding queries | 15 | `risk/*.rq` |
+| — of which data-category derivations | 7 | `propagation/*.rq` (6) + `business_data_bridge.rq` |
+| — of which business-flow derivations | 1 | `business_flow.rq` |
+| — of which mitigation rewrites | 9 registrations over 8 files | `mitigation/*.rq` |
+| Loaded triples | 7 470 | — |
 
-Note the ratio: **every motif has an executable matcher**, but only **12 of 24 motifs
+Taxonomy entries loaded: IBM Atlas 30 · MIT domains 19 · MIT control families 88 ·
+NIST AI 600-1 9 · OWASP LLM 10 · OWASP ASI 4.
+
+Note the ratio: **every motif has an executable matcher**, but only **14 of 31 motifs
 carry at least one risk pattern** (§6.7).
 
 ---
@@ -87,8 +98,18 @@ ontology/patterns/implementation/risk_*.rq    SPARQL CONSTRUCTs that execute the
 
 **Primary anchor — OWASP Top 10 for LLM Applications 2025.** The ten categories are
 re-expressed as SKOS concepts `owasp:llm01-prompt-injection` … `owasp:llm10-unbounded-consumption`
-in `ontology/taxonomy/owasp_llm.ttl`, each with a `skos:definition` copied or paraphrased
-from the OWASP text and a `dct:source` pointing at the OWASP release.
+in `ontology/taxonomy/owasp_llm.ttl`, each with a `dct:source` pointing at the OWASP release.
+**Every `skos:definition`, risk mechanism and risk condition in that file is written from
+scratch** for PAIR-AI's structural model — not a copy or a close paraphrase. OWASP is
+CC BY-**SA** 4.0, whose ShareAlike term would bind this repository's CC BY 4.0 files; only
+identifiers, numbering and short names are reused. The file states this in its own header.
+
+**Agentic anchor — OWASP Agentic Top 10 (ASI) 2026**, in `ontology/taxonomy/owasp_asi.ttl`,
+under the same licence discipline. Only **4 of its entries** are modelled — ASI01 goal
+hijack, ASI02 tool misuse, ASI06 memory and context poisoning, ASI07 insecure inter-agent
+communication. The partiality is deliberate: entries defined by runtime behaviour have no
+shape in a submitted graph, so modelling them would fire a finding on every agent — noise
+that breaks candidate framing rather than supporting it.
 
 **Secondary taxonomies — IBM AI Risk Atlas, MIT AI Risk Repository, MIT AI Risk
 Controls**, all obtained through the IBM *AI Atlas Nexus* knowledge-graph YAML/TSV data
@@ -161,18 +182,36 @@ such a sentence by string concatenation inside the risk queries was removed on 2
 
 ### 1.4 The executable side (`risk_*.rq`)
 
-Each risk pattern has exactly one OQP. Structurally, every one of the 11 queries:
+Each risk pattern has exactly one OQP. Structurally, every one of the 15 queries:
 
 1. starts from an existing `pair:MotifMatch` and reads its bindings
    (`pair:hasNodeBinding/pair:matchedElement`) — so risk evaluation is always anchored to
    structure that a motif already recognised;
 2. adds the applicability conditions: facet checks (data category), extra structural
    reachability via property paths, and control-absence via `FILTER NOT EXISTS`
-   (every one of the 11 queries uses at least one; `risk_unbounded_consumption.rq` uses three);
+   (**12 of the 15** carry at least one, at most two per query);
 3. CONSTRUCTs a `pair:RiskFinding` carrying `pair:hasEvidence` (the matched elements),
-   `pair:hasDerivedMechanism`, `pair:hasSatisfiedCondition` (all 11 queries emit it),
-   `pair:hasCandidateRiskTaxonomyEntry`, `pair:hasSuggestedControl`, and
-   `pair:findingStatus "candidate"`.
+   `pair:hasDerivedMechanism`, `pair:hasSatisfiedCondition`,
+   `pair:hasCandidateRiskTaxonomyEntry`, `pair:hasSuggestedControl`,
+   `pair:generatedByRiskPattern`, and `pair:findingStatus "candidate"`.
+
+The **three queries with no control-absence check at all** — data and model poisoning,
+supply chain compromise, vector and embedding weakness — are unclearable by design, and
+correctly so: they rest on provenance and vetting, which are non-technical controls with no
+runtime shape, so no structural escape exists to write. The answer there is finding-level
+triage through `pair:findingStatus`, not a query escape. Never conflate the two.
+
+**Clause order is load-bearing.** rdflib has no query optimizer: it evaluates a BGP in
+textual order and applies a FILTER to its whole group. Every risk query is therefore written
+as `WHERE { { structure … FILTER NOT EXISTS … } curated metadata . OPTIONAL … BIND … }`. The
+metadata block is a small cross product (18–36 rows) and hoisting it to the top multiplied
+every structural join, property path and absence check by that factor — roughly 3× runtime
+for identical results. Keep the structural braces too: without them the filters leave that
+group and fire once per metadata row again.
+
+**`pair:generatedByRiskPattern` is what routes a finding to its mitigation rewrite.** The
+same control answers several patterns while a rewrite is written against one vulnerable
+shape, so rewrites are keyed on (control, risk pattern) — see §1.6.
 
 Conditions are **reusable constituents** and are shared across patterns where the
 structural gate is genuinely the same. Example, documented in the file itself:
@@ -186,8 +225,9 @@ a deliberate, commented exception, not drift.
 `ontology/taxonomy/taxonomy_mapping.ttl` is organised in explicit provenance tiers:
 
 - **Section 1 — upstream-verified**: taken from IBM AI Atlas Nexus SSSOM mapping sets
-  (`ibm2owasp.tsv`, `mit-ai-risk-repository_ibm-risk-atlas.tsv`), predicates preserved
-  exactly as curated upstream (`ManualMappingCuration`, confidence 0.95).
+  (`ibm2owasp.tsv`, `mit-ai-risk-repository_ibm-risk-atlas.tsv`, `owasp_asi2owasp_llm.tsv`,
+  `ibm2nistgenai.tsv`), predicates preserved exactly as curated upstream
+  (`ManualMappingCuration`, confidence 0.95).
 - **Section 2 — project curation**: no upstream row exists; each mapping carries a stated
   rationale.
 - **Section 3 — risk→control grounding** over the MIT mitigation layer, project curation.
@@ -211,8 +251,40 @@ Two distinct things are visible on a finding, and the distinction matters:
   control was an altitude error that has since been removed.
 
 Both the classification axis and the `realizedByMotif` assignments are project expert
-curation — a reviewed first pass, and explicitly candidate associations (see §6.8 and
-`docs/notes/control_layer_weakness_analysis.md`).
+curation — a reviewed first pass, and explicitly candidate associations (see §6.8).
+
+### 1.7 Applying a control is a registered rewrite, not code
+
+Added since this document was first written. A `pair:MitigationApplication` implementation
+restates the vulnerable shape its `pair:mitigatesRiskPattern` found and CONSTRUCTs the step
+that interrupts it, bound to the elements the finding already cites — so nothing guesses
+which evidence element is which, and the knowledge of where a control belongs lives beside
+the rule that raised the finding. **9 rewrites are registered over 8 `.rq` files** in
+`ontology/patterns/implementation/mitigation/`, run on demand through `apply_control()` and
+scoped to one finding by `initBindings`. Inserted IRIs are derived from the elements they
+screen, so re-applying is a no-op.
+
+**The output type is the safety catch.** The pipeline asks only for `pair:MotifMatch` and
+`pair:RiskFinding`, so a rewrite never runs inside an assessment. If it did, every finding
+would mitigate itself and none would ever be reported;
+`test_a_mitigation_rewrite_never_runs_during_an_assessment` enforces it.
+
+**Rewrites are keyed on (control, risk pattern), never on the control alone.** The same
+control answers several patterns — output validation is suggested by improper output
+handling, sensitive disclosure and system prompt leakage — while a rewrite is written
+against one vulnerable shape. Keyed on the control alone, each of those findings offered an
+Apply button that ran the wrong rewrite, found its own screen already in place and reported
+"already in place on this path". Findings therefore carry `pair:generatedByRiskPattern`, and
+a control with no rewrite *for that finding's pattern* reports `applicable: false` rather
+than offering a button that does nothing.
+
+**Control motifs are sized to the risk, not to the vocabulary.** `GuardrailsMotif` is 8
+nodes and 8 edges; prompt injection needs an input screen and nothing else, so
+`InputScreeningMotif` and `OutputScreeningMotif` are 3 nodes and 2 edges each and nest
+inside it. A control whose `realizedByMotif` points at a motif far larger than the risk it
+addresses is not actionable — that motif is what the canvas offers to insert.
+
+Mechanics in full: `docs/reference/mitigation_and_gap_mechanics.md`.
 
 ---
 
@@ -224,15 +296,20 @@ exactly how they came to exist.
 
 ### 2.1 What a role is, technically
 
-- `pair:PatternRole` is an `owl:Class` that is `rdfs:subClassOf skos:Concept`; the 85
+- `pair:PatternRole` is an `owl:Class` that is `rdfs:subClassOf skos:Concept`; the 97
   roles are *instances* of it, assigned to architecture elements via `pair:playsRole`
   (domain `rdfs:Resource`, i.e. any element).
-- Roles form a hierarchy through `pair:subRoleOf`, an `owl:TransitiveProperty`, under three
-  roots: `pair:ProcessingStep`, `pair:ControlStep`, `pair:ResourceRole`.
+- Roles form a hierarchy through `pair:subRoleOf`, an `owl:TransitiveProperty`, under four
+  roots: `pair:ProcessingStep`, `pair:ControlStep`, `pair:ResourceRole`, `pair:UserInput`.
 - Queries match with `pair:playsRole/pair:subRoleOf* pair:SomeRole`, so tagging a more
   specific sub-role (`pair:PublicUserInput`) still satisfies a motif asking for the parent
   (`pair:UserInput`). This is what lets one motif match two systems annotated at different
   levels of specificity.
+- **Parent choice is load-bearing.** Because queries walk up from a *general* role, a
+  precise role parented to an abstract top-level role is inert: tagging an element with the
+  obviously-correct term then silently prevents the motif from matching. This bit
+  `RewrittenQuery` and `RerankedContext`, which now sit under `UserInput` and
+  `RetrievedContext` respectively.
 
 ### 2.2 How they were actually created
 
@@ -257,42 +334,48 @@ introduced.
 
 ### 2.3 The retro-fitted provenance, and what it does not mean
 
-All 85 roles now carry `dct:source`. Breakdown:
+**Every role traces to an origin, in one of three ways** (R6, enforced by
+`test_every_pattern_role_states_its_provenance`). Measured 2026-08-30 over 97 roles:
 
-| `dct:source` anchor(s) | Roles |
+| How the role is grounded | Roles |
 | --- | --- |
-| Martin Fowler, gen-AI patterns | 24 |
-| Mercari ML System Design Pattern | 20 |
-| DPV / DPV-AI + Fowler | 9 |
-| OWASP LLM Top 10 | 9 |
-| Tool4Boxology + Fowler | 6 |
-| DPV / DPV-AI + Mercari | 4 |
-| Tool4Boxology | 3 |
-| Tool4Boxology + DPV + Mercari | 2 |
-| AIRO + DPV | 2 |
-| Other combinations (Tool4Boxology/AIRO/DPV/Fowler/Mercari) | 4 |
-| "expert curation" (+ OWASP scope note) | 2 |
-| **Roles with no `dct:source`** | **0** |
+| States its own `dct:source` | 50 |
+| Carries a SKOS mapping into an external vocabulary (DPV, DPV-AI, AIRO, Tool4Boxology) | 35 |
+| Neither — inherits through `pair:subRoleOf` from a parent that has one | 12 |
+| **Roles with no traceable origin** | **0** |
 
-Read that table carefully, because it is easy to over-claim:
+The 50 own-source roles anchor to Martin Fowler's gen-AI patterns (14 directly), the Mercari
+ML System Design Pattern pages, the OWASP LLM Top 10, and — for the agentic additions — the
+OWASP ASI entries (13 roles across ASI02, ASI06 and ASI07).
 
-- The provenance was **added after the roles existed**, during the v1.1/v2 consistency
-  pass — it records *what a role was read from or anchored to*, not that the term was
-  imported from a published vocabulary.
-- **No role URI is an external URI.** All 85 live in the `pair:` namespace.
-- There is **no `skos:exactMatch` / `skos:broadMatch` from any role to an external role
-  vocabulary**, and there is **no `skos:ConceptScheme` for roles** (unlike the facets,
-  which are proper SKOS schemes). The hierarchy uses the custom `pair:subRoleOf` rather
-  than `skos:broader`.
-- Where a source string says "DPV-AI ai:LLM" or "AIRO airo:Output", it means the concept
-  was checked against that vocabulary and found compatible — not that the two are formally
-  mapped.
+The third row is deliberate rather than an omission: a role introduced to *refine* another
+states no source because its grounding is the role it specializes, and `pair:subRoleOf`
+already says which one that is. A prose note saying "it inherits the grounding of
+`pair:ExternalDependency`" duplicated the triple beside it, and only the triple can be
+checked — so the test walks the chain instead.
+
+Read this carefully, because it is easy to over-claim:
+
+- The `dct:source` provenance was **added after the roles existed**, during the v1.1/v2
+  consistency pass — it records *what a role was read from or anchored to*, not that the
+  term was imported from a published vocabulary.
+- **No role URI is an external URI.** All 97 live in the `pair:` namespace.
+- There is still **no `skos:ConceptScheme` for roles** (unlike the facets, which are proper
+  SKOS schemes), and the hierarchy uses the custom `pair:subRoleOf` rather than
+  `skos:broader`.
+- The 35 SKOS mappings are a genuine improvement over the earlier state, in which no role
+  was formally mapped to anything. They are still **project-asserted alignments**, reviewed
+  once, not adopted from an upstream mapping set — and they cover about a third of the
+  vocabulary, so the layer as a whole remains the weakest-grounded part of the knowledge
+  base (§2.4).
 
 ### 2.4 Consequences to be aware of
 
-1. **Coverage is exactly as wide as the two pattern catalogs plus OWASP.** Anything
-   outside — agentic tool use, multi-agent delegation, human-in-the-loop review — has thin
-   or no role coverage.
+1. **Coverage is exactly as wide as the sources that were read.** That set has since grown
+   — agentic tool use, multi-agent delegation, agent memory and human-in-the-loop review all
+   have roles now, extracted from the OWASP ASI entries the same way. The limitation is
+   unchanged in kind: anything no source describes still has no role, and adding one is a
+   curation act, not a discovery.
 2. **Circularity risk.** Roles were partly defined so that motifs would bind. A motif
    matching an architecture therefore demonstrates less independent validation than it
    appears to: the annotator, the role set, and the motif were all shaped by the same
@@ -308,10 +391,13 @@ Read that table carefully, because it is easy to over-claim:
 ### 2.5 What would actually fix this
 
 Declare a proper `skos:ConceptScheme` for roles with `skos:broader` alongside (or instead
-of) `pair:subRoleOf`; publish SKOS mappings to external vocabularies where genuine
-counterparts exist (DPV-AI, AIRO, Tool4Boxology already appear in the source strings); and
-run an empirical study — annotate unseen architectures with independent annotators and
-measure both agreement and whether the role set is sufficient without extension.
+of) `pair:subRoleOf`; extend the SKOS mappings past the 35 roles that now carry one, to
+every role with a genuine external counterpart; and run an empirical study — annotate unseen
+architectures with independent annotators and measure both agreement and whether the role
+set is sufficient without extension.
+
+The mapping half is **partly done**: 35 roles are now aligned to DPV, DPV-AI, AIRO and
+Tool4Boxology, where §2.3 previously recorded none at all. The scheme and the study are not.
 
 ---
 
@@ -319,18 +405,37 @@ measure both agreement and whether the role set is sufficient without extension.
 
 ### 3.1 Sources
 
-24 motifs, each with `dct:source` **and** `pair:derivedFrom` (R6):
+31 motifs. **Every one carries `pair:derivedFrom`** (R6); 27 also carry a `dct:source`.
+Measured 2026-08-30:
 
-- **9 GenAI motifs** from Martin Fowler, *Emerging patterns for generative AI systems*:
-  Direct Prompting, RAG, Embeddings, Vector-based Information Retrieval, Hybrid Retriever,
-  Query Rewriting, Reranker, Guardrails, Evals, Fine-Tuning.
-- **14 classic ML/MLOps motifs** from the Mercari ML System Design Pattern catalog, each
+- **13 GenAI motifs** derived from Martin Fowler, *Emerging patterns for generative AI
+  systems*: Direct Prompting, RAG, Embeddings, Hybrid Retriever, Query Rewriting, Reranker,
+  Guardrails, Evals, Fine-Tuning, plus four refinements introduced later — Information
+  Retrieval, Vector-based Information Retrieval, Input Screening, Output Screening. Those
+  four state `pair:derivedFrom` alone, because they refine a shape the catalogue already
+  describes rather than adding one it does not.
+- **13 classic ML/MLOps motifs** from the Mercari ML System Design Pattern catalog, each
   sourced to the specific pattern page: serving (Synchronous, Asynchronous, Batch,
   Prep-pred, Multi-stage), training (Batch training, Pipeline training), lifecycle
   (Train-then-serve, Training-to-serving), operation (Prediction log, Prediction
   monitoring, Model load, Model-in-image).
+- **4 agentic motifs** sourced to the OWASP Agentic (ASI) entries whose structural signature
+  they express: Tool-Using Agent, Agent Memory Loop, Agent Delegation, Human Oversight.
 - **1 project-curated motif**: `pat:ExternalDependencyMotif`, sourced as expert curation
   scoped by OWASP LLM03 (supply chain) — no external catalog defines it.
+
+Two properties of the set shape how to read any count over it:
+
+- **Motifs nest, deliberately.** The library is not an antichain — a smaller motif is often
+  a subgraph of a larger one and always co-matches with it (Vector-IR inside RAG; Input and
+  Output Screening inside Guardrails). Match counts therefore measure *structural coverage*,
+  never "how many different things the system does".
+- **A control motif is not a safe motif.** Guardrails and Evals are what absence-of-control
+  conditions look for, so their presence suppresses findings on that path — but Guardrails
+  is itself the declared gate for improper output handling and system-prompt leakage, since
+  a screened path still carries the hidden instructions and the unvalidated output it
+  screens. Adding a control motif means re-assessing the amended architecture, not assuming
+  a clean sheet.
 
 ### 3.2 The two layers, and why they can drift
 
@@ -394,11 +499,29 @@ explained.
 ### 3.5 Motifs read structure only (R2)
 
 A motif matches **roles + flow relations**, never facets. This is verified mechanically,
-not merely asserted: no `match_*.rq` references `pair:containsDataCategory` or any
-`facet:` property. (An earlier R2 leak in `match_embeddings.rq`, which filtered on a data
+not merely asserted: no query in `implementation/match/` references
+`pair:containsDataCategory` or any `facet:` property — re-checked 2026-08-30, still zero. (An earlier R2 leak in `match_embeddings.rq`, which filtered on a data
 category, has been removed.) Keeping motifs facet-blind is what keeps them risk-neutral
 and reusable: retrieval over public data and retrieval over sensitive data are the *same*
 structure, and only the risk stage is allowed to care about the difference.
+
+### 3.6 Process typing never decides whether a motif matches
+
+Unified 2026-08-06. Every step-node class check in every match query is
+`?step a/rdfs:subClassOf* beam:Process` — the same shape as the library's role idiom,
+`pair:playsRole/pair:subRoleOf*`. It walks the class hierarchy already present in the loaded
+graph, so no reasoner is involved, and `beam:Process`, `beam:Infer`, `beam:Transform`,
+`beam:Train` and `beam:Generate` all bind identically.
+
+Before this, three conventions coexisted, and the consequence was severe rather than
+cosmetic: a leaf-typed agent matched *zero* agentic motifs while an identical generic-typed
+one matched them all. **Never write a bare `a beam:Infer` in a query** —
+`test_queries_check_process_typing_one_way` fails on it, and
+`test_process_typing_does_not_change_what_matches` proves the equivalence end to end.
+
+The **role is the discriminator**; the class is only a coarse process/resource guard.
+`shacl/annotation_guidance.ttl` still warns when a step carries no process-family class at
+all, since that genuinely cannot bind.
 
 ---
 
@@ -412,11 +535,12 @@ structure, and only the risk stage is allowed to care about the difference.
 | **Risk** | `ontology/core/beam_core_risk.ttl`, `ontology/taxonomy/*` | BEAM Risk (built on AIRO) + OWASP/IBM/MIT taxonomies + cross-mappings |
 | **Pattern** | `ontology/core/pair_ai_pattern.ttl`, `ontology/patterns/*` | Roles, data categories, motif/risk-pattern/finding vocabulary, the two libraries, the control layer |
 | **Facets** | `ontology/facets/*` | SKOS characterization schemes + their attachment properties |
-| **Contract** | `shacl/architecture_input_contract.ttl` | SHACL shapes for a valid submitted architecture graph |
+| **Context** | `ontology/context/*`, `external/sbpmn/sbpmn_2.0.ttl` | The business layer bridge: `pair:refinedBy`, `pair:businessFollows`, and two registered derivations (§7) |
+| **Contract** | `shacl/*` | Three shape sets answering three different questions (§4.6) |
 
-Stored permanently: the three modules (this is the reusable **AI-RKG**). Not stored:
-per-system architecture graphs and their findings — those are assessment input/output and
-land in `outputs/`.
+Stored permanently: the modules above (this is the reusable **AI-RKG**). Not stored:
+per-system architecture graphs, per-organisation process models, and their findings — those
+are assessment input/output and land in `outputs/`.
 
 ### 4.2 BEAM is canonical; external vocabularies enter only through adapters (R5)
 
@@ -451,8 +575,22 @@ why, so the decision is not silently re-litigated.
 - **Structural reuse** — `owl:imports` / subclassing plus `dct:source`: Boxology → BEAM,
   AIRO → BEAM Risk, DPV for entities and identifiability.
 - **Vocabulary reuse** — the project defines its own SKOS scheme and links out with
-  `skos:exactMatch` / `broadMatch` / `closeMatch`: OECD (data facets), VAIR, TÜV AI.ST
-  (**on hold**, license unverified — do not add TÜV mappings).
+  `skos:exactMatch` / `broadMatch` / `closeMatch`. **DPV is the alignment target**, because
+  it is resolvable and third-party checkable.
+
+**OECD is absorbed, not represented** (decided 2026-08-03). It is cited as a `dct:source` on
+the facet schemes; there is **no `oecd:` concept scheme and there must not be one**. OECD
+publishes no resolvable concept URIs, so any `oecd:X` would be a concept we wrote from the
+same reading that produced the facet value — the `exactMatch` would be true by construction
+and prove nothing, while doubling the concept count. Say "informed by OECD", not "aligned to
+OECD". Adding document loci would change this, but loci must be read from the source, never
+inferred.
+
+**TÜV AI.ST is excluded**, not on hold — licence verified closed 2026-08-03. The v0.1
+whitepaper carries "© TÜV AI.Lab GmbH" with no licence grant and the PDF is marked
+"CONFIDENTIAL. DO NOT SHARE"; publicly downloadable ≠ reusable. Do not mint TÜV concepts,
+reproduce its tables, or add TÜV mappings. Citing it in prose is normal scholarship and
+remains fine. Reopen only on written permission from the vendor.
 
 **DPV is referenced, never copied.** `facet:hasPersonalDataCategory` and
 `facet:hasIdentifiabilityLevel` take DPV URIs directly as values (verified against DPV
@@ -478,25 +616,60 @@ live beside it:
 | `facet:hasDomain` / `hasPurpose` / `hasDeploymentSetting` | `beam:System` | `context.ttl`, DPV purposes |
 | `facet:hasImplementationType` | `beam:Model` | `implementation_type.ttl` |
 | `facet:hasTaskCategory` | `beam:Task` | `task.ttl` |
-| `pair:containsDataCategory` | `beam:Data` | `pair:DataCategory` (8), in the **pattern** module |
+| `pair:containsDataCategory` | `beam:Data` | `pair:DataCategory` (7), in the **pattern** module |
 
 The Data Category facet sits in the pattern module rather than the facet module for a
-substantive reason: its values are **propagated along data flow by a registered query**
+substantive reason: its values are **propagated along data flow by registered queries**
 (R8, derived facts), whereas every other facet is a base fact annotated by the modeler.
 Ranges are kept at `skos:Concept` deliberately — the intended scheme is stated in the
 property comment rather than enforced with OWL axioms.
 
+**There is no "Personal" data category, and there must not be one.** Personal data is
+expressed with DPV concepts through `facet:hasPersonalDataCategory` (R3), never mirrored
+into `pair:DataCategoryScheme`.
+
+Concept counts, measured 2026-08-30: **35** concepts across the project's own facet
+namespaces — task 20, data 11, autonomy 4. `context.ttl` declares the Domain and Purpose
+schemes as shells whose values are taken from DPV directly; `implementation_type.ttl` is
+likewise a declared scheme with no project concepts in it yet.
+
+**Facets reach the assessment two ways, and only two** (decided 2026-08-11):
+
+1. **Bridge** — a protection-relevant facet value is mapped into a `pair:DataCategory` by a
+   registered propagation query, and the category then travels along the flow like any
+   other. Live for `facet:hasPersonalDataCategory` → `SensitiveInformation` and
+   `facet:hasDataRights dataf:Proprietary` → `ConfidentialInformation`.
+2. **Direct read** — an applicability condition tests the facet on a *bound element of the
+   match* (R2), positively (R10). No propagation is involved.
+
+**Facets are never propagated as facets.** R8 makes Data Category the one facet that is also
+derived; propagating others would break that line and force every condition to read two
+propagating vocabularies. Concretely: content-borne properties (sensitivity,
+confidentiality) bridge and travel; element-intrinsic properties (provenance, dynamism) do
+not, because an element derived from observed data is *derived* data, not observed data —
+copying the label downstream would assert something false. "What was this derived from?" is
+answered by the `prov:Derivation` chain instead, which is exact.
+
 R7 is respected throughout: **Task ≠ Capability ≠ Application Type** are three separate
 axes and are never merged.
 
-### 4.6 Input contract (R4)
+### 4.6 Three SHACL shape sets, three different questions (R4)
 
-`shacl/architecture_input_contract.ttl` makes explicit what a submitted graph *must*
-(Violation) and *should* (Warning) represent for candidate findings to be meaningful — at
-minimum one `beam:System`, and every `beam:Process` participating in at least one
-`beam:use`/`beam:produce`. This is the operational counterpart of the Open World
-Assumption: absence-of-control checks are only defensible if the contract states what the
-submitter was expected to model.
+| File | Question | Severity |
+| --- | --- | --- |
+| `shacl/architecture_input_contract.ttl` | Is this graph acceptable? | Violations |
+| `shacl/assessment_output_contract.ttl` | Are emitted findings well formed? | Violations |
+| `shacl/annotation_guidance.ttl` | Will this annotation actually match anything? | `sh:Info` / `sh:Warning` only |
+
+The **input contract** makes explicit what a submitted graph *must* (Violation) and *should*
+(Warning) represent for candidate findings to be meaningful — at minimum one `beam:System`,
+and every `beam:Process` participating in at least one `beam:use`/`beam:produce`. This is
+the operational counterpart of the Open World Assumption: absence-of-control checks are only
+defensible if the contract states what the submitter was expected to model.
+
+**Every guidance shape is `sh:Info` or `sh:Warning`, never `sh:Violation`**, so guidance can
+never change whether a graph conforms — a test enforces that. It rides along with the input
+contract in the webapp and in `validate_graphs.py`.
 
 ---
 
@@ -558,17 +731,30 @@ human review — not a score, not a pass/fail verdict.
 
 0. **Load** (`load_base_graph`) — BEAM core, BEAM risk, `imports.ttl`,
    `pair_ai_pattern.ttl`, the motif library, the risk pattern library, the control layer,
-   every file in `ontology/facets/`, and every file in `ontology/taxonomy/`, into one
-   `rdflib.Graph`; then the submitted architecture file(s) are parsed into the *same*
-   graph.
-1. **Propagate** (`_propagate_data_categories`) — every implementation registered with
-   `pair:producesOutputType pair:DataCategoryPropagation` (currently one:
-   `propagate_untrusted_content.rq`) runs repeatedly until no new triple appears, capped
-   at 20 iterations. Roots: anything under `pair:PublicUserInput` or
-   `pair:RetrievedContext`. Taint flows along `beam:use`/`beam:produce`. It stops at a step
-   under `pair:GuardrailStep` or at an element explicitly tagged `pair:TrustedContent`.
-   Rationale: forgetting to hand-tag one derived element three hops downstream would
-   silently suppress a finding.
+   every file in `ontology/facets/`, `ontology/taxonomy/`, `ontology/context/`, and
+   `external/sbpmn/`, into one `rdflib.Graph`; then the submitted file(s) — an architecture,
+   and optionally a business process model — are parsed into the *same* graph.
+   **The knowledge base is parsed once per process** and copied per call
+   (`_base_knowledge`); Turtle parsing was the largest single cost in every entry point.
+   `load_base_graph()` still hands back a fresh writable graph, so never return the cached
+   instance. Editing a `.ttl` in a live server needs `reload_knowledge_base()` — Flask's
+   reloader watches Python only.
+1. **Derive** (`_derive_facts`) — every implementation registered with
+   `pair:producesOutputType pair:DataCategoryPropagation` **or**
+   `pair:BusinessFlowDerivation` runs repeatedly until no new triple appears, capped at 20
+   iterations. **Eight are registered** (measured 2026-08-30): untrusted content, content
+   categories, generated content, personal data category, personal data rights, proprietary
+   data, the business data bridge, and business flow.
+   Untrusted-content taint takes anything under `pair:PublicUserInput` or
+   `pair:RetrievedContext` as a root and flows along `beam:use`/`beam:produce`, stopping at a
+   step under `pair:GuardrailStep` or at an element explicitly tagged
+   `pair:TrustedContent`. Rationale: forgetting to hand-tag one derived element three hops
+   downstream would silently suppress a finding.
+   **A control barrier must be earned.** Widening the `content_categories.rq` barrier to
+   output guardrails was right — a screened output inheriting the categories the screen
+   exists to stop made inserting one *grow* the derived set. Adding pseudonymisation to it
+   was wrong, and a test caught it: `dpv:PseudonymisedData` is a kind of `dpv:PersonalData`,
+   so sensitivity must survive it.
 2. **Match motifs** — every implementation with `producesOutputType pair:MotifMatch` runs
    once as a CONSTRUCT; results are merged back into the working graph so later queries
    can see them.
@@ -585,52 +771,89 @@ adding a `.rq` and registering it in Turtle. Prepared queries are cached
 (`_prepared_query`); SPARQL parsing dominated runtime, and caching takes a full assessment
 from roughly two seconds to a tenth of a second.
 
-### 5.3 Entry points
+**rdflib's SPARQL compiler is not thread-safe.** pyparsing keeps global parser state, so two
+threads compiling queries at once corrupt it, surfacing as
+"`Param.postParse2() missing 1 required positional argument`". Compilation is serialized
+inside `_prepared_query`; keep it there rather than locking in a caller, and never parse
+SPARQL off the main thread outside that function.
 
-- **CLI** — `airiskkg assess <graph.ttl> [more.ttl ...] [--output-dir DIR]`
-  (see `docs/notes/running_assessment_runner.md`).
-- **Web workbench** — `airiskkg serve`: visual builder, Turtle editor, Tool4Boxology
-  import, SHACL validation, and in-memory assessment rendered by OWASP category
-  (see `docs/user_guide.md`, `docs/notes/running_the_webapp.md`).
+### 5.3 A run records what it ran on
+
+`build_export` mints a `prov:Activity` and, beside it, **one `prov:Entity` per input** — the
+submitted graph, the knowledge base, and the business process layer when one is submitted —
+each carrying a `pair:contentFingerprint`, plus `pair:sourceRevision` on the library when a
+repository is present (the container has none). Inputs are entities rather than properties on
+the activity precisely so that adding a third input costs a call rather than a new predicate.
+
+An entity's IRI *is* its fingerprint, so two runs over the same input reference one node.
+`pair:assessmentFingerprint` on the activity answers "same question?"; the activity IRI stays
+a fresh UUID, because two runs at different times genuinely are two events and collapsing
+them would assert they were one. Graph fingerprints canonicalize blank nodes and sort
+N-Triples before hashing — never `to_isomorphic(...).graph_digest()`, whose value is
+rdflib's own and would break comparability across an rdflib upgrade.
+
+### 5.4 Entry points
+
+- **CLI** — `airiskkg assess <graph.ttl> [more.ttl ...] [--output-dir DIR]`.
+- **Web workbench** — `airiskkg serve`: visual builder, Turtle editor, BPMN process canvas,
+  Tool4Boxology import, SHACL validation, and in-memory assessment rendered by OWASP
+  category (see `docs/user_guide.md`).
 - **Tool4Boxology import** — `python/scripts/normalize_t4b.py` and the workbench endpoint,
   both via `t4b_import.py`.
 
-### 5.4 What a run currently produces
+### 5.5 What a run currently produces
 
-Verified on 2026-07-28 against the bundled examples:
+Measured 2026-08-30 by running the pipeline. `test_propagation.py` pins the four
+single-graph rows and asserts that **every bundled example has a baseline** — adding one
+without a number would otherwise leave it unwatched.
 
-| Example | Motif matches | Findings | Motifs that matched |
-| --- | --- | --- | --- |
-| `ontology/example/onyx_danswer.ttl` | 13 | 23 | DirectPrompting, Embeddings, ExternalDependency, QueryRewriting, Reranker, RAG, VectorIR |
-| `ontology/example/beam_export_graph_rag.ttl` | 0 | 0 | — (raw Tool4Boxology export, **no role annotations**) |
+| Example | Motif matches | Findings |
+| --- | --- | --- |
+| RAG chatbot (Onyx / Danswer) | 14 | 22 |
+| Minimal graph RAG | 3 | 7 |
+| Meter anomaly scoring (ML serving) | 4 | 1 |
+| IT support agent (agentic) | 4 | 8 |
+| Energy scene: graph RAG + meter anomaly + the business process | 7 | 8 |
+| IT service desk scene: the agent + its business process | 4 | 9 |
 
-The 23 findings on `onyx_danswer` span 16 distinct (motif, risk) combinations across eight
-OWASP categories, with prompt-injection alone firing from four different motifs. The zero
-on `beam_export_graph_rag.ttl` is not a failure of the pipeline — it is the method's
-central dependency made visible: an unannotated graph, however well-drawn, matches nothing
-(§6.6; `ontology/example/beam_export_graph_rag_annotated.ttl` is the annotated form of exactly this
-file).
+The RAG chatbot is the broadest graph in the repository: 14 matches over **8 distinct
+motifs** (Direct Prompting, Embeddings, External Dependency, Information Retrieval, Query
+Rewriting, Reranker, RAG, Vector-based IR). Matches are `pair:MotifMatch` instances, not
+distinct motifs — nested motifs co-match by design, so the number is structural coverage.
+
+**Never name an example file in a test.** These get renamed — `onyx_danswer.ttl` became
+`onyx_danswer_rag_chatbot.ttl` became `ony_rag_chatbot.ttl` became `onyx_rag_chatbot.ttl`
+inside two days — and each rename broke suites for reasons unrelated to what they test.
+Resolve one through `tests/conftest.py::example_path(NAMESPACE)`: renaming a file is a
+filing decision, changing a namespace is a modelling one.
+
+**An unannotated graph matches nothing**, however well drawn. That is not a failure of the
+pipeline but the method's central dependency made visible (§6.6). The raw Tool4Boxology
+export that used to demonstrate this has since been removed from the bundled set, which is
+now four annotated architectures plus two process models.
 
 ---
 
 ## 6. Current limitations
 
-Each item below was verified against the repository on 2026-07-28, not carried over from
+Each item below was verified against the repository on 2026-08-30, not carried over from
 older notes.
 
-**6.1 The characterization facet layer is declared but not consumed.** No query in
-`ontology/patterns/implementation/` references any `facet:` property. Autonomy,
-provenance, identifiability, dynamism, rights, domain, purpose, deployment setting, task,
-implementation type — all modelled, none read. Only the Data Category facet (in the
-pattern module) is operational. Until at least one applicability condition reads a facet,
-the layer is an enabler, not a capability, and the "structure + context" story is
-half-delivered.
+**6.1 The characterization facet layer is only partly consumed.** Two facets now reach the
+assessment, both by the bridge route (§4.5): `facet:hasPersonalDataCategory` and
+`facet:hasDataRights`, read by three propagation queries. Autonomy, provenance,
+identifiability, dynamism, domain, purpose, deployment setting, task and implementation type
+remain modelled and read by nothing. **No applicability condition reads a facet directly**
+— the second of the two sanctioned routes is declared but unexercised. So the "structure +
+context" story is now partly delivered rather than half-promised, and the untouched
+dimensions are still an enabler rather than a capability.
 
-**6.2 Only one derived facet exists.** Untrusted-content taint is the sole propagated
-category. `pair:SensitiveInformation`, `pair:PromptInstruction`, and the rest must be
-hand-tagged on every element that carries them. Propagation also only covers what is
-structurally derivable — a `beam:Data` node labelled "internal HR records" with no
-distinctive role stays untagged unless a human tags it.
+**6.2 Derived facts have grown, and their reach is still structural.** Seven data-category
+derivations now run to a fixed point where there was one. But propagation still only covers
+what is structurally derivable — a `beam:Data` node labelled "internal HR records" with no
+distinctive role and no facet stays untagged unless a human tags it, or unless a business
+process model says something about it. `pair:PromptInstruction` and several other categories
+are still hand-tagged everywhere they appear.
 
 **6.3 ODP and OQP are synchronized by hand.** No compiler turns a motif declaration into
 its query. `test_library_consistency.py` catches identifier drift mechanically, but
@@ -641,56 +864,234 @@ caught by reading both.
 grounding by URI, no SKOS scheme, no inter-annotator agreement study, and role granularity
 was shaped by what motifs needed to bind.
 
-**6.5 Example and test debt — resolved.** Two third-party use-case graphs and the Verba
-example were removed, which for a time left several tests loading fixtures that no longer
-existed. Those tests were repointed at `onyx_danswer.ttl` and the agentic examples, and the
-suite is green again. Every example the repository ships now lives in `ontology/example/`;
-nothing in the test suite reads from an ignored directory.
+**6.5 Example and test debt — resolved, and now enforced.** Every example the repository
+ships lives in `ontology/example/` (four architectures) and `ontology/example/context/` (two
+process models); confidential and NDA-covered graphs live in the gitignored
+`ontology/example_local/`, which nothing in the test suite or the shipped library may read
+— a fresh clone has to pass, and `test_private_examples.py` enforces that plus the ignore
+rule, the `.dockerignore` allow-list, and that a WSGI app neither lists nor serves the
+folder. `.dockerignore` is an **allow-list** and must stay one: `COPY . /app` once shipped an
+NDA-covered directory because `.gitignore` and `.dockerignore` are unrelated files and nobody
+updated the second.
 
 **6.6 Assessment quality is bounded by annotation quality.** The method has no way to
-recover a role the modeler did not assign, and three type mismatches silently block
-matching (the LLM-call step must be `beam:Infer`, the model `beam:StatisticalModel`, data
-boxes `beam:Data`). A perfectly drawn diagram with no `pair:playsRole` produces zero
-findings, as `beam_export_graph_rag.ttl` demonstrates.
+recover a role the modeler did not assign. A perfectly drawn diagram with no
+`pair:playsRole` produces zero findings.
 
-**6.7 Risk coverage is GenAI-shaped and OWASP-shaped.** 11 risk patterns anchored to the
-OWASP LLM Top 10 cover **12 of 24 motifs**. The 12 uncovered motifs are almost entirely
-the classic ML/MLOps set — Synchronous/Asynchronous/Batch/Multi-stage/Prep-pred
-prediction, Batch and Pipeline training, Train-then-serve, Prediction logging and
-monitoring — plus Evals and Hybrid Retriever. IBM Atlas and MIT entries are used as *link
-targets*, never as sources of new patterns, so risks that OWASP does not name (fairness,
-environmental cost, labour impact, most MIT domains) cannot currently be found even though
-they are present in the loaded taxonomies.
+Process typing no longer contributes to this (§3.6) — any class under `beam:Process` binds
+identically, so the old trap of typing an LLM call `beam:Process` instead of `beam:Infer` is
+gone. What remains is the **process/resource split** (a resource typed as a process cannot
+bind a step node, and vice versa) and, above all, **role choice**, including which parent a
+role sits under.
+
+**6.7 Risk coverage is OWASP-shaped.** 15 risk patterns anchored to the OWASP LLM Top 10 and
+the ASI entries cover **14 of 31 motifs**. The 17 uncovered motifs are almost entirely the
+classic ML/MLOps set — Synchronous/Asynchronous/Batch/Multi-stage/Prep-pred prediction,
+Batch and Pipeline training, Train-then-serve, Prediction logging and monitoring — plus
+Evals, Hybrid Retriever, Information Retrieval, and the three control motifs, which exist to
+be *found* rather than flagged. IBM Atlas, MIT and NIST entries are used as *link targets*,
+never as sources of new patterns, so risks that OWASP does not name (fairness, environmental
+cost, labour impact, most MIT domains) cannot currently be found even though they are
+present in the loaded taxonomies.
+
+The agentic gap has narrowed but is deliberately partial: only the four ASI entries with a
+design-time structural signature are modelled (§1.1).
 
 **6.8 The control layer is a curated first pass.** `pair:realizedByMotif` covers 5 of 12
 controls and encodes an *assumed* structural mitigation, not evidence that inserting the
 motif removes the risk. The same MIT control family can still be reached by a finding
 along multiple paths (as `pair:suggestedControl`, through a `pat:Control_*`
-`skos:relatedMatch`, and through the risk's taxonomy entry). Detailed critique:
-`docs/notes/control_layer_weakness_analysis.md`; forward plan:
-`docs/notes/mitigation_research_roadmap.md`.
+`skos:relatedMatch`, and through the risk's taxonomy entry).
 
-**6.9 Provenance obligations are partly unmet (R6).** The SSSOM export for taxonomy
-mappings has not been generated. OECD facet concepts carry TODO markers instead of
-`skos:exactMatch` because OECD publishes no resolvable concept URIs. `task.ttl`
-second-level concepts and the Implementation Type scheme are curated placeholders awaiting
-authoritative taxonomies. TÜV AI.ST is on hold pending license verification.
+**A control clears a finding by being built, not by being asserted.** Fifteen risk queries
+once carried `FILTER NOT EXISTS { pattern suggestedControl ?c . ?c beamr:associatedTo
+?element }` as an escape. Nothing ever wrote that triple — not an example, not a rewrite,
+not any code path — so the escape could not fire, and removing all fifteen left the output
+byte-identical. It was worse than dead: it made a finding *look* falsifiable while the only
+thing that could clear it was unreachable. Do not reintroduce an escape nothing can satisfy.
+
+Three risk queries still have no structural check at all (§1.4), and are correct that way.
+Others carry one on the structural half while the annotation half remains unclearable —
+audit before assuming a given finding is actionable. Mechanics in full:
+`docs/reference/mitigation_and_gap_mechanics.md`.
+
+**6.9 Provenance obligations are partly unmet (R6).** Every mapping now has an
+`sssom:Mapping` record with a semapv justification in
+`ontology/taxonomy/provenance/mapping_provenance.ttl`, regenerated by
+`python/scripts/generate_mapping_provenance.py`. It sits **below the runner's non-recursive
+glob deliberately** — a finding must never cite its own provenance as support — so never
+move it up a level. What is still unmet: **R6's own-SSSOM export has never been generated**;
+the project consumes upstream sets rather than publishing one, and documentation should say
+so rather than imply the export exists.
+
+OECD facet concepts carry no `skos:exactMatch` because OECD publishes no resolvable concept
+URIs; OECD is therefore **absorbed as a `dct:source`, not represented as a scheme**, and
+there must be no `oecd:` namespace — any such concept would be one we wrote from the same
+reading that produced the facet value, making the match true by construction. Say "informed
+by OECD", never "aligned to OECD". DPV is the alignment target, because it is resolvable and
+third-party checkable.
+
+The facet layer is a **documented mixture**, not wholesale external grounding. Measured
+2026-08-30 over its 35 concepts: **25 carry a SKOS mapping** into an external vocabulary
+(overwhelmingly DPV), 10 carry none, and only 4 state a `dct:source` of their own — OECD is
+cited once per **scheme** (autonomy, data facets, task) rather than per concept, so the
+grounding is scheme-level and inherited, not term-by-term. Do not describe the layer as
+"OECD/DPV-derived" without that qualification.
+
+`task.ttl` second-level concepts and the Implementation Type scheme are curated placeholders
+awaiting authoritative taxonomies. TÜV AI.ST remains excluded — licence verified closed
+2026-08-03; cite it in prose, but mint no concepts and reproduce no tables.
 
 **6.10 Findings are unranked and overlapping.** There is no severity, likelihood, or
 priority; no de-duplication when several motifs trigger the same risk on overlapping
-evidence (prompt-injection fires four times on `onyx_danswer`); and no aggregation from
-findings to a system-level statement. A human reads a flat list.
+evidence (prompt injection fires from several matches on the RAG chatbot); and no
+aggregation from findings to a system-level statement. A human reads a flat list.
+`pair:findingStatus` is the triage extension point, and finding IRIs are deterministic so a
+judgement survives a re-run — but nothing consumes a status yet.
 
 **6.11 There is no evaluation yet.** No ground-truth dataset, no precision/recall against
-expert assessment, no baseline comparison, no user study. Firing counts on three example
-architectures are the only empirical signal, and those examples were themselves annotated
-by the method's authors.
+expert assessment, no baseline comparison, no user study. Firing counts on four bundled
+architectures and two process models are the only empirical signal, and those examples were
+themselves annotated by the method's authors.
 
-**6.12 Engineering constraints.** The whole knowledge base plus the architecture graph is
-loaded into a single in-memory `rdflib.Graph` per run; no OWL reasoning is performed at any
-point (alignments are additive and are *not* consumed during matching, by design); and the
-workbench builder does not support `beam:Agent` / `beam:Task`, so agentic architectures
-cannot be authored there even though the vocabulary exists.
+**6.12 Engineering constraints.** The whole knowledge base plus the submitted graphs are
+loaded into a single in-memory `rdflib.Graph` per run, and **no OWL reasoning is performed at
+any point** — alignments are additive and are *not* consumed during matching, by design, and
+`owl:inverseOf` is declared as documentation only, which is why `pair:hasMotif` and
+`pair:hasRiskPattern` must both be written by hand. The workbench builder offers
+`beam:Data` / `StatisticalModel` / `SemanticModel` / `Symbol` and the five process classes,
+but no `beam:Agent` or `beam:Task`. That no longer blocks agentic authoring — the bundled
+agentic example uses none of either, since agentic motifs bind on roles and process classes
+— but the two vocabulary terms remain unreachable from the builder.
+
+**6.13 The business layer has one bridge and one honest gap.** Nothing in a process model
+names an architecture element — that is the point, since the analyst does not know them — so
+`business_data_bridge.rq` maps **by role**, onto the refined system's `pair:UserInput` and
+`pair:PredictionRequest` elements. Where a system has several, all of them are reached
+whether or not the declared data actually flows to each. A `prov:Derivation` records
+which business annotation produced which category so a modeller can disagree with it, but the
+mapping is not element-precise and cannot be. `.bpmn` XML import does not exist: the layer is
+authored in Turtle or through the canvas, while a real process model usually starts life in
+Camunda or Signavio.
+
+---
+
+## 7. The business context layer
+
+Added on `feature/bpmn-business-context` and absent from every earlier revision of this
+document.
+
+### 7.1 Why it exists
+
+A sparse architecture graph fires in every direction, because almost every applicability
+condition is either satisfied or unfalsifiable when the graph says little. The missing
+information is rarely architectural: whether the data reaching a scoring step identifies a
+household is known by the process owner, not by whoever drew the components — and the
+artefact the process owner already maintains is a process model. The layer exists to let a
+non-RDF-writing analyst state facts that change findings, in a notation they already use.
+
+### 7.2 The join is refinement, never subsumption
+
+```
+business (sBPMN 2.0)  --pair:refinedBy-->  architecture (BEAM)  --pair:playsRole-->  patterns
+```
+
+**A `bpmn:activity` is not a `beam:Process`** and must never be aligned to one. Every match
+query types its step node as `?step a/rdfs:subClassOf* beam:Process` (§3.6), so subsuming
+activities under it would make every business activity a candidate motif node — and the input
+contract, which requires each `beam:Process` to use or produce a resource, would reject every
+process model outright.
+
+`pair:refinedBy` is PAIR's own rather than `sbpmn:calledElement`, whose unconstrained range
+would accept it and would hard-code the sBPMN namespace into every submitted architecture,
+foreclosing a later change of process ontology.
+
+### 7.3 Two derivations
+
+**`business_flow.rq` — typed reachability.** `bp:sourceRef` and `bp:targetRef` are declared
+on *five* classes: `sequenceFlow`, `messageFlow`, `dataAssociation`, `association`,
+`conversationLink`. A property path written straight over them walks out of control flow,
+through a data association, and back in somewhere unrelated — and the result looks like
+evidence. One *typed* hop is therefore materialised as `pair:businessFollows`, so every
+condition downstream uses a plain transitive path that cannot make that mistake. **Never
+write a raw path over `bp:sourceRef`.**
+
+**`business_data_bridge.rq` — the point of the whole layer.** A personal-data kind declared
+on a `bpmn:itemDefinition`, minus the two DPV values that mean "not personal"
+(`dpv:AnonymisedData`, `dpv:NonPersonalData`), yields `pair:SensitiveInformation` on the
+refined system's resources playing `pair:UserInput` or `pair:PredictionRequest` — or a
+sub-role of either — with a `prov:Derivation` recording which annotation produced it.
+`dpv:PseudonymisedData` is **not** excluded: pseudonymised data is still personal data.
+
+R8 stays intact: what is *annotated* stays annotated — on the item definition, by a human;
+what is *derived* is the data category, exactly as before. **No facet is propagated as a
+facet, and no BPMN triple enters the architecture.**
+
+`dpv:AnonymisedData` and `dpv:NonPersonalData` are excluded and are offered in the UI on
+purpose: "checked, and not personal" is a claim, and it must not collapse into the silence of
+never having said anything.
+
+### 7.4 A control can live in the process
+
+The improper-output-handling query asks its absence question **twice**: once of the
+architecture (is there an output validation or guardrail step reading or producing this
+output?) and once of the business process (is there a human task, downstream of the activity
+this system refines, reading what that activity produced, performed by a `bp:humanPerformer`?).
+
+Without the second question the finding could only be cleared by inserting a control step
+into the architecture — and a review that genuinely exists went on being reported as absent.
+Nothing is asserted into the architecture and no facet is read: it is a positive structural
+claim over represented business structure, evaluated on elements the match already bound,
+admissible under R10 and graph-relative under R4 like every other absence here. It is inert
+when no process is submitted.
+
+### 7.5 What the layer actually moves
+
+Measured 2026-08-30. Two scenes, two different effects:
+
+**IT service desk** — the agent alone assesses to 4 matches / 8 findings; with its process,
+4 / **9**. The added finding is a candidate sensitive information disclosure, raised because
+a personal-data item declared on the process reaches the system's user-facing output.
+`test_business_data_editing.py` pins the mechanism rather than the total: detaching the data
+annotation returns it to 8, re-declaring it as `dpv:PersonalData` restores 9, and
+re-declaring it as `dpv:AnonymisedData` leaves it at 8.
+
+**Energy customer service** — the two architectures alone give 7 / 8; with the process, also
+7 / 8. **The total is unchanged and the content is not:**
+
+- **+1** candidate sensitive information disclosure, raised by the data bridge;
+- **−1** candidate improper LLM output handling, cleared by the human review step that lives
+  in the process (§7.4).
+
+State the composition, not the total. A count alone hides two real changes in opposite
+directions — and the earlier summary of this layer as "the scene is not the sum of its parts"
+is, for this scene, arithmetically false while the underlying claim is stronger than it
+sounds.
+
+`ec:LogInteraction` correctly clears nothing: logging an interaction is not reviewing it.
+Both steps are in the example on purpose, because a layer where every added step clears
+something is a layer that is not being read.
+
+### 7.6 Scoping is a traversal, not stored state
+
+`pair:refinedBy` names the system, and `beam:hasProcess` / `hasResource` / `hasAgent` /
+`contain` say what it holds, so "the architecture behind **this** activity" is answered by
+walking the graph (`graph_view._members_of()`). There is no database and there must not be one
+for this. The same membership draws the per-system boundary on the architecture canvas.
+
+### 7.7 The canvas draws what a risk assessment reads, and no more
+
+Pools as bands, activities in flow order with task-type glyphs, sequence flow within a pool,
+message flow across pools, sub-process expansion in place, data objects as folded pages, data
+stores as cylinders, data associations as dashed arrows, and the classification humanised
+above the shape. **Gateways, events and boundary markers are deliberately absent**: no bundled
+example uses one, a faithful BPMN renderer is a project of its own, and none of them changes
+a finding.
+
+Editing runs through `/api/process-edit`, a server-side rewrite mirroring `/api/graph-edit`,
+so the Turtle in the editor stays the single source of truth. Whether a connection is a
+sequence flow or a message flow is read from the containment, never asked — in BPMN that is
+not a preference.
 
 ---
 
@@ -701,9 +1102,8 @@ cannot be authored there even though the vocabulary exists.
 | `docs/reference/PAIR-AI_glossary_v1_3.md` | **Authoritative.** Definitions, rules R1–R10, grounding references |
 | `docs/reference/catalogue.md` | Full inventory of motifs, risk patterns, roles, data categories |
 | `docs/reference/risk_control_linkage.md` | Risk to control linkage, including the MIT evidence layer |
+| `docs/reference/mitigation_and_gap_mechanics.md` | How a control is applied and how the gap report is built |
 | `docs/user_guide.md` | Workbench user guide |
-| `ontology/example/*.ttl` | Worked and unannotated example architecture graphs |
-| `docs/notes/running_assessment_runner.md`, `running_the_webapp.md` | Operational setup |
-| `docs/notes/control_layer_weakness_analysis.md` | Deep critique of the risk→control→motif chain |
-| `docs/notes/mitigation_research_roadmap.md` | Forward plan for the mitigation layer |
-| `CHANGELOG_data_model.md` | v1 → v2 rename and migration record |
+| `ontology/example/*.ttl`, `ontology/example/context/*.ttl` | The bundled architectures and process models |
+| `docs/notes/business_context_as_built.md` | What shipped on the business-layer branch (local-only; `docs/notes/` is gitignored) |
+| `CHANGELOG_data_model.md` | Data-model change and audit record (local-only) |

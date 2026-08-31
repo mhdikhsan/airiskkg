@@ -111,12 +111,16 @@ framing instead of supporting it.
   end to end. The role is the discriminator; the class is only a coarse process/resource
   guard. `annotation_guidance.ttl` still warns when a step carries no process-family class
   at all, since that genuinely cannot bind.
-- **Provenance reaches the role vocabulary too (R6).** Every `pair:PatternRole` states a
-  `dct:source` or a SKOS mapping. Where a role has no external source of its own, its
-  provenance is *derived* — the source of the motif or risk pattern whose registered query
-  traverses it — or declared explicitly as a refinement introduced for annotation
-  precision. Never attribute a role to a document it did not come from;
-  `test_every_pattern_role_states_its_provenance` is the net.
+- **Provenance reaches the role vocabulary too (R6).** Every `pair:PatternRole` traces to
+  an origin in one of three ways. Measured 2026-08-30 over 97 roles: **50** state their own
+  `dct:source`, **35** carry a SKOS mapping into an external vocabulary (DPV, DPV-AI, AIRO,
+  Tool4Boxology — the two sets are disjoint), and **12** state neither and inherit through
+  `pair:subRoleOf` from a parent that has one. The third way is deliberate: a role
+  introduced to *refine* another is grounded by the role it specializes, and `subRoleOf`
+  already says which — a prose note restating it duplicates a triple that can be checked.
+  So `test_every_pattern_role_states_its_provenance` **walks the chain** rather than looking
+  at one node; what regresses it is a new role with no source, no mapping, and no parent
+  that has either. Never attribute a role to a document it did not come from.
 - **Declared-but-unused vocabulary gets removed, not documented.** `pair:maturity` and
   `pair:identifiesCandidateRisk` were deleted 2026-08-06: nothing wrote them and nothing
   read them, so they described intentions rather than the pipeline. Reinstate such a term
@@ -229,8 +233,12 @@ framing instead of supporting it.
   **DPV is the alignment target** (resolvable, third-party checkable); OECD is a cited
   documentary source. Say "informed by OECD", not "aligned to OECD".
 - **The facet layer is a documented mixture, not wholesale external grounding.**
-  59 concepts: 24 cite OECD, 35 declare project curation, 34 carry no external
-  mapping. Do not describe it as "OECD/DPV-derived" without that qualification.
+  Re-counted 2026-08-30: **35 concepts** (task 20, data 11, autonomy 4). 25 carry a
+  SKOS mapping into an external vocabulary, overwhelmingly DPV; 10 carry none; only 4
+  state a `dct:source` of their own, because **OECD is cited once per scheme**, not per
+  concept — the grounding is scheme-level and inherited. `context.ttl` (Domain, Purpose)
+  and `implementation_type.ttl` are declared scheme shells with no project concepts in
+  them. Do not describe the layer as "OECD/DPV-derived" without that qualification.
 - **Alignment provenance is data, not commentary.** Every mapping has an
   `sssom:Mapping` record in `ontology/taxonomy/provenance/` with a semapv
   justification. It sits below the runner's non-recursive glob deliberately — a
@@ -279,9 +287,10 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - `ontology/core/` — beam_core.ttl, beam_core_risk.ttl, pair_ai_pattern.ttl (pattern meta-vocabulary)
 - `ontology/patterns/` — motif.ttl, risk_pattern_library.ttl, control_mitigation_layer.ttl
 - `ontology/patterns/implementation/` — the executable SPARQL CONSTRUCTs, in three
-  subdirectories: `match/` (one per motif, 28), `risk/` (one per risk pattern, 15), and
-  `propagation/` (4 derived-fact rules: content categories, untrusted taint, generated
-  content, personal data rights — re-run to a fixed point by the runner).
+  subdirectories: `match/` (one per motif, 31), `risk/` (one per risk pattern, 15),
+  `propagation/` (6 derived-fact rules: untrusted taint, content categories, generated
+  content, personal data category, personal data rights, proprietary data — re-run to a
+  fixed point by the runner), and `mitigation/` (8 files carrying 9 registrations).
   **These paths are data**: each is registered by a `pair:PatternImplementation` whose
   `pair:implementationPath` is a literal string, so moving or renaming a query means updating
   its declaration too. `test_library_consistency.py` fails if the two drift apart.
@@ -367,7 +376,7 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - Branch per feature; one labeled commit per task; never commit directly to main.
 - After every ontology change: parse all `.ttl` with RDFLib, run pyshacl where shapes
   exist, and re-run the assessment on the bundled examples — then explain any diff.
-  Current baseline (matches / findings, measured 2026-08-25):
+  Current baseline (matches / findings, re-measured 2026-08-30):
 
   | Graph | Matches | Findings |
   | --- | --- | --- |
@@ -375,10 +384,17 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   | Minimal graph RAG | 3 | 7 |
   | Meter anomaly scoring | 4 | 1 |
   | IT support agent (agentic) | 4 | 8 |
-  | Energy scene: both of the last two + the business process | 7 | 8 |
+  | Energy scene: minimal graph RAG + meter anomaly + the business process | 7 | 8 |
   | IT service desk scene: the agent + its business process | 4 | 9 |
 
-  The scene is not the sum of its parts, and that is the business layer working.
+  **Read the composition, never the total.** "The scene is not the sum of its parts" was
+  wrong as stated and is corrected here: it holds for the IT service desk scene (8 → 9),
+  and is arithmetically false for the energy scene, where 3 + 4 = 7 matches and 7 + 1 = 8
+  findings is exactly what the scene produces. What the energy process actually does is
+  **+1** sensitive information disclosure (the data bridge raised it) and **−1** improper
+  output handling (the human review in the process cleared it) — two real changes in
+  opposite directions that net to zero. A total that happens to match is a coincidence of
+  this example; diff the finding set, not the count.
 
   The agentic layer is covered by `test_agentic_assessment.py`, which states its own
   graph inline — the MCP example it used to read now lives in `example_local/` — and,
@@ -431,12 +447,15 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - Tool4Boxology export quirks the normalizer must handle: lowercase type URIs
   (`t4b:transform` vs `t4b:Transform`), ontology declares `patternProcess` but exports
   `hasProcess`, instances multi-typed with `t4b:Component`.
-- Current library size (2026-08-25, counted off the loaded graph): **31 motifs**,
+- Current library size (2026-08-30, counted off the loaded graph): **31 motifs**,
   **15 risk patterns**, **97 pattern roles**, **7 data categories**, **35 facet
-  concepts**, **14 risk mechanisms**, 16 applicability conditions carried on 20 attachments.
-  Implementations: 31 match queries, 15 risk queries, 6 propagation rules, 8 mitigation
-  rewrites, and 2 business-context derivations (the last outside
-  `patterns/implementation/`, under `ontology/context/`).
+  concepts**, **14 risk mechanisms**, 16 applicability conditions carried on 20 attachments,
+  12 `pat:Control_*`, 7 470 triples.
+  **63 registered implementations**: 31 match queries, 15 risk queries, 6 propagation rules,
+  9 mitigation rewrites over 8 `.rq` files (`response_verification.rq` is registered twice,
+  under two controls for the same risk pattern), and 2 business-context derivations (the
+  last outside `patterns/implementation/`, under `ontology/context/` — one of them registers
+  as `DataCategoryPropagation`, so the runner sees 7 of those and 1 `BusinessFlowDerivation`).
   Every figure but the motif count had already drifted before anyone noticed, so
   re-count rather than edit by hand:
   `len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))` and its siblings.
@@ -461,11 +480,13 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   whose only escape is `?control beamr:associatedTo ?element` cannot be cleared by
   changing the architecture — `beamr:associatedTo` appears in no bundled example and no
   UI writes it — so the finding is unfalsifiable by design work. Prompt injection was
-  fixed 2026-08-17 by testing for a screening step on the path; **3 of 15 risk queries
-  still have no structural check at all** (data_model_poisoning, excessive_agency,
-  sensitive_retrieval, supply_chain, system_prompt_leakage, vector_embedding_weakness,
-  and the annotation half of others). Some are legitimately unstructural — supply-chain
-  vetting has no shape — but audit before assuming.
+  fixed 2026-08-17 by testing for a screening step on the path. Re-counted 2026-08-30:
+  **3 of 15 risk queries carry no `FILTER NOT EXISTS` at all** — `data_model_poisoning`,
+  `supply_chain`, `vector_embedding_weakness` — and those three are exactly the ones that
+  are legitimately unstructural (provenance and vetting have no shape). The other 12 carry
+  one or two. That is not the same as being clearable: several test only the structural
+  half while the annotation half stays unclearable, so audit a specific finding before
+  telling anyone it is actionable.
 - **Applying a control is a registered SPARQL rewrite, not code.** A
   `pair:MitigationApplication` implementation restates the vulnerable shape its
   `pair:mitigatesRiskPattern` found and CONSTRUCTs the step that interrupts it, bound to
