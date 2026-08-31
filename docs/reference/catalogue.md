@@ -1,10 +1,10 @@
 # PAIR-AI Catalogue — Motifs, Risk Patterns & Annotation Roles
 
 The complete inventory of what PAIR-AI can recognise and flag: every **motif**
-(28), every **risk pattern** (15), every **annotation role** (95), and the
+(31), every **risk pattern** (15), every **annotation role** (97), and the
 **data categories** (7). Terminology follows
 [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md); counts were read off the
-loaded ontology on 2026-08-06. This file is maintained by hand — if the library
+loaded ontology on 2026-08-30. This file is maintained by hand — if the library
 changes and this page does not, this page is wrong.
 
 ## How the three fit together
@@ -434,11 +434,62 @@ workbench and in `validate_graphs.py`. What it catches:
 | `UserFacingOutputIsProducedShape` | A sink no step produces. |
 | `KnowledgeSourceDeclaresContentShape` | A knowledge source with no data category — an annotated base fact (R8) nothing can supply for you. |
 
+---
+
+## 6. Business context vocabulary
+
+A submitted document may carry a **business process model** (sBPMN 2.0) alongside
+the architecture. It is joined by **refinement, never subsumption** — a
+`bpmn:activity` is not a `beam:Process` — and reaches the assessment through
+exactly two registered derivations in `ontology/context/implementation/`.
+
+| Term | What it does |
+| --- | --- |
+| `pair:refinedBy` | Activity → `beam:System`. The only join between the two layers, and PAIR's own rather than `sbpmn:calledElement`. |
+| `pair:businessFollows` | One *typed* control-flow hop, materialised by `business_flow.rq`. Downstream conditions use a plain transitive path over it. **Never write a raw path over `bp:sourceRef`** — it is declared on five classes and walks out of control flow into a data association. |
+| `pair:BusinessFlowDerivation` | The output type that makes `business_flow.rq` run in the derivation loop. |
+
+**The data classification an analyst can state** on a `bpmn:itemDefinition`, and
+what `business_data_bridge.rq` does with it. The list lives once, in
+`airiskkg/workbench/process_view.py::DATA_CLASSES`, and is imported by both the
+picker and the writer so a dropdown cannot offer a term the server would reject.
+
+| DPV value | Shown as | Bridges to `SensitiveInformation`? |
+| --- | --- | --- |
+| `dpv:PersonalData` | Personal data | yes |
+| `dpv:SensitivePersonalData` | Sensitive personal data | yes |
+| `dpv:SpecialCategoryPersonalData` | Special category personal data | yes |
+| `dpv:PseudonymisedData` | Pseudonymised (still personal) | yes |
+| `dpv:AnonymisedData` | Anonymised — not personal | **no**, excluded |
+| `dpv:NonPersonalData` | Not personal | **no**, excluded |
+
+The last two are offered on purpose. "Checked, and not personal" is a claim, and it
+must not collapse into the silence of never having said anything.
+
+The bridge emits its category onto the refined system's resources that play
+`pair:UserInput` or `pair:PredictionRequest` (or a sub-role of either), with a
+`prov:Derivation` saying which annotation produced it. The mapping goes **by role**
+because nothing in the business layer names an architecture element — which is the
+point, since the analyst does not know them. Where a system has several such
+elements, all of them are reached.
+
+**A control can live in the process.** The improper-output-handling query asks its
+absence question of the business layer too: a human task downstream of the refining
+activity, reading what that activity produced, performed by a `bp:humanPerformer`,
+is an output control. Without that, a review that genuinely exists went on being
+reported as absent. Logging the interaction correctly clears nothing.
+
+Not modelled, deliberately: gateways, events and boundary markers. No bundled
+example uses one and none of them changes a finding.
+
+Full account: [PAIR-AI_method_and_construction.md](PAIR-AI_method_and_construction.md) §7.
+
 ## See also
 
 - [../user_guide.md](../user_guide.md) — running the workbench
 - [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md) — terminology and modeling rules (R1–R10)
 - [PAIR-AI_method_and_construction.md](PAIR-AI_method_and_construction.md) — how the library was built
 - [risk_control_linkage.md](risk_control_linkage.md) — risk → control linkage, including the MIT evidence layer
-- [../notes/business_context_as_built.md](../notes/business_context_as_built.md) — the business (BPMN) layer: what it adds, and the two derivations that carry it into an assessment
-- [../../ontology/example/](../../ontology/example/) — worked annotation examples and the unannotated control graph
+- [PAIR-AI_method_and_construction.md](PAIR-AI_method_and_construction.md) §7 — the business (BPMN) layer: the join, the two derivations, and what it moves
+- [../notes/business_context_as_built.md](../notes/business_context_as_built.md) — the same layer as built on its branch (**local-only**; `docs/notes/` is gitignored, so this link is dead in a fresh clone)
+- [../../ontology/example/](../../ontology/example/) — the four bundled architectures, plus `context/` for the two process models
