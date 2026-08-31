@@ -4,7 +4,7 @@
 
 <http://tool4boxology.org/Boxology/graphrag-example> a beam:Element,
         beam:System ;
-    rdfs:label "GraphRAG Example" ;
+    rdfs:label "Graph Rag Chatbot" ;
     beam:context "The system will be used in a demonstration environment (not real-world use case) to showcase RAG systems for potential users." ;
     beam:description "The workflow describes a simplified event information chatbot based on the GraphRAG approach." ;
     beam:hasProcess <http://tool4boxology.org/Component/extraction>,
