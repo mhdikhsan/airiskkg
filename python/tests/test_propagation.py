@@ -18,7 +18,14 @@ from rdflib import RDF, RDFS, URIRef
 
 from airiskkg.assessment_runner import PAIR, run_assessment, run_assessment_from_text
 from airiskkg.paths import EXAMPLE_DIR
-from conftest import AGENT_NS, ANOMALY_NS, GRAPH_RAG_NS, ONYX_NS, example_path  # noqa: E402
+from conftest import (  # noqa: E402
+    AGENT_NS,
+    GRAPH_RAG_NS,
+    ONYX_NS,
+    TARIFF_NS,
+    WIEN_ENERGIE_NS,
+    example_path,
+)
 
 EX = "http://example.org/"
 
@@ -317,20 +324,29 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     expected = {
         example_path(ONYX_NS): (14, 22),
         example_path(GRAPH_RAG_NS): (3, 7),
-        # An ML serving shape rather than a generative one, so it exercises a
-        # different part of the library: prediction motifs, and a supply-chain
-        # finding from the external model rather than any GenAI risk.
-        example_path(ANOMALY_NS): (4, 1),
+        # The Wien Energie chatbot, and the graph the bundled process refines.
+        # A hybrid retrieval shape: the graph branch is a rewritten query put to
+        # a knowledge source, the document branch a vector search, and one
+        # generation step answers from whichever ran.
+        example_path(WIEN_ENERGIE_NS): (5, 9),
+        # The tariff change assistant: a grounded shape, so no
+        # direct-prompting-without-grounding, and the two generated replies are
+        # what the business layer later clears.
+        example_path(TARIFF_NS): (3, 9),
         # The agentic shape, and the only bundled graph that reaches it: tool
         # use, a memory loop and a delegation, with no control step anywhere -
         # so all three agentic motifs match and four ASI-derived patterns fire.
         example_path(AGENT_NS): (4, 8),
     }
     # Every graph the repo ships is pinned. Adding one without a baseline would
-    # otherwise leave it unwatched, which is how drift goes unnoticed.
-    assert set(expected) == set(EXAMPLE_DIR.glob("*.ttl")), (
+    # otherwise leave it unwatched, which is how drift goes unnoticed. Baselines
+    # for graphs that are not shipped are fine and deliberate: a graph retired
+    # from the example set keeps its fixture and its numbers, so retiring it
+    # from the deployment does not retire it from the watch.
+    unpinned = set(EXAMPLE_DIR.glob("*.ttl")) - set(expected)
+    assert not unpinned, (
         "bundled examples without a baseline: "
-        + ", ".join(sorted(p.name for p in set(EXAMPLE_DIR.glob("*.ttl")) - set(expected)))
+        + ", ".join(sorted(path.name for path in unpinned))
     )
     for name, (motifs, findings) in expected.items():
         result = run_assessment(name, write_outputs=False)

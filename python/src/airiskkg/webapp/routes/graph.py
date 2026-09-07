@@ -143,11 +143,21 @@ def graph_edit() -> object:
         element = local[f"e{index}"]
         data.add((element, RDF.type, URIRef(class_uri)))
         data.add((element, RDFS.label, Literal(label)))
-        system = next(iter(data.subjects(RDF.type, BEAM.System)), None)
+        # The architecture the reader is looking at, when they say which. A
+        # document carries several once a business process runs more than one
+        # system, and "the first System in the graph" put every new element in
+        # whichever one rdflib happened to yield first.
+        asked = payload.get("system")
+        system = URIRef(asked) if asked else None
+        if system is not None and (system, RDF.type, BEAM.System) not in data:
+            return jsonify({"error": "That AI system is not in this graph."}), 400
+        if system is None:
+            system = next(iter(data.subjects(RDF.type, BEAM.System)), None)
         if system is not None:
             predicate = BEAM.hasProcess if payload.get("category") == "process" else BEAM.hasResource
             data.add((system, predicate, element))
         new_id = str(element)
+
     elif op == "add-edge":
         subject = payload.get("subject")
         predicate = payload.get("predicate")
@@ -259,17 +269,62 @@ def graph_edit() -> object:
 BPMN = Namespace("https://sBPMN.github.io/2.0/classes#")
 BP = Namespace("https://sBPMN.github.io/2.0/properties#")
 
-# What the palette offers. Deliberately short: these are the constructs a risk
-# assessment reads. Gateways and events draw well and say nothing this method
-# can use, so offering them would invite effort that changes no finding.
+# What the palette offers, restricted to what external/sbpmn/sbpmn_2.0.ttl
+# declares. Gateways and events change no finding on their own, but a process
+# drawn without them is not the process the analyst was asked to check, and a
+# branch smuggled into three sequential tasks reads as an order that is not there.
 ACTIVITY_KINDS = {
     "task": "Task",
     "userTask": "User task",
+    "manualTask": "Manual task",
     "serviceTask": "Service task",
+    "scriptTask": "Script task",
+    "businessRuleTask": "Business rule task",
     "sendTask": "Send task",
     "receiveTask": "Receive task",
     "subProcess": "Sub-process",
+    "adHocSubProcess": "Ad-hoc sub-process",
+    "transaction": "Transaction",
+    "callActivity": "Call activity",
 }
+
+EVENT_KINDS = {
+    "startEvent": "Start",
+    "intermediateCatchEvent": "Intermediate",
+    "intermediateThrowEvent": "Intermediate",
+    "endEvent": "End",
+    "boundaryEvent": "Boundary",
+}
+
+EVENT_DEFINITIONS = {
+    "message": "messageEventDefinition",
+    "timer": "timerEventDefinition",
+    "error": "errorEventDefinition",
+    "escalation": "escalationEventDefinition",
+    "signal": "signalEventDefinition",
+    "conditional": "conditionalEventDefinition",
+    "compensate": "compensateEventDefinition",
+    "cancel": "cancelEventDefinition",
+    "terminate": "terminateEventDefinition",
+    "link": "linkEventDefinition",
+}
+
+GATEWAY_KINDS = {
+    "exclusiveGateway": "Exclusive",
+    "parallelGateway": "Parallel",
+    "inclusiveGateway": "Inclusive",
+    "eventBasedGateway": "Event-based",
+    "parallelEventBasedGateway": "Event-based",
+    "complexGateway": "Complex",
+}
+
+LOOP_KINDS = {
+    "standard": ("standardLoopCharacteristics", None),
+    "multiParallel": ("multiInstanceLoopCharacteristics", False),
+    "multiSequential": ("multiInstanceLoopCharacteristics", True),
+}
+
+FLOW_NODE_KINDS = {*ACTIVITY_KINDS, *EVENT_KINDS, *GATEWAY_KINDS}
 
 
 DPV = Namespace("https://w3id.org/dpv#")
@@ -289,19 +344,66 @@ def _process_of(data: Graph, node: URIRef) -> URIRef | None:
 
     In BPMN that is not a preference: sequence flow cannot leave a process, and
     a message flow only exists between participants. Reading the containment and
-    deciding from it means the modeller never has to know the rule."""
-    for process in data.subjects(BP.contains, node):
-        if (process, RDF.type, BPMN.process) in data:
-            return process
+    deciding from it means the modeller never has to know the rule.
+
+    A node nested in a sub-process, or pinned to the border of one as a boundary
+    event, belongs to the process that holds its host."""
+    seen: set[URIRef] = set()
+    current: URIRef | None = node
+    while current is not None and current not in seen:
+        seen.add(current)
+        parent = data.value(current, BP.attachedToRef)
+        for holder in data.subjects(BP.contains, current):
+            if (holder, RDF.type, BPMN.process) in data:
+                return holder
+            if parent is None:
+                parent = holder
+        current = parent
     return None
+
+
+def _process_of_pool(data: Graph, pool: str | None) -> URIRef | None:
+    return data.value(URIRef(pool), BP.processRef) if pool else None
+
+
+def _place(data: Graph, process: URIRef, node: URIRef, lane: str | None) -> None:
+    """Put a new flow node in its process, and in a lane when one is selected.
+    A lane holds nodes by reference, so the process still contains them."""
+    data.add((process, BP.contains, node))
+    if lane:
+        band = URIRef(lane)
+        if (band, RDF.type, BPMN.lane) in data:
+            data.add((band, BP.flowNodeRef, node))
+
+
+def _retype(data: Graph, node: URIRef, kind: str) -> None:
+    """Swap the BPMN class without disturbing anything else on the node - a
+    retype must not drop the flows, the data or the refinement it carries."""
+    for existing in list(data.objects(node, RDF.type)):
+        if str(existing).startswith(str(BPMN)) and str(existing)[len(str(BPMN)):] in FLOW_NODE_KINDS:
+            data.remove((node, RDF.type, existing))
+    data.add((node, RDF.type, BPMN[kind]))
+
+
+def _set_event_definition(data: Graph, event: URIRef, definition: str) -> None:
+    for old in list(data.objects(event, BP.eventDefinition)):
+        data.remove((event, BP.eventDefinition, old))
+        for triple in list(data.triples((old, None, None))):
+            data.remove(triple)
+    if definition in EVENT_DEFINITIONS:
+        node = _fresh(data, "evdef")
+        data.add((node, RDF.type, BPMN[EVENT_DEFINITIONS[definition]]))
+        data.add((event, BP.eventDefinition, node))
 
 
 @graph_routes.post("/api/process-edit")
 def process_edit() -> object:
     """Structural edits to the business layer, mirroring /api/graph-edit.
 
-    Body: {ttl, op, ...}. Ops: add-pool, add-activity, connect, set-refines,
-    add-data, classify-data, detach-data, rename, delete. Returns the rewritten
+    Body: {ttl, op, ...}. Ops: add-pool, add-lane, add-activity, add-event,
+    add-gateway, add-annotation, connect, set-refines, set-node-type, set-loop,
+    add-system, add-data, classify-data, set-data-shape, detach-data, rename,
+    delete. Returns the rewritten
     Turtle, which the editor adopts.
     """
     payload = request.get_json(silent=True) or {}
@@ -338,8 +440,131 @@ def process_edit() -> object:
         activity = _fresh(data, "act")
         data.add((activity, RDF.type, BPMN[kind]))
         data.add((activity, BP.name, Literal((payload.get("label") or ACTIVITY_KINDS[kind]).strip())))
-        data.add((process, BP.contains, activity))
+        _place(data, process, activity, payload.get("lane"))
         new_id = str(activity)
+
+    elif op == "add-event":
+        kind = payload.get("kind")
+        if kind not in EVENT_KINDS:
+            return jsonify({"error": f"Unknown event kind: {kind}"}), 400
+        definition = payload.get("definition") or ""
+        if definition and definition not in EVENT_DEFINITIONS:
+            return jsonify({"error": f"Unknown event trigger: {definition}"}), 400
+        # A boundary event is placed by the activity it watches, not by a pool:
+        # it has no position of its own and cannot exist without a host. Every
+        # other event is placed by the pool, and sBPMN declares attachedToRef on
+        # bpmn:boundaryEvent alone - so a host given for any other kind is
+        # dropped rather than written outside the property's domain.
+        host = payload.get("attachedTo") if kind == "boundaryEvent" else None
+        if kind == "boundaryEvent" and not payload.get("attachedTo"):
+            return jsonify(
+                {"error": "A boundary event must name the activity it is attached to."}
+            ), 400
+        process = (
+            _process_of(data, URIRef(host)) if host
+            else _process_of_pool(data, payload.get("pool"))
+        )
+        if process is None:
+            return jsonify({"error": "add-event needs a participant with a process."}), 400
+        event = _fresh(data, "ev")
+        data.add((event, RDF.type, BPMN[kind]))
+        if payload.get("label"):
+            data.add((event, BP.name, Literal(payload["label"].strip())))
+        _set_event_definition(data, event, definition)
+        if host:
+            data.add((event, BP.attachedToRef, URIRef(host)))
+            data.add((event, BP.cancelActivity, Literal(bool(payload.get("interrupting", True)))))
+            data.add((process, BP.contains, event))
+        else:
+            _place(data, process, event, payload.get("lane"))
+        new_id = str(event)
+
+    elif op == "add-gateway":
+        kind = payload.get("kind")
+        if kind not in GATEWAY_KINDS:
+            return jsonify({"error": f"Unknown gateway kind: {kind}"}), 400
+        process = _process_of_pool(data, payload.get("pool"))
+        if process is None:
+            return jsonify({"error": "add-gateway needs a participant with a process."}), 400
+        gateway = _fresh(data, "gw")
+        data.add((gateway, RDF.type, BPMN[kind]))
+        if payload.get("label"):
+            data.add((gateway, BP.name, Literal(payload["label"].strip())))
+        _place(data, process, gateway, payload.get("lane"))
+        new_id = str(gateway)
+
+    elif op == "add-lane":
+        process = _process_of_pool(data, payload.get("pool"))
+        if process is None:
+            return jsonify({"error": "add-lane needs a participant with a process."}), 400
+        lane_set = data.value(process, BP.laneSet)
+        if lane_set is None:
+            lane_set = _fresh(data, "laneset")
+            data.add((lane_set, RDF.type, BPMN.laneSet))
+            data.add((process, BP.laneSet, lane_set))
+        lane = _fresh(data, "lane")
+        data.add((lane, RDF.type, BPMN.lane))
+        data.add((lane, BP.name, Literal((payload.get("label") or "Lane").strip())))
+        data.add((lane_set, BP.contains, lane))
+        new_id = str(lane)
+
+    elif op == "add-annotation":
+        process = _process_of_pool(data, payload.get("pool"))
+        if process is None:
+            return jsonify({"error": "add-annotation needs a participant with a process."}), 400
+        note = _fresh(data, "note")
+        data.add((note, RDF.type, BPMN.textAnnotation))
+        data.add((note, BP.text, Literal((payload.get("text") or "").strip())))
+        data.add((process, BP.contains, note))
+        anchor = payload.get("attachedTo")
+        if anchor:
+            link = _fresh(data, "assoc")
+            data.add((link, RDF.type, BPMN.association))
+            data.add((link, BP.sourceRef, URIRef(anchor)))
+            data.add((link, BP.targetRef, note))
+            data.add((process, BP.contains, link))
+        new_id = str(note)
+
+    elif op == "set-node-type":
+        element = payload.get("element")
+        kind = payload.get("kind")
+        if not element or kind not in FLOW_NODE_KINDS:
+            return jsonify({"error": f"set-node-type needs an element and a known kind: {kind}"}), 400
+        node = URIRef(element)
+        _retype(data, node, kind)
+        data.remove((node, BP.name, None))
+        if payload.get("label"):
+            data.add((node, BP.name, Literal(payload["label"].strip())))
+        if kind in EVENT_KINDS:
+            _set_event_definition(data, node, payload.get("definition") or "")
+            data.remove((node, BP.cancelActivity, None))
+            if kind == "boundaryEvent":
+                data.add((node, BP.cancelActivity,
+                          Literal(bool(payload.get("interrupting", True)))))
+            else:
+                data.remove((node, BP.attachedToRef, None))
+        new_id = element
+
+    elif op == "set-loop":
+        activity = payload.get("activity")
+        loop = payload.get("loop") or ""
+        if not activity:
+            return jsonify({"error": "set-loop needs an activity."}), 400
+        node = URIRef(activity)
+        for old in list(data.objects(node, BP.loopCharacteristics)):
+            data.remove((node, BP.loopCharacteristics, old))
+            for triple in list(data.triples((old, None, None))):
+                data.remove(triple)
+        if loop in LOOP_KINDS:
+            name, sequential = LOOP_KINDS[loop]
+            characteristics = _fresh(data, "loop")
+            data.add((characteristics, RDF.type, BPMN[name]))
+            if sequential is not None:
+                data.add((characteristics, BP.isSequential, Literal(sequential)))
+            data.add((node, BP.loopCharacteristics, characteristics))
+        elif loop:
+            return jsonify({"error": f"Unknown repetition: {loop}"}), 400
+        new_id = activity
 
     elif op == "connect":
         source = payload.get("source")
@@ -360,6 +585,24 @@ def process_edit() -> object:
         data.add((target_ref, BP.incoming, flow))
         new_id = str(flow)
 
+    elif op == "add-system":
+        # An architecture for an activity that has none yet. pair:refinedBy is
+        # authored on the activity, so the business layer is where a system is
+        # called for - and until now the only way to answer was to write
+        # `a beam:System` in Turtle by hand. Created empty on purpose: what it
+        # holds is drawn on the architecture canvas, and an empty system says
+        # plainly that the shape is not modelled yet.
+        label = (payload.get("label") or "New AI system").strip()
+        system = _fresh(data, "system")
+        data.add((system, RDF.type, BEAM.Element))
+        data.add((system, RDF.type, BEAM.System))
+        data.add((system, RDFS.label, Literal(label)))
+        activity = payload.get("activity")
+        if activity:
+            data.remove((URIRef(activity), PAIR.refinedBy, None))
+            data.add((URIRef(activity), PAIR.refinedBy, system))
+        new_id = str(system)
+
     elif op == "set-refines":
         activity = payload.get("activity")
         system = payload.get("system")
@@ -379,15 +622,29 @@ def process_edit() -> object:
         if classification and classification not in DATA_CLASSES:
             return jsonify({"error": f"Unknown data classification: {classification}"}), 400
 
+        shape = payload.get("shape") or "object"
+        if shape not in ("object", "store"):
+            return jsonify({"error": f"Unknown data shape: {shape}"}), 400
+
         node = URIRef(activity)
         label = (payload.get("label") or "Data").strip()
-        obj = _fresh(data, "data")
+        obj = _fresh(data, "store" if shape == "store" else "data")
         reference = _fresh(data, "dataref")
-        data.add((obj, RDF.type, BPMN.dataObject))
+        # A document and a database are different things and BPMN draws them
+        # differently - a folded page and a cylinder. The editor could write
+        # only the page, so a database had to be hand-written in Turtle.
+        if shape == "store":
+            data.add((obj, RDF.type, BPMN.dataStore))
+            data.add((reference, RDF.type, BPMN.dataStoreReference))
+            data.add((reference, BP.dataStoreRef, obj))
+        else:
+            data.add((obj, RDF.type, BPMN.dataObject))
+            data.add((reference, RDF.type, BPMN.dataObjectReference))
+            data.add((reference, BP.dataObjectRef, obj))
         data.add((obj, BP.name, Literal(label)))
-        data.add((reference, RDF.type, BPMN.dataObjectReference))
-        data.add((reference, BP.dataObjectRef, obj))
-        if payload.get("collection"):
+        # isCollection is declared on dataObject, not on dataStore - a store is
+        # already a collection and BPMN gives it capacity instead.
+        if payload.get("collection") and shape == "object":
             data.add((obj, BP.isCollection, Literal(True)))
         if classification:
             item = _fresh(data, "item")
@@ -431,6 +688,39 @@ def process_edit() -> object:
                 data.add((item, BP.structureRef, DPV[classification]))
         new_id = str(ref)
 
+    elif op == "set-data-shape":
+        """Turn a document into a database or back, keeping everything else.
+
+        The classification and the associations are the parts that matter to a
+        finding, so a change of shape must not disturb them - retyping is a
+        statement about what the data is, not about what reads it."""
+        reference = payload.get("reference")
+        shape = payload.get("shape")
+        if not reference or shape not in ("object", "store"):
+            return jsonify({"error": "set-data-shape needs a reference and a shape."}), 400
+        ref = URIRef(reference)
+        target = data.value(ref, BP.dataObjectRef) or data.value(ref, BP.dataStoreRef)
+        if target is None:
+            return jsonify({"error": "That data reference points at nothing."}), 400
+
+        for old_type in (BPMN.dataObjectReference, BPMN.dataStoreReference):
+            data.remove((ref, RDF.type, old_type))
+        for old_type in (BPMN.dataObject, BPMN.dataStore):
+            data.remove((target, RDF.type, old_type))
+        data.remove((ref, BP.dataObjectRef, None))
+        data.remove((ref, BP.dataStoreRef, None))
+        if shape == "store":
+            data.add((ref, RDF.type, BPMN.dataStoreReference))
+            data.add((ref, BP.dataStoreRef, target))
+            data.add((target, RDF.type, BPMN.dataStore))
+            # Not declared on dataStore, so it cannot travel with the retype.
+            data.remove((target, BP.isCollection, None))
+        else:
+            data.add((ref, RDF.type, BPMN.dataObjectReference))
+            data.add((ref, BP.dataObjectRef, target))
+            data.add((target, RDF.type, BPMN.dataObject))
+        new_id = str(ref)
+
     elif op == "detach-data":
         reference = payload.get("reference")
         activity = payload.get("activity")
@@ -458,7 +748,7 @@ def process_edit() -> object:
             for a in data.subjects(RDF.type, BPMN.dataOutputAssociation)
         )
         if not still_used:
-            obj = data.value(ref, BP.dataObjectRef)
+            obj = data.value(ref, BP.dataObjectRef) or data.value(ref, BP.dataStoreRef)
             item = data.value(obj, BP.itemSubjectRef) if obj is not None else None
             for victim in [ref, obj, item]:
                 if victim is None:
@@ -488,6 +778,19 @@ def process_edit() -> object:
         if process is not None:
             doomed.add(process)
             doomed.update(data.objects(process, BP.contains))
+            for lane_set in data.objects(process, BP.laneSet):
+                doomed.add(lane_set)
+                doomed.update(data.objects(lane_set, BP.contains))
+        # A boundary event has no life apart from the activity it is pinned to.
+        for event in list(data.subjects(BP.attachedToRef, None)):
+            if set(data.objects(event, BP.attachedToRef)) & doomed:
+                doomed.add(event)
+                doomed.update(data.objects(event, BP.eventDefinition))
+        doomed.update(
+            definition
+            for victim in list(doomed)
+            for definition in data.objects(victim, BP.eventDefinition)
+        )
         # Any connector that touched what is going.
         for flow in list(data.subjects(BP.sourceRef, None)) + list(data.subjects(BP.targetRef, None)):
             ends = set(data.objects(flow, BP.sourceRef)) | set(data.objects(flow, BP.targetRef))

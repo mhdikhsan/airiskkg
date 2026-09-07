@@ -17,10 +17,26 @@ from __future__ import annotations
 import pytest
 
 from airiskkg.paths import EXAMPLE_DIR, REPO_ROOT
+from conftest import (  # noqa: E402
+    TARIFF_NS,
+    WIEN_ENERGIE_NS,
+    example_path,
+    process_path,
+)
 
-CONTEXT = REPO_ROOT / "ontology" / "example" / "context" / "energy_customer_service.ttl"
-CHECK_READING = "http://w3id.org/airiskkg/example/energy-cs#CheckReading"
-METER_READING_REF = "http://w3id.org/airiskkg/example/energy-cs#MeterReadingRef"
+# Resolved, not located: both retired from the shipped example set and are kept
+# as test fixtures, so the coverage they back did not retire with them.
+CONTEXT = process_path("energy_customer_service")
+TARIFF = process_path("energy_tariff_change")
+EC = "http://w3id.org/airiskkg/example/energy-cs#"
+# One activity whose only data input is the one under test, so clearing a
+# classification can be checked by looking at everything the activity reads.
+OFFER_HELP = EC + "OfferHelp"
+CHAT_MESSAGE_REF = EC + "ChatMessageRef"
+# The question, which several AI steps read: detaching it takes two edits.
+DOMAIN_CLASSIFICATION = EC + "DomainClassification"
+QUERY_EXTRACTION = EC + "QueryParameterExtraction"
+QUESTION_REF = EC + "QuestionRef"
 
 
 @pytest.fixture(scope="module")
@@ -37,13 +53,22 @@ def process_ttl() -> str:
 
 
 @pytest.fixture(scope="module")
+def tariff_ttl() -> str:
+    """The tariff process, which has an activity whose only data input is the
+    one under test - so clearing a classification can be checked by looking at
+    everything the activity reads."""
+    return TARIFF.read_text(encoding="utf-8")
+
+
+@pytest.fixture(scope="module")
 def scene(process_ttl) -> str:
     """The process plus both architectures it refines - what the workbench holds
     when someone opens the business example."""
     return "\n\n".join([
-        (EXAMPLE_DIR / "meter_anomaly_scoring.ttl").read_text(encoding="utf-8"),
-        (EXAMPLE_DIR / "simple_graph_rag.ttl").read_text(encoding="utf-8"),
+        example_path(WIEN_ENERGIE_NS).read_text(encoding="utf-8"),
+        example_path(TARIFF_NS).read_text(encoding="utf-8"),
         process_ttl,
+        TARIFF.read_text(encoding="utf-8"),
     ])
 
 
@@ -63,42 +88,42 @@ def findings(client, ttl: str) -> int:
     return client.post("/api/assess", json={"ttl": ttl}).get_json()["summary"]["riskFindingCount"]
 
 
-def test_added_data_comes_back_through_the_process_view(client, process_ttl) -> None:
-    after = edit(client, process_ttl, "add-data", activity=CHECK_READING, direction="in",
+def test_added_data_comes_back_through_the_process_view(client, tariff_ttl) -> None:
+    after = edit(client, tariff_ttl, "add-data", activity=OFFER_HELP, direction="in",
                  label="Tariff record", classification="PersonalData")
-    reads, _ = data_of(client, after, CHECK_READING)
+    reads, _ = data_of(client, after, OFFER_HELP)
     added = [row for row in reads if row["label"] == "Tariff record"]
     assert added, f"the new data object is not attached to the activity: {reads}"
     assert added[0]["kinds"] == ["PersonalData"], "the classification did not survive the round trip"
 
 
-def test_a_classification_can_be_changed_and_cleared(client, process_ttl) -> None:
-    after = edit(client, process_ttl, "classify-data", reference=METER_READING_REF,
+def test_a_classification_can_be_changed_and_cleared(client, tariff_ttl) -> None:
+    after = edit(client, tariff_ttl, "classify-data", reference=CHAT_MESSAGE_REF,
                  classification="SensitivePersonalData")
-    reads, _ = data_of(client, after, CHECK_READING)
+    reads, _ = data_of(client, after, OFFER_HELP)
     assert [r for r in reads if r["kinds"] == ["SensitivePersonalData"]], "reclassifying did nothing"
 
-    cleared = edit(client, after, "classify-data", reference=METER_READING_REF, classification="")
-    reads, _ = data_of(client, cleared, CHECK_READING)
+    cleared = edit(client, after, "classify-data", reference=CHAT_MESSAGE_REF, classification="")
+    reads, _ = data_of(client, cleared, OFFER_HELP)
     assert all(not r["kinds"] for r in reads), "clearing the classification left it in place"
 
 
-def test_detaching_data_leaves_nothing_behind(client, process_ttl) -> None:
+def test_detaching_data_leaves_nothing_behind(client, tariff_ttl) -> None:
     """A data object nothing reads or writes is litter, and it would keep
     drawing on the diagram."""
-    after = edit(client, process_ttl, "detach-data",
-                 reference=METER_READING_REF, activity=CHECK_READING)
-    reads, _ = data_of(client, after, CHECK_READING)
-    assert not [r for r in reads if r["id"] == METER_READING_REF], "the data is still attached"
-    assert "MeterReadingRef" not in after, "the reference outlived its only association"
-    assert "Smart meter reading" not in after, "the data object outlived its only reference"
+    after = edit(client, tariff_ttl, "detach-data",
+                 reference=CHAT_MESSAGE_REF, activity=OFFER_HELP)
+    reads, _ = data_of(client, after, OFFER_HELP)
+    assert not [r for r in reads if r["id"] == CHAT_MESSAGE_REF], "the data is still attached"
+    assert "ChatMessageRef" not in after, "the reference outlived its only association"
+    assert "CustomerChatMessage" not in after, "the data object outlived its only reference"
 
 
-def test_an_unknown_classification_is_refused(client, process_ttl) -> None:
+def test_an_unknown_classification_is_refused(client, tariff_ttl) -> None:
     """The picker is built from the same table the writer validates against, so
     anything else arriving here is a bug or a hand-made request."""
     response = client.post("/api/process-edit", json={
-        "ttl": process_ttl, "op": "add-data", "activity": CHECK_READING,
+        "ttl": tariff_ttl, "op": "add-data", "activity": OFFER_HELP,
         "direction": "in", "label": "Whatever", "classification": "NotADpvTerm",
     })
     assert response.status_code == 400
@@ -114,20 +139,21 @@ def test_the_classification_is_what_moves_the_assessment(client, scene) -> None:
     """
     shipped = findings(client, scene)
 
-    without = edit(client, scene, "detach-data",
-                   reference=METER_READING_REF, activity=CHECK_READING)
+    without = scene
+    for activity in (DOMAIN_CLASSIFICATION, QUERY_EXTRACTION):
+        without = edit(client, without, "detach-data", reference=QUESTION_REF, activity=activity)
     assert findings(client, without) < shipped, (
         "removing the personal data the bridge reads changed no finding"
     )
 
-    personal = edit(client, without, "add-data", activity=CHECK_READING, direction="in",
-                    label="Smart meter reading", classification="PersonalData")
+    personal = edit(client, without, "add-data", activity=DOMAIN_CLASSIFICATION, direction="in",
+                    label="Customer question", classification="PersonalData")
     assert findings(client, personal) == shipped, (
         "re-declaring it as personal data did not bring the finding back"
     )
 
-    anonymised = edit(client, without, "add-data", activity=CHECK_READING, direction="in",
-                      label="Smart meter reading", classification="AnonymisedData")
+    anonymised = edit(client, without, "add-data", activity=DOMAIN_CLASSIFICATION, direction="in",
+                      label="Customer question", classification="AnonymisedData")
     assert findings(client, anonymised) == findings(client, without), (
         "anonymised data raised a sensitive-information category; the bridge excludes it"
     )
@@ -230,4 +256,67 @@ def test_every_taxonomy_entry_names_the_catalogue_it_came_from() -> None:
     assert not unnamed, (
         "these taxonomy schemes have no entry in _SOURCE_PREFIXES, so their risks "
         "are shown as coming from \"Other\": " + ", ".join(unnamed)
+    )
+
+
+def test_a_database_classified_on_the_process_reaches_the_architecture(client) -> None:
+    """A data store carries its classification like a data object does.
+
+    The bridge joined through `bp:dataObjectRef` alone, so "the customer
+    database holds personal data" - the most ordinary claim a process owner
+    makes, and the reason a database is drawn as a store rather than a page -
+    derived nothing at all. The editor had offered both shapes since the picker
+    was added, which made the silence worse: the annotation was accepted, drawn
+    as a cylinder, and then ignored by the one query that reads it.
+
+    Counted as a derived category rather than as a finding: this graph is the
+    smallest thing that exercises the bridge and matches no motif, so no risk
+    pattern can fire on it. What the bridge does is derive the category.
+    """
+    base = """
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ex:   <http://example.org/store-bridge#> .
+
+ex:Sys a beam:Element , beam:System ; rdfs:label "S" ;
+    beam:hasProcess ex:Step ; beam:hasResource ex:In .
+ex:In a beam:Element , beam:Data ; rdfs:label "In" ; pair:playsRole pair:UserInput .
+ex:Step a beam:Element , beam:Infer ; rdfs:label "Step" ;
+    pair:playsRole pair:PredictionStep ; beam:use ex:In ; beam:produce ex:Out .
+ex:Out a beam:Element , beam:Data ; rdfs:label "Out" ; pair:playsRole pair:PredictionResult .
+
+ex:Proc a bpmn:process ; bp:name "P" ; bp:contains ex:Act .
+ex:Act a bpmn:serviceTask ; bp:name "A" ; pair:refinedBy ex:Sys ;
+    bp:dataInputAssociation ex:Assoc .
+ex:Assoc a bpmn:dataInputAssociation ; bp:sourceRef ex:Ref ; bp:targetRef ex:Act .
+ex:Item a bpmn:itemDefinition ; bp:structureRef dpv:PersonalData .
+"""
+    shapes = {
+        "store": base + """
+ex:Ref a bpmn:dataStoreReference ; bp:dataStoreRef ex:Thing .
+ex:Thing a bpmn:dataStore ; bp:name "Customer DB" ; bp:itemSubjectRef ex:Item .
+""",
+        "object": base + """
+ex:Ref a bpmn:dataObjectReference ; bp:dataObjectRef ex:Thing .
+ex:Thing a bpmn:dataObject ; bp:name "Customer DB" ; bp:itemSubjectRef ex:Item .
+""",
+    }
+
+    def derived(ttl: str) -> int:
+        summary = client.post("/api/assess", json={"ttl": ttl}).get_json()["summary"]
+        return summary["derivedCategoryCount"]
+
+    for label, ttl in shapes.items():
+        assert derived(ttl) > 0, (
+            f"a {label} classified as personal data derived no data category"
+        )
+
+    # And the exclusion still holds: saying it is not personal is a claim too,
+    # and it must not collapse into the silence of never having said anything.
+    assert derived(shapes["store"].replace("dpv:PersonalData", "dpv:AnonymisedData")) == 0, (
+        "an anonymised store still derived a category"
     )

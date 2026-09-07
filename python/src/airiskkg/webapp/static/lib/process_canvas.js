@@ -1,37 +1,52 @@
-/* The business layer, drawn: pools as bands, activities in flow order,
- * sequence flow within a pool and message flow across pools. Gateways, events
- * and boundary markers are deliberately absent. A separate surface from
- * graph_view.js, not a second mode of it. */
+/* The business layer, drawn as BPMN 2.0 draws it: pools banded into lanes,
+ * events, gateways, activities with their type and loop markers, sequence flow
+ * routed from the model rather than from where a box happened to land, message
+ * flow across pools, data objects with their classification, and text
+ * annotations. Restricted to what external/sbpmn/sbpmn_2.0.ttl can express.
+ * A separate surface from graph_view.js, not a second mode of it. */
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-const POOL_LABEL_W = 34;   // the vertical name strip down a pool's left edge
-const POOL_PAD = 20;
-const BOX_W = 244;
-const BOX_H = 58;
-const BOX_GAP = 52;        // room for an arrow between two activities
-const CHILD_H = 30;
-const POOL_GAP = 34;
-const LINE_H = 14;         // a wrapped second line of an activity name
-const DATA_W = 30;         // the folded page / cylinder itself
+const POOL_LABEL_W = 30;
+const LANE_LABEL_W = 24;
+const POOL_PAD = 16;
+const BOX_W = 212;
+const BOX_H = 64;
+const EVENT_R = 18;
+const GATE_R = 22;
+const COL_GAP = 48;
+const BRANCH_GAP = 62;   // extra room after a gateway, for the branch labels
+const ROW_GAP = 22;
+const POOL_GAP = 30;
+const COLLAPSED_H = 46;  // a black-box pool: the band and its name, nothing inside
+const LINE_H = 14;
+const DATA_W = 30;
 const DATA_H = 36;
-const DATA_BAND = 92;      // the strip above a pool's activities, when it has data
+const DATA_BAND = 92;
+const NOTE_W = 150;
+const RISK_ROW_H = 17;
+const CHILD_H = 30;
 
 let svg = null;
 let root = null;
 let data = null;
-let expanded = new Set();   // subprocesses opened in place
+let index = null;             // id -> normalised flow node, built per render
+let expanded = new Set();
 let onOpenArchitecture = null;
-let onEdit = null;            // (op, payload) -> Promise, applied server-side
-let onSelect = null;          // (id) -> void, so a click can reach the source
-let systems = [];             // architectures a activity may be refined by
-let dataClasses = [];         // what a data object may be classified as
-let selectedPool = null;      // where a new activity lands
-let connecting = null;        // drag in progress: { from, line }
-let swallowNextClick = false; // a pan ends in a click the reader did not mean
-let findingsByActivity = new Map();  // activity id -> { findings, items }
-let openRisks = new Set();           // activities whose risk list is unfolded
+let onEdit = null;
+let onSelect = null;
+let systems = [];
+let dataClasses = [];
+let selectedPool = null;
+let selectedLane = null;      // where a new node lands inside a banded pool
+let connecting = null;
+let swallowNextClick = false;
+let findingsByActivity = new Map();
+let openRisks = new Set();
 let view = { x: 0, y: 0, k: 1 };
+let paletteFolded = false;
+let paletteTouched = false;       // once the reader chooses, the choice sticks
+let collapsedPools = new Set();   // BPMN black-box pools: banded, not opened
 
 function node(tag, attrs = {}, parent = null) {
   const element = document.createElementNS(SVG_NS, tag);
@@ -45,6 +60,12 @@ function node(tag, attrs = {}, parent = null) {
 function text(parent, x, y, value, cls) {
   const element = node("text", { x, y, class: cls }, parent);
   element.textContent = value;
+  return element;
+}
+
+function centred(parent, x, y, value, cls) {
+  const element = text(parent, x, y, value, cls);
+  element.setAttribute("text-anchor", "middle");
   return element;
 }
 
@@ -72,25 +93,6 @@ function wrap(value, max, maxLines) {
   return kept;
 }
 
-function nameRoomOf(activity) {
-  return riskOf(activity) && riskOf(activity).findings ? 19 : 28;
-}
-
-/* The block above the sub-process marker: type icon, name, chip, performers.
- * Everything inside a box is placed relative to this rather than to BOX_H, so
- * a name that needs two lines pushes the rest down instead of colliding. */
-function headHeight(activity) {
-  const lines = wrap(activity.label, nameRoomOf(activity), 2).length;
-  return BOX_H + (lines - 1) * LINE_H;
-}
-
-function dataOf(activity) {
-  return [
-    ...activity.reads.map((d) => ({ ...d, direction: "in" })),
-    ...activity.writes.map((d) => ({ ...d, direction: "out" })),
-  ];
-}
-
 /* dpv:PersonalData reads as "Personal data" to someone who does not write RDF;
  * the prefixed form stays on the tooltip. */
 export function humanKind(kind) {
@@ -99,110 +101,510 @@ export function humanKind(kind) {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
 }
 
-/** Activities of one pool, outermost only - children are drawn nested. */
-function topLevelOf(participant) {
-  return data.activities.filter(
-    (a) => !a.parent && a.process && a.process === participant.process
-  );
+function dataOf(activity) {
+  if (!activity.reads) return [];
+  return [
+    ...activity.reads.map((d) => ({ ...d, direction: "in" })),
+    ...activity.writes.map((d) => ({ ...d, direction: "out" })),
+  ];
 }
 
-function childrenOf(activity) {
-  const byId = new Map(data.activities.map((a) => [a.id, a]));
-  return activity.children.map((id) => byId.get(id)).filter(Boolean);
+function riskOf(item) {
+  return findingsByActivity.get(item.id) || null;
 }
 
-const RISK_ROW_H = 17;
-
-function riskOf(activity) {
-  return findingsByActivity.get(activity.id) || null;
+/** Every flow node of the model in one table, tagged with how it is drawn. */
+function buildIndex(model) {
+  const table = new Map();
+  (model.activities || []).forEach((a) => table.set(a.id, { ...a, shape: "activity" }));
+  (model.events || []).forEach((e) => table.set(e.id, { ...e, shape: "event" }));
+  (model.gateways || []).forEach((g) => table.set(g.id, { ...g, shape: "gateway" }));
+  return table;
 }
 
-function boxHeight(activity) {
-  let height = headHeight(activity);
-  if (expanded.has(activity.id) && activity.children.length) {
-    height += activity.children.length * CHILD_H + 10;
+function nameRoomOf(activity) {
+  return riskOf(activity) && riskOf(activity).findings ? 19 : 28;
+}
+
+function headHeight(activity) {
+  const lines = wrap(activity.label, nameRoomOf(activity), 2).length;
+  return BOX_H + (lines - 1) * LINE_H;
+}
+
+/* An event is 36px wide and its name is not. Sizing a column by the shape
+ * alone put "The customer has an answer" outside the pool it belongs to. */
+function footprintOf(item) {
+  const { w } = sizeOf(item);
+  if (item.shape === "activity" || !item.label) return w;
+  const longest = Math.max(...wrap(item.label, 18, 2).map((line) => line.length));
+  return Math.max(w, longest * 5.6);
+}
+
+function sizeOf(item) {
+  if (item.shape === "event") return { w: EVENT_R * 2, h: EVENT_R * 2 };
+  if (item.shape === "gateway") return { w: GATE_R * 2, h: GATE_R * 2 };
+  let h = headHeight(item);
+  if (expanded.has(item.id) && item.children.length) {
+    h += item.children.length * CHILD_H + 10;
   }
-  const risk = riskOf(activity);
-  if (risk && openRisks.has(activity.id)) {
-    height += risk.items.length * RISK_ROW_H + 12;
+  const risk = riskOf(item);
+  if (risk && openRisks.has(item.id)) h += risk.items.length * RISK_ROW_H + 12;
+  return { w: BOX_W, h };
+}
+
+/* Longest-path layering over sequence flow. A cycle - a rework loop - leaves
+ * nodes that Kahn never reaches; they are placed after the latest predecessor
+ * that was reached, so the loop draws as a backward edge instead of hanging. */
+function rankNodes(ids, edges) {
+  const succ = new Map(ids.map((id) => [id, []]));
+  const pred = new Map(ids.map((id) => [id, []]));
+  const indegree = new Map(ids.map((id) => [id, 0]));
+  edges.forEach(([source, target]) => {
+    if (!succ.has(source) || !indegree.has(target)) return;
+    succ.get(source).push(target);
+    pred.get(target).push(source);
+    indegree.set(target, indegree.get(target) + 1);
+  });
+
+  const rank = new Map(ids.map((id) => [id, 0]));
+  const depth = new Map(ids.map((id) => [id, 0]));
+  const queue = ids.filter((id) => indegree.get(id) === 0);
+  const settled = new Set(queue);
+  while (queue.length) {
+    const current = queue.shift();
+    succ.get(current).forEach((next) => {
+      rank.set(next, Math.max(rank.get(next), rank.get(current) + 1));
+      indegree.set(next, indegree.get(next) - 1);
+      if (indegree.get(next) === 0 && !settled.has(next)) {
+        settled.add(next);
+        queue.push(next);
+      }
+    });
   }
-  return height;
+  ids.filter((id) => !settled.has(id)).forEach((id) => {
+    const reached = pred.get(id).filter((p) => settled.has(p)).map((p) => rank.get(p));
+    rank.set(id, reached.length ? Math.max(...reached) + 1 : 0);
+    settled.add(id);
+  });
+
+  // How much process is left after each node. Walked back from the deepest
+  // rank, so a successor is always settled before the node that reaches it.
+  [...ids].sort((a, b) => rank.get(b) - rank.get(a)).forEach((id) => {
+    const onward = succ.get(id).filter((n) => rank.get(n) > rank.get(id)).map((n) => depth.get(n));
+    depth.set(id, onward.length ? Math.max(...onward) + 1 : 0);
+  });
+
+  return { rank, pred, depth };
+}
+
+/** Lanes of one process, in the order the modeller declared them. */
+function lanesOf(model, processId) {
+  const bands = (model.lanes || []).filter((lane) => lane.process === processId);
+  /* Declaration order, and nothing else. Ordering by where each lane's work
+   * starts meant a lane jumped position the moment something was dropped into
+   * it - put a start event in the third lane and the third lane became the
+   * first, which moves the whole diagram out from under the person drawing it.
+   * Lane order in BPMN is a modelling choice, not something to derive from
+   * content: the line each lane was written on says what the modeller decided,
+   * and a lane added through the palette is appended, so it lands at the
+   * bottom where it was asked for. */
+  bands.sort((a, b) => (a.line ?? Infinity) - (b.line ?? Infinity)
+    || a.id.localeCompare(b.id, undefined, { numeric: true }));
+  return bands;
+}
+
+/* One row per branch: a node sits on its predecessor's row when that row is
+ * free at this column, so a straight chain stays straight and only a split
+ * steps down. Which branch keeps the row is not arbitrary - a default flow is
+ * the exception by definition, and an end event terminates one path rather
+ * than continuing the process, so both step off and the main line runs
+ * straight, and of the rest the branch with the most process still ahead of it
+ * keeps the row. Ordered by id alone, the tariff diagram put "another request"
+ * on the main row and pushed the tariff change itself down a row. */
+function assignRows(members, rank, pred, laneOf, aside, depth) {
+  const taken = new Set();
+  const row = new Map();
+  [...members].sort((a, b) =>
+    (rank.get(a) - rank.get(b))
+    || (aside.has(a) - aside.has(b))
+    || (depth.get(b) - depth.get(a))
+    || a.localeCompare(b))
+    .forEach((id) => {
+      const sameLane = pred.get(id).filter((p) => laneOf.get(p) === laneOf.get(id));
+      const preferred = sameLane.length ? Math.min(...sameLane.map((p) => row.get(p) ?? 0)) : 0;
+      let slot = Math.max(0, preferred);
+      while (taken.has(`${rank.get(id)}:${slot}`)) slot += 1;
+      taken.add(`${rank.get(id)}:${slot}`);
+      row.set(id, slot);
+    });
+  return row;
 }
 
 function layout() {
-  const placed = new Map();
   const pools = [];
-  let y = POOL_PAD;
+  const placed = new Map();
+  const notes = [];
+  const flows = data.sequenceFlows || [];
+  let poolY = POOL_PAD;
 
   data.participants.forEach((participant) => {
-    const activities = topLevelOf(participant);
-    let x = POOL_LABEL_W + POOL_PAD;
-    let tallest = BOX_H;
-    // Data objects sit in a strip above the activities, so a pool with none
-    // does not carry an empty band.
-    const band = activities.some((a) => dataOf(a).length) ? DATA_BAND : 0;
-    activities.forEach((activity) => {
-      const h = boxHeight(activity);
-      tallest = Math.max(tallest, h);
-      placed.set(activity.id, {
-        x, y: y + POOL_PAD + band, w: BOX_W, h,
-        head: headHeight(activity), band, activity,
+    const members = [...index.values()].filter(
+      (item) => !item.parent && !item.attachedTo && item.process
+        && item.process === participant.process
+    );
+
+    /* A collapsed pool is BPMN's black box: the band and its name, nothing
+     * inside. Its members still get a slot - the band itself - so a message
+     * flow into the pool lands on the pool instead of vanishing with the box
+     * it used to point at. */
+    if (collapsedPools.has(participant.id)) {
+      const band = {
+        x: 0, y: poolY, w: POOL_LABEL_W + LANE_LABEL_W + BOX_W + POOL_PAD * 2, h: COLLAPSED_H,
+      };
+      /* Each member gets a slice of the band rather than all of it. Sharing one
+       * rect put every message flow on the same pixel and stacked their labels
+       * into an unreadable smear - five messages into one participant is
+       * exactly the case a black box has to survive. */
+      const usable = band.w - POOL_LABEL_W - POOL_PAD;
+      const slice = members.length ? usable / members.length : usable;
+      members.forEach((item, seat) => {
+        placed.set(item.id, {
+          x: POOL_LABEL_W + slice * seat, y: band.y, w: slice, h: band.h,
+          item, band: 0, head: band.h,
+        });
       });
-      x += BOX_W + BOX_GAP;
+      pools.push({
+        participant, ...band, lanes: [], members, showLanes: false, collapsed: true,
+      });
+      poolY += COLLAPSED_H + POOL_GAP;
+      return;
+    }
+    const ids = members.map((m) => m.id);
+    const inPool = new Set(ids);
+    const edges = flows
+      .filter((f) => inPool.has(f.source) && inPool.has(f.target))
+      .map((f) => [f.source, f.target]);
+    const { rank, pred, depth } = rankNodes(ids, edges);
+
+    // Column widths: an event or a gateway must not force an activity's width.
+    const columns = new Map();
+    members.forEach((item) => {
+      const at = rank.get(item.id);
+      columns.set(at, Math.max(columns.get(at) || 0, footprintOf(item)));
     });
-    const poolH = tallest + band + POOL_PAD * 2;
+    /* A column that a gateway branches out of needs a wider gap after it: every
+     * branch turns in that gap, and the labels saying which branch is which go
+     * beside those turns. Sized like every other column rather than by nudging
+     * the whole diagram apart. */
+    const branching = new Set(
+      members.filter((item) => item.shape === "gateway"
+        && flows.filter((f) => f.source === item.id).length > 1)
+        .map((item) => rank.get(item.id))
+    );
+    const columnX = new Map();
+    let cursor = POOL_LABEL_W + LANE_LABEL_W + POOL_PAD;
+    let lastGap = 0;
+    [...columns.keys()].sort((a, b) => a - b).forEach((at) => {
+      columnX.set(at, cursor);
+      lastGap = COL_GAP + (branching.has(at) ? BRANCH_GAP : 0);
+      cursor += columns.get(at) + lastGap;
+    });
+    const poolW = Math.max(cursor - lastGap + POOL_PAD,
+      POOL_LABEL_W + LANE_LABEL_W + BOX_W + POOL_PAD * 2);
+
+    // The branches that give up the main row: the default flow's target, and a
+    // path that only ends.
+    const aside = new Set([
+      ...flows.filter((f) => f.default && inPool.has(f.target)).map((f) => f.target),
+      ...ids.filter((id) => {
+        const item = index.get(id);
+        return item.shape === "event" && item.kind === "endEvent";
+      }),
+    ]);
+
+    // Every node lands in a band. A process with no lanes gets one unnamed
+    // band, so the rest of the layout does not need a second code path.
+    const declared = lanesOf(data, participant.process);
+    const laneOf = new Map();
+    members.forEach((item) => {
+      const band = declared.find((lane) => lane.id === item.laneId);
+      laneOf.set(item.id, band ? band.id : "");
+    });
+    /* Every declared lane is drawn, empty or not. Filtering to the ones with
+     * members meant a modeller who added a participant and three lanes saw
+     * nothing at all - and an empty lane is exactly what you draw first, before
+     * there is any work to put in it. */
+    const bands = [...declared];
+    const loose = ids.filter((id) => laneOf.get(id) === "");
+    if (loose.length || !bands.length) {
+      bands.push({ id: "", label: bands.length ? "Other" : "", members: loose, implicit: true });
+    }
+
+    const noteOf = new Map();
+    (data.associations || []).forEach((link) => {
+      const note = (data.artifacts || []).find(
+        (a) => a.kind === "textAnnotation" && (a.id === link.target || a.id === link.source));
+      const anchor = note && (note.id === link.target ? link.source : link.target);
+      if (note && inPool.has(anchor)) noteOf.set(note.id, anchor);
+    });
+
+    let laneY = poolY + POOL_PAD;
+    const drawnBands = [];
+    bands.forEach((band) => {
+      const mine = ids.filter((id) => laneOf.get(id) === band.id);
+      const row = assignRows(mine, rank, pred, laneOf, aside, depth);
+      const noteRow = Math.max(-1, ...mine.map((id) => row.get(id))) + 1;
+      const attached = [...noteOf.entries()].filter(([, anchor]) => mine.includes(anchor));
+
+      const rowHeight = new Map();
+      const rowBand = new Map();
+      mine.forEach((id) => {
+        const item = index.get(id);
+        const at = row.get(id);
+        rowHeight.set(at, Math.max(rowHeight.get(at) || 0, sizeOf(item).h));
+        if (dataOf(item).length) rowBand.set(at, DATA_BAND);
+      });
+      if (attached.length) rowHeight.set(noteRow, 54);
+
+      const rowY = new Map();
+      let stack = laneY + POOL_PAD / 2;
+      [...rowHeight.keys()].sort((a, b) => a - b).forEach((at) => {
+        stack += rowBand.get(at) || 0;
+        rowY.set(at, stack);
+        stack += rowHeight.get(at) + ROW_GAP;
+      });
+      const laneH = Math.max(stack - ROW_GAP + POOL_PAD / 2 - laneY, BOX_H + POOL_PAD);
+
+      mine.forEach((id) => {
+        const item = index.get(id);
+        const { w, h } = sizeOf(item);
+        const at = rank.get(id);
+        placed.set(id, {
+          x: columnX.get(at) + (columns.get(at) - w) / 2,
+          y: rowY.get(row.get(id)),
+          w, h, item, band: rowBand.get(row.get(id)) || 0,
+          head: item.shape === "activity" ? headHeight(item) : h,
+        });
+      });
+      attached.forEach(([noteId, anchor], seat) => {
+        const host = placed.get(anchor);
+        notes.push({
+          note: (data.artifacts || []).find((a) => a.id === noteId),
+          x: (host ? host.x : columnX.get(0)) + seat * (NOTE_W + 12),
+          y: rowY.get(noteRow), anchor,
+        });
+      });
+
+      drawnBands.push({ ...band, x: POOL_LABEL_W, y: laneY, w: poolW - POOL_LABEL_W, h: laneH });
+      laneY += laneH;
+    });
+
+    // A boundary event sits on the lower border of the activity it watches,
+    // so it is placed from its host rather than given a column of its own.
+    members.forEach((item) => {
+      const host = placed.get(item.id);
+      if (!host || !(item.boundary || []).length) return;
+      const r = EVENT_R - 3;
+      const step = Math.min(host.w / (item.boundary.length + 1), 46);
+      item.boundary.forEach((id, seat) => {
+        const attached = index.get(id);
+        if (!attached) return;
+        placed.set(id, {
+          x: host.x + step * (seat + 1) - r, y: host.y + host.h - r,
+          w: r * 2, h: r * 2, item: attached, band: 0, head: r * 2,
+        });
+      });
+    });
+
+    const poolH = Math.max(laneY + POOL_PAD - poolY, BOX_H + POOL_PAD * 2);
     pools.push({
-      participant,
-      x: 0,
-      y,
-      w: Math.max(x + POOL_PAD, POOL_LABEL_W + BOX_W + POOL_PAD * 2),
-      h: poolH,
-      activities,
+      participant, x: 0, y: poolY, w: poolW, h: poolH,
+      lanes: drawnBands, members, showLanes: bands.some((b) => !b.implicit),
     });
-    y += poolH + POOL_GAP;
+    poolY += poolH + POOL_GAP;
   });
 
-  return { pools, placed, height: y };
+  const widest = Math.max(0, ...pools.map((pool) => pool.w));
+  pools.forEach((pool) => {
+    pool.w = widest;
+    pool.lanes.forEach((lane) => { lane.w = widest - POOL_LABEL_W; });
+  });
+
+  return { pools, placed, notes, height: poolY };
 }
 
-function arrow(parent, from, to, dashed, label) {
-  const x1 = from.x + from.w;
-  const y1 = from.y + (from.head || BOX_H) / 2;
-  const x2 = to.x;
-  const y2 = to.y + (to.head || BOX_H) / 2;
-  const sameRow = Math.abs(y1 - y2) < 2;
-  const d = sameRow
-    ? `M ${x1} ${y1} L ${x2} ${y2}`
-    : `M ${x1} ${y1} C ${x1 + 40} ${y1}, ${x2 - 40} ${y2}, ${x2} ${y2}`;
-  node("path", {
-    d,
-    class: dashed ? "pc-flow message" : "pc-flow",
-    "marker-end": dashed ? "url(#pc-arrow-msg)" : "url(#pc-arrow)",
-  }, parent);
-  if (label) {
-    const t = text(parent, (x1 + x2) / 2, (y1 + y2) / 2 - 6, label, "pc-flow-label");
-    t.setAttribute("text-anchor", "middle");
+/* Event trigger glyphs, drawn about the centre of the ring. A throwing event
+ * fills its glyph and a catching one outlines it - in BPMN that is the whole
+ * difference between waiting for a message and sending one. */
+function definitionGlyph(parent, kind, throwing) {
+  const g = node("g", { class: `pc-ev-glyph${throwing ? " throwing" : ""}` }, parent);
+  if (kind === "message") {
+    node("rect", { x: -7, y: -5, width: 14, height: 10, class: "pc-ev-mark" }, g);
+    node("path", { d: "M -7 -5 L 0 1 L 7 -5", class: "pc-ev-line" }, g);
+  } else if (kind === "timer") {
+    node("circle", { cx: 0, cy: 0, r: 7.5, class: "pc-ev-line" }, g);
+    node("path", {
+      d: "M 0 -5 V 0 L 3.5 2.5 M 0 -7.5 v 1.6 M 0 6 v 1.5 M -7.5 0 h 1.6 M 6 0 h 1.5",
+      class: "pc-ev-line",
+    }, g);
+  } else if (kind === "error") {
+    node("path", { d: "M -7 6 L -2.5 -3 L 2 1.5 L 7 -6 L 2.5 3 L -2 -1.5 Z", class: "pc-ev-mark" }, g);
+  } else if (kind === "escalation") {
+    node("path", { d: "M 0 -7 L 6 7 L 0 1 L -6 7 Z", class: "pc-ev-mark" }, g);
+  } else if (kind === "signal") {
+    node("path", { d: "M 0 -7 L 7 6 H -7 Z", class: "pc-ev-mark" }, g);
+  } else if (kind === "conditional") {
+    node("rect", { x: -6, y: -7, width: 12, height: 14, class: "pc-ev-mark" }, g);
+    node("path", { d: "M -4 -4 h 8 M -4 -1 h 8 M -4 2 h 8 M -4 5 h 8", class: "pc-ev-line" }, g);
+  } else if (kind === "compensate") {
+    node("path", { d: "M 0 -6 V 6 L -7 0 Z M 7 -6 V 6 L 0 0 Z", class: "pc-ev-mark" }, g);
+  } else if (kind === "cancel") {
+    node("path", { d: "M -6 -6 L 6 6 M 6 -6 L -6 6", class: "pc-ev-line strong" }, g);
+  } else if (kind === "terminate") {
+    node("circle", { cx: 0, cy: 0, r: 7, class: "pc-ev-mark filled" }, g);
+  } else if (kind === "link") {
+    node("path", { d: "M -7 -2.5 h 7 v -3 l 7 5.5 l -7 5.5 v -3 h -7 z", class: "pc-ev-mark" }, g);
+  }
+  return g;
+}
+
+/* A start event is a thin ring, an intermediate one a double ring, an end
+ * event a thick one, and a non-interrupting boundary event dashes both. */
+function eventShape(parent, cx, cy, item, radius = EVENT_R) {
+  const dashed = item.kind === "boundaryEvent" && !item.interrupting;
+  const cls = (extra) => `pc-ev-ring ${extra}${dashed ? " open" : ""}`;
+  if (item.kind === "endEvent") {
+    node("circle", { cx, cy, r: radius, class: cls("end") }, parent);
+  } else if (item.kind === "startEvent") {
+    node("circle", { cx, cy, r: radius, class: cls("start") }, parent);
+  } else {
+    node("circle", { cx, cy, r: radius, class: cls("mid") }, parent);
+    node("circle", { cx, cy, r: radius - 3.5, class: cls("mid") }, parent);
+  }
+  if (item.definition) {
+    const glyph = definitionGlyph(parent, item.definition, item.throwing);
+    glyph.setAttribute("transform", `translate(${cx} ${cy}) scale(${radius / EVENT_R})`);
   }
 }
 
-/** A message crosses a boundary: leave the source downward, enter the target. */
-function messageArrow(parent, from, to, label) {
-  const x1 = from.x + from.w / 2;
-  const x2 = to.x + to.w / 2;
-  const goingDown = to.y > from.y;
-  const y1 = goingDown ? from.y + from.h : from.y;
-  const y2 = goingDown ? to.y : to.y + to.h;
-  const mid = (y1 + y2) / 2;
-  node("path", {
-    d: `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`,
-    class: "pc-flow message",
-    "marker-end": "url(#pc-arrow-msg)",
-  }, parent);
-  node("circle", { cx: x1, cy: y1, r: 3.5, class: "pc-msg-start" }, parent);
-  const t = text(parent, (x1 + x2) / 2, mid - 4, label, "pc-flow-label");
-  t.setAttribute("text-anchor", "middle");
+function drawEvent(parent, slot) {
+  const { item } = slot;
+  const group = node("g", { class: `pc-event ${item.kind}` }, parent);
+  const cx = slot.x + slot.w / 2;
+  const cy = slot.y + slot.h / 2;
+  eventShape(group, cx, cy, item);
+  if (item.label) {
+    wrap(item.label, 18, 2).forEach((line, row) => {
+      centred(group, cx, slot.y + slot.h + 13 + row * 12, line, "pc-ev-label");
+    });
+  }
+  const hint = node("title", {}, group);
+  hint.textContent = `${item.label || humanKind(item.kind)}\n${humanKind(item.kind)}`
+    + (item.definition ? ` — ${humanKind(item.definition)}` : "")
+    + (item.definitionLabel ? `: ${item.definitionLabel}` : "");
+  return group;
 }
 
+/** The glyph inside the diamond - drawn on the canvas and in the palette. */
+function gatewayMark(parent, kind, cx, cy) {
+  const mark = node("g", { transform: `translate(${cx} ${cy})`, class: "pc-gate-mark" }, parent);
+  if (kind === "exclusiveGateway") {
+    node("path", { d: "M -6 -6 L 6 6 M 6 -6 L -6 6" }, mark);
+  } else if (kind === "parallelGateway") {
+    node("path", { d: "M 0 -8 V 8 M -8 0 H 8" }, mark);
+  } else if (kind === "inclusiveGateway") {
+    node("circle", { cx: 0, cy: 0, r: 7.5, class: "pc-gate-ring" }, mark);
+  } else if (kind === "complexGateway") {
+    node("path", { d: "M 0 -8 V 8 M -8 0 H 8 M -5.6 -5.6 L 5.6 5.6 M 5.6 -5.6 L -5.6 5.6" }, mark);
+  } else {
+    node("circle", { cx: 0, cy: 0, r: 9, class: "pc-gate-ring" }, mark);
+    node("circle", { cx: 0, cy: 0, r: 6.5, class: "pc-gate-ring" }, mark);
+    if (kind === "parallelEventBasedGateway") {
+      node("path", { d: "M 0 -4 V 4 M -4 0 H 4" }, mark);
+    } else {
+      node("path", {
+        d: "M 0 -4.4 L 4.2 -1.4 L 2.6 3.6 H -2.6 L -4.2 -1.4 Z", class: "pc-gate-ring",
+      }, mark);
+    }
+  }
+  return mark;
+}
+
+/* A gateway is a diamond and the glyph inside says which one. A bare diamond
+ * is legal BPMN and means exclusive, but a reader who has to know that rule is
+ * a reader the diagram has already failed, so the X is always drawn. */
+function drawGateway(parent, slot) {
+  const { item } = slot;
+  const group = node("g", { class: `pc-gateway ${item.kind}` }, parent);
+  const cx = slot.x + slot.w / 2;
+  const cy = slot.y + slot.h / 2;
+  const r = GATE_R;
+  node("path", {
+    d: `M ${cx} ${cy - r} L ${cx + r} ${cy} L ${cx} ${cy + r} L ${cx - r} ${cy} Z`,
+    class: "pc-gate-box",
+  }, group);
+  gatewayMark(group, item.kind, cx, cy);
+  if (item.label) {
+    wrap(item.label, 18, 2).forEach((line, row) => {
+      centred(group, cx, slot.y - 18 + row * 12, line, "pc-ev-label");
+    });
+  }
+  const hint = node("title", {}, group);
+  hint.textContent = `${item.label || humanKind(item.kind)}\n${humanKind(item.kind)}`
+    + (item.direction ? ` (${item.direction})` : "");
+  return group;
+}
+
+/** The marker row along the bottom edge: what BPMN says about how it runs. */
+function activityMarkers(parent, slot) {
+  const { item } = slot;
+  const marks = [];
+  if (item.children.length) marks.push("sub");
+  if (item.markers.loop === "standard") marks.push("loop");
+  if (item.markers.loop === "multiParallel") marks.push("multiParallel");
+  if (item.markers.loop === "multiSequential") marks.push("multiSequential");
+  if (item.markers.adHoc) marks.push("adHoc");
+  if (item.markers.compensation) marks.push("compensation");
+  if (!marks.length) return;
+
+  const size = 14;
+  const step = size + 6;
+  const startX = slot.x + slot.w / 2 - (marks.length * step - 6) / 2;
+  marks.forEach((mark, seat) => {
+    const x = startX + seat * step;
+    const y = slot.y + slot.h - size - 3;
+    const g = node("g", { class: `pc-mk pc-mk-${mark}`, transform: `translate(${x} ${y})` }, parent);
+    if (mark === "sub") {
+      node("rect", { x: 0, y: 0, width: size, height: size, class: "pc-mk-box" }, g);
+      node("path", { d: `M ${size / 2} 3 V ${size - 3} M 3 ${size / 2} H ${size - 3}` }, g);
+      g.classList.add("pc-marker");
+      g.setAttribute("cursor", "pointer");
+      g.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        if (expanded.has(item.id)) expanded.delete(item.id); else expanded.add(item.id);
+        draw();
+      });
+      node("title", {}, g).textContent = expanded.has(item.id)
+        ? "Collapse the business steps inside this activity"
+        : "Show the business steps inside this activity";
+    } else if (mark === "loop") {
+      node("path", { d: "M 12 4 a 5 5 0 1 0 1 5 M 12 1 v 3.5 h -3.5" }, g);
+      node("title", {}, g).textContent = "Loop: repeats while its condition holds";
+    } else if (mark === "multiParallel") {
+      node("path", { d: "M 3 2 v 11 M 7 2 v 11 M 11 2 v 11" }, g);
+      node("title", {}, g).textContent = "Multi-instance, parallel";
+    } else if (mark === "multiSequential") {
+      node("path", { d: "M 2 4 h 11 M 2 7.5 h 11 M 2 11 h 11" }, g);
+      node("title", {}, g).textContent = "Multi-instance, sequential";
+    } else if (mark === "adHoc") {
+      node("path", { d: "M 2 9 q 3 -5 5.5 0 t 5.5 0" }, g);
+      node("title", {}, g).textContent = "Ad-hoc: the steps have no fixed order";
+    } else if (mark === "compensation") {
+      node("path", { d: "M 7 3 v 9 L 1 7.5 Z M 14 3 v 9 L 8 7.5 Z", class: "pc-mk-fill" }, g);
+      node("title", {}, g).textContent = "Compensation handler";
+    }
+  });
+}
 
 // BPMN marks the kind of work with a corner glyph, not a word.
 function typeMarker(parent, kind, x, y) {
@@ -211,7 +613,9 @@ function typeMarker(parent, kind, x, y) {
     node("circle", { cx: 6, cy: 3.5, r: 2.6 }, g);
     node("path", { d: "M 1 11 a 5 5 0 0 1 10 0" }, g);
   } else if (kind === "manualTask") {
-    node("path", { d: "M 2 10 v -4 a 1.4 1.4 0 0 1 2.8 0 v -2 a 1.4 1.4 0 0 1 2.8 0 v 1 a 1.4 1.4 0 0 1 2.8 0 v 5" }, g);
+    node("path", {
+      d: "M 2 10 v -4 a 1.4 1.4 0 0 1 2.8 0 v -2 a 1.4 1.4 0 0 1 2.8 0 v 1 a 1.4 1.4 0 0 1 2.8 0 v 5",
+    }, g);
   } else if (kind === "serviceTask") {
     node("circle", { cx: 6, cy: 6, r: 4.4 }, g);
     node("circle", { cx: 6, cy: 6, r: 1.6, class: "pc-icon-hole" }, g);
@@ -225,8 +629,158 @@ function typeMarker(parent, kind, x, y) {
     node("path", { d: "M 1 2.5 l 5 4 l 5 -4" }, g);
   } else if (kind === "businessRuleTask") {
     node("path", { d: "M 1 2 h 10 v 8 h -10 z M 1 4.4 h 10 M 4.4 4.4 v 5.6" }, g);
+  } else if (kind === "callActivity") {
+    node("path", { d: "M 1 2 h 10 v 8 h -10 z M 3.4 4.4 h 5.2 v 3.2 h -5.2 z" }, g);
   }
   return g;
+}
+
+/* A text annotation is an open bracket, not a box: BPMN draws only the left
+ * edge so a comment never reads as another step of work. */
+function drawNote(parent, note, x, y) {
+  const lines = wrap(note.text, 30, 3);
+  const height = Math.max(34, lines.length * 13 + 12);
+  const group = node("g", { class: "pc-note" }, parent);
+  node("path", {
+    d: `M ${x + 9} ${y} H ${x} V ${y + height} H ${x + 9}`, class: "pc-note-bracket",
+  }, group);
+  lines.forEach((line, row) => {
+    text(group, x + 15, y + 15 + row * 13, line, "pc-note-label");
+  });
+  node("title", {}, group).textContent = note.text;
+  return { group, width: NOTE_W, height };
+}
+
+/* BPMN routes connectors at right angles, not as splines. The corners are
+ * rounded so a three-segment route still reads as one line. */
+function orthPath(points, radius = 9) {
+  const kept = points.filter((p, i) => i === 0
+    || Math.abs(p.x - points[i - 1].x) > 0.5 || Math.abs(p.y - points[i - 1].y) > 0.5);
+  if (kept.length < 2) return "";
+  let d = `M ${kept[0].x} ${kept[0].y}`;
+  for (let i = 1; i < kept.length - 1; i += 1) {
+    const previous = kept[i - 1];
+    const corner = kept[i];
+    const next = kept[i + 1];
+    const back = Math.hypot(corner.x - previous.x, corner.y - previous.y);
+    const on = Math.hypot(next.x - corner.x, next.y - corner.y);
+    const r = Math.min(radius, back / 2, on / 2);
+    const ax = corner.x - ((corner.x - previous.x) / back) * r;
+    const ay = corner.y - ((corner.y - previous.y) / back) * r;
+    const bx = corner.x + ((next.x - corner.x) / on) * r;
+    const by = corner.y + ((next.y - corner.y) / on) * r;
+    d += ` L ${ax} ${ay} Q ${corner.x} ${corner.y} ${bx} ${by}`;
+  }
+  const last = kept[kept.length - 1];
+  return `${d} L ${last.x} ${last.y}`;
+}
+
+/** Where a connector leaves or meets a shape - a diamond by its four points. */
+function port(slot, side) {
+  const cx = slot.x + slot.w / 2;
+  const midY = slot.y + (slot.head || slot.h) / 2;
+  const cy = slot.item && slot.item.shape === "activity" ? midY : slot.y + slot.h / 2;
+  if (side === "right") return { x: slot.x + slot.w, y: cy };
+  if (side === "left") return { x: slot.x, y: cy };
+  if (side === "top") return { x: cx, y: slot.y };
+  return { x: cx, y: slot.y + slot.h };
+}
+
+/* Three cases, and the third is the one the old canvas could not draw at all:
+ * a flow that goes backwards is a rework loop and has to leave and re-enter
+ * from below, or it crosses every box between its ends. */
+function routeSequence(from, to) {
+  const gap = 22;
+  if (to.x >= from.x + from.w - 1) {
+    const a = port(from, "right");
+    const b = port(to, "left");
+    if (Math.abs(a.y - b.y) < 2) return [a, b];
+    const midX = (a.x + b.x) / 2;
+    return [a, { x: midX, y: a.y }, { x: midX, y: b.y }, b];
+  }
+  if (to.x + to.w <= from.x + 1) {
+    const a = port(from, "bottom");
+    const b = port(to, "bottom");
+    const below = Math.max(a.y, b.y) + gap;
+    return [a, { x: a.x, y: below }, { x: b.x, y: below }, b];
+  }
+  const downward = to.y > from.y;
+  const a = port(from, downward ? "bottom" : "top");
+  const b = port(to, downward ? "top" : "bottom");
+  const midY = (a.y + b.y) / 2;
+  return [a, { x: a.x, y: midY }, { x: b.x, y: midY }, b];
+}
+
+function sequenceArrow(parent, from, to, flow) {
+  const points = routeSequence(from, to);
+  const group = node("g", { class: "pc-seq" }, parent);
+  node("path", {
+    d: orthPath(points),
+    class: "pc-flow",
+    "marker-end": "url(#pc-arrow)",
+  }, group);
+  // A default flow carries a tick through its tail; a conditional one a diamond.
+  const start = points[0];
+  const after = points[1];
+  if (flow.default) {
+    const dx = Math.sign(after.x - start.x) || 0;
+    const dy = Math.sign(after.y - start.y) || 0;
+    node("path", {
+      d: `M ${start.x + dx * 5 - 4 - dy * 4} ${start.y + dy * 5 - 4 + dx * 4} `
+        + `L ${start.x + dx * 12 + 4 - dy * 4} ${start.y + dy * 12 + 4 + dx * 4}`,
+      class: "pc-flow-tick",
+    }, group);
+  } else if (flow.condition) {
+    const dx = Math.sign(after.x - start.x) || 0;
+    const dy = Math.sign(after.y - start.y) || 0;
+    const cx = start.x + dx * 7;
+    const cy = start.y + dy * 7;
+    node("path", {
+      d: `M ${cx - dx * 6 - dy * 5} ${cy - dy * 6 - dx * 5} L ${cx + dy * 5 - dx * 0} ${cy + dx * 5}`
+        + ` L ${cx + dx * 6 + dy * 5} ${cy + dy * 6 + dx * 5} L ${cx - dy * 5} ${cy - dx * 5} Z`,
+      class: "pc-flow-diamond",
+    }, group);
+  }
+  /* On the longest segment of the route. The middle of an orthogonal route is
+   * a corner, and three branches leaving one gateway all turn in the same few
+   * pixels; the segment entering the target is short for every branch that had
+   * to change rows. The longest run is the one with room, and it differs per
+   * branch. A vertical run takes the label beside it rather than across it. */
+  const caption = flow.label;
+  if (caption) {
+    let best = null;
+    for (let i = 1; i < points.length; i += 1) {
+      const run = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      if (!best || run > best.run) best = { run, from: points[i - 1], to: points[i] };
+    }
+    if (best && best.run >= 34) {
+      const vertical = Math.abs(best.to.x - best.from.x) < Math.abs(best.to.y - best.from.y);
+      const room = vertical ? 30 : Math.max(10, Math.floor(best.run / 5.4));
+      const midX = (best.from.x + best.to.x) / 2;
+      const midY = (best.from.y + best.to.y) / 2;
+      if (vertical) text(group, midX + 5, midY, truncate(caption, room), "pc-flow-label");
+      else centred(group, midX, midY - 5, truncate(caption, room), "pc-flow-label");
+    }
+  }
+  if (flow.label || flow.condition) {
+    node("title", {}, group).textContent = flow.condition
+      ? `${flow.label || "when"}: ${flow.condition}` : flow.label;
+  }
+  return group;
+}
+
+/** A message crosses a boundary: leave the source downward, enter the target. */
+function messageArrow(parent, from, to, label) {
+  const downward = to.y > from.y;
+  const a = port(from, downward ? "bottom" : "top");
+  const b = port(to, downward ? "top" : "bottom");
+  const midY = (a.y + b.y) / 2;
+  const points = [a, { x: a.x, y: midY }, { x: b.x, y: midY }, b];
+  node("path", {
+    d: orthPath(points), class: "pc-flow message", "marker-end": "url(#pc-arrow-msg)",
+  }, parent);
+  node("circle", { cx: a.x, cy: a.y, r: 3.5, class: "pc-msg-start" }, parent);
+  if (label) centred(parent, (a.x + b.x) / 2, midY - 5, truncate(label, 26), "pc-flow-label");
 }
 
 /* A data object is a folded page and a data store a cylinder, which is what
@@ -252,10 +806,18 @@ function dataGlyph(parent, x, y, item) {
       class: "pc-data-shape",
     }, g);
     node("path", { d: `M ${x + DATA_W - fold} ${y} v ${fold} h ${fold}`, class: "pc-data-fold" }, g);
+    // A data input is an open arrow in the corner and a data output a filled one.
+    if (item.input || item.output) {
+      node("path", {
+        d: `M ${x + 4} ${y + 9} l 4 -4 l 4 4 m -4 -4 v 8`,
+        class: item.output ? "pc-data-io filled" : "pc-data-io",
+      }, g);
+    }
   }
   if (item.collection) {
     node("path", {
-      d: `M ${x + DATA_W / 2 - 3} ${y + DATA_H - 7} v 6 M ${x + DATA_W / 2} ${y + DATA_H - 7} v 6 M ${x + DATA_W / 2 + 3} ${y + DATA_H - 7} v 6`,
+      d: `M ${x + DATA_W / 2 - 3} ${y + DATA_H - 7} v 6 M ${x + DATA_W / 2} ${y + DATA_H - 7} v 6 `
+        + `M ${x + DATA_W / 2 + 3} ${y + DATA_H - 7} v 6`,
       class: "pc-data-fold",
     }, g);
   }
@@ -273,11 +835,11 @@ function dataAssociation(parent, x1, y1, x2, y2) {
 }
 
 function drawData(parent, slot) {
-  const items = dataOf(slot.activity);
+  const items = dataOf(slot.item);
   if (!items.length || !slot.band) return;
   const spread = Math.min(slot.w / items.length, 92);
-  items.forEach((item, index) => {
-    const cx = slot.x + spread * (index + 0.5) + (slot.w - spread * items.length) / 2;
+  items.forEach((item, seat) => {
+    const cx = slot.x + spread * (seat + 0.5) + (slot.w - spread * items.length) / 2;
     const top = slot.y - slot.band + 6;
     const g = dataGlyph(parent, cx - DATA_W / 2, top, item);
     if (item.direction === "in") {
@@ -286,149 +848,157 @@ function drawData(parent, slot) {
       dataAssociation(g, cx, slot.y - 4, cx, top + DATA_H + 2);
     }
     wrap(item.label, 16, 2).forEach((line, row) => {
-      const label = text(g, cx, top + DATA_H + 13 + row * 11, line, "pc-data-label");
-      label.setAttribute("text-anchor", "middle");
+      centred(g, cx, top + DATA_H + 13 + row * 11, line, "pc-data-label");
     });
+    if (item.state) centred(g, cx, top - 14, `[${truncate(item.state, 14)}]`, "pc-data-state");
     if (item.kinds.length) {
-      const chip = text(g, cx, top - 4, item.kinds.map(humanKind).join(", "), "pc-data-kind");
-      chip.setAttribute("text-anchor", "middle");
+      centred(g, cx, top - 4, item.kinds.map(humanKind).join(", "), "pc-data-kind");
     }
     const title = node("title", {}, g);
     title.textContent = `${item.label} — ${item.direction === "in" ? "read by" : "written by"} `
-      + `${slot.activity.label}`
+      + `${slot.item.label}`
       + (item.kinds.length
         ? `\nClassified: ${item.kinds.join(", ")}`
         : "\nNot classified");
   });
 }
 
+function childrenOf(activity) {
+  return activity.children.map((id) => index.get(id)).filter(Boolean);
+}
+
+/* A call activity is drawn with a thick border and a transaction with a second
+ * one inside it - both are BPMN's way of saying "this box is not the whole
+ * story", which for a risk assessment is exactly the box to look inside. */
+function activityBorder(parent, slot) {
+  const { item } = slot;
+  const dashed = item.markers.eventSubProcess;
+  node("rect", {
+    x: slot.x, y: slot.y, width: slot.w, height: slot.h, rx: 8,
+    class: `pc-box${item.markers.call ? " call" : ""}${dashed ? " event-sub" : ""}`,
+  }, parent);
+  if (item.markers.transaction) {
+    node("rect", {
+      x: slot.x + 3.5, y: slot.y + 3.5, width: slot.w - 7, height: slot.h - 7, rx: 5,
+      class: "pc-box inner",
+    }, parent);
+  }
+}
+
 function drawActivity(parent, slot) {
-  const { activity } = slot;
+  const item = slot.item;
   const group = node("g", {
-    class: `pc-activity${activity.refines.length ? " refined" : ""}${activity.human ? " human" : ""}`,
+    class: `pc-activity${item.refines.length ? " refined" : ""}${item.human ? " human" : ""}`,
   }, parent);
 
-  node("rect", {
-    x: slot.x, y: slot.y, width: slot.w, height: slot.h, rx: 8, class: "pc-box",
-  }, group);
+  activityBorder(group, slot);
   const hint = node("title", {}, group);
-  hint.textContent = `${activity.label}\n` + (activity.refines.length
-    ? "Open the AI architecture that carries out this activity"
-    : (activity.children.length ? "Click + to show the steps inside" : "Edit this activity"));
+  hint.textContent = `${item.label}\n` + (item.refines.length
+    ? "Click the AI system chip to open the architecture, the pencil to edit"
+    : (item.children.length ? "Click + to show the steps inside" : "Edit this activity"));
 
-  typeMarker(group, activity.kind, slot.x + 8, slot.y + 7);
+  typeMarker(group, item.kind, slot.x + 8, slot.y + 7);
   // The risk badge owns the top right, so the name wraps under it.
-  const lines = wrap(activity.label, nameRoomOf(activity), 2);
-  lines.forEach((line, index) => {
-    text(group, slot.x + 26, slot.y + 17 + index * LINE_H, line, "pc-label");
+  const lines = wrap(item.label, nameRoomOf(item), 2);
+  lines.forEach((line, seat) => {
+    text(group, slot.x + 26, slot.y + 17 + seat * LINE_H, line, "pc-label");
   });
   const afterName = slot.y + 17 + (lines.length - 1) * LINE_H;
 
-  if (activity.performers.length) {
-    const row = afterName + (activity.refines.length ? 31 : 17);
-    text(group, slot.x + 26, row, truncate(activity.performers.join(", "), 26), "pc-by");
+  if (item.performers.length) {
+    const row = afterName + (item.refines.length ? 31 : 17);
+    text(group, slot.x + 26, row, truncate(item.performers.join(", "), 26), "pc-by");
   }
 
-  // Two ways in: the inner flow, and the architecture that carries it.
-  if (activity.children.length) {
-    const marker = node("g", { class: "pc-marker" }, group);
-    node("rect", {
-      x: slot.x + slot.w / 2 - 9, y: slot.y + slot.h - 9,
-      width: 18, height: 18, rx: 3, class: "pc-marker-box",
-    }, marker);
-    const sign = text(marker, slot.x + slot.w / 2, slot.y + slot.h + 4,
-      expanded.has(activity.id) ? "−" : "+", "pc-marker-sign");
-    sign.setAttribute("text-anchor", "middle");
-    marker.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      if (expanded.has(activity.id)) expanded.delete(activity.id);
-      else expanded.add(activity.id);
-      draw();
-    });
-    marker.setAttribute("cursor", "pointer");
-    const title = node("title", {}, marker);
-    title.textContent = expanded.has(activity.id)
-      ? "Collapse the business steps inside this activity"
-      : "Show the business steps inside this activity";
-  }
+  activityMarkers(group, slot);
 
-  if (expanded.has(activity.id) && activity.children.length) {
-    childrenOf(activity).forEach((child, index) => {
-      const cy = slot.y + slot.head + index * CHILD_H;
+  if (expanded.has(item.id) && item.children.length) {
+    childrenOf(item).forEach((child, seat) => {
+      const cy = slot.y + slot.head + seat * CHILD_H;
       node("rect", {
         x: slot.x + 12, y: cy, width: slot.w - 24, height: CHILD_H - 6, rx: 4, class: "pc-child",
       }, group);
-      text(group, slot.x + 22, cy + 18, truncate(child.label, 26), "pc-child-label");
+      const glyph = child.shape === "gateway" ? "◇ " : (child.shape === "event" ? "○ " : "");
+      text(group, slot.x + 22, cy + 18, glyph + truncate(child.label, 26), "pc-child-label");
     });
   }
 
   // Candidate risks for this activity; the badge folds the list.
-  const risk = riskOf(activity);
+  const risk = riskOf(item);
   if (risk && risk.findings) {
-    const open = openRisks.has(activity.id);
+    const open = openRisks.has(item.id);
     const badge = node("g", { class: "pc-risk", cursor: "pointer" }, group);
     const width = 54;
     node("rect", {
       x: slot.x + slot.w - width - 10, y: slot.y + 8,
       width, height: 17, rx: 8, class: "pc-risk-box",
     }, badge);
-    const caption = text(badge, slot.x + slot.w - width / 2 - 10, slot.y + 20,
+    centred(badge, slot.x + slot.w - width / 2 - 10, slot.y + 20,
       `${risk.findings} risk${risk.findings === 1 ? "" : "s"} ${open ? "⌃" : "⌄"}`,
       "pc-risk-label");
-    caption.setAttribute("text-anchor", "middle");
     badge.addEventListener("click", (ev) => {
       ev.stopPropagation();
-      if (open) openRisks.delete(activity.id); else openRisks.add(activity.id);
+      if (open) openRisks.delete(item.id); else openRisks.add(item.id);
       draw();
     });
-    const riskTitle = node("title", {}, badge);
-    riskTitle.textContent = open
+    node("title", {}, badge).textContent = open
       ? "Hide the candidate risks found here"
       : "Show the candidate risks found here";
 
     if (open) {
       let rowY = slot.y + slot.h - risk.items.length * RISK_ROW_H - 6;
-      risk.items.forEach((item) => {
-        text(group, slot.x + 26, rowY + 11, "• " + truncate(item.label, 34), "pc-risk-item");
+      risk.items.forEach((entry) => {
+        text(group, slot.x + 26, rowY + 11, `• ${truncate(entry.label, 34)}`, "pc-risk-item");
         rowY += RISK_ROW_H;
       });
     }
   }
 
-  if (activity.refines.length) {
-    // A badge, not a button: the box itself opens the architecture.
-    const chip = node("g", { class: "pc-open" }, group);
+  if (item.refines.length) {
+    /* The chip is the only way down, and that is the point. The box used to
+     * descend on any click, so reading a refined activity - selecting it to
+     * find the Turtle that declares it - threw the reader onto the
+     * architecture instead, every time. Descending is now asked for. */
+    const chip = node("g", { class: "pc-open", cursor: "pointer" }, group);
     const chipW = 74;
     node("rect", {
       x: slot.x + 26, y: afterName + 6, width: chipW, height: 15, rx: 7, class: "pc-open-box",
     }, chip);
-    const badge = text(chip, slot.x + 26 + chipW / 2, afterName + 17, "AI system ›", "pc-open-label");
-    badge.setAttribute("text-anchor", "middle");
+    centred(chip, slot.x + 26 + chipW / 2, afterName + 17, "AI system ›", "pc-open-label");
+    node("title", {}, chip).textContent = "Open the AI architecture that carries out this activity";
+    chip.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (onSelect) onSelect(item.id);
+      if (onOpenArchitecture) onOpenArchitecture(item);
+    });
   }
   if (onEdit) {
     // Sequence flow or message flow follows from the pools; the server decides.
-    const port = node("g", { class: "pc-port", cursor: "crosshair" }, group);
+    const dot = node("g", { class: "pc-port", cursor: "crosshair" }, group);
     node("circle", {
-      cx: slot.x + slot.w, cy: slot.y + slot.head / 2, r: 7, class: "pc-port-dot",
-    }, port);
-    port.addEventListener("pointerdown", (ev) => {
+      cx: slot.x + slot.w, cy: slot.y + slot.head / 2, r: PORT_SCREEN_R, class: "pc-port-dot",
+    }, dot);
+    dot.addEventListener("pointerdown", (ev) => {
       ev.stopPropagation();
-      startConnect(ev, activity, slot);
+      startConnect(ev, item, slot);
     });
-    const portTitle = node("title", {}, port);
-    portTitle.textContent = "Drag onto another activity to connect";
+    node("title", {}, dot).textContent = "Drag onto another activity to connect";
 
-    // One primary action per box: a refined activity opens its architecture.
+    /* Clicking the box selects it and reveals the line that declares it. On a
+     * refined activity that is all it does - the chip descends, the pencil
+     * edits - because a box that changed level under every click made the
+     * source it had just revealed impossible to read. An activity with no
+     * architecture behind it has neither chip nor pencil, so its box still
+     * opens the editor. */
     group.addEventListener("click", (ev) => {
-      if (ev.target.closest(".pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
+      if (ev.target.closest(".pc-marker, .pc-port, .pc-edit, .pc-risk, .pc-open")) return;
       ev.stopPropagation();
-      if (onSelect) onSelect(activity.id);
-      if (activity.refines.length && onOpenArchitecture) onOpenArchitecture(activity);
-      else showDetail(activity, ev);
+      if (onSelect) onSelect(item.id);
+      if (!item.refines.length) showDetail(item, ev);
     });
     group.setAttribute("cursor", "pointer");
 
-    if (activity.refines.length) {
+    if (item.refines.length) {
       const pencil = node("g", { class: "pc-edit", cursor: "pointer" }, group);
       node("rect", {
         x: slot.x + slot.w - 26, y: slot.y + slot.h - 24, width: 18, height: 18, rx: 3,
@@ -440,13 +1010,63 @@ function drawActivity(parent, slot) {
       }, pencil);
       pencil.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        showDetail(activity, ev);
+        showDetail(item, ev);
       });
-      const editTitle = node("title", {}, pencil);
-      editTitle.textContent = "Edit this activity";
+      node("title", {}, pencil).textContent = "Edit this activity";
     }
   }
   return group;
+}
+
+/** An event pinned to the border of the activity it watches. */
+function drawBoundary(parent, slot) {
+  const { item } = slot;
+  const group = node("g", { class: `pc-event boundaryEvent${item.interrupting ? "" : " open"}` },
+    parent);
+  eventShape(group, slot.x + slot.w / 2, slot.y + slot.h / 2, item, EVENT_R - 3);
+  if (item.label) {
+    wrap(item.label, 16, 2).forEach((line, row) => {
+      centred(group, slot.x + slot.w / 2, slot.y + slot.h + 12 + row * 11, line, "pc-ev-label");
+    });
+  }
+  node("title", {}, group).textContent = `${item.label || "Boundary event"}\n`
+    + `${item.interrupting ? "Interrupting" : "Non-interrupting"} boundary event`
+    + (item.definition ? ` — ${humanKind(item.definition)}` : "");
+  group.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (onSelect) onSelect(item.id);
+    if (onEdit) showNodeDetail(item, ev);
+  });
+  return group;
+}
+
+function drawFlowNode(parent, slot) {
+  if (slot.item.shape === "event") return drawEvent(parent, slot);
+  if (slot.item.shape === "gateway") return drawGateway(parent, slot);
+  return drawActivity(parent, slot);
+}
+
+/* An event or a gateway is clicked like an activity, but there is no
+ * architecture behind it, so it always opens its editor. */
+function wireSimpleNode(group, slot) {
+  if (!onEdit) return;
+  const { item } = slot;
+  const dot = node("g", { class: "pc-port", cursor: "crosshair" }, group);
+  node("circle", {
+    cx: slot.x + slot.w, cy: slot.y + slot.h / 2, r: PORT_SCREEN_R, class: "pc-port-dot",
+  }, dot);
+  dot.addEventListener("pointerdown", (ev) => {
+    ev.stopPropagation();
+    startConnect(ev, item, { ...slot, head: slot.h });
+  });
+  node("title", {}, dot).textContent = "Drag onto another node to connect";
+  group.setAttribute("cursor", "pointer");
+  group.addEventListener("click", (ev) => {
+    if (ev.target.closest(".pc-port")) return;
+    ev.stopPropagation();
+    if (onSelect) onSelect(item.id);
+    showNodeDetail(item, ev);
+  });
 }
 
 function svgPoint(clientX, clientY) {
@@ -454,9 +1074,9 @@ function svgPoint(clientX, clientY) {
   return { x: (clientX - rect.left - view.x) / view.k, y: (clientY - rect.top - view.y) / view.k };
 }
 
-function startConnect(ev, activity, slot) {
+function startConnect(ev, item, slot) {
   const line = node("path", { class: "pc-flow pending" }, root);
-  connecting = { from: activity, slot, line, id: ev.pointerId };
+  connecting = { from: item, slot, line, id: ev.pointerId };
   // Held for the length of the drag so it survives leaving the port, and
   // released in endConnect - a capture left standing swallows every later
   // click on the canvas.
@@ -467,7 +1087,7 @@ function moveConnect(ev) {
   if (!connecting) return;
   const to = svgPoint(ev.clientX, ev.clientY);
   const x1 = connecting.slot.x + connecting.slot.w;
-  const y1 = connecting.slot.y + connecting.slot.head / 2;
+  const y1 = connecting.slot.y + (connecting.slot.head || connecting.slot.h) / 2;
   connecting.line.setAttribute("d", `M ${x1} ${y1} L ${to.x} ${to.y}`);
 }
 
@@ -479,15 +1099,13 @@ async function endConnect(ev) {
   try { svg.releasePointerCapture(id); } catch (error) { /* already gone */ }
   swallowNextClick = true;
   const dropped = document.elementFromPoint(ev.clientX, ev.clientY);
-  const group = dropped && dropped.closest(".pc-activity");
-  if (!group) return;
-  const target = [...root.querySelectorAll(".pc-activity")].indexOf(group);
-  const targetId = drawnOrder[target];
+  // The id travels on the element, so a drop lands on the node under the
+  // pointer rather than on whatever was drawn in that position.
+  const group = dropped && dropped.closest("[data-node]");
+  const targetId = group && group.getAttribute("data-node");
   if (!targetId || targetId === from.id) return;
   await onEdit("connect", { source: from.id, target: targetId });
 }
-
-let drawnOrder = [];
 
 function closeDetail() {
   const panel = document.querySelector("#process-detail");
@@ -498,6 +1116,12 @@ function escapeHtml(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 }
 
+function options(list, selected) {
+  return list.map(([value, label]) =>
+    `<option value="${escapeHtml(value)}"${value === selected ? " selected" : ""}>`
+    + `${escapeHtml(label)}</option>`).join("");
+}
+
 function classOptions(selected) {
   return ['<option value="">— not classified —</option>']
     .concat(dataClasses.map((c) =>
@@ -505,20 +1129,86 @@ function classOptions(selected) {
     .join("");
 }
 
-/* The data rows are why this panel exists at all now: a classification on a
- * data object is what business_data_bridge.rq turns into a data category on the
- * architecture, and it was previously only reachable by hand-writing three
- * BPMN nodes in Turtle. */
-function dataRows(activity) {
-  const items = dataOf(activity);
-  if (!items.length) return '<div class="pd-empty">No data attached yet.</div>';
-  return items.map((item) => `
-    <div class="pd-data" data-ref="${escapeHtml(item.id)}">
-      <span class="pd-dir">${item.direction === "in" ? "reads" : "writes"}</span>
-      <span class="pd-name" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</span>
-      <select class="pd-class">${classOptions(item.kinds[0] || "")}</select>
-      <button type="button" class="pd-drop" title="Detach this data from the activity">×</button>
-    </div>`).join("");
+function placePanel(panel, ev, height) {
+  panel.classList.remove("hidden");
+  const rect = svg.getBoundingClientRect();
+  // Clamped at both ends: on a canvas narrower than the panel, rect.width - 300
+  // is negative and the panel went off the left edge entirely.
+  panel.style.left = `${Math.max(8, Math.min(ev.clientX - rect.left + 12, rect.width - 300))}px`;
+  panel.style.top = `${Math.max(8, Math.min(ev.clientY - rect.top + 12, rect.height - height))}px`;
+}
+
+const EVENT_KINDS = [
+  ["startEvent", "Start"],
+  ["intermediateCatchEvent", "Intermediate (catching)"],
+  ["intermediateThrowEvent", "Intermediate (throwing)"],
+  ["endEvent", "End"],
+  ["boundaryEvent", "Boundary"],
+];
+
+const EVENT_DEFINITIONS = [
+  ["", "— none (plain) —"],
+  ["message", "Message"],
+  ["timer", "Timer"],
+  ["error", "Error"],
+  ["escalation", "Escalation"],
+  ["signal", "Signal"],
+  ["conditional", "Conditional"],
+  ["compensate", "Compensation"],
+  ["cancel", "Cancel"],
+  ["terminate", "Terminate"],
+  ["link", "Link"],
+];
+
+const GATEWAY_KINDS = [
+  ["exclusiveGateway", "Exclusive (XOR)"],
+  ["parallelGateway", "Parallel (AND)"],
+  ["inclusiveGateway", "Inclusive (OR)"],
+  ["eventBasedGateway", "Event-based"],
+  ["parallelEventBasedGateway", "Event-based, parallel"],
+  ["complexGateway", "Complex"],
+];
+
+/* Events and gateways get their own editor: they carry a type and, for an
+ * event, a trigger - and changing either is what turns a placeholder circle
+ * into the thing the process actually waits for. */
+function showNodeDetail(item, ev) {
+  const panel = document.querySelector("#process-detail");
+  if (!panel) return;
+  const isEvent = item.shape === "event";
+  const kinds = isEvent ? EVENT_KINDS : GATEWAY_KINDS;
+  panel.innerHTML = `
+    <div class="nd-head">${escapeHtml(isEvent ? "event" : "gateway")}</div>
+    <label class="nd-row"><span>Name</span>
+      <input type="text" id="pd-name" value="${escapeHtml(item.label)}" /></label>
+    <label class="nd-row"><span>Type</span>
+      <select id="pd-kind">${options(kinds, item.kind)}</select></label>
+    ${isEvent ? `<label class="nd-row"><span>Trigger</span>
+      <select id="pd-def">${options(EVENT_DEFINITIONS, item.definition || "")}</select></label>` : ""}
+    ${isEvent && item.kind === "boundaryEvent" ? `<label class="nd-row nd-check">
+      <span>Interrupts the activity</span>
+      <input type="checkbox" id="pd-interrupt"${item.interrupting ? " checked" : ""} /></label>` : ""}
+    <div class="nd-actions">
+      <button type="button" class="btn small primary" id="pd-apply">Apply</button>
+      <button type="button" class="btn small" id="pd-delete">Delete</button>
+    </div>`;
+  placePanel(panel, ev, 220);
+
+  panel.querySelector("#pd-apply").addEventListener("click", async () => {
+    const label = panel.querySelector("#pd-name").value.trim();
+    const kind = panel.querySelector("#pd-kind").value;
+    const definition = isEvent ? panel.querySelector("#pd-def").value : "";
+    const interrupting = panel.querySelector("#pd-interrupt");
+    closeDetail();
+    await onEdit("set-node-type", {
+      element: item.id, kind, definition, label,
+      interrupting: interrupting ? interrupting.checked : true,
+    });
+  });
+  panel.querySelector("#pd-delete").addEventListener("click", async () => {
+    closeDetail();
+    await onEdit("delete", { element: item.id });
+  });
 }
 
 /* The same panel an activity gets, with the two things a pool has: its name,
@@ -530,15 +1220,22 @@ function showPoolDetail(participant, ev) {
     <div class="nd-head">participant</div>
     <label class="nd-row"><span>Name</span>
       <input type="text" id="pd-pool-name" value="${escapeHtml(participant.label)}" /></label>
+    <div class="pd-add">
+      <input type="text" id="pd-lane-name" placeholder="name of a new lane" />
+      <button type="button" class="btn small" id="pd-lane-add">Add lane</button>
+    </div>
     <div class="nd-actions">
       <button type="button" class="btn small primary" id="pd-pool-apply">Apply</button>
       <button type="button" class="btn small" id="pd-pool-delete">Delete</button>
     </div>`;
-  panel.classList.remove("hidden");
-  const rect = svg.getBoundingClientRect();
-  panel.style.left = `${Math.min(ev.clientX - rect.left + 12, rect.width - 300)}px`;
-  panel.style.top = `${Math.max(8, Math.min(ev.clientY - rect.top + 12, rect.height - 200))}px`;
+  placePanel(panel, ev, 200);
 
+  panel.querySelector("#pd-lane-add").addEventListener("click", async () => {
+    const label = panel.querySelector("#pd-lane-name").value.trim();
+    if (!label) return;
+    closeDetail();
+    await onEdit("add-lane", { pool: participant.id, label });
+  });
   panel.querySelector("#pd-pool-apply").addEventListener("click", async () => {
     const name = panel.querySelector("#pd-pool-name").value.trim();
     closeDetail();
@@ -553,41 +1250,106 @@ function showPoolDetail(participant, ev) {
   });
 }
 
+function showLaneDetail(lane, ev) {
+  const panel = document.querySelector("#process-detail");
+  if (!panel) return;
+  panel.innerHTML = `
+    <div class="nd-head">lane</div>
+    <label class="nd-row"><span>Name</span>
+      <input type="text" id="pd-lane-label" value="${escapeHtml(lane.label)}" /></label>
+    <div class="nd-actions">
+      <button type="button" class="btn small primary" id="pd-lane-apply">Apply</button>
+      <button type="button" class="btn small" id="pd-lane-delete">Delete</button>
+    </div>`;
+  placePanel(panel, ev, 160);
+  panel.querySelector("#pd-lane-apply").addEventListener("click", async () => {
+    const label = panel.querySelector("#pd-lane-label").value.trim();
+    closeDetail();
+    if (label && label !== lane.label) await onEdit("rename", { element: lane.id, label });
+  });
+  panel.querySelector("#pd-lane-delete").addEventListener("click", async () => {
+    closeDetail();
+    if (selectedLane === lane.id) selectedLane = null;
+    await onEdit("delete", { element: lane.id });
+  });
+}
+
+/* The data rows are why this panel exists at all now: a classification on a
+ * data object is what business_data_bridge.rq turns into a data category on the
+ * architecture, and it was previously only reachable by hand-writing three
+ * BPMN nodes in Turtle. */
+const DATA_SHAPES = [["object", "Document"], ["store", "Data store"]];
+
+function dataRows(activity) {
+  const items = dataOf(activity);
+  if (!items.length) return '<div class="pd-empty">No data attached yet.</div>';
+  return items.map((item) => `
+    <div class="pd-data" data-ref="${escapeHtml(item.id)}">
+      <span class="pd-dir">${item.direction === "in" ? "reads" : "writes"}</span>
+      <span class="pd-name" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</span>
+      <select class="pd-shape" title="A document is a folded page, a data store a cylinder"
+        >${options(DATA_SHAPES, item.store ? "store" : "object")}</select>
+      <select class="pd-class">${classOptions(item.kinds[0] || "")}</select>
+      <button type="button" class="pd-drop" title="Detach this data from the activity">×</button>
+    </div>`).join("");
+}
+
+const LOOP_KINDS = [
+  ["", "— runs once —"],
+  ["standard", "Loop"],
+  ["multiParallel", "Multi-instance, parallel"],
+  ["multiSequential", "Multi-instance, sequential"],
+];
+
 function showDetail(activity, ev) {
   const panel = document.querySelector("#process-detail");
   if (!panel) return;
-  const options = ['<option value="">— not an AI activity —</option>']
+  /* The last option is how an architecture gets started at all. Until it was
+   * here the list offered only systems that already existed, so an analyst who
+   * had drawn the process and wanted to say what carries out a step had to go
+   * and write `a beam:System` in Turtle first. */
+  const systemOptions = ['<option value="">— not an AI activity —</option>']
     .concat(systems.map((s) =>
-      `<option value="${s.id}"${activity.refines.includes(s.id) ? " selected" : ""}>${escapeHtml(s.label)}</option>`))
+      `<option value="${s.id}"${activity.refines.includes(s.id) ? " selected" : ""}>`
+      + `${escapeHtml(s.label)}</option>`))
+    .concat(['<option value="__new__">+ new AI system…</option>'])
     .join("");
   panel.innerHTML = `
-    <div class="nd-head">${activity.kind}</div>
+    <div class="nd-head">${escapeHtml(activity.kind)}</div>
     <label class="nd-row"><span>Name</span>
       <input type="text" id="pd-name" value="${escapeHtml(activity.label)}" /></label>
     <label class="nd-row"><span>Carried out by</span>
-      <select id="pd-refines">${options}</select></label>
+      <select id="pd-refines">${systemOptions}</select></label>
+    <label class="nd-row"><span>Repetition</span>
+      <select id="pd-loop">${options(LOOP_KINDS, activity.markers.loop || "")}</select></label>
     <div class="pd-section">Data</div>
     ${dataRows(activity)}
     <div class="pd-add">
       <select id="pd-dir"><option value="in">reads</option><option value="out">writes</option></select>
       <input type="text" id="pd-data-name" placeholder="name of the data" />
+      <select id="pd-data-shape">${options(DATA_SHAPES, "object")}</select>
       <select id="pd-data-class">${classOptions("")}</select>
       <button type="button" class="btn small" id="pd-data-add">Add</button>
+    </div>
+    <div class="pd-add">
+      <select id="pd-boundary">${options(EVENT_DEFINITIONS, "error")}</select>
+      <button type="button" class="btn small" id="pd-boundary-add">Attach boundary event</button>
     </div>
     <div class="nd-actions">
       <button type="button" class="btn small primary" id="pd-apply">Apply</button>
       <button type="button" class="btn small" id="pd-delete">Delete</button>
     </div>`;
-  panel.classList.remove("hidden");
-  const rect = svg.getBoundingClientRect();
-  panel.style.left = `${Math.min(ev.clientX - rect.left + 12, rect.width - 300)}px`;
-  panel.style.top = `${Math.max(8, Math.min(ev.clientY - rect.top + 12, rect.height - 300))}px`;
+  placePanel(panel, ev, 340);
 
   panel.querySelectorAll(".pd-data").forEach((row) => {
     const reference = row.dataset.ref;
     row.querySelector(".pd-class").addEventListener("change", async (event) => {
       closeDetail();
       await onEdit("classify-data", { reference, classification: event.target.value });
+    });
+    row.querySelector(".pd-shape").addEventListener("change", async (event) => {
+      closeDetail();
+      await onEdit("set-data-shape", { reference, shape: event.target.value });
     });
     row.querySelector(".pd-drop").addEventListener("click", async () => {
       closeDetail();
@@ -600,15 +1362,37 @@ function showDetail(activity, ev) {
     if (!label) return;
     const direction = panel.querySelector("#pd-dir").value;
     const classification = panel.querySelector("#pd-data-class").value;
+    const shape = panel.querySelector("#pd-data-shape").value;
     closeDetail();
-    await onEdit("add-data", { activity: activity.id, direction, label, classification });
+    await onEdit("add-data", { activity: activity.id, direction, label, classification, shape });
+  });
+
+  panel.querySelector("#pd-boundary-add").addEventListener("click", async () => {
+    const definition = panel.querySelector("#pd-boundary").value;
+    closeDetail();
+    await onEdit("add-event", {
+      kind: "boundaryEvent", definition, attachedTo: activity.id, label: "",
+    });
   });
 
   panel.querySelector("#pd-apply").addEventListener("click", async () => {
     const name = panel.querySelector("#pd-name").value.trim();
     const system = panel.querySelector("#pd-refines").value;
+    const loop = panel.querySelector("#pd-loop").value;
+    const label = name || activity.label;
     closeDetail();
     if (name && name !== activity.label) await onEdit("rename", { element: activity.id, label: name });
+    if (loop !== (activity.markers.loop || "")) {
+      await onEdit("set-loop", { activity: activity.id, loop });
+    }
+    if (system === "__new__") {
+      // Named after the activity it carries out, which is the only thing known
+      // about it yet; the chip then opens it so the shape can be drawn.
+      const suggested = window.prompt("Name of the AI system that carries out this activity:",
+        `${label} system`);
+      if (suggested) await onEdit("add-system", { activity: activity.id, label: suggested });
+      return;
+    }
     await onEdit("set-refines", { activity: activity.id, system });
   });
   panel.querySelector("#pd-delete").addEventListener("click", async () => {
@@ -617,11 +1401,7 @@ function showDetail(activity, ev) {
   });
 }
 
-function draw() {
-  if (!svg || !data) return;
-  svg.innerHTML = "";
-
-  const defs = node("defs", {}, svg);
+function defineMarkers(defs) {
   const dataHead = node("marker", {
     id: "pc-arrow-data", viewBox: "0 0 10 10", refX: 9, refY: 5,
     markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse",
@@ -635,10 +1415,36 @@ function draw() {
     }, defs);
     node("path", { d: "M 0 0 L 10 5 L 0 10 z", class: cls }, marker);
   });
+}
+
+/* A group is an artifact: it draws a dashed frame round whatever it names and
+ * crosses lanes freely, which is the one thing pools and lanes may not do. */
+function drawGroups(parent, placed) {
+  (data.artifacts || []).filter((a) => a.kind === "group").forEach((cluster) => {
+    const boxes = (cluster.members || []).map((id) => placed.get(id)).filter(Boolean);
+    if (!boxes.length) return;
+    const x = Math.min(...boxes.map((b) => b.x)) - 14;
+    const y = Math.min(...boxes.map((b) => b.y - b.band)) - 18;
+    const right = Math.max(...boxes.map((b) => b.x + b.w)) + 14;
+    const bottom = Math.max(...boxes.map((b) => b.y + b.h)) + 14;
+    const group = node("g", { class: "pc-group" }, parent);
+    node("rect", {
+      x, y, width: right - x, height: bottom - y, rx: 8, class: "pc-group-box",
+    }, group);
+    text(group, x + 10, y + 14, truncate(cluster.text, 34), "pc-group-label");
+  });
+}
+
+function draw() {
+  if (!svg || !data) return;
+  svg.innerHTML = "";
+  defineMarkers(node("defs", {}, svg));
 
   root = node("g", { id: "pc-root" }, svg);
-  drawnOrder = [];
-  const { pools, placed } = layout();
+  portsSizedAt = null;   // a fresh DOM: the handles have to be measured again
+  const { pools, placed, notes } = layout();
+
+  drawGroups(root, placed);
 
   pools.forEach((pool) => {
     const group = node("g", { class: "pc-pool" }, root);
@@ -650,8 +1456,9 @@ function draw() {
     }, group);
     if (pool.participant.id === selectedPool) group.classList.add("selected");
     group.addEventListener("click", (ev) => {
-      if (ev.target.closest(".pc-activity, .pc-pool-edit")) return;
+      if (ev.target.closest("[data-node], .pc-pool-edit, .pc-pool-fold, .pc-lane-strip")) return;
       selectedPool = pool.participant.id;
+      selectedLane = null;
       if (onSelect) onSelect(pool.participant.id);
       draw();
       renderPalette();
@@ -660,6 +1467,25 @@ function draw() {
     /* A pool could be added and never removed: the delete op has handled a
      * participant all along - it takes the process and its activities with it -
      * but nothing on the canvas asked for it. */
+    /* Collapse to the band. BPMN calls this a black-box pool and draws exactly
+     * this: a participant whose internals are not the subject at hand. With
+     * two pools on screen and only one being read, the other is scenery. */
+    const fold = node("g", { class: "pc-pool-fold pc-marker", cursor: "pointer" }, group);
+    node("rect", {
+      x: pool.x + pool.w - 48, y: pool.y + 6, width: 18, height: 18, rx: 3,
+      class: "pc-marker-box",
+    }, fold);
+    centred(fold, pool.x + pool.w - 39, pool.y + 19, pool.collapsed ? "+" : "−", "pc-marker-sign");
+    node("title", {}, fold).textContent = pool.collapsed
+      ? "Open this participant"
+      : "Collapse this participant to a band";
+    fold.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (collapsedPools.has(pool.participant.id)) collapsedPools.delete(pool.participant.id);
+      else collapsedPools.add(pool.participant.id);
+      draw();
+    });
+
     if (onEdit) {
       const edit = node("g", { class: "pc-pool-edit", cursor: "pointer" }, group);
       node("rect", {
@@ -667,57 +1493,205 @@ function draw() {
         class: "pc-marker-box",
       }, edit);
       // The far corner: the near one carries the rotated pool name.
-      const glyph = text(edit, pool.x + pool.w - 17, pool.y + 19, "\u22ef", "pc-marker-sign");
-      glyph.setAttribute("text-anchor", "middle");
-      node("title", {}, edit).textContent = "Rename or delete this participant";
+      centred(edit, pool.x + pool.w - 17, pool.y + 19, "⋯", "pc-marker-sign");
+      node("title", {}, edit).textContent = "Rename this participant, add a lane, or delete it";
       edit.addEventListener("click", (ev) => {
         ev.stopPropagation();
         showPoolDetail(pool.participant, ev);
       });
     }
-    const label = text(group, 0, 0, truncate(pool.participant.label, 24), "pc-pool-label");
-    label.setAttribute("text-anchor", "middle");
-    label.setAttribute(
-      "transform",
-      `translate(${pool.x + POOL_LABEL_W / 2}, ${pool.y + pool.h / 2}) rotate(-90)`
-    );
+    // Three bars at the foot of the pool: BPMN's way of saying there are many
+    // of this participant, not one.
+    if (pool.participant.multiple) {
+      const cx = pool.x + pool.w / 2;
+      node("path", {
+        d: `M ${cx - 5} ${pool.y + pool.h - 13} v 10 M ${cx} ${pool.y + pool.h - 13} v 10 `
+          + `M ${cx + 5} ${pool.y + pool.h - 13} v 10`,
+        class: "pc-multi",
+      }, group);
+      node("title", {}, group).textContent = `${pool.participant.label} (many)`;
+    }
+    /* The name runs down the strip while there is room for it. A collapsed
+     * pool is 46px tall and the rotated name is longer than that, so it read
+     * as a caption hanging off the band rather than the band's own name. */
+    if (pool.collapsed) {
+      text(group, pool.x + POOL_LABEL_W + 12, pool.y + pool.h / 2 + 4,
+        truncate(pool.participant.label, 44), "pc-pool-label");
+    } else {
+      const label = centred(group, 0, 0, truncate(pool.participant.label, 24), "pc-pool-label");
+      label.setAttribute(
+        "transform",
+        `translate(${pool.x + POOL_LABEL_W / 2}, ${pool.y + pool.h / 2}) rotate(-90)`
+      );
+    }
 
-    // sequence flow: consecutive activities inside this pool
-    pool.activities.forEach((activity, index) => {
-      const next = pool.activities[index + 1];
-      if (next) arrow(group, placed.get(activity.id), placed.get(next.id), false, null);
+    if (pool.collapsed) return;
+
+    // Lane bands: drawn only when the model declares them, so a plain process
+    // is not given a boundary it never claimed.
+    if (pool.showLanes) {
+      pool.lanes.forEach((lane) => {
+        const band = node("g", { class: "pc-lane" }, group);
+        node("rect", {
+          x: lane.x, y: lane.y, width: lane.w, height: lane.h, class: "pc-lane-box",
+        }, band);
+        node("rect", {
+          x: lane.x, y: lane.y, width: LANE_LABEL_W, height: lane.h, class: "pc-lane-strip",
+        }, band);
+        if (lane.id === selectedLane) band.classList.add("selected");
+        const caption = centred(band, 0, 0, truncate(lane.label || "", 22), "pc-lane-label");
+        caption.setAttribute(
+          "transform",
+          `translate(${lane.x + LANE_LABEL_W / 2}, ${lane.y + 12 + (lane.h - 12) / 2}) rotate(-90)`
+        );
+        /* The whole band selects it, not the name strip alone. The strip is a
+         * couple of dozen pixels wide and the rotated label is painted on top
+         * of it with no handler of its own, so a click aimed squarely at the
+         * lane name reached the pool instead - and the pool handler clears the
+         * lane. Anything the reader can point at and call "this lane" now is
+         * one: the strip, the name, or the empty room inside it. */
+        band.addEventListener("click", (ev) => {
+          if (ev.target.closest("[data-node], .pc-pool-edit, .pc-pool-fold, .pc-lane-edit")) {
+            return;
+          }
+          ev.stopPropagation();
+          selectedPool = pool.participant.id;
+          selectedLane = lane.id || null;
+          if (lane.id && onSelect) onSelect(lane.id);
+          draw();
+          renderPalette();
+        });
+        if (onEdit && lane.id) {
+          /* The same handle a pool has. Renaming a lane was double-click only,
+           * which is a gesture nothing on the canvas advertises - a reader who
+           * had not been told simply could not rename or remove one. */
+          const edit = node("g", { class: "pc-lane-edit", cursor: "pointer" }, band);
+          node("rect", {
+            x: lane.x + 3, y: lane.y + 4, width: LANE_LABEL_W - 6, height: 16, rx: 3,
+            class: "pc-marker-box",
+          }, edit);
+          centred(edit, lane.x + LANE_LABEL_W / 2, lane.y + 16, "⋯", "pc-marker-sign");
+          node("title", {}, edit).textContent = `Rename or delete the lane "${lane.label}"`;
+          edit.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            showLaneDetail(lane, ev);
+          });
+
+          [band.querySelector(".pc-lane-strip"), caption].forEach((target) => {
+            target.addEventListener("dblclick", (ev) => {
+              ev.stopPropagation();
+              showLaneDetail(lane, ev);
+            });
+          });
+          node("title", {}, band).textContent = `Lane: ${lane.label}`
+            + "\nClick to add steps here, double-click to rename";
+        }
+      });
+    }
+
+    // Sequence flow, from the model. Drawn under the nodes so a connector
+    // never sits on top of a box it only passes.
+    const edges = node("g", { class: "pc-edges" }, group);
+    // Boundary events belong to the pool through their host, so a flow out of
+    // one is drawn here rather than dropped for being outside the member set.
+    const mine = new Set(pool.members.flatMap((m) => [m.id, ...(m.boundary || [])]));
+    (data.sequenceFlows || []).forEach((flow) => {
+      if (!mine.has(flow.source) && !mine.has(flow.target)) return;
+      const from = placed.get(flow.source);
+      const to = placed.get(flow.target);
+      if (from && to) sequenceArrow(edges, from, to, flow);
     });
-    pool.activities.forEach((activity) => {
-      drawnOrder.push(activity.id);
-      drawData(group, placed.get(activity.id));
-      drawActivity(group, placed.get(activity.id));
+
+    pool.members.forEach((item) => {
+      const slot = placed.get(item.id);
+      if (!slot) return;
+      if (item.shape === "activity") drawData(group, slot);
+      const drawn = drawFlowNode(group, slot);
+      drawn.setAttribute("data-node", item.id);
+      if (item.shape !== "activity") wireSimpleNode(drawn, slot);
+      (item.boundary || []).forEach((id) => {
+        const attached = placed.get(id);
+        if (attached) drawBoundary(group, attached).setAttribute("data-node", id);
+      });
+    });
+
+    notes.filter((entry) => mine.has(entry.anchor)).forEach((entry) => {
+      const drawn = drawNote(group, entry.note, entry.x, entry.y);
+      const host = placed.get(entry.anchor);
+      if (host) {
+        node("path", {
+          d: `M ${entry.x + 4} ${entry.y + 6} L ${host.x + host.w / 2} ${host.y + host.h}`,
+          class: "pc-assoc",
+        }, drawn.group);
+      }
     });
   });
 
   // message flow: what crosses a boundary between actors
-  data.messageFlows.forEach((flow) => {
+  (data.messageFlows || []).forEach((flow) => {
     const from = placed.get(flow.source);
     const to = placed.get(flow.target);
-    if (from && to) messageArrow(root, from, to, flow.label);
+    if (from && to) messageArrow(root, from, to, flow.message || flow.label);
   });
 
   fit();
 }
 
+/* The connector handle is measured on screen, not in the diagram. At r=6 in
+ * diagram units a whole-process view scales it to three pixels across, which
+ * is not a thing anyone can grab - and on a gateway or an event, which are
+ * small to begin with, it was the difference between a feature and a rumour. */
+const PORT_SCREEN_R = 7;
+let portsSizedAt = null;
+
+function sizePorts() {
+  if (!root || portsSizedAt === view.k) return;
+  portsSizedAt = view.k;
+  const scale = view.k || 1;
+  root.querySelectorAll(".pc-port-dot").forEach((dot) => {
+    dot.setAttribute("r", PORT_SCREEN_R / scale);
+    dot.setAttribute("stroke-width", 1.5 / scale);
+  });
+}
+
 function applyView() {
   if (root) root.setAttribute("transform", `translate(${view.x} ${view.y}) scale(${view.k})`);
+  sizePorts();
+}
+
+/* Fit under the palette, not behind it. The palette floats over the canvas,
+ * and once it offered the whole notation it was three rows tall - so centring
+ * in the full height slid the first row of the diagram underneath it. With the
+ * drawer open there was little height to give and the top pool went straight
+ * under the buttons: clicking an activity there hit a palette button instead,
+ * and nothing opened. */
+function paletteInset() {
+  const palette = document.querySelector("#process-palette");
+  if (!palette || palette.classList.contains("hidden")) return 0;
+  const height = palette.getBoundingClientRect().height;
+  return height ? height + 18 : 0;
 }
 
 function fit() {
   if (!root || !svg) return;
+  // The canvas is hidden while the reader is on the architecture level, so the
+  // palette could not measure itself against it until now.
+  renderPalette();
   const box = root.getBBox();
   const rect = svg.getBoundingClientRect();
   if (!box.width || !box.height || !rect.width) return;
-  const k = Math.min(rect.width / (box.width + 60), rect.height / (box.height + 60), 1.2);
+  /* Capped at half the canvas. The palette can be held open by the reader, and
+   * on a canvas shortened by the drawer an unfolded palette is taller than the
+   * room left - so insetting by its full height pushed the diagram off the
+   * bottom, where clicking an activity reached nothing. Past the cap it simply
+   * overlaps, which is what a floating toolbar is allowed to do. */
+  const inset = Math.min(paletteInset(), rect.height * 0.5);
+  const usable = Math.max(rect.height - inset, 140);
+  const k = Math.min(rect.width / (box.width + 60), usable / (box.height + 60), 1.2);
   view = {
     k,
     x: (rect.width - box.width * k) / 2 - box.x * k,
-    y: (rect.height - box.height * k) / 2 - box.y * k,
+    y: inset + (usable - box.height * k) / 2 - box.y * k,
   };
   applyView();
 }
@@ -795,30 +1769,180 @@ function initPanZoom() {
   }, { passive: false });
 }
 
+/* Grouped the way a BPMN palette is: what starts and ends a process, what
+ * splits it, what does the work, and what says something about it. */
 const PALETTE = [
-  { op: "add-pool", label: "Participant", hint: "A pool: an actor with a boundary" },
-  { kind: "receiveTask", label: "Receive", hint: "Waits for a message" },
-  { kind: "task", label: "Task", hint: "A step of work" },
-  { kind: "userTask", label: "User task", hint: "A person does it - and can review what an AI produced" },
-  { kind: "serviceTask", label: "Service task", hint: "Automated: where an AI capability usually sits" },
-  { kind: "subProcess", label: "Sub-process", hint: "Has a flow of its own, and may name an architecture" },
-  { kind: "sendTask", label: "Send", hint: "Sends a message" },
+  { group: "Pool", op: "add-pool", label: "Participant", hint: "A pool: an actor with a boundary" },
+  { group: "Pool", op: "add-lane", label: "Lane", hint: "A band inside a pool: who does the work" },
+
+  { group: "Events", op: "add-event", kind: "startEvent", label: "Start",
+    hint: "Where the process begins" },
+  { group: "Events", op: "add-event", kind: "startEvent", definition: "message",
+    label: "Message start", hint: "Begins when a message arrives" },
+  { group: "Events", op: "add-event", kind: "startEvent", definition: "timer",
+    label: "Timer start", hint: "Begins on a schedule" },
+  { group: "Events", op: "add-event", kind: "intermediateCatchEvent", definition: "message",
+    label: "Message catch", hint: "Waits for a message part-way through" },
+  { group: "Events", op: "add-event", kind: "intermediateThrowEvent", definition: "message",
+    label: "Message throw", hint: "Sends a message part-way through" },
+  { group: "Events", op: "add-event", kind: "endEvent", label: "End",
+    hint: "Where this path of the process finishes" },
+  { group: "Events", op: "add-event", kind: "endEvent", definition: "error",
+    label: "Error end", hint: "Finishes by raising an error" },
+
+  { group: "Gateways", op: "add-gateway", kind: "exclusiveGateway", label: "XOR",
+    hint: "Exclusive: exactly one path is taken" },
+  { group: "Gateways", op: "add-gateway", kind: "parallelGateway", label: "AND",
+    hint: "Parallel: every path is taken" },
+  { group: "Gateways", op: "add-gateway", kind: "inclusiveGateway", label: "OR",
+    hint: "Inclusive: one or more paths are taken" },
+  { group: "Gateways", op: "add-gateway", kind: "eventBasedGateway", label: "Event",
+    hint: "Event-based: whichever event happens first decides" },
+
+  { group: "Activities", kind: "task", label: "Task", hint: "A step of work" },
+  { group: "Activities", kind: "userTask", label: "User task",
+    hint: "A person does it - and can review what an AI produced" },
+  { group: "Activities", kind: "serviceTask", label: "Service task",
+    hint: "Automated: where an AI capability usually sits" },
+  { group: "Activities", kind: "businessRuleTask", label: "Rule task",
+    hint: "Decides by a rule, not by a model" },
+  { group: "Activities", kind: "sendTask", label: "Send", hint: "Sends a message" },
+  { group: "Activities", kind: "receiveTask", label: "Receive", hint: "Waits for a message" },
+  { group: "Activities", kind: "subProcess", label: "Sub-process",
+    hint: "Has a flow of its own, and may name an architecture" },
+  { group: "Activities", kind: "callActivity", label: "Call",
+    hint: "Calls a process defined elsewhere" },
+  { group: "Activities", kind: "transaction", label: "Transaction",
+    hint: "Completes as a whole or compensates" },
+
+  { group: "Artifacts", op: "add-annotation", label: "Note",
+    hint: "A text annotation: says something about a step without being one" },
 ];
+
+/* The palette draws the shape it inserts, at the size it can be recognised at.
+ * A row of words says a gateway is available; it does not say a gateway is a
+ * diamond, and the whole reason BPMN has a notation is that the shape carries
+ * the meaning. Same primitives as the canvas, so the button cannot drift from
+ * what clicking it produces. */
+function paletteIcon(item) {
+  const icon = document.createElementNS(SVG_NS, "svg");
+  icon.setAttribute("class", "pp-icon");
+  icon.setAttribute("viewBox", "0 0 30 24");
+  icon.setAttribute("aria-hidden", "true");
+
+  if (item.op === "add-pool") {
+    node("rect", { x: 2, y: 4, width: 26, height: 16, class: "pc-pool-box" }, icon);
+    node("rect", { x: 2, y: 4, width: 6, height: 16, class: "pc-pool-strip" }, icon);
+  } else if (item.op === "add-lane") {
+    node("rect", { x: 2, y: 4, width: 26, height: 16, class: "pc-pool-box" }, icon);
+    node("path", { d: "M 2 12 H 28", class: "pc-lane-box" }, icon);
+    node("rect", { x: 2, y: 4, width: 5, height: 16, class: "pc-lane-strip" }, icon);
+  } else if (item.op === "add-event") {
+    eventShape(icon, 15, 12, {
+      kind: item.kind, definition: item.definition || null,
+      throwing: item.kind.startsWith("intermediateThrow") || item.kind === "endEvent",
+      interrupting: true,
+    }, 10);
+  } else if (item.op === "add-gateway") {
+    node("path", { d: "M 15 2 L 26 12 L 15 22 L 4 12 Z", class: "pc-gate-box" }, icon);
+    const mark = gatewayMark(icon, item.kind, 15, 12);
+    mark.setAttribute("transform", "translate(15 12) scale(0.62)");
+  } else if (item.op === "add-annotation") {
+    node("path", { d: "M 10 4 H 4 V 20 H 10", class: "pc-note-bracket" }, icon);
+    node("path", { d: "M 13 9 H 26 M 13 13 H 26 M 13 17 H 22", class: "pc-note-rule" }, icon);
+  } else {
+    node("rect", {
+      x: 2, y: 4, width: 26, height: 16, rx: 3,
+      class: `pc-box${item.kind === "callActivity" ? " call" : ""}`,
+    }, icon);
+    if (item.kind === "transaction") {
+      node("rect", { x: 4, y: 6, width: 22, height: 12, rx: 2, class: "pc-box inner" }, icon);
+    }
+    const glyph = typeMarker(icon, item.kind, 4, 6);
+    glyph.setAttribute("transform", "translate(4 6) scale(0.95)");
+    if (item.kind === "subProcess") {
+      node("rect", { x: 12, y: 14, width: 7, height: 7, class: "pc-mk-box" }, icon);
+      node("path", { d: "M 15.5 15.5 V 19.5 M 13.5 17.5 H 17.5", class: "pp-icon-plus" }, icon);
+    }
+  }
+  return icon;
+}
+
+/* Twenty-four buttons in five sections is a reasonable toolbar on a wide screen
+ * and the whole canvas on a small one: at 800px it left the diagram a strip at
+ * the bottom. Rather than guess at breakpoints, measure - a toolbar that takes
+ * a third of the canvas is in the way, whatever the screen is. It only ever
+ * folds itself; unfolding is the reader's to do, and once they have chosen the
+ * choice sticks. */
+const PALETTE_SHARE = 0.34;
+
+/* Decided by measuring the palette against the canvas, both ways, every time.
+ * An earlier version only ever folded, and a canvas that measured zero while
+ * the reader was on the architecture level latched it folded on a screen with
+ * plenty of room. Building it unfolded and measuring costs one reflow before
+ * paint, and it is the only thing that cannot be wrong about its own size. */
+function autoFoldPalette(host) {
+  if (paletteTouched || !svg) return;
+  const rect = svg.getBoundingClientRect();
+  const height = host.getBoundingClientRect().height;
+  if (!rect.height || !height) return;
+  paletteFolded = height > rect.height * PALETTE_SHARE;
+}
 
 function renderPalette() {
   const host = document.querySelector("#process-palette");
   if (!host || !onEdit) return;
+  buildPalette(host);
+  const wasFolded = paletteFolded;
+  autoFoldPalette(host);
+  if (paletteFolded !== wasFolded) buildPalette(host);
+}
+
+function buildPalette(host) {
   host.innerHTML = "";
+  host.classList.toggle("folded", paletteFolded);
   const pool = data && data.participants.find((p) => p.id === selectedPool);
+
+  /* The palette grew from seven buttons to twenty-four when it started
+   * offering the whole notation, and three rows of them sat over the diagram
+   * they were for. It folds to its handle. */
+  const fold = document.createElement("button");
+  fold.type = "button";
+  fold.className = "pp-fold";
+  fold.textContent = paletteFolded ? "▸ Add" : "▾ Add";
+  fold.title = paletteFolded ? "Show the BPMN palette" : "Fold the palette away";
+  fold.addEventListener("click", () => {
+    paletteTouched = true;
+    paletteFolded = !paletteFolded;
+    buildPalette(host);
+    fit();
+  });
+  host.appendChild(fold);
+  if (paletteFolded) return;
+
+  /* Each category is its own block, not a label floating in a run of buttons.
+   * Inline, the headings wrapped into the middle of a row and the reader could
+   * not see where the gateways stopped and the activities began. */
+  const sections = new Map();
   PALETTE.forEach((item) => {
-    const needsPool = !item.op;
+    if (!sections.has(item.group)) {
+      const section = document.createElement("div");
+      section.className = "pp-section";
+      const heading = document.createElement("span");
+      heading.className = "pp-group";
+      heading.textContent = item.group;
+      section.appendChild(heading);
+      host.appendChild(section);
+      sections.set(item.group, section);
+    }
+    const section = sections.get(item.group);
+    const needsPool = item.op !== "add-pool";
     const button = document.createElement("button");
     button.type = "button";
     button.className = "pp-item";
-    button.textContent = item.label;
-    button.title = needsPool && !pool
-      ? `${item.hint} — click a participant first`
-      : item.hint;
+    button.appendChild(paletteIcon(item));
+    button.appendChild(document.createTextNode(item.label));
+    button.title = needsPool && !pool ? `${item.hint} — click a participant first` : item.hint;
     button.disabled = needsPool && !pool;
     button.addEventListener("click", async () => {
       if (item.op === "add-pool") {
@@ -826,13 +1950,33 @@ function renderPalette() {
         if (label) await onEdit("add-pool", { label });
         return;
       }
-      await onEdit("add-activity", { pool: selectedPool, kind: item.kind, label: item.label });
+      if (item.op === "add-lane") {
+        const label = window.prompt("Name of the lane (a role, a team, a system):");
+        if (label) await onEdit("add-lane", { pool: selectedPool, label });
+        return;
+      }
+      const where = { pool: selectedPool, lane: selectedLane };
+      if (item.op === "add-event") {
+        await onEdit("add-event", {
+          ...where, kind: item.kind, definition: item.definition || "", label: "",
+        });
+      } else if (item.op === "add-gateway") {
+        await onEdit("add-gateway", { ...where, kind: item.kind, label: "" });
+      } else if (item.op === "add-annotation") {
+        const body = window.prompt("What should the note say?");
+        if (body) await onEdit("add-annotation", { ...where, text: body });
+      } else {
+        await onEdit("add-activity", { ...where, kind: item.kind, label: item.label });
+      }
     });
-    host.appendChild(button);
+    section.appendChild(button);
   });
   const note = document.createElement("span");
   note.className = "pp-note";
-  note.textContent = pool ? `adding to: ${pool.label}` : "click a participant to add steps to it";
+  const lane = data && (data.lanes || []).find((l) => l.id === selectedLane);
+  note.textContent = pool
+    ? `adding to: ${pool.label}${lane ? ` › ${lane.label}` : ""}`
+    : "click a participant to add steps to it";
   host.appendChild(note);
   // Visibility belongs to the level switch, not to render.
 }
@@ -843,6 +1987,17 @@ function init(options) {
   onEdit = options.onEdit || null;
   onSelect = options.onSelect || null;
   if (svg) initPanZoom();
+  /* A window that changes size changes how much room the diagram has, and the
+   * fit is computed from that room. Without this the canvas kept the scale it
+   * was given when the page loaded. */
+  let resizing = null;
+  window.addEventListener("resize", () => {
+    window.clearTimeout(resizing);
+    resizing = window.setTimeout(() => {
+      renderPalette();
+      fit();
+    }, 120);
+  });
   // Built now: the palette is how an empty process gets its first participant.
   renderPalette();
 }
@@ -860,11 +2015,14 @@ function setFindings(rows) {
 
 function render(next) {
   data = next;
+  index = buildIndex(next);
   // Keep an activity open across a re-render, but forget one that is gone.
-  const ids = new Set(next.activities.map((a) => a.id));
-  expanded = new Set([...expanded].filter((id) => ids.has(id)));
+  expanded = new Set([...expanded].filter((id) => index.has(id)));
   const pools = new Set(next.participants.map((p) => p.id));
   if (!pools.has(selectedPool)) selectedPool = next.participants.length ? next.participants[0].id : null;
+  const lanes = new Set((next.lanes || []).map((l) => l.id));
+  if (!lanes.has(selectedLane)) selectedLane = null;
+  collapsedPools = new Set([...collapsedPools].filter((id) => pools.has(id)));
   draw();
   renderPalette();
 }
@@ -873,4 +2031,6 @@ function hasProcess() {
   return Boolean(data && data.stats && data.stats.activities);
 }
 
-export const ProcessCanvas = { init, render, fit, hasProcess, setSystems, setDataClasses, setFindings, svgRoot: () => svg };
+export const ProcessCanvas = {
+  init, render, fit, hasProcess, setSystems, setDataClasses, setFindings, svgRoot: () => svg,
+};

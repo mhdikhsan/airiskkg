@@ -1,6 +1,7 @@
 import { postJson } from "../core/api.js";
 import { $, el } from "../core/dom.js";
 import { setStatus } from "../core/status.js";
+import { state } from "../state.js";
 import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
 import { runMutation } from "./mutations.js";
@@ -32,10 +33,31 @@ ex:Company a bpmn:participant ;
 ex:Service a bpmn:process ;
   bp:name "Answer the request" ;
   bp:isExecutable true ;
-  bp:contains ex:Receive , ex:Answer , ex:Review .
+  bp:laneSet ex:Lanes ;
+  bp:contains ex:Started , ex:Receive , ex:Answer , ex:Approved , ex:Review ,
+              ex:Send , ex:Sent , ex:Reworked .
+
+ex:Lanes a bpmn:laneSet ;
+  bp:contains ex:AutomationLane , ex:PeopleLane .
+
+ex:AutomationLane a bpmn:lane ;
+  bp:name "Automation" ;
+  bp:flowNodeRef ex:Started , ex:Receive , ex:Answer , ex:Send , ex:Sent .
+
+ex:PeopleLane a bpmn:lane ;
+  bp:name "Support team" ;
+  bp:flowNodeRef ex:Approved , ex:Review , ex:Reworked .
+
+ex:Started a bpmn:startEvent ;
+  bp:name "A request arrives" ;
+  bp:eventDefinition ex:RequestTrigger ;
+  bp:outgoing ex:F0 .
+
+ex:RequestTrigger a bpmn:messageEventDefinition .
 
 ex:Receive a bpmn:receiveTask ;
   bp:name "Receive the request" ;
+  bp:incoming ex:F0 ;
   bp:outgoing ex:F1 .
 
 # The AI capability. Point pair:refinedBy at a beam:System in this document and
@@ -49,13 +71,42 @@ ex:Answer a bpmn:subProcess ;
 ex:Review a bpmn:userTask ;
   bp:name "Check it before it goes out" ;
   bp:incoming ex:F2 ;
+  bp:outgoing ex:F3 ;
   bp:resourceRole ex:Agent .
 
 ex:Agent a bpmn:humanPerformer ;
   bp:name "Support agent" .
 
-ex:F1 a bpmn:sequenceFlow ; bp:sourceRef ex:Receive ; bp:targetRef ex:Answer .
-ex:F2 a bpmn:sequenceFlow ; bp:sourceRef ex:Answer ;  bp:targetRef ex:Review .
+# Where the review decides. Delete the gateway and both boxes flow one after
+# the other, which is a different claim about how the work runs.
+ex:Approved a bpmn:exclusiveGateway ;
+  bp:name "Good to send?" ;
+  bp:gatewayDirection "Diverging" ;
+  bp:incoming ex:F3 ;
+  bp:outgoing ex:F4 , ex:F5 .
+
+ex:Send a bpmn:sendTask ;
+  bp:name "Send the answer" ;
+  bp:incoming ex:F4 ;
+  bp:outgoing ex:F6 .
+
+ex:Sent a bpmn:endEvent ;
+  bp:name "Answered" ;
+  bp:incoming ex:F6 .
+
+ex:Reworked a bpmn:endEvent ;
+  bp:name "Sent back for rework" ;
+  bp:incoming ex:F5 .
+
+ex:F0 a bpmn:sequenceFlow ; bp:sourceRef ex:Started ;  bp:targetRef ex:Receive .
+ex:F1 a bpmn:sequenceFlow ; bp:sourceRef ex:Receive ;  bp:targetRef ex:Answer .
+ex:F2 a bpmn:sequenceFlow ; bp:sourceRef ex:Answer ;   bp:targetRef ex:Review .
+ex:F3 a bpmn:sequenceFlow ; bp:sourceRef ex:Review ;   bp:targetRef ex:Approved .
+ex:F4 a bpmn:sequenceFlow ; bp:name "approved" ;
+  bp:sourceRef ex:Approved ; bp:targetRef ex:Send .
+ex:F5 a bpmn:sequenceFlow ; bp:name "needs rework" ;
+  bp:sourceRef ex:Approved ; bp:targetRef ex:Reworked .
+ex:F6 a bpmn:sequenceFlow ; bp:sourceRef ex:Send ;     bp:targetRef ex:Sent .
 
 ex:Msg a bpmn:messageFlow ;
   bp:name "asks" ;
@@ -129,6 +180,10 @@ function addPaletteElement(item, clientX, clientY) {
       const { ttl, newId } = await postJson("/api/graph-edit", {
         ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
         op: "add-element", classUri: BEAM_NS + item.cls, category: item.cat, label: item.label,
+        // The architecture on screen. Without this the server fell back to the
+        // first System in the graph, so drawing inside the second one silently
+        // filed every element under the first.
+        system: state.scopedSystem || null,
       });
       if (newId && clientX != null) GraphView.placeNodeAt(newId, clientX, clientY);
       noteChange(`added ${item.label}`);

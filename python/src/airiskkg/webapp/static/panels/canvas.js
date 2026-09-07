@@ -99,6 +99,8 @@ const TASK_KINDS = {
   businessRuleTask: "Business rule",
   subProcess: "Sub-process",
   callActivity: "Call activity",
+  transaction: "Transaction",
+  adHocSubProcess: "Ad-hoc",
 };
 
 function taskKind(kind) {
@@ -122,7 +124,8 @@ async function refreshProcess(ttl) {
   state.lastProcess = data;
   if (awaitingChoice && (data.stats.activities || architectureHasContent())) settleChoice();
   ProcessCanvas.render(data);
-  mapSource([...data.participants, ...data.activities], "business");
+  mapSource([...data.participants, ...data.activities, ...(data.events || []),
+    ...(data.gateways || []), ...(data.lanes || [])], "business");
   /* A participant with no activities yet is still a process model being
    * drawn. Counting only activities threw the reader to the architecture level
    * the moment they added their first pool. */
@@ -148,6 +151,8 @@ async function refreshProcess(ttl) {
     el("span", { class: "stat" }, `${count} activities`),
     data.stats.refined ? el("span", { class: "stat" }, `${data.stats.refined} AI`) : null,
     data.stats.humanSteps ? el("span", { class: "stat" }, `${data.stats.humanSteps} human`) : null,
+    data.stats.gateways ? el("span", { class: "stat" }, `${data.stats.gateways} gateways`) : null,
+    data.stats.events ? el("span", { class: "stat" }, `${data.stats.events} events`) : null,
     descriptive
       ? el("span", { class: "hint" }, `${descriptive} not marked executable`)
       : null,
@@ -198,7 +203,11 @@ async function refreshProcess(ttl) {
 function resetProcess() {
   const empty = {
     participants: [], processes: [], activities: [], lanes: [], messageFlows: [],
-    stats: { activities: 0, participants: 0, processes: 0, refined: 0, humanSteps: 0 },
+    events: [], gateways: [], sequenceFlows: [], artifacts: [], associations: [],
+    stats: {
+      activities: 0, participants: 0, processes: 0, refined: 0, humanSteps: 0,
+      events: 0, gateways: 0, lanes: 0,
+    },
   };
   state.lastProcess = empty;
   ProcessCanvas.render(empty);
