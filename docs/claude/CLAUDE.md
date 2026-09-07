@@ -181,13 +181,60 @@ framing instead of supporting it.
   unrelated — and the result looks like evidence. `business_flow.rq` materialises one *typed*
   hop as `pair:businessFollows` so every condition downstream can use a plain transitive path
   and cannot make that mistake. Never write a raw path over `bp:sourceRef`.
-- **The BPMN canvas draws what a risk assessment reads, and no more.** Pools, activities with
-  their task-type glyphs, sequence and message flow, sub-process expansion, and data objects
-  with their classification. Gateways, events and boundary markers are deliberately absent:
-  no bundled example uses one and none of them changes a finding. Editing goes through
-  `/api/process-edit`, a server-side rewrite like `/api/graph-edit` — the Turtle in the editor
-  stays the single source of truth. Whether a connection is a sequence flow or a message flow
-  is read from the containment, never asked.
+- **The BPMN canvas draws the notation sBPMN declares (widened 2026-09-06).** Pools banded
+  into lanes, activities with their task-type and loop/multi-instance markers, events (start,
+  intermediate catching and throwing, end, boundary) with their trigger glyphs, gateways
+  (exclusive, parallel, inclusive, event-based, complex), sub-process expansion, data objects
+  with their classification, and text annotations. The vocabulary ceiling is
+  `external/sbpmn/sbpmn_2.0.ttl` — `test_bpmn_authoring.py` fails on a class or property it
+  does not declare, the way `test_business_context.py` already checked the bundled examples.
+  The previous rule excluded gateways and events on the argument that none changes a finding.
+  That was true and misleading: **a diagram that cannot say "this branches" asserts an order
+  of work the model never claimed.** `AnswerSourceIdentification` had three sequence flows
+  leaving it and was drawn as a straight chain of three tasks. Confirmed additive — the
+  Wien Energie baselines are byte-identical with the gateways and events in place.
+- **Descending to the architecture is asked for, not stumbled into (2026-09-06).** On a
+  refined activity the box only *selects* — it reveals the line that declares it and stops
+  there; the blue "AI system" chip opens the architecture and the pencil opens the editor.
+  The box used to descend on any click, so selecting a refined activity to find its Turtle
+  changed level instead and scrolled the source away underneath. An activity with no
+  architecture behind it carries neither chip nor pencil, so its box still opens the editor —
+  one control per box, and never two meanings for the same click.
+  `test_the_chip_opens_the_architecture_and_the_box_does_not` holds both halves; the second
+  is the one that regresses.
+- **A document is not a database, and the editor can now say which.** `add-data` takes a
+  `shape` (`object` | `store`) and `set-data-shape` retypes an existing one in place, keeping
+  its name, its classification and its associations - the parts a finding actually reads. The
+  canvas always drew the distinction (a folded page against a cylinder) but only Turtle
+  written by hand could state it. `bp:isCollection` is declared on `dataObject` and not on
+  `dataStore`, so it is dropped on a retype to a store rather than carried into a domain
+  sBPMN does not declare.
+- **The palette folds itself by measurement, not by breakpoint.** It is rebuilt unfolded,
+  measured against the canvas, and folded when it would take more than a third of it - so a
+  small window gets its diagram back without a table of screen sizes to maintain. The
+  reader's own toggle wins from then on. An earlier version only ever folded, and a canvas
+  that measures zero while the reader is on the architecture level latched it shut on a
+  screen with plenty of room; it now decides both ways, every render. `fit()` also insets the
+  diagram below the palette - the palette floats over the canvas, and centring in the full
+  height slid the top pool underneath it, where clicking an activity hit a palette button.
+- **A pool collapses to a band, and the palette folds to its handle.** BPMN's black-box pool:
+  a collapsed participant keeps its band and its name, its members keep a slot on that band
+  so message flow still lands on the pool, and nothing inside is drawn. The palette went from
+  seven buttons to twenty-four when it started offering the whole notation, and every button
+  now draws the shape it inserts using the same primitives as the canvas — so a button cannot
+  drift from what clicking it produces.
+- **Sequence flow is routed from the model, never from adjacency.** `process_view` emits
+  `sequenceFlows`; the canvas layers nodes by longest path over them and routes orthogonally.
+  Before this the view read sequence flow only to topologically sort activities and threw it
+  away, so the canvas drew an arrow between whichever boxes landed side by side — inventing
+  flows that did not exist and omitting every one that crossed a lane. Never draw a connector
+  from layout order. Editing goes through `/api/process-edit`, a server-side rewrite like
+  `/api/graph-edit` — the Turtle in the editor stays the single source of truth. Whether a
+  connection is a sequence flow or a message flow is read from the containment, never asked.
+- **sBPMN cannot express an expression body**, so a `conditionExpression` carries its readable
+  text on `rdfs:label`. `bp:value` is declared for `categoryValue` alone and `bp:documentation`
+  points at a node with no text property — BPMN puts it in XML mixed content, which sBPMN does
+  not model. Do not invent a `bp:` term for it.
 - **Scoping to one architecture is a traversal, not stored state.** `pair:refinedBy` names the
   system and `beam:hasProcess` / `hasResource` / `hasAgent` / `contain` say what it holds, so
   `graph_view._members_of()` answers "the architecture behind THIS activity". There is no
@@ -313,17 +360,38 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
 - `ontology/visualization/` — standalone SPARQL run by hand; referenced by no declaration,
   unlike `patterns/implementation/`
 - `ontology/example/` — **every** architecture graph the repo ships: a RAG chatbot
-  (Onyx / Danswer), a minimal graph-RAG, a meter-anomaly scorer (ML serving, added
-  so the business example can refine two different architectures), and an IT support
-  agent (synthetic; the only bundled graph that reaches the agentic layer, which
-  otherwise existed only inline in `test_agentic_assessment.py`). Four, and the set
-  stays small on purpose: every one is pinned by `test_propagation.py`, which fails if
-  a graph ships without a baseline.
-  `ontology/example/context/` holds the process models — two:
-  `energy_customer_service.ttl` (two pools, two sub-processes refined onto two different
-  architectures — the case for "one process runs several systems") and
-  `it_service_desk.ttl` (one AI activity carrying an agent, with a human approval between
-  the agent's decision and the change taking effect).
+  (Onyx / Danswer), a minimal graph-RAG, `wien_energie_bottina.ttl` (the Wien Energie
+  chatbot of Serles & Toma 2024 — three systems: the RAG/KG agent chain and the two
+  answer sources it queries), `wien_energie_tariff_change.ttl` (the tariff-change
+  assistant of the same portal, two systems), and an IT support agent (synthetic; the
+  only bundled graph that reaches the agentic layer, which otherwise existed only
+  inline in `test_agentic_assessment.py`). The meter-anomaly scorer was removed
+  2026-09-04: it was invented for this repository, and the Wien Energie graphs give
+  the business layer several real systems to refine. The set stays small on purpose:
+  every graph is pinned by `test_propagation.py`, which fails if one ships without a
+  baseline.
+  `ontology/example/context/` holds the process models — one file per scenario, because
+  a scenario you cannot assess on its own is two scenarios:
+  `energy_customer_service.ttl` (BotTina answering a customer question) and
+  `energy_tariff_change.ttl` (the change plan, where a customer service agent makes the
+  change the assistant prepared). Together they carry both halves of the human question:
+  a live-chat takeover that must clear nothing, and an approval that governs the change
+  but not the chat. `it_service_desk.ttl` carries the agentic approval and ships beside
+  `it_support_agent.ttl`, the architecture it refines — a different shape from the energy
+  pair on purpose: one AI activity carrying an *agent*, which the energy examples cannot
+  demonstrate.
+  **The shipped set is a teaching set, chosen 2026-09-07.** Three architecture/process
+  pairs — BotTina, the tariff change, and the IT service desk — plus two architecture-only
+  graphs that earn their place by coverage: `simple_graph_rag.ttl` is the smallest thing
+  that matches anything, and `onyx_rag_chatbot.ttl` is the only graph exercising query
+  rewriting, reranking, embeddings and supply chain, which six suites rest on. Nothing here
+  is confidential: Onyx models an MIT-licensed public product with its sources cited, Wien
+  Energie comes from a published paper, and the IT service desk is synthetic. The private
+  graphs (`dicoding*`, `MCP_Example_Action`) stay in `example_local/`.
+  Commit `45544fa`, whose message is about a label, deleted onyx, `it_support_agent` and
+  `it_service_desk` from `ontology/example/` as collateral; they were restored 2026-09-07.
+  A graph leaving the shipped set breaks `test_propagation.py` and, for onyx, five more
+  suites — so check `git ls-files ontology/example/` before assuming a move was deliberate.
   **Never name one of these files in a test.** They get renamed — `onyx_danswer.ttl`
   became `onyx_danswer_rag_chatbot.ttl` became `ony_rag_chatbot.ttl` became
   `onyx_rag_chatbot.ttl` inside two days — and each rename broke suites for reasons
@@ -382,19 +450,26 @@ Three kinds of thing, kept apart on purpose: knowledge (`ontology/`), contracts
   | --- | --- | --- |
   | RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 22 |
   | Minimal graph RAG | 3 | 7 |
-  | Meter anomaly scoring | 4 | 1 |
+  | Wien Energie chatbot (BotTina) | 5 | 9 |
+  | Wien Energie tariff change (4 systems) | 3 | 9 |
   | IT support agent (agentic) | 4 | 8 |
-  | Energy scene: minimal graph RAG + meter anomaly + the business process | 7 | 8 |
+  | Energy scene: BotTina + the business process | 5 | 10 |
+  | Tariff scene: the tariff graph + its business process | 3 | 11 |
   | IT service desk scene: the agent + its business process | 4 | 9 |
 
-  **Read the composition, never the total.** "The scene is not the sum of its parts" was
-  wrong as stated and is corrected here: it holds for the IT service desk scene (8 → 9),
-  and is arithmetically false for the energy scene, where 3 + 4 = 7 matches and 7 + 1 = 8
-  findings is exactly what the scene produces. What the energy process actually does is
-  **+1** sensitive information disclosure (the data bridge raised it) and **−1** improper
-  output handling (the human review in the process cleared it) — two real changes in
-  opposite directions that net to zero. A total that happens to match is a coincidence of
-  this example; diff the finding set, not the count.
+  **Read the composition, never the total**, and **a system boundary is not
+  bookkeeping** (2026-09-04). The tariff graph was first written as one assistant
+  owning the chat text and the form. A customer service agent approves the change, so
+  the improper-output escape — which asks only that the reviewed step and the output
+  belong to the *same* system — cleared the chatbot's explanation as well. Nobody
+  reads that explanation before it reaches the customer, so the clearing was false.
+  Split into the four capabilities the diagram separates (conversation agent, rules,
+  form machinery, record service) the finding correctly stands, and the risk lands
+  where it belongs: 11 findings on the three agent activities, **0** on the rules check
+  and the form service. Both scenes now only raise (+1 and +2 sensitive information
+  disclosure). No bundled scene clears anything any more — `test_business_context.py`
+  keeps that half covered by building the approval inline. Diff the finding set, not
+  the count.
 
   The agentic layer is covered by `test_agentic_assessment.py`, which states its own
   graph inline — the MCP example it used to read now lives in `example_local/` — and,
