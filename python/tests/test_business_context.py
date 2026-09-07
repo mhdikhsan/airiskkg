@@ -1,17 +1,22 @@
-"""The business process layer: a control that lives in the process, not the pipeline.
+"""The business process layer, over a process that really exists.
 
-Three claims, and each is a test below.
+The example is the question-answering process of the Wien Energie chatbot
+(Serles & Toma, 2024). That matters for what can be claimed here: the process
+was drawn by someone describing their system, not by someone demonstrating this
+library, and it does not contain an approval step. So the three claims are:
 
   1. The layer is additive. An architecture assessed alone gives exactly what it
      gave before the layer existed. This is the property everything else rests
      on - a context layer that silently moved the baseline would make every
      recorded assessment incomparable with every later one.
-  2. A human review expressed only in the business process clears a finding the
-     architecture cannot clear, without asserting anything into the architecture
-     and without a negative facet condition (R10).
-  3. It clears it for the right reasons. "Findings went down" proves nothing on
-     its own: a condition that is merely too permissive clears just as
-     thoroughly as a correct one.
+  2. A data annotation made once on the process raises a finding the pipeline
+     could not have raised, because what a customer types is about that
+     customer and no architecture diagram says so.
+  3. The output-handling escape is precise. The shipped process has a human
+     step - an administrator taking a conversation over in live chat - and it
+     does not clear the improper-output-handling finding, because taking over
+     is not reviewing. Add an approval that reads the drafted answer and the
+     finding clears; break any one thing that approval claims and it comes back.
 """
 
 from __future__ import annotations
@@ -23,10 +28,42 @@ from rdflib import RDF, Graph
 
 from airiskkg.assessment_runner import PAIR, load_base_graph, run_assessment
 from airiskkg.paths import EXAMPLE_DIR
-from conftest import GRAPH_RAG_NS, example_path  # noqa: E402
+from conftest import TARIFF_NS, WIEN_ENERGIE_NS, example_path, process_path  # noqa: E402
 
-PROCESS = EXAMPLE_DIR / "context" / "energy_customer_service.ttl"
+# Resolved rather than located: these two retired from the shipped example set
+# and are kept as test fixtures, so the coverage they back did not retire with
+# them. process_path finds either home.
+PROCESS = process_path("energy_customer_service")
+TARIFF_PROCESS = process_path("energy_tariff_change")
 IMPROPER_OUTPUT = "ImproperOutputHandlingRiskPattern"
+DISCLOSURE = "SensitiveInformationDisclosureRiskPattern"
+
+# An approval the shipped process does not have. It is stated here rather than
+# in the example because the example is a record of somebody's real process:
+# adding a control to it that Wien Energie never described would make the
+# assessment of it a fiction. The escape still has to be tested, so the review
+# is built where it belongs - in the test that makes a claim about it.
+REVIEW = """
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix ec:   <http://w3id.org/airiskkg/example/energy-cs#> .
+
+ec:ApproveAnswer a bpmn:userTask ;
+    bp:name "Check the answer before it goes out" ;
+    bp:incoming ec:RFlow1 ;
+    bp:outgoing ec:RFlow2 ;
+    bp:dataInputAssociation ec:AnswerToApprove ;
+    bp:resourceRole ec:ChatbotAdministrator .
+
+ec:AnswerToApprove a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:AnswerRef ; bp:targetRef ec:ApproveAnswer .
+
+ec:RFlow1 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ExplanationGeneration ; bp:targetRef ec:ApproveAnswer .
+
+ec:RFlow2 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ApproveAnswer ; bp:targetRef ec:SendAnswer .
+"""
 
 
 def _short(term) -> str:
@@ -40,14 +77,24 @@ def _findings_by_pattern(result) -> Counter:
     return counts
 
 
+def _assess(process_turtle: str):
+    """Assess the architecture together with a process given as text."""
+    from airiskkg.assessment_runner import _run_assessment_on_graph
+
+    graph = load_base_graph()
+    graph.parse(example_path(WIEN_ENERGIE_NS), format="turtle")
+    graph.parse(data=process_turtle, format="turtle")
+    return _run_assessment_on_graph(graph, write_outputs=False, output_dir=".")
+
+
 @pytest.fixture(scope="module")
 def architecture_only():
-    return run_assessment(example_path(GRAPH_RAG_NS), write_outputs=False)
+    return run_assessment(example_path(WIEN_ENERGIE_NS), write_outputs=False)
 
 
 @pytest.fixture(scope="module")
 def with_process():
-    return run_assessment([example_path(GRAPH_RAG_NS), PROCESS], write_outputs=False)
+    return run_assessment([example_path(WIEN_ENERGIE_NS), PROCESS], write_outputs=False)
 
 
 def test_the_bridge_vocabulary_is_loaded_and_declared() -> None:
@@ -78,8 +125,8 @@ def test_a_bpmn_activity_is_not_a_beam_process() -> None:
 
 def test_the_architecture_alone_is_unchanged(architecture_only) -> None:
     """The baseline the whole library is measured against."""
-    assert architecture_only.motif_match_count == 3
-    assert architecture_only.risk_finding_count == 7
+    assert architecture_only.motif_match_count == 5
+    assert architecture_only.risk_finding_count == 9
 
 
 def test_context_carries_no_flow_facts_of_its_own(architecture_only) -> None:
@@ -89,7 +136,7 @@ def test_context_carries_no_flow_facts_of_its_own(architecture_only) -> None:
 
 
 def test_business_flow_closes_transitively(with_process) -> None:
-    """Reachability closed over the retailer's chain and the customer's.
+    """Reachability closed over the chatbot's chain and the customer's.
 
     A gateway or an intervening step between the AI activity and a later control
     must not hide it, and SPARQL cannot type the nodes a property path passes
@@ -98,106 +145,188 @@ def test_business_flow_closes_transitively(with_process) -> None:
     assert len(derived) > 10
 
 
-def test_a_review_in_the_process_clears_what_the_pipeline_cannot(
-    architecture_only, with_process
-) -> None:
+# --- what the process raises --------------------------------------------------
+
+
+def test_the_process_raises_what_the_pipeline_could_not(architecture_only, with_process) -> None:
+    """Route 1, and the reason the layer is worth having. The architecture says
+    a question arrives as untrusted public text, which is true and is all it
+    knows. That the question is *about a customer* - registration, an invoice, a
+    payment - is a fact about the business, stated once by whoever owns it."""
     before = _findings_by_pattern(architecture_only)
     after = _findings_by_pattern(with_process)
 
-    assert before[IMPROPER_OUTPUT] == 1
-    assert after[IMPROPER_OUTPUT] == 0
+    assert before[DISCLOSURE] == 0
+    assert after[DISCLOSURE] == 1
 
-    # Onyx has one generation step and one user-facing output; the finding fires
-    # four times because that step binds in four motif matches. They share a
-    # sink, so they clear together - and nothing else moves.
     assert with_process.motif_match_count == architecture_only.motif_match_count
     for pattern in set(before) | set(after):
-        if pattern != IMPROPER_OUTPUT:
+        if pattern != DISCLOSURE:
             assert before[pattern] == after[pattern], f"{pattern} moved unexpectedly"
 
 
-def test_the_architecture_gains_no_triples_from_being_reviewed(with_process) -> None:
-    """The review clears the finding by being represented, not by being written
-    into the pipeline. No control step is invented."""
-    architecture = Graph().parse(example_path(GRAPH_RAG_NS), format="turtle")
+def test_the_architecture_gains_no_triples_from_being_described(with_process) -> None:
+    """The process is read, not merged. No step is invented in the pipeline."""
+    architecture = Graph().parse(example_path(WIEN_ENERGIE_NS), format="turtle")
     steps_before = set(architecture.subjects(PAIR.playsRole, None))
     steps_after = {
         subject
         for subject in with_process.working_graph.subjects(PAIR.playsRole, None)
-        if str(subject).startswith("http://tool4boxology.org/Component/")
+        if str(subject).startswith("http://w3id.org/airiskkg/example/wien-energie#")
     }
     assert steps_after == steps_before
+
+
+def test_a_business_data_annotation_reaches_the_architecture_it_refines() -> None:
+    """The annotation is made on the business data object; the category lands on
+    the architecture's input and travels from there like any other."""
+    alone = run_assessment(example_path(WIEN_ENERGIE_NS), write_outputs=False)
+    with_context = run_assessment([example_path(WIEN_ENERGIE_NS), PROCESS], write_outputs=False)
+
+    def sensitive(result):
+        return {
+            _short(e)
+            for e in result.working_graph.subjects(
+                PAIR.containsDataCategory, PAIR.SensitiveInformation
+            )
+        }
+
+    gained = sensitive(with_context) - sensitive(alone)
+    assert "Question" in gained, "the customer question never became sensitive"
+    assert "Answer" in gained, "sensitivity did not travel to what the chatbot says back"
+
+
+def test_the_bridge_records_where_the_annotation_came_from() -> None:
+    """A derived category with no trace is a claim the modeller cannot argue
+    with. The derivation names the business data object it came from."""
+    from rdflib import Namespace
+
+    prov = Namespace("http://www.w3.org/ns/prov#")
+    result = run_assessment([example_path(WIEN_ENERGIE_NS), PROCESS], write_outputs=False)
+
+    derivations = list(result.working_graph.subjects(RDF.type, prov.Derivation))
+    business = [
+        d
+        for d in derivations
+        if any("energy-cs" in str(e) for e in result.working_graph.objects(d, prov.entity))
+    ]
+    assert business, "no derivation points back at a business data object"
+
+
+# --- what the process does not clear ------------------------------------------
+
+
+def test_a_human_step_that_is_not_a_review_clears_nothing(with_process) -> None:
+    """The shipped process has a human in it: when the chatbot cannot answer, an
+    administrator takes the conversation over in live chat. It is a userTask, it
+    is performed by a person, and it is downstream of an activity the chatbot
+    carries out - three of the four things the escape asks for. It still must
+    not clear the finding, because it never reads what was generated."""
+    view = _process_activities()
+    takeover = next(a for a in view if a["label"] == "Take over the conversation in live chat")
+    assert takeover["human"], "the takeover stopped being a human task"
+
+    assert _findings_by_pattern(with_process)[IMPROPER_OUTPUT] == 1
+
+
+def test_an_approval_that_reads_the_answer_clears_what_the_pipeline_cannot() -> None:
+    """And the other half: a review that does read the draft does clear it,
+    without asserting anything into the architecture and without a negative
+    facet condition (R10)."""
+    process = PROCESS.read_text(encoding="utf-8")
+
+    assert _findings_by_pattern(_assess(process))[IMPROPER_OUTPUT] == 1
+    assert _findings_by_pattern(_assess(process + REVIEW))[IMPROPER_OUTPUT] == 0
 
 
 # --- the escape must be precise, not merely permissive -----------------------
 
 MUTATIONS = {
     "the review is a serviceTask, not a userTask": (
-        "ec:ReviewReply a bpmn:userTask ;",
-        "ec:ReviewReply a bpmn:serviceTask ;",
+        "ec:ApproveAnswer a bpmn:userTask ;",
+        "ec:ApproveAnswer a bpmn:serviceTask ;",
     ),
+    "the review reads the question, not the drafted answer": (
+        "    bp:sourceRef ec:AnswerRef ; bp:targetRef ec:ApproveAnswer .",
+        "    bp:sourceRef ec:QuestionRef ; bp:targetRef ec:ApproveAnswer .",
+    ),
+    "the review happens before the answer is generated": (
+        "    bp:sourceRef ec:ExplanationGeneration ; bp:targetRef ec:ApproveAnswer .",
+        "    bp:sourceRef ec:ApproveAnswer ; bp:targetRef ec:ExplanationGeneration .",
+    ),
+}
+
+PROCESS_MUTATIONS = {
     "the reviewer is not a person": (
-        "ec:SupportAgent a bpmn:humanPerformer ;",
-        "ec:SupportAgent a bpmn:resource ;",
-    ),
-    "the review reads the enquiry, not the drafted reply": (
-        "    bp:sourceRef ec:DraftRef ; bp:targetRef ec:ReviewReply .",
-        "    bp:sourceRef ec:EnquiryRef ; bp:targetRef ec:ReviewReply .",
-    ),
-    "the review happens before the AI drafts": (
-        "    bp:sourceRef ec:CustomerService ; bp:targetRef ec:ReviewReply .",
-        "    bp:sourceRef ec:ReviewReply ; bp:targetRef ec:CustomerService .",
+        "ec:ChatbotAdministrator a bpmn:humanPerformer ;",
+        "ec:ChatbotAdministrator a bpmn:resource ;",
     ),
     "the activity is not linked to the system": (
-        "    pair:refinedBy sgr:graphrag-example ;",
-        "    rdfs:seeAlso sgr:graphrag-example ;",
+        "    pair:refinedBy we:AgentChain ;\n    bp:incoming ec:SFlowMerged ;",
+        "    rdfs:seeAlso we:AgentChain ;\n    bp:incoming ec:SFlowMerged ;",
     ),
 }
 
 
 @pytest.mark.parametrize("description", sorted(MUTATIONS))
-def test_breaking_one_thing_the_escape_requires_brings_the_finding_back(description) -> None:
-    """Each mutation breaks exactly one claim the escape makes. The fourth is the
-    one that matters: "close the ticket" is also a later human task, and it must
-    not count as having reviewed anything."""
+def test_breaking_one_thing_the_review_claims_brings_the_finding_back(description) -> None:
+    """Each mutation breaks exactly one claim the approval makes. The third is
+    the one that matters: taking a conversation over is also a later human task,
+    and it must not count as having reviewed anything."""
     original, replacement = MUTATIONS[description]
+    assert original in REVIEW, f"the review no longer contains: {original!r}"
+    process = PROCESS.read_text(encoding="utf-8") + REVIEW.replace(original, replacement)
+
+    assert _findings_by_pattern(_assess(process))[IMPROPER_OUTPUT] == 1, (
+        f"the escape still fired after breaking: {description}"
+    )
+
+
+@pytest.mark.parametrize("description", sorted(PROCESS_MUTATIONS))
+def test_breaking_one_thing_the_process_provides_brings_the_finding_back(description) -> None:
+    """The other two claims are made by the shipped process rather than by the
+    review: who the performer is, and whether the activity names an
+    architecture at all."""
+    original, replacement = PROCESS_MUTATIONS[description]
     process = PROCESS.read_text(encoding="utf-8")
     assert original in process, f"the example no longer contains: {original!r}"
 
-    graph = load_base_graph()
-    graph.parse(example_path(GRAPH_RAG_NS), format="turtle")
-    graph.parse(data=process.replace(original, replacement), format="turtle")
-
-    from airiskkg.assessment_runner import _run_assessment_on_graph
-
-    result = _run_assessment_on_graph(graph, write_outputs=False, output_dir=".")
-    assert _findings_by_pattern(result)[IMPROPER_OUTPUT] == 1, (
+    mutated = process.replace(original, replacement) + REVIEW
+    assert _findings_by_pattern(_assess(mutated))[IMPROPER_OUTPUT] == 1, (
         f"the escape still fired after breaking: {description}"
     )
 
 
 # --- actors, messages, and nesting -------------------------------------------
 #
-# "The retailer answers the customer" is two participants exchanging messages,
+# "The chatbot answers the customer" is two participants exchanging messages,
 # not two lanes of one process. Modelled as lanes it would still draw, and the
-# arrow between the two organisations would be inexpressible.
-
-ENERGY_PROCESS = PROCESS
+# arrow between the customer and the company would be inexpressible.
 
 
-@pytest.fixture(scope="module")
-def energy_view():
+def _process_view():
     from airiskkg.workbench.process_view import process_view
 
     graph = Graph()
-    graph.parse(example_path(GRAPH_RAG_NS), format="turtle")
+    graph.parse(example_path(WIEN_ENERGIE_NS), format="turtle")
     graph.parse(PROCESS, format="turtle")
     return process_view(graph)
 
 
+def _process_activities():
+    return _process_view()["activities"]
+
+
+@pytest.fixture(scope="module")
+def energy_view():
+    return _process_view()
+
+
 def test_two_actors_each_with_their_own_process(energy_view) -> None:
+    """One scenario per file: the customer asking, and the chatbot answering.
+    The tariff change is its own process, in its own document."""
     labels = [p["label"] for p in energy_view["participants"]]
-    assert labels == ["Customer", "Northwind Energy"]
+    assert labels == ["Wien Energie Chatbot", "Wien Energie customer"]
     assert all(p["process"] for p in energy_view["participants"])
 
 
@@ -206,47 +335,63 @@ def test_messages_cross_the_boundary_between_actors(energy_view) -> None:
     company answered the customer; sequence flow cannot leave a process."""
     by_activity = {a["id"]: a["label"] for a in energy_view["activities"]}
     pairs = {
-        (by_activity[m["source"]], by_activity[m["target"]])
-        for m in energy_view["messageFlows"]
+        (by_activity[m["source"]], by_activity[m["target"]]) for m in energy_view["messageFlows"]
     }
-    assert ("Ask a question", "Receive the enquiry") in pairs
-    assert ("Send the reply", "Read the answer") in pairs
+    assert ("Ask a question", "Receive the question") in pairs
+    assert ("Send the answer", "Read the answer") in pairs
 
 
 def test_the_ai_activity_is_a_subprocess_that_expands_two_ways(energy_view) -> None:
     """Both are true and they answer different questions: the inner flow says
-    what the service does as business steps, pair:refinedBy says which AI system
-    carries them out."""
-    # Two sub-processes now - one per AI system - so name the one under test
-    # rather than taking whichever comes first.
-    chatbot = next(
-        a for a in energy_view["activities"] if a["label"] == "Customer service chatbot"
+    what the step does as business steps, pair:refinedBy says which AI system
+    carries them out. The diagram gives both - Figure 2 draws the steps, and the
+    page behind it expands two of them."""
+    classification = next(
+        a for a in energy_view["activities"] if a["label"] == "Domain classification"
     )
 
-    assert chatbot["refines"], "the subprocess names no architecture"
-    assert len(chatbot["children"]) == 3, "the subprocess has no business steps of its own"
-    for child in chatbot["children"]:
+    assert classification["refines"], "the subprocess names no architecture"
+    assert len(classification["children"]) == 2, "the subprocess has no business steps of its own"
+    for child in classification["children"]:
         inner = next(a for a in energy_view["activities"] if a["id"] == child)
-        assert inner["parent"] == chatbot["id"]
+        assert inner["parent"] == classification["id"]
 
 
-def test_the_customers_pool_is_not_confused_with_the_retailers(energy_view) -> None:
+def test_a_choice_between_sources_is_a_gateway_not_three_tasks(energy_view) -> None:
+    """The routing step decides which source answers, and the paper says a
+    question may need both at once. Written as three sequential service tasks
+    that choice read as an order of work that is not there, and the canvas drew
+    an arrow from each one to the next."""
+    gateway = next(
+        g for g in energy_view["gateways"] if g["label"] == "Which source can answer?"
+    )
+    assert gateway["kind"] == "inclusiveGateway", "an exclusive split cannot use both sources"
+
+    leaving = [f for f in energy_view["sequenceFlows"] if f["source"] == gateway["id"]]
+    assert len(leaving) == 3
+    assert all(f["condition"] for f in leaving), "a branch with no condition says nothing"
+
+    routing = next(
+        a for a in energy_view["activities"] if a["label"] == "Answer source identification"
+    )
+    assert routing["refines"], "the step still names the architecture that decides"
+    assert not routing["children"], "the choice belongs to the gateway now"
+
+
+def test_the_customers_pool_is_not_confused_with_the_chatbots(energy_view) -> None:
     processes = {p["participant"]: p["id"] for p in energy_view["processes"]}
-    customer_side = [a for a in energy_view["activities"] if a["process"] == processes["Customer"]]
+    customer_side = [
+        a for a in energy_view["activities"] if a["process"] == processes["Wien Energie customer"]
+    ]
 
     assert {a["label"] for a in customer_side} == {"Ask a question", "Read the answer"}
 
 
-def test_the_review_step_is_what_moves_the_count() -> None:
-    """One business step is the whole difference. Without the process the reply
-    goes out as generated; with it, an agent reads the draft first."""
-    alone = run_assessment(example_path(GRAPH_RAG_NS), write_outputs=False)
-    with_context = run_assessment(
-        [example_path(GRAPH_RAG_NS), ENERGY_PROCESS], write_outputs=False
-    )
-
-    assert alone.risk_finding_count == 7 and with_context.risk_finding_count == 6
-    assert alone.motif_match_count == with_context.motif_match_count == 3
+def test_the_lanes_of_the_diagram_survive(energy_view) -> None:
+    """The two lanes are the shape of the paper's Figure 2: a chain of LLM
+    agents, and the sources it queries. The third holds the human."""
+    lanes = {lane["label"] for lane in energy_view["lanes"]}
+    assert {"LLM agent chain", "Answer source", "Chatbot administration"} <= lanes
 
 
 def test_the_example_only_uses_sbpmn_terms_sbpmn_declares() -> None:
@@ -300,102 +445,139 @@ def test_the_example_only_uses_sbpmn_terms_sbpmn_declares() -> None:
     assert not violations, "sBPMN violations:\n" + "\n".join(sorted(violations))
 
 
-# --- one process, two AI systems ---------------------------------------------
+# --- one process, several AI systems -----------------------------------------
 #
-# The case the layer exists for. A business process usually runs more than one
-# AI capability, they are rarely the same kind of thing, and their risks have
-# almost nothing in common - which nobody can see while each architecture is
-# assessed in a window of its own.
-
-ANOMALY_NS_LOCAL = "http://w3id.org/airiskkg/example/meter-anomaly#"
+# The case the layer exists for, and the paper counts them the same way: an LLM
+# agent chain that decides where an answer comes from, and the two answer
+# sources it queries. Nobody can see that while each is assessed in a window of
+# its own.
 
 
-def test_the_process_points_two_activities_at_two_different_systems() -> None:
+def test_the_process_points_its_activities_at_more_than_one_system(energy_view) -> None:
+    refined = {a["label"]: a["refines"] for a in energy_view["activities"] if a["refines"]}
+    systems = {system for targets in refined.values() for system in targets}
+
+    assert len(systems) == 3, f"expected three systems, got {sorted(systems)}"
+    assert refined["Knowledge graph query"] != refined["Document retrieval (RAG)"], (
+        "the two answer sources point at the same architecture"
+    )
+
+
+def test_the_two_answer_sources_carry_different_risks() -> None:
+    """A curated graph and a pile of vectorised PDFs are not the same problem,
+    and a reader who sees them side by side should not have to be told so."""
+    result = run_assessment([example_path(WIEN_ENERGIE_NS), PROCESS], write_outputs=False)
+
+    vector_findings = [
+        finding
+        for finding in result.risk_findings.subjects(RDF.type, PAIR.RiskFinding)
+        if _short(result.risk_findings.value(finding, PAIR.generatedByRiskPattern))
+        == "VectorAndEmbeddingWeaknessRiskPattern"
+    ]
+    assert vector_findings, "the document store raised no vector-side finding"
+
+    evidence = {
+        _short(e)
+        for finding in vector_findings
+        for e in result.risk_findings.objects(finding, PAIR.hasEvidence)
+    }
+    assert "DocumentStore" in evidence
+    assert "KnowledgeGraph" not in evidence, "a knowledge graph has no embeddings to be weak"
+
+
+def test_findings_reach_the_activity_each_system_carries_out() -> None:
+    """What makes a finding communicable: the box in the process it arises
+    under, not the name of a step inside an architecture."""
+    from airiskkg.assessment_view import summarize_result
+
+    result = run_assessment([example_path(WIEN_ENERGIE_NS), PROCESS], write_outputs=False)
+    rows = {row["label"]: row for row in summarize_result(result)["findingsByActivity"]}
+
+    assert rows["Document retrieval (RAG)"]["findings"], "the RAG source was attributed nothing"
+    assert rows["Knowledge graph query"]["findings"], "the graph source was attributed nothing"
+    assert rows["Answer generation"]["findings"] > rows["Knowledge graph query"]["findings"], (
+        "the chain that writes the answer should carry more than one source does"
+    )
+
+
+# --- the tariff change scenario ----------------------------------------------
+#
+# The other half of the use case, and the one that shows why a system boundary
+# is not bookkeeping. A customer service agent approves the change before it
+# takes effect - but they read the checked form, not the text the agent wrote
+# to the customer. Those belong to different systems, so the approval clears
+# the one and not the other. Merge the two and the escape fires on both, which
+# would report an explanation as reviewed that nobody ever read.
+
+TARIFF_REVIEW = """
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix ec:   <http://w3id.org/airiskkg/example/energy-cs#> .
+
+ec:DraftExplanationRef a bpmn:dataObjectReference ;
+    bp:name "Drafted explanation" .
+
+ec:DraftExplanationOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:ExplainConditions ; bp:targetRef ec:DraftExplanationRef .
+
+ec:ExplanationToApprove a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:DraftExplanationRef ; bp:targetRef ec:ChangePlan .
+
+ec:ExplainConditions bp:dataOutputAssociation ec:DraftExplanationOut .
+ec:ChangePlan bp:dataInputAssociation ec:ExplanationToApprove .
+"""
+
+
+def _assess_tariff(process_turtle: str):
+    from airiskkg.assessment_runner import _run_assessment_on_graph
+
+    graph = load_base_graph()
+    graph.parse(example_path(TARIFF_NS), format="turtle")
+    graph.parse(data=process_turtle, format="turtle")
+    return _run_assessment_on_graph(graph, write_outputs=False, output_dir=".")
+
+
+def test_the_tariff_process_raises_without_clearing() -> None:
+    """Personal data in the chat and on the account reaches what the assistant
+    says back. The approval further down the process does not answer for that."""
+    tariff = example_path(TARIFF_NS)
+    alone = _findings_by_pattern(run_assessment(tariff, write_outputs=False))
+    with_context = _findings_by_pattern(
+        run_assessment([tariff, TARIFF_PROCESS], write_outputs=False)
+    )
+
+    assert alone[IMPROPER_OUTPUT] == 2 and alone[DISCLOSURE] == 0
+    assert with_context[DISCLOSURE] == 2, "the personal data annotation raised nothing"
+    assert with_context[IMPROPER_OUTPUT] == 2, (
+        "the agent approves the change, not the chat text, so it clears neither reply"
+    )
+
+
+def test_an_approval_that_reads_the_reply_is_what_clears_it() -> None:
+    """Same process, same person, one more thing on their desk: the drafted
+    reply. Now the escape fires, and it fires because the step they read
+    belongs to the system that wrote the reply."""
+    process = TARIFF_PROCESS.read_text(encoding="utf-8")
+
+    assert _findings_by_pattern(_assess_tariff(process))[IMPROPER_OUTPUT] == 2
+    assert _findings_by_pattern(_assess_tariff(process + TARIFF_REVIEW))[IMPROPER_OUTPUT] == 0
+
+
+def test_the_tariff_process_names_a_system_for_each_capability() -> None:
+    """Four systems, because the diagram separates four things: the agent that
+    talks, the rules that decide, the form machinery and the record service.
+    Attribution is the point - the risk sits on the agent, not on the form."""
+    from airiskkg.assessment_view import summarize_result
     from airiskkg.workbench.process_view import process_view
 
     graph = Graph()
-    graph.parse(example_path(GRAPH_RAG_NS), format="turtle")
-    graph.parse(example_path(ANOMALY_NS_LOCAL), format="turtle")
-    graph.parse(PROCESS, format="turtle")
-    view = process_view(graph)
+    graph.parse(example_path(TARIFF_NS), format="turtle")
+    graph.parse(TARIFF_PROCESS, format="turtle")
+    refined = {a["label"]: a["refines"] for a in process_view(graph)["activities"] if a["refines"]}
+    assert len({s for targets in refined.values() for s in targets}) == 4
 
-    refined = {a["label"]: a["refines"] for a in view["activities"] if a["refines"]}
-    assert len(refined) == 2, f"expected two AI activities, got {sorted(refined)}"
-    systems = {system for targets in refined.values() for system in targets}
-    assert len(systems) == 2, "both activities point at the same architecture"
-
-
-def test_each_architecture_still_assesses_on_its_own() -> None:
-    """Refinement adds context; it does not make an architecture dependent on the
-    process. Either one alone is still a complete, assessable graph."""
-    chatbot = run_assessment(example_path(GRAPH_RAG_NS), write_outputs=False)
-    anomaly = run_assessment(example_path(ANOMALY_NS_LOCAL), write_outputs=False)
-
-    assert (chatbot.motif_match_count, chatbot.risk_finding_count) == (3, 7)
-    assert (anomaly.motif_match_count, anomaly.risk_finding_count) == (4, 1)
-
-
-def test_the_two_systems_carry_different_risks() -> None:
-    """An ML serving shape and a generative one are not the same problem, and a
-    reader who sees them side by side should not have to be told so."""
-    chatbot = _findings_by_pattern(run_assessment(example_path(GRAPH_RAG_NS), write_outputs=False))
-    anomaly = _findings_by_pattern(run_assessment(example_path(ANOMALY_NS_LOCAL), write_outputs=False))
-
-    assert "PromptInjectionRiskPattern" in chatbot
-    assert "PromptInjectionRiskPattern" not in anomaly
-    assert set(anomaly) == {"SupplyChainCompromiseRiskPattern"}
-
-
-# --- context declared once, in the business model -----------------------------
-
-
-def test_a_business_data_annotation_reaches_the_architecture_it_refines() -> None:
-    """Route 1, and the reason the layer is worth having. Consumption data says
-    when a household is in and when it is empty, so it names a person - but the
-    scoring architecture never said so, and no architecture modeller would know
-    to. It is stated once, on the process, by whoever owns it."""
-    architectures = [example_path(GRAPH_RAG_NS), example_path(ANOMALY_NS_LOCAL)]
-
-    alone = run_assessment(architectures, write_outputs=False)
-    with_context = run_assessment(architectures + [PROCESS], write_outputs=False)
-
-    def sensitive(result):
-        return {
-            _short(e)
-            for e in result.working_graph.subjects(PAIR.containsDataCategory, PAIR.SensitiveInformation)
-        }
-
-    gained = sensitive(with_context) - sensitive(alone)
-    assert "Reading" in gained, "the meter reading never became sensitive"
-    assert "Score_Result" in gained, "sensitivity did not travel to what the scorer produces"
-
-
-def test_the_bridge_records_where_the_annotation_came_from() -> None:
-    """A derived category with no trace is a claim the modeller cannot argue
-    with. The derivation names the business data object it came from."""
-    from rdflib import Namespace
-
-    prov = Namespace("http://www.w3.org/ns/prov#")
-    result = run_assessment(
-        [example_path(GRAPH_RAG_NS), example_path(ANOMALY_NS_LOCAL), PROCESS], write_outputs=False
-    )
-
-    derivations = list(result.working_graph.subjects(RDF.type, prov.Derivation))
-    business = [
-        d for d in derivations
-        if any("energy-cs" in str(e) for e in result.working_graph.objects(d, prov.entity))
-    ]
-    assert business, "no derivation points back at a business data object"
-
-
-def test_context_both_clears_and_raises() -> None:
-    """The honest shape of it. A human review in the process clears an
-    output-handling finding; a data annotation in the same process raises a
-    disclosure the architecture could not have known about. Reporting only the
-    total would hide both."""
-    architectures = [example_path(GRAPH_RAG_NS), example_path(ANOMALY_NS_LOCAL)]
-    before = _findings_by_pattern(run_assessment(architectures, write_outputs=False))
-    after = _findings_by_pattern(run_assessment(architectures + [PROCESS], write_outputs=False))
-
-    assert before[IMPROPER_OUTPUT] == 1 and after[IMPROPER_OUTPUT] == 0
-    assert after["SensitiveInformationDisclosureRiskPattern"] > before["SensitiveInformationDisclosureRiskPattern"]
+    result = run_assessment([example_path(TARIFF_NS), TARIFF_PROCESS], write_outputs=False)
+    rows = {row["label"]: row["findings"] for row in summarize_result(result)["findingsByActivity"]}
+    assert rows["Explain the conditions"] > 0, "the agent that writes to the customer carries none"
+    assert rows["Check the contract conditions"] == 0, "the rules check carries the chat findings"
+    assert rows["Show the change form"] == 0, "the form machinery carries the chat findings"

@@ -29,6 +29,7 @@ from pathlib import Path
 import pytest
 
 from airiskkg.paths import REPO_ROOT
+from conftest import process_path  # noqa: E402
 
 STATIC = REPO_ROOT / "python" / "src" / "airiskkg" / "webapp" / "static"
 
@@ -65,7 +66,12 @@ def served():
     from airiskkg.webapp.app import create_app
 
     port = _free_port()
-    app = create_app(local_examples=False)
+    # The fixtures ride along so the canvas has a rich process model to draw -
+    # lanes, a gateway, two architectures. They are not part of the curated set
+    # the deployment offers; see conftest.FIXTURE_DIR.
+    from conftest import FIXTURE_DIR
+
+    app = create_app(local_examples=False, extra_example_dirs=[FIXTURE_DIR])
     server = threading.Thread(
         target=lambda: app.run(host="127.0.0.1", port=port, use_reloader=False, threaded=True),
         daemon=True,
@@ -103,6 +109,11 @@ def _dump_dom(browser: str, url: str, budget: int = 15000) -> str:
         ],
         capture_output=True,
         text=True,
+        # The page is UTF-8 and the DOM it dumps carries the glyphs the canvas
+        # draws. Left to the Windows default the reader decodes cp1252 and
+        # every test in this file fails on one byte of one label.
+        encoding="utf-8",
+        errors="replace",
         timeout=180,
     )
     return completed.stdout
@@ -120,7 +131,7 @@ def rendered(served):
     driver = """
   <script>
   window.addEventListener("load", async () => {
-    const a = await (await fetch("/api/examples/simple_graph_rag")).json();
+    const a = await (await fetch("/api/examples/wien_energie_bottina")).json();
     const p = await (await fetch("/api/examples/energy_customer_service")).json();
     window.PairAI.Editor.setValue(a.ttl + String.fromCharCode(10,10) + p.ttl);
     setTimeout(() => document.querySelector("#level-business").click(), 2500);
@@ -143,7 +154,7 @@ def test_the_business_canvas_draws_its_pools_and_activities(rendered) -> None:
     assert 'class="pc-pool' in markup, "no pools were drawn"
     assert 'class="pc-activity' in markup, "no activities were drawn"
     assert "pc-flow message" in markup, "no message flow between the two participants"
-    assert "Northwind Energy" in markup and "Customer" in markup
+    assert "Wien Energie Chatbot" in markup and "Customer" in markup
 
 
 def test_the_business_canvas_draws_the_data_and_what_it_is(rendered) -> None:
@@ -156,22 +167,88 @@ def test_the_business_canvas_draws_the_data_and_what_it_is(rendered) -> None:
 
     assert "pc-data-shape" in markup, "no data objects were drawn"
     assert "pc-data-link" in markup, "data objects are drawn but not associated with any activity"
-    assert "Smart meter reading" in markup, "the meter reading data object is not labelled"
+    assert "Customer question" in markup, "the customer question data object is not labelled"
     assert "Personal data" in markup, (
         "the data object carries dpv:PersonalData and the diagram does not say so"
     )
 
 
 def test_a_long_activity_name_wraps_rather_than_being_cut(rendered) -> None:
-    """"Check the meter r..." reads as a different activity from the one it is."""
+    """"Take over the conv..." reads as a different activity from the one it is."""
     canvas = re.search(r'<svg id="process-canvas".*?</svg>', rendered, re.S)
     # Only what is painted on the box. The full name is also on the <title>,
     # and reading the whole markup let a truncated label pass on the strength
     # of its own tooltip.
     painted = " ".join(re.findall(r'<text[^>]*class="pc-label"[^>]*>([^<]*)</text>', canvas.group(0)))
-    assert "anomalies" in painted, (
-        "the second half of \"Check the meter reading for anomalies\" never made it onto the box; "
+    assert "live" in painted, (
+        "the second half of \"Take over the conversation in live chat\" never made it onto the box; "
         "the labels drawn were: " + painted
+    )
+
+
+def test_a_pool_with_lanes_is_banded_and_named(rendered) -> None:
+    """The model declared three lanes all along and the canvas drew none of
+    them, so the human step and the answer sources sat in the same undivided
+    strip as the agent chain that calls them."""
+    canvas = re.search(r'<svg id="process-canvas".*?</svg>', rendered, re.S)
+    markup = canvas.group(0)
+    assert "pc-lane-box" in markup, "the chatbot pool declares lanes and none was drawn"
+
+    painted = set(re.findall(r'<text[^>]*class="pc-lane-label"[^>]*>([^<]*)</text>', markup))
+    assert {"LLM agent chain", "Answer source"} <= painted, (
+        f"the lane names never reached the canvas; drawn: {sorted(painted)}"
+    )
+
+
+def test_events_and_gateways_are_drawn_the_way_bpmn_draws_them(rendered) -> None:
+    """A start event is a ring, an end event a thick one, a gateway a diamond.
+    Without them a reader cannot tell where the process begins, and a branch
+    reads as an order of work."""
+    canvas = re.search(r'<svg id="process-canvas".*?</svg>', rendered, re.S)
+    markup = canvas.group(0)
+
+    assert "pc-ev-ring start" in markup, "no start event was drawn"
+    assert "pc-ev-ring end" in markup, "no end event was drawn"
+    assert "pc-gate-box" in markup, "no gateway diamond was drawn"
+    assert "pc-ev-glyph" in markup, "the message start event carries no trigger glyph"
+
+    painted = " ".join(re.findall(r'<text[^>]*class="pc-ev-label"[^>]*>([^<]*)</text>', markup))
+    assert "Which source can" in painted, (
+        f"the gateway is drawn but not named; labels drawn: {painted}"
+    )
+
+
+def test_sequence_flow_is_drawn_from_the_model_not_from_what_sits_beside_what(rendered) -> None:
+    """The canvas used to draw an arrow between consecutive boxes in layout
+    order, whether or not a flow joined them: a three-way branch came out as a
+    straight chain, and the flow to the human step was not drawn at all. Every
+    top-level flow the model declares must now be on screen, and no more."""
+    from rdflib import RDF, Graph, URIRef
+
+    from airiskkg.paths import EXAMPLE_DIR
+
+    classes = "https://sBPMN.github.io/2.0/classes#"
+    props = "https://sBPMN.github.io/2.0/properties#"
+    model = Graph().parse(process_path("energy_customer_service"), format="turtle")
+
+    # A flow inside a sub-process is not drawn until the box is expanded.
+    nested = {
+        child
+        for activity in model.subjects(RDF.type, URIRef(classes + "subProcess"))
+        for child in model.objects(activity, URIRef(props + "contains"))
+    }
+    declared = [
+        flow
+        for flow in model.subjects(RDF.type, URIRef(classes + "sequenceFlow"))
+        if model.value(flow, URIRef(props + "sourceRef")) not in nested
+        and model.value(flow, URIRef(props + "targetRef")) not in nested
+    ]
+
+    canvas = re.search(r'<svg id="process-canvas".*?</svg>', rendered, re.S)
+    drawn = len(re.findall(r'class="pc-seq"', canvas.group(0)))
+    assert drawn == len(declared), (
+        f"the model declares {len(declared)} sequence flows outside a sub-process "
+        f"and the canvas drew {drawn}"
     )
 
 
@@ -357,9 +434,10 @@ def test_descending_is_not_dragged_back_to_the_business_layer(served) -> None:
       s.dispatchEvent(new Event("change", { bubbles: true }));
       setTimeout(() => {
         log("landed=" + (document.querySelector("#level-business").classList.contains("active") ? 1 : 0));
-        const box = document.querySelector(".pc-activity.refined .pc-box");
-        log("box=" + (box ? 1 : 0));
-        if (box) box.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        // The chip, not the box: the box selects and stays put on purpose.
+        const chip = document.querySelector(".pc-activity.refined .pc-open");
+        log("box=" + (chip ? 1 : 0));
+        if (chip) chip.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         setTimeout(() => {
           log("arch=" + (document.querySelector("#level-architecture").classList.contains("active") ? 1 : 0));
           log("nodes=" + document.querySelectorAll(".node").length);
@@ -407,14 +485,13 @@ def test_picking_a_scene_replaces_what_was_there(served) -> None:
   };
   window.addEventListener("load", () => {
     setTimeout(() => {
-      pick("onyx_rag_chatbot");                       // an architecture first
+      pick("simple_graph_rag");                       // an architecture first
       setTimeout(() => {
         pick("energy_customer_service");              // then the scene
         setTimeout(() => {
           const ttl = window.PairAI.Editor.getValue();
-          log("onyxleft=" + (ttl.includes("onyx") ? 1 : 0));
-          log("meter=" + (ttl.includes("meter-anomaly") ? 1 : 0));
-          log("graphrag=" + (ttl.includes("graphrag-example") ? 1 : 0));
+          log("firstleft=" + (ttl.includes("graphrag-example") ? 1 : 0));
+          log("bottina=" + (ttl.includes("AgentChain") ? 1 : 0));
           log("process=" + (ttl.includes("energy-cs") ? 1 : 0));
         }, 6000);
       }, 5000);
@@ -431,13 +508,13 @@ def test_picking_a_scene_replaces_what_was_there(served) -> None:
     found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
     report = found.group(1).strip() if found else ""
     seen = {k: int(v) for k, v in re.findall(r"(\w+)=(\d+)", report)}
-    assert "onyxleft" in seen, f"the probe never reported: {report!r}"
+    assert "firstleft" in seen, f"the probe never reported: {report!r}"
 
-    assert seen["onyxleft"] == 0, (
+    assert seen["firstleft"] == 0, (
         "the architecture loaded before the scene is still in the editor - it was "
         "added, not replaced, and its findings will be counted alongside the scene's"
     )
-    for part in ("meter", "graphrag", "process"):
+    for part in ("bottina", "process"):
         assert seen[part] == 1, f"the scene is missing its {part} half: {report}"
 
 
@@ -471,12 +548,12 @@ def test_loading_another_example_clears_the_last_run(served) -> None:
   };
   window.addEventListener("load", () => {
     setTimeout(() => {
-      pick("simple_graph_rag");
+      pick("wien_energie_bottina");
       setTimeout(() => {
         document.querySelector("#btn-assess").click();
         setTimeout(() => {
           drawerCounts("before");
-          pick("meter_anomaly_scoring");          // a different document
+          pick("wien_energie_tariff_change");     // a different document
           setTimeout(() => drawerCounts("after"), 4000);
         }, 11000);
       }, 4000);

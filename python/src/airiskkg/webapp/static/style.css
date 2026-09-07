@@ -784,7 +784,7 @@ label.btn { display: inline-flex; align-items: center; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.pd-class, .pd-add select, .pd-add input {
+.pd-shape, .pd-class, .pd-add select, .pd-add input {
   border: 1px solid #c6ccd8;
   border-radius: 5px;
   padding: 2px 4px;
@@ -804,8 +804,22 @@ label.btn { display: inline-flex; align-items: center; }
   padding: 0 2px;
 }
 .pd-drop:hover { color: #c0392b; }
-.pd-add { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
-.pd-add input { flex: 1 1 auto; min-width: 0; }
+/* Five controls do not fit on one line of a 300px panel. The name takes a row
+   of its own and the three pickers share the next, so nothing is squeezed to
+   the width of its scroll arrow. */
+.pd-add {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+.pd-add input { flex: 1 1 100%; min-width: 0; max-width: none; }
+.pd-add select { flex: 1 1 0; min-width: 0; }
+.pd-add .btn { flex: 0 0 auto; }
+.pd-shape { flex: none; max-width: 96px; }
+.pd-data .pd-shape, .pd-data .pd-class { flex: 0 1 auto; min-width: 0; }
+.pd-data .pd-name { flex: 1 1 40px; }
 
 .validation-row {
   display: flex;
@@ -1081,10 +1095,80 @@ label.btn { display: inline-flex; align-items: center; }
 .pc-arrow-head.message { fill: #ffffff; stroke: #b07a2e; stroke-width: 1.4; }
 .pc-msg-start { fill: #ffffff; stroke: #b07a2e; stroke-width: 1.4; }
 
+/* Lanes: a band inside a pool, with its own name strip. Drawn only when the
+   model declares a laneSet, so a plain process keeps a plain box. */
+/* `fill: none` leaves only the stroke hittable, so the room inside a lane was
+   not clickable and a click there fell through to the pool. */
+.pc-lane-box { fill: none; stroke: #d7dce6; stroke-width: 1; pointer-events: all; }
+.pc-lane-label { cursor: pointer; }
+.pc-lane-edit .pc-marker-box { fill: #ffffff; stroke: #b6bece; stroke-width: 1; }
+.pc-lane-edit:hover .pc-marker-box { stroke: #4a72c4; }
+.pc-lane-edit .pc-marker-sign { font-size: 11px; }
+.pc-lane-strip { fill: #f6f8fb; stroke: #d7dce6; stroke-width: 1; cursor: pointer; }
+.pc-lane-label { fill: #6b7488; font-size: 10px; letter-spacing: 0.06em; font-weight: 600; }
+.pc-lane.selected .pc-lane-strip { fill: #e5edfd; }
+.pc-lane.selected .pc-lane-label { fill: #2f4d94; }
+.pc-lane-strip:hover { fill: #eaeff7; }
+
+/* Events. The ring weight is the notation: thin starts, double catches or
+   throws part-way through, thick ends. */
+.pc-ev-ring { fill: #ffffff; stroke: #5b6478; }
+.pc-ev-ring.start { stroke-width: 1.4; fill: #f4faf5; }
+.pc-ev-ring.mid { stroke-width: 1.4; fill: #ffffff; }
+.pc-ev-ring.end { stroke-width: 3.2; fill: #fdf5f4; }
+.pc-ev-ring.open { stroke-dasharray: 4 3; }
+.pc-event.startEvent .pc-ev-ring { stroke: #4f9a6a; }
+.pc-event.endEvent .pc-ev-ring { stroke: #b4574d; }
+.pc-ev-label { fill: #48505f; font-size: 10px; }
+.pc-ev-mark { fill: none; stroke: #3c4353; stroke-width: 1.3; }
+.pc-ev-line { fill: none; stroke: #3c4353; stroke-width: 1.2; }
+.pc-ev-line.strong { stroke-width: 1.8; }
+.pc-ev-glyph.throwing .pc-ev-mark { fill: #3c4353; stroke: #3c4353; }
+.pc-ev-glyph.throwing .pc-ev-line { stroke: #ffffff; }
+.pc-ev-mark.filled { fill: #3c4353; }
+
+/* Gateways: the diamond, and the glyph that says which kind. */
+.pc-gate-box { fill: #fffdf3; stroke: #b9902f; stroke-width: 1.5; }
+.pc-gate-mark path { fill: none; stroke: #8a6a1c; stroke-width: 2.2; stroke-linecap: round; }
+.pc-gate-ring { fill: none; stroke: #8a6a1c; stroke-width: 1.4; }
+.pc-gateway:hover .pc-gate-box { fill: #fdf5df; }
+
+/* Activity markers along the bottom edge, and the borders that say a box is
+   not the whole story. */
+.pc-mk path { fill: none; stroke: #5b6478; stroke-width: 1.3; stroke-linecap: round; }
+.pc-mk-box { fill: #ffffff; stroke: #5b6478; stroke-width: 1.2; }
+.pc-mk .pc-mk-fill { fill: #5b6478; stroke: none; }
+.pc-box.call { stroke-width: 3.4; }
+.pc-box.event-sub { stroke-dasharray: 5 3; }
+.pc-box.inner { fill: none; }
+
+/* Artifacts: a note is a bracket, a group a dashed frame. Neither is a step. */
+.pc-note-bracket { fill: none; stroke: #9aa4b8; stroke-width: 1.2; }
+.pc-note-label { fill: #5b6478; font-size: 10.5px; }
+.pc-assoc { fill: none; stroke: #9aa4b8; stroke-width: 1; stroke-dasharray: 2 3; }
+.pc-group-box { fill: none; stroke: #a79ac4; stroke-width: 1.3; stroke-dasharray: 10 4 2 4; }
+.pc-group-label { fill: #7b6ea3; font-size: 10.5px; font-weight: 600; }
+
+/* Conditional and default sequence flow carry their mark at the tail. */
+.pc-flow-tick { fill: none; stroke: #7c8698; stroke-width: 1.6; }
+.pc-flow-diamond { fill: #ffffff; stroke: #7c8698; stroke-width: 1.3; }
+.pc-data-io { fill: none; stroke: #b3a06b; stroke-width: 1.2; }
+.pc-data-io.filled { fill: none; stroke: #8a7434; stroke-width: 2; }
+.pc-data-state { fill: #8a7434; font-size: 9px; font-style: italic; }
+
+.pc-multi { fill: none; stroke: #6b7488; stroke-width: 1.6; }
+
 .pc-pool.selected .pc-pool-strip { fill: #dce6fb; }
 .pc-pool.selected .pc-pool-label { fill: #2f4d94; }
-.pc-port-dot { fill: #ffffff; stroke: #4a72c4; stroke-width: 1.5; opacity: 0; }
-.pc-activity:hover .pc-port-dot { opacity: 1; }
+/* The connector handle. Its radius is set from the zoom in process_canvas.js
+   so it stays the same size on screen; only the reveal lives here. An event
+   and a gateway carry one too - the selector named activities alone, so on
+   every circle and diamond the handle was there and invisible. */
+.pc-port-dot { fill: #ffffff; stroke: #4a72c4; opacity: 0; }
+.pc-activity:hover .pc-port-dot,
+.pc-event:hover .pc-port-dot,
+.pc-gateway:hover .pc-port-dot,
+.pc-port:hover .pc-port-dot { opacity: 1; }
 
 .canvas-wrap.business .canvas-empty,
 .canvas-wrap.business .legend,
@@ -1119,17 +1203,83 @@ label.btn { display: inline-flex; align-items: center; }
   left: 10px;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  /* Top, not centre: centred, the fold handle sat halfway down a 260px row of
+     sections and jumped 18px the moment it folded - so the second click of a
+     fold/unfold landed on the canvas behind it. */
+  align-items: flex-start;
   gap: 5px;
   max-width: 62%;
+  max-height: 42%;
+  overflow-y: auto;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px;
   z-index: 3;
 }
+.nd-check { display: flex; align-items: center; gap: 8px; }
+.nd-check input { width: auto; }
 .process-palette.hidden { display: none; }
+/* The palette shows the shape it inserts. Sized so a diamond still reads as a
+   diamond at button height, and reusing the canvas classes so the two cannot
+   drift apart. */
+.pp-icon {
+  width: 26px;
+  height: 20px;
+  margin-right: 5px;
+  vertical-align: -5px;
+  overflow: visible;
+}
+.pp-icon .pc-box { stroke-width: 1.1; }
+.pp-icon .pc-box.call { stroke-width: 2.4; }
+.pp-icon .pc-gate-mark path { stroke-width: 2.6; }
+.pp-icon .pc-icon path, .pp-icon .pc-icon circle { stroke-width: 1.1; }
+.pp-icon-plus { fill: none; stroke: #5b6478; stroke-width: 1.1; }
+.pp-icon .pc-note-rule { fill: none; stroke: #9aa4b8; stroke-width: 1.1; }
+.pp-icon .pc-pool-box, .pp-icon .pc-pool-strip, .pp-icon .pc-lane-strip { stroke-width: 1; }
+.pp-icon .pc-lane-box { fill: none; stroke: #d7dce6; stroke-width: 1; }
+
+.pp-fold {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+.pp-fold:hover { border-color: #4a72c4; }
+.process-palette.folded { max-height: none; }
+
+.pc-pool-fold .pc-marker-box { fill: #ffffff; stroke: #9aa4b8; stroke-width: 1.2; }
+.pc-pool-fold:hover .pc-marker-box { stroke: #4a72c4; }
+
+/* One block per category, so a section wraps as a unit and the heading cannot
+   land in the middle of somebody else's row. */
+.pp-section {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 7px 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: rgba(127, 141, 168, 0.06);
+}
+.pp-group {
+  width: 100%;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 1px;
+}
 .pp-item {
+  display: inline-flex;
+  align-items: center;
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -1316,6 +1466,30 @@ label.btn { display: inline-flex; align-items: center; }
 
 @media (max-height: 700px) {
   .drawer:not(.collapsed) .drawer-body { max-height: 40vh; }
+  .process-palette { max-height: 34%; }
+}
+
+/* The palette is a toolbar, not the content. On a small canvas it starts
+   folded (process_canvas.js decides that from the room actually available);
+   these keep it from swallowing the diagram when the reader opens it anyway. */
+@media (max-width: 1100px) {
+  .process-palette { max-height: 38%; }
+  .pp-item { font-size: 11px; padding: 2px 7px; }
+  .pp-icon { width: 22px; height: 17px; margin-right: 4px; }
+  .pp-section { padding: 3px 6px 4px; }
+}
+
+@media (max-width: 900px) {
+  .process-palette {
+    max-width: calc(100% - 20px);
+    max-height: 32%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    align-items: flex-start;
+  }
+  .pp-section { flex: 0 0 auto; }
+  .pp-note { display: none; }
+  #process-detail { width: min(280px, calc(100vw - 32px)); }
 }
 .brand h1 { white-space: nowrap; }
 .brand { flex: 0 0 auto; }

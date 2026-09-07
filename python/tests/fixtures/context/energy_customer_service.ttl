@@ -1,0 +1,381 @@
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix we:   <http://w3id.org/airiskkg/example/wien-energie#> .
+@prefix ec:   <http://w3id.org/airiskkg/example/energy-cs#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# The question-answering process of the Wien Energie chatbot (BotTina), 
+ec:ServiceCollaboration a bpmn:collaboration ;
+    bp:name "Wien Energie customer question answering" ;
+    bp:contains ec:CustomerPool , ec:ChatbotPool .
+
+ec:CustomerPool a bpmn:participant ;
+    bp:name "Wien Energie customer" ;
+    bp:processRef ec:CustomerJourney .
+
+ec:ChatbotPool a bpmn:participant ;
+    bp:name "Wien Energie Chatbot" ;
+    bp:processRef ec:AnsweringProcess .
+
+
+## The customer's side ---------------------------------------------------------
+
+ec:CustomerJourney a bpmn:process ;
+    bp:name "Ask BotTina a question" ;
+    bp:isExecutable false ;
+    bp:contains ec:HasAQuestion , ec:AskQuestion , ec:ReadAnswer , ec:QuestionAnswered .
+
+ec:HasAQuestion a bpmn:startEvent ;
+    bp:name "Has a question" ;
+    bp:outgoing ec:CFlow0 .
+
+ec:AskQuestion a bpmn:task ;
+    bp:name "Ask a question" ;
+    bp:incoming ec:CFlow0 ;
+    bp:outgoing ec:CFlow1 .
+
+ec:ReadAnswer a bpmn:task ;
+    bp:name "Read the answer" ;
+    bp:incoming ec:CFlow1 ;
+    bp:outgoing ec:CFlow2 .
+
+ec:QuestionAnswered a bpmn:endEvent ;
+    bp:incoming ec:CFlow2 .
+
+ec:CFlow0 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:HasAQuestion ; bp:targetRef ec:AskQuestion .
+ec:CFlow1 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:AskQuestion ;  bp:targetRef ec:ReadAnswer .
+ec:CFlow2 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ReadAnswer ;   bp:targetRef ec:QuestionAnswered .
+
+
+## The chatbot's side ----------------------------------------------------------
+
+ec:AnsweringProcess a bpmn:process ;
+    bp:name "Answer a customer question" ;
+    bp:isExecutable true ;
+    bp:laneSet ec:ChatbotLanes ;
+    bp:contains ec:QuestionArrives , ec:ReceiveQuestion , ec:DomainClassification ,
+                ec:AnswerSourceIdentification , ec:SourceGateway , ec:QueryParameterExtraction ,
+                ec:KnowledgeGraphQuery , ec:DocumentRetrieval , ec:SourceJoin ,
+                ec:AnswerGeneration , ec:ExplanationGeneration , ec:TakeOverConversation ,
+                ec:AnswerJoin , ec:SendAnswer , ec:AnswerSent .
+
+ec:ChatbotLanes a bpmn:laneSet ;
+    bp:contains ec:AgentChainLane , ec:AnswerSourceLane , ec:AdministrationLane .
+
+ec:AgentChainLane a bpmn:lane ;
+    bp:name "LLM agent chain" ;
+    bp:flowNodeRef ec:QuestionArrives , ec:ReceiveQuestion , ec:DomainClassification ,
+                   ec:ClassifyWithLLM , ec:IdentifyAnswer , ec:AnswerSourceIdentification ,
+                   ec:SourceGateway , ec:QueryParameterExtraction , ec:SourceJoin ,
+                   ec:AnswerGeneration , ec:ExplanationGeneration , ec:AnswerJoin ,
+                   ec:SendAnswer , ec:AnswerSent .
+
+ec:AnswerSourceLane a bpmn:lane ;
+    bp:name "Answer source" ;
+    bp:flowNodeRef ec:KnowledgeGraphQuery , ec:DocumentRetrieval .
+
+ec:AdministrationLane a bpmn:lane ;
+    bp:name "Chatbot administration" ;
+    bp:flowNodeRef ec:TakeOverConversation .
+
+
+ec:QuestionArrives a bpmn:startEvent ;
+    bp:name "A customer asks" ;
+    bp:eventDefinition ec:QuestionArrivesTrigger ;
+    bp:outgoing ec:SFlow0 .
+
+ec:QuestionArrivesTrigger a bpmn:messageEventDefinition ;
+    bp:messageRef ec:QuestionMessage .
+
+ec:SFlow0 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:QuestionArrives ; bp:targetRef ec:ReceiveQuestion .
+
+ec:ReceiveQuestion a bpmn:receiveTask ;
+    bp:name "Receive the question" ;
+    bp:messageRef ec:QuestionMessage ;
+    bp:dataInputAssociation ec:QuestionIn ;
+    bp:incoming ec:SFlow0 ;
+    bp:outgoing ec:SFlow1 .
+
+
+ec:DomainClassification a bpmn:subProcess ;
+    bp:name "Domain classification" ;
+    rdfs:comment "The question is placed in one of the subdomains the chatbot supports. The subdomains are collected from the SHACL shapes." ;
+    pair:refinedBy we:AgentChain ;
+    bp:incoming ec:SFlow1 ;
+    bp:outgoing ec:SFlow2 ;
+    bp:dataInputAssociation ec:QuestionToClassify , ec:ShapesToClassify ;
+    bp:contains ec:ClassifyWithLLM , ec:IdentifyAnswer .
+
+ec:ClassifyWithLLM a bpmn:serviceTask ;
+    bp:name "Classify the domains with a zero-shot LLM prompt" ;
+    bp:outgoing ec:DFlow1 .
+
+ec:IdentifyAnswer a bpmn:serviceTask ;
+    bp:name "Identify the answer" ;
+    bp:incoming ec:DFlow1 .
+
+ec:DFlow1 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ClassifyWithLLM ; bp:targetRef ec:IdentifyAnswer .
+
+
+ec:AnswerSourceIdentification a bpmn:serviceTask ;
+    bp:name "Answer source identification" ;
+    rdfs:comment "Reads the target classes and properties the shapes declare for the identified domain, and decides which source can answer." ;
+    pair:refinedBy we:AgentChain ;
+    bp:incoming ec:SFlow2 ;
+    bp:outgoing ec:SFlowRoute ;
+    bp:dataInputAssociation ec:ShapesToRoute .
+
+# Inclusive, not exclusive: a question that asks two things at once is split
+# between both sources, so more than one branch may be taken.
+ec:SourceGateway a bpmn:inclusiveGateway ;
+    bp:name "Which source can answer?" ;
+    bp:gatewayDirection "Diverging" ;
+    bp:incoming ec:SFlowRoute ;
+    bp:outgoing ec:SFlow3 , ec:SFlow4 , ec:SFlow9 .
+
+ec:SFlowRoute a bpmn:sequenceFlow ;
+    bp:sourceRef ec:AnswerSourceIdentification ; bp:targetRef ec:SourceGateway .
+
+
+ec:QueryParameterExtraction a bpmn:serviceTask ;
+    bp:name "Query parameter extraction" ;
+    rdfs:comment "Recognises the parameters of the graph query. The chain writes the query that is put to the knowledge graph." ;
+    pair:refinedBy we:AgentChain ;
+    bp:incoming ec:SFlow3 ;
+    bp:outgoing ec:SFlow5 ;
+    bp:dataInputAssociation ec:QuestionToExtract .
+
+ec:KnowledgeGraphQuery a bpmn:serviceTask ;
+    bp:name "Knowledge graph query" ;
+    pair:refinedBy we:KnowledgeGraphService ;
+    bp:incoming ec:SFlow5 ;
+    bp:outgoing ec:SFlow6 ;
+    bp:dataInputAssociation ec:GraphToQuery .
+
+ec:DocumentRetrieval a bpmn:serviceTask ;
+    bp:name "Document retrieval (RAG)" ;
+    pair:refinedBy we:DocumentRagService ;
+    bp:incoming ec:SFlow4 ;
+    bp:outgoing ec:SFlow7 ;
+    bp:dataInputAssociation ec:QuestionToRetrieve , ec:DocumentsToRetrieve .
+
+ec:AnswerGeneration a bpmn:serviceTask ;
+    bp:name "Answer generation" ;
+    rdfs:comment "The partial results from the sources that were chosen are merged here, and an LLM agent writes the answer from them." ;
+    pair:refinedBy we:AgentChain ;
+    bp:incoming ec:SFlowMerged ;
+    bp:outgoing ec:SFlow8 ;
+    bp:dataOutputAssociation ec:AnswerOut .
+
+ec:ExplanationGeneration a bpmn:serviceTask ;
+    bp:name "Explanation generation" ;
+    rdfs:comment "Says which graph entities and which documents the answer came from, and that an LLM wrote the parts that came from documents." ;
+    pair:refinedBy we:AgentChain ;
+    bp:incoming ec:SFlow8 ;
+    bp:outgoing ec:SFlow10 ;
+    bp:dataInputAssociation ec:AnswerToExplain ;
+    bp:dataOutputAssociation ec:ExplanationOut .
+
+ec:TakeOverConversation a bpmn:userTask ;
+    bp:name "Take over the conversation in live chat" ;
+    bp:incoming ec:SFlow9 ;
+    bp:outgoing ec:SFlow11 ;
+    bp:dataInputAssociation ec:QuestionToTakeOver ;
+    bp:resourceRole ec:ChatbotAdministrator .
+
+ec:ChatbotAdministrator a bpmn:humanPerformer ;
+    bp:name "Chatbot administrator" ;
+    bp:resourceRef ec:AdministratorRole .
+
+ec:AdministratorRole a bpmn:resource ;
+    bp:name "Wien Energie chatbot administrator" .
+
+ec:SendAnswer a bpmn:sendTask ;
+    bp:name "Send the answer" ;
+    bp:messageRef ec:AnswerMessage ;
+    bp:incoming ec:SFlowAnswered ;
+    bp:outgoing ec:SFlowEnd .
+
+# The two joins the diagram had drawn as several arrows into one box. The
+# source join is inclusive because the split was; the answer join is exclusive
+# because a question is either answered by the chatbot or taken over, never both.
+ec:SourceJoin a bpmn:inclusiveGateway ;
+    bp:gatewayDirection "Converging" ;
+    bp:incoming ec:SFlow6 , ec:SFlow7 ;
+    bp:outgoing ec:SFlowMerged .
+
+ec:AnswerJoin a bpmn:exclusiveGateway ;
+    bp:gatewayDirection "Converging" ;
+    bp:incoming ec:SFlow10 , ec:SFlow11 ;
+    bp:outgoing ec:SFlowAnswered .
+
+ec:AnswerSent a bpmn:endEvent ;
+    bp:name "The customer has an answer" ;
+    bp:incoming ec:SFlowEnd .
+
+
+## Control flow ----------------------------------------------------------------
+ec:SFlow1 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ReceiveQuestion ;             bp:targetRef ec:DomainClassification .
+ec:SFlow2 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:DomainClassification ;        bp:targetRef ec:AnswerSourceIdentification .
+
+ec:SFlow3 a bpmn:sequenceFlow ;
+    bp:name "knowledge graph" ;
+    bp:conditionExpression ec:SchemaCovers ;
+    bp:sourceRef ec:SourceGateway ;               bp:targetRef ec:QueryParameterExtraction .
+ec:SFlow4 a bpmn:sequenceFlow ;
+    bp:name "documents" ;
+    bp:conditionExpression ec:DocumentsCover ;
+    bp:sourceRef ec:SourceGateway ;               bp:targetRef ec:DocumentRetrieval .
+ec:SFlow9 a bpmn:sequenceFlow ;
+    bp:name "no source" ;
+    bp:conditionExpression ec:NoSourceAnswers ;
+    bp:sourceRef ec:SourceGateway ;               bp:targetRef ec:TakeOverConversation .
+
+ec:SchemaCovers a bpmn:formalExpression ;
+    rdfs:label "the identified domain is covered by the knowledge graph shapes" .
+ec:DocumentsCover a bpmn:formalExpression ;
+    rdfs:label "the identified domain is covered by the document store" .
+ec:NoSourceAnswers a bpmn:formalExpression ;
+    rdfs:label "no source covers the identified domain" .
+
+ec:SFlow5 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:QueryParameterExtraction ;    bp:targetRef ec:KnowledgeGraphQuery .
+ec:SFlow6 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:KnowledgeGraphQuery ;         bp:targetRef ec:SourceJoin .
+ec:SFlow7 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:DocumentRetrieval ;           bp:targetRef ec:SourceJoin .
+ec:SFlowMerged a bpmn:sequenceFlow ;
+    bp:sourceRef ec:SourceJoin ;                  bp:targetRef ec:AnswerGeneration .
+ec:SFlow8 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:AnswerGeneration ;            bp:targetRef ec:ExplanationGeneration .
+ec:SFlow10 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ExplanationGeneration ;       bp:targetRef ec:AnswerJoin .
+ec:SFlow11 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:TakeOverConversation ;        bp:targetRef ec:AnswerJoin .
+ec:SFlowAnswered a bpmn:sequenceFlow ;
+    bp:sourceRef ec:AnswerJoin ;                  bp:targetRef ec:SendAnswer .
+ec:SFlowEnd a bpmn:sequenceFlow ;
+    bp:sourceRef ec:SendAnswer ;                  bp:targetRef ec:AnswerSent .
+
+
+
+ec:AnswerMessage a bpmn:message ;
+    bp:name "Answer" .
+
+ec:MFlow1 a bpmn:messageFlow ;
+    bp:name "asks" ;
+    bp:messageRef ec:QuestionMessage ;
+    bp:sourceRef ec:AskQuestion ;
+    bp:targetRef ec:ReceiveQuestion .
+
+ec:MFlow2 a bpmn:messageFlow ;
+    bp:name "answers" ;
+    bp:messageRef ec:AnswerMessage ;
+    bp:sourceRef ec:SendAnswer ;
+    bp:targetRef ec:ReadAnswer .
+
+
+
+ec:QuestionRef a bpmn:dataObjectReference ;
+    bp:name "Customer question" ;
+    bp:dataObjectRef ec:CustomerQuestion .
+
+ec:CustomerQuestion a bpmn:dataObject ;
+    bp:name "Customer question" ;
+    bp:itemSubjectRef ec:QuestionItem .
+
+ec:QuestionItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:PersonalData .
+
+ec:QuestionIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:QuestionRef ; bp:targetRef ec:ReceiveQuestion .
+
+ec:QuestionToClassify a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:QuestionRef ; bp:targetRef ec:DomainClassification .
+
+ec:QuestionToExtract a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:QuestionRef ; bp:targetRef ec:QueryParameterExtraction .
+
+ec:QuestionToRetrieve a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:QuestionRef ; bp:targetRef ec:DocumentRetrieval .
+
+ec:QuestionToTakeOver a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:QuestionRef ; bp:targetRef ec:TakeOverConversation .
+
+
+ec:ShapesRef a bpmn:dataObjectReference ;
+    bp:name "SHACL shapes" ;
+    bp:dataObjectRef ec:DomainShapes .
+
+ec:DomainShapes a bpmn:dataObject ;
+    bp:name "SHACL shapes" ;
+    rdfs:comment "The supported subdomains, and the target classes and properties of each." ;
+    bp:itemSubjectRef ec:ShapesItem .
+
+ec:ShapesItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:NonPersonalData .
+
+ec:ShapesToClassify a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:ShapesRef ; bp:targetRef ec:DomainClassification .
+
+ec:ShapesToRoute a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:ShapesRef ; bp:targetRef ec:AnswerSourceIdentification .
+
+
+ec:KnowledgeGraphStoreRef a bpmn:dataStoreReference ;
+    bp:name "Wien Energie knowledge graph" ;
+    bp:dataStoreRef ec:KnowledgeGraphStore .
+
+ec:KnowledgeGraphStore a bpmn:dataStore ;
+    bp:name "Wien Energie knowledge graph" .
+
+ec:GraphToQuery a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:KnowledgeGraphStoreRef ; bp:targetRef ec:KnowledgeGraphQuery .
+
+ec:DocumentStoreRef a bpmn:dataStoreReference ;
+    bp:name "Document store" ;
+    bp:dataStoreRef ec:DocumentStore .
+
+ec:DocumentStore a bpmn:dataStore ;
+    bp:name "Document store" ;
+    rdfs:comment "PDF files, FAQs and other pages from the Wien Energie website, held as vectors." .
+
+ec:DocumentsToRetrieve a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:DocumentStoreRef ; bp:targetRef ec:DocumentRetrieval .
+
+
+ec:AnswerRef a bpmn:dataObjectReference ;
+    bp:name "Answer" .
+
+ec:AnswerOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:AnswerGeneration ; bp:targetRef ec:AnswerRef .
+
+ec:AnswerToExplain a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:AnswerRef ; bp:targetRef ec:ExplanationGeneration .
+
+ec:ExplanationRef a bpmn:dataObjectReference ;
+    bp:name "Explanation" .
+
+ec:ExplanationOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:ExplanationGeneration ; bp:targetRef ec:ExplanationRef .
+
+ec:DraftRef a bpmn:dataObjectReference ;
+    bp:name "Drafted reply" .
+
+ec:DraftOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:CustomerService ; bp:targetRef ec:DraftRef .
+
+ec:DraftRef a bpmn:dataObjectReference ;
+    bp:name "Drafted reply" .
+
+ec:DraftOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:CustomerService ; bp:targetRef ec:DraftRef .

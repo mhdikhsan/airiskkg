@@ -1,0 +1,411 @@
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix wt:   <http://w3id.org/airiskkg/example/wien-energie-tariff#> .
+@prefix ec:   <http://w3id.org/airiskkg/example/energy-cs#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# Change Plan Tariff for Energie: the customer asks the assistant in the portal,
+# the rules decide, the form is prepared and checked, and a customer service
+# agent makes the change. Each lane names the system that carries it out.
+
+ec:TariffCollaboration a bpmn:collaboration ;
+    bp:name "Wien Energie tariff change" ;
+    bp:contains ec:TariffCustomerPool , ec:WienEnergiePool .
+
+ec:TariffCustomerPool a bpmn:participant ;
+    bp:name "Customer" ;
+    bp:processRef ec:TariffCustomerJourney .
+
+ec:WienEnergiePool a bpmn:participant ;
+    bp:name "Wien Energie" ;
+    bp:processRef ec:TariffChangeProcess .
+
+
+## The customer side -----------------------------------------------------------
+
+ec:TariffCustomerJourney a bpmn:process ;
+    bp:name "Change plan tariff for energy" ;
+    bp:isExecutable false ;
+    bp:contains ec:WantsAChange , ec:LogIntoPortal , ec:StartChatSession , ec:IntentGateway ,
+                ec:RequestTariffChange , ec:FillOutForm , ec:ReceiveConfirmation ,
+                ec:TariffChanged , ec:HandledElsewhere .
+
+ec:WantsAChange a bpmn:startEvent ;
+    bp:name "Wants to change something" ;
+    bp:outgoing ec:TFlow0 .
+
+ec:LogIntoPortal a bpmn:task ;
+    bp:name "Log into the customer portal" ;
+    bp:incoming ec:TFlow0 ;
+    bp:outgoing ec:TFlow1 .
+
+ec:StartChatSession a bpmn:task ;
+    bp:name "Start a chat session" ;
+    bp:incoming ec:TFlow1 ;
+    bp:outgoing ec:TFlow2 .
+
+# The portal diagram splits here on what the customer wants. Only the tariff
+# branch is named in the source; the rest leave through the default flow.
+ec:IntentGateway a bpmn:exclusiveGateway ;
+    bp:name "What does the customer want?" ;
+    bp:gatewayDirection "Diverging" ;
+    bp:default ec:TFlowOther ;
+    bp:incoming ec:TFlow2 ;
+    bp:outgoing ec:TFlow2a , ec:TFlowOther .
+
+ec:RequestTariffChange a bpmn:task ;
+    bp:name "Change tariff (service plan)" ;
+    bp:incoming ec:TFlow2a ;
+    bp:outgoing ec:TFlow3 .
+
+ec:FillOutForm a bpmn:task ;
+    bp:name "Fill out the form" ;
+    bp:incoming ec:TFlow3 ;
+    bp:outgoing ec:TFlow4 ;
+    bp:dataOutputAssociation ec:SubmittedFormOut .
+
+ec:ReceiveConfirmation a bpmn:task ;
+    bp:name "Receive the confirmation" ;
+    bp:incoming ec:TFlow4 ;
+    bp:outgoing ec:TFlow4a .
+
+ec:TariffChanged a bpmn:endEvent ;
+    bp:name "Tariff changed" ;
+    bp:incoming ec:TFlow4a .
+
+ec:HandledElsewhere a bpmn:endEvent ;
+    bp:name "Another request" ;
+    bp:incoming ec:TFlowOther .
+
+ec:TFlow0 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:WantsAChange ;       bp:targetRef ec:LogIntoPortal .
+ec:TFlow1 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:LogIntoPortal ;      bp:targetRef ec:StartChatSession .
+ec:TFlow2 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:StartChatSession ;   bp:targetRef ec:IntentGateway .
+ec:TFlow2a a bpmn:sequenceFlow ;
+    bp:name "tariff" ;
+    bp:conditionExpression ec:WantsTariffChange ;
+    bp:sourceRef ec:IntentGateway ;      bp:targetRef ec:RequestTariffChange .
+ec:TFlowOther a bpmn:sequenceFlow ;
+    bp:sourceRef ec:IntentGateway ;      bp:targetRef ec:HandledElsewhere .
+
+ec:WantsTariffChange a bpmn:formalExpression ;
+    rdfs:label "the customer wants to change the tariff" .
+
+ec:TFlow3 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:RequestTariffChange ; bp:targetRef ec:FillOutForm .
+ec:TFlow4 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:FillOutForm ;        bp:targetRef ec:ReceiveConfirmation .
+ec:TFlow4a a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ReceiveConfirmation ; bp:targetRef ec:TariffChanged .
+
+
+## The Wien Energie side -------------------------------------------------------
+
+ec:TariffChangeProcess a bpmn:process ;
+    bp:name "Change the tariff plan" ;
+    bp:isExecutable true ;
+    bp:laneSet ec:WienEnergieLanes ;
+    bp:contains ec:CustomerArrives , ec:AuthenticateCustomer , ec:OfferHelp ,
+                ec:RetrieveContract , ec:CheckContractConditions , ec:ConditionsGateway ,
+                ec:ExplainConditions , ec:DeclineChange , ec:ShowForm , ec:CheckForm ,
+                ec:ChangePlan , ec:ConfirmChange , ec:ChangeMade , ec:ChangeDeclined .
+
+ec:WienEnergieLanes a bpmn:laneSet ;
+    bp:contains ec:PortalLane , ec:LlmAgentLane , ec:ServiceAgentLane .
+
+ec:PortalLane a bpmn:lane ;
+    bp:name "Customer portal" ;
+    bp:flowNodeRef ec:CustomerArrives , ec:AuthenticateCustomer .
+
+ec:LlmAgentLane a bpmn:lane ;
+    bp:name "LLM agent" ;
+    bp:flowNodeRef ec:OfferHelp , ec:RetrieveContract , ec:CheckContractConditions ,
+                   ec:ConditionsGateway , ec:ExplainConditions , ec:DeclineChange ,
+                   ec:ChangeDeclined , ec:ShowForm , ec:CheckForm .
+
+ec:ServiceAgentLane a bpmn:lane ;
+    bp:name "Customer service agent" ;
+    bp:flowNodeRef ec:ChangePlan , ec:ConfirmChange , ec:ChangeMade .
+
+
+ec:CustomerArrives a bpmn:startEvent ;
+    bp:name "A customer logs in" ;
+    bp:eventDefinition ec:LoginTrigger ;
+    bp:outgoing ec:TFlow4b .
+
+ec:LoginTrigger a bpmn:messageEventDefinition ;
+    bp:messageRef ec:LoginMessage .
+
+ec:TFlow4b a bpmn:sequenceFlow ;
+    bp:sourceRef ec:CustomerArrives ; bp:targetRef ec:AuthenticateCustomer .
+
+ec:AuthenticateCustomer a bpmn:serviceTask ;
+    bp:name "Authenticate the customer" ;
+    bp:incoming ec:TFlow4b ;
+    bp:outgoing ec:TFlow5 ;
+    bp:dataOutputAssociation ec:AccountOut .
+
+ec:OfferHelp a bpmn:serviceTask ;
+    bp:name "How can I help?" ;
+    pair:refinedBy wt:ConversationAgent ;
+    bp:incoming ec:TFlow5 ;
+    bp:outgoing ec:TFlow6 ;
+    bp:dataInputAssociation ec:ChatMessageIn .
+
+ec:RetrieveContract a bpmn:serviceTask ;
+    bp:name "Retrieve the current contract" ;
+    pair:refinedBy wt:CustomerRecords ;
+    bp:incoming ec:TFlow6 ;
+    bp:outgoing ec:TFlow7 ;
+    bp:dataInputAssociation ec:AccountIn , ec:RecordsToRetrieve .
+
+ec:CheckContractConditions a bpmn:businessRuleTask ;
+    bp:name "Check the contract conditions" ;
+    pair:refinedBy wt:EligibilityService ;
+    bp:incoming ec:TFlow7 ;
+    bp:outgoing ec:TFlow7a ;
+    bp:dataInputAssociation ec:ConditionsToCheck .
+
+# The rule task decides; the gateway is where the decision splits the flow.
+# Exclusive: the change is either allowed or it is not.
+ec:ConditionsGateway a bpmn:exclusiveGateway ;
+    bp:name "Conditions fulfilled?" ;
+    bp:gatewayDirection "Diverging" ;
+    bp:incoming ec:TFlow7a ;
+    bp:outgoing ec:TFlow8 , ec:TFlow9 .
+
+ec:ExplainConditions a bpmn:serviceTask ;
+    bp:name "Explain the conditions" ;
+    pair:refinedBy wt:ConversationAgent ;
+    bp:incoming ec:TFlow8 ;
+    bp:outgoing ec:TFlow10 .
+
+ec:DeclineChange a bpmn:serviceTask ;
+    bp:name "Decline the change" ;
+    pair:refinedBy wt:ConversationAgent ;
+    bp:incoming ec:TFlow9 ;
+    bp:outgoing ec:TFlow9a .
+
+ec:ChangeDeclined a bpmn:endEvent ;
+    bp:name "Change declined" ;
+    bp:incoming ec:TFlow9a .
+
+ec:ShowForm a bpmn:serviceTask ;
+    bp:name "Show the change form" ;
+    pair:refinedBy wt:FormService ;
+    bp:incoming ec:TFlow10 ;
+    bp:outgoing ec:TFlow11 ;
+    bp:dataOutputAssociation ec:FormOut .
+
+ec:CheckForm a bpmn:serviceTask ;
+    bp:name "Check the submitted form" ;
+    pair:refinedBy wt:FormService ;
+    bp:incoming ec:TFlow11 ;
+    bp:outgoing ec:TFlow12 ;
+    bp:dataInputAssociation ec:SubmittedFormIn ;
+    bp:dataOutputAssociation ec:CheckedFormOut .
+
+ec:ChangePlan a bpmn:userTask ;
+    bp:name "Change the plan" ;
+    rdfs:comment "The agent reads what the assistant checked and makes the change. Nothing takes effect before this." ;
+    bp:incoming ec:TFlow12 ;
+    bp:outgoing ec:TFlow13 ;
+    bp:dataInputAssociation ec:CheckedFormIn ;
+    bp:dataOutputAssociation ec:RecordUpdate ;
+    bp:resourceRole ec:ServiceAgent .
+
+ec:ServiceAgent a bpmn:humanPerformer ;
+    bp:name "Customer service agent" ;
+    bp:resourceRef ec:ServiceAgentRole .
+
+ec:ServiceAgentRole a bpmn:resource ;
+    bp:name "Wien Energie customer service agent" .
+
+ec:ConfirmChange a bpmn:sendTask ;
+    bp:name "Confirm the change" ;
+    bp:messageRef ec:ConfirmationMessage ;
+    bp:incoming ec:TFlow13 ;
+    bp:outgoing ec:TFlow13a .
+
+ec:ChangeMade a bpmn:endEvent ;
+    bp:name "Change made" ;
+    bp:incoming ec:TFlow13a .
+
+
+ec:TFlow5 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:AuthenticateCustomer ;     bp:targetRef ec:OfferHelp .
+ec:TFlow6 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:OfferHelp ;                bp:targetRef ec:RetrieveContract .
+ec:TFlow7 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:RetrieveContract ;         bp:targetRef ec:CheckContractConditions .
+ec:TFlow7a a bpmn:sequenceFlow ;
+    bp:sourceRef ec:CheckContractConditions ;  bp:targetRef ec:ConditionsGateway .
+ec:TFlow8 a bpmn:sequenceFlow ;
+    bp:name "fulfilled" ;
+    bp:conditionExpression ec:ConditionsMet ;
+    bp:sourceRef ec:ConditionsGateway ;        bp:targetRef ec:ExplainConditions .
+ec:TFlow9 a bpmn:sequenceFlow ;
+    bp:name "not fulfilled" ;
+    bp:conditionExpression ec:ConditionsNotMet ;
+    bp:sourceRef ec:ConditionsGateway ;        bp:targetRef ec:DeclineChange .
+ec:TFlow9a a bpmn:sequenceFlow ;
+    bp:sourceRef ec:DeclineChange ;            bp:targetRef ec:ChangeDeclined .
+
+ec:ConditionsMet a bpmn:formalExpression ;
+    rdfs:label "the change conditions are fulfilled" .
+ec:ConditionsNotMet a bpmn:formalExpression ;
+    rdfs:label "the change conditions are not fulfilled" .
+ec:TFlow10 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ExplainConditions ;        bp:targetRef ec:ShowForm .
+ec:TFlow11 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ShowForm ;                 bp:targetRef ec:CheckForm .
+ec:TFlow12 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:CheckForm ;                bp:targetRef ec:ChangePlan .
+ec:TFlow13 a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ChangePlan ;               bp:targetRef ec:ConfirmChange .
+ec:TFlow13a a bpmn:sequenceFlow ;
+    bp:sourceRef ec:ConfirmChange ;            bp:targetRef ec:ChangeMade .
+
+
+## What crosses the pool boundary ----------------------------------------------
+
+ec:LoginMessage a bpmn:message ;
+    bp:name "Portal login" .
+
+ec:ChatOpeningMessage a bpmn:message ;
+    bp:name "Chat message" .
+
+ec:FormMessage a bpmn:message ;
+    bp:name "Change form" .
+
+ec:SubmittedFormMessage a bpmn:message ;
+    bp:name "Submitted form" .
+
+ec:ConfirmationMessage a bpmn:message ;
+    bp:name "Change confirmation" .
+
+ec:TMsg1 a bpmn:messageFlow ;
+    bp:name "logs in" ;
+    bp:messageRef ec:LoginMessage ;
+    bp:sourceRef ec:LogIntoPortal ;    bp:targetRef ec:AuthenticateCustomer .
+
+ec:TMsg2 a bpmn:messageFlow ;
+    bp:name "asks" ;
+    bp:messageRef ec:ChatOpeningMessage ;
+    bp:sourceRef ec:StartChatSession ; bp:targetRef ec:OfferHelp .
+
+ec:TMsg3 a bpmn:messageFlow ;
+    bp:name "shows the form" ;
+    bp:messageRef ec:FormMessage ;
+    bp:sourceRef ec:ShowForm ;         bp:targetRef ec:FillOutForm .
+
+ec:TMsg4 a bpmn:messageFlow ;
+    bp:name "submits" ;
+    bp:messageRef ec:SubmittedFormMessage ;
+    bp:sourceRef ec:FillOutForm ;      bp:targetRef ec:CheckForm .
+
+ec:TMsg5 a bpmn:messageFlow ;
+    bp:name "confirms" ;
+    bp:messageRef ec:ConfirmationMessage ;
+    bp:sourceRef ec:ConfirmChange ;    bp:targetRef ec:ReceiveConfirmation .
+
+
+## Data ------------------------------------------------------------------------
+
+ec:ChatMessageRef a bpmn:dataObjectReference ;
+    bp:name "Customer chat message" ;
+    bp:dataObjectRef ec:CustomerChatMessage .
+
+ec:CustomerChatMessage a bpmn:dataObject ;
+    bp:name "Customer chat message" ;
+    bp:itemSubjectRef ec:ChatMessageItem .
+
+ec:ChatMessageItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:PersonalData .
+
+ec:ChatMessageIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:ChatMessageRef ; bp:targetRef ec:OfferHelp .
+
+
+ec:AccountRef a bpmn:dataObjectReference ;
+    bp:name "Authenticated customer account" ;
+    bp:dataObjectRef ec:CustomerAccount .
+
+ec:CustomerAccount a bpmn:dataObject ;
+    bp:name "Authenticated customer account" ;
+    bp:itemSubjectRef ec:AccountItem .
+
+ec:AccountItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:PersonalData .
+
+ec:AccountOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:AuthenticateCustomer ; bp:targetRef ec:AccountRef .
+
+ec:AccountIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:AccountRef ; bp:targetRef ec:RetrieveContract .
+
+
+ec:CustomerRecordStoreRef a bpmn:dataStoreReference ;
+    bp:name "Customer DB" ;
+    bp:dataStoreRef ec:CustomerRecordStore .
+
+ec:CustomerRecordStore a bpmn:dataStore ;
+    bp:name "Customer DB" .
+
+ec:RecordsToRetrieve a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:CustomerRecordStoreRef ; bp:targetRef ec:RetrieveContract .
+
+ec:RecordUpdate a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:ChangePlan ; bp:targetRef ec:CustomerRecordStoreRef .
+
+
+ec:TariffConditionsRef a bpmn:dataObjectReference ;
+    bp:name "Tariff and contract conditions" ;
+    bp:dataObjectRef ec:TariffConditions .
+
+ec:TariffConditions a bpmn:dataObject ;
+    bp:name "Tariff and contract conditions" ;
+    bp:itemSubjectRef ec:TariffConditionsItem .
+
+ec:TariffConditionsItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:NonPersonalData .
+
+ec:ConditionsToCheck a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:TariffConditionsRef ; bp:targetRef ec:CheckContractConditions .
+
+
+ec:FormRef a bpmn:dataObjectReference ;
+    bp:name "Change form" .
+
+ec:FormOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:ShowForm ; bp:targetRef ec:FormRef .
+
+ec:SubmittedFormRef a bpmn:dataObjectReference ;
+    bp:name "Submitted change form" ;
+    bp:dataObjectRef ec:SubmittedFormData .
+
+ec:SubmittedFormData a bpmn:dataObject ;
+    bp:name "Submitted change form" ;
+    bp:itemSubjectRef ec:SubmittedFormItem .
+
+ec:SubmittedFormItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:PersonalData .
+
+ec:SubmittedFormOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:FillOutForm ; bp:targetRef ec:SubmittedFormRef .
+
+ec:SubmittedFormIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:SubmittedFormRef ; bp:targetRef ec:CheckForm .
+
+ec:CheckedFormRef a bpmn:dataObjectReference ;
+    bp:name "Checked change form" .
+
+ec:CheckedFormOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ec:CheckForm ; bp:targetRef ec:CheckedFormRef .
+
+ec:CheckedFormIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ec:CheckedFormRef ; bp:targetRef ec:ChangePlan .

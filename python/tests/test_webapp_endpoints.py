@@ -8,7 +8,13 @@ flask = pytest.importorskip("flask")
 
 from airiskkg.paths import EXAMPLE_DIR, REPO_ROOT  # noqa: E402
 from airiskkg.webapp.app import create_app  # noqa: E402
-from conftest import GRAPH_RAG_NS, ONYX_NS, example_path  # noqa: E402
+from conftest import (  # noqa: E402
+    GRAPH_RAG_NS,
+    ONYX_NS,
+    WIEN_ENERGIE_NS,
+    example_path,
+    process_path,
+)
 
 
 @pytest.fixture(scope="module")
@@ -709,15 +715,16 @@ def test_findings_are_attributed_to_the_activity_they_arise_under(client) -> Non
     """What makes a finding communicable. "Seven findings on Customer service
     chatbot" is a sentence a process owner acts on; the name of an inference step
     inside the architecture is not."""
-    architecture = example_path(GRAPH_RAG_NS).read_text(encoding="utf-8")
-    process = (EXAMPLE_DIR / "context" / "energy_customer_service.ttl").read_text(encoding="utf-8")
+    architecture = example_path(WIEN_ENERGIE_NS).read_text(encoding="utf-8")
+    process = process_path("energy_customer_service").read_text(encoding="utf-8")
 
     assessed = client.post("/api/assess", json={"ttl": architecture + "\n" + process}).get_json()
     rows = assessed["findingsByActivity"]
 
     assert rows, "no findings were attributed to any activity"
-    assert rows[0]["label"] == "Customer service chatbot"
-    assert rows[0]["findings"] == assessed["summary"]["riskFindingCount"]
+    labels = {row["label"] for row in rows}
+    assert "Answer generation" in labels and "Document retrieval (RAG)" in labels
+    assert rows[0]["findings"] <= assessed["summary"]["riskFindingCount"]
 
 
 def test_an_architecture_with_no_process_attributes_nothing(client) -> None:
@@ -731,13 +738,11 @@ def test_a_process_example_says_which_architectures_it_needs(client) -> None:
     """A process names the systems its activities are carried out by and does
     not contain them. Loaded alone it draws a diagram pointing at architectures
     that are not there - no nodes, no findings, and nothing saying why."""
-    body = client.get("/api/examples/energy_customer_service").get_json()
+    # A shipped process, since this is a claim about what the deployment offers.
+    body = client.get("/api/examples/it_service_desk").get_json()
 
     assert body["kind"] == "process"
-    assert {row["example"] for row in body["requires"]} == {
-        "simple_graph_rag",
-        "meter_anomaly_scoring",
-    }
+    assert {row["example"] for row in body["requires"]} == {"it_support_agent"}
     assert body["missing"] == [], "the shipped process refines something we do not ship"
 
 

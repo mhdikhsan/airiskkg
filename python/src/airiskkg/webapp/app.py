@@ -29,17 +29,29 @@ Reading the graph
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from flask import Flask, send_from_directory
 
 from airiskkg.webapp.routes import BLUEPRINTS
 from airiskkg.webapp.runtime import local_examples_default, start_warmup
 
 
-def create_app(*, local_examples: bool | None = None) -> Flask:
+def create_app(
+    *, local_examples: bool | None = None, extra_example_dirs: list | None = None
+) -> Flask:
+    """`extra_example_dirs` offers graphs from somewhere else as well.
+
+    It exists for the browser tests, which drive the canvas and need a process
+    model rich enough to have something to drive - lanes, a gateway, two
+    architectures - without that model having to be part of the curated set the
+    deployment offers. Nothing else passes it, so a served app offers exactly
+    what ships."""
     app = Flask(__name__, static_folder="static", static_url_path="/static")
     app.config["LOCAL_EXAMPLES"] = (
         local_examples_default() if local_examples is None else local_examples
     )
+    app.config["EXTRA_EXAMPLE_DIRS"] = [Path(d) for d in (extra_example_dirs or [])]
     start_warmup()
 
     @app.get("/")

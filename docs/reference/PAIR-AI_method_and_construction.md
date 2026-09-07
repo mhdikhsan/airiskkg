@@ -1079,14 +1079,32 @@ something is a layer that is not being read.
 walking the graph (`graph_view._members_of()`). There is no database and there must not be one
 for this. The same membership draws the per-system boundary on the architecture canvas.
 
-### 7.7 The canvas draws what a risk assessment reads, and no more
+### 7.7 The canvas draws the notation sBPMN declares
 
-Pools as bands, activities in flow order with task-type glyphs, sequence flow within a pool,
-message flow across pools, sub-process expansion in place, data objects as folded pages, data
-stores as cylinders, data associations as dashed arrows, and the classification humanised
-above the shape. **Gateways, events and boundary markers are deliberately absent**: no bundled
-example uses one, a faithful BPMN renderer is a project of its own, and none of them changes
-a finding.
+Pools banded into lanes, activities with their task-type glyphs and their loop,
+multi-instance, ad-hoc and compensation markers, events in all five positions — start,
+intermediate catching, intermediate throwing, end, boundary — carrying the trigger glyph of
+their event definition, gateways as diamonds glyphed by kind, sub-process expansion in place,
+call activities and transactions by their border weight, data objects as folded pages, data
+stores as cylinders, data associations as dashed arrows with the classification humanised
+above the shape, and text annotations as open brackets.
+
+The vocabulary ceiling is `external/sbpmn/sbpmn_2.0.ttl`, checked rather than claimed:
+`test_bpmn_authoring.py` fails on any class or property the editor writes that sBPMN does not
+declare, the same bar `test_business_context.py` already held the bundled examples to. One
+consequence is worth recording — sBPMN gives an `expression` no body property, because BPMN
+carries it as XML mixed content, so the readable text of a `conditionExpression` rides on
+`rdfs:label` rather than on an invented `bp:` term.
+
+An earlier version of this section argued that gateways and events were deliberately absent
+because none of them changes a finding. That is true and it was the wrong conclusion. A
+diagram that cannot say *this branches* asserts an order of work the model never claimed:
+`ec:AnswerSourceIdentification` had three sequence flows leaving it and the canvas drew it as
+a straight chain, because it connected consecutive boxes in layout order rather than reading
+the flows at all. Sequence flow is now emitted by `process_view`, laid out by longest path
+over the real edges, and routed orthogonally; the Wien Energie baselines are unchanged with
+the gateways and events in place, which is the evidence that the notation is additive to the
+assessment rather than a second thing to keep in step with it.
 
 Editing runs through `/api/process-edit`, a server-side rewrite mirroring `/api/graph-edit`,
 so the Turtle in the editor stays the single source of truth. Whether a connection is a

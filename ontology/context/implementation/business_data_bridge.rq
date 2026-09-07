@@ -26,7 +26,13 @@ WHERE {
         bp:targetRef ?activity ;
         bp:sourceRef ?dataReference .
 
-    ?dataReference bp:dataObjectRef ?dataObject .
+    # A store as well as an object. A database is a data store in BPMN and that
+    # is the right way to draw one, but the bridge read bp:dataObjectRef alone -
+    # so "the customer database holds personal data", the most ordinary claim a
+    # process owner makes, derived nothing. The editor has offered both shapes
+    # since the picker was added, which made the silence worse: the annotation
+    # was accepted and then ignored.
+    ?dataReference bp:dataObjectRef|bp:dataStoreRef ?dataObject .
     ?dataObject bp:itemSubjectRef ?item .
     ?item bp:structureRef ?personalDataKind .
 
