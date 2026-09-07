@@ -1,0 +1,196 @@
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix we:   <http://w3id.org/airiskkg/example/wien-energie#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# BotTina, the Wien Energie customer-service chatbot, as described by
+# Serles, U., & Toma, I. (2024). LLMs meet knowledge graphs for a more
+# transparent conversational AI: Wien Energie chatbot. Knowledge Graphs and
+# Neurosymbolic AI (KG-NeSy) workshop, AIRoV 2024.
+# <https://airov.at/2024/workshop/KG-NeSy>
+
+## 1. The RAG/KG agent chain ---------------------------------------------------
+
+we:AgentChain a beam:Element , beam:System ;
+    rdfs:label "RAG/KG agent chain" ;
+    beam:description "Decides which answer source can serve a customer question, queries it through the source services, and writes the answer and an explanation of where it came from. Implemented as a chain of prompts to LLM agents." ;
+    beam:context "Public customer-service chatbot (BotTina) for an energy retailer, in operation since 2017, answering questions about registration and cancellation, tariffs, invoices and payments." ;
+    beam:hasProcess we:ClassifyDomain , we:IdentifyAnswerSource , we:ExtractQueryParameters ,
+                    we:AssemblePrompt , we:GenerateAnswer , we:GenerateExplanation ;
+    beam:hasResource we:Question , we:DomainShapes , we:LLM , we:SystemPrompt ,
+                     we:DomainLabel , we:AnswerPlan , we:KGQueryParameters ,
+                     we:AnsweringPrompt , we:Answer , we:Explanation .
+
+we:Question a beam:Data ;
+    rdfs:label "Customer question" ;
+    rdfs:comment "Free text typed into the chat widget on the Wien Energie website. Whether it carries personal data is not stated here: the business process states it once, and the bridge derives it." ;
+    pair:containsDataCategory pair:ExternalUserContent ,
+        pair:UntrustedContent ;
+    pair:playsRole pair:PublicUserInput ,
+        pair:UserInput ;
+    beam:usedBy we:ClassifyDomain , we:IdentifyAnswerSource , we:ExtractQueryParameters ,
+                we:AssemblePrompt , we:RetrieveDocuments .
+
+we:DomainShapes a beam:SemanticModel , beam:Data ;
+    rdfs:label "SHACL shapes for the supported subdomains" ;
+    rdfs:comment "The subdomains the chatbot supports are collected from these shapes, and the answer-source step reads the target classes and properties they declare for the identified domain. Drawn as an annotation on the diagram; it is an input, so it is modelled as one." ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:KnowledgeSource ;
+    beam:usedBy we:ClassifyDomain , we:IdentifyAnswerSource , we:ExtractQueryParameters .
+
+we:LLM a beam:StatisticalModel ;
+    rdfs:label "LLM" ;
+    rdfs:comment "One model serves every link in the chain. The paper names no vendor, so nothing is claimed here about where it runs." ;
+    pair:playsRole pair:FoundationLLM ,
+        pair:GenerativeModel ;
+    beam:usedBy we:ClassifyDomain , we:IdentifyAnswerSource , we:ExtractQueryParameters ,
+                we:GenerateAnswer , we:GenerateExplanation .
+
+we:SystemPrompt a beam:Symbol ;
+    rdfs:label "Agent prompt templates" ;
+    pair:containsDataCategory pair:PromptInstruction ;
+    pair:playsRole pair:SystemPrompt ;
+    beam:usedBy we:ClassifyDomain , we:IdentifyAnswerSource , we:ExtractQueryParameters ,
+                we:AssemblePrompt , we:GenerateAnswer , we:GenerateExplanation .
+
+we:ClassifyDomain a beam:Infer , beam:Process ;
+    rdfs:label "Domain classification" ;
+    rdfs:comment "A zero- or few-shot LLM prompt placing the question in one of the subdomains the shapes support." ;
+    pair:playsRole pair:PredictionStep ;
+    beam:use we:Question , we:DomainShapes , we:LLM , we:SystemPrompt ;
+    beam:produce we:DomainLabel ;
+    beam:inform we:IdentifyAnswerSource .
+
+we:DomainLabel a beam:Data ;
+    rdfs:label "Identified subdomain" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:PredictionResult ;
+    beam:usedBy we:IdentifyAnswerSource .
+
+we:IdentifyAnswerSource a beam:Infer , beam:Process ;
+    rdfs:label "Answer source identification" ;
+    rdfs:comment "Reads the schema for the identified domain and decides whether the knowledge graph can answer, whether the document store must, or whether the question splits across both." ;
+    pair:playsRole pair:PlanningStep ;
+    beam:use we:Question , we:DomainLabel , we:DomainShapes , we:LLM , we:SystemPrompt ;
+    beam:produce we:AnswerPlan ;
+    beam:inform we:ExtractQueryParameters , we:RetrieveDocuments .
+
+we:AnswerPlan a beam:Data ;
+    rdfs:label "Answer plan" ;
+    rdfs:comment "Which source answers which part of the question. Asked about gas offers and their prices, the plan sends the offers to the graph and the prices to the documents." ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:ResourceRole ;
+    beam:usedBy we:ExtractQueryParameters , we:RetrieveDocuments .
+
+we:ExtractQueryParameters a beam:Infer , beam:Process ;
+    rdfs:label "Query parameter extraction" ;
+    rdfs:comment "Recognises the parameters of the graph query from the question, so the query put to the knowledge graph is written by the model rather than by the modeller." ;
+    pair:playsRole pair:QueryReformulationStep ;
+    beam:use we:Question , we:AnswerPlan , we:DomainShapes , we:LLM , we:SystemPrompt ;
+    beam:produce we:KGQueryParameters ;
+    beam:inform we:QueryKnowledgeGraph .
+
+we:KGQueryParameters a beam:Data ;
+    rdfs:label "Recognised query parameters" ;
+    pair:playsRole pair:RewrittenQuery ;
+    beam:usedBy we:QueryKnowledgeGraph .
+
+we:AssemblePrompt a beam:Transform , beam:Process ;
+    rdfs:label "Answer prompt assembly" ;
+    rdfs:comment "Not a box in the business diagram, which draws business steps. The paper implements the approach as a chain of prompts using LLM agents, and generates the answer using the context provided by the knowledge graph, the document store or both: this is the step that puts that context in front of the model." ;
+    pair:playsRole pair:PromptConstructionStep ;
+    beam:use we:Question , we:KGResult , we:RetrievedPassages , we:SystemPrompt ;
+    beam:produce we:AnsweringPrompt ;
+    beam:inform we:GenerateAnswer .
+
+we:AnsweringPrompt a beam:Data ;
+    rdfs:label "Answering prompt" ;
+    pair:containsDataCategory pair:PromptInstruction ;
+    pair:playsRole pair:PromptTemplate ;
+    beam:usedBy we:GenerateAnswer .
+
+we:GenerateAnswer a beam:Generate , beam:Infer , beam:Process ;
+    rdfs:label "Answer generation" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use we:AnsweringPrompt , we:LLM , we:SystemPrompt ;
+    beam:produce we:Answer ;
+    beam:inform we:GenerateExplanation .
+
+we:Answer a beam:Data ;
+    rdfs:label "Answer" ;
+    pair:containsDataCategory pair:GeneratedContent ;
+    pair:playsRole pair:LLMResponse ,
+        pair:PublicUserFacingOutput ,
+        pair:UserFacingOutput ;
+    beam:usedBy we:GenerateExplanation .
+
+we:GenerateExplanation a beam:Generate , beam:Infer , beam:Process ;
+    rdfs:label "Explanation generation" ;
+    rdfs:comment "Names the graph entities and the documents the answer was built from, and says which parts an LLM wrote. The transparency the paper is about: it explains the answer, it does not check it." ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use we:Answer , we:KGResult , we:RetrievedPassages , we:LLM , we:SystemPrompt ;
+    beam:produce we:Explanation .
+
+we:Explanation a beam:Data ;
+    rdfs:label "Answer explanation" ;
+    pair:containsDataCategory pair:GeneratedContent ;
+    pair:playsRole pair:LLMResponse ,
+        pair:PublicUserFacingOutput ,
+        pair:UserFacingOutput .
+
+## 2. The knowledge graph answer source ----------------------------------------
+
+we:KnowledgeGraphService a beam:Element , beam:System ;
+    rdfs:label "Wien Energie knowledge graph service" ;
+    beam:description "Answers the part of a question the graph schema covers: type, contact point, opening hours, URLs and the description of Wien Energie products and services." ;
+    beam:context "Curated, semantically annotated content. The paper's reason for querying it first is that a graph can be shown to a customer - it is a white box." ;
+    beam:hasProcess we:QueryKnowledgeGraph ;
+    beam:hasResource we:KnowledgeGraph , we:KGResult .
+
+we:KnowledgeGraph a beam:SemanticModel , beam:Data ;
+    rdfs:label "Wien Energie knowledge graph" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:KnowledgeSource ;
+    beam:usedBy we:QueryKnowledgeGraph .
+
+we:QueryKnowledgeGraph a beam:Transform , beam:Process ;
+    rdfs:label "Knowledge graph query" ;
+    pair:playsRole pair:RetrievalStep ;
+    beam:use we:KGQueryParameters , we:KnowledgeGraph ;
+    beam:produce we:KGResult ;
+    beam:inform we:AssemblePrompt .
+
+we:KGResult a beam:Data ;
+    rdfs:label "Knowledge graph result" ;
+    rdfs:comment "Dereferenceable entities, which is what lets the explanation cite where an answer came from." ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:RetrievedResult ;
+    beam:usedBy we:AssemblePrompt , we:GenerateExplanation .
+
+## 3. The document store answer source -----------------------------------------
+
+we:DocumentRagService a beam:Element , beam:System ;
+    rdfs:label "Document store retrieval service" ;
+    beam:description "Answers from unstructured content the graph does not model - pricing, technical detail, contract conditions - by vector search over the indexed documents." ;
+    beam:context "PDF files, FAQs and other pages from the Wien Energie website, stored as vectors. The content is the retailer's own and is not semantically annotated." ;
+    beam:hasProcess we:RetrieveDocuments ;
+    beam:hasResource we:DocumentStore , we:RetrievedPassages .
+
+we:DocumentStore a beam:Data ;
+    rdfs:label "Document store" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:VectorStore ;
+    beam:usedBy we:RetrieveDocuments .
+
+we:RetrieveDocuments a beam:Transform , beam:Process ;
+    rdfs:label "Document retrieval (RAG)" ;
+    pair:playsRole pair:VectorSearchStep ;
+    beam:use we:Question , we:AnswerPlan , we:DocumentStore ;
+    beam:produce we:RetrievedPassages ;
+    beam:inform we:AssemblePrompt .
+
+we:RetrievedPassages a beam:Data ;
+    rdfs:label "Retrieved document passages" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:RetrievedResult ;
+    beam:usedBy we:AssemblePrompt , we:GenerateExplanation .

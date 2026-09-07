@@ -1,0 +1,186 @@
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix wt:   <http://w3id.org/airiskkg/example/wien-energie-tariff#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# The tariff change of the Wien Energie portal, from the ChangePlan BPMN.
+# Four systems, one per capability the diagram separates: the agent that talks
+# to the customer, the rules that decide, the form machinery, and the record
+# service. The boundaries matter - an output is handled by a human only if the
+# step that person reads belongs to the system that produced the output.
+
+## 1. The conversation agent ---------------------------------------------------
+
+wt:ConversationAgent a beam:Element , beam:System ;
+    rdfs:label "Tariff conversation agent" ;
+    beam:description "The part that talks: recognises what the customer wants, and writes back either the conditions of a change or the reason it was declined." ;
+    beam:context "Runs in the chat widget of the authenticated Wien Energie customer portal. What it writes reaches the customer directly." ;
+    beam:hasProcess wt:RecogniseIntent , wt:ExplainConditions , wt:DeclineChange ;
+    beam:hasResource wt:ChatMessage , wt:LLM , wt:AgentPrompt , wt:CustomerIntent ,
+                     wt:ConditionExplanation , wt:DeclineMessage .
+
+wt:ChatMessage a beam:Data ;
+    rdfs:label "Customer chat message" ;
+    pair:containsDataCategory pair:ExternalUserContent ,
+        pair:UntrustedContent ;
+    pair:playsRole pair:PublicUserInput ,
+        pair:UserInput ;
+    beam:usedBy wt:RecogniseIntent , wt:ExplainConditions , wt:DeclineChange .
+
+wt:LLM a beam:StatisticalModel ;
+    rdfs:label "LLM" ;
+    pair:playsRole pair:FoundationLLM ,
+        pair:GenerativeModel ;
+    beam:usedBy wt:RecogniseIntent , wt:ExplainConditions , wt:DeclineChange .
+
+wt:AgentPrompt a beam:Symbol ;
+    rdfs:label "Agent prompt templates" ;
+    pair:containsDataCategory pair:PromptInstruction ;
+    pair:playsRole pair:SystemPrompt ;
+    beam:usedBy wt:RecogniseIntent , wt:ExplainConditions , wt:DeclineChange .
+
+wt:RecogniseIntent a beam:Infer , beam:Process ;
+    rdfs:label "Intent recognition" ;
+    rdfs:comment "The How can I help step: what the customer is asking for." ;
+    pair:playsRole pair:PredictionStep ;
+    beam:use wt:ChatMessage , wt:LLM , wt:AgentPrompt ;
+    beam:produce wt:CustomerIntent ;
+    beam:inform wt:RetrieveContract .
+
+wt:CustomerIntent a beam:Data ;
+    rdfs:label "Recognised intent" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:PredictionResult ;
+    beam:usedBy wt:CheckConditions , wt:PrepareForm .
+
+wt:ExplainConditions a beam:Generate , beam:Infer , beam:Process ;
+    rdfs:label "Condition explanation" ;
+    rdfs:comment "Grounded in the contract on file, and read by nobody at Wien Energie before it reaches the customer." ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use wt:ChatMessage , wt:ContractRecord , wt:EligibilityDecision , wt:LLM , wt:AgentPrompt ;
+    beam:produce wt:ConditionExplanation ;
+    beam:inform wt:PrepareForm .
+
+wt:ConditionExplanation a beam:Data ;
+    rdfs:label "Condition explanation" ;
+    pair:containsDataCategory pair:GeneratedContent ;
+    pair:playsRole pair:LLMResponse ,
+        pair:PublicUserFacingOutput ,
+        pair:UserFacingOutput .
+
+wt:DeclineChange a beam:Generate , beam:Infer , beam:Process ;
+    rdfs:label "Decline generation" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use wt:ChatMessage , wt:ContractRecord , wt:EligibilityDecision , wt:LLM , wt:AgentPrompt ;
+    beam:produce wt:DeclineMessage .
+
+wt:DeclineMessage a beam:Data ;
+    rdfs:label "Decline message" ;
+    pair:containsDataCategory pair:GeneratedContent ;
+    pair:playsRole pair:LLMResponse ,
+        pair:PublicUserFacingOutput ,
+        pair:UserFacingOutput .
+
+## 2. The contract eligibility service -----------------------------------------
+
+wt:EligibilityService a beam:Element , beam:System ;
+    rdfs:label "Contract eligibility service" ;
+    beam:description "Decides whether the change the customer asked for is allowed under the contract they hold." ;
+    beam:context "A business rule task in the diagram: the agent asks, the rules answer. No model is involved, so the decision is reproducible and can be shown to the customer." ;
+    beam:hasProcess wt:CheckConditions ;
+    beam:hasResource wt:TariffConditions , wt:EligibilityDecision .
+
+wt:TariffConditions a beam:SemanticModel , beam:Data ;
+    rdfs:label "Tariff and contract conditions" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:KnowledgeSource ;
+    beam:usedBy wt:CheckConditions , wt:CheckForm .
+
+wt:CheckConditions a beam:Transform , beam:Process ;
+    rdfs:label "Contract condition check" ;
+    pair:playsRole pair:PolicyEnforcementStep ;
+    beam:use wt:CustomerIntent , wt:ContractRecord , wt:TariffConditions ;
+    beam:produce wt:EligibilityDecision ;
+    beam:inform wt:ExplainConditions , wt:DeclineChange .
+
+wt:EligibilityDecision a beam:Data ;
+    rdfs:label "Eligibility decision" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:ResourceRole ;
+    beam:usedBy wt:ExplainConditions , wt:DeclineChange , wt:PrepareForm .
+
+## 3. The change form service --------------------------------------------------
+
+wt:FormService a beam:Element , beam:System ;
+    rdfs:label "Change form service" ;
+    beam:description "Fills the change form from the contract on file, and checks the form that comes back before a person acts on it." ;
+    beam:context "The last stop before the customer service agent. Nothing it produces changes a contract." ;
+    beam:hasProcess wt:PrepareForm , wt:CheckForm ;
+    beam:hasResource wt:ChangeForm , wt:SubmittedForm , wt:CheckedForm .
+
+wt:PrepareForm a beam:Transform , beam:Process ;
+    rdfs:label "Change form assembly" ;
+    rdfs:comment "Fills a template from the contract record. No model writes the form." ;
+    pair:playsRole pair:ProcessingStep ;
+    beam:use wt:CustomerIntent , wt:ContractRecord , wt:EligibilityDecision ;
+    beam:produce wt:ChangeForm .
+
+wt:ChangeForm a beam:Data ;
+    rdfs:label "Change form" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:UserFacingOutput .
+
+wt:SubmittedForm a beam:Data ;
+    rdfs:label "Submitted change form" ;
+    rdfs:comment "Typed behind portal authentication, so not public, but still user input." ;
+    pair:containsDataCategory pair:ExternalUserContent ,
+        pair:UntrustedContent ;
+    pair:playsRole pair:UserInput ;
+    beam:usedBy wt:CheckForm .
+
+wt:CheckForm a beam:Transform , beam:Process ;
+    rdfs:label "Form check" ;
+    pair:playsRole pair:PolicyEnforcementStep ;
+    beam:use wt:SubmittedForm , wt:ContractRecord , wt:TariffConditions ;
+    beam:produce wt:CheckedForm .
+
+wt:CheckedForm a beam:Data ;
+    rdfs:label "Checked change form" ;
+    rdfs:comment "What the customer service agent acts on. Nothing changes until they do." ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:ResourceRole .
+
+## 4. The customer record service ----------------------------------------------
+
+wt:CustomerRecords a beam:Element , beam:System ;
+    rdfs:label "Customer record service" ;
+    beam:description "Looks up the contract on file for the authenticated customer." ;
+    beam:context "The system of record for contracts and tariffs. The agent reads it; only a customer service agent writes to it." ;
+    beam:hasProcess wt:RetrieveContract ;
+    beam:hasResource wt:CustomerReference , wt:CustomerDatabase , wt:ContractRecord .
+
+wt:CustomerReference a beam:Data ;
+    rdfs:label "Authenticated customer reference" ;
+    rdfs:comment "Handed over by the portal once the customer is authenticated. It is the query the record service answers." ;
+    pair:playsRole pair:UserInput ;
+    beam:usedBy wt:RetrieveContract .
+
+wt:CustomerDatabase a beam:Data ;
+    rdfs:label "Customer database" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:KnowledgeSource ;
+    beam:usedBy wt:RetrieveContract .
+
+wt:RetrieveContract a beam:Transform , beam:Process ;
+    rdfs:label "Current contract retrieval" ;
+    pair:playsRole pair:RetrievalStep ;
+    beam:use wt:CustomerReference , wt:CustomerDatabase ;
+    beam:produce wt:ContractRecord ;
+    beam:inform wt:CheckConditions .
+
+wt:ContractRecord a beam:Data ;
+    rdfs:label "Current contract record" ;
+    pair:containsDataCategory pair:Information ;
+    pair:playsRole pair:RetrievedResult ;
+    beam:usedBy wt:CheckConditions , wt:ExplainConditions , wt:DeclineChange ,
+                wt:PrepareForm , wt:CheckForm .
