@@ -38,7 +38,7 @@ body {
   flex-direction: column;
   overflow: hidden;
 }
-body.resizing { user-select: none; cursor: col-resize; }
+body.resizing { -webkit-user-select: none; user-select: none; cursor: col-resize; }
 
 /* ---- header / toolbar ---- */
 .app-header {
@@ -51,11 +51,36 @@ body.resizing { user-select: none; cursor: col-resize; }
   background: var(--bg-panel);
   flex: 0 0 auto;
 }
-.brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .brand h1 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
 .subtitle { color: var(--text-dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The library sits with the identity, one step away from it. */
+.brand #btn-library { margin-left: 4px; }
 .toolbar { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .toolbar-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+
+/* Bring a graph in, run it, take something away. The rule draws itself between
+ * groups, so a button moved to another group cannot take a separator with it. */
+.tool-group { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.tool-group + .tool-group {
+  border-left: 1px solid var(--border);
+  padding-left: 12px;
+  margin-left: 4px;
+}
+
+/* An action and the one setting that belongs to it, drawn as one control. */
+.btn-split { display: inline-flex; align-items: stretch; }
+.btn-split .btn { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.btn-split select {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-color: #1c2029;
+  padding-left: 8px;
+  padding-right: 4px;
+  width: 94px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
 
 .btn, .toolbar select {
   font: inherit;
@@ -100,7 +125,7 @@ label.btn { display: inline-flex; align-items: center; }
   line-height: 19px;
   background: #131620;
   border-right: 1px solid var(--border);
-  user-select: none;
+  -webkit-user-select: none; user-select: none;
 }
 .gutter div { padding-right: 10px; height: 19px; }
 .gutter .err-line { color: var(--error); background: rgba(255, 107, 107, 0.12); font-weight: 600; }
@@ -224,7 +249,7 @@ label.btn { display: inline-flex; align-items: center; }
   background: var(--node-other);
   color: #2a2f38;
   cursor: grab;
-  user-select: none;
+  -webkit-user-select: none; user-select: none;
   text-align: center;
 }
 .palette-item:active { cursor: grabbing; }
@@ -233,7 +258,7 @@ label.btn { display: inline-flex; align-items: center; }
 .tray-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-  color: #6b7280; cursor: pointer; user-select: none;
+  color: #6b7280; cursor: pointer; -webkit-user-select: none; user-select: none;
 }
 .tray-head .tray-toggle { font-size: 11px; color: #8b93a1; }
 .tray-body { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; }
@@ -264,7 +289,7 @@ label.btn { display: inline-flex; align-items: center; }
   background: #eef3fc;
   color: #2a2f38;
   cursor: grab;
-  user-select: none;
+  -webkit-user-select: none; user-select: none;
   line-height: 1.25;
 }
 .motif-item:hover { background: #e2ecfb; }
@@ -455,26 +480,6 @@ label.btn { display: inline-flex; align-items: center; }
   white-space: nowrap;
 }
 
-.legend {
-  position: absolute;
-  bottom: 10px;
-  left: 12px;
-  display: flex;
-  gap: 12px;
-  font-size: 11px;
-  color: #555;
-  background: rgba(255,255,255,0.85);
-  border: 1px solid #d8dde6;
-  border-radius: 6px;
-  padding: 4px 10px;
-}
-.legend-item { display: inline-flex; align-items: center; gap: 5px; }
-.swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-.swatch.process { background: var(--node-process); border: 1.5px solid var(--node-process-border); }
-.swatch.data { background: var(--node-data); border: 1.5px solid var(--node-data-border); border-radius: 6px; }
-.swatch.symbol { background: var(--node-symbol); border: 1.5px solid var(--node-symbol-border); border-radius: 6px; }
-.swatch.model { background: var(--node-model); border: 1.5px solid var(--node-model-border); transform: rotate(45deg) scale(0.85); }
-.swatch.agent { background: var(--node-agent); border: 1.5px solid var(--node-agent-border); border-radius: 50%; }
 
 .canvas-empty {
   position: absolute;
@@ -1160,10 +1165,7 @@ label.btn { display: inline-flex; align-items: center; }
 
 .pc-pool.selected .pc-pool-strip { fill: #dce6fb; }
 .pc-pool.selected .pc-pool-label { fill: #2f4d94; }
-/* The connector handle. Its radius is set from the zoom in process_canvas.js
-   so it stays the same size on screen; only the reveal lives here. An event
-   and a gateway carry one too - the selector named activities alone, so on
-   every circle and diamond the handle was there and invisible. */
+/* The connector handle. */
 .pc-port-dot { fill: #ffffff; stroke: #4a72c4; opacity: 0; }
 .pc-activity:hover .pc-port-dot,
 .pc-event:hover .pc-port-dot,
@@ -1171,9 +1173,36 @@ label.btn { display: inline-flex; align-items: center; }
 .pc-port:hover .pc-port-dot { opacity: 1; }
 
 .canvas-wrap.business .canvas-empty,
-.canvas-wrap.business .legend,
 .canvas-wrap.business .system-badge,
 .canvas-wrap.business .node-detail:not(#process-detail) { display: none !important; }
+
+.system-badge-add,
+.system-badge-orphans {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 7px;
+  margin-left: 8px;
+  font: inherit;
+  font-size: 11px;
+  color: inherit;
+  cursor: pointer;
+}
+.system-badge-add:hover,
+.system-badge-orphans:hover { border-color: var(--accent); color: var(--accent); }
+.system-badge-orphans { border-style: dashed; }
+
+.system-badge-name {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.system-badge-name:hover { color: var(--accent); }
 
 .system-bound-box {
   fill: rgba(74, 114, 196, 0.035);
@@ -1188,6 +1217,21 @@ label.btn { display: inline-flex; align-items: center; }
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+/* Selected: what a new element joins. The same idea as the chosen pool on the
+   BPMN canvas, drawn the same way - a heavier edge and a filled ground. */
+.system-bound.selected .system-bound-box {
+  stroke-width: 2.4;
+  stroke-dasharray: none;
+  fill: rgba(74, 114, 196, 0.10);
+}
+.system-bound.selected .system-bound-label { font-weight: 700; }
+.system-bound.empty .system-bound-box { stroke-dasharray: 4 4; }
+.system-bound-hint { fill: #9aa4b8; font-size: 11px; font-style: italic; }
+.system-bound-edit-box { fill: #ffffff; stroke: #9aa4b8; stroke-width: 1.1; }
+.system-bound-edit:hover .system-bound-edit-box { stroke: var(--accent); }
+.system-bound-edit-sign { fill: #6b7488; font-size: 12px; }
+.system-badge-chosen { color: var(--accent); font-weight: 600; }
+
 .system-bound.s1 .system-bound-box { fill: rgba(79, 154, 106, 0.04); stroke: #8fb39c; }
 .system-bound.s1 .system-bound-label { fill: #5d8a6f; }
 .system-bound.s2 .system-bound-box { fill: rgba(179, 160, 107, 0.05); stroke: #bfae83; }
@@ -1427,7 +1471,6 @@ label.btn { display: inline-flex; align-items: center; }
 .canvas-wrap.unstarted .palette,
 .canvas-wrap.unstarted .motif-palette,
 .canvas-wrap.unstarted .process-palette,
-.canvas-wrap.unstarted .legend,
 .canvas-wrap.unstarted .canvas-controls { display: none !important; }
 
 /* The opening question, once answered, is not a caption for an empty canvas. */
@@ -1439,6 +1482,50 @@ label.btn { display: inline-flex; align-items: center; }
   scrollbar-width: thin;
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* WebKit reached `scrollbar-width` only in Safari 18.2, and macOS hides overlay
+   scrollbars while they are idle - so on Safari a strip that scrolls sideways
+   showed nothing at all to say it had more in it. These give the scrollable
+   panels a visible bar there without changing anything on Chromium, which
+   honours the standard property above. */
+.drawer-tabs::-webkit-scrollbar,
+.drawer-body::-webkit-scrollbar,
+.process-palette::-webkit-scrollbar,
+.library-list::-webkit-scrollbar,
+.library-detail::-webkit-scrollbar,
+.editor-pane::-webkit-scrollbar,
+pre::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.drawer-tabs::-webkit-scrollbar-track,
+.drawer-body::-webkit-scrollbar-track,
+.process-palette::-webkit-scrollbar-track,
+.library-list::-webkit-scrollbar-track,
+.library-detail::-webkit-scrollbar-track,
+.editor-pane::-webkit-scrollbar-track,
+pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+.drawer-tabs::-webkit-scrollbar-thumb,
+.drawer-body::-webkit-scrollbar-thumb,
+.process-palette::-webkit-scrollbar-thumb,
+.library-list::-webkit-scrollbar-thumb,
+.library-detail::-webkit-scrollbar-thumb,
+.editor-pane::-webkit-scrollbar-thumb,
+pre::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 5px;
+}
+.drawer-tabs::-webkit-scrollbar-thumb:hover,
+.drawer-body::-webkit-scrollbar-thumb:hover,
+.process-palette::-webkit-scrollbar-thumb:hover,
+.library-list::-webkit-scrollbar-thumb:hover,
+.library-detail::-webkit-scrollbar-thumb:hover,
+.editor-pane::-webkit-scrollbar-thumb:hover,
+pre::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
 }
 .drawer-tab { white-space: nowrap; flex: 0 0 auto; }
 
@@ -1673,3 +1760,285 @@ body.editor-hidden .pane-head { display: none; }
 /* The same architecture heading, in panels that only report - nothing to fold. */
 .annotate-group.static { cursor: default; }
 .annotate-group.static:hover { color: var(--text-dim); }
+
+/* ---- the library ---- * What the knowledge base can recognise, read before a graph exists. */
+.library {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+.library.hidden { display: none; }
+.library-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.library-title { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
+.library-title h2 { margin: 0; font-size: 17px; font-weight: 500; white-space: nowrap; }
+.library-sub { color: var(--text-dim); font-size: 12px; }
+.library-head-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.library-search {
+  /* Safari styles type=search natively and ignores the background, the radius
+     and the padding below until appearance is reset - which on this dark panel
+     drew a white pill with a system clear button. */
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--bg-editor);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 5px 10px;
+  width: 260px;
+}
+.library-search:focus { outline: none; border-color: var(--accent); }
+.library-search::-webkit-search-decoration,
+.library-search::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+.library-lead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 22px;
+  background: rgba(79, 140, 255, 0.07);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.library-lead.hidden { display: none; }
+.library-lead-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  max-width: 900px;
+}
+.library-lead-text strong { color: var(--text); font-weight: 600; }
+.library-lead-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+
+.library-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+.library-rail {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.library-tabs { display: flex; border-bottom: 1px solid var(--border); flex: 0 0 auto; }
+.library-tab {
+  flex: 1 1 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 9px 6px;
+  cursor: pointer;
+}
+.library-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.library-tab:hover { color: var(--text); }
+.library-list { overflow-y: auto; flex: 1 1 auto; padding-bottom: 12px; }
+
+.lib-group {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px 5px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.lib-group-count { font-family: var(--mono); }
+.lib-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.lib-row:hover { background: rgba(255, 255, 255, 0.04); }
+.lib-row.selected { background: rgba(79, 140, 255, 0.12); border-left-color: var(--accent); }
+.lib-row-name { flex: 1 1 auto; min-width: 0; }
+.lib-row-count { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); }
+/* No risk pattern applies to this structure - an answer, not a blank. */
+.lib-row-count.zero { color: #545c6b; }
+.chip.family { background: #2b3547; color: #b6c6e0; border-color: #3c4a63; }
+
+.library-detail { overflow-y: auto; padding: 20px 26px 40px; }
+.lib-empty { color: var(--text-dim); font-size: 13px; max-width: 60ch; line-height: 1.6; }
+.lib-detail-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.lib-back {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+.lib-back:hover { color: var(--accent); }
+.lib-detail-head h3 { margin: 0; font-size: 18px; font-weight: 500; }
+.lib-detail-source { display: flex; flex-wrap: wrap; gap: 6px; }
+.lib-detail-desc { font-size: 13px; line-height: 1.65; color: var(--text-dim); max-width: 80ch; }
+.lib-equation {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  border-left: 2px solid var(--accent-dim);
+  padding: 4px 0 4px 10px;
+  margin: 12px 0 0;
+}
+.lib-section { margin-top: 24px; }
+.lib-section h4 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.lib-note { margin: 0 0 10px; font-size: 12px; line-height: 1.6; color: #7e8698; max-width: 80ch; }
+.lib-list { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; }
+.lib-list li { margin-bottom: 4px; }
+.lib-control-name { margin-right: 8px; }
+.lib-control-motifs { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 2px 0 6px; }
+.lib-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.lib-mechanism { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+
+.lib-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: var(--bg-panel);
+}
+.lib-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lib-card-size { font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
+.lib-card-desc { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--text-dim); max-width: 80ch; }
+.lib-preview {
+  background: var(--canvas-bg);
+  border-radius: 6px;
+  margin: 10px 0;
+  padding: 8px;
+  overflow-x: auto;
+}
+.motif-preview { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.mp-label { font-size: 11px; font-weight: 600; fill: #2a2f38; }
+.mp-arrowhead { fill: #7c8698; }
+.lib-roles { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.lib-roles-lead { font-size: 11px; color: var(--text-dim); }
+.chip.role { background: #24313f; color: #9fc3dd; border-color: #33465a; }
+.chip.clickable { cursor: pointer; font: inherit; }
+.chip.clickable:hover { border-color: var(--accent); color: var(--text); }
+.lib-card-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+.library-status {
+  flex: 0 0 auto;
+  padding: 7px 22px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  min-height: 30px;
+}
+.library-status:empty { display: none; }
+.library-status.ok { color: var(--good); }
+.library-status.error { color: var(--error); }
+
+/* The landing: the catalogue itself, where an instruction to pick something
+ * would otherwise leave the opening screen empty. */
+.lib-landing-title { margin: 0 0 4px; font-size: 17px; font-weight: 500; }
+.library-detail h4 {
+  margin: 22px 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+.lib-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 13px;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.lib-tile:hover { border-color: var(--accent); background: rgba(79, 140, 255, 0.08); }
+.lib-tile-head { display: flex; align-items: baseline; gap: 7px; }
+.lib-tile-head strong { font-size: 13px; font-weight: 600; }
+.lib-tile-desc {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lib-tile-desc.borrowed { font-style: italic; }
+.lib-from { color: var(--text-dim); font-style: italic; }
+/* What a pattern may lead to. Carried on the card rather than used to file it:
+ * one pattern reaches several domains and none of them is its category. */
+.lib-tile-domains {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.chip.domain { background: #3a2b2b; color: #e0b6b6; border-color: #5c3f3f; }
+.chip.domain.none { background: none; color: #7e8698; border-color: #3a4050; font-style: italic; }
+.lib-domain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.lib-tile-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 10.5px;
+  color: #7e8698;
+  font-family: var(--mono);
+  margin-top: auto;
+}
+
+@media (max-width: 900px) {
+  .library-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: 34% minmax(0, 1fr); }
+  .library-rail { border-right: none; border-bottom: 1px solid var(--border); }
+  .library-lead { flex-direction: column; align-items: flex-start; }
+  .library-search { width: 150px; }
+}
