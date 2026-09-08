@@ -1,15 +1,5 @@
 # syntax=docker/dockerfile:1
 
-# PAIR-AI Architecture Workbench — Flask app served by gunicorn.
-#
-#   docker build -t pair-ai .
-#   docker run --rm -p 8000:8000 pair-ai      ->  http://localhost:8000
-#
-# The app loads ontology / shacl / example files at runtime relative to the
-# repository root (airiskkg.paths._find_repo_root walks up until it finds both
-# ontology/ and python/). So we copy the whole project and run the package from
-# source on PYTHONPATH, which makes REPO_ROOT resolve to /app.
-
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -19,22 +9,19 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Runtime dependencies (mirror python/pyproject.toml: rdflib + pyshacl + flask)
-# plus gunicorn for serving. Installed before copying the source so this layer
-# is cached across code changes.
-RUN pip install --no-cache-dir rdflib pyshacl flask gunicorn
+# Patch what the base image carries; adds no packages.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 
-# Project source + the ontology / shacl / example data read at runtime.
-#
-# This copies the build context, and .dockerignore is an allow-list, so the
-# context is only what the app reads: python/src, ontology, shacl, external and
-# the three top-level text files. Everything else - docs/, v1/, data/, tests,
-# and every private path - is excluded by default rather than by remembering.
-# ontology/example_local/ is excluded from inside ontology/ as well: those are
-# the user's own, possibly confidential graphs and they never ship.
+# pip stays unpinned: build-time only, so each rebuild picks up its own
+# security fixes. What the app runs on is pinned in the requirements file.
+COPY requirements-docker.txt /tmp/requirements-docker.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r /tmp/requirements-docker.txt
+
 COPY . /app
 
-# Run unprivileged; the app only reads these files (default perms are readable).
 RUN useradd --create-home --uid 1000 appuser
 USER appuser
 
@@ -43,5 +30,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/',timeout=4).status==200 else 1)"
 
-# 2 workers, generous timeout (an assessment reloads the base ontology graph).
+# Timeout is generous: an assessment reloads the base ontology graph.
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "180", "airiskkg.webapp.app:app"]
