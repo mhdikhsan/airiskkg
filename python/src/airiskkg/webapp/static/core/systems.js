@@ -1,30 +1,10 @@
-/* Which architecture holds a thing, for the panels that list things.
- *
- * A document can carry several architectures - a business process running two
- * systems is the ordinary case - and a flat list gives no way to tell which is
- * which. Three panels need the same answer, so it is written once here rather
- * than three times slightly differently.
- *
- * Membership is the server's, off beam:hasProcess / hasResource / hasAgent /
- * contain. Nothing here infers it.
- */
+/* Which architecture holds a thing, for the panels that list things. */
 import { state } from "../state.js";
 
 const SPANNING = "Spans more than one architecture";
 const UNCLAIMED = "Belongs to no system";
 
-/**
- * Keep only what belongs to the architecture currently on screen.
- *
- * `state.lastGraph` is already scoped - graph_view narrows it when a reader
- * descends into a business activity - so "is this element drawn?" is the same
- * question as "is this in scope?", and there is no second copy of the scoping
- * rule to drift.
- *
- * Descending into the meter scorer used to leave the RAG system's Information
- * Retrieval match sitting in the motifs list, with nothing saying it came from
- * the other architecture.
- */
+/** Keep only what belongs to the architecture currently on screen. */
 export function onScreen(items, idsOf) {
   const graph = state.lastGraph;
   if (!graph || !graph.nodes) return items || [];
@@ -43,17 +23,7 @@ function ownerMap(systems) {
   return owner;
 }
 
-/**
- * Group items under the architecture that holds them.
- *
- * `idsOf(item)` gives the element ids an item covers - one for a row, several
- * for a motif match. An item whose elements sit in different architectures is
- * not filed under either: that it spans them is the interesting fact, and
- * picking one would hide it.
- *
- * Returns [{ label, items }]. `label` is null when every item lands in the same
- * single group, which is the signal that headings would say nothing.
- */
+/** Group items under the architecture that holds them. */
 export function groupBySystem(items, idsOf, systems) {
   const list = systems || (state.lastGraph && state.lastGraph.systems) || [];
   const owner = ownerMap(list);
