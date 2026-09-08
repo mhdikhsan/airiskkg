@@ -208,8 +208,7 @@ def _flow_nodes(graph: Graph, classes: tuple[str, ...]) -> list[URIRef]:
 
 
 def _direct_process(graph: Graph, node: URIRef) -> str | None:
-    """The process that lists this node directly. A node inside a sub-process
-    has none, and is reached through its parent instead."""
+    """The process that lists this node directly."""
     for holder in graph.subjects(_prop("contains"), node):
         if (holder, RDF.type, _cls("process")) in graph:
             return str(holder)
@@ -260,8 +259,7 @@ def _participants(graph: Graph) -> list[dict]:
 
 
 def _sequence_flows(graph: Graph) -> list[dict]:
-    """What the diagram must actually draw. Before this the canvas connected
-    whichever boxes happened to land next to each other."""
+    """What the diagram must actually draw."""
     defaults = {
         str(flow) for node in graph.subjects() for flow in graph.objects(node, _prop("default"))
     }
@@ -310,9 +308,7 @@ def _message_flows(graph: Graph) -> list[dict]:
 
 
 def _lanes(graph: Graph) -> list[dict]:
-    """Lanes with the nodes they hold, so the canvas can band a pool. The
-    member list was previously reduced to a count on the way out, which is why
-    no lane was ever drawn."""
+    """Lanes with the nodes they hold, so the canvas can band a pool."""
     owner: dict[URIRef, URIRef] = {}
     for process in graph.subjects(RDF.type, _cls("process")):
         for lane_set in graph.objects(process, _prop("laneSet")):
@@ -349,8 +345,7 @@ def _lanes(graph: Graph) -> list[dict]:
 
 
 def _artifacts(graph: Graph) -> tuple[list[dict], list[dict]]:
-    """Text annotations and groups, plus the dotted associations tying them to
-    what they comment on."""
+    """Text annotations and groups, plus the dotted associations tying them to what they comment on."""
     notes = []
     for note in graph.subjects(RDF.type, _cls("textAnnotation")):
         body = graph.value(note, _prop("text"))
@@ -394,11 +389,7 @@ def _artifacts(graph: Graph) -> tuple[list[dict], list[dict]]:
 
 
 def _stamp_lines(view: dict, ttl_text: str | None) -> dict:
-    """Say where each business element was written.
-
-    Without this a click on a pool or an activity had nowhere to go: the source
-    map is fed from /api/graph, which knows the architecture only, so selecting
-    anything on the business canvas quietly did nothing."""
+    """Say where each business element was written."""
     if not ttl_text:
         return view
     lines = source_lines(ttl_text)

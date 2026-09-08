@@ -15,13 +15,7 @@ def _sh(term: str) -> URIRef:
 
 @lru_cache(maxsize=1)
 def guidance_shape_ids() -> frozenset[str]:
-    """Which shapes come from annotation_guidance.ttl rather than the contract.
-
-    The two files answer different questions and the report merges them, so a
-    reader cannot tell them apart afterwards. That matters for anything that
-    acts on the result: the contract's "type this to a leaf class" warning
-    fires on every plain beam:Data and is not a statement about anyone's
-    annotation, while the guidance shapes are exactly that."""
+    """Which shapes come from annotation_guidance.ttl rather than the contract."""
     guidance = Graph()
     guidance.parse(SHACL_DIR / "annotation_guidance.ttl", format="turtle")
     return frozenset(str(s) for s in set(guidance.subjects()))
