@@ -1,0 +1,18 @@
+# CQ03: Which pattern role does each architecture element play, and where does
+# that role sit in the role hierarchy?
+# Scope: architecture
+# Note: every match query walks pair:playsRole/pair:subRoleOf*, so a role
+# parented under the wrong parent is inert - the element is annotated and still
+# matches nothing.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+
+SELECT ?elementName ?roleName ?parentRoleName
+WHERE {
+    ?element pair:playsRole ?role .
+    OPTIONAL { ?role pair:subRoleOf ?parentRole }
+    BIND(REPLACE(STR(?element), "^.*[#/]", "") AS ?elementName)
+    BIND(REPLACE(STR(?role), "^.*[#/]", "") AS ?roleName)
+    BIND(REPLACE(STR(?parentRole), "^.*[#/]", "") AS ?parentRoleName)
+}
+ORDER BY ?elementName ?roleName

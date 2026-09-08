@@ -1,0 +1,21 @@
+# CQ11: Given a motif, which risk patterns can apply to it, and what mechanism
+# does each carry?
+# Scope: library
+# Note: read through pair:hasRiskPattern, the required mirror of pair:hasMotif.
+# No OWL reasoning runs, so a one-sided assertion would be invisible here.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT ?motifName ?patternName ?mechanismText
+WHERE {
+    VALUES ?motif { pat:RetrievalAugmentedGenerationMotif }
+
+    ?motif pair:hasRiskPattern ?pattern .
+    ?pattern pair:hasMechanism ?mechanism .
+    OPTIONAL { ?mechanism skos:definition ?mechanismText }
+    BIND(REPLACE(STR(?motif), "^.*[#/]", "") AS ?motifName)
+    BIND(REPLACE(STR(?pattern), "^.*[#/]", "") AS ?patternName)
+}
+ORDER BY ?patternName

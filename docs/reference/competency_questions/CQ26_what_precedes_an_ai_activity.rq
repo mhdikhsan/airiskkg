@@ -1,0 +1,23 @@
+# CQ26: What happens in the business process before the activity an AI system
+# carries out?
+# Scope: business
+# Note: read through pair:businessFollows, the materialized typed hop. Never
+# write a raw path over bp:sourceRef / bp:targetRef: those are declared on five
+# classes, so a property path over them walks out of control flow, through a
+# data association and back in somewhere unrelated - and the result looks like
+# evidence.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX bp:   <https://sBPMN.github.io/2.0/properties#>
+
+SELECT ?aiActivityName ?earlierName ?earlierType
+WHERE {
+    ?activity pair:refinedBy ?system .
+    ?earlier pair:businessFollows ?activity .
+    OPTIONAL { ?activity bp:name ?aiActivityName }
+    OPTIONAL { ?earlier bp:name ?earlierNameValue }
+    OPTIONAL { ?earlier a ?type }
+    BIND(COALESCE(?earlierNameValue, REPLACE(STR(?earlier), "^.*[#/]", "")) AS ?earlierName)
+    BIND(REPLACE(STR(?type), "^.*[#/]", "") AS ?earlierType)
+}
+ORDER BY ?aiActivityName ?earlierName

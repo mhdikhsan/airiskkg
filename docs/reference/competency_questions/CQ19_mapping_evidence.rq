@@ -1,0 +1,22 @@
+# CQ19: On what evidence does each cross-taxonomy mapping rest?
+# Scope: provenance
+# Note: answered over ontology/taxonomy/provenance/, which sits below the
+# runner's non-recursive glob on purpose - a finding must never cite its own
+# provenance as support. Prefer semapv:ManualMappingCuration rows; treat
+# semapv:LLMBasedMatching as a human decision, not an automatic adoption.
+
+PREFIX sssom: <https://w3id.org/sssom/>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+
+SELECT ?mappingSet ?justification (COUNT(DISTINCT ?mapping) AS ?mappings)
+WHERE {
+    ?mapping a sssom:Mapping ;
+        sssom:mapping_justification ?justificationIri ;
+        prov:wasDerivedFrom ?set .
+    OPTIONAL { ?set rdfs:label ?setLabel }
+    BIND(COALESCE(?setLabel, REPLACE(STR(?set), "^.*[#/]", "")) AS ?mappingSet)
+    BIND(REPLACE(STR(?justificationIri), "^.*[#/]", "") AS ?justification)
+}
+GROUP BY ?mappingSet ?justification
+ORDER BY ?mappingSet

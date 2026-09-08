@@ -1,0 +1,22 @@
+# CQ05: Which motifs does the library recognise, in which family, and how large
+# is each one?
+# Scope: library
+# Note: the family is a filing decision about this library, never a reading of a
+# submitted architecture - no match query may read pair:motifFamily.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT ?family ?motifName
+       (COUNT(DISTINCT ?node) AS ?nodes)
+       (COUNT(DISTINCT ?edge) AS ?edges)
+WHERE {
+    ?motif a pair:GraphMotif ;
+        pair:motifFamily ?familyConcept .
+    ?familyConcept skos:prefLabel ?family .
+    OPTIONAL { ?motif pair:hasPatternNode ?node }
+    OPTIONAL { ?motif pair:hasPatternEdge ?edge }
+    BIND(REPLACE(STR(?motif), "^.*[#/]", "") AS ?motifName)
+}
+GROUP BY ?family ?motifName
+ORDER BY ?family ?motifName
