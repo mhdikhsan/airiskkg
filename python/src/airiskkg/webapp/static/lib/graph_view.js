@@ -26,6 +26,8 @@ let manualPositions = new Map(); // node id -> {x,y} drag overrides (view-only)
 let lastNodeIds = "";            // to refit only when the element set changes
 let suppressFitOnce = false;     // set by placeNodeAt so a dropped node stays put
 let selectedId = null;           // the element clicked for editing (Del key target)
+let selectedSystem = null;       // which architecture a new element joins
+let systemExtent = null;         // what the frames occupy, for the fit
 
 function svgEl(tag, attrs = {}, parent = null) {
   const node = document.createElementNS(SVG_NS, tag);
@@ -284,22 +286,49 @@ function placeNodeAt(id, clientX, clientY) {
   suppressFitOnce = true;
 }
 
+const EMPTY_SYS_W = 300;   // a system with nothing in it still needs a box
+const EMPTY_SYS_H = 130;
 const SYS_PAD = 22;        // room between the outermost node and the boundary
 const SYS_LABEL_H = 20;
 
 function drawSystemBounds(layer) {
-  const systems = (current.systems || []).filter((s) => (s.members || []).length);
-  if (current.scopedTo || systems.length < 2) return;
+  /* Every system gets a frame, including one with nothing in it yet. */
+  systemExtent = null;
+  if (current.scopedTo) return;
+  const systems = current.systems || [];
+  if (!systems.length) return;
+
+  const placed = [...positions.values()];
+  let emptyLeft = placed.length ? Math.min(...placed.map((b) => b.x)) : 0;
+  let emptyTop = placed.length
+    ? Math.max(...placed.map((b) => b.y + b.h)) + SYS_PAD * 3
+    : 0;
 
   systems.forEach((system, index) => {
-    const boxes = system.members.map((id) => positions.get(id)).filter(Boolean);
-    if (!boxes.length) return;
-    const left = Math.min(...boxes.map((b) => b.x)) - SYS_PAD;
-    const top = Math.min(...boxes.map((b) => b.y)) - SYS_PAD - SYS_LABEL_H;
-    const right = Math.max(...boxes.map((b) => b.x + b.w)) + SYS_PAD;
-    const bottom = Math.max(...boxes.map((b) => b.y + b.h)) + SYS_PAD;
+    const boxes = (system.members || []).map((id) => positions.get(id)).filter(Boolean);
+    let left;
+    let top;
+    let right;
+    let bottom;
+    if (boxes.length) {
+      left = Math.min(...boxes.map((b) => b.x)) - SYS_PAD;
+      top = Math.min(...boxes.map((b) => b.y)) - SYS_PAD - SYS_LABEL_H;
+      right = Math.max(...boxes.map((b) => b.x + b.w)) + SYS_PAD;
+      bottom = Math.max(...boxes.map((b) => b.y + b.h)) + SYS_PAD;
+    } else {
+      // Somewhere to put it, and somewhere to drop the first element into.
+      left = emptyLeft;
+      top = emptyTop;
+      right = left + EMPTY_SYS_W;
+      bottom = top + EMPTY_SYS_H;
+      emptyLeft += EMPTY_SYS_W + SYS_PAD * 2;
+    }
 
-    const group = svgEl("g", { class: `system-bound s${index % 4}`, "data-id": system.id }, layer);
+    const chosen = system.id === selectedSystem;
+    const group = svgEl("g", {
+      class: `system-bound s${index % 4}${chosen ? " selected" : ""}${boxes.length ? "" : " empty"}`,
+      "data-id": system.id,
+    }, layer);
     svgEl("rect", {
       x: left, y: top, width: right - left, height: bottom - top, rx: 10,
       class: "system-bound-box",
@@ -308,9 +337,62 @@ function drawSystemBounds(layer) {
       x: left + 12, y: top + 14, class: "system-bound-label",
     }, group);
     name.textContent = system.label;
+    if (!boxes.length) {
+      const hint = svgEl("text", {
+        x: left + (right - left) / 2, y: top + (bottom - top) / 2,
+        class: "system-bound-hint", "text-anchor": "middle",
+      }, group);
+      hint.textContent = "empty — add elements while this is selected";
+    }
     svgEl("title", {}, group).textContent =
-      `${system.label} — ${system.members.length} element(s)`;
+      `${system.label} — ${(system.members || []).length} element(s)`
+      + String.fromCharCode(10) + "Click to select: what you add next goes in here.";
+
+    // The pencil, so selecting and editing are not the same click.
+    const edit = svgEl("g", { class: "system-bound-edit" }, group);
+    svgEl("rect", {
+      x: right - 26, y: top + 4, width: 18, height: 18, rx: 3,
+      class: "system-bound-edit-box",
+    }, edit);
+    const glyph = svgEl("text", {
+      x: right - 17, y: top + 17, class: "system-bound-edit-sign", "text-anchor": "middle",
+    }, edit);
+    glyph.textContent = "⋯";
+    svgEl("title", {}, edit).textContent = "Name, describe or delete this AI system";
+    edit.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      showSystemDetail(system, ev);
+    });
+
+    group.style.cursor = "pointer";
+    group.addEventListener("click", (ev) => {
+      // A click inside the frame lands on the element there, not on the frame.
+      if (ev.target.closest(".node, .system-bound-edit")) return;
+      ev.stopPropagation();
+      selectSystem(system.id === selectedSystem ? null : system.id);
+    });
+
+    /* Remembered so the fit can see it. The content bounds are the nodes, and a
+     * system with nothing in it is drawn beyond them - so it was fitted out of
+     * view: created, invisible, and impossible to select. */
+    systemExtent = systemExtent
+      ? {
+        x: Math.min(systemExtent.x, left), y: Math.min(systemExtent.y, top),
+        right: Math.max(systemExtent.right, right), bottom: Math.max(systemExtent.bottom, bottom),
+      }
+      : { x: left, y: top, right, bottom };
   });
+}
+
+/** Which architecture new elements join. Mirrors the pool on the BPMN canvas. */
+function selectSystem(id) {
+  selectedSystem = id;
+  if (annotationCfg.onSelectSystem) annotationCfg.onSelectSystem(id);
+  draw();
+}
+
+function getSelectedSystem() {
+  return selectedSystem;
 }
 
 function draw() {
@@ -380,11 +462,19 @@ function draw() {
 
   const pad = 40;
   const xs = Array.from(positions.values());
+  let minX = Math.min(...xs.map((p) => p.x));
+  let minY = Math.min(...xs.map((p) => p.y));
+  let maxX = Math.max(...xs.map((p) => p.x + p.w));
+  let maxY = Math.max(...xs.map((p) => p.y + p.h));
+  if (systemExtent) {
+    minX = Math.min(minX, systemExtent.x);
+    minY = Math.min(minY, systemExtent.y);
+    maxX = Math.max(maxX, systemExtent.right);
+    maxY = Math.max(maxY, systemExtent.bottom);
+  }
   contentBox = {
-    x: Math.min(...xs.map((p) => p.x)) - pad,
-    y: Math.min(...xs.map((p) => p.y)) - pad,
-    w: Math.max(...xs.map((p) => p.x + p.w)) - Math.min(...xs.map((p) => p.x)) + pad * 2,
-    h: Math.max(...xs.map((p) => p.y + p.h)) - Math.min(...xs.map((p) => p.y)) + pad * 2,
+    x: minX - pad, y: minY - pad,
+    w: maxX - minX + pad * 2, h: maxY - minY + pad * 2,
   };
   paintHighlight();
 }
@@ -560,6 +650,48 @@ function showDetail(node, ev) {
   });
 }
 
+/* What a system says about itself. BEAM declares description and context on
+ * System and every shipped example fills them in, but nothing served them and
+ * nothing edited them - so naming an architecture meant writing Turtle. */
+function showSystemDetail(system, ev) {
+  detailBox.innerHTML = [
+    `<h4>AI system</h4>`,
+    `<label class="detail-field"><span>Label</span>`,
+    `<input id="sd-label" class="an-input" type="text" value="${escapeAttr(system.label || "")}"></label>`,
+    `<label class="detail-field"><span>Name (id)</span>`,
+    `<input id="sd-name" class="an-input" type="text" value="${escapeAttr(system.id.split(/[#/]/).pop())}"></label>`,
+    `<label class="detail-field"><span>Description</span>`,
+    `<textarea id="sd-description" class="an-input" rows="3">${escape(system.description || "")}</textarea></label>`,
+    `<label class="detail-field"><span>Context</span>`,
+    `<textarea id="sd-context" class="an-input" rows="3">${escape(system.context || "")}</textarea></label>`,
+    `<div class="detail-actions">`,
+    `<button type="button" class="btn small primary" id="sd-apply">Apply</button>`,
+    `<button type="button" class="btn small danger" id="sd-delete">Delete</button>`,
+    `</div>`,
+  ].join("");
+  detailBox.classList.remove("hidden");
+  positionDetail(ev);
+  detailBox.querySelector("#sd-apply").addEventListener("click", () => {
+    if (!annotationCfg.onEdit) return;
+    annotationCfg.onEdit(system.id, {
+      label: detailBox.querySelector("#sd-label").value,
+      name: detailBox.querySelector("#sd-name").value,
+      description: detailBox.querySelector("#sd-description").value,
+      context: detailBox.querySelector("#sd-context").value,
+    });
+  });
+  detailBox.querySelector("#sd-delete").addEventListener("click", () => {
+    detailBox.classList.add("hidden");
+    if (annotationCfg.onDelete) annotationCfg.onDelete(system.id);
+  });
+}
+
+/** Open the editor for a system by id, from anywhere on the page. */
+function editSystem(id, ev) {
+  const system = (current.systems || []).find((s) => s.id === id);
+  if (system) showSystemDetail(system, ev || { clientX: 80, clientY: 120 });
+}
+
 function escape(text) {
   const div = document.createElement("div");
   div.textContent = text;
@@ -596,11 +728,14 @@ function initPanZoom() {
   wrap.addEventListener("pointerdown", (ev) => {
     if (wrap.classList.contains("business")) return;
     if (ev.target.closest("button, select, input, textarea, a, label")) return;
-    if (ev.target.closest(".node, .canvas-controls, .node-detail, .palette, .motif-palette, .canvas-empty")) return;
+    // .system-bound is a control now, like .node: pressing on the frame opened
+    // its editor and this handler hid it again in the same gesture.
+    if (ev.target.closest(".node, .system-bound, .canvas-controls, .node-detail, .palette, .motif-palette, .canvas-empty")) return;
     dragging = { x: ev.clientX, y: ev.clientY };
-    wrap.setPointerCapture(ev.pointerId);
+    try { wrap.setPointerCapture(ev.pointerId); } catch (error) { /* already gone */ }
     detailBox.classList.add("hidden");
     setHighlight([]);
+    if (selectedSystem) selectSystem(null);
   });
   wrap.addEventListener("pointermove", (ev) => {
     if (!dragging) return;
@@ -814,5 +949,5 @@ function exportSvg(filename = "architecture.svg") {
 
 export const GraphView = {
   init, render, clear, setHighlight, fit, layoutPositions, setAnnotation, placeNodeAt,
-  exportSvg, toSvgDocument,
+  exportSvg, toSvgDocument, editSystem, getSelectedSystem, selectSystem,
 };

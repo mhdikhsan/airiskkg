@@ -73,9 +73,7 @@ function truncate(value, max) {
   return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
 
-/* Wrap on words instead of cutting. A name reading "Check the meter r..." tells
- * a reader nothing about which of several meter activities they are looking
- * at; the full text also goes on the <title> so nothing is lost. */
+/* Wrap on words instead of cutting; the full text goes on the <title> anyway. */
 function wrap(value, max, maxLines) {
   const words = String(value || "").split(/\s+/).filter(Boolean);
   const lines = [];
@@ -200,14 +198,7 @@ function rankNodes(ids, edges) {
 /** Lanes of one process, in the order the modeller declared them. */
 function lanesOf(model, processId) {
   const bands = (model.lanes || []).filter((lane) => lane.process === processId);
-  /* Declaration order, and nothing else. Ordering by where each lane's work
-   * starts meant a lane jumped position the moment something was dropped into
-   * it - put a start event in the third lane and the third lane became the
-   * first, which moves the whole diagram out from under the person drawing it.
-   * Lane order in BPMN is a modelling choice, not something to derive from
-   * content: the line each lane was written on says what the modeller decided,
-   * and a lane added through the palette is appended, so it lands at the
-   * bottom where it was asked for. */
+  /* Declaration order, and nothing else. */
   bands.sort((a, b) => (a.line ?? Infinity) - (b.line ?? Infinity)
     || a.id.localeCompare(b.id, undefined, { numeric: true }));
   return bands;
@@ -253,18 +244,12 @@ function layout() {
         && item.process === participant.process
     );
 
-    /* A collapsed pool is BPMN's black box: the band and its name, nothing
-     * inside. Its members still get a slot - the band itself - so a message
-     * flow into the pool lands on the pool instead of vanishing with the box
-     * it used to point at. */
+    /* A collapsed pool is BPMN's black box: the band and its name, nothing inside. */
     if (collapsedPools.has(participant.id)) {
       const band = {
         x: 0, y: poolY, w: POOL_LABEL_W + LANE_LABEL_W + BOX_W + POOL_PAD * 2, h: COLLAPSED_H,
       };
-      /* Each member gets a slice of the band rather than all of it. Sharing one
-       * rect put every message flow on the same pixel and stacked their labels
-       * into an unreadable smear - five messages into one participant is
-       * exactly the case a black box has to survive. */
+      /* Each member gets a slice of the band rather than all of it. */
       const usable = band.w - POOL_LABEL_W - POOL_PAD;
       const slice = members.length ? usable / members.length : usable;
       members.forEach((item, seat) => {
@@ -330,10 +315,7 @@ function layout() {
       const band = declared.find((lane) => lane.id === item.laneId);
       laneOf.set(item.id, band ? band.id : "");
     });
-    /* Every declared lane is drawn, empty or not. Filtering to the ones with
-     * members meant a modeller who added a participant and three lanes saw
-     * nothing at all - and an empty lane is exactly what you draw first, before
-     * there is any work to put in it. */
+    /* Every declared lane is drawn, empty or not. */
     const bands = [...declared];
     const loose = ids.filter((id) => laneOf.get(id) === "");
     if (loose.length || !bands.length) {
@@ -741,11 +723,7 @@ function sequenceArrow(parent, from, to, flow) {
       class: "pc-flow-diamond",
     }, group);
   }
-  /* On the longest segment of the route. The middle of an orthogonal route is
-   * a corner, and three branches leaving one gateway all turn in the same few
-   * pixels; the segment entering the target is short for every branch that had
-   * to change rows. The longest run is the one with room, and it differs per
-   * branch. A vertical run takes the label beside it rather than across it. */
+  /* On the longest segment of the route. */
   const caption = flow.label;
   if (caption) {
     let best = null;
@@ -955,10 +933,7 @@ function drawActivity(parent, slot) {
   }
 
   if (item.refines.length) {
-    /* The chip is the only way down, and that is the point. The box used to
-     * descend on any click, so reading a refined activity - selecting it to
-     * find the Turtle that declares it - threw the reader onto the
-     * architecture instead, every time. Descending is now asked for. */
+    /* The chip is the only way down, and that is the point. */
     const chip = node("g", { class: "pc-open", cursor: "pointer" }, group);
     const chipW = 74;
     node("rect", {
@@ -984,12 +959,7 @@ function drawActivity(parent, slot) {
     });
     node("title", {}, dot).textContent = "Drag onto another activity to connect";
 
-    /* Clicking the box selects it and reveals the line that declares it. On a
-     * refined activity that is all it does - the chip descends, the pencil
-     * edits - because a box that changed level under every click made the
-     * source it had just revealed impossible to read. An activity with no
-     * architecture behind it has neither chip nor pencil, so its box still
-     * opens the editor. */
+    /* Clicking the box selects it and reveals the line that declares it. */
     group.addEventListener("click", (ev) => {
       if (ev.target.closest(".pc-marker, .pc-port, .pc-edit, .pc-risk, .pc-open")) return;
       ev.stopPropagation();
@@ -1304,10 +1274,7 @@ const LOOP_KINDS = [
 function showDetail(activity, ev) {
   const panel = document.querySelector("#process-detail");
   if (!panel) return;
-  /* The last option is how an architecture gets started at all. Until it was
-   * here the list offered only systems that already existed, so an analyst who
-   * had drawn the process and wanted to say what carries out a step had to go
-   * and write `a beam:System` in Turtle first. */
+  /* The last option is how an architecture gets started at all. */
   const systemOptions = ['<option value="">— not an AI activity —</option>']
     .concat(systems.map((s) =>
       `<option value="${s.id}"${activity.refines.includes(s.id) ? " selected" : ""}>`
@@ -1544,12 +1511,7 @@ function draw() {
           "transform",
           `translate(${lane.x + LANE_LABEL_W / 2}, ${lane.y + 12 + (lane.h - 12) / 2}) rotate(-90)`
         );
-        /* The whole band selects it, not the name strip alone. The strip is a
-         * couple of dozen pixels wide and the rotated label is painted on top
-         * of it with no handler of its own, so a click aimed squarely at the
-         * lane name reached the pool instead - and the pool handler clears the
-         * lane. Anything the reader can point at and call "this lane" now is
-         * one: the strip, the name, or the empty room inside it. */
+        /* The whole band selects it, not the name strip alone. */
         band.addEventListener("click", (ev) => {
           if (ev.target.closest("[data-node], .pc-pool-edit, .pc-pool-fold, .pc-lane-edit")) {
             return;
@@ -1637,10 +1599,7 @@ function draw() {
   fit();
 }
 
-/* The connector handle is measured on screen, not in the diagram. At r=6 in
- * diagram units a whole-process view scales it to three pixels across, which
- * is not a thing anyone can grab - and on a gateway or an event, which are
- * small to begin with, it was the difference between a feature and a rumour. */
+/* The connector handle is measured on screen, not in the diagram. */
 const PORT_SCREEN_R = 7;
 let portsSizedAt = null;
 
@@ -1659,12 +1618,7 @@ function applyView() {
   sizePorts();
 }
 
-/* Fit under the palette, not behind it. The palette floats over the canvas,
- * and once it offered the whole notation it was three rows tall - so centring
- * in the full height slid the first row of the diagram underneath it. With the
- * drawer open there was little height to give and the top pool went straight
- * under the buttons: clicking an activity there hit a palette button instead,
- * and nothing opened. */
+/* Fit under the palette, not behind it. */
 function paletteInset() {
   const palette = document.querySelector("#process-palette");
   if (!palette || palette.classList.contains("hidden")) return 0;
@@ -1680,11 +1634,7 @@ function fit() {
   const box = root.getBBox();
   const rect = svg.getBoundingClientRect();
   if (!box.width || !box.height || !rect.width) return;
-  /* Capped at half the canvas. The palette can be held open by the reader, and
-   * on a canvas shortened by the drawer an unfolded palette is taller than the
-   * room left - so insetting by its full height pushed the diagram off the
-   * bottom, where clicking an activity reached nothing. Past the cap it simply
-   * overlaps, which is what a floating toolbar is allowed to do. */
+  /* Capped at half the canvas. */
   const inset = Math.min(paletteInset(), rect.height * 0.5);
   const usable = Math.max(rect.height - inset, 140);
   const k = Math.min(rect.width / (box.width + 60), usable / (box.height + 60), 1.2);
@@ -1819,11 +1769,7 @@ const PALETTE = [
     hint: "A text annotation: says something about a step without being one" },
 ];
 
-/* The palette draws the shape it inserts, at the size it can be recognised at.
- * A row of words says a gateway is available; it does not say a gateway is a
- * diamond, and the whole reason BPMN has a notation is that the shape carries
- * the meaning. Same primitives as the canvas, so the button cannot drift from
- * what clicking it produces. */
+/* The palette draws the shape it inserts, at the size it can be recognised at. */
 function paletteIcon(item) {
   const icon = document.createElementNS(SVG_NS, "svg");
   icon.setAttribute("class", "pp-icon");
@@ -1876,11 +1822,7 @@ function paletteIcon(item) {
  * choice sticks. */
 const PALETTE_SHARE = 0.34;
 
-/* Decided by measuring the palette against the canvas, both ways, every time.
- * An earlier version only ever folded, and a canvas that measured zero while
- * the reader was on the architecture level latched it folded on a screen with
- * plenty of room. Building it unfolded and measuring costs one reflow before
- * paint, and it is the only thing that cannot be wrong about its own size. */
+/* Decided by measuring the palette against the canvas, both ways, every time. */
 function autoFoldPalette(host) {
   if (paletteTouched || !svg) return;
   const rect = svg.getBoundingClientRect();
