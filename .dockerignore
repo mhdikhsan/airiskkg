@@ -4,6 +4,7 @@
 !ontology
 !shacl
 !external
+!requirements-docker.txt
 
 # Attribution and licence travel with the code
 !NOTICE.md
