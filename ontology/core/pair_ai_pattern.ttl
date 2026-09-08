@@ -19,7 +19,10 @@
 <http://w3id.org/airiskkg/pair-ai#> a owl:Ontology ;
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Pattern Module Ontology"@en ;
-    dct:description "Pattern-level vocabulary for constructing the PAIR-AI AI Risk Knowledge Graph."@en ;
+    dct:description """Meta-vocabulary for the motif and AI risk pattern layer of the
+    PAIR-AI AI Risk Knowledge Graph: motifs and their pattern nodes and edges, AI risk
+    patterns and their constituents, and the motif matches and risk findings they
+    produce."""@en ;
     vann:preferredNamespacePrefix "pair" ;
     vann:preferredNamespaceUri "http://w3id.org/airiskkg/pair-ai#" ;
     owl:imports <http://w3id.org/beam/core#> ,
@@ -82,7 +85,7 @@ pair:RiskFinding a owl:Class ;
 
 pair:DataCategoryPropagation a owl:Class ;
     rdfs:label "Data Category Propagation"@en ;
-    skos:definition "Marker output type for pattern implementations that infer pair:containsDataCategory facts (e.g. untrusted-content taint) from roles and data flow."@en .
+    skos:definition "Marker output type for registered implementations that infer pair:containsDataCategory facts (e.g. untrusted-content taint) from roles and data flow."@en .
 
 pair:MitigationApplication a owl:Class ;
     rdfs:label "Mitigation Application"@en .
@@ -220,11 +223,23 @@ pair:operationalizesRiskCondition a owl:ObjectProperty ;
 
 pair:derivedFrom a owl:ObjectProperty ;
     rdfs:label "derived from"@en ;
-    rdfs:comment "Derivation provenance for curated pattern knowledge."@en ;
+    rdfs:comment "Derivation provenance for curated motifs and risk patterns."@en ;
     rdfs:domain [
         a owl:Class ;
         owl:unionOf (pair:GraphMotif pair:RiskPattern)
     ] .
+
+pair:motifFamily a owl:ObjectProperty ;
+    rdfs:label "motif family"@en ;
+    rdfs:comment """
+    Which family of AI system this motif is a shape of. A shelving decision
+    about this library, read off each motif's own provenance and description -
+    never a claim about a submitted architecture, and never read during
+    matching. Motifs from more than one family co-match in one system all the
+    time: a GenAI assistant served by a trained model matches both.
+    """@en ;
+    rdfs:domain pair:GraphMotif ;
+    rdfs:range skos:Concept .
 
 pair:implementedBy a owl:ObjectProperty ;
     rdfs:label "implemented by"@en ;
