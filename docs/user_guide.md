@@ -12,21 +12,44 @@ it.
 
 ## 1. What this application is
 
-**PAIR-AI is design-time risk assessment for AI systems.** Instead of running the
-system, you describe its architecture as a graph and PAIR-AI tells you which
-risks the *structure* predisposes it to. It works with two core concepts.
+**PAIR-AI is pattern-based risk assessment for AI systems.** Instead of running the
+system, you describe it — its architecture as a graph, and optionally the business
+process that runs it — and PAIR-AI tells you which risks the *structure*
+predisposes it to. That works before the system is built and as an audit of one
+already running: either way you are assessing a description, never a live system.
+It works with two core concepts.
 
 ### Motif
 
-A **motif** is a reusable architectural pattern — a small graph of *pattern
-roles* wired together by data-flow relations. For example: *"a retrieval step
-that uses a vector store and produces retrieved context"*, or *"a user query
-handled directly by a generative model that produces user-facing output"*.
+A **motif** is a *reusable, type-level configuration of pattern roles connected by
+flow relations* — a small graph capturing a recurring arrangement in AI system
+architectures. For example: *"a retrieval step that uses a vector store and
+produces retrieved context"*, or *"a user query handled by a generative model
+that produces user-facing output"*.
 
-Motifs match **structure only** — the roles elements play and the flow between
-them. A motif matching your graph is **risk-neutral**: it just means your system
-has that shape. Motifs are the recurring building blocks the method recognises;
-the current library has 24 of them (see the [Reference](#4-reference)).
+**A motif is not an architecture design pattern.** A design pattern is
+prescriptive — something you apply while designing. A motif is descriptive —
+something recognised in a design afterwards, and it sits *below* design-pattern level:
+one design pattern (RAG, say) induces several motifs, and one motif (vector
+retrieval) turns up in several design patterns. Architecture design patterns are
+**not modelled** in the ontology; motifs and AI risk patterns are.
+
+Three properties carry the definition:
+
+- **A configuration, not an element.** A motif constrains several elements
+  *together with the relations between them*. One annotated element is never a
+  motif — risk attaches to the interaction, not the part.
+- **Over roles, not implementations.** A motif's nodes are constrained by pattern
+  roles and BEAM classes, never by implementation-specific labels. That is what
+  lets one motif match systems that look nothing alike.
+- **Structure only, hence risk-neutral.** A motif reads roles and flow relations
+  and **no facet**. A motif matching your graph just means your system has that
+  shape.
+
+**Type and instance:** the motif is the type; a **motif match** is its
+instantiation, mapping the motif's abstract nodes onto concrete elements of your
+graph. "Reusable" is exact in that sense — one motif, many matches, across
+systems. The current library has 31 (see the [Reference](#4-reference)).
 
 ### Candidate risk finding
 
@@ -98,7 +121,7 @@ stay in sync both ways**:
 
 | Button | What it does |
 | --- | --- |
-| **Load example ▾** | Load an architecture graph. Under **Bundled**: `onyx_rag_chatbot` (a fully-annotated RAG assistant) and `simple_graph_rag` (a small graph-RAG). Under **Local**: anything you dropped in `ontology/example_local/` — see [Your own graphs](#26-your-own-graphs). |
+| **Load example ▾** | Load an architecture graph. Under **Bundled**: `simple_graph_rag` (a small, fully-annotated graph-RAG) and `it_support_agent` (a tool-using agent, the one offered graph that reaches the agentic layer). Under **Local**: anything you dropped in `ontology/example_local/` — see [Your own graphs](#26-your-own-graphs). |
 | **Open .ttl** | Upload your own Turtle file. |
 | **Starter** | Replace the editor with a minimal starter graph to build from. |
 | **Clear** | Empty both the code and the diagram (asks to confirm). |
@@ -180,7 +203,7 @@ no motif matched, often a signal that the graph still needs **roles** (see §3).
 
 ### 2.5 Building from the motif catalogue
 
-The **Motifs** tray (right of the canvas) lists all 24 motifs. Click a motif — or
+The **Motifs** tray (right of the canvas) lists all 31 motifs. Click a motif — or
 drag it onto the canvas — to instantiate it: the workbench adds that motif's
 elements **already wired and annotated** with the roles it expects, and the editor
 Turtle updates to match. Then **Run assessment** to see what the new shape
@@ -200,17 +223,22 @@ is exactly the situation for graphs imported from Tool4Boxology / the private
 *t4b-beam* tool: they carry structure (types + flow edges) but **no pattern
 roles**. Annotation is the step that makes such a graph assessable.
 
-We'll use the bundled **`beam_export_graph_rag.ttl`** example — a real t4b-beam
-export of a GraphRAG event-information chatbot.
+The graph is a t4b-beam export of a GraphRAG event-information chatbot.
 
-> **The finished result of this walkthrough** — the same graph with every role
-> and facet filled in — is bundled as
-> **`ontology/example/beam_export_graph_rag_annotated.ttl`**, so you can compare
-> your annotation against it.
+> **The finished result of this walkthrough** — that graph with every role and
+> facet filled in — is bundled as **`ontology/example/simple_graph_rag.ttl`**, so
+> you can compare your annotation against it. The unannotated export it started
+> from is no longer bundled: only the finished graph is, because the example menu
+> offers graphs that assess. To follow along from a blank slate, load
+> `simple_graph_rag` and delete its `pair:playsRole` and
+> `pair:containsDataCategory` lines in the editor — or import
+> `external/tool4boxology/sample_export.nt`, a real Tool4Boxology export that
+> arrives with structure and no roles at all.
 
 ### Step 1 — Load it and look
 
-Toolbar → **Load example ▾ → beam_export_graph_rag**.
+Toolbar → **Load example ▾ → simple_graph_rag**, then strip the role triples as
+above.
 
 You'll see a BEAM-native RAG pipeline: `beam:System`, `beam:Data` /
 `beam:StatisticalModel` / `beam:SemanticModel` / `beam:Symbol` resources, and
@@ -235,7 +263,7 @@ play several (e.g. a store that is both `VectorStore` and `VectorIndex`, or an L
 that is both `FoundationLLM` and `GenerativeModel`). Roles fall into three
 families — **resource / data roles**, **process-step roles**, and **control
 roles**. The
-complete vocabulary (all 85 roles, with definitions) is in
+complete vocabulary (all 97 roles, with definitions) is in
 [§4.3 Roles](#43-roles-full-vocabulary). The handful you'll reach for most on a
 RAG / LLM graph:
 
@@ -383,7 +411,7 @@ filtering).
 
 ### 4.3 Roles (full vocabulary)
 
-The 85 pattern roles you assign to elements, grouped by family. Assign the most
+The 97 pattern roles you assign to elements, grouped by family. Assign the most
 specific role that fits.
 
 #### Top-level role abstractions
@@ -562,12 +590,12 @@ specific role that fits.
 
 | I want to… | Do this |
 | --- | --- |
-| Try it fast | **Load example ▾ → onyx_rag_chatbot**, then **Run assessment** |
+| Try it fast | **Load example ▾ → simple_graph_rag**, then **Run assessment** |
 | Import a structure-only graph | **Open .ttl**, or **Import t4b** for a Tool4Boxology export, then annotate |
 | Make a graph matchable | **Annotate** tab → assign roles → **Apply annotations** |
 | Check my graph is well-formed | **Validate** → read the **Input contract** tab |
 | See why a finding fired | Select it in **Findings** → evidence highlights in the diagram |
 | See which motifs matched | **Run assessment** → **Motifs** tab → click a motif to highlight its elements |
-| Scaffold a pattern fast | Open the **Motifs** tray (right of the canvas) → click a motif to drop its annotated elements |
+| Scaffold a motif fast | Open the **Motifs** tray (right of the canvas) → click a motif to drop its annotated elements |
 | Start from scratch | **Starter**, or **Clear** and build with the palette |
 | Keep a graph off GitHub | Put it in `ontology/example_local/` — gitignored, and never in a built image |

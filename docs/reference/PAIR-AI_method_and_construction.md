@@ -26,18 +26,28 @@ inventory (see `docs/reference/catalogue.md`), not a change record (see
 
 ## 0. Orientation
 
-PAIR-AI is **design-time** risk assessment for AI systems. The system is never executed;
-its architecture is described as an RDF graph, and the method reports which risks the
-*structure* predisposes the system to.
+PAIR-AI is **pattern-based** risk assessment for AI systems, working over two views of the
+same system: the **architecture** (an RDF graph, BEAM) and the **business process** that runs
+it (sBPMN 2.0), joined by `pair:refinedBy`.
 
-The mental model is static analysis for architectures: **motifs ≈ linter rules**,
-**candidate risk findings ≈ warnings** — never confirmed bugs.
+It serves both occasions — assessing a design before it is built, and auditing a system
+already in production. **The system is never executed either way.** What the method reads is
+always the represented structure, so auditing a running system means describing what was
+actually built and assessing that description; nothing observes traffic, logs, or model
+outputs. The method reports which risks the *structure* predisposes the system to.
+
+The mental model is static analysis for architectures, with one correction worth making
+explicitly: a motif is **not** the lint rule. A lint rule fires; a motif only matches. The
+rule is the **risk pattern**, whose constituents line up with a lint rule term for term —
+the code shape it matches, the guard on it, the message, the category, the suggested fix.
+A **candidate risk finding** is the diagnostic it emits, and like a diagnostic it is never a
+confirmed bug.
 
 Formally the method is a function over one architecture graph:
 
 > **Assessment(G) → Findings**, evaluated against two frozen, curated libraries.
 
-- **Motif Library** — risk-neutral structural patterns ("query-driven retrieval over a
+- **Motif Library** — risk-neutral structural configurations ("query-driven retrieval over a
   vector store", "a user query answered directly by an LLM").
 - **Risk Pattern Library** — risk knowledge, each entry being
   **Risk Pattern = Motif + Applicability Conditions + Mechanism + Taxonomy Links + Controls**,
@@ -64,18 +74,18 @@ figure but the motif count had drifted before anyone noticed.
 | Data categories | 7 | `ontology/core/pair_ai_pattern.ttl` |
 | Actionable controls (`pat:Control_*`) | 12 | `ontology/patterns/control_mitigation_layer.ttl` |
 | Facet concepts (project namespaces) | 35 | `ontology/facets/*.ttl` |
-| Registered SPARQL implementations (OQPs) | 63 | `ontology/patterns/implementation/`, `ontology/context/implementation/` |
-| — of which motif matchers | 31 | `match/*.rq` |
+| Registered SPARQL implementations | 63 | `ontology/patterns/implementation/`, `ontology/context/implementation/` |
+| — of which motif matchers (the OQPs) | 31 | `match/*.rq` |
 | — of which risk-finding queries | 15 | `risk/*.rq` |
 | — of which data-category derivations | 7 | `propagation/*.rq` (6) + `business_data_bridge.rq` |
 | — of which business-flow derivations | 1 | `business_flow.rq` |
 | — of which mitigation rewrites | 9 registrations over 8 files | `mitigation/*.rq` |
-| Loaded triples | 7 470 | — |
+| Loaded triples | 7 529 | — |
 
 Taxonomy entries loaded: IBM Atlas 30 · MIT domains 19 · MIT control families 88 ·
 NIST AI 600-1 9 · OWASP LLM 10 · OWASP ASI 4.
 
-Note the ratio: **every motif has an executable matcher**, but only **14 of 31 motifs
+Note the ratio: **every motif has an executable matcher**, but only **15 of 31 motifs
 carry at least one risk pattern** (§6.7).
 
 ---
@@ -131,7 +141,7 @@ unintended ways"). Prose is not machine-checkable. Two layers were therefore aut
 2. **Risk patterns + applicability conditions in `risk_pattern_library.ttl`.** For each
    pattern, the `pair:ApplicabilityCondition` instances and the SPARQL logic in the
    matching `risk_*.rq` are original project work: they translate mechanism prose into a
-   graph pattern that can actually be evaluated (e.g. "an element carrying
+   SPARQL graph pattern that can actually be evaluated (e.g. "an element carrying
    `pair:UntrustedContent` reaches a generation step that produces user-facing output,
    and no represented control sits on that path").
 
@@ -173,7 +183,7 @@ Provenance is tiered per field:
 The **mechanism is inert**: it is never evaluated during matching. Encoding the causal
 account a second time as a graph condition would duplicate the applicability condition
 and reintroduce declarative/executable drift, so the mechanism is attached by reference to
-every finding of its pattern — the same explanation is reproduced, never regenerated, per
+every finding of its risk pattern — the same explanation is reproduced, never regenerated, per
 system and per run. Instance grounding is **not** materialized in the graph: the concrete
 risk-bearing elements are already asserted as `pair:hasEvidence`, and any sentence naming
 them belongs to the presentation layer. (A `pair:mechanismNarrative` property that built
@@ -210,10 +220,10 @@ for identical results. Keep the structural braces too: without them the filters 
 group and fire once per metadata row again.
 
 **`pair:generatedByRiskPattern` is what routes a finding to its mitigation rewrite.** The
-same control answers several patterns while a rewrite is written against one vulnerable
+same control answers several risk patterns while a rewrite is written against one vulnerable
 shape, so rewrites are keyed on (control, risk pattern) — see §1.6.
 
-Conditions are **reusable constituents** and are shared across patterns where the
+Conditions are **reusable constituents** and are shared across risk patterns where the
 structural gate is genuinely the same. Example, documented in the file itself:
 `pat:SensitiveDataRetrievalExposureRiskPattern` (anchored to LLM02) reuses
 `pat:VectorEmbeddingWeakness_RetrievalCondition` (defined for LLM08), because the
@@ -270,12 +280,12 @@ would mitigate itself and none would ever be reported;
 `test_a_mitigation_rewrite_never_runs_during_an_assessment` enforces it.
 
 **Rewrites are keyed on (control, risk pattern), never on the control alone.** The same
-control answers several patterns — output validation is suggested by improper output
+control answers several risk patterns — output validation is suggested by improper output
 handling, sensitive disclosure and system prompt leakage — while a rewrite is written
 against one vulnerable shape. Keyed on the control alone, each of those findings offered an
 Apply button that ran the wrong rewrite, found its own screen already in place and reported
 "already in place on this path". Findings therefore carry `pair:generatedByRiskPattern`, and
-a control with no rewrite *for that finding's pattern* reports `applicable: false` rather
+a control with no rewrite *for that finding's risk pattern* reports `applicable: false` rather
 than offering a button that does nothing.
 
 **Control motifs are sized to the risk, not to the vocabulary.** `GuardrailsMotif` is 8
@@ -321,8 +331,9 @@ source material and extracting the distinctions they implied:
   distinctions a risk statement actually depends on. `pair:RetrievalStep` exists as a
   distinct role from `pair:ProcessingStep` because LLM08 talks specifically about
   retrieval and embedding weaknesses;
-- **the architecture pattern catalogs** (Martin Fowler's GenAI patterns; Mercari's ML
-  System Design Patterns) — read to enumerate the components each pattern is built from:
+- **the architecture design pattern catalogues** (Martin Fowler's GenAI patterns; Mercari's
+  ML System Design Patterns) — read to enumerate the components each design pattern is built
+  from:
   a query-rewriting step, a vector store, a reranker model, a serving image, a prediction
   queue.
 
@@ -459,9 +470,10 @@ cross-references the two layers to catch that class of drift.
 
 ### 3.3 The curation loop in practice
 
-1. Pick a pattern from a source catalog and decide whether it is one motif or several
-   (the relationship is m:n — one design pattern induces several motifs; one motif recurs
-   in several patterns).
+1. Pick an architecture design pattern from a source catalogue and decide whether it is
+   one motif or several
+   (the relationship is m:n — one architecture design pattern induces several motifs; one motif recurs
+   in several design patterns).
 2. Name the pattern nodes and choose each node's expected BEAM class and role; add roles
    to `pair_ai_pattern.ttl` only if an existing role cannot express the distinction.
 3. Write the ODP in `motif.ttl` with `dct:source` + `pair:derivedFrom`.
@@ -492,7 +504,7 @@ Two recent, concrete corrections illustrate the curation standard:
   removed, making the motif flow-agnostic about what the generation step reads.
 
 The rule this expresses: when a motif does not match architectures that plainly exhibit
-the pattern, the motif is wrong, not the architecture. The declaration and the `.rq` are
+the design pattern, the motif is wrong, not the architecture. The declaration and the `.rq` are
 corrected together, and the example assessments are re-run so any change in findings is
 explained.
 
@@ -698,7 +710,7 @@ declares it). Each solution is recorded as one `pair:MotifMatch` with explicit
 roles (Stage 2) and context/facets (Stage 1). For each risk pattern whose motif matched,
 its applicability conditions are evaluated over the *bound* elements — facet checks,
 additional reachability, and absence-of-represented-control. If all conditions hold, a
-candidate finding is instantiated carrying the pattern's mechanism, taxonomy links, and
+candidate finding is instantiated carrying the risk pattern's mechanism, taxonomy links, and
 controls — selected from curated knowledge, never invented at assessment time.
 
 **Stage 4 — Output.** A structured record per finding: evidence pointers, mechanism,
@@ -803,7 +815,7 @@ rdflib's own and would break comparability across an rdflib upgrade.
 
 ### 5.5 What a run currently produces
 
-Measured 2026-08-30 by running the pipeline. `test_propagation.py` pins the four
+Measured 2026-09-08 by running the pipeline. `test_propagation.py` pins the
 single-graph rows and asserts that **every bundled example has a baseline** — adding one
 without a number would otherwise leave it unwatched.
 
@@ -811,9 +823,11 @@ without a number would otherwise leave it unwatched.
 | --- | --- | --- |
 | RAG chatbot (Onyx / Danswer) | 14 | 22 |
 | Minimal graph RAG | 3 | 7 |
-| Meter anomaly scoring (ML serving) | 4 | 1 |
+| Wien Energie chatbot (BotTina) | 5 | 9 |
+| Wien Energie tariff change (4 systems) | 3 | 9 |
 | IT support agent (agentic) | 4 | 8 |
-| Energy scene: graph RAG + meter anomaly + the business process | 7 | 8 |
+| Energy scene: BotTina + the business process | 5 | 10 |
+| Tariff scene: the tariff graph + its business process | 3 | 11 |
 | IT service desk scene: the agent + its business process | 4 | 9 |
 
 The RAG chatbot is the broadest graph in the repository: 14 matches over **8 distinct
@@ -829,8 +843,10 @@ filing decision, changing a namespace is a modelling one.
 
 **An unannotated graph matches nothing**, however well drawn. That is not a failure of the
 pipeline but the method's central dependency made visible (§6.6). The raw Tool4Boxology
-export that used to demonstrate this has since been removed from the bundled set, which is
-now four annotated architectures plus two process models.
+export that used to demonstrate this has since been removed from the tracked set, which is
+now five annotated architectures and three process models — two architectures and one
+process the workbench offers, the rest kept as test fixtures. To see an unannotated graph,
+import `external/tool4boxology/sample_export.nt`.
 
 ---
 
@@ -865,8 +881,12 @@ grounding by URI, no SKOS scheme, no inter-annotator agreement study, and role g
 was shaped by what motifs needed to bind.
 
 **6.5 Example and test debt — resolved, and now enforced.** Every example the repository
-ships lives in `ontology/example/` (four architectures) and `ontology/example/context/` (two
-process models); confidential and NDA-covered graphs live in the gitignored
+ships lives in one of two tracked places: `ontology/example/` holds what the workbench
+**offers** (`simple_graph_rag.ttl`, `it_support_agent.ttl`, and `context/it_service_desk.ttl`),
+and `python/tests/fixtures/` holds the graphs a **test** needs that the deployment does not
+offer (Onyx, the two Wien Energie architectures, and their two process models). Retiring a
+graph from the offered set must not retire the coverage that rested on it, which is what the
+second directory is for. Confidential and NDA-covered graphs live in the gitignored
 `ontology/example_local/`, which nothing in the test suite or the shipped library may read
 — a fresh clone has to pass, and `test_private_examples.py` enforces that plus the ignore
 rule, the `.dockerignore` allow-list, and that a WSGI app neither lists nor serves the
@@ -885,12 +905,12 @@ bind a step node, and vice versa) and, above all, **role choice**, including whi
 role sits under.
 
 **6.7 Risk coverage is OWASP-shaped.** 15 risk patterns anchored to the OWASP LLM Top 10 and
-the ASI entries cover **14 of 31 motifs**. The 17 uncovered motifs are almost entirely the
+the ASI entries cover **15 of 31 motifs**. The 16 uncovered motifs are almost entirely the
 classic ML/MLOps set — Synchronous/Asynchronous/Batch/Multi-stage/Prep-pred prediction,
 Batch and Pipeline training, Train-then-serve, Prediction logging and monitoring — plus
 Evals, Hybrid Retriever, Information Retrieval, and the three control motifs, which exist to
 be *found* rather than flagged. IBM Atlas, MIT and NIST entries are used as *link targets*,
-never as sources of new patterns, so risks that OWASP does not name (fairness, environmental
+never as sources of new risk patterns, so risks that OWASP does not name (fairness, environmental
 cost, labour impact, most MIT domains) cannot currently be found even though they are
 present in the loaded taxonomies.
 
@@ -950,8 +970,8 @@ aggregation from findings to a system-level statement. A human reads a flat list
 judgement survives a re-run — but nothing consumes a status yet.
 
 **6.11 There is no evaluation yet.** No ground-truth dataset, no precision/recall against
-expert assessment, no baseline comparison, no user study. Firing counts on four bundled
-architectures and two process models are the only empirical signal, and those examples were
+expert assessment, no baseline comparison, no user study. Firing counts on five tracked
+architectures and three process models are the only empirical signal, and those examples were
 themselves annotated by the method's authors.
 
 **6.12 Engineering constraints.** The whole knowledge base plus the submitted graphs are
@@ -1122,6 +1142,7 @@ not a preference.
 | `docs/reference/risk_control_linkage.md` | Risk to control linkage, including the MIT evidence layer |
 | `docs/reference/mitigation_and_gap_mechanics.md` | How a control is applied and how the gap report is built |
 | `docs/user_guide.md` | Workbench user guide |
-| `ontology/example/*.ttl`, `ontology/example/context/*.ttl` | The bundled architectures and process models |
+| `ontology/example/*.ttl`, `ontology/example/context/*.ttl` | The architectures and process model the workbench offers |
+| `python/tests/fixtures/**.ttl` | Graphs a test needs that the deployment does not offer |
 | `docs/notes/business_context_as_built.md` | What shipped on the business-layer branch (local-only; `docs/notes/` is gitignored) |
 | `CHANGELOG_data_model.md` | Data-model change and audit record (local-only) |

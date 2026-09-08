@@ -87,6 +87,28 @@ values. Facets characterize elements; they are never nodes that motifs traverse.
 > and **risk-neutral by itself**: it states what structure is present, never whether that
 > structure is dangerous.
 
+**Three levels, and the differentia between them.** "Pattern" and "motif" name different levels
+and must not be used interchangeably:
+
+| Level | PAIR-AI term | Carries | Modeled as |
+| --- | --- | --- | --- |
+| Type, with rationale | architecture design pattern (RAG, agentic loop, the Mercari serving patterns) | structure + intent + applicability + consequences | **not modeled**; cited via `dct:source` / `pair:derivedFrom` |
+| Type, structure only | **architectural motif** | pattern roles + flow relations | `pair:GraphMotif` |
+| Instance | **motif match** | bindings from pattern nodes to concrete elements | `pair:MotifMatch` |
+
+The differentia is **what gets dropped**. A design pattern is a problem–solution pair in a context
+and documents *why* the solution works. A motif keeps only the *structure*. That subtraction is
+exactly what makes a motif matchable and risk-neutral: rationale cannot be matched against a graph,
+structure can.
+
+An **AI risk pattern** (`pair:RiskPattern`, term 7) is a pattern in the full sense. It re-attaches
+to a motif the applicability conditions, consequences (mechanism, taxonomy links) and mitigations
+(controls) that the motif dropped — oriented to risk rather than to design intent. Calling it a
+pattern is therefore correct.
+
+PAIR-AI adapts "motif" from the class level, where the term originates in design-pattern detection
+[D17, D15], to the architecture level. This is an **adaptation, not a direct reuse**.
+
 Three properties carry the definition, and the rest of the method depends on each:
 
 - **A configuration, not an element.** A motif constrains *several elements together with the
@@ -120,11 +142,11 @@ mapping from the motif's abstract pattern nodes to concrete architecture element
 exact in this sense: one motif, many matches, across systems.
 
 **Terminology grounding.** "Motif" is established terminology in design-pattern detection, where
-a *design motif* is the structural solution core of a pattern, described by roles and relations
-and matched against concrete systems, as distinct both from the full pattern and from its
-occurrences [D17, D15]. The granularity claim follows the notion of **architectural primitives**:
-abstractions below the level of a pattern that recur across the realizations of several patterns
-[D18, D19]. Annotating an architecture with such abstractions and then proposing catalogued
+a *design motif* is the structural solution core of a design pattern, described by roles and
+relations and matched against concrete systems, as distinct both from the full design pattern
+and from its occurrences [D17, D15]. The granularity claim follows the notion of **architectural primitives**:
+abstractions below the level of an architecture design pattern that recur across the
+realizations of several design patterns [D18, D19]. Annotating an architecture with such abstractions and then proposing catalogued
 patterns from the annotations is an established method shape [D20]; PAIR-AI applies it over RDF
 and adds risk semantics. The graph-theoretic sense of a small recurring subgraph matched against
 a host graph [D1] is the secondary reading. In ontology-engineering terms the declarative motif is
@@ -147,17 +169,42 @@ designing, a motif is recognized afterwards. *Not:* an architectural style [D16]
 vocabulary and constraints for a whole system; a motif is local and several may co-occur in one
 architecture. *Not:* a risk, and *not* a single role.
 
-### 5. Motif Implementation (`pair:PatternImplementation`)
+### 5. Pattern Implementation (`pair:PatternImplementation`)
 
-The executable SPARQL CONSTRUCT query that detects a motif in an architecture graph and
-materializes each occurrence as a motif match (`pair:implementedBy`). Executing it performs
-subgraph matching: SPARQL basic graph pattern evaluation is subgraph-homomorphism search over the
-RDF graph [D6]. The model *permits* several implementations of one motif; the current library is
-1:1 (one matcher per motif). An implementation is an implementation *of the motif*, not of the
-risk pattern.
+A **registered executable SPARQL CONSTRUCT query**. Every one carries a
+`pair:implementationPath` (a literal string naming its `.rq` file) and a
+`pair:producesOutputType` (what it emits); those two are the invariant, and are what
+`test_library_consistency.py` checks. Five kinds are registered — counts measured off the loaded
+graph on 2026-09-08, 63 in total:
 
-**ODP and OQP.** The declarative motif and its executable query are the two roles a semantic
-pattern can take: an **ontology design pattern (ODP)** when it structures the ontology or
+| Kind | Count | Bound to its subject by | Emits |
+| --- | --- | --- | --- |
+| Motif matcher | 31 | `pair:implementsMotif` | `pair:MotifMatch` |
+| Risk query | 15 | `pair:implementsRiskPattern` | `pair:RiskFinding` |
+| Mitigation rewrite | 9 | `pair:implementsControl` + `pair:mitigatesRiskPattern` | the control structure it inserts |
+| Propagation rule | 6 | — | derived facts (e.g. `pair:containsDataCategory`) |
+| Business-context derivation | 2 | — | `pair:businessFollows`, derived data categories |
+
+**A motif matcher implements the *motif*, not the risk pattern** that uses it —
+`pair:implementsMotif` and `pair:implementsRiskPattern` are separate properties for exactly that
+reason. Executing a matcher performs subgraph matching: SPARQL basic graph pattern evaluation is
+subgraph-homomorphism search over the RDF graph [D6]. It materializes each occurrence as a motif
+match (`pair:implementedBy`). The model *permits* several implementations of one motif; the
+current library is 1:1.
+
+The last two kinds implement no pattern at all: they are **derivation rules**, identified only by
+what they produce.
+
+**Naming.** The class is called `pair:PatternImplementation` although 8 of its 63 members
+implement neither a motif nor a risk pattern, so the name is a generalization that does not hold
+literally. It is **retained deliberately**: it is a published w3id IRI, an IRI is identity, and
+renaming it would rewrite 83 occurrences across `.ttl`, `.rq` and Python for no change in
+behaviour. In prose, write **"registered implementation"** for the class as a whole, and name the
+kind — motif matcher, risk query, mitigation rewrite, propagation rule, business-context
+derivation — when you mean one of them. See the `pair:Pattern*` naming exception in Section B.
+
+**ODP and OQP** — this pairing concerns motif matchers specifically. The declarative motif and its
+executable query are the two roles a semantic pattern can take: an **ontology design pattern (ODP)** when it structures the ontology or
 knowledge graph, and an **ontology query pattern (OQP)** when it is operationalized as a reusable
 SPARQL template that retrieves instances of that structure [D25, D14, D24]. An OQP is derived from
 its ODP and may differ topologically where the application requires it, but must not violate the
@@ -172,8 +219,8 @@ present somewhere in this system" and "the data bound to the prompt-context node
 different claims; only the second licenses a finding.
 
 Conditions are constituents *of* a risk pattern, not external inputs. A condition may be shared by
-several patterns where the structural gate is genuinely identical; such reuse must be documented
-at the reusing pattern.
+several risk patterns where the structural gate is genuinely identical; such reuse must be
+documented at the reusing risk pattern.
 
 Four kinds are in use:
 
@@ -222,10 +269,10 @@ which likewise pairs the environment in which a misuse occurs with how it occurs
 the countermeasures that address it, and the evidence needed to trace it.
 
 **Link direction.** Motif and risk pattern are connected by the inverse pair `pair:hasMotif`
-(pattern → motif) and `pair:hasRiskPattern` (motif → pattern).
+(risk pattern → motif) and `pair:hasRiskPattern` (motif → risk pattern).
 
 > **`pair:hasMotif` is canonical.** The binding is authored on the **risk pattern**, because the
-> motif is a *constituent of* the pattern per the equation above. `pair:hasRiskPattern` is a
+> motif is a *constituent of* the risk pattern per the equation above. `pair:hasRiskPattern` is a
 > **required mirror**, not an optional convenience.
 
 The mirror is mandatory because **no OWL reasoning runs in the assessment pipeline**: asserting
@@ -235,7 +282,7 @@ only. Both directions are written explicitly in the library, the mirror is enfor
 `python/tests/test_library_consistency.py`, and the authoring rule is restated in the
 `rdfs:comment` of both properties.
 
-*Not:* a risk (a pattern is type-level and reusable; a finding is instance-level and
+*Not:* a risk (a risk pattern is type-level and reusable; a finding is instance-level and
 system-specific). *Not:* an anti-pattern — a risk pattern does not assert that the configuration
 is bad practice, only that it is conditionally disposed toward harm. *Not:* a taxonomy entry,
 which classifies harms rather than configurations.
@@ -262,7 +309,7 @@ computing it at assessment time would assert more than the structure supports.
 ### 9. Candidate Risk Finding (`pair:RiskFinding`)
 
 A system-specific, defeasible assertion that a risk pattern applies to one motif match, generated
-when the submitted architecture graph *represents* that pattern's applicability conditions as
+when the submitted architecture graph *represents* that risk pattern's applicability conditions as
 satisfied for that match. A finding links the motif match it was generated from, the matched
 motif, the satisfied conditions, the derived mechanism, taxonomy entries, suggested controls, and
 its **evidence** — the matched elements, attached via `pair:hasEvidence`, retained for durable
@@ -288,6 +335,22 @@ instance*.
 ---
 
 ## B. Internal and narrative terms 
+
+**The `pair:Pattern*` naming exception.** Several ontology terms carry "Pattern" in their local
+name while denoting parts of a *motif*, not of a design pattern or a risk pattern:
+`pair:PatternNode`, `pair:PatternEdge`, `pair:PatternRole`, `pair:PatternImplementation`,
+`pair:hasPatternNode`, `pair:hasPatternEdge`, `pair:sourcePatternNode`,
+`pair:targetPatternNode`, `pair:patternPredicate`, `pair:bindsPatternNode`. Here "pattern" is
+used in its **graph-pattern** sense — the abstract nodes and edges a query matches — which is
+standard in RDF and SPARQL, and predates the motif/pattern distinction being tightened.
+
+These names are **retained deliberately**. They are load-bearing across the knowledge base and
+the pipeline (1 278 occurrences across 68 files as of 2026-09-08, of which 1 006 in five `.ttl`
+files and 210 across 47 `.rq` files), and renaming them would rewrite every match query and
+several Python modules for no semantic gain. **The prose rule still holds**: in running text,
+never write bare "pattern" for one of these — write "pattern node", "pattern edge", or name the
+term outright.
+
 
 **Motif Match** (`pair:MotifMatch`) — a total mapping from the pattern nodes of one motif to
 elements of one architecture graph that preserves the motif's declared edges and satisfies each

@@ -11,14 +11,15 @@ changes and this page does not, this page is wrong.
 
 - **Roles** annotate elements. You put a `pair:playsRole` on a single BEAM
   element (a box) — one element may carry several roles.
-- **Motifs** are the *linter rules*. A motif is a type-level configuration of
-  **role-tagged elements plus the flow edges between them** (`beam:use` /
-  `beam:produce` / `beam:inform`). Matching finds the configuration; a motif is
-  **risk-neutral by itself** — it says what structure is present, never whether
-  that structure is dangerous.
-- **Risk patterns** are the *alerts*. When a motif match also satisfies a risk
+- **Motifs** are the *structure a rule matches*, not the rule. A motif is a
+  type-level configuration of **role-tagged elements plus the flow edges between
+  them** (`beam:use` / `beam:produce` / `beam:inform`). Matching finds the
+  configuration; a motif is **risk-neutral by itself** — it says what structure is
+  present, never whether that structure is dangerous.
+- **Risk patterns** are the *rules*. When a motif match also satisfies a risk
   pattern's applicability conditions (a data category, the absence of a
-  represented control, a tool edge…), PAIR-AI emits a **candidate** risk finding.
+  represented control, a tool edge…), PAIR-AI emits a **candidate risk finding** —
+  the alert, which requires triage and is never a confirmed defect.
 
 > **Per-element or combination?** Annotation is **per-element** — you tag each
 > box on its own. Recognition is **per-combination** — a motif only matches when
@@ -49,6 +50,19 @@ Two properties of the library shape how to read the tables below:
 Motifs are risk-neutral: they describe *structure*, not danger. The **Feeds**
 column lists the risk patterns **declared** on the motif via
 `pair:hasRiskPattern` (see §2).
+
+**The sections below are declared, not just written here.** Each motif carries
+`pair:motifFamily`, one of four concepts in `pair:MotifFamilyScheme`: **GenAI**
+(13), **ML serving and training** (13), **Agentic** (4), **Supply chain** (1).
+The finer headings used here are subdivisions of those four — the three Gen AI
+sections are all GenAI, and Prediction/serving, Training, Lifecycle and
+Operational are all ML serving and training. Checked 2026-09-08: the shelving in
+the graph and the sections in this document agree on all 31 motifs, with no
+disagreements. The workbench library browser groups by the declared family, and
+`test_library_consistency.py` fails if a motif is shelved twice or not at all.
+A family is a filing decision about this library, never a claim about a
+submitted architecture: no match query reads it, and one system routinely
+matches several families at once.
 
 > **The declared binding is not the whole firing story.** Risk queries evaluate
 > their conditions over *any* `pair:MotifMatch` whose bindings carry the required
@@ -172,9 +186,9 @@ mitigations attached to the finding.
 | **ASI07** | Insecure inter-agent communication | A message crosses between agents and is acted on with no represented validation, guardrail, or policy step. | Agent Delegation | Input validation & prompt isolation; tool permission boundaries; logging/monitoring/evals |
 | **ASI06** | Memory & context poisoning | Content is committed to agent memory with no represented `MemoryValidationStep`, **and** the recalled context later reaches a generation step. | Agent Memory Loop | Trusted training & indexing data; input validation & prompt isolation; logging/monitoring/evals |
 
-Each pattern also links to IBM AI Risk Atlas, MIT AI Risk Repository subdomains,
+Each risk pattern also links to IBM AI Risk Atlas, MIT AI Risk Repository subdomains,
 and (where applicable) NIST AI 600-1 entries via `pair:mayIndicateRisk`; the
-agentic patterns carry both their ASI entry and the related LLM entry.
+agentic risk patterns carry both their ASI entry and the related LLM entry.
 
 *All findings are **candidate** risks — structural dispositions, not confirmed
 failures. Missing findings usually mean a missing role, not a safe system.*
@@ -492,4 +506,5 @@ Full account: [PAIR-AI_method_and_construction.md](PAIR-AI_method_and_constructi
 - [risk_control_linkage.md](risk_control_linkage.md) — risk → control linkage, including the MIT evidence layer
 - [PAIR-AI_method_and_construction.md](PAIR-AI_method_and_construction.md) §7 — the business (BPMN) layer: the join, the two derivations, and what it moves
 - [../notes/business_context_as_built.md](../notes/business_context_as_built.md) — the same layer as built on its branch (**local-only**; `docs/notes/` is gitignored, so this link is dead in a fresh clone)
-- [../../ontology/example/](../../ontology/example/) — the four bundled architectures, plus `context/` for the two process models
+- [../../ontology/example/](../../ontology/example/) — the architectures the workbench offers, plus `context/` for the process model that refines one of them
+- [../../python/tests/fixtures/](../../python/tests/fixtures/) — the graphs a test needs that the deployment does not offer (Onyx, the two Wien Energie graphs, and their two process models)
