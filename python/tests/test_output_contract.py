@@ -1,10 +1,4 @@
-"""Tests for the SHACL assessment-output contract (pair:findingStatus value set).
-
-The pipeline emits candidate risk findings and nothing else: every risk query
-writes the literal "candidate". The other four status values are an extension
-point for later human review, so the shape has to accept them while rejecting
-anything outside the closed set.
-"""
+"""Tests for the SHACL assessment-output contract (pair:findingStatus value set)."""
 
 from __future__ import annotations
 

@@ -1,16 +1,4 @@
-"""Tests for data-category propagation.
-
-The modeler annotates WHERE protected content enters the system; whether it can
-REACH a later element is derived by following the flow (Rule R8). Two rules run
-to a fixed point, with different semantics:
-
-  untrusted_content.rq   trust taint, seeded from roles, barrier = guardrail
-  content_categories.rq  content categories under pair:Information, propagating
-                         what was annotated, barrier = redaction
-
-Each test pairs propagation with its barrier: a rule that never stops would tag
-the whole graph and make the categories useless for discriminating risk.
-"""
+"""Tests for data-category propagation."""
 
 from __future__ import annotations
 
@@ -85,8 +73,7 @@ def test_sensitive_information_reaches_the_output_without_being_annotated() -> N
 
 
 def test_a_redaction_step_stops_the_category() -> None:
-    """Without a barrier the category would reach everything downstream and stop
-    discriminating anything. Redaction is what makes it stop."""
+    """Without a barrier the category would reach everything downstream and stop discriminating anything."""
     result = run_assessment_from_text(_with_redaction())
     assert "SensitiveInformation" in _categories(result, "Ctx"), "upstream of redaction"
     for downstream in ("Clean", "Answer"):
@@ -108,9 +95,7 @@ def test_propagation_alone_satisfies_the_sensitive_retrieval_condition() -> None
 
 
 def test_trust_taint_and_content_categories_propagate_independently() -> None:
-    """Two rules, two barriers. UntrustedContent is seeded from roles and stopped
-    by a guardrail; content categories are annotated and stopped by redaction.
-    A redaction step must not be mistaken for a guardrail."""
+    """Two rules, two barriers."""
     result = run_assessment_from_text(_with_redaction())
     clean = _categories(result, "Clean")
     assert "UntrustedContent" in clean, "redaction is not a guardrail; trust taint continues"
@@ -118,32 +103,20 @@ def test_trust_taint_and_content_categories_propagate_independently() -> None:
 
 
 def test_taint_roots_carry_the_marker_themselves() -> None:
-    """An element whose role IS a taint root must carry pair:UntrustedContent.
-
-    Until 2026-08-06 the rule only tagged what a root flowed into, so the
-    elements whose untrusted provenance is least in doubt - the public input,
-    the retrieved context - were invisible to any condition reading a step's
-    own input. Roots are now marked directly."""
+    """An element whose role IS a taint root must carry pair:UntrustedContent."""
     result = run_assessment_from_text(_without_redaction())
     assert "UntrustedContent" in _categories(result, "Query"), "public input is a taint root"
     assert "UntrustedContent" in _categories(result, "Ctx"), "retrieved context is a taint root"
 
 
 def test_generation_output_is_marked_as_generated_content() -> None:
-    """What a generation step produces is generated content, by definition of
-    the role. Derived rather than annotated (Rule R8): no human judgement is
-    involved, unlike SensitiveInformation."""
+    """What a generation step produces is generated content, by definition of the role."""
     result = run_assessment_from_text(_without_redaction())
     assert "GeneratedContent" in _categories(result, "Answer")
 
 
 def test_redaction_stops_protected_content_but_not_origin_markers() -> None:
-    """Redaction removes protected content; it does not rewrite provenance.
-
-    Redacting a model's output does not make that output un-generated, so
-    pair:GeneratedContent passes the barrier while pair:SensitiveInformation
-    does not. A barrier that erased both would destroy provenance a downstream
-    condition may need."""
+    """Redaction removes protected content; it does not rewrite provenance."""
     graph = _GRAPH % (_REDACTION, "ex:Clean") + """
 ex:RedactAnswer a beam:Process ; pair:playsRole pair:RedactionStep ;
     beam:use ex:Answer ; beam:produce ex:PublicAnswer .
@@ -241,11 +214,7 @@ ex:corpus a beam:Data ; pair:playsRole pair:KnowledgeSource ;
 
 
 def test_a_derived_category_can_be_traced_back_to_its_annotation() -> None:
-    """A derived fact the modeler cannot check is a fact they have to trust.
-
-    Each propagation hop records the upstream element and the step it passed
-    through, so the chain from a sensitive output back to the human annotation
-    is walkable."""
+    """A derived fact the modeler cannot check is a fact they have to trust."""
     from rdflib import Namespace
 
     prov = Namespace("http://www.w3.org/ns/prov#")
@@ -267,11 +236,7 @@ def test_a_derived_category_can_be_traced_back_to_its_annotation() -> None:
 
 
 def test_derivation_records_do_not_break_the_fixed_point() -> None:
-    """Provenance IRIs are deterministic on purpose.
-
-    The runner loops until no new triple appears. Blank-node derivations would
-    mint a fresh identifier every pass, so the rule would never converge and
-    would grow the graph until the iteration cap stopped it."""
+    """Provenance IRIs are deterministic on purpose."""
     result = run_assessment_from_text(_DPV_GRAPH % "")
     assert len(result.inferred_annotations) < 60, (
         f"propagation did not converge tightly ({len(result.inferred_annotations)} triples); "
@@ -325,9 +290,6 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
         example_path(ONYX_NS): (14, 22),
         example_path(GRAPH_RAG_NS): (3, 7),
         # The Wien Energie chatbot, and the graph the bundled process refines.
-        # A hybrid retrieval shape: the graph branch is a rewritten query put to
-        # a knowledge source, the document branch a vector search, and one
-        # generation step answers from whichever ran.
         example_path(WIEN_ENERGIE_NS): (5, 9),
         # The tariff change assistant: a grounded shape, so no
         # direct-prompting-without-grounding, and the two generated replies are
@@ -338,11 +300,7 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
         # so all three agentic motifs match and four ASI-derived patterns fire.
         example_path(AGENT_NS): (4, 8),
     }
-    # Every graph the repo ships is pinned. Adding one without a baseline would
-    # otherwise leave it unwatched, which is how drift goes unnoticed. Baselines
-    # for graphs that are not shipped are fine and deliberate: a graph retired
-    # from the example set keeps its fixture and its numbers, so retiring it
-    # from the deployment does not retire it from the watch.
+    # Every graph the repo ships is pinned.
     unpinned = set(EXAMPLE_DIR.glob("*.ttl")) - set(expected)
     assert not unpinned, (
         "bundled examples without a baseline: "

@@ -1,18 +1,4 @@
-"""The assessment export: is the exported file usable on its own?
-
-An export is only worth having if someone who receives it, with no access to
-this repository, can read it. That means three properties, and each is a test
-below:
-
-  1. It carries the evidence. Findings reference elements by URI, so the
-     architecture graph has to travel with them or the evidence is unresolvable.
-  2. It does NOT carry the library. The motif, risk-pattern, and taxonomy layers
-     are the reusable knowledge resource, not this run's output; bundling them
-     would republish the whole corpus into every export.
-  3. It says where it came from. Findings without provenance read as standing
-     facts about a system rather than the output of one analysis of one graph,
-     which is exactly the reading candidate framing rejects.
-"""
+"""The assessment export: is the exported file usable on its own?"""
 
 from __future__ import annotations
 
@@ -71,10 +57,7 @@ def test_export_carries_the_evidence_it_references() -> None:
 
 
 def test_export_does_not_republish_the_library() -> None:
-    """The library is referenced by URI, never bundled.
-
-    Without this the export balloons from ~1k to ~7k triples and every download
-    ships the motif, risk-pattern, and taxonomy layers again."""
+    """The library is referenced by URI, never bundled."""
     _result, export = _export()
     assert not set(export.graph.subjects(RDF.type, PAIR.GraphMotif)), "motif library leaked"
     assert not set(export.graph.subjects(RDF.type, PAIR.RiskPattern)), "risk pattern library leaked"
@@ -137,9 +120,7 @@ def test_unknown_format_is_rejected() -> None:
 
 
 def test_export_without_the_parsed_architecture_still_excludes_the_library() -> None:
-    """The convenience path recovers the architecture by subtracting the base
-    graph. If that subtraction regressed, the export would silently include the
-    entire library - the exact failure this fallback is most likely to hide."""
+    """The convenience path recovers the architecture by subtracting the base graph."""
     result = run_assessment_from_text(GRAPH)
     recovered = build_export(result, None)
     assert not set(recovered.graph.subjects(RDF.type, PAIR.GraphMotif))
@@ -197,11 +178,7 @@ def test_the_same_question_asked_twice_gets_the_same_fingerprint() -> None:
 
 
 def test_reformatting_the_input_does_not_change_the_fingerprint() -> None:
-    """Whitespace, prefixes and triple order are not modelling decisions. Hashing
-    the raw text would report a reindented file as a different architecture.
-
-    Rewritten as N-Triples with the statements shuffled: same graph, nothing
-    textually in common with the original."""
+    """Whitespace, prefixes and triple order are not modelling decisions."""
     lines = Graph().parse(data=GRAPH, format="turtle").serialize(format="nt").splitlines()
     shuffled = "\n".join(reversed([line for line in lines if line.strip()]))
 
@@ -215,9 +192,7 @@ def test_changing_the_architecture_changes_the_fingerprint() -> None:
 
 
 def test_two_runs_stay_two_activities_even_when_nothing_changed() -> None:
-    """PROV correctness. Two assessments at different times genuinely are two
-    events, and collapsing their IRIs would assert they were one. The fingerprint
-    answers 'same question'; the activity answers 'same occasion'."""
+    """PROV correctness."""
     _r1, first = _export()
     _r2, second = _export()
     assert first.activity != second.activity

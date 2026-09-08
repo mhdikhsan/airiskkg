@@ -1,21 +1,8 @@
-"""Nothing private leaves this machine.
-
-`ontology/example_local/` is where the user's own architecture graphs live -
-confidential systems, NDA-covered use cases, work in progress. Two channels can
-publish them, and each has been a real leak in this project:
-
-  * **git** - a forgotten `git add .` before a push.
-  * **the image** - `.gitignore` and `.dockerignore` are unrelated files, and
-    `COPY . /app` shipped whatever the first one was quietly keeping out.
-
-So the rule is enforced rather than remembered: the folder is ignored, only its
-README is tracked, the Docker context is an allow-list, and the webapp offers
-the folder only when someone asks for it. A test suite that passes on a fresh
-clone is the other half - nothing here may read from the folder either.
-"""
+"""Nothing private leaves this machine."""
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -41,11 +28,7 @@ def _git(*args: str) -> str:
 
 
 def test_only_the_readme_is_tracked_under_example_local() -> None:
-    """The failure this exists for: a confidential graph committed by accident.
-
-    `git add .` cannot do it while the ignore rule holds, but `git add -f` can,
-    and so can an ignore rule that stops matching after someone edits it. This
-    reads what git actually tracks rather than what .gitignore says."""
+    """The failure this exists for: a confidential graph committed by accident."""
     tracked = [line for line in _git("ls-files", LOCAL_REL).splitlines() if line.strip()]
     assert tracked == [f"{LOCAL_REL}/README.md"], (
         "only the README may be tracked under example_local; found: " + ", ".join(tracked)
@@ -63,12 +46,7 @@ def test_a_graph_dropped_into_example_local_is_ignored() -> None:
 
 
 def test_the_docker_context_excludes_private_paths() -> None:
-    """The image is published; the working tree is not.
-
-    Checked as text because building requires a daemon. The allow-list form is
-    the point: `*` first, then the paths the app reads. A deny-list would need
-    editing every time a private folder is added, which is exactly the habit
-    that put NDA graphs in an image once already."""
+    """The image is published; the working tree is not."""
     lines = [
         line.strip()
         for line in (REPO_ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines()
@@ -87,9 +65,7 @@ def test_the_docker_context_excludes_private_paths() -> None:
 
 
 def test_a_wsgi_app_never_offers_local_examples() -> None:
-    """The deployed case. `airiskkg.webapp.app:app` is what gunicorn imports and
-    what the Dockerfile runs, and it takes no arguments - so the default has to
-    be the safe one, not something a deployment remembers to set."""
+    """The deployed case."""
     from airiskkg.webapp import app as module
 
     client = module.app.test_client()
@@ -102,12 +78,7 @@ def test_a_wsgi_app_never_offers_local_examples() -> None:
 
 
 def test_a_wsgi_app_cannot_read_a_local_example_by_name() -> None:
-    """Not listing them is not enough - the reader must refuse too, or the names
-    are simply a guess away.
-
-    Only names that exist *only* locally count. Keeping a working copy of a
-    bundled graph in the folder is normal, and that name resolving to the
-    bundled file is correct, not a leak."""
+    """Not listing them is not enough - the reader must refuse too, or the names are simply a guess away."""
     bundled = {path.stem for path in EXAMPLE_DIR.glob("*.ttl")}
     local_graphs = (
         [path for path in sorted(EXAMPLE_LOCAL_DIR.glob("*.ttl")) if path.stem not in bundled]
@@ -161,4 +132,60 @@ def test_the_suite_reads_no_local_graph() -> None:
     assert not offenders, (
         "these tests read ontology/example_local/, which a fresh clone does not have: "
         + ", ".join(offenders)
+    )
+
+
+# Namespaces anything published from this repository may mint IRIs under: the
+# project's own, the vocabularies its graphs are written in, synthetic hosts,
+# and sources already public. Compared case-insensitively.
+PUBLISHABLE_NAMESPACES = (
+    "http://w3id.org/airiskkg/",
+    "http://w3id.org/beam/",
+    "http://example.org/",
+    "http://example.com/",
+    "http://www.w3.org/",
+    "https://www.w3.org/",
+    "http://purl.org/dc/",
+    "http://purl.org/vocab/",
+    "https://w3id.org/dpv",
+    "https://w3id.org/sssom",
+    "https://w3id.org/semapv/",
+    "https://sbpmn.github.io/",
+    "http://tool4boxology.org/",
+    "https://creativecommons.org/licenses/",
+    "https://docs.onyx.app/",
+    "https://github.com/onyx-dot-app/",
+    "https://airov.at/",
+)
+
+_BRACKETED_IRI = re.compile(r"<\s*(https?://[^>\s]+)\s*>")
+_ANY_IRI = re.compile(r"""https?://[^\s<>"'`)\]},;]+""")
+
+
+def _iris_of(path: Path) -> set[str]:
+    """A .ttl or .rq is RDF end to end, so every IRI in it is content."""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    pattern = _ANY_IRI if path.suffix in {".ttl", ".rq"} else _BRACKETED_IRI
+    return set(pattern.findall(text))
+
+
+def test_no_published_graph_mints_iris_outside_the_allow_list() -> None:
+    """The third channel: a confidential graph pasted inline rather than dropped in a folder."""
+    tracked = [
+        REPO_ROOT / name
+        for name in _git("ls-files", "python/tests", "ontology/example").split()
+    ]
+    assert tracked, "expected tracked files to scan"
+    offenders: list[str] = []
+    for path in tracked:
+        if not path.is_file():
+            continue
+        for iri in sorted(_iris_of(path)):
+            if not iri.lower().startswith(PUBLISHABLE_NAMESPACES):
+                offenders.append(f"{path.relative_to(REPO_ROOT).as_posix()}: {iri}")
+    assert not offenders, (
+        "these tracked files mint IRIs under a namespace that is not on the "
+        "publishable allow-list - if the namespace is genuinely public, add it "
+        "to PUBLISHABLE_NAMESPACES; if it is a client's, it must not be "
+        "committed:\n  " + "\n  ".join(offenders[:20])
     )

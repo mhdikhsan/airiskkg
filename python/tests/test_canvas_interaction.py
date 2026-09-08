@@ -1,20 +1,4 @@
-"""Can the canvas actually be clicked?
-
-The companion to test_canvas_renders.py, and the harder half. That file proved
-the diagram is drawn; this one proves it responds - and the two are genuinely
-different questions, because the bug that prompted it drew a perfect diagram
-nobody could interact with.
-
-Why this goes through the DevTools protocol rather than dispatching events.
-`element.dispatchEvent(new MouseEvent("click"))` lands on whatever element you
-name, always. A real click is routed by the browser, and pointer capture changes
-where it lands: `#canvas-wrap` captured the pointer for the architecture pan, so
-every real click on the business canvas retargeted to the wrap and the BPMN
-handlers never ran. A synthetic-click test was green throughout - it was testing
-the listener, which was fine, and never the interaction, which was not.
-
-So: real mouse input, at real coordinates, read back from the real page.
-"""
+"""Can the canvas actually be clicked?"""
 
 from __future__ import annotations
 
@@ -32,6 +16,8 @@ pytest.importorskip("websockets")
 from test_canvas_renders import STATIC, _browser, _free_port, served  # noqa: E402,F401
 
 from conftest import GRAPH_RAG_NS, WIEN_ENERGIE_NS, example_path  # noqa: E402
+
+pytestmark = pytest.mark.browser
 
 
 def _example(namespace: str) -> str:
@@ -131,8 +117,7 @@ class _Page:
 
 @pytest.fixture(scope="module")
 def page(served):
-    """A headless browser on the business level of the real app, driveable with
-    real input."""
+    """A headless browser on the business level of the real app, driveable with real input."""
     import asyncio
 
     browser = _browser()
@@ -211,10 +196,7 @@ def _descend(loop, handle):
 
 
 def _descend_from(loop, handle, label):
-    """Descend from a named activity rather than from whichever one is drawn
-    first. A test that says something about the architecture it lands in has to
-    choose that architecture; DOM order follows the layout and changes when the
-    diagram does."""
+    """Descend from a named activity rather than from whichever one is drawn first."""
     chip = loop.run_until_complete(handle.js(f"""(() => {{
         const box = [...document.querySelectorAll('.pc-activity.refined')]
             .find((a) => (a.textContent || '').includes({label!r}));
@@ -229,12 +211,7 @@ def _descend_from(loop, handle, label):
 
 
 def _open_palette(loop, handle):
-    """Unfold the palette if this viewport folded it.
-
-    It folds itself when it would take more than a third of the canvas, and the
-    canvas here is half a 1400px window with the drawer open. A test about
-    adding a participant is not a test about the fold, so it asks for the
-    buttons rather than assuming them."""
+    """Unfold the palette if this viewport folded it."""
     return loop.run_until_complete(handle.js("""(() => {
         const host = document.querySelector('#process-palette');
         if (!host) return 0;
@@ -247,12 +224,7 @@ def _open_palette(loop, handle):
 
 
 def _fold_palette(loop, handle):
-    """Give the diagram the whole canvas.
-
-    The palette is a toolbar; a test about something drawn on the canvas should
-    not also be a test about how much room the toolbar left. With it open the
-    diagram scales down far enough that a risk badge is four pixels tall, and a
-    click at real coordinates lands beside it."""
+    """Give the diagram the whole canvas."""
     loop.run_until_complete(handle.js("""(() => {
         const host = document.querySelector('#process-palette');
         if (host && host.querySelector('.pp-item')) host.querySelector('.pp-fold').click();
@@ -261,12 +233,28 @@ def _fold_palette(loop, handle):
     time.sleep(0.5)
 
 
-def _add_from_palette(loop, handle, label):
-    """Click a palette button by name.
+@pytest.fixture
+def scene_restored(page):
+    """Put the document back, whatever happened to the test."""
+    loop, handle = page
+    saved = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+    yield page
+    loop.run_until_complete(handle.send("Runtime.evaluate", {
+        "expression": "window.PairAI.Editor.setValue(" + json.dumps(saved) + ")",
+        "returnByValue": True,
+    }))
+    _settle(loop, handle, "window.PairAI.Editor.getValue().length", 0, tries=40)
+    # The level too, and the selection.
+    loop.run_until_complete(handle.js(
+        "window.PairAI.GraphView && window.PairAI.GraphView.selectSystem"
+        " ? (window.PairAI.GraphView.selectSystem(null), 1) : 1"))
+    _back_to_business(loop, handle)
+    _settle(loop, handle,
+            "document.querySelectorAll('#process-canvas .pc-pool').length", 0, tries=40)
 
-    Brought into view first: the palette scrolls once it offers the whole
-    notation, and a button in a later section reports a rect that is outside
-    the visible box, so a click at those coordinates lands on the canvas."""
+
+def _add_from_palette(loop, handle, label):
+    """Click a palette button by name."""
     _open_palette(loop, handle)
     at = loop.run_until_complete(handle.js(f"""(() => {{
         const b = [...document.querySelectorAll('#process-palette .pp-item')]
@@ -288,11 +276,7 @@ def _on_architecture(loop, handle):
 
 
 def _settle(loop, handle, expression, unwanted, tries=20):
-    """Wait for the page to finish, rather than guessing how long it takes.
-
-    Descending fires a round trip, and a fixed sleep either wastes time or reads
-    the previous render - which is how this test first reported a canvas that
-    had narrowed correctly as one that had not."""
+    """Wait for the page to finish, rather than guessing how long it takes."""
     for _ in range(tries):
         value = loop.run_until_complete(handle.js(expression))
         if value != unwanted:
@@ -307,18 +291,7 @@ def _back_to_business(loop, handle):
 
 
 def test_the_chip_opens_the_architecture_and_the_box_does_not(page) -> None:
-    """Descending is asked for, not stumbled into.
-
-    The box used to open the architecture on any click, so selecting a refined
-    activity - to find the Turtle that declares it - changed level instead, and
-    the source it had just revealed scrolled away underneath. The chip is the
-    request; the box is only a selection. Two claims, and the second is the one
-    that regressed: a box that still descends is the bug back.
-
-    The original claim this test was written for stands as well: #canvas-wrap
-    captured the pointer for the architecture pan, so a real click on the
-    business canvas retargeted to the wrap and reached nothing. Synthetic
-    clicks could not see it, which is why this is driven through CDP."""
+    """Descending is asked for, not stumbled into."""
     loop, handle = page
     box = _box(loop, handle)
     assert box, "no refined activity was drawn to click"
@@ -334,9 +307,7 @@ def test_the_chip_opens_the_architecture_and_the_box_does_not(page) -> None:
 
 
 def test_a_pool_collapses_to_a_band_and_opens_again(page) -> None:
-    """BPMN's black-box pool. With two participants on screen and one being
-    read, the other is scenery - and on a process this wide, scenery costs the
-    reader the whole viewport."""
+    """BPMN's black-box pool."""
     loop, handle = page
     _back_to_business(loop, handle)
 
@@ -434,16 +405,9 @@ def test_every_palette_button_draws_the_shape_it_inserts(page) -> None:
     assert seen["triggers"] >= 3, f"no event button shows the trigger it carries: {seen}"
 
 
-def test_a_connector_can_be_dragged_from_a_gateway(page) -> None:
-    """Events and gateways carry a connector handle, and it can be grabbed.
-
-    Two things had made it a rumour rather than a feature. The reveal was
-    written `.pc-activity:hover`, so on every circle and diamond the handle was
-    present and permanently invisible. And its radius was in diagram units, so
-    on a whole-process view it measured three pixels across - a target nobody
-    can hit with a mouse. The drag itself worked the whole time, which is why
-    only looking at the painted result finds this."""
-    loop, handle = page
+def test_a_connector_can_be_dragged_from_a_gateway(scene_restored) -> None:
+    """Events and gateways carry a connector handle, and it can be grabbed."""
+    loop, handle = scene_restored
     _back_to_business(loop, handle)
     _fold_palette(loop, handle)
 
@@ -500,7 +464,6 @@ def test_a_connector_can_be_dragged_from_a_gateway(page) -> None:
     })()"""))
     # Kept and put back: this writes to the document, and the page fixture is
     # shared with every test after it.
-    loop.run_until_complete(handle.js("window.__scene = window.PairAI.Editor.getValue(), 1"))
     before = loop.run_until_complete(handle.js(
         "window.PairAI.Editor.getValue().split('sequenceFlow').length"))
     loop.run_until_complete(
@@ -508,11 +471,6 @@ def test_a_connector_can_be_dragged_from_a_gateway(page) -> None:
     time.sleep(1.5)
     after = loop.run_until_complete(handle.js(
         "window.PairAI.Editor.getValue().split('sequenceFlow').length"))
-    loop.run_until_complete(handle.send("Runtime.evaluate", {
-        "expression": "window.PairAI.Editor.setValue(window.__scene)",
-        "returnByValue": True,
-    }))
-    time.sleep(2.5)
 
     assert after > before, (
         f"dragging from a gateway wrote no sequence flow ({before} -> {after})"
@@ -520,8 +478,7 @@ def test_a_connector_can_be_dragged_from_a_gateway(page) -> None:
 
 
 def test_clicking_empty_canvas_does_not_open_anything(page) -> None:
-    """The other half of the same claim: the box means something, the space
-    around it does not."""
+    """The other half of the same claim: the box means something, the space around it does not."""
     loop, handle = page
     box = _box(loop, handle)
 
@@ -532,8 +489,7 @@ def test_clicking_empty_canvas_does_not_open_anything(page) -> None:
 
 
 def test_dragging_the_canvas_is_not_a_click(page) -> None:
-    """Panning ends in a click the reader did not mean. Letting go over an
-    activity must not open it, or the diagram moves and then jumps a level."""
+    """Panning ends in a click the reader did not mean."""
     loop, handle = page
     chip = _chip(loop, handle)
     assert chip, "no chip to let go over"
@@ -545,18 +501,12 @@ def test_dragging_the_canvas_is_not_a_click(page) -> None:
 
 
 def test_the_risk_badge_folds_the_findings_it_counts(page) -> None:
-    """A count alone is a number nobody can act on; the whole list at once is a
-    wall. The badge folds, so a reader opens the one activity they are asking
-    about - and the box grows to hold it rather than the list spilling over the
-    diagram."""
+    """A count alone is a number nobody can act on; the whole list at once is a wall."""
     loop, handle = page
     _back_to_business(loop, handle)
     _fold_palette(loop, handle)
 
-    # Waited for, not slept through. Nine seconds was enough for the assessment
-    # on the machine this was written on and not on a loaded one, so this test
-    # reported "no activity reported any candidate risk" for a run that had
-    # simply not come back yet - the same mistake _settle exists to stop.
+    # Waited for, not slept through.
     loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
     _settle(loop, handle,
             'Number(document.querySelector("#findings-count").textContent || 0)', 0, tries=75)
@@ -580,19 +530,10 @@ def test_the_risk_badge_folds_the_findings_it_counts(page) -> None:
 
 
 def test_descending_narrows_the_canvas_to_that_activitys_architecture(page) -> None:
-    """"Open this activity" means the architecture behind it, not the other tab.
-
-    A document that carries two architectures - which is the normal case once a
-    business process runs more than one AI system - used to draw both, so
-    descending from either activity showed the same picture. The relation is
-    already in the graph, so narrowing is a query and nothing needs storing:
-    pair:refinedBy names the system, beam:hasProcess and beam:hasResource say
-    what it holds."""
+    """"Open this activity" means the architecture behind it, not the other tab."""
     loop, handle = page
 
-    # Widen first, deliberately. Picking the architecture level by hand clears
-    # any scope a previous descent left behind, and measuring without doing so
-    # compares a narrowed canvas against itself.
+    # Widen first, deliberately.
     loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
     time.sleep(2)
     whole = loop.run_until_complete(handle.js('document.querySelectorAll(".node").length'))
@@ -639,13 +580,7 @@ def test_descending_narrows_the_canvas_to_that_activitys_architecture(page) -> N
 
 
 def test_a_pan_does_not_eat_the_click_after_it(page) -> None:
-    """The "it gets stuck" report, reduced.
-
-    A pan produces a click nobody meant, so one click is swallowed. That flag
-    used to be cleared only by a handler on an activity - so panning and then
-    releasing over empty canvas left it armed, and the next real click, whenever
-    it came, vanished. Here: pan over nothing, then click the sub-process, and
-    it must open."""
+    """The "it gets stuck" report, reduced."""
     loop, handle = page
     _back_to_business(loop, handle)
 
@@ -707,8 +642,7 @@ def test_the_findings_list_follows_the_architecture_on_screen(page) -> None:
 
 
 def test_a_version_can_be_read_without_being_restored(page) -> None:
-    """Restore replaces the graph on screen, which is a commitment. Asking what
-    a past assessment found should not require making it the present one."""
+    """Restore replaces the graph on screen, which is a commitment."""
     loop, handle = page
 
     # Self-sufficient: a version only exists once something has been assessed,
@@ -750,14 +684,7 @@ def test_a_version_can_be_read_without_being_restored(page) -> None:
 
 
 def test_clicking_a_plain_activity_opens_an_editor_for_it(page) -> None:
-    """The popup existed and was unreachable.
-
-    A rule meant to keep the architecture's node popup off the business canvas
-    matched on `.node-detail`, and the process popup is one - so every BPMN
-    activity opened a panel with `display: none`. Nothing threw, nothing
-    logged, and the only way to attach data to an activity was to write three
-    BPMN nodes into the Turtle by hand.
-    """
+    """The popup existed and was unreachable."""
     loop, handle = page
     _back_to_business(loop, handle)
 
@@ -794,9 +721,7 @@ def test_clicking_a_plain_activity_opens_an_editor_for_it(page) -> None:
 
 
 def test_two_architectures_are_drawn_as_two_named_areas(page) -> None:
-    """The scene holds a GraphRAG chatbot and a meter-anomaly scorer because one
-    business process runs both. They used to arrive as one undifferentiated
-    field of nodes with nothing saying where one ended and the other began."""
+    """The scene holds the graph-RAG chatbot and the Wien Energie architecture, because one business process runs both."""
     loop, handle = page
     loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
     time.sleep(2)
@@ -827,11 +752,7 @@ def test_two_architectures_are_drawn_as_two_named_areas(page) -> None:
 
 @pytest.fixture(scope="module")
 def empty_workbench(served):
-    """A browser on the real page with nothing loaded - the opening screen.
-
-    Its own page, because the shared `page` fixture loads three graphs before
-    anything else runs, and the question this is about is only on screen while
-    the workbench is empty."""
+    """A browser on the real page with nothing loaded - the opening screen."""
     import asyncio
 
     browser = _browser()
@@ -873,19 +794,67 @@ def empty_workbench(served):
     process.terminate()
 
 
-def test_the_opening_choice_answers_a_real_click(empty_workbench) -> None:
-    """The first thing anyone sees, and it was dead.
+# What the workbench opens on.
 
-    `.canvas-empty` lives inside `#canvas-wrap`, whose pointerdown handler arms
-    the architecture pan and takes pointer capture - which retargets the click
-    that follows to the wrap, so the card's own handler never ran. Pressing
-    either card did nothing at all.
 
-    The suite stayed green because the test for this calls `.click()`, which
-    invokes the handler directly and can never see a click that does not
-    arrive. Only real input can.
-    """
+def _library_state(loop, handle):
+    return loop.run_until_complete(handle.js("""(() => ({
+        open: !document.querySelector('#library').classList.contains('hidden'),
+        lead: !document.querySelector('#library-lead').classList.contains('hidden'),
+        risks: document.querySelectorAll('#library-list .lib-row').length,
+        tiles: document.querySelectorAll('#library-detail .lib-tile').length,
+        motifCards: document.querySelectorAll('#library-detail .lib-card').length,
+        previews: document.querySelectorAll('#library-detail .motif-preview .shape').length,
+    }))()"""))
+
+
+def _spot(loop, handle, expression):
+    """The middle of an element, in page coordinates, or None if it is not on
+    screen - so a click is never sent at a shape that is not there."""
+    return loop.run_until_complete(handle.js(f"""(() => {{
+        const node = {expression};
+        if (!node || node.offsetParent === null) return null;
+        const r = node.getBoundingClientRect();
+        return {{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }};
+    }})()"""))
+
+
+def test_the_library_is_what_the_workbench_opens_on(empty_workbench) -> None:
+    """An empty canvas says nothing about what would be found on it."""
     loop, handle = empty_workbench
+
+    opened = _library_state(loop, handle)
+    assert opened["open"], "the workbench did not open on the library"
+    assert opened["lead"], "the opening frame that explains motif and risk pattern is missing"
+    assert opened["risks"] > 10, (
+        f"the risk list has {opened['risks']} entries; the library holds 15 risk patterns"
+    )
+    assert opened["tiles"] > 10, "the opening panel does not show the catalogue"
+
+    at = _spot(loop, handle,
+               "[...document.querySelectorAll('#library-list .lib-row')]"
+               ".find((r) => r.textContent.includes('Prompt injection'))")
+    assert at, "no row for prompt injection in the risk list"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+
+    picked = _library_state(loop, handle)
+    assert picked["motifCards"] >= 3, (
+        "prompt injection applies to three motifs and the panel drew "
+        f"{picked['motifCards']} of them"
+    )
+    assert picked["previews"] > 0, (
+        "the motifs are listed but not drawn - a reader cannot tell what structure "
+        "would have to be present"
+    )
+
+
+def test_the_opening_choice_answers_a_real_click(empty_workbench) -> None:
+    """The first thing anyone sees, and it was dead."""
+    loop, handle = empty_workbench
+
+    dismissed = _spot(loop, handle, "document.querySelector('#btn-library-close')")
+    assert dismissed, "the library has no way out of it"
+    loop.run_until_complete(handle.click(dismissed["x"], dismissed["y"]))
 
     at = loop.run_until_complete(handle.js("""(() => {
         const card = document.querySelector('#start-business');
@@ -914,17 +883,60 @@ def test_the_opening_choice_answers_a_real_click(empty_workbench) -> None:
     assert seen["wayBack"], "no way back to the architecture layer"
 
 
-def test_a_new_example_forgets_the_scope_of_the_last_one(page) -> None:
-    """Descend into an activity, then pick a plain architecture example.
+def test_a_motif_added_from_the_library_lands_on_the_canvas(empty_workbench) -> None:
+    """The backward route, end to end: pick a risk, add the structure it applies
+    to, and the editor holds an annotated graph the assessment can already read.
 
-    The scope survived the change of document, so the findings list filtered
-    against a system the new graph does not contain and reported "0 of 18" with
-    the breadcrumb still naming an activity from the example before.
+    The library stays open on purpose. Picking one risk usually means adding
+    more than one motif, and being thrown onto the canvas after each would make
+    that a round trip every time.
+
+    Runs after the opening-choice test because it leaves content behind, and
+    the question that test is about is only on screen while there is none.
     """
-    loop, handle = page
+    loop, handle = empty_workbench
+
+    reopen = _spot(loop, handle, "document.querySelector('#btn-library')")
+    assert reopen, "the toolbar has no way back into the library"
+    loop.run_until_complete(handle.click(reopen["x"], reopen["y"]))
+    time.sleep(1)
+
+    at = _spot(loop, handle,
+               "[...document.querySelectorAll('#library-list .lib-row')]"
+               ".find((r) => r.textContent.includes('Prompt injection'))")
+    assert at, "no row for prompt injection in the risk list"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+
+    add = _spot(loop, handle,
+                "[...document.querySelectorAll('#library-detail .lib-card button')]"
+                ".find((b) => b.textContent === 'Add to canvas')")
+    assert add, "the motifs a risk applies to offer no way to add one"
+    loop.run_until_complete(handle.click(add["x"], add["y"]))
+    time.sleep(4)
+
+    after = loop.run_until_complete(handle.js("""(() => ({
+        ttl: window.PairAI.Editor.getValue(),
+        drawn: document.querySelectorAll('#canvas .shape').length,
+        stillOpen: !document.querySelector('#library').classList.contains('hidden'),
+        said: document.querySelector('#library-status').textContent,
+    }))()"""))
+
+    assert "pair:playsRole" in after["ttl"], (
+        "the motif was added without the roles it matches on, so nothing would bind"
+    )
+    assert after["drawn"] > 0, "the motif reached the editor but was never drawn"
+    assert after["stillOpen"], "adding a motif closed the library"
+    assert "Added" in after["said"], (
+        "the library sits over the status bar and said nothing about what it did: "
+        + after["said"]
+    )
+
+
+def test_a_new_example_forgets_the_scope_of_the_last_one(scene_restored) -> None:
+    """Descend into an activity, then pick a plain architecture example."""
+    loop, handle = scene_restored
     # Restored at the end: this test swaps the document out, and the page
     # fixture is shared with every test after it.
-    loop.run_until_complete(handle.js("window.__scene = window.PairAI.Editor.getValue(), 1"))
     _back_to_business(loop, handle)
 
     _descend(loop, handle)
@@ -945,11 +957,6 @@ def test_a_new_example_forgets_the_scope_of_the_last_one(page) -> None:
         crumb: !document.querySelector("#breadcrumb").classList.contains("hidden"),
     }))()"""))
 
-    loop.run_until_complete(handle.send("Runtime.evaluate", {
-        "expression": "window.PairAI.Editor.setValue(window.__scene)",
-        "returnByValue": True,
-    }))
-    time.sleep(3)
 
     assert after["scoped"] is None, (
         f"the new example is still narrowed to {after['scoped']} from the previous one"
@@ -961,13 +968,7 @@ def test_a_new_example_forgets_the_scope_of_the_last_one(page) -> None:
 
 
 def test_annotate_narrows_with_the_rest_of_the_workbench(page) -> None:
-    """Descending filtered the findings list and the canvas, but not this tab.
-
-    Someone opening the meter scorer to annotate it was handed every element of
-    the chatbot as well, in a table that had just learned to group by
-    architecture - so the grouping told them the elements were from somewhere
-    else without telling them why they were there at all.
-    """
+    """Descending filtered the findings list and the canvas, but not this tab."""
     loop, handle = page
     _back_to_business(loop, handle)
 
@@ -997,12 +998,7 @@ def test_annotate_narrows_with_the_rest_of_the_workbench(page) -> None:
 
 
 def test_widening_by_hand_also_widens_the_annotate_table(page) -> None:
-    """The breadcrumb reset it and the level switch did not.
-
-    Widening called the two redraws it knew about rather than announcing the
-    change, so the annotate table - which learned to follow the scope later -
-    stayed narrowed to the architecture just left.
-    """
+    """The breadcrumb reset it and the level switch did not."""
     loop, handle = page
     _back_to_business(loop, handle)
 
@@ -1160,21 +1156,11 @@ def test_starter_still_works_from_its_new_home_on_the_editor(page) -> None:
     assert "@prefix" in after, f"Starter did not load a graph: {after[:80]!r}"
 
 
-def test_the_brand_goes_back_to_the_opening_question(page) -> None:
-    """Clicking PAIR-AI starts over.
+def test_the_brand_goes_back_to_the_opening_question(scene_restored) -> None:
+    """Clicking PAIR-AI starts over."""
+    loop, handle = scene_restored
 
-    It has to clear the document to do it: refreshProcess settles the choice
-    again the moment there is anything to draw, so the question cannot stand
-    over a canvas with content on it. With content loaded the click is
-    confirmed, so this empties the editor first and presses it on a workbench
-    that is already started.
-    """
-    loop, handle = page
-
-    # Empty the document without going through the confirm dialog, which would
-    # block a headless browser. Kept first: the page fixture is shared, and a
-    # test that leaves the workbench empty breaks every test after it.
-    loop.run_until_complete(handle.js("window.__scene = window.PairAI.Editor.getValue(), 1"))
+    # Empty the document without going through the confirm dialog, which would block a headless browser.
     loop.run_until_complete(handle.js("window.PairAI.Editor.setValue('')"))
     time.sleep(3)
     started = loop.run_until_complete(handle.js(
@@ -1204,42 +1190,12 @@ def test_the_brand_goes_back_to_the_opening_question(page) -> None:
     assert seen["choiceVisible"], "the question is set but its cards are not on screen"
     assert seen["levelSwitchHidden"], "the level switch is still offered before a choice"
 
-    # Put the scene back: usable is not enough, the next test needs a graph.
-    loop.run_until_complete(handle.js('document.querySelector("#start-architecture").click()'))
-    loop.run_until_complete(handle.send("Runtime.evaluate", {
-        "expression": "window.PairAI.Editor.setValue(window.__scene)",
-        "returnByValue": True,
-    }))
-    time.sleep(4)
 
 
 def test_motifs_and_data_flow_narrow_to_the_architecture_on_screen(page) -> None:
-    """Descending narrows the motif list to the architecture on screen.
-
-    The assessment runs on the whole document - it has to, that is what the
-    business layer is for - so every panel that lists its output has to narrow
-    the reading itself. Findings did; the motifs tab and the data flow tab did
-    not, and a match belonging to an architecture the reader had left stayed on
-    the list with nothing saying so.
-
-    What it counts, and why. This once named the motifs it expected to vanish,
-    which stopped being a claim about scoping the moment the examples changed:
-    in the Wien Energie graph the retrieval motifs genuinely span the agent
-    chain and the two sources it queries, so every one of those architectures
-    touches them, and `onScreen` keeps a spanning match visible from both ends
-    on purpose. The graph-RAG example in this scene is refined by no activity,
-    so it can never be descended into - its matches are the ones that must
-    leave. Counting is the honest test: the total must fall, and the badge must
-    name one architecture.
-
-    The sequence mirrors test_the_findings_list_follows_the_architecture_on_screen
-    exactly, because that one is known to hold: assess from the architecture
-    level, then go back to business and descend.
-    """
+    """Descending narrows the motif list to the architecture on screen."""
     loop, handle = page
     # Load the scene itself rather than inheriting whatever the last test left.
-    # The page fixture is shared, and this one needs two architectures and the
-    # process that refines them.
     loop.run_until_complete(handle.js("""(async () => {
         const nl = String.fromCharCode(10, 10);
         const get = async (n) => (await (await fetch('/api/examples/' + n)).json()).ttl;
@@ -1303,12 +1259,7 @@ def test_motifs_and_data_flow_narrow_to_the_architecture_on_screen(page) -> None
 
 
 def test_adding_the_first_participant_stays_on_the_business_layer(page) -> None:
-    """Drawing a process from nothing threw you to the architecture.
-
-    The landing rule read `stats.activities > 0`, so a participant with no
-    activities in it yet did not count as a process - and the first thing anyone
-    draws is a participant with no activities in it yet.
-    """
+    """Drawing a process from nothing threw you to the architecture."""
     loop, handle = page
     loop.run_until_complete(handle.js("window.PairAI.Editor.setValue('')"))
     time.sleep(3)
@@ -1349,13 +1300,7 @@ def test_adding_the_first_participant_stays_on_the_business_layer(page) -> None:
 
 
 def test_three_lanes_on_a_new_participant_are_all_drawn(page) -> None:
-    """An empty lane is the first thing a modeller draws.
-
-    The layout kept only lanes that had a member, so adding a participant and
-    then three lanes - which is how anyone starts - painted nothing at all, and
-    there was nowhere to drop the first step. They also stack in the order they
-    were added: with no work in them there is no first column to order by, and
-    sorting by name reshuffled what the modeller had just laid out."""
+    """An empty lane is the first thing a modeller draws."""
     loop, handle = page
     loop.run_until_complete(handle.js("window.PairAI.Editor.setValue('')"))
     time.sleep(3)
@@ -1390,15 +1335,7 @@ def test_three_lanes_on_a_new_participant_are_all_drawn(page) -> None:
 
 
 def test_a_step_lands_in_the_lane_that_was_selected(page) -> None:
-    """Clicking a lane must select that lane.
-
-    It did not. The rotated lane name is painted over the name strip and had no
-    handler of its own, and the band's interior was `fill: none`, so only the
-    stroke was hittable - which meant a click aimed squarely at a lane reached
-    the pool instead, and the pool handler clears the lane. The reader then
-    added a step "into" the lane they had just clicked and it went somewhere
-    else entirely. Both halves are checked: that the click selects, and that the
-    step is drawn in the band it was aimed at."""
+    """Clicking a lane must select that lane."""
     loop, handle = page
     loop.run_until_complete(handle.js("window.PairAI.Editor.setValue('')"))
     time.sleep(3)
@@ -1452,17 +1389,7 @@ def test_a_step_lands_in_the_lane_that_was_selected(page) -> None:
 
 
 def test_putting_something_in_a_lane_does_not_move_the_lane(page) -> None:
-    """Lane order is a modelling choice, not a consequence of content.
-
-    Bands were ordered by where each lane's work started, so dropping a start
-    event into the third lane made it the first - the whole diagram shifted out
-    from under the person drawing it, and the step they had just placed was
-    suddenly somewhere else on screen. Declaration order is what the modeller
-    decided, and it holds whatever is put in.
-
-    Also checks the handle: renaming a lane was double-click only, a gesture
-    nothing advertises, so a reader who had not been told could not rename or
-    delete one at all."""
+    """Lane order is a modelling choice, not a consequence of content."""
     loop, handle = page
     loop.run_until_complete(handle.js("window.PairAI.Editor.setValue('')"))
     time.sleep(3)
@@ -1526,6 +1453,194 @@ def test_putting_something_in_a_lane_does_not_move_the_lane(page) -> None:
     assert landed == "Customer Portal", f"the start event was drawn in {landed}"
 
 
+def test_a_system_is_named_and_described_from_the_architecture_canvas(scene_restored) -> None:
+    """An architecture has to be nameable where it is drawn."""
+    loop, handle = scene_restored
+    architecture = (
+        '@prefix beam: <http://w3id.org/beam/core#> .' + chr(10)
+        + '@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .' + chr(10)
+        + '@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .' + chr(10)
+        + '@prefix ex:   <http://example.org/one-system#> .' + chr(10)
+        + 'ex:Sys a beam:Element , beam:System ; rdfs:label "My system" ;' + chr(10)
+        + '    beam:hasProcess ex:Step ; beam:hasResource ex:In .' + chr(10)
+        + 'ex:In a beam:Element , beam:Data ; rdfs:label "In" ;' + chr(10)
+        + '    pair:playsRole pair:UserInput .' + chr(10)
+        + 'ex:Step a beam:Element , beam:Infer ; rdfs:label "Step" ;' + chr(10)
+        + '    pair:playsRole pair:PredictionStep ;' + chr(10)
+        + '    beam:use ex:In ; beam:produce ex:Out .' + chr(10)
+        + 'ex:Out a beam:Element , beam:Data ; rdfs:label "Out" ;' + chr(10)
+        + '    pair:playsRole pair:PredictionResult .' + chr(10)
+    )
+    loop.run_until_complete(handle.send("Runtime.evaluate", {
+        "expression": "window.PairAI.Editor.setValue(" + json.dumps(architecture) + ")",
+        "returnByValue": True,
+    }))
+    # Waited for, not slept through: the page fixture arrives with whatever the
+    # last test left, and a fixed sleep asserted against the previous document.
+    _settle(
+        loop, handle,
+        "((window.PairAI.state.lastGraph || {}).systems || []).length === 1", False, tries=60,
+    )
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle,
+            "document.querySelectorAll('#canvas .system-bound').length", 0, tries=40)
+
+    # The frame has to exist - it is the only thing on the canvas that *is* the
+    # system - but the element palette floats over the top-left of the canvas,
+    # which is where its name is drawn, so the name is not a dependable target.
+    # The badge always is, and both open the same editor.
+    frame = loop.run_until_complete(handle.js(
+        "document.querySelectorAll('#canvas .system-bound').length"))
+    assert frame == 1, f"one architecture drew {frame} frames"
+
+    handle_at = loop.run_until_complete(handle.js("""(() => {
+        const name = document.querySelector('#system-badge .system-badge-name');
+        if (!name) return null;
+        const r = name.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert handle_at, "the system badge offers no name to click"
+    loop.run_until_complete(handle.click(handle_at["x"], handle_at["y"]))
+    time.sleep(0.8)
+    panel = loop.run_until_complete(handle.js("""(() => {
+        const box = document.querySelector('#node-detail');
+        return {
+            hidden: box.classList.contains('hidden'),
+            heading: box.querySelector('h4') ? box.querySelector('h4').textContent : null,
+            fields: ['#sd-label', '#sd-description', '#sd-context']
+                .filter((sel) => box.querySelector(sel)).length,
+        };
+    })()"""))
+    assert panel["heading"] == "AI system", f"the badge opened {panel}"
+    assert not panel["hidden"], (
+        "the editor opened and was hidden again by the same gesture"
+    )
+    assert panel["fields"] == 3, f"the editor is missing a field: {panel}"
+
+    loop.run_until_complete(handle.js("""(() => {
+        document.querySelector('#sd-label').value = 'Tariff conversation agent';
+        document.querySelector('#sd-description').value = 'Answers the customer in chat.';
+        document.querySelector('#sd-context').value = 'Public self-service portal.';
+        return 1;
+    })()"""))
+    # Brought into view first.
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('#sd-apply');
+        b.scrollIntoView({ block: 'nearest' });
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(3)
+
+    written = loop.run_until_complete(handle.js("""(() => {
+        const ttl = window.PairAI.Editor.getValue();
+        const system = (window.PairAI.state.lastGraph.systems || [])[0] || {};
+        return {
+            description: /beam:description/.test(ttl),
+            context: /beam:context/.test(ttl),
+            label: system.label,
+            servedDescription: system.description,
+        };
+    })()"""))
+    assert written["description"] and written["context"], (
+        f"the description and context were not written to the graph: {written}"
+    )
+    assert written["label"] == "Tariff conversation agent", written
+    assert written["servedDescription"] == "Answers the customer in chat.", (
+        f"the description is not served back to the canvas: {written}"
+    )
+
+
+
+def test_a_selected_system_is_where_a_new_element_lands(scene_restored) -> None:
+    """The architecture's pool."""
+    loop, handle = scene_restored
+    two = (
+        '@prefix beam: <http://w3id.org/beam/core#> .' + chr(10)
+        + '@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .' + chr(10)
+        + '@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .' + chr(10)
+        + '@prefix ex:   <http://example.org/two-systems#> .' + chr(10)
+        + 'ex:First a beam:System ; rdfs:label "Taxonomy Expansion" ;' + chr(10)
+        + '    beam:hasProcess ex:Step ; beam:hasResource ex:In .' + chr(10)
+        + 'ex:In a beam:Data ; rdfs:label "In" ; pair:playsRole pair:UserInput .' + chr(10)
+        + 'ex:Step a beam:Transform ; rdfs:label "Step" ;' + chr(10)
+        + '    pair:playsRole pair:RetrievalStep ;' + chr(10)
+        + '    beam:use ex:In ; beam:produce ex:Out .' + chr(10)
+        + 'ex:Out a beam:Data ; rdfs:label "Out" ;' + chr(10)
+        + '    pair:playsRole pair:RetrievedContext .' + chr(10)
+        + 'ex:Second a beam:System ; rdfs:label "LLM based retrieval" .' + chr(10)
+    )
+    loop.run_until_complete(handle.send("Runtime.evaluate", {
+        "expression": "window.PairAI.Editor.setValue(" + json.dumps(two) + ")",
+        "returnByValue": True,
+    }))
+    _settle(
+        loop, handle,
+        "((window.PairAI.state.lastGraph || {}).systems || []).length === 2", False, tries=60,
+    )
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle,
+            "document.querySelectorAll('#canvas .system-bound').length", 0, tries=40)
+
+    frames = loop.run_until_complete(handle.js("""(() => {
+        return [...document.querySelectorAll('#canvas .system-bound')].map((g) => {
+            const box = g.querySelector('.system-bound-box').getBoundingClientRect();
+            return {
+                label: g.querySelector('.system-bound-label').textContent,
+                empty: g.classList.contains('empty'),
+                x: Math.round(box.left + box.width / 2),
+                y: Math.round(box.top + box.height / 2),
+            };
+        });
+    })()"""))
+    assert len(frames) == 2, f"two systems drew {len(frames)} frames: {frames}"
+    empty = next((f for f in frames if f["empty"]), None)
+    assert empty, f"the system with nothing in it drew no frame: {frames}"
+    assert empty["label"] == "LLM based retrieval"
+
+    loop.run_until_complete(handle.click(empty["x"], empty["y"]))
+    time.sleep(1)
+    picked = loop.run_until_complete(handle.js("""(() => ({
+        selected: [...document.querySelectorAll('#canvas .system-bound.selected')]
+            .map((g) => g.querySelector('.system-bound-label').textContent),
+        bar: document.querySelector('#system-badge').textContent,
+    }))()"""))
+    assert picked["selected"] == ["LLM based retrieval"], (
+        f"clicking the frame did not select it: {picked}"
+    )
+    assert "adding to: LLM based retrieval" in picked["bar"], (
+        f"the bar does not say where a new element goes: {picked['bar']!r}"
+    )
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = [...document.querySelectorAll('.palette-item')]
+            .find((x) => x.textContent.trim() === 'Data');
+        if (!b) return null;
+        b.scrollIntoView({ block: 'nearest' });
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert at, "the element palette offers no Data"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(3)
+
+    members = loop.run_until_complete(handle.js("""(() => {
+        const rows = (window.PairAI.state.lastGraph || {}).systems || [];
+        const out = {};
+        rows.forEach((s) => { out[s.label] = (s.members || []).length; });
+        return out;
+    })()"""))
+    assert members.get("LLM based retrieval") == 1, (
+        f"the element did not land in the selected system: {members}"
+    )
+    assert members.get("Taxonomy Expansion") == 2, (
+        f"the element landed in the other system as well: {members}"
+    )
+
+
+
 def test_a_participant_can_be_deleted_from_the_canvas(page) -> None:
     """The delete op has handled a participant all along - it takes the process
     and its activities with it - but nothing on the canvas asked for it, so a
@@ -1561,14 +1676,7 @@ def test_a_participant_can_be_deleted_from_the_canvas(page) -> None:
 
 
 def test_clicking_a_business_element_reveals_its_line(page) -> None:
-    """A click on the business canvas had nowhere to go.
-
-    The source map was fed from /api/graph, which knows the architecture only,
-    so /api/process reported no line and selecting a pool or an activity marked
-    nothing - the reader had to find the element in the Turtle by eye. The map
-    is keyed by layer because the two endpoints answer at different times, and a
-    single map that cleared itself let whichever arrived second erase the other.
-    """
+    """A click on the business canvas had nowhere to go."""
     loop, handle = page
     before = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
     try:
@@ -1601,10 +1709,7 @@ def test_clicking_a_business_element_reveals_its_line(page) -> None:
         business_marks = loop.run_until_complete(handle.js(marked))
         assert business_marks > 0, "clicking an activity marked no line in the editor"
 
-        # And the architecture still resolves. One map that cleared itself on
-        # every call meant the business layer, answering second, erased the
-        # architecture's lines - so in a document carrying both, clicking a BEAM
-        # node stopped working the moment a process was added beside it.
+        # And the architecture still resolves.
         loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
         time.sleep(1)
         loop.run_until_complete(handle.js("window.PairAI.GraphView.fit()"))

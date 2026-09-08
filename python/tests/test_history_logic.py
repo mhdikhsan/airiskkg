@@ -1,15 +1,4 @@
-"""The version history's logic, exercised outside a browser.
-
-`test_webapp_static_wiring.py` says it plainly: there is no JavaScript test
-runner here, so the browser code is only ever exercised by hand. That was
-tolerable while the front end was rendering - a wrong pixel is visible. History
-is not rendering. It decides whether a version is recorded at all, computes the
-delta a reader will trust, and sheds data when the browser's storage fills up,
-and every one of those fails silently and looks like nothing happened.
-
-So this runs the real module under node, with localStorage stubbed, and skips
-when node is unavailable rather than pretending the checks ran.
-"""
+"""The version history's logic, exercised outside a browser."""
 
 from __future__ import annotations
 
@@ -19,6 +8,8 @@ import subprocess
 import pytest
 
 from airiskkg.paths import REPO_ROOT
+
+pytestmark = pytest.mark.ui
 
 HISTORY_JS = REPO_ROOT / "python" / "src" / "airiskkg" / "webapp" / "static" / "lib" / "version_history.js"
 

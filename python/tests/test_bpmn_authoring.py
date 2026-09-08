@@ -1,17 +1,4 @@
-"""Drawing the rest of BPMN, not only the boxes a motif reads.
-
-The canvas used to offer pools, activities and data, on the argument that
-nothing else changes a finding. That argument was half right and wholly
-misleading: a gateway changes no finding, but a process drawn without one is
-not the process the analyst was asked to check. The Wien Energie routing step
-had three sequence flows leaving it and was drawn as a straight chain, so the
-diagram asserted an order of work that the model never claimed.
-
-So these check the other half of the round trip: an event, a gateway, a lane or
-an annotation added through the API comes back through the process view as the
-thing it was asked for, and the Turtle it writes stays inside what
-external/sbpmn/sbpmn_2.0.ttl actually declares.
-"""
+"""Drawing the rest of BPMN, not only the boxes a motif reads."""
 
 from __future__ import annotations
 
@@ -21,6 +8,8 @@ from rdflib import RDF, RDFS, Graph, URIRef
 from airiskkg.paths import REPO_ROOT, SBPMN_DIR
 from conftest import process_path  # noqa: E402
 
+pytestmark = pytest.mark.ui
+
 CONTEXT = process_path("energy_customer_service")
 EC = "http://w3id.org/airiskkg/example/energy-cs#"
 CHATBOT_POOL = EC + "ChatbotPool"
@@ -29,6 +18,7 @@ SEND_ANSWER = EC + "SendAnswer"
 DOCUMENT_RETRIEVAL = EC + "DocumentRetrieval"
 DOMAIN_CLASSIFICATION = EC + "DomainClassification"
 PAIR_REFINED_BY = URIRef("http://w3id.org/airiskkg/pair-ai#refinedBy")
+BEAM_NS = "http://w3id.org/beam/core#"
 CLASSES = "https://sBPMN.github.io/2.0/classes#"
 PROPS = "https://sBPMN.github.io/2.0/properties#"
 
@@ -89,8 +79,7 @@ def test_a_gateway_keeps_the_kind_that_decides_how_it_is_drawn(client, process_t
 
 
 def test_a_new_node_lands_in_the_lane_that_was_selected(client, process_ttl) -> None:
-    """A lane says who does the work. A node added while a lane is selected and
-    filed outside it would put the work in nobody's hands."""
+    """A lane says who does the work."""
     before = view(client, process_ttl)
     after = view(client, edit(client, process_ttl, "add-gateway", pool=CHATBOT_POOL,
                               lane=AGENT_CHAIN_LANE, kind="exclusiveGateway", label="Answered?"))
@@ -229,14 +218,7 @@ def test_changing_the_shape_keeps_what_a_finding_reads(client, process_ttl) -> N
 # --- giving an activity an architecture ---------------------------------------
 
 def test_an_activity_can_be_given_a_new_architecture(client, process_ttl) -> None:
-    """The business layer is where a system is called for.
-
-    `pair:refinedBy` is authored on the activity, so an analyst who has drawn
-    the process and wants to say what carries out a step asks here - and until
-    add-system there was no answer but to write `a beam:System` in Turtle by
-    hand. It is created empty on purpose: what it holds is drawn on the
-    architecture canvas, and an empty system says plainly that the shape is not
-    modelled yet."""
+    """The business layer is where a system is called for."""
     after = edit(client, process_ttl, "add-system",
                  activity=DOMAIN_CLASSIFICATION, label="Domain classifier")
     graph = Graph().parse(data=after, format="turtle")
@@ -296,12 +278,136 @@ def test_adding_to_a_system_that_is_not_there_is_refused(client, process_ttl) ->
     assert "not in this graph" in response.get_json()["error"]
 
 
+# --- drawing the architecture first -------------------------------------------
+
+def test_a_system_can_be_created_named_and_described_from_the_canvas(client) -> None:
+    """The architecture-first route, and what a system says about itself.
+
+    add-system on /api/process-edit needs an activity to bind, which is the
+    wrong way round for someone who draws the architecture and only then models
+    the process it serves: elements landed in no system, and the business layer
+    then had nothing to offer under "Carried out by".
+
+    `beam:description` and `beam:context` are declared on System and every
+    shipped example fills them in, but graph_view served neither and nothing
+    edited them - so naming an architecture meant writing Turtle by hand."""
+    empty = "@prefix beam: <http://w3id.org/beam/core#> ." + chr(10)
+    created = client.post("/api/graph-edit", json={
+        "ttl": empty, "op": "add-system", "label": "Tariff conversation agent",
+    })
+    assert created.status_code == 200, created.get_json()
+    ttl = created.get_json()["ttl"]
+    system = created.get_json()["newId"]
+
+    # An element added while it is on screen belongs to it.
+    grown = client.post("/api/graph-edit", json={
+        "ttl": ttl, "op": "add-element", "category": "process",
+        "classUri": "http://w3id.org/beam/core#Infer", "label": "Explain conditions",
+        "system": system,
+    })
+    assert grown.status_code == 200, grown.get_json()
+    ttl = grown.get_json()["ttl"]
+
+    described = client.post("/api/graph-edit", json={
+        "ttl": ttl, "op": "edit-element", "element": system,
+        "label": "Tariff conversation agent",
+        "description": "Answers the customer in chat.",
+        "context": "Public self-service portal.",
+    })
+    assert described.status_code == 200, described.get_json()
+    ttl = described.get_json()["ttl"]
+
+    view = client.post("/api/graph", json={"ttl": ttl}).get_json()
+    assert len(view["systems"]) == 1, view["systems"]
+    row = view["systems"][0]
+    assert row["label"] == "Tariff conversation agent"
+    assert row["description"] == "Answers the customer in chat.", (
+        "a system's description is not served, so the canvas cannot show it"
+    )
+    assert row["context"] == "Public self-service portal."
+    assert len(row["members"]) == 1, "the element did not land in the system on screen"
+
+    # And the business layer can now point an activity at it.
+    process = ttl + """
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix local: <http://w3id.org/airiskkg/local#> .
+local:poolX a bpmn:participant ; bp:name "Wien Energie" ; bp:processRef local:procX .
+local:procX a bpmn:process ; bp:name "P" ; bp:contains local:actX .
+local:actX a bpmn:serviceTask ; bp:name "Explain condition" .
+"""
+    offered = client.post("/api/process", json={"ttl": process}).get_json()
+    assert "Tariff conversation agent" in {s["label"] for s in offered["unrefinedSystems"]}, (
+        "an architecture drawn first is not offered under 'Carried out by'"
+    )
+
+    joined = client.post("/api/process-edit", json={
+        "ttl": process, "op": "set-refines",
+        "activity": "http://w3id.org/airiskkg/local#actX", "system": system,
+    })
+    assert joined.status_code == 200, joined.get_json()
+    after = client.post("/api/process", json={"ttl": joined.get_json()["ttl"]}).get_json()
+    activity = next(a for a in after["activities"] if a["id"].endswith("actX"))
+    assert activity["refines"] == [system], (
+        f"the activity was not connected to the architecture: {activity['refines']}"
+    )
+
+
+def test_a_new_system_can_take_in_the_elements_that_belong_to_nowhere(client) -> None:
+    """Naming an architecture you have just opened means "this is it"."""
+    ttl = (
+        '@prefix beam: <http://w3id.org/beam/core#> .' + chr(10)
+        + '@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .' + chr(10)
+        + '@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .' + chr(10)
+        + '@prefix ex:   <http://example.org/orphans#> .' + chr(10)
+        + 'ex:Doc a beam:Data ; rdfs:label "Doc" ;' + chr(10)
+        + '    pair:playsRole pair:UserInput .' + chr(10)
+        + 'ex:Step a beam:Transform ; rdfs:label "Step" ;' + chr(10)
+        + '    pair:playsRole pair:RetrievalStep ;' + chr(10)
+        + '    beam:use ex:Doc ; beam:produce ex:Out .' + chr(10)
+        + 'ex:Out a beam:Data ; rdfs:label "Out" ;' + chr(10)
+        + '    pair:playsRole pair:RetrievedContext .' + chr(10)
+    )
+    before = client.post("/api/graph", json={"ttl": ttl}).get_json()
+    assert before["systems"] == [], "the fixture already has a system"
+    assert len(before["unclaimed"]) == 3, before["unclaimed"]
+
+    # Typed the way a BEAM export types them: beam:Data and beam:Transform, no
+    # beam:Element anywhere. Keying adoption on beam:Element adopted nothing.
+    assert "beam:Element" not in ttl
+
+    adopted = client.post("/api/graph-edit", json={
+        "ttl": ttl, "op": "add-system", "label": "Taxonomy Expansion", "adopt": True,
+    })
+    assert adopted.status_code == 200, adopted.get_json()
+    after = client.post("/api/graph", json={"ttl": adopted.get_json()["ttl"]}).get_json()
+
+    assert after["unclaimed"] == [], (
+        f"the new system left {len(after['unclaimed'])} element(s) belonging to nowhere"
+    )
+    assert len(after["systems"]) == 1
+    assert len(after["systems"][0]["members"]) == 3, after["systems"][0]
+
+    # A process is held as a process and data as a resource, not all as one.
+    graph = Graph().parse(data=adopted.get_json()["ttl"], format="turtle")
+    system = URIRef(adopted.get_json()["newId"])
+    processes = {str(o) for o in graph.objects(system, URIRef(BEAM_NS + "hasProcess"))}
+    resources = {str(o) for o in graph.objects(system, URIRef(BEAM_NS + "hasResource"))}
+    assert processes == {"http://example.org/orphans#Step"}, processes
+    assert resources == {"http://example.org/orphans#Doc", "http://example.org/orphans#Out"}
+
+    # And not adopting stays available, for splitting one architecture in two.
+    plain = client.post("/api/graph-edit", json={
+        "ttl": ttl, "op": "add-system", "label": "Second half",
+    })
+    still = client.post("/api/graph", json={"ttl": plain.get_json()["ttl"]}).get_json()
+    assert len(still["unclaimed"]) == 3, "add-system adopted without being asked"
+
+
 # --- and it must still be sBPMN ----------------------------------------------
 
 def test_every_edit_writes_only_terms_sbpmn_declares(client, process_ttl) -> None:
-    """The bundled examples are checked for this in test_business_context.py.
-    What the editor writes has to clear the same bar, or the workbench quietly
-    produces documents no other BPMN tool reads."""
+    """The bundled examples are checked for this in test_business_context.py."""
     onto = Graph()
     for path in sorted(SBPMN_DIR.glob("*.ttl")):
         onto.parse(path, format="turtle")

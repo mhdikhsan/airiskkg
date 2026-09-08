@@ -1,9 +1,4 @@
-"""Assessment tests for the Onyx (formerly Danswer) enterprise RAG example.
-
-This example exercises motifs the other examples do not: query rewriting,
-reranker, and direct prompting — and, unlike verba, its external models are
-bound in motif matches, so the supply-chain risk pattern fires.
-"""
+"""Assessment tests for the Onyx (formerly Danswer) enterprise RAG example."""
 
 from rdflib import DCTERMS, RDF, RDFS, Namespace
 from rdflib.namespace import SKOS
@@ -47,8 +42,7 @@ def test_onyx_reranker_match_binds_reranker_model() -> None:
 
 
 def test_onyx_produces_supply_chain_finding() -> None:
-    """Match-bound external models (generator LLM, reranker) must yield
-    candidate supply-chain findings."""
+    """Match-bound external models (generator LLM, reranker) must yield candidate supply-chain findings."""
     result = _result()
     supply_chain_findings = set(
         result.risk_findings.subjects(

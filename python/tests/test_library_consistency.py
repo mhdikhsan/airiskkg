@@ -1,19 +1,4 @@
-"""Mechanical consistency net for the AI-RKG pattern layer.
-
-Cross-checks the five layers of the pattern knowledge for identifier drift -
-the failure mode of LLM-assisted curation, where each layer looks plausible
-in isolation but references URIs the other layers never declare or emit:
-
-  A. declared vocabulary  (ontology/core/pair_ai_pattern.ttl)
-  B. motif library        (ontology/patterns/motif.ttl)
-  C. risk pattern library (ontology/patterns/risk_pattern_library.ttl)
-  D. SPARQL queries       (ontology/patterns/implementation/{match,risk,propagation}/)
-  E. example graphs       (ontology/example/*.ttl)
-  +  taxonomies           (ontology/taxonomy/*.ttl)
-
-A hallucinated URI anywhere becomes a test failure here instead of a
-silently dead (or unfalsifiable) rule.
-"""
+"""Mechanical consistency net for the AI-RKG pattern layer."""
 
 from __future__ import annotations
 
@@ -52,13 +37,7 @@ _BINDS_RE = re.compile(r"bindsPatternNode\s+pat:(\w+)")
 
 @pytest.fixture(scope="module")
 def libraries() -> Graph:
-    """Everything the runner loads, resolved the way the runner resolves it.
-
-    This used to name six files by hand, and drifted the moment a module was
-    added: the business context bridge declared pair:refinedBy, the risk queries
-    used it, and this fixture reported it undeclared because it had never heard
-    of the directory. `ontology_files()` is the loader's own list, so the two
-    cannot disagree again."""
+    """Everything the runner loads, resolved the way the runner resolves it."""
     g = Graph()
     for path in ontology_files():
         g.parse(path, format="turtle")
@@ -357,6 +336,47 @@ def test_realized_by_motif_targets_are_declared_motifs(libraries) -> None:
     assert not offenders, "\n".join(sorted(offenders))
 
 
+def test_every_motif_is_shelved_under_exactly_one_family(libraries) -> None:
+    """`pair:motifFamily` is what the library browser groups by, so a motif with
+    none lands in a group called "Unshelved" and one with two is listed twice.
+
+    The families are a shelving of this library - which family of AI system a
+    shape belongs to - read off each motif's own provenance. They are never
+    consulted during matching: R2 keeps that to roles and flow relations, and a
+    real system matches several families at once.
+    """
+    families = set(libraries.subjects(SKOS_NS.inScheme, PAIR.MotifFamilyScheme))
+    assert families, "no motif families are declared"
+
+    offenders = []
+    for motif in set(libraries.subjects(RDF.type, PAIR.GraphMotif)):
+        shelved = list(libraries.objects(motif, PAIR.motifFamily))
+        if len(shelved) != 1:
+            offenders.append(f"{motif} has {len(shelved)} families")
+        elif shelved[0] not in families:
+            offenders.append(f"{motif} names {shelved[0]}, which is not in the scheme")
+    assert not offenders, "\n".join(offenders)
+
+
+def test_a_motif_family_says_what_it_covers_and_where_it_came_from(libraries) -> None:
+    """A group heading with no definition asks the reader to guess what
+    "Agentic" means here, and the panel prints the definition under it."""
+    for family in sorted(libraries.subjects(SKOS_NS.inScheme, PAIR.MotifFamilyScheme), key=str):
+        assert libraries.value(family, SKOS_NS.prefLabel), f"{family} has no label"
+        assert libraries.value(family, SKOS_NS.definition), f"{family} says nothing about what it covers"
+        assert libraries.value(family, DCTERMS.source), f"{family} states no source"
+
+
+def test_no_match_query_reads_the_motif_family(libraries) -> None:
+    """Shelving is not matching."""
+    offenders = [
+        path.relative_to(REPO_ROOT).as_posix()
+        for path in sorted((REPO_ROOT / "ontology").rglob("*.rq"))
+        if "motifFamily" in path.read_text(encoding="utf-8")
+    ]
+    assert not offenders, "motif family read during matching: " + ", ".join(offenders)
+
+
 def test_every_motif_has_a_matching_oqp(libraries) -> None:
     matched = set(libraries.objects(None, PAIR.implementsMotif))
     offenders = sorted(
@@ -430,11 +450,7 @@ def test_each_motif_query_matches_its_canonical_instance(libraries) -> None:
 
 
 def test_every_motif_and_risk_pattern_states_its_source(libraries) -> None:
-    """Every curated library entry states where it came from (Rule R6).
-
-    This was previously xfail-ed because it also demanded pair:maturity, a
-    property nothing ever wrote. Maturity was removed 2026-08-06; the dct:source
-    half was already satisfied, so the test now runs for real."""
+    """Every curated library entry states where it came from (Rule R6)."""
     missing_source = [
         str(subject)
         for rdf_type in (PAIR.GraphMotif, PAIR.RiskPattern)
@@ -449,18 +465,7 @@ def test_every_motif_and_risk_pattern_states_its_source(libraries) -> None:
 
 
 def test_every_pattern_role_states_its_provenance(libraries) -> None:
-    """Rule R6 reaches the role vocabulary too: every role traces to an origin.
-
-    Three ways to state it, and the third is why this walks rather than looks.
-    A role may cite a source, or carry a SKOS mapping into an external
-    vocabulary; a role introduced to refine another states neither, because its
-    grounding is the one it specializes. `pair:subRoleOf` already says which
-    role that is, so the chain is followed rather than restated - a prose note
-    saying "it inherits the grounding of pair:ExternalDependency" duplicated the
-    triple beside it, and only the triple can be checked.
-
-    What still regresses this: a new role with no source, no mapping, and no
-    parent that has either."""
+    """Rule R6 reaches the role vocabulary too: every role traces to an origin."""
     mapping_predicates = (
         SKOS_NS.exactMatch,
         SKOS_NS.closeMatch,
@@ -497,21 +502,7 @@ def test_every_pattern_role_states_its_provenance(libraries) -> None:
 
 
 def test_queries_check_process_typing_one_way(query_texts) -> None:
-    """Process typing must not decide whether a motif matches.
-
-    Three conventions used to coexist: `a beam:Process`, `a beam:Infer` /
-    `beam:Transform` / `beam:Train` / `beam:Generate`, and no class check at all.
-    Nothing infers rdfs:subClassOf at match time, so a graph typed one way was
-    invisible to queries written the other - a leaf-typed agent matched zero
-    agentic motifs while an identical generic-typed one matched them all.
-
-    Every step-node class check is now `a/rdfs:subClassOf* beam:Process`, the
-    same shape as the library's role idiom. A bare `a beam:Infer` reintroduces
-    the split, so it fails here.
-
-    Only the WHERE clause is scanned. The rule is about what a query CHECKS: a
-    CONSTRUCT template asserts a type onto an element it creates, and a
-    mitigation rewrite has to state the class of the step it inserts."""
+    """Process typing must not decide whether a motif matches."""
     offenders = []
     for fname, text in query_texts.items():
         _, _, where = text.partition("WHERE")
@@ -553,13 +544,7 @@ def test_process_typing_does_not_change_what_matches() -> None:
 
 
 def test_specific_roles_are_subroles_of_the_role_their_motif_queries(libraries) -> None:
-    """A precise role must sit under the general role its motif actually queries.
-
-    Match queries traverse pair:playsRole/pair:subRoleOf*, so a specific role
-    parented directly to an abstract top-level role is inert: annotating an
-    element with the obviously-correct precise term then silently prevents the
-    motif from matching, and the graph has to double-tag with the general role
-    to work. Regression guard for exactly that class of bug."""
+    """A precise role must sit under the general role its motif actually queries."""
     expected_parents = {
         # role -> the role its motif's pattern node requires
         PAIR.RewrittenQuery: PAIR.UserInput,
