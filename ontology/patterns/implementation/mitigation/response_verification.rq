@@ -4,14 +4,6 @@ PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 # Verify a generated response against its evidence (LLM09).
-#
-# Bound to Control_LoggingMonitoringAndEvals, not to Grounding and Verification,
-# and the difference is not cosmetic. The risk query clears on an evaluation or
-# scoring step reading the response - verification - while Grounding and
-# Verification is realized by retrieval motifs (RAG, Vector IR, Hybrid
-# Retriever, Reranker), and adding retrieval adds no verification step, so it
-# cannot clear this finding. The reference document reaches the same place from
-# the other side: its evaluator-node row maps to EvalsMotif.
 
 CONSTRUCT {
     ?verificationStep

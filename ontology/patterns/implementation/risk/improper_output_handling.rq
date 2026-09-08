@@ -64,18 +64,6 @@ WHERE {
         }
 
         # The same question asked of the business process, when one is submitted.
-        # A human task downstream of the activity this system refines, reading
-        # what the system produced before it travels on, is an output control -
-        # it just does not live in the inference pipeline, which is not where
-        # organisations put approvals. Without this the finding could only be
-        # cleared by inserting a control step into the architecture, and a review
-        # that genuinely exists went on being reported as absent.
-        #
-        # Nothing is asserted into the architecture and no facet is read: this is
-        # a positive structural claim over represented business structure,
-        # evaluated on elements the match already bound. Admissible under R10
-        # because an approval gate is a control, and graph-relative under R4 like
-        # every other absence here. Inert when no process is submitted.
         FILTER NOT EXISTS {
             ?activity
                 pair:refinedBy ?system ;

@@ -4,16 +4,6 @@ PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 # Redact protected content before it reaches a user-facing sink (LLM02).
-#
-# The reference document's transformation pipeline node, and the other control
-# the sensitive-output pattern suggests: where output screening blocks unsafe
-# content, redaction removes the protected content itself. Both satisfy that
-# pattern's escape clause, and which one an assessor wants is their choice, so
-# both are offered rather than one being picked for them.
-#
-# A redaction step is also a barrier in content_categories.rq, so what leaves it
-# no longer carries the category that entered - which is why this changes the
-# Data flow tab as well as the finding.
 
 CONSTRUCT {
     ?redactionStep

@@ -41,11 +41,7 @@ WHERE {
         ?generationStep beam:inform+ ?toolOrActionStep .
 
 
-        # Nothing mediates the path from generation to the action. Same shape as
-        # tool misuse, which this overlaps by design: a policy gate, a human
-        # approval, or a rate control standing between the model's decision and
-        # the action it drives. Closed-world over the submitted graph only
-        # (Rule R4).
+        # Nothing mediates the path from generation to the action.
         FILTER NOT EXISTS {
             ?mediatingStep pair:playsRole ?mediatingRole .
             {

@@ -5,18 +5,6 @@ PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX dct:   <http://purl.org/dc/terms/>
 
 # Protected content reaching a user-facing element (LLM02).
-#
-# Merged from two patterns that reported one incident from two ends: an
-# exit-anchored one, firing wherever a sink carried a protected category by any
-# route, and a retrieval-anchored one, firing when a retrieval step read a store
-# holding sensitive content that then flowed to an output. On a RAG system both
-# fired, so an assessor triaged the same disclosure twice.
-#
-# One finding per sink now, whichever route the content took. The retrieval
-# branch is kept because it contributes evidence the exit branch cannot see -
-# the store, the retrieval step, the retrieved context - which is what makes the
-# remedy choosable: constrain what may be retrieved, or screen what leaves.
-# Both control sets ride on the one finding.
 
 CONSTRUCT {
     ?riskFinding
@@ -40,10 +28,7 @@ CONSTRUCT {
 }
 WHERE {
     {
-        # The sink carries protected content, however it got there. Matched
-        # through pair:subDataCategoryOf* rather than by exact value: a graph may
-        # declare its own kinds beneath the protected roots - onyx does exactly
-        # that - and an exact test would miss every one of them.
+        # The sink carries protected content, however it got there.
         ?sink pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
         ?sink pair:containsDataCategory/pair:subDataCategoryOf* ?category .
         VALUES ?category { pair:SensitiveInformation pair:ConfidentialInformation }

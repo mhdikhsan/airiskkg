@@ -4,10 +4,6 @@ PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 # Validate what is written to agent memory (ASI06).
-#
-# The gate shape: a validation step informs the write, so nothing reaches the
-# store unchecked. Bound to the write step the finding cites, which is the
-# element that pattern's escape clause tests.
 
 CONSTRUCT {
     ?validationStep
