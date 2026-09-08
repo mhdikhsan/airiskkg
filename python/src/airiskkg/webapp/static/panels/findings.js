@@ -48,10 +48,7 @@ function controlItem(control, finding) {
   return el("li", { title: control.definition || "" }, children);
 }
 
-/* A different list from a different place, and the two used to sit under
- * headings that gave no clue of it. These are MIT control families the
- * finding's taxonomy entries link to - corroboration that the risk maps onto
- * recognised families, not controls anyone can insert here. */
+/* A different list from a different place, and the two used to sit under headings that gave no clue of it. */
 function groundedFamiliesSection(families) {
   if (!families || !families.length) return null;
   return el("div", { class: "ctrl-group evidence" }, [
@@ -86,10 +83,7 @@ function taxonomyChips(finding) {
   if (finding.mechanism) {
     row.appendChild(el("span", { class: "chip mech", title: finding.mechanism.id }, finding.mechanism.label));
   }
-  /* Each entry says which catalogue it came from. Without it the list read as
-   * one undifferentiated set: "LLM01:2025 Prompt Injection" names its source
-   * because OWASP numbers its own entries, while "Prompt injection attack" and
-   * "AI system security vulnerabilities" gave no clue they are IBM and MIT. */
+  /* Each entry says which catalogue it came from. */
   const chipFor = (t) => el("span", {
     class: "chip tax",
     title: `${t.source}
@@ -149,10 +143,7 @@ function findingCard(finding) {
 
 /* Which findings belong to the architecture currently open. The assessment
  * stays whole; only the reading narrows. */
-/* The last run described a document that is gone. Leaving its findings under
- * a freshly loaded example reads as the new one having been assessed - the
- * canvas redraws, the risk list does not, and nothing says which graph the
- * numbers belong to. */
+/* The last run described a document that is gone. */
 export function clearFindings() {
   state.lastAssessment = null;
   state.lastRun = null;
