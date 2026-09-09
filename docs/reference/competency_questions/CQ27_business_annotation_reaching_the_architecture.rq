@@ -1,0 +1,35 @@
+# CQ27: Which annotation made on the business process produced a data category
+# in the architecture it refines?
+# Scope: business
+# Note: the one bridge, and R8 stays intact. What is ANNOTATED stays annotated -
+# on the item definition, by a human; what is DERIVED is the data category. No
+# facet is propagated as a facet and no BPMN triple enters the architecture. The
+# mapping goes by role, not by name, because nothing in the business layer names
+# an architecture element - that is the point, since the analyst does not know
+# them. The join on pair:refinedBy is what separates this from the
+# architecture-internal propagation of CQ23: both emit a prov:Derivation, and
+# only this one hangs off an activity a business process owns.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX bp:   <https://sBPMN.github.io/2.0/properties#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?architectureElement ?category ?businessDataName ?businessActivityName ?systemName
+WHERE {
+    ?element prov:qualifiedDerivation ?derivation .
+    ?derivation pair:derivedCategory ?categoryIri ;
+        prov:entity ?dataObject ;
+        prov:hadActivity ?activity .
+    ?activity pair:refinedBy ?system .
+
+    OPTIONAL { ?dataObject bp:name ?dataName }
+    OPTIONAL { ?activity bp:name ?activityName }
+    OPTIONAL { ?system rdfs:label ?systemLabel }
+    BIND(REPLACE(STR(?element), "^.*[#/]", "") AS ?architectureElement)
+    BIND(REPLACE(STR(?categoryIri), "^.*[#/]", "") AS ?category)
+    BIND(COALESCE(?dataName, REPLACE(STR(?dataObject), "^.*[#/]", "")) AS ?businessDataName)
+    BIND(COALESCE(?activityName, REPLACE(STR(?activity), "^.*[#/]", "")) AS ?businessActivityName)
+    BIND(COALESCE(?systemLabel, REPLACE(STR(?system), "^.*[#/]", "")) AS ?systemName)
+}
+ORDER BY ?architectureElement ?category

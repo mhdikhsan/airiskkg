@@ -20,7 +20,7 @@ ontology/                   KNOWLEDGE - the reusable AI risk knowledge base
   facets/                   SKOS characterization facets (task, context, autonomy, data)
   taxonomy/                 External risk taxonomies + the cross-taxonomy mappings
   alignments/               Adapters for external vocabularies (Tool4Boxology, DPV)
-  example/                  Architecture graphs used as worked examples and fixtures
+  example/                  Architecture graphs the workbench offers in its example menu
   visualization/            Standalone SPARQL run by hand, not by the pipeline
 
 shacl/                      CONTRACTS - what a graph must satisfy
@@ -29,13 +29,14 @@ shacl/                      CONTRACTS - what a graph must satisfy
 
 python/                     CODE - the pipeline that runs the knowledge base
   src/airiskkg/             Package: assessment runner, views, importers, webapp
-  scripts/                  Standalone maintenance and export utilities
+  scripts/                  Tracked tooling: something depends on each of these
+    local/                  Gitignored scratch - one-off and personal scripts
   tests/                    Test suite
+    fixtures/               Graphs a test needs that the deployment does not offer
   pyproject.toml            Package configuration (installable from python/)
 
 external/                   Vendored third-party sources (see NOTICE.md)
 outputs/                    Generated assessment runs (not knowledge; untracked)
-v1/                         Frozen prior generation - reference only, do not edit
 ```
 
 Two details worth knowing before editing:
@@ -57,6 +58,20 @@ Keep ontology sources in `ontology/`, grouped by core model, patterns, facets,
 taxonomies, alignments, and examples. After any ontology change: parse every
 `.ttl` with RDFLib, run the SHACL shapes, and re-run the assessment on the
 bundled examples, explaining any diff in findings.
+
+### Running the tests
+
+```bash
+cd python
+pytest                # the default run: everything except the browser suites
+pytest -m browser     # the two suites that drive a real headless Chrome or Edge
+pytest -m ""          # everything
+```
+
+The browser suites are 70% of the wall clock and need a browser installed, so
+they are deselected by default. Run them before calling a change to the canvas,
+the page, or the endpoints done - they are the only checks that the diagram is
+actually drawn and can actually be clicked.
 
 ## Method Flow
 

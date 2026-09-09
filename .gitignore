@@ -19,9 +19,10 @@ docs/example_UC/
 ontology/example_local/*
 !ontology/example_local/README.md
 
+outputs/
 
-outputs/*.ttl
-outputs/output_*/
+python/scripts/local/*
+!python/scripts/local/README.md
 data/processed/**
 !data/processed/
 !data/processed/.gitkeep

@@ -13,9 +13,7 @@ export function renderDerivedCategories(allRows) {
   const empty = $("#derived-empty");
   const count = $("#derived-count");
   list.innerHTML = "";
-  /* Narrowed to the architecture on screen, like the findings list and the
-   * motifs tab. A category derived inside the chatbot said nothing to someone
-   * who had opened the meter scorer. */
+  /* Narrowed to the architecture on screen, like the findings list and the motifs tab. */
   const rows = onScreen(allRows || [], (r) => [r.element.id]);
   if (!rows || !rows.length) {
     empty.textContent = "No category travelled: every data category in this graph sits where you annotated it.";

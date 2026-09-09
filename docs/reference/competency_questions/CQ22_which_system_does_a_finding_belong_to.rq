@@ -1,0 +1,22 @@
+# CQ22: Which system does each candidate finding belong to?
+# Scope: assessment
+# Note: the assessed system is deliberately NOT asserted on the finding - it is
+# derived by traversing from an evidence element to the containing beam:System.
+# A system boundary is not bookkeeping: it decides which findings a same-system
+# escape can clear.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+
+SELECT ?systemName ?patternName (COUNT(DISTINCT ?finding) AS ?findings)
+WHERE {
+    ?finding a pair:RiskFinding ;
+        pair:generatedByRiskPattern ?pattern ;
+        pair:hasEvidence ?element .
+    ?system a beam:System .
+    ?system beam:hasProcess|beam:hasResource|beam:hasAgent|beam:contain ?element .
+    BIND(REPLACE(STR(?system), "^.*[#/]", "") AS ?systemName)
+    BIND(REPLACE(STR(?pattern), "^.*[#/]", "") AS ?patternName)
+}
+GROUP BY ?systemName ?patternName
+ORDER BY ?systemName ?patternName

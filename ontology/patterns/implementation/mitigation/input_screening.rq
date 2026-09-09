@@ -4,19 +4,6 @@ PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 # Insert an input screening step onto the path a prompt-injection finding cites.
-#
-# The rewrite is the mirror of the risk query: it re-derives the vulnerable
-# shape - untrusted content reaching a generation step, directly or through one
-# intermediate step - and constructs the step that breaks it, bound to the very
-# elements the finding names. Nothing is guessed about which element is which,
-# because the same structural conditions that raised the finding also identify
-# where the screen belongs.
-#
-# ?finding is supplied by the caller, so applying a control acts on the one the
-# assessor clicked and leaves every other finding alone.
-#
-# The step's IRI is derived from the pair it screens, so applying twice
-# constructs the identical triples and the second application is a no-op.
 
 CONSTRUCT {
     ?screeningStep

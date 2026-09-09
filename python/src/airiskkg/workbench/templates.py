@@ -33,13 +33,18 @@ def motif_templates() -> dict:
             cls_name = short(cls) if cls is not None else "Data"
             key = short(pnode)
             node_cls[key] = cls_name
-            node_label = display_label(short(role)) if role else str(graph.value(pnode, RDFS.label) or key)
-            nodes.append({
+            declared = graph.value(pnode, RDFS.label)
+            node_label = display_label(short(role)) if role else str(declared or key)
+            entry = {
                 "key": key,
                 "cls": cls_name,
                 "label": node_label,
                 "roles": [short(role)] if role is not None else [],
-            })
+            }
+            # What the declaration calls this node, when the role it matches on is called something else.
+            if declared and str(declared) != node_label:
+                entry["note"] = str(declared)
+            nodes.append(entry)
         edges = []
         for pedge in graph.objects(motif, PAIR.hasPatternEdge):
             src = graph.value(pedge, PAIR.sourcePatternNode)

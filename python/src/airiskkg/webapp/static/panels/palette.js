@@ -164,6 +164,9 @@ ex:Generate a beam:Transform ;
 
 const BEAM_NS = "http://w3id.org/beam/core#";
 
+/* A system is not a symbol. It is the container the symbols sit in, and it
+   belongs with the other system controls above the canvas, not in a tray of
+   shapes to drop. See createSystem, called from the system bar. */
 const PALETTE = [
   { label: "Data", cls: "Data", kind: "data", cat: "resource" },
   { label: "Symbol", cls: "Symbol", kind: "symbol", cat: "resource" },
@@ -174,16 +177,42 @@ const PALETTE = [
   { label: "Generate", cls: "Generate", kind: "process", cat: "process" },
 ];
 
+export function createSystem(unclaimedCount, systemCount) {
+  const label = window.prompt("Name of the AI system:", "New AI system");
+  if (!label) return null;
+  /* Naming the architecture you just opened means "this is that architecture",
+     so with nothing else on the canvas the elements simply join it - being
+     asked at that point is a question with one sensible answer. Once a system
+     already exists the same act is ambiguous: it may be a second architecture,
+     or a split of the first, and only the reader knows which. */
+  const adopt = unclaimedCount > 0 && (
+    !systemCount || window.confirm(
+      `Put the ${unclaimedCount} element(s) that belong to no system into "${label}"?`));
+  return runMutation(async () => {
+    try {
+      const { ttl } = await postJson("/api/graph-edit", {
+        ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> ." + String.fromCharCode(10),
+        op: "add-system", label, adopt,
+      });
+      noteChange(`added system ${label}`);
+      Editor.setValue(ttl);
+      setStatus("ok", adopt
+        ? `Added ${label} — it holds the elements that belonged to no system`
+        : `Added ${label} — new elements land in it, and a business activity can name it`);
+    } catch (error) {
+      setStatus("error", "Could not add the system: " + error.message.split(String.fromCharCode(10))[0]);
+    }
+  });
+}
+
 function addPaletteElement(item, clientX, clientY) {
   return runMutation(async () => {
     try {
       const { ttl, newId } = await postJson("/api/graph-edit", {
         ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
         op: "add-element", classUri: BEAM_NS + item.cls, category: item.cat, label: item.label,
-        // The architecture on screen. Without this the server fell back to the
-        // first System in the graph, so drawing inside the second one silently
-        // filed every element under the first.
-        system: state.scopedSystem || null,
+        /* The architecture that is selected, then the one on screen. */
+        system: GraphView.getSelectedSystem() || state.scopedSystem || null,
       });
       if (newId && clientX != null) GraphView.placeNodeAt(newId, clientX, clientY);
       noteChange(`added ${item.label}`);

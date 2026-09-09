@@ -10,6 +10,8 @@ sys.path.insert(0, str(REPO_ROOT / "python" / "scripts"))
 
 from validate_graphs import SHAPES_PATH, _load_ontology_graph, validate_graph  # noqa: E402
 
+from conftest import FIXTURE_DIR  # noqa: E402
+
 from airiskkg.paths import EXAMPLE_DIR  # noqa: E402
 
 
@@ -19,10 +21,17 @@ def _shapes() -> Graph:
     return shapes
 
 
+def _tracked_graphs() -> list[Path]:
+    """Every architecture graph the repository ships, offered or kept for a test."""
+    return sorted(EXAMPLE_DIR.glob("*.ttl")) + sorted(FIXTURE_DIR.glob("*.ttl"))
+
+
 def test_example_graphs_have_no_violations() -> None:
     shapes = _shapes()
     ont = _load_ontology_graph()
-    for graph_path in sorted(EXAMPLE_DIR.glob("*.ttl")):
+    graphs = _tracked_graphs()
+    assert graphs, "no architecture graphs found to validate"
+    for graph_path in graphs:
         ok, violations, _warnings, results_text = validate_graph(graph_path, shapes, ont)
         assert ok, f"{graph_path.name} has {violations} violation(s):\n{results_text}"
 

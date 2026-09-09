@@ -1,0 +1,24 @@
+# CQ21: Which candidate risk findings were raised, from which risk pattern, with
+# how much evidence and which taxonomy entries?
+# Scope: assessment
+# Note: findings are CANDIDATE risks - structural dispositions requiring human
+# triage, never confirmed failures. pair:findingStatus is the triage extension
+# point, and finding IRIs are deterministic so a judgement survives a re-run.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+
+SELECT ?patternName ?status
+       (COUNT(DISTINCT ?finding) AS ?findings)
+       (COUNT(DISTINCT ?evidence) AS ?evidenceElements)
+       (GROUP_CONCAT(DISTINCT ?entryName; separator=", ") AS ?taxonomyEntries)
+WHERE {
+    ?finding a pair:RiskFinding ;
+        pair:generatedByRiskPattern ?pattern ;
+        pair:findingStatus ?status ;
+        pair:hasEvidence ?evidence .
+    OPTIONAL { ?finding pair:hasCandidateRiskTaxonomyEntry ?entry }
+    BIND(REPLACE(STR(?pattern), "^.*[#/]", "") AS ?patternName)
+    BIND(COALESCE(REPLACE(STR(?entry), "^.*[#/]", ""), "") AS ?entryName)
+}
+GROUP BY ?patternName ?status
+ORDER BY ?patternName

@@ -1,14 +1,4 @@
-"""Does the front end's module graph still hold together?
-
-The browser is the only thing that runs this code, and it reports a broken
-import as one line in a console nobody is watching: the page loads, the panel
-that needed the module is simply blank. Three separate breakages during the
-split looked exactly like that - an export that was never written because a
-regex did not match `$`, a name left pointing at a variable that had moved, and
-a pair of panels that each needed the other to have loaded first.
-
-None of those need a browser to find. They are all statements about the text.
-"""
+"""Does the front end's module graph still hold together?"""
 
 from __future__ import annotations
 
@@ -19,6 +9,8 @@ from pathlib import PurePosixPath
 import pytest
 
 from airiskkg.paths import REPO_ROOT
+
+pytestmark = pytest.mark.ui
 
 STATIC = REPO_ROOT / "python" / "src" / "airiskkg" / "webapp" / "static"
 
@@ -92,9 +84,7 @@ def test_the_module_graph_has_no_cycles() -> None:
 
 
 def test_the_page_puts_exactly_one_thing_on_window() -> None:
-    """Module scope is the reason to have modules at all. One handle is left for
-    the tests that drive the page from outside, and it is named so that it reads
-    as a decision rather than as six leftovers."""
+    """Module scope is the reason to have modules at all."""
     assigned = set()
     for rel, source in modules().items():
         assigned |= {(rel, name) for name in re.findall(r"(?m)^\s*window\.([A-Za-z_$][\w$]*)\s*=", source)}

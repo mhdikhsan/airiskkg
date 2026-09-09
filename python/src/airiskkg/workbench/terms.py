@@ -27,6 +27,27 @@ EDGE_KINDS = [
 
 PROCESS_CLASS_NAMES = {"Transform", "Infer", "Train", "Generate", "Process"}
 
+# Which catalogue an IRI came from. Two views read it - a finding's taxonomy
+# chips and the library browser - and a second copy would drift.
+TAXONOMY_SOURCES = {
+    "http://w3id.org/airiskkg/taxonomy/owasp-llm#": ("OWASP LLM Top 10", "OWASP LLM"),
+    "http://w3id.org/airiskkg/taxonomy/owasp-asi#": ("OWASP Agentic Top 10", "OWASP ASI"),
+    "http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#": ("IBM AI Risk Atlas", "IBM"),
+    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#": ("MIT AI Risk Repository", "MIT"),
+    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#": ("MIT AI Risk Control", "MIT"),
+    "http://w3id.org/airiskkg/taxonomy/nist-genai#": ("NIST AI 600-1", "NIST"),
+    "http://w3id.org/airiskkg/patterns#": ("PAIR-AI Pattern Library", "PAIR-AI"),
+}
+
+
+def source_pair(uri: object) -> tuple[str, str]:
+    """(full catalogue name, short name) for the vocabulary an IRI sits in."""
+    text = str(uri)
+    for prefix, names in TAXONOMY_SOURCES.items():
+        if text.startswith(prefix):
+            return names
+    return ("Other", "Other")
+
 
 def short(term: object) -> str:
     """The local part of an IRI: what a term is called, without its namespace."""

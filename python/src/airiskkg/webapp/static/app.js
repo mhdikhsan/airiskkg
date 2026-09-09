@@ -8,10 +8,13 @@ import { setStatus } from "./core/status.js";
 import { Editor } from "./lib/editor.js";
 import { GraphView } from "./lib/graph_view.js";
 import { VersionHistory } from "./lib/version_history.js";
-import { askAgain, refreshPreview, resetScope, setLevel, settleChoice } from "./panels/canvas.js";
+import {
+  askAgain, refreshPreview, refreshSystemBar, resetScope, setLevel, settleChoice, startDrawing,
+} from "./panels/canvas.js";
 import { clearDerivedCategories, renderDerivedCategories } from "./panels/dataflow.js";
 import { clearFindings, reReadFindings, renderFindings } from "./panels/findings.js";
 import { renderHistory } from "./panels/history.js";
+import { closeLibrary, initLibrary, isLibraryOpen, openLibrary } from "./panels/library.js";
 import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
 import { applyConnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
 import { openOverview } from "./panels/overview.js";
@@ -32,7 +35,9 @@ function initDivider() {
      * button dead. Same trap as the canvas pan and the opening choice. */
     if (ev.target.closest("button")) return;
     dragging = true;
-    divider.setPointerCapture(ev.pointerId);
+    // Guarded like the canvas: WebKit throws on a pointer it no longer knows
+    // about, and an exception here leaves the divider dead for the session.
+    try { divider.setPointerCapture(ev.pointerId); } catch (error) { /* already gone */ }
     document.body.classList.add("resizing");
   });
   divider.addEventListener("pointermove", (ev) => {
@@ -68,15 +73,18 @@ function initDivider() {
 
 // init 
 async function init() {
+  /* The front door first. */
+  initLibrary();
+  const opensOnLibrary = !$("#ttl-source").value.trim();
+  if (opensOnLibrary) openLibrary({ opening: true });
+  else closeLibrary();
+
   GraphView.init();
   Editor.init({ onChange: refreshPreview });
   initDivider();
 
   // A scope change redraws both the canvas and the findings list.
-  /* A different document means the results on screen describe something that
-   * is no longer there. Decided in one place so every route in - an example, a
-   * file, an import, the starter, Clear, a restored version - forgets the same
-   * things. */
+  /* A different document means the results on screen describe something that is no longer there. */
   const forgetTheLastDocument = () => {
     resetScope();
     clearFindings();
@@ -114,6 +122,9 @@ async function init() {
     vocabulary, classes,
     onEdit: applyEdit, onDelete: applyDelete, onConnect: applyConnect, onStatus: setStatus,
     onSelect: (id) => revealInSource([id]),
+    // Picking an architecture changes what the palette adds to, and the bar is
+    // where that is said - so it has to be redrawn without a round trip.
+    onSelectSystem: () => refreshSystemBar(),
   });
   ProcessCanvas.setDataClasses(vocabulary.dataClasses || []);
   Annotate.init({ vocabulary, onStatus: setStatus });
@@ -138,11 +149,7 @@ async function init() {
     }),
     onSelect: (id) => revealInSource([id]),
     onOpenArchitecture: (activity) => {
-      /* Only descend into an architecture that is actually here. The activity
-       * names the system that carries it out; if that system is not in this
-       * graph, descending used to draw whatever else was loaded - delete the
-       * graph-RAG half of the energy scene and the chatbot activity opened the
-       * meter scorer. Saying it is absent is the whole point of the layer. */
+      /* Only descend into an architecture that is actually here. */
       const wanted = activity.refines[0] || null;
       const here = (state.lastGraph && state.lastGraph.systems ? state.lastGraph.systems : [])
         .some((s) => s.id === wanted);
@@ -162,24 +169,15 @@ async function init() {
   });
   $("#canvas-wrap").classList.add("unstarted");
 
-  $("#start-business").addEventListener("click", () => {
-    settleChoice();
-    state.levelChosenByHand = true;
-    setLevel("business");
-    openDrawer("process");
-    setStatus("ok", "Business process", "add a participant, then steps inside it");
-  });
-  $("#start-architecture").addEventListener("click", () => {
-    settleChoice();
-    state.levelChosenByHand = true;
-    setLevel("architecture");
-    setStatus("ok", "AI architecture", "drag a symbol onto the canvas, or load an example");
-  });
+  $("#start-business").addEventListener("click", () => startDrawing("business"));
+  $("#start-architecture").addEventListener("click", () => startDrawing("architecture"));
 
   $("#btn-overview").addEventListener("click", openOverview);
   $("#btn-overview-close").addEventListener("click", () => $("#overview").classList.add("hidden"));
   document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape") $("#overview").classList.add("hidden");
+    if (ev.key !== "Escape") return;
+    $("#overview").classList.add("hidden");
+    if (isLibraryOpen()) closeLibrary();
   });
   $("#btn-overview-svg").addEventListener("click", () => {
     const svg = $("#overview-diagram").querySelector("svg");
@@ -245,12 +243,7 @@ async function init() {
     try {
       const example = await api(`/api/examples/${encodeURIComponent(name)}`);
       if (example.kind === "process") {
-        /* Replaces, exactly like an architecture example does. It used to
-         * prepend whatever was already in the editor - so picking the process
-         * after onyx assessed the two together and reported 30 findings where
-         * the scene has 8. Picking from this dropdown is choosing what to look
-         * at, and a scene is self-contained: the process plus every
-         * architecture it refines. */
+        /* Replaces, exactly like an architecture example does. */
         const wanted = (example.requires || []).filter((r) => r.example);
         const parts = [];
         for (const requirement of wanted) {
@@ -334,6 +327,8 @@ async function init() {
     if (hasContent) Editor.setValue("");
     askAgain();
     setLevel("architecture");
+    // Back to the front door, which is where the workbench opens.
+    openLibrary({ opening: true });
     setStatus("ok", "Start over", "choose what you are describing");
   });
 
@@ -410,6 +405,12 @@ async function init() {
       button.disabled = false;
     }
   });
+
+  /* The workbench opens on the library rather than on an empty canvas: a
+   * reader who has not seen a motif cannot draw one, and the blank canvas said
+   * nothing about what would be found on it. Only when there is nothing loaded
+   * - a restored document is its own answer to the opening question. */
+
 
   $("#drawer-toggle").addEventListener("click", toggleDrawer);
   $("#drawer-head").addEventListener("dblclick", toggleDrawer);

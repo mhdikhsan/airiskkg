@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 from rdflib import RDF, RDFS, Graph, Literal, Namespace, URIRef
 
 from airiskkg.assessment_runner import BEAM, PAIR
-from airiskkg.graph_view import graph_view
+from airiskkg.graph_view import _kind_and_type, _members_of, graph_view
 from airiskkg.knowledge_base import graph_fingerprint
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
 from airiskkg.workbench.process_view import DATA_CLASSES, process_view
@@ -46,13 +46,7 @@ def read_graph() -> object:
 
 @graph_routes.post("/api/process")
 def read_process() -> object:
-    """The business process layer of a submitted graph, if it carries one.
-
-    Separate from /api/graph because the two answer different questions and one
-    graph may hold both: /api/graph draws the architecture, this lists the
-    process the architecture sits in. A graph with no BPMN triples comes back
-    empty rather than as an error - most graphs have no process, and that is not
-    a fault."""
+    """The business process layer of a submitted graph, if it carries one."""
     payload = request.get_json(silent=True) or {}
     ttl = (payload.get("ttl") or "").strip()
     if not ttl:
@@ -143,10 +137,7 @@ def graph_edit() -> object:
         element = local[f"e{index}"]
         data.add((element, RDF.type, URIRef(class_uri)))
         data.add((element, RDFS.label, Literal(label)))
-        # The architecture the reader is looking at, when they say which. A
-        # document carries several once a business process runs more than one
-        # system, and "the first System in the graph" put every new element in
-        # whichever one rdflib happened to yield first.
+        # The architecture the reader is looking at, when they say which.
         asked = payload.get("system")
         system = URIRef(asked) if asked else None
         if system is not None and (system, RDF.type, BEAM.System) not in data:
@@ -157,6 +148,46 @@ def graph_edit() -> object:
             predicate = BEAM.hasProcess if payload.get("category") == "process" else BEAM.hasResource
             data.add((system, predicate, element))
         new_id = str(element)
+
+    elif op == "add-system":
+        # The architecture-first route. add-system on /api/process-edit needs an
+        # activity to bind, which is the wrong way round for someone who draws
+        # the architecture and only then models the process it serves.
+        label = (payload.get("label") or "New AI system").strip()
+        system = _fresh(data, "system")
+        data.add((system, RDF.type, BEAM.Element))
+        data.add((system, RDF.type, BEAM.System))
+        data.add((system, RDFS.label, Literal(label)))
+        for key, prop in (("description", BEAM.description), ("context", BEAM.context)):
+            value = (payload.get(key) or "").strip()
+            if value:
+                data.add((system, prop, Literal(value)))
+
+        # Take in the elements that belong to nowhere.
+        if payload.get("adopt"):
+            claimed: set[URIRef] = set()
+            for other in data.subjects(RDF.type, BEAM.System):
+                claimed |= _members_of(data, other)
+
+            # Whatever the canvas counts as an element, which is any BEAM type
+            # or a subclass of one - not beam:Element. A graph exported from
+            # BEAM types its boxes beam:Data and beam:Transform and stops there,
+            # so keying adoption on beam:Element adopted nothing at all and left
+            # the reader with an empty system beside every one of their boxes.
+            typed: dict[URIRef, set[URIRef]] = {}
+            for subject, obj in data.subject_objects(RDF.type):
+                if isinstance(subject, URIRef) and isinstance(obj, URIRef):
+                    typed.setdefault(subject, set()).add(obj)
+
+            holder = {"agent": BEAM.hasAgent, "process": BEAM.hasProcess}
+            for element, types in typed.items():
+                if element in claimed:
+                    continue
+                kind, _unused = _kind_and_type(types)
+                if kind in ("other", "system"):
+                    continue
+                data.add((system, holder.get(kind, BEAM.hasResource), element))
+        new_id = str(system)
 
     elif op == "add-edge":
         subject = payload.get("subject")
@@ -190,6 +221,12 @@ def graph_edit() -> object:
             data.remove((element, PAIR.containsDataCategory, None))
             for category in payload.get("categories") or []:
                 data.add((element, PAIR.containsDataCategory, URIRef(category)))
+        for key, prop in (("description", BEAM.description), ("context", BEAM.context)):
+            if key in payload:
+                data.remove((element, prop, None))
+                value = (payload.get(key) or "").strip()
+                if value:
+                    data.add((element, prop, Literal(value)))
         new_name = (payload.get("name") or "").strip()
         if new_name:
             old = str(element)
@@ -218,7 +255,10 @@ def graph_edit() -> object:
         existing = {str(s) for s in data.subjects() if str(s).startswith(str(local))}
         counter = [1]
 
-        def _fresh() -> URIRef:
+        # Named apart from the module-level _fresh: a nested def with the same
+        # name makes it local to this whole view, so every other branch that
+        # reached for the module one got an unbound local instead.
+        def _fresh_template_id() -> URIRef:
             while str(local[f"e{counter[0]}"]) in existing:
                 counter[0] += 1
             node = local[f"e{counter[0]}"]
@@ -229,7 +269,7 @@ def graph_edit() -> object:
         key_to_uri: dict[str, URIRef] = {}
         new_ids: list[str] = []
         for node in template["nodes"]:
-            uri = _fresh()
+            uri = _fresh_template_id()
             key_to_uri[node["key"]] = uri
             is_process = node["cls"] in PROCESS_CLASS_NAMES
             data.add((uri, RDF.type, BEAM[node["cls"]]))
@@ -269,10 +309,7 @@ def graph_edit() -> object:
 BPMN = Namespace("https://sBPMN.github.io/2.0/classes#")
 BP = Namespace("https://sBPMN.github.io/2.0/properties#")
 
-# What the palette offers, restricted to what external/sbpmn/sbpmn_2.0.ttl
-# declares. Gateways and events change no finding on their own, but a process
-# drawn without them is not the process the analyst was asked to check, and a
-# branch smuggled into three sequential tasks reads as an order that is not there.
+# What the palette offers, restricted to what external/sbpmn/sbpmn_2.0.ttl declares.
 ACTIVITY_KINDS = {
     "task": "Task",
     "userTask": "User task",
@@ -367,8 +404,7 @@ def _process_of_pool(data: Graph, pool: str | None) -> URIRef | None:
 
 
 def _place(data: Graph, process: URIRef, node: URIRef, lane: str | None) -> None:
-    """Put a new flow node in its process, and in a lane when one is selected.
-    A lane holds nodes by reference, so the process still contains them."""
+    """Put a new flow node in its process, and in a lane when one is selected."""
     data.add((process, BP.contains, node))
     if lane:
         band = URIRef(lane)
@@ -398,14 +434,7 @@ def _set_event_definition(data: Graph, event: URIRef, definition: str) -> None:
 
 @graph_routes.post("/api/process-edit")
 def process_edit() -> object:
-    """Structural edits to the business layer, mirroring /api/graph-edit.
-
-    Body: {ttl, op, ...}. Ops: add-pool, add-lane, add-activity, add-event,
-    add-gateway, add-annotation, connect, set-refines, set-node-type, set-loop,
-    add-system, add-data, classify-data, set-data-shape, detach-data, rename,
-    delete. Returns the rewritten
-    Turtle, which the editor adopts.
-    """
+    """Structural edits to the business layer, mirroring /api/graph-edit."""
     payload = request.get_json(silent=True) or {}
     ttl = (payload.get("ttl") or "").strip()
     op = payload.get("op")

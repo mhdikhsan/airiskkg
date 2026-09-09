@@ -245,7 +245,9 @@ amends the design and re-runs, and the same rules speak again. The finding
 disappears because the graph no longer represents the gap — not because anything
 was proven safe (Rule R4).
 
-Applied in sequence on onyx, findings fall from 25 to 14.
+Applied in sequence on onyx, findings fall from 22 to 11 (re-measured 2026-09-08:
+13 applicable control applications in the first round, 33 triples added, nothing
+applicable left in the second).
 
 ### A limitation worth knowing
 

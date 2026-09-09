@@ -1,0 +1,23 @@
+# CQ24: What did this assessment run run on?
+# Scope: assessment
+# Note: inputs are prov:Entity nodes, not properties on the activity, so a third
+# input costs a call rather than a predicate. An entity's IRI is its
+# fingerprint, so two runs over the same input reference one node; the activity
+# IRI stays a fresh UUID because two runs at different times are two events.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?inputLabel ?contentFingerprint ?revision ?assessmentFingerprint ?endedAt
+WHERE {
+    ?activity a prov:Activity ;
+        prov:endedAtTime ?endedAt ;
+        pair:assessmentFingerprint ?assessmentFingerprint ;
+        prov:used ?input .
+    ?input a prov:Entity ;
+        rdfs:label ?inputLabel ;
+        pair:contentFingerprint ?contentFingerprint .
+    OPTIONAL { ?input pair:sourceRevision ?revision }
+}
+ORDER BY ?inputLabel

@@ -984,10 +984,7 @@ pat:SensitiveInformationDisclosureRiskPattern
     rdfs:label "Sensitive information disclosure risk pattern"@en ;
     dct:description """
     Applies wherever content carrying a protected category reaches an element
-    exposed to a user, with no represented control on the way out. Covers both
-    routes to that exposure: any path ending at the sink, and the retrieval
-    route, which additionally names the store the content was read from.
-    Merged 2026-08-17 from two patterns that reported one disclosure twice.
+    exposed to a user, with no represented control on the way out.
     """@en ;
     pair:hasMechanism owasp:mechanism-sensitive-data-propagation ;
     pair:hasApplicabilityCondition

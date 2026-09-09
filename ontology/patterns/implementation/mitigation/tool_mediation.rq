@@ -4,12 +4,6 @@ PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 # Mediate an agent's tool action (ASI02).
-#
-# A policy enforcement step informs the action, so the action is no longer taken
-# on the planner's say-so alone. Bound to the action step the finding cites.
-# Policy enforcement rather than human approval: it is the mediation that is
-# structural, and requiring a human is a stronger commitment than the tool
-# should make on the assessor's behalf.
 
 CONSTRUCT {
     ?mediatingStep

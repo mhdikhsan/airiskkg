@@ -1,18 +1,4 @@
-"""Annotation-guidance shapes: do they catch the mistakes that lose findings?
-
-These shapes answer a question neither contract asks. The input contract asks
-whether a graph is acceptable; the output contract asks whether emitted findings
-are well formed. Neither asks whether an annotation will actually match
-anything - and a graph can satisfy the input contract completely while producing
-zero findings, at which point silence reads as safety.
-
-Two properties are tested here and both matter:
-
-  1. Each shape fires on the mistake it names.
-  2. No shape is a Violation, and the curated examples raise nothing. A guidance
-     layer that cries wolf on the repository's own examples would be trained
-     away within a week.
-"""
+"""Annotation-guidance shapes: do they catch the mistakes that lose findings?"""
 
 from __future__ import annotations
 
@@ -72,8 +58,7 @@ def _fired_on(reports: list[tuple[str, str]], node: str, phrase: str) -> bool:
 
 
 def test_no_guidance_shape_is_a_violation(shapes: Graph) -> None:
-    """The whole point is that these are advisory. A Violation here would make
-    the input contract reject graphs it is documented to accept."""
+    """The whole point is that these are advisory."""
     severities = set(shapes.objects(None, SH.severity))
     assert severities, "shapes declare no severity at all"
     assert SH.Violation not in severities, "guidance shapes must never be Violations"
@@ -81,8 +66,7 @@ def test_no_guidance_shape_is_a_violation(shapes: Graph) -> None:
 
 
 def test_step_role_with_no_process_class_at_all_is_flagged(shapes, ontology) -> None:
-    """An untyped step is always a mistake: no query can bind it, whichever
-    convention that query follows."""
+    """An untyped step is always a mistake: no query can bind it, whichever convention that query follows."""
     reports = _messages(
         shapes, ontology, "ex:gen a beam:Data ; pair:playsRole pair:GenerationStep ."
     )
@@ -90,12 +74,7 @@ def test_step_role_with_no_process_class_at_all_is_flagged(shapes, ontology) -> 
 
 
 def test_leaf_typed_step_is_not_flagged(shapes, ontology) -> None:
-    """Any process-family typing is now equivalent.
-
-    Step nodes match on `a/rdfs:subClassOf* beam:Process`, so beam:Infer alone
-    binds exactly as beam:Process does. The shape that used to nudge modelers to
-    dual-type was retired with that unification - keeping it would advise a
-    workaround for a problem that no longer exists."""
+    """Any process-family typing is now equivalent."""
     reports = _messages(
         shapes, ontology, "ex:gen a beam:Infer ; pair:playsRole pair:GenerationStep ."
     )
@@ -177,12 +156,7 @@ def test_generation_step_without_a_model_is_flagged(shapes, ontology) -> None:
 
 
 def test_curated_examples_raise_no_guidance_warnings(shapes, ontology) -> None:
-    """The examples are what a modeler is shown as correct. If the guidance layer
-    warned about them, it would be teaching the opposite of what it intends.
-
-    Info-level hints are allowed here - "this data element carries no role" is
-    legitimately true of incidental elements in a real architecture. Warnings
-    are not: those name annotations that cannot work."""
+    """The examples are what a modeler is shown as correct."""
     offenders = []
     for path in (
         example_path(ONYX_NS),

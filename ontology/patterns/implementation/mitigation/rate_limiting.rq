@@ -4,11 +4,6 @@ PREFIX beam: <http://w3id.org/beam/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 # Bound an unbounded loop or call path (LLM10).
-#
-# The reference document's boundary/proxy node: a step that enforces limits,
-# informing the step whose consumption is unbounded. The risk query clears on a
-# RateLimitControlStep reaching the loop source along beam:inform*, so the
-# control is placed as a gate ahead of it.
 
 CONSTRUCT {
     ?controlStep

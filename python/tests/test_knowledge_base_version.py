@@ -30,9 +30,7 @@ def test_the_fingerprint_survives_a_reload():
 
 
 def test_registered_queries_are_fingerprinted_not_only_the_ontology():
-    """A risk query rewritten in place changes every finding while leaving the
-    ontology untouched. If the stamp missed .rq files it would report the two
-    libraries as one, which is the confusion it exists to prevent."""
+    """A risk query rewritten in place changes every finding while leaving the ontology untouched."""
     queries = registered_query_files(load_base_graph())
     names = {path.name for path in queries}
 

@@ -1,13 +1,4 @@
-"""Shared test fixtures.
-
-The one thing here is example lookup. Tests used to name bundled graphs by
-filename, and the filenames get renamed - `onyx_danswer.ttl` became
-`onyx_danswer_rag_chatbot.ttl` became `ony_rag_chatbot.ttl` inside two days -
-so every rename broke a handful of suites for reasons that had nothing to do
-with what they test. A graph's namespace IRI is the stable thing about it: it
-survives renames because renaming a file is a filing decision and changing a
-namespace is a modelling one.
-"""
+"""Shared test fixtures."""
 
 from __future__ import annotations
 
@@ -21,22 +12,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from airiskkg.paths import EXAMPLE_DIR  # noqa: E402
 
 # Graphs a test needs but the deployment does not offer.
-#
-# The shipped set is a curated teaching set - it is what the example dropdown
-# lists, and it stays small on purpose. Retiring a graph from it must not retire
-# the coverage that rested on it: onyx is still the only graph exercising query
-# rewriting, reranking, embeddings and supply chain, and the Wien Energie pair
-# still backs the business-context suite.
-#
-# So they live here instead, with the tests that need them. Tracked, so a fresh
-# clone passes; outside ontology/example/, so nothing offers them; and never
-# ontology/example_local/, which a clone does not have and which
-# test_private_examples.py forbids the suite from reading.
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 
-# The IRI each bundled example mints its elements under. Only graphs the
-# repository ships belong here: ontology/example_local/ is the user's own,
-# absent from a fresh clone, and nothing in the suite may depend on it.
+# The IRI each bundled example mints its elements under.
 ONYX_NS = "http://w3id.org/airiskkg/example/onyx-danswer#"
 GRAPH_RAG_NS = "http://tool4boxology.org/Boxology/graphrag-example"
 WIEN_ENERGIE_NS = "http://w3id.org/airiskkg/example/wien-energie#"

@@ -1,28 +1,4 @@
-"""Mechanical falsifiability checks on the cross-taxonomy mapping layer.
-
-Cross-vocabulary alignment is the part of this knowledge base that rests most
-heavily on judgement, and judgement is exactly what a test suite cannot audit.
-What it CAN audit is logical coherence: a set of mappings can be internally
-contradictory regardless of who or what produced it, and those contradictions
-are decidable. These checks catch the errors that survive review because they
-look plausible in isolation and only conflict with a statement made elsewhere.
-
-The direction-sensitive failure mode is the one worth designing against. In this
-repo an ASI -> OWASP link was once curated in the inverse direction and read as
-entirely reasonable; it was caught only by comparing against upstream. Hierarchy
-predicates are easy to state backwards and hard to eyeball, so most of what
-follows is about direction.
-
-SKOS direction, since every check below depends on it:
-
-    A skos:broader  B   -- B is the more general concept (B is A's parent)
-    A skos:broadMatch B -- same, across schemes: A is a subset of B
-    A skos:narrowMatch B -- B is a subset of A
-
-These are guards, not bug reports: the mapping layer satisfies all of them
-today. They exist so that the next mapping added - by a human, from upstream, or
-LLM-assisted - cannot silently contradict one already present.
-"""
+"""Mechanical falsifiability checks on the cross-taxonomy mapping layer."""
 
 from __future__ import annotations
 
@@ -92,9 +68,7 @@ def test_mapping_predicates_are_used_only_across_schemes(taxonomy: Graph) -> Non
 
 
 def test_no_pair_of_concepts_carries_two_mapping_predicates(taxonomy: Graph) -> None:
-    """The predicates are mutually exclusive readings of one relationship. Two of
-    them on the same ordered pair means two incompatible claims, typically from
-    one mapping being added without noticing another already existed."""
+    """The predicates are mutually exclusive readings of one relationship."""
     seen: dict[tuple[URIRef, URIRef], set[str]] = {}
     for s, p, o in _mappings(taxonomy):
         seen.setdefault((s, o), set()).add(_name(p))
@@ -105,9 +79,7 @@ def test_no_pair_of_concepts_carries_two_mapping_predicates(taxonomy: Graph) -> 
 
 
 def test_no_mapping_contradicts_a_recorded_non_correspondence(taxonomy: Graph) -> None:
-    """Upstream SSSOM sets record skos:noMatch - 'we checked, there is no
-    correspondence'. A positive mapping over the same pair overrides a negative
-    result somebody deliberately recorded, in either direction."""
+    """Upstream SSSOM sets record skos:noMatch - 'we checked, there is no correspondence'."""
     denied = {frozenset((s, o)) for s, _, o in taxonomy.triples((None, NO_MATCH, None))}
     offenders = [(s, p, o) for s, p, o in _mappings(taxonomy) if frozenset((s, o)) in denied]
     assert not offenders, "\n".join(
@@ -117,12 +89,7 @@ def test_no_mapping_contradicts_a_recorded_non_correspondence(taxonomy: Graph) -
 
 
 def test_nothing_is_transitively_broader_than_itself(taxonomy: Graph) -> None:
-    """The inversion guard. Read every hierarchical mapping as one edge 'is a
-    subset of' and look for a cycle: a cycle means some concept ends up strictly
-    broader than itself, which is the shape a backwards mapping makes once it
-    meets the mappings around it. A single inverted link is invisible on its own
-    and only becomes decidable in combination - which is precisely why review
-    misses it."""
+    """The inversion guard."""
     edges: dict[URIRef, set[URIRef]] = {}
     for subject, _, obj in taxonomy.triples((None, SKOS.broadMatch, None)):
         edges.setdefault(subject, set()).add(obj)  # subject is a subset of obj
@@ -170,14 +137,7 @@ def test_no_two_concepts_claim_to_be_exactly_the_same_external_concept(
 
 
 def test_a_child_never_maps_more_broadly_than_its_own_parent(taxonomy: Graph) -> None:
-    """Coherence between the hierarchy and the mappings laid over it.
-
-    Given child C under parent P, C is a subset of P. If C claims some external T
-    is a subset of C (narrowMatch) while P claims P is a subset of that same T
-    (broadMatch or exactMatch), then P <= T <= C <= P forces C, P and T to be the
-    same concept - the child collapses into its parent. That is always an error
-    in one of the two mappings, and it is invisible unless the pair is inspected
-    together."""
+    """Coherence between the hierarchy and the mappings laid over it."""
     relation: dict[URIRef, dict[URIRef, str]] = {}
     for subject, predicate, obj in _mappings(taxonomy):
         relation.setdefault(subject, {})[obj] = _name(predicate)
@@ -238,14 +198,7 @@ def provenance() -> Graph:
 
 
 def test_the_provenance_layer_is_not_loaded_by_the_assessment(taxonomy: Graph) -> None:
-    """The load-bearing half of 'keep it away from production'.
-
-    This layer is evidence ABOUT the knowledge base, not knowledge the pipeline
-    may reason over - a risk finding must never be able to cite its own
-    provenance record as support. The runner globs ontology/taxonomy/*.ttl
-    non-recursively, so living one directory down excludes it by construction
-    rather than by anyone remembering to. This test pins that: move the file up a
-    level and it fails."""
+    """The load-bearing half of 'keep it away from production'."""
     from airiskkg.paths import TAXONOMY_DIR
 
     assert PROVENANCE.exists(), "provenance layer is missing"
@@ -257,13 +210,7 @@ def test_the_provenance_layer_is_not_loaded_by_the_assessment(taxonomy: Graph) -
 
 @pytest.fixture(scope="module")
 def all_mapped() -> Graph:
-    """Every directory that can declare a mapping, not just ontology/taxonomy/.
-
-    The first version of this fixture read taxonomy/ alone, so the coverage test
-    below passed while 80 mappings in patterns/ and core/ had no provenance at
-    all - a green test asserting a guarantee it was not making. Scoping a
-    coverage check to the place you already looked is worse than having none,
-    because it converts an unknown into a false assurance."""
+    """Every directory that can declare a mapping, not just ontology/taxonomy/."""
     graph = Graph()
     for sub in ("taxonomy", "patterns", "core"):
         for path in sorted((REPO_ROOT / "ontology" / sub).glob("*.ttl")):
@@ -337,18 +284,7 @@ _MIT_NS = "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#"
 
 
 def test_chain_corroboration_flags_match_the_upstream_edges() -> None:
-    """No upstream set links OWASP to MIT, so those rows are project curation.
-    Some are triangulated through an IBM Atlas concept that upstream mapped to
-    both ends; the rest rest on judgement alone. The flag records which is which.
-
-    Corroboration must come from INDEPENDENTLY curated edges. Chaining through
-    an Atlas link that this project curated itself would be our own judgement
-    corroborating our own judgement - circular, and it inflates the count: three
-    OWASP-MIT links look supported until the project-curated Atlas edges they
-    lean on are excluded.
-
-    Recomputed here from the recorded mapping sets rather than by calling the
-    generator, so a bug in its logic cannot validate itself."""
+    """No upstream set links OWASP to MIT, so those rows are project curation."""
     graph = Graph().parse(PROVENANCE, format="turtle")
 
     upstream_atlas_owasp: dict = {}
@@ -398,9 +334,7 @@ def test_chain_corroboration_flags_match_the_upstream_edges() -> None:
 
 
 def test_only_project_curated_owasp_mit_links_carry_the_flag() -> None:
-    """The flag answers a question that only arises for project curation. An
-    upstream row is already someone else's judgement; annotating it with our
-    corroboration would blur the tier the whole file exists to keep visible."""
+    """The flag answers a question that only arises for project curation."""
     graph = Graph().parse(PROVENANCE, format="turtle")
     offenders = []
     for mapping in graph.subjects(PAIRM.chainCorroborated, None):
@@ -511,16 +445,7 @@ def test_facet_sources_are_of_a_recognised_kind(facets: Graph) -> None:
 
 
 def test_citing_dpv_requires_actually_linking_to_dpv(facets: Graph) -> None:
-    """The difference between alignment and name-dropping. DPV publishes
-    resolvable URIs, so a concept that claims DPV as its source can carry a
-    mapping a third party can check - and if it cannot, the citation is doing
-    rhetorical work its evidence does not support.
-
-    This is the check that would not survive minting an OECD concept scheme:
-    OECD publishes no URIs, so an oecd:* concept could only ever be one we wrote
-    ourselves from the same reading that produced the facet value. The mapping
-    would be true by construction and would prove nothing. That asymmetry is why
-    OECD stays a cited documentary source while DPV is an alignment target."""
+    """The difference between alignment and name-dropping."""
     offenders = []
     for concept in facets.subjects(SKOS.inScheme, None):
         sources = " ".join(str(o) for o in facets.objects(concept, DCTERMS.source))
@@ -573,9 +498,7 @@ def _rollup_from_csv() -> dict[str, set[str]]:
 
 
 def test_the_risk_to_mitigation_csv_is_present() -> None:
-    """Without it the block below is unverifiable, which was the situation until
-    the file was recovered. Losing it again should fail loudly, not silently
-    reduce these links back to unfalsifiable assertions."""
+    """Without it the block below is unverifiable, which was the situation until the file was recovered."""
     assert RISK_TO_MITIGATION_CSV.exists(), (
         f"{RISK_TO_MITIGATION_CSV.name} is missing - the 32 embedding-derived "
         "risk-to-control links can no longer be re-derived or checked"
@@ -583,11 +506,7 @@ def test_the_risk_to_mitigation_csv_is_present() -> None:
 
 
 def test_section_3_control_links_reproduce_from_the_csv(taxonomy: Graph) -> None:
-    """The committed links must equal the CSV rollup exactly, in both directions.
-
-    Extra links would mean curation crept in under an evidence-grounded label;
-    missing links would mean the rollup was applied selectively. Either way the
-    stated provenance would no longer describe the data."""
+    """The committed links must equal the CSV rollup exactly, in both directions."""
     offenders = []
     for owasp, expected in sorted(_rollup_from_csv().items()):
         actual = {
@@ -632,8 +551,7 @@ def actions() -> Graph:
 
 
 def test_every_action_in_the_crosswalk_is_modelled(actions: Graph) -> None:
-    """Both directions. A missing action means the layer was generated from a
-    stale CSV; an extra one means it was hand-edited, which the header forbids."""
+    """Both directions."""
     import csv
     import re
 

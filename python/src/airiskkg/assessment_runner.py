@@ -136,6 +136,15 @@ def knowledge_base_fingerprint() -> KnowledgeBaseVersion:
 def reload_knowledge_base() -> None:
     _base_knowledge.cache_clear()
     _cached_version.cache_clear()
+    # Everything read off the graph once and kept. Imported here, not at module
+    # scope: workbench reads this module, so the dependency only runs one way.
+    from airiskkg.workbench.library import library_catalogue
+    from airiskkg.workbench.templates import motif_templates
+    from airiskkg.workbench.vocabulary import vocabulary
+
+    library_catalogue.cache_clear()
+    motif_templates.cache_clear()
+    vocabulary.cache_clear()
 
 
 def load_base_graph() -> Graph:

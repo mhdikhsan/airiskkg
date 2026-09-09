@@ -2,6 +2,7 @@ from __future__ import annotations
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 from airiskkg.assessment_runner import PAIR, AssessmentResult, applicable_controls
 from airiskkg.knowledge_base import graph_fingerprint
+from airiskkg.workbench.terms import source_pair
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 PROV = Namespace("http://www.w3.org/ns/prov#")
@@ -16,24 +17,23 @@ _MIT_MAPPING_PREDS = (
     SKOS.narrowMatch,
 )
 
-_SOURCE_PREFIXES = {
-    "http://w3id.org/airiskkg/taxonomy/owasp-llm#": ("OWASP LLM Top 10", "OWASP LLM"),
-    "http://w3id.org/airiskkg/taxonomy/owasp-asi#": ("OWASP Agentic Top 10", "OWASP ASI"),
-    "http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#": ("IBM AI Risk Atlas", "IBM"),
-    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#": ("MIT AI Risk Repository", "MIT"),
-    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#": ("MIT AI Risk Control", "MIT"),
-    "http://w3id.org/airiskkg/taxonomy/nist-genai#": ("NIST AI 600-1", "NIST"),
-    "http://w3id.org/airiskkg/patterns#": ("PAIR-AI Pattern Library", "PAIR-AI"),
-}
-
 
 def _local_name(uri: URIRef) -> str:
     text = str(uri)
     return text.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
 
 
+# A business element names itself with bp:name, not rdfs:label.
+_BP_NAME_PROP = URIRef("https://sBPMN.github.io/2.0/properties#name")
+_BP_ITEM_SUBJECT = URIRef("https://sBPMN.github.io/2.0/properties#itemSubjectRef")
+
+
 def _label(graph: Graph, resource: URIRef) -> str:
-    value = graph.value(resource, SKOS.prefLabel) or graph.value(resource, RDFS.label)
+    value = (
+        graph.value(resource, SKOS.prefLabel)
+        or graph.value(resource, RDFS.label)
+        or graph.value(resource, _BP_NAME_PROP)
+    )
     return str(value) if value else _local_name(resource)
 
 
@@ -46,15 +46,7 @@ def _definition(graph: Graph, resource: URIRef) -> str | None:
 
 
 def _source(uri: URIRef) -> str:
-    return _source_pair(uri)[0]
-
-
-def _source_pair(uri: URIRef) -> tuple[str, str]:
-    text = str(uri)
-    for prefix, names in _SOURCE_PREFIXES.items():
-        if text.startswith(prefix):
-            return names
-    return ("Other", "Other")
+    return source_pair(uri)[0]
 
 
 def _ref(graph: Graph, resource: URIRef) -> dict:
@@ -63,7 +55,7 @@ def _ref(graph: Graph, resource: URIRef) -> dict:
         "label": _label(graph, resource),
         "definition": _definition(graph, resource),
         "source": _source(resource),
-        "sourceShort": _source_pair(resource)[1],
+        "sourceShort": source_pair(resource)[1],
     }
 
 
@@ -194,9 +186,13 @@ def _derived_categories(result: AssessmentResult) -> list[dict]:
     }
 
     def is_annotated(element, category) -> bool:
+        """Where the trail stops: a category somebody stated rather than derived."""
+        if element is None:
+            return False
+        if (element, _BP_ITEM_SUBJECT, None) in graph:
+            return True
         return (
-            element is not None
-            and (element, PAIR.containsDataCategory, category) in graph
+            (element, PAIR.containsDataCategory, category) in graph
             and (element, category) not in inferred
         )
 

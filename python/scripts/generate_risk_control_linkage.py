@@ -384,10 +384,7 @@ def main() -> int:
     add("")
 
     def top_categories(concept) -> set[str]:
-        """All top-level ancestors, not one. The taxonomy is a polyhierarchy and
-        8 of the 36 concepts sit under two categories at once, so returning a
-        single answer would mean silently picking one - false precision of
-        exactly the kind this document is meant to avoid."""
+        """All top-level ancestors, not one."""
         found, seen, frontier = set(), set(), [concept]
         while frontier:
             node = frontier.pop()

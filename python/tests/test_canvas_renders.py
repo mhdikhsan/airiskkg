@@ -1,19 +1,4 @@
-"""Does the canvas actually draw anything?
-
-Every other check in this repository passed while the business canvas showed a
-blank rectangle for three rounds of fixes. The element ids all existed, the CSS
-classes were all defined, the JavaScript parsed, the endpoints returned correct
-data, and 196 tests were green - because none of them ran the page. The renderer
-was fine; a wiring call had landed inside `renderFindings()` instead of `init()`,
-so nothing initialised until an assessment had been run.
-
-Only one thing catches that: loading the real page in a real browser and looking
-at what came out. This does that headlessly, and skips rather than pretends when
-no browser is installed.
-
-It asserts presence and rough shape, not pixels. A screenshot comparison would
-fail on a font change and teach everyone to ignore it.
-"""
+"""Does the canvas actually draw anything?"""
 
 from __future__ import annotations
 
@@ -30,6 +15,8 @@ import pytest
 
 from airiskkg.paths import REPO_ROOT
 from conftest import process_path  # noqa: E402
+
+pytestmark = pytest.mark.browser
 
 STATIC = REPO_ROOT / "python" / "src" / "airiskkg" / "webapp" / "static"
 
@@ -60,8 +47,7 @@ def _free_port() -> int:
 
 @pytest.fixture(scope="module")
 def served():
-    """The real app, on a real port. Nothing is stubbed: a bug that only appears
-    once the whole page is wired together is exactly what this is for."""
+    """The real app, on a real port."""
     flask = pytest.importorskip("flask")  # noqa: F841
     from airiskkg.webapp.app import create_app
 
@@ -109,9 +95,7 @@ def _dump_dom(browser: str, url: str, budget: int = 15000) -> str:
         ],
         capture_output=True,
         text=True,
-        # The page is UTF-8 and the DOM it dumps carries the glyphs the canvas
-        # draws. Left to the Windows default the reader decodes cp1252 and
-        # every test in this file fails on one byte of one label.
+        # The page is UTF-8 and the DOM it dumps carries the glyphs the canvas draws.
         encoding="utf-8",
         errors="replace",
         timeout=180,
@@ -176,9 +160,7 @@ def test_the_business_canvas_draws_the_data_and_what_it_is(rendered) -> None:
 def test_a_long_activity_name_wraps_rather_than_being_cut(rendered) -> None:
     """"Take over the conv..." reads as a different activity from the one it is."""
     canvas = re.search(r'<svg id="process-canvas".*?</svg>', rendered, re.S)
-    # Only what is painted on the box. The full name is also on the <title>,
-    # and reading the whole markup let a truncated label pass on the strength
-    # of its own tooltip.
+    # Only what is painted on the box.
     painted = " ".join(re.findall(r'<text[^>]*class="pc-label"[^>]*>([^<]*)</text>', canvas.group(0)))
     assert "live" in painted, (
         "the second half of \"Take over the conversation in live chat\" never made it onto the box; "
@@ -201,9 +183,7 @@ def test_a_pool_with_lanes_is_banded_and_named(rendered) -> None:
 
 
 def test_events_and_gateways_are_drawn_the_way_bpmn_draws_them(rendered) -> None:
-    """A start event is a ring, an end event a thick one, a gateway a diamond.
-    Without them a reader cannot tell where the process begins, and a branch
-    reads as an order of work."""
+    """A start event is a ring, an end event a thick one, a gateway a diamond."""
     canvas = re.search(r'<svg id="process-canvas".*?</svg>', rendered, re.S)
     markup = canvas.group(0)
 
@@ -274,18 +254,11 @@ def test_nothing_threw_while_the_page_wired_itself_up(rendered) -> None:
     assert "Uncaught" not in rendered
 
 
-# Clicking is not tested here. A synthetic click lands on whatever element you
-# name it at, so it proved nothing while a real one was being retargeted by
-# pointer capture and reaching no handler at all. Interaction is tested with
-# real input in test_canvas_interaction.py.
+# Clicking is not tested here.
 
 
 def test_picking_the_process_example_gives_something_assessable(served) -> None:
-    """The whole scene, from one choice in the dropdown.
-
-    Selecting the process used to load the process alone: the business diagram
-    drew, the architecture canvas stayed empty, and Run assessment finished with
-    nothing - which reads as a broken tool rather than a missing dependency."""
+    """The whole scene, from one choice in the dropdown."""
     browser = _browser()
     if not browser:
         pytest.skip("no Chromium-family browser to render with")
@@ -322,9 +295,7 @@ def test_picking_the_process_example_gives_something_assessable(served) -> None:
     found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
     report = found.group(1).strip() if found else ""
 
-    # An empty report must fail, not pass. Asserting only that "nodes=0" is
-    # absent is true of a probe that never ran, and a check that passes when
-    # nothing happened is worse than no check. 
+    # An empty report must fail, not pass.
     counts = dict(re.findall(r"(\w+)=(\d+)", report))
     assert {"nodes", "findings", "activities"} <= counts.keys(), (
         f"the probe did not report: {report!r}"
@@ -356,8 +327,7 @@ def _drive(served, script, budget=45000):
 
 
 def test_an_empty_workbench_asks_which_layer_rather_than_guessing(served) -> None:
-    """The two layers are different jobs, and which one someone came to do is
-    not guessable. Before a choice, neither layer's tools are on screen."""
+    """The two layers are different jobs, and which one someone came to do is not guessable."""
     report = _drive(served, """
     const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
     window.addEventListener("load", () => setTimeout(() => {
@@ -374,9 +344,7 @@ def test_an_empty_workbench_asks_which_layer_rather_than_guessing(served) -> Non
 
 
 def test_a_process_example_opens_on_the_business_layer(served) -> None:
-    """A process was opened to be looked at. The presence of an architecture
-    used to win, so loading a business example dropped the reader into the
-    architecture and the BPMN diagram had to be hunted for."""
+    """A process was opened to be looked at."""
     report = _drive(served, """
     const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
     window.addEventListener("load", () => setTimeout(() => {
@@ -454,20 +422,7 @@ def test_descending_is_not_dragged_back_to_the_business_layer(served) -> None:
 
 
 def test_picking_a_scene_replaces_what_was_there(served) -> None:
-    """Switching examples must not add up.
-
-    The process branch used to prepend whatever was already in the editor, so
-    loading onyx (22 findings) and then picking the energy process assessed the
-    two together and reported 30 where the scene has 8. Architecture examples
-    replaced all along; only this branch did not, and the existing scene test
-    could not see it because it picks the process on an empty workbench.
-
-    This reads the editor rather than the finding count. The count is the
-    symptom a reader notices; what went wrong is that the previous graph was
-    still there. Checking the cause is also the difference between a clear
-    failure and a browser timeout, because the aggregated graph is slow enough
-    to assess that the probe never finished.
-    """
+    """Switching examples must not add up."""
     browser = _browser()
     if not browser:
         pytest.skip("no Chromium-family browser to render with")
@@ -519,13 +474,7 @@ def test_picking_a_scene_replaces_what_was_there(served) -> None:
 
 
 def test_loading_another_example_clears_the_last_run(served) -> None:
-    """The canvas redrew and the risk list did not.
-
-    Assess one example, load another, and the drawer still showed the previous
-    run's findings, motifs and derived categories - with no indication which
-    graph the numbers belonged to. Nothing cleared them: state.lastAssessment
-    was only ever assigned, never reset.
-    """
+    """The canvas redrew and the risk list did not."""
     browser = _browser()
     if not browser:
         pytest.skip("no Chromium-family browser to render with")
@@ -580,18 +529,7 @@ def test_loading_another_example_clears_the_last_run(served) -> None:
 
 
 def test_the_motifs_tab_explains_an_annotation_that_cannot_bind(served) -> None:
-    """The two halves of "why did nothing match" used to sit in different tabs.
-
-    A step role on a beam:Data element is the case that shows why they belong
-    together. The gap report offers that element as a candidate - it is
-    Data-typed, so it fits any unfilled Data node - and every suggestion is
-    wrong. The SHACL guidance says the true thing in one line: it plays a step
-    role and carries no process class.
-
-    So the guidance now renders beside the gaps, and a candidate it flagged is
-    marked rather than dropped: hiding it would leave a reader wondering where
-    their element went.
-    """
+    """The two halves of "why did nothing match" used to sit in different tabs."""
     browser = _browser()
     if not browser:
         pytest.skip("no Chromium-family browser to render with")

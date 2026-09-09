@@ -121,16 +121,7 @@ def test_export_endpoint_rejects_bad_input(client) -> None:
 
 
 def test_validate_endpoint_returns_annotation_guidance_hints(client) -> None:
-    """The guidance shapes must actually reach the endpoint's output.
-
-    They were loaded but inert once before: the shapes walk pair:subRoleOf*
-    inside sh:sparql constraints, which only see the data graph, so passing the
-    role hierarchy as pyshacl's ont_graph left every Info hint unproduced. The
-    file parsed, the endpoint answered 200, and the hints were simply absent -
-    nothing failed.
-
-    A vector store no retrieval step uses is the trigger: annotated correctly,
-    but no motif can bind it."""
+    """The guidance shapes must actually reach the endpoint's output."""
     ttl = """
     @prefix ex: <http://example.org/hint#> .
     @prefix beam: <http://w3id.org/beam/core#> .
@@ -172,6 +163,133 @@ def test_import_t4b_endpoint_reports_bad_input(client) -> None:
     response = client.post("/api/import/t4b", json={"data": "not a triple at all", "format": "nt"})
     assert response.status_code == 400
     assert "error" in response.get_json()
+
+
+def test_the_library_endpoint_is_counted_off_the_graph(client) -> None:
+    """The workbench opens on this, so it has to say what is actually loaded."""
+    from airiskkg.assessment_runner import PAIR, load_base_graph
+    from rdflib import RDF
+
+    response = client.get("/api/library")
+    assert response.status_code == 200
+    data = response.get_json()
+
+    graph = load_base_graph()
+    assert data["stats"]["riskPatterns"] == len(set(graph.subjects(RDF.type, PAIR.RiskPattern)))
+    assert data["stats"]["motifs"] == len(set(graph.subjects(RDF.type, PAIR.GraphMotif)))
+    assert data["stats"]["patternRoles"] == len(set(graph.subjects(RDF.type, PAIR.PatternRole)))
+    assert len(data["riskPatterns"]) == data["stats"]["riskPatterns"]
+    assert len(data["motifs"]) == data["stats"]["motifs"]
+
+
+def test_every_risk_pattern_carries_the_constituents_it_is_defined_by(client) -> None:
+    """Risk Pattern = Motif + Applicability Conditions + Mechanism + Taxonomy Links + Controls."""
+    data = client.get("/api/library").get_json()
+    for pattern in data["riskPatterns"]:
+        where = pattern["label"]
+        assert pattern["conditions"], f"{where} tests no condition"
+        assert pattern["mechanism"], f"{where} carries no mechanism"
+        assert pattern["taxonomy"], f"{where} links to no taxonomy entry"
+        assert pattern["controls"], f"{where} suggests no control"
+        assert pattern["derivedFrom"], f"{where} states no origin"
+
+    motif_free = {p["label"] for p in data["riskPatterns"] if not p["motifs"]}
+    assert motif_free == {
+        "Excessive agency risk pattern",
+        "Sensitive information disclosure risk pattern",
+    }, (
+        "a risk pattern stopped naming the motifs it applies to, or started to; "
+        f"patterns with none: {sorted(motif_free)}"
+    )
+
+
+def test_what_a_pattern_may_lead_to_is_traversed_never_asserted(client) -> None:
+    """The consequence side of the library."""
+    from airiskkg.assessment_runner import PAIR, load_base_graph
+    from rdflib import RDF, SKOS, Namespace, URIRef
+
+    nexus = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
+    domain_taxonomy = URIRef(
+        "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy"
+    )
+    graph = load_base_graph()
+    domains = {
+        group
+        for group in graph.subjects(RDF.type, nexus.RiskGroup)
+        if (group, SKOS.inScheme, domain_taxonomy) in graph
+    }
+    assert domains, "the domain taxonomy of harms is not loaded"
+
+    data = client.get("/api/library").get_json()
+    for pattern in data["riskPatterns"]:
+        expected = {
+            str(graph.value(broader, SKOS.prefLabel))
+            for entry in graph.objects(URIRef(pattern["iri"]), PAIR.mayIndicateRisk)
+            for broader in graph.objects(entry, SKOS.broader)
+            if broader in domains
+        }
+        served = {domain["label"] for domain in pattern["riskDomains"]}
+        assert served == expected, (
+            f"{pattern['label']} is served domains the graph does not support: "
+            f"{sorted(served)} vs {sorted(expected)}"
+        )
+
+    unlinked = {p["label"] for p in data["riskPatterns"] if not p["riskDomains"]}
+    assert unlinked == {
+        "Agent goal hijack risk pattern",
+        "Insecure inter-agent communication risk pattern",
+    }, (
+        "the set of patterns with no domain of harm moved; if a link was added, "
+        f"say where it came from. Currently unlinked: {sorted(unlinked)}"
+    )
+
+
+def test_every_taxonomy_entry_says_whether_it_is_a_harm_or_a_citation(client) -> None:
+    """Each entry carries the domain it rolls up to, or None."""
+    data = client.get("/api/library").get_json()
+    for pattern in data["riskPatterns"]:
+        for entry in pattern["taxonomy"]:
+            assert "domain" in entry, f"{entry['label']} does not say whether it is a harm"
+            if entry["sourceShort"].startswith("OWASP"):
+                assert entry["domain"] is None, (
+                    "an OWASP entry was given a domain of harm; the Top 10 numbers "
+                    "weaknesses and nothing upstream maps one to an outcome"
+                )
+
+
+def test_a_motif_in_the_library_can_be_drawn_and_added(client) -> None:
+    """The library offers each motif for insertion, so what it shows has to be
+    the same shape add-motif writes. Both read the declared pattern nodes and
+    edges; a motif whose declaration drifted from its query produces a template
+    that cannot match itself, and this is where that shows up first."""
+    data = client.get("/api/library").get_json()
+    by_id = {motif["id"]: motif for motif in data["motifs"]}
+
+    rag = by_id["RetrievalAugmentedGenerationMotif"]
+    assert rag["nodes"] and rag["edges"], "the RAG motif has nothing to draw"
+    keys = {node["key"] for node in rag["nodes"]}
+    for source, _predicate, target in rag["edges"]:
+        assert source in keys and target in keys, "an edge points outside the motif"
+
+    added = client.post("/api/graph-edit", json={
+        "ttl": "@prefix beam: <http://w3id.org/beam/core#> .\n",
+        "op": "add-motif", "motif": rag["id"],
+    })
+    assert added.status_code == 200
+    ttl = added.get_json()["ttl"]
+    assert "pair:playsRole" in ttl, "the inserted motif carries no roles, so nothing would bind"
+    for role in rag["roles"]:
+        assert role["id"] in ttl, f"{role['id']} is offered by the library but never inserted"
+
+
+def test_the_library_and_the_findings_panel_name_a_taxonomy_the_same_way(client) -> None:
+    """Both label an IRI with the catalogue it came from, off one table."""
+    data = client.get("/api/library").get_json()
+    sources = {entry["source"] for p in data["riskPatterns"] for entry in p["taxonomy"]}
+    assert "Other" not in sources, (
+        f"a taxonomy entry sits outside every known catalogue: {sorted(sources)}"
+    )
+    assert {"OWASP LLM Top 10", "IBM AI Risk Atlas", "MIT AI Risk Repository"} <= sources
 
 
 def test_vocabulary_roles_are_grouped_by_top_level_role(client) -> None:
@@ -222,11 +340,7 @@ def test_vocabulary_roles_declare_which_element_kind_they_apply_to(client) -> No
     assert by_group["Resource Role"] == {"resource"}
 
 
-# Inline RAG fixture. These three tests used to load a bundled example and then
-# edit it by string replacement, which silently stopped testing anything the
-# moment the example was renamed or its element names changed - the assertion
-# that caught it was a guard someone had the foresight to add. Stating the graph
-# here keeps the gap report under test regardless of how examples are organised.
+# Inline RAG fixture.
 _RAG_GRAPH = """
 @prefix local: <http://example.org/rag#> .
 @prefix beam: <http://w3id.org/beam/core#> .
@@ -342,9 +456,7 @@ def test_module_notes_list_every_registered_route(client) -> None:
 
 
 def test_graph_nodes_carry_the_line_that_declares_them(client) -> None:
-    """The canvas and the Turtle are two views of one document. Without a line
-    number the only way across is to read a label off a box and search for it,
-    which fails the moment two elements share a label."""
+    """The canvas and the Turtle are two views of one document."""
     ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     data = client.post("/api/graph", json={"ttl": ttl}).get_json()
     assert data["nodes"], "expected nodes"
@@ -360,9 +472,7 @@ def test_graph_nodes_carry_the_line_that_declares_them(client) -> None:
 
 
 def test_source_lines_ignore_continuations_and_comments() -> None:
-    """A subject is where a statement starts. Indented predicate lines belong to
-    a subject already recorded, and a term inside a comment is not a
-    declaration."""
+    """A subject is where a statement starts."""
     from airiskkg.graph_view import source_lines
 
     ttl = (
@@ -403,12 +513,7 @@ def _finding(client, ttl, phrase):
 
 
 def test_applying_a_control_clears_the_finding_it_answers(client) -> None:
-    """The point of suggesting a control is that applying it changes the answer.
-
-    The insertion is a registered SPARQL rewrite that restates the vulnerable
-    shape and constructs the step interrupting it, so the screen lands on the
-    path the finding cites - not beside the diagram, where it would be
-    structurally present and on no path at all."""
+    """The point of suggesting a control is that applying it changes the answer."""
     finding = _finding(client, _INJECTION_GRAPH, "prompt injection")
     assert finding is not None, "expected the bare graph to raise prompt injection"
     control = next(c for c in finding["suggestedControls"] if c["applicable"])
@@ -477,14 +582,7 @@ def test_applying_a_control_that_has_no_rewrite_is_refused(client) -> None:
 
 
 def test_apply_is_offered_only_where_a_rewrite_targets_that_risk(client) -> None:
-    """The bug this exists for: one control, several risks, one rewrite.
-
-    Output validation is suggested by improper-output-handling, sensitive
-    disclosure and system-prompt-leakage, but a rewrite is written against one
-    vulnerable shape. Keyed on the control alone, every one of those findings
-    offered an Apply button that ran the improper-output-handling rewrite: it
-    found its own screen already in place, added nothing, reported "already in
-    place on this path", and left the risk untouched."""
+    """The bug this exists for: one control, several risks, one rewrite."""
     ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     data = client.post("/api/assess", json={"ttl": ttl}).get_json()
 
@@ -517,9 +615,7 @@ def test_apply_is_offered_only_where_a_rewrite_targets_that_risk(client) -> None
 
 
 def test_a_risk_firing_on_several_paths_needs_a_control_on_each(client) -> None:
-    """Applying once does not always clear a label. Prompt injection is raised
-    per untrusted-content/generation pair, so a system with three such paths
-    needs three screens - the count falls each time rather than in one step."""
+    """Applying once does not always clear a label."""
     ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     counts = []
     for _ in range(3):
@@ -597,8 +693,7 @@ def test_reserializing_the_graph_does_not_look_like_an_edit(client) -> None:
 
 
 def test_applying_a_control_moves_the_input_fingerprint_and_clears_findings(client) -> None:
-    """The loop the drawer reports on: what did the control I just applied do?
-    Answerable as a set difference because finding IRIs are deterministic."""
+    """The loop the drawer reports on: what did the control I just applied do?"""
     ttl = _onyx_ttl()
     first = client.post("/api/assess", json={"ttl": ttl}).get_json()
     before = {finding["id"] for finding in first["findings"]}
@@ -654,9 +749,7 @@ def test_a_process_can_be_drawn_from_nothing(client) -> None:
 
 
 def test_whether_a_connection_is_a_message_follows_from_the_pools(client) -> None:
-    """Not a preference the modeller has to know. Sequence flow cannot leave a
-    process and a message flow only exists between participants, so the server
-    reads the containment and decides."""
+    """Not a preference the modeller has to know."""
     ttl = ""
     ttl, customer = _draw(client, ttl, op="add-pool", label="Customer")
     ttl, retailer = _draw(client, ttl, op="add-pool", label="Retailer")
@@ -673,8 +766,7 @@ def test_whether_a_connection_is_a_message_follows_from_the_pools(client) -> Non
 
 
 def test_deleting_a_participant_takes_its_process_and_connectors(client) -> None:
-    """A pool owns its process. Removing the pool alone would leave a process
-    nothing runs, activities nobody performs, and a message from nowhere."""
+    """A pool owns its process."""
     ttl = ""
     ttl, customer = _draw(client, ttl, op="add-pool", label="Customer")
     ttl, retailer = _draw(client, ttl, op="add-pool", label="Retailer")
@@ -712,9 +804,7 @@ def test_an_unknown_activity_kind_is_refused(client) -> None:
 
 
 def test_findings_are_attributed_to_the_activity_they_arise_under(client) -> None:
-    """What makes a finding communicable. "Seven findings on Customer service
-    chatbot" is a sentence a process owner acts on; the name of an inference step
-    inside the architecture is not."""
+    """What makes a finding communicable."""
     architecture = example_path(WIEN_ENERGIE_NS).read_text(encoding="utf-8")
     process = process_path("energy_customer_service").read_text(encoding="utf-8")
 
@@ -735,9 +825,7 @@ def test_an_architecture_with_no_process_attributes_nothing(client) -> None:
 
 
 def test_a_process_example_says_which_architectures_it_needs(client) -> None:
-    """A process names the systems its activities are carried out by and does
-    not contain them. Loaded alone it draws a diagram pointing at architectures
-    that are not there - no nodes, no findings, and nothing saying why."""
+    """A process names the systems its activities are carried out by and does not contain them."""
     # A shipped process, since this is a claim about what the deployment offers.
     body = client.get("/api/examples/it_service_desk").get_json()
 

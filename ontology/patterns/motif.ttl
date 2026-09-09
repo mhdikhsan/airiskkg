@@ -162,7 +162,7 @@ pat:VectorIR_RetrievalProducesResultEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:VectorIR_RetrievedResultNode .
 
-# ML system design motifs: serving patterns
+# ML system design motifs derived from the serving design patterns
 
 pat:SynchronousPredictionMotif
     a pair:GraphMotif ;
@@ -609,7 +609,7 @@ pat:MultiStage_SlowProducesResultEdge
     pair:targetPatternNode pat:MultiStage_ImprovedResultNode .
 
 
-# ML system design motifs: training patterns
+# ML system design motifs derived from the training design patterns
 
 pat:BatchTrainingMotif
     a pair:GraphMotif ;
@@ -873,7 +873,7 @@ pat:PipeTrain_EvaluationProducesResultEdge
     pair:targetPatternNode pat:PipeTrain_EvaluationResultNode .
 
 
-# ML system design motifs: lifecycle patterns
+# ML system design motifs derived from the lifecycle design patterns
 
 pat:TrainThenServeMotif
     a pair:GraphMotif ;
@@ -1099,7 +1099,7 @@ pat:TrainToServe_PredictionUsesModelEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:TrainToServe_DeployedModelNode .
 
-# ML system design motifs: operation patterns
+# ML system design motifs derived from the operation design patterns
 
 pat:PredictionLoggingMotif
     a pair:GraphMotif ;
@@ -2696,3 +2696,108 @@ pat:HumanOversight_ActionProducesResultEdge
     pair:sourcePatternNode pat:HumanOversight_ActionStepNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:HumanOversight_ActionResultNode .
+
+
+#################################################################
+# Motif families
+#
+# Which family of AI system each motif is a shape of. Read off the motif's own
+# provenance and description, and kept in one block rather than scattered over
+# the declarations, because it is one shelving decision and belongs where it can
+# be reviewed as one.
+#
+# It is a statement about this library, not about a submitted architecture. No
+# match query reads it - R2 keeps matching to roles and flow relations - and a
+# real system routinely matches several families at once: a GenAI assistant
+# served by a trained model matches both.
+#################################################################
+
+pair:MotifFamilyScheme
+    a skos:ConceptScheme ;
+    skos:prefLabel "Motif family scheme"@en ;
+    skos:definition """
+    The families of AI system this motif library covers: GenAI, ML serving and
+    training, agentic, and supply chain.
+    """@en .
+
+pat:GenAIMotifFamily
+    a skos:Concept ;
+    skos:inScheme pair:MotifFamilyScheme ;
+    skos:prefLabel "GenAI"@en ;
+    skos:definition """
+    Shapes of a generative AI application: prompting, retrieval that feeds a
+    prompt, screening around a generation step, fine-tuning, and evaluation.
+    """@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:AgenticMotifFamily
+    a skos:Concept ;
+    skos:inScheme pair:MotifFamilyScheme ;
+    skos:prefLabel "Agentic"@en ;
+    skos:definition """
+    Shapes in which a planning step decides what happens next: tool use, memory
+    written then read back, delegation between agents, and human approval on
+    the path to an action.
+    """@en ;
+    dct:source <https://genai.owasp.org/> .
+
+pat:MLSystemMotifFamily
+    a skos:Concept ;
+    skos:inScheme pair:MotifFamilyScheme ;
+    skos:prefLabel "ML serving and training"@en ;
+    skos:definition """
+    Shapes of a machine learning system in operation: how predictions are
+    served, how models are trained, and how the two are connected, logged, and
+    monitored.
+    """@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/> .
+
+pat:SupplyChainMotifFamily
+    a skos:Concept ;
+    skos:inScheme pair:MotifFamilyScheme ;
+    skos:prefLabel "Supply chain"@en ;
+    skos:definition """
+    Shapes in which something the system depends on comes from outside it. Not
+    specific to any one family of AI system, which is why it is its own.
+    """@en ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .
+
+# GenAIMotifFamily
+pat:DirectPromptingMotif                  pair:motifFamily pat:GenAIMotifFamily .
+pat:EmbeddingsMotif                       pair:motifFamily pat:GenAIMotifFamily .
+pat:EvalsMotif                            pair:motifFamily pat:GenAIMotifFamily .
+pat:FineTuningMotif                       pair:motifFamily pat:GenAIMotifFamily .
+pat:GuardrailsMotif                       pair:motifFamily pat:GenAIMotifFamily .
+pat:HybridRetrieverMotif                  pair:motifFamily pat:GenAIMotifFamily .
+pat:InformationRetrievalMotif             pair:motifFamily pat:GenAIMotifFamily .
+pat:InputScreeningMotif                   pair:motifFamily pat:GenAIMotifFamily .
+pat:OutputScreeningMotif                  pair:motifFamily pat:GenAIMotifFamily .
+pat:QueryRewritingMotif                   pair:motifFamily pat:GenAIMotifFamily .
+pat:RerankerMotif                         pair:motifFamily pat:GenAIMotifFamily .
+pat:RetrievalAugmentedGenerationMotif     pair:motifFamily pat:GenAIMotifFamily .
+pat:VectorBasedInformationRetrievalMotif  pair:motifFamily pat:GenAIMotifFamily .
+
+# AgenticMotifFamily
+pat:AgentDelegationMotif  pair:motifFamily pat:AgenticMotifFamily .
+pat:AgentMemoryLoopMotif  pair:motifFamily pat:AgenticMotifFamily .
+pat:HumanOversightMotif   pair:motifFamily pat:AgenticMotifFamily .
+pat:ToolUsingAgentMotif   pair:motifFamily pat:AgenticMotifFamily .
+
+# MLSystemMotifFamily
+pat:AsynchronousPredictionMotif  pair:motifFamily pat:MLSystemMotifFamily .
+pat:BatchPredictionMotif         pair:motifFamily pat:MLSystemMotifFamily .
+pat:BatchTrainingMotif           pair:motifFamily pat:MLSystemMotifFamily .
+pat:ModelInImageMotif            pair:motifFamily pat:MLSystemMotifFamily .
+pat:ModelLoadMotif               pair:motifFamily pat:MLSystemMotifFamily .
+pat:MultiStagePredictionMotif    pair:motifFamily pat:MLSystemMotifFamily .
+pat:PipelineTrainingMotif        pair:motifFamily pat:MLSystemMotifFamily .
+pat:PredictionLoggingMotif       pair:motifFamily pat:MLSystemMotifFamily .
+pat:PredictionMonitoringMotif    pair:motifFamily pat:MLSystemMotifFamily .
+pat:PreprocessPredictionMotif    pair:motifFamily pat:MLSystemMotifFamily .
+pat:SynchronousPredictionMotif   pair:motifFamily pat:MLSystemMotifFamily .
+pat:TrainThenServeMotif          pair:motifFamily pat:MLSystemMotifFamily .
+pat:TrainingToServingMotif       pair:motifFamily pat:MLSystemMotifFamily .
+
+# SupplyChainMotifFamily
+pat:ExternalDependencyMotif  pair:motifFamily pat:SupplyChainMotifFamily .
+

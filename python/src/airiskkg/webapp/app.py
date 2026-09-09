@@ -1,6 +1,9 @@
 """Flask application serving the PAIR-AI risk assessment UI.
 Reading the graph
     ``GET  /``                       Single-page UI.
+    ``GET  /api/library``            The risk pattern library and the motif
+                                     library: what the knowledge base can
+                                     recognise, before a graph is submitted.
     ``GET  /api/vocabulary``         Pattern roles, data categories, BEAM
                                      element classes, edge kinds, motif templates.
     ``GET  /api/examples``           Names of the example graphs on offer.
@@ -40,13 +43,7 @@ from airiskkg.webapp.runtime import local_examples_default, start_warmup
 def create_app(
     *, local_examples: bool | None = None, extra_example_dirs: list | None = None
 ) -> Flask:
-    """`extra_example_dirs` offers graphs from somewhere else as well.
-
-    It exists for the browser tests, which drive the canvas and need a process
-    model rich enough to have something to drive - lanes, a gateway, two
-    architectures - without that model having to be part of the curated set the
-    deployment offers. Nothing else passes it, so a served app offers exactly
-    what ships."""
+    """`extra_example_dirs` offers graphs from somewhere else as well."""
     app = Flask(__name__, static_folder="static", static_url_path="/static")
     app.config["LOCAL_EXAMPLES"] = (
         local_examples_default() if local_examples is None else local_examples

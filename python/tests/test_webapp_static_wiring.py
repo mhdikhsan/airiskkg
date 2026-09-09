@@ -1,16 +1,4 @@
-"""Static wiring checks for the workbench front end.
-
-There is no JavaScript test runner in this repository, so the browser code is
-only ever exercised by hand. That leaves one failure mode wide open and cheap to
-close from here: a control that is wired to an element id which does not exist.
-`document.querySelector("#btn-typo")` returns null, `addEventListener` throws
-once at startup, and every handler registered after it silently never binds - so
-a single typo can disable unrelated buttons with no visible error.
-
-These tests read the static files as text. They cannot tell you the export
-produces a good SVG; they can tell you the button is connected and that the
-export code's assumptions about class names still hold.
-"""
+"""Static wiring checks for the workbench front end."""
 
 from __future__ import annotations
 
@@ -20,6 +8,8 @@ import pytest
 
 from airiskkg.paths import REPO_ROOT
 
+pytestmark = pytest.mark.ui
+
 STATIC = REPO_ROOT / "python" / "src" / "airiskkg" / "webapp" / "static"
 
 
@@ -28,11 +18,7 @@ def _read(name: str) -> str:
 
 
 def _all_modules() -> str:
-    """Every module the page loads, concatenated.
-
-    Reading app.js alone was right while app.js was the whole front end. It is
-    now the entry point, and most `$("#id")` calls live in panels/ - so a check
-    scoped to app.js would keep passing while covering almost nothing."""
+    """Every module the page loads, concatenated."""
     return "\n".join(p.read_text(encoding="utf-8") for p in sorted(STATIC.rglob("*.js")))
 
 
@@ -71,11 +57,7 @@ def test_graph_view_exposes_the_export_api_the_app_calls() -> None:
 
 
 def test_svg_export_strips_classes_that_the_renderer_actually_emits() -> None:
-    """The strip list must track the renderer.
-
-    If a class is renamed in the drawing code but not in EXPORT_STRIPPED_CLASSES,
-    interaction-only elements start appearing in exported files as invisible
-    shapes - the kind of defect nobody notices until a designer opens the SVG."""
+    """The strip list must track the renderer."""
     graph = _read("lib/graph_view.js")
     stripped = re.search(r"EXPORT_STRIPPED_CLASSES\s*=\s*\[(.*?)\]", graph, re.S)
     assert stripped, "EXPORT_STRIPPED_CLASSES is gone; the export would keep hit-areas"
@@ -105,18 +87,7 @@ def test_export_resolves_css_variables_rather_than_hardcoding_them() -> None:
 
 
 def test_every_script_parses() -> None:
-    """A syntax error anywhere in a file kills the whole file.
-
-    This is not hypothetical. An escaped newline that survived into the source
-    as a real line break left `app.js` unparsable, so nothing in the workbench
-    worked at all - no preview, no assessment, no buttons - while the entire
-    Python suite stayed green, because none of it loads the browser code. The
-    only visible symptom was 304s in the network tab, which are not an error and
-    sent the search in the wrong direction.
-
-    Node is used when present rather than required: the check is worth having on
-    any machine that can run it, and skipping is honest about the rest.
-    """
+    """A syntax error anywhere in a file kills the whole file."""
     import shutil
     import subprocess
 
@@ -138,16 +109,7 @@ def test_every_script_parses() -> None:
 
 
 def test_the_stylesheet_is_not_broken_by_a_half_removed_comment() -> None:
-    """A comment sweep left two of these behind:
-
-        /*  business process  */
-         * A list, not a diagram. ...  */
-
-    The closing marker moved up, so the following lines became stray tokens and
-    the CSS parser dropped the rule after them. `.proc-lane` had no styling at
-    all - not the new one, not the old one - and the tab simply looked plain.
-    Nothing failed, because a stylesheet never reports anything.
-    """
+    """A comment sweep left two of these behind: /* business process */ * A list, not a diagram."""
     css = (STATIC / "style.css").read_text(encoding="utf-8")
 
     assert css.count("/*") == css.count("*/"), "unbalanced CSS comment markers"

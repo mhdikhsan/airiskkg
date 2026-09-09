@@ -1,11 +1,12 @@
 import { postJson } from "../core/api.js";
 import { emit } from "../core/bus.js";
 import { $, el } from "../core/dom.js";
-import { setTabVisible } from "../core/drawer.js";
+import { openDrawer, setTabVisible } from "../core/drawer.js";
 import { mapSource, revealInSource } from "../core/source.js";
 import { parseErrorLine, setStatus } from "../core/status.js";
 import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
+import { createSystem } from "./palette.js";
 import { scheduleStaleCheck } from "./run.js";
 import { ProcessCanvas, humanKind } from "../lib/process_canvas.js";
 import { state } from "../state.js";
@@ -34,6 +35,26 @@ export function settleChoice() {
   $("#canvas-wrap").classList.remove("unstarted");
   $("#canvas-wrap").classList.add("started");
   $("#level-switch").classList.remove("hidden");
+  /* There is something on the canvas now, so the front door steps aside -
+   * whichever way the content arrived. Announced rather than done here: the
+   * library is what listens, and it must not be imported from the panel it
+   * opens on top of. */
+  emit("choice:settled");
+}
+
+/* The opening choice, wherever it is made: the question on the canvas, the two
+ * options under the library, or a motif added from it. One function, so a
+ * second entry point cannot answer the question differently from the first. */
+export function startDrawing(level) {
+  settleChoice();
+  state.levelChosenByHand = true;
+  setLevel(level);
+  if (level === "business") {
+    openDrawer("process");
+    setStatus("ok", "Business process", "add a participant, then steps inside it");
+    return;
+  }
+  setStatus("ok", "AI architecture", "drag a symbol onto the canvas, or load an example");
 }
 
 function architectureHasContent() {
@@ -194,12 +215,68 @@ async function refreshProcess(ttl) {
   });
 }
 
+
+/* The system bar: which architectures are here, which one a new element joins,
+   what belongs to none of them, and how to make another. Its own function
+   because selecting a system has to redraw it without a round trip. */
+export function refreshSystemBar() {
+  if (state.lastGraph) renderSystemBar(state.lastGraph);
+}
+
+function renderSystemBar(data) {
+  const badge = $("#system-badge");
+  const unclaimed = (data.unclaimed || []).length;
+  if (data.systems.length || data.nodes.length) {
+    /* When the canvas is narrowed, name the one system on screen. Listing
+     * every system the document holds would caption a drawing that shows
+     * only one of them. */
+    const shown = data.scopedTo
+      ? data.systems.filter((s) => s.id === data.scopedTo)
+      : data.systems;
+    // Each name opens its own editor.
+    badge.innerHTML = "";
+    shown.forEach((system, index) => {
+      if (index) badge.appendChild(document.createTextNode(" · "));
+      const link = el("button", {
+        type: "button", class: "system-badge-name",
+        title: "Name, describe or delete this AI system",
+      }, system.label);
+      link.addEventListener("click", (ev) => GraphView.editSystem(system.id, ev));
+      badge.appendChild(link);
+    });
+    if (unclaimed) {
+      /* Not just a complaint. */
+      if (shown.length) badge.appendChild(document.createTextNode(" · "));
+      const orphans = el("button", {
+        type: "button", class: "system-badge-orphans",
+        title: "These elements are in no system, so no business activity can point at them."
+          + " Click to put them in one.",
+      }, `${unclaimed} in no system`);
+      orphans.addEventListener("click", () => createSystem(unclaimed, data.systems.length));
+      badge.appendChild(orphans);
+    }
+    const chosen = GraphView.getSelectedSystem();
+    if (chosen) {
+      const picked = data.systems.find((row) => row.id === chosen);
+      if (picked) {
+        badge.appendChild(document.createTextNode(" · "));
+        badge.appendChild(el("span", { class: "system-badge-chosen" },
+          `adding to: ${picked.label}`));
+      }
+    }
+    const add = el("button", {
+      type: "button", class: "system-badge-add", title: "Create an AI system",
+    }, "+ system");
+    add.addEventListener("click", () => createSystem(unclaimed, data.systems.length));
+    badge.appendChild(add);
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
 //  live preview 
-/* An empty document has no business layer either. Clearing only the
- * architecture left the last deleted participant drawn on a canvas whose
- * source no longer mentions it - delete the one pool in a document and it
- * stayed on screen. The level is left alone when the reader picked it: they
- * said they were drawing a process, and an empty canvas is where that starts. */
+/* An empty document has no business layer either. */
 function resetProcess() {
   const empty = {
     participants: [], processes: [], activities: [], lanes: [], messageFlows: [],
@@ -242,22 +319,7 @@ export async function refreshPreview(ttl) {
     refreshProcess(ttl);
     mapSource([...data.nodes, ...data.systems]);
     Editor.markErrorLine(null);
-    const badge = $("#system-badge");
-    if (data.systems.length) {
-      /* When the canvas is narrowed, name the one system on screen. Listing
-       * every system the document holds would caption a drawing that shows
-       * only one of them. */
-      const shown = data.scopedTo
-        ? data.systems.filter((s) => s.id === data.scopedTo)
-        : data.systems;
-      badge.textContent = shown.map((s) => s.label).join(" · ")
-        + (data.unclaimed && data.unclaimed.length
-            ? ` · ${data.unclaimed.length} element(s) belong to no system`
-            : "");
-      badge.classList.remove("hidden");
-    } else {
-      badge.classList.add("hidden");
-    }
+    renderSystemBar(data);
     setStatus("ok", "Graph parsed", `${data.stats.nodes} nodes · ${data.stats.edges} edges`);
   } catch (error) {
     if (seq !== previewSeq) return;

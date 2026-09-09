@@ -1,23 +1,4 @@
-"""The business process layer, over a process that really exists.
-
-The example is the question-answering process of the Wien Energie chatbot
-(Serles & Toma, 2024). That matters for what can be claimed here: the process
-was drawn by someone describing their system, not by someone demonstrating this
-library, and it does not contain an approval step. So the three claims are:
-
-  1. The layer is additive. An architecture assessed alone gives exactly what it
-     gave before the layer existed. This is the property everything else rests
-     on - a context layer that silently moved the baseline would make every
-     recorded assessment incomparable with every later one.
-  2. A data annotation made once on the process raises a finding the pipeline
-     could not have raised, because what a customer types is about that
-     customer and no architecture diagram says so.
-  3. The output-handling escape is precise. The shipped process has a human
-     step - an administrator taking a conversation over in live chat - and it
-     does not clear the improper-output-handling finding, because taking over
-     is not reviewing. Add an approval that reads the drafted answer and the
-     finding clears; break any one thing that approval claims and it comes back.
-"""
+"""The business process layer, over a process that really exists."""
 
 from __future__ import annotations
 
@@ -38,11 +19,7 @@ TARIFF_PROCESS = process_path("energy_tariff_change")
 IMPROPER_OUTPUT = "ImproperOutputHandlingRiskPattern"
 DISCLOSURE = "SensitiveInformationDisclosureRiskPattern"
 
-# An approval the shipped process does not have. It is stated here rather than
-# in the example because the example is a record of somebody's real process:
-# adding a control to it that Wien Energie never described would make the
-# assessment of it a fiction. The escape still has to be tested, so the review
-# is built where it belongs - in the test that makes a claim about it.
+# An approval the shipped process does not have.
 REVIEW = """
 @prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
 @prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
@@ -109,11 +86,7 @@ def test_the_bridge_vocabulary_is_loaded_and_declared() -> None:
 
 
 def test_a_bpmn_activity_is_not_a_beam_process() -> None:
-    """The layering mistake that would undo the whole idea. Every match query
-    types its step as `a/rdfs:subClassOf* beam:Process`, so subsuming activities
-    under it would make every business activity a candidate motif node - and the
-    input contract, which requires each beam:Process to use or produce a
-    resource, would reject every process model outright."""
+    """The layering mistake that would undo the whole idea."""
     from rdflib import RDFS, URIRef
 
     graph = load_base_graph()
@@ -136,11 +109,7 @@ def test_context_carries_no_flow_facts_of_its_own(architecture_only) -> None:
 
 
 def test_business_flow_closes_transitively(with_process) -> None:
-    """Reachability closed over the chatbot's chain and the customer's.
-
-    A gateway or an intervening step between the AI activity and a later control
-    must not hide it, and SPARQL cannot type the nodes a property path passes
-    through - so the closure is built by the derivation loop instead."""
+    """Reachability closed over the chatbot's chain and the customer's."""
     derived = list(with_process.working_graph.triples((None, PAIR.businessFollows, None)))
     assert len(derived) > 10
 
@@ -149,10 +118,7 @@ def test_business_flow_closes_transitively(with_process) -> None:
 
 
 def test_the_process_raises_what_the_pipeline_could_not(architecture_only, with_process) -> None:
-    """Route 1, and the reason the layer is worth having. The architecture says
-    a question arrives as untrusted public text, which is true and is all it
-    knows. That the question is *about a customer* - registration, an invoice, a
-    payment - is a fact about the business, stated once by whoever owns it."""
+    """Route 1, and the reason the layer is worth having."""
     before = _findings_by_pattern(architecture_only)
     after = _findings_by_pattern(with_process)
 
@@ -197,8 +163,7 @@ def test_a_business_data_annotation_reaches_the_architecture_it_refines() -> Non
 
 
 def test_the_bridge_records_where_the_annotation_came_from() -> None:
-    """A derived category with no trace is a claim the modeller cannot argue
-    with. The derivation names the business data object it came from."""
+    """A derived category with no trace is a claim the modeller cannot argue with."""
     from rdflib import Namespace
 
     prov = Namespace("http://www.w3.org/ns/prov#")
@@ -270,9 +235,7 @@ PROCESS_MUTATIONS = {
 
 @pytest.mark.parametrize("description", sorted(MUTATIONS))
 def test_breaking_one_thing_the_review_claims_brings_the_finding_back(description) -> None:
-    """Each mutation breaks exactly one claim the approval makes. The third is
-    the one that matters: taking a conversation over is also a later human task,
-    and it must not count as having reviewed anything."""
+    """Each mutation breaks exactly one claim the approval makes."""
     original, replacement = MUTATIONS[description]
     assert original in REVIEW, f"the review no longer contains: {original!r}"
     process = PROCESS.read_text(encoding="utf-8") + REVIEW.replace(original, replacement)
@@ -323,16 +286,14 @@ def energy_view():
 
 
 def test_two_actors_each_with_their_own_process(energy_view) -> None:
-    """One scenario per file: the customer asking, and the chatbot answering.
-    The tariff change is its own process, in its own document."""
+    """One scenario per file: the customer asking, and the chatbot answering."""
     labels = [p["label"] for p in energy_view["participants"]]
     assert labels == ["Wien Energie Chatbot", "Wien Energie customer"]
     assert all(p["process"] for p in energy_view["participants"])
 
 
 def test_messages_cross_the_boundary_between_actors(energy_view) -> None:
-    """What a pool boundary is for. A message flow is the only way to say the
-    company answered the customer; sequence flow cannot leave a process."""
+    """What a pool boundary is for."""
     by_activity = {a["id"]: a["label"] for a in energy_view["activities"]}
     pairs = {
         (by_activity[m["source"]], by_activity[m["target"]]) for m in energy_view["messageFlows"]
@@ -358,10 +319,7 @@ def test_the_ai_activity_is_a_subprocess_that_expands_two_ways(energy_view) -> N
 
 
 def test_a_choice_between_sources_is_a_gateway_not_three_tasks(energy_view) -> None:
-    """The routing step decides which source answers, and the paper says a
-    question may need both at once. Written as three sequential service tasks
-    that choice read as an order of work that is not there, and the canvas drew
-    an arrow from each one to the next."""
+    """The routing step decides which source answers, and the paper says a question may need both at once."""
     gateway = next(
         g for g in energy_view["gateways"] if g["label"] == "Which source can answer?"
     )
@@ -395,12 +353,7 @@ def test_the_lanes_of_the_diagram_survive(energy_view) -> None:
 
 
 def test_the_example_only_uses_sbpmn_terms_sbpmn_declares() -> None:
-    """Conformance, checked rather than claimed.
-
-    A process model is only interoperable if it says things the ontology
-    actually defines - otherwise it is BPMN-shaped Turtle that no other tool
-    reads. Every property is checked against the domain and range sBPMN itself
-    declares, and every class against sBPMN's own class list."""
+    """Conformance, checked rather than claimed."""
     from rdflib import OWL, RDFS, URIRef
 
     from airiskkg.paths import SBPMN_DIR
@@ -538,8 +491,7 @@ def _assess_tariff(process_turtle: str):
 
 
 def test_the_tariff_process_raises_without_clearing() -> None:
-    """Personal data in the chat and on the account reaches what the assistant
-    says back. The approval further down the process does not answer for that."""
+    """Personal data in the chat and on the account reaches what the assistant says back."""
     tariff = example_path(TARIFF_NS)
     alone = _findings_by_pattern(run_assessment(tariff, write_outputs=False))
     with_context = _findings_by_pattern(
@@ -554,9 +506,7 @@ def test_the_tariff_process_raises_without_clearing() -> None:
 
 
 def test_an_approval_that_reads_the_reply_is_what_clears_it() -> None:
-    """Same process, same person, one more thing on their desk: the drafted
-    reply. Now the escape fires, and it fires because the step they read
-    belongs to the system that wrote the reply."""
+    """Same process, same person, one more thing on their desk: the drafted reply."""
     process = TARIFF_PROCESS.read_text(encoding="utf-8")
 
     assert _findings_by_pattern(_assess_tariff(process))[IMPROPER_OUTPUT] == 2

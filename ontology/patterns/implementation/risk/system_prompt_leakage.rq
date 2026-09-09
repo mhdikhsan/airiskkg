@@ -39,10 +39,7 @@ WHERE {
         FILTER(?matchedElement IN (?systemPrompt, ?generationStep, ?userFacingOutput))
 
 
-        # Nothing screens the output that the system prompt fed. The control is
-        # an output-side screen: the two controls this pattern suggests beyond
-        # prompt secrecy itself are guardrails and output validation.
-        # Closed-world over the submitted graph only (Rule R4).
+        # Nothing screens the output that the system prompt fed.
         FILTER NOT EXISTS {
             ?outputControl pair:playsRole ?outputControlRole .
             {

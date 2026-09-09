@@ -1,21 +1,11 @@
-"""Tests for the agentic motifs and risk patterns (OWASP Agentic Top 10 subset).
-
-Two shapes distinguish an agent from a single generation call: a planning step
-that can act outside the system, and a store the system writes to and reads back.
-Both motifs are risk-neutral; the findings depend on what is NOT represented, so
-each test pairs a positive case with a control that must suppress it.
-"""
+"""Tests for the agentic motifs and risk patterns (OWASP Agentic Top 10 subset)."""
 
 from __future__ import annotations
 
 from airiskkg.assessment_runner import run_assessment_from_text
 from airiskkg.assessment_view import summarize_result
 
-# Self-contained on purpose. This suite used to load a bundled example, which
-# made it hostage to how the example set is organised - it broke three times in
-# one week as graphs were renamed, moved, and replaced. The shapes under test
-# are small enough to state here, so the tests now fail only when the agentic
-# layer changes.
+# Self-contained on purpose.
 AGENT_GRAPH = """
 @prefix local: <http://example.org/agentic#> .
 @prefix beam: <http://w3id.org/beam/core#> .
@@ -120,8 +110,7 @@ def test_write_validation_suppresses_the_memory_poisoning_finding() -> None:
 
 
 def test_memory_loop_needs_the_same_store_written_and_read() -> None:
-    """The motif is the loop, not merely a read. Pointing the read at a different
-    store must stop it matching, otherwise it is just retrieval."""
+    """The motif is the loop, not merely a read."""
     ttl = _example_ttl().replace(
         "    beam:use local:agentMemory ;\n    beam:produce local:recalledContext .",
         "    beam:use local:otherStore ;\n    beam:produce local:recalledContext .\n"

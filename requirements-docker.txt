@@ -1,0 +1,24 @@
+# The set the image is built from. Regenerate with `pip freeze` from a built
+# image, never by hand. Raising rdflib changes the SPARQL engine and pyparsing is
+# the parser under it - re-run the suite and check the baselines before either
+# moves.
+# Re-checked 2026-09-08: the image builds, serves, and returns the same
+# assessment as a local run (simple_graph_rag: 7 findings, 3 matches). The 308
+# tests behind that ran on these versions except pyshacl, which is 0.40.0 in the
+# development venv and 0.40.1 here.
+blinker==1.9.0
+click==8.5.0
+Flask==3.1.3
+gunicorn==26.2.0
+html5rdf==1.2.1
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+owlrl==7.6.2
+packaging==26.3
+prettytable==3.18.0
+pyparsing==3.3.2
+pyshacl==0.40.1
+rdflib==7.6.0
+wcwidth==0.8.3
+Werkzeug==3.1.8

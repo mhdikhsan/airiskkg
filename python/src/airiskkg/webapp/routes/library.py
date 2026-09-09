@@ -2,6 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from flask import Blueprint, current_app, jsonify
 from airiskkg.paths import CONTEXT_EXAMPLE_DIR, EXAMPLE_DIR, EXAMPLE_LOCAL_DIR
+from airiskkg.workbench.library import library_catalogue
 from airiskkg.workbench.scenes import scene_for
 from airiskkg.workbench.vocabulary import vocabulary
 
@@ -22,6 +23,12 @@ def example_dirs() -> list[tuple[Path, bool, str]]:
         if (extra / "context").is_dir():
             dirs.append((extra / "context", False, "process"))
     return dirs
+
+
+@library_routes.get("/api/library")
+def get_library() -> object:
+    """What the knowledge base can recognise, before any graph is submitted."""
+    return jsonify(library_catalogue())
 
 
 @library_routes.get("/api/vocabulary")

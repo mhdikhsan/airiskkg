@@ -75,10 +75,7 @@ function renderMotifGaps(gaps) {
       candidates: onScreen(n.candidates || [], (c) => [c.id]),
     }));
     const has = missingNodes.some((n) => n.candidates.length);
-    /* A gap whose every candidate was elsewhere is a statement about the other
-     * architecture. Gaps are computed over the whole document - there is no
-     * per-system gap to ask for - so this is the honest reading of one under a
-     * narrowed view, and unscoped nothing is dropped. */
+    /* A gap whose every candidate was elsewhere is a statement about the other architecture. */
     return { ...g, missingNodes, elsewhere: had && !has };
   }).filter((g) => !g.elsewhere);
   const near = scopedGaps.filter((g) => g.satisfied / g.total >= 0.5).slice(0, 5);
@@ -215,7 +212,10 @@ export function renderMotifs(matches, gaps, options = {}) {
 
 // ---- motif palette ----
 
-function addMotif(item) {
+/* Resolves to true when the motif landed in the editor. The palette ignores
+ * that - the status bar has already said so - but the library sits over the
+ * status bar and has to report the outcome itself. */
+export function addMotif(item) {
   return runMutation(async () => {
     try {
       const { ttl } = await postJson("/api/graph-edit", {
@@ -225,8 +225,10 @@ function addMotif(item) {
       noteChange(`added motif: ${item.label}`);
       Editor.setValue(ttl);
       setStatus("ok", `Added "${item.label}" — already annotated; Run assessment for findings`);
+      return true;
     } catch (error) {
       setStatus("error", "Could not add motif: " + error.message.split("\n")[0]);
+      return false;
     }
   });
 }

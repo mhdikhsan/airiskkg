@@ -1,0 +1,14 @@
+# CQ09: Which design source is each motif derived from?
+# Scope: library
+# Note: pair:derivedFrom on every motif and risk pattern is the provenance rule
+# (R6). Never attribute a motif to a document it did not come from.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+
+SELECT ?motifName ?source
+WHERE {
+    ?motif a pair:GraphMotif ;
+        pair:derivedFrom ?source .
+    BIND(REPLACE(STR(?motif), "^.*[#/]", "") AS ?motifName)
+}
+ORDER BY ?motifName

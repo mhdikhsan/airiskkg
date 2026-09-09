@@ -1,7 +1,4 @@
-"""Round-trip test for the Tool4Boxology alignment adapter (Task 6).
-
-sample_export.nt -> normalize_t4b -> BEAM graph -> motif queries + SHACL.
-"""
+"""Round-trip test for the Tool4Boxology alignment adapter (Task 6)."""
 
 import sys
 from pathlib import Path

@@ -1,0 +1,25 @@
+# CQ04: Which characterization facets can be annotated on an architecture
+# element, on what kind of element, and how many values does each scheme offer?
+# Scope: library
+# Note: facets are annotated base facts (R8) and no motif may read one (R2). An
+# applicability condition may, positively only (R10) - a negative facet
+# condition would fire on every under-annotated system, and under-annotation is
+# the normal case: no bundled example graph annotates a single facet value. The
+# one facet that also travels is Data Category, which is why it lives in the
+# pattern module rather than here; see CQ23.
+
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+
+SELECT ?facet ?appliesTo ?intendedValues
+WHERE {
+    ?facetProperty a owl:ObjectProperty .
+    FILTER(STRSTARTS(STR(?facetProperty), "http://w3id.org/airiskkg/facets#"))
+    OPTIONAL { ?facetProperty rdfs:domain ?domain }
+    OPTIONAL { ?facetProperty rdfs:comment ?comment }
+    BIND(REPLACE(STR(?facetProperty), "^.*[#/]", "") AS ?facet)
+    BIND(REPLACE(STR(?domain), "^.*[#/]", "") AS ?appliesTo)
+    BIND(?comment AS ?intendedValues)
+}
+ORDER BY ?facet

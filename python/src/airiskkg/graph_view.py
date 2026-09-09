@@ -69,6 +69,11 @@ def _local_name(uri: URIRef) -> str:
     return text.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
 
 
+def _text(graph: Graph, resource: URIRef, prop: URIRef) -> str | None:
+    value = graph.value(resource, prop)
+    return str(value) if value is not None else None
+
+
 def _label(graph: Graph, ontology: Graph, resource: URIRef) -> str:
     value = (
         graph.value(resource, RDFS.label)
@@ -237,6 +242,9 @@ def graph_view(ttl_text: str, scope: str | None = None) -> dict:
                 "id": s["id"],
                 "label": s["label"],
                 "line": s["line"],
+                # What the system says about itself.
+                "description": _text(graph, URIRef(s["id"]), BEAM.description),
+                "context": _text(graph, URIRef(s["id"]), BEAM.context),
                 "members": sorted(
                     str(m) for m in members_by_system.get(s["id"], set())
                     if str(m) in {n["id"] for n in nodes}

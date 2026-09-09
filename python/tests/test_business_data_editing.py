@@ -1,16 +1,4 @@
-"""Attaching data to a business activity, without writing Turtle by hand.
-
-A data object is three BPMN nodes and two associations - a reference, an object,
-an item definition - and the one that matters for risk is the last, because
-business_data_bridge.rq reads `bp:structureRef` off it. Asking a process owner
-to write that by hand is asking them to learn RDF to say "this is personal
-data", which is the one thing the business layer exists to let them say.
-
-So these check the whole round trip: the edit writes BPMN a reader can parse,
-the process view shows it back, and the assessment moves because of it. The
-last one is the point. An edit that draws a box and changes no finding would be
-decoration.
-"""
+"""Attaching data to a business activity, without writing Turtle by hand."""
 
 from __future__ import annotations
 
@@ -23,6 +11,8 @@ from conftest import (  # noqa: E402
     example_path,
     process_path,
 )
+
+pytestmark = pytest.mark.ui
 
 # Resolved, not located: both retired from the shipped example set and are kept
 # as test fixtures, so the coverage they back did not retire with them.
@@ -109,8 +99,7 @@ def test_a_classification_can_be_changed_and_cleared(client, tariff_ttl) -> None
 
 
 def test_detaching_data_leaves_nothing_behind(client, tariff_ttl) -> None:
-    """A data object nothing reads or writes is litter, and it would keep
-    drawing on the diagram."""
+    """A data object nothing reads or writes is litter, and it would keep drawing on the diagram."""
     after = edit(client, tariff_ttl, "detach-data",
                  reference=CHAT_MESSAGE_REF, activity=OFFER_HELP)
     reads, _ = data_of(client, after, OFFER_HELP)
@@ -130,13 +119,7 @@ def test_an_unknown_classification_is_refused(client, tariff_ttl) -> None:
 
 
 def test_the_classification_is_what_moves_the_assessment(client, scene) -> None:
-    """The whole reason the business layer exists.
-
-    Detaching the personal-data input drops a finding; putting it back restores
-    it; putting it back as anonymised does not - which is exactly what
-    business_data_bridge.rq says, since dpv:AnonymisedData is one of the two
-    values it excludes.
-    """
+    """The whole reason the business layer exists."""
     shipped = findings(client, scene)
 
     without = scene
@@ -205,13 +188,7 @@ def test_a_narrowed_canvas_reports_only_the_system_it_shows(scene) -> None:
 
 
 def test_an_absent_architecture_is_reported_not_substituted(scene) -> None:
-    """Deleting one architecture from a two-system scene.
-
-    The chatbot activity still says which system carries it out. With that
-    system gone, narrowing to it used to be ignored and the canvas drew
-    everything left - so opening the chatbot landed the reader on the meter
-    scorer. That is not an empty answer, it is the wrong one.
-    """
+    """Deleting one architecture from a two-system scene."""
     from airiskkg.graph_view import graph_view
 
     everything = graph_view(scene)
@@ -260,19 +237,7 @@ def test_every_taxonomy_entry_names_the_catalogue_it_came_from() -> None:
 
 
 def test_a_database_classified_on_the_process_reaches_the_architecture(client) -> None:
-    """A data store carries its classification like a data object does.
-
-    The bridge joined through `bp:dataObjectRef` alone, so "the customer
-    database holds personal data" - the most ordinary claim a process owner
-    makes, and the reason a database is drawn as a store rather than a page -
-    derived nothing at all. The editor had offered both shapes since the picker
-    was added, which made the silence worse: the annotation was accepted, drawn
-    as a cylinder, and then ignored by the one query that reads it.
-
-    Counted as a derived category rather than as a finding: this graph is the
-    smallest thing that exercises the bridge and matches no motif, so no risk
-    pattern can fire on it. What the bridge does is derive the category.
-    """
+    """A data store carries its classification like a data object does."""
     base = """
 @prefix beam: <http://w3id.org/beam/core#> .
 @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .

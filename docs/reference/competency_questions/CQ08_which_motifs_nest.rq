@@ -1,0 +1,23 @@
+# CQ08: Which motifs declare a role set contained in another motif's, and so are
+# candidates to co-match with it?
+# Scope: library
+# Note: the library is deliberately not an antichain. This answers containment
+# of the declared node roles only - a hint about co-matching, not a proof of
+# subgraph nesting, which also depends on the edges. It is why a match count
+# measures structural coverage rather than distinct architectural features.
+
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+
+SELECT ?innerName ?outerName
+WHERE {
+    ?inner a pair:GraphMotif .
+    ?outer a pair:GraphMotif .
+    FILTER(?inner != ?outer)
+    FILTER NOT EXISTS {
+        ?inner pair:hasPatternNode/pair:expectedRole ?role .
+        FILTER NOT EXISTS { ?outer pair:hasPatternNode/pair:expectedRole ?role }
+    }
+    BIND(REPLACE(STR(?inner), "^.*[#/]", "") AS ?innerName)
+    BIND(REPLACE(STR(?outer), "^.*[#/]", "") AS ?outerName)
+}
+ORDER BY ?innerName ?outerName

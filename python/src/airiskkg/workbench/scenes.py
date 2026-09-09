@@ -11,12 +11,7 @@ from airiskkg.paths import CONTEXT_EXAMPLE_DIR, EXAMPLE_DIR
 
 @lru_cache(maxsize=8)
 def _systems_by_example(extra: tuple[Path, ...] = ()) -> dict[str, list[str]]:
-    """Which example holds which architecture.
-
-    `extra` is for a caller that offers graphs from somewhere else as well - the
-    browser tests do, so a process can name an architecture the deployment does
-    not ship. Cached per directory set rather than once, since the answer
-    depends on which directories were asked about."""
+    """Which example holds which architecture."""
     found: dict[str, list[str]] = {}
     for directory in (EXAMPLE_DIR, *extra):
         if not directory.is_dir():
