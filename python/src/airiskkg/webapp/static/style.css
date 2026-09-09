@@ -2042,3 +2042,81 @@ body.editor-hidden .pane-head { display: none; }
   .library-lead { flex-direction: column; align-items: flex-start; }
   .library-search { width: 150px; }
 }
+
+/* ---- small screens ---- */
+
+/* Labels below are hidden from sight, not from the accessibility tree: each of
+   these buttons is an icon plus a word, and the word is its accessible name. */
+
+@media (max-width: 1100px) {
+  /* Icons carry the secondary actions so the toolbar keeps to one row. The
+     primary one keeps its word - "run this" is the sentence the header makes. */
+  .toolbar .btn:not(.primary) { position: relative; padding: 6px 9px; }
+  .toolbar .btn:not(.primary) > span {
+    position: absolute; width: 1px; height: 1px; margin: -1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  /* A rule between groups reads as a divider only while they share a line. */
+  .tool-group + .tool-group { border-left: none; padding-left: 0; margin-left: 0; }
+  .toolbar { column-gap: 12px; row-gap: 6px; }
+  .tool-group { gap: 5px; }
+  .btn-split select { width: 78px; }
+}
+
+@media (max-width: 820px) {
+  /* Two trays pinned to opposite corners of a narrow canvas meet in the middle. */
+  .palette { max-width: 42%; }
+  .motif-palette { width: auto; max-width: 42%; }
+}
+
+@media (max-width: 700px) {
+  /* The stats are a sentence, not a column: on one line they sat under the
+     search box and the two overlapped. */
+  .library-head { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 14px; }
+  .library-title { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .library-title h2 { white-space: normal; font-size: 16px; }
+  .library-sub { font-size: 11.5px; line-height: 1.5; }
+  .library-head-actions { flex: 1 1 auto; }
+  .library-search { flex: 1 1 auto; width: auto; min-width: 0; }
+  .library-lead { padding: 10px 14px; }
+  .library-lead-actions { flex-wrap: wrap; }
+  .library-body { grid-template-rows: minmax(0, 42%) minmax(0, 1fr); }
+  .library-detail { padding: 16px 14px 32px; }
+  .overview-head { flex-wrap: wrap; gap: 8px; }
+}
+
+@media (max-width: 620px) {
+  /* Brand on one line, toolbar on the next - two rows that stay two rows
+     however long the labels are. */
+  .app-header { flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 10px; }
+  .brand { flex: 1 1 auto; gap: 8px; }
+  .brand h1 { font-size: 16px; }
+  .brand #btn-library { position: relative; padding: 6px 9px; }
+  .brand #btn-library > span {
+    position: absolute; width: 1px; height: 1px; margin: -1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  .toolbar { flex: 1 1 100%; justify-content: flex-start; flex-wrap: wrap;
+    column-gap: 8px; row-gap: 6px; }
+  #example-select { flex: 1 1 110px; min-width: 0; }
+  .btn-split select { width: 66px; }
+  /* Fingers, not a mouse. */
+  .toolbar .btn, .toolbar select { min-height: 34px; }
+
+  .pane-head-actions .btn { position: relative; }
+  .pane-head-actions .btn > span {
+    position: absolute; width: 1px; height: 1px; margin: -1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+
+  /* Wrapped, not scrolled: a strip that puts four of seven tabs behind a
+     sideways scroll hides the one being looked for. */
+  .drawer-tabs { flex-wrap: wrap; overflow-x: visible; }
+  .drawer-head { align-items: flex-start; }
+  .drawer-tab { padding: 8px 9px; font-size: 12px; }
+  .drawer-toggle { padding: 8px 6px; }
+
+  .palette, .motif-palette { max-width: 46%; padding: 6px; }
+  .palette-item { font-size: 11px; padding: 5px 7px; }
+  .start-card { width: auto; max-width: 300px; }
+}
