@@ -22,6 +22,18 @@ def _parsed(ttl: str) -> Graph:
     return data
 
 
+# How each drawn line is written in the graph, which is not one to one: the
+# canvas draws beam:use backwards (resource into process) and both use and
+# produce have an inverse form that draws the same line. Mirrors
+# graph_view._FLOW_EDGES, and `remove-edge` is the only thing that needs it.
+DRAWN_AS = {
+    "use": ((BEAM.use, True), (BEAM.usedBy, False)),
+    "produce": ((BEAM.produce, False), (BEAM.producedBy, True)),
+    "inform": ((BEAM.inform, False),),
+    "participatedIn": ((BEAM.participatedIn, False),),
+}
+
+
 def _serialized(data: Graph, **extra: object) -> object:
     data.bind("beam", BEAM)
     data.bind("pair", PAIR)
@@ -198,6 +210,33 @@ def graph_edit() -> object:
         if predicate not in ("use", "produce", "inform"):
             return jsonify({"error": "predicate must be use, produce, or inform."}), 400
         data.add((URIRef(subject), BEAM[predicate], URIRef(obj)))
+    elif op == "remove-edge":
+        """A connector drawn wrong used to cost the elements at either end,
+        because deleting an element was the only thing that took its edges with
+        it.
+
+        Named by the line as drawn - source, target, kind - and not by a triple.
+        The canvas draws beam:use backwards on purpose, resource into process,
+        and both use and produce have an inverse form that draws the same line;
+        a client sending a triple would have to know all of that, and would get
+        it wrong in exactly one of the four cases. The table below is the same
+        one graph_view reads the edges with."""
+        source = payload.get("source")
+        target = payload.get("target")
+        kind = payload.get("kind")
+        if not (source and target and kind):
+            return jsonify({"error": "remove-edge needs source, target, kind."}), 400
+        if kind not in DRAWN_AS:
+            return jsonify({"error": f"{kind} is not a flow this canvas draws."}), 400
+        head, tail = URIRef(source), URIRef(target)
+        gone = 0
+        for predicate, inverted in DRAWN_AS[kind]:
+            triple = (tail, predicate, head) if inverted else (head, predicate, tail)
+            if triple in data:
+                data.remove(triple)
+                gone += 1
+        if not gone:
+            return jsonify({"error": "There is no such connection to remove."}), 400
     elif op == "edit-element":
         element_id = payload.get("element")
         if not element_id:
@@ -308,6 +347,13 @@ def graph_edit() -> object:
 
 BPMN = Namespace("https://sBPMN.github.io/2.0/classes#")
 BP = Namespace("https://sBPMN.github.io/2.0/properties#")
+
+# Every kind of connector sBPMN declares, which is what `disconnect` will act
+# on and nothing else.
+CONNECTOR_CLASSES = {
+    BPMN.sequenceFlow, BPMN.messageFlow, BPMN.association,
+    BPMN.dataInputAssociation, BPMN.dataOutputAssociation,
+}
 
 # What the palette offers, restricted to what external/sbpmn/sbpmn_2.0.ttl declares.
 ACTIVITY_KINDS = {
@@ -786,6 +832,22 @@ def process_edit() -> object:
                     data.remove(triple)
                 for triple in list(data.triples((None, None, victim))):
                     data.remove(triple)
+
+    elif op == "disconnect":
+        # Deliberately not `delete`, which takes an element and everything it
+        # owns: the same field holding an activity IRI by accident would take
+        # the activity. This one refuses anything that is not a connector.
+        flow = payload.get("flow")
+        if not flow:
+            return jsonify({"error": "disconnect needs a flow."}), 400
+        node = URIRef(flow)
+        if not set(data.objects(node, RDF.type)) & CONNECTOR_CLASSES:
+            return jsonify({"error": "That is not a connector."}), 400
+        for triple in list(data.triples((node, None, None))):
+            data.remove(triple)
+        # bp:outgoing and bp:incoming on the two ends point back at it.
+        for triple in list(data.triples((None, None, node))):
+            data.remove(triple)
 
     elif op == "rename":
         element = payload.get("element")

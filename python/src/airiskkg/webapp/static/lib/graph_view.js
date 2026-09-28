@@ -410,13 +410,18 @@ function draw() {
   const systemLayer = svgEl("g", { class: "systems" }, viewport);
   const edgeLayer = svgEl("g", { class: "edges" }, viewport);
   const nodeLayer = svgEl("g", { class: "nodes" }, viewport);
+  /* Declared here so it sits after the nodes in document order: the badge is a
+     control and must not end up under a box it happens to cross. */
+  const overlayLayer = svgEl("g", { class: "overlay" }, viewport);
   drawSystemBounds(systemLayer);
 
   for (const e of current.edges) {
     const d = edgePath(e);
     if (!d) continue;
-    svgEl("path", {
-      d, class: `edge ${e.kind}`, fill: "none",
+    const mine = pickedEdge && pickedEdge.source === e.source
+      && pickedEdge.target === e.target && pickedEdge.kind === e.kind;
+    const line = svgEl("path", {
+      d, class: `edge ${e.kind}${mine ? " picked" : ""}`, fill: "none",
       "marker-end": `url(#arrow-${e.kind})`,
       "data-source": e.source, "data-target": e.target,
     }, edgeLayer);
@@ -430,6 +435,16 @@ function draw() {
     if (meaning) {
       svgEl("title", {}, hit).textContent = `${meaning.title} (${meaning.dir}) — ${meaning.body}`;
     }
+    /* A connector drawn wrong used to cost the boxes at either end, because
+       deleting an element was the only thing that removed its edges. Pick the
+       line and it offers to go, the way a diagram editor does. */
+    hit.addEventListener("pointerdown", (ev) => {
+      ev.stopPropagation();
+      // As drawn. Which triples wrote this line is the server's table.
+      pickedEdge = mine ? null : { source: e.source, target: e.target, kind: e.kind };
+      draw();
+    });
+    if (mine) drawEdgeBadge(overlayLayer, line, pickedEdge);
   }
 
   for (const node of current.nodes) {
@@ -577,7 +592,11 @@ function truncate(text, max) {
 }
 
 //  element popover 
-let annotationCfg = { vocabulary: { roles: [], dataCategories: [] }, classes: [], onEdit: null, onConnect: null, onDelete: null, onStatus: null, onSelect: null };
+let annotationCfg = { vocabulary: { roles: [], dataCategories: [] }, classes: [], onEdit: null, onConnect: null, onDelete: null, onDisconnect: null, onStatus: null, onSelect: null };
+
+/* Which connector the reader has picked, as the triple it stands for. View
+   state: picking a line changes nothing in the graph until they say so. */
+let pickedEdge = null;
 function setAnnotation(cfg) { annotationCfg = { ...annotationCfg, ...cfg }; }
 function escapeAttr(text) { return escape(text).replace(/"/g, "&quot;"); }
 
@@ -727,12 +746,20 @@ function initPanZoom() {
   let dragging = null;
   wrap.addEventListener("pointerdown", (ev) => {
     if (wrap.classList.contains("business")) return;
+    // The risk level draws its own canvas over this one and captures the
+    // pointer below: leaving this handler on retargeted every pointerup to the
+    // wrap, so a press on anything up there never became a click.
+    if (wrap.classList.contains("risk")) return;
+    // The risk level draws its own canvas over this one and captures the
+    // pointer below: leaving this handler on retargeted every pointerup to the
+    // wrap, so a press on anything up there never became a click.
     if (ev.target.closest("button, select, input, textarea, a, label")) return;
     // .system-bound is a control now, like .node: pressing on the frame opened
     // its editor and this handler hid it again in the same gesture.
     if (ev.target.closest(".node, .system-bound, .canvas-controls, .node-detail, .palette, .motif-palette, .canvas-empty")) return;
     dragging = { x: ev.clientX, y: ev.clientY };
     try { wrap.setPointerCapture(ev.pointerId); } catch (error) { /* already gone */ }
+    if (pickedEdge) { pickedEdge = null; draw(); }
     detailBox.classList.add("hidden");
     setHighlight([]);
     if (selectedSystem) selectSystem(null);
@@ -789,6 +816,29 @@ function clear() {
   detailBox.classList.add("hidden");
 }
 
+/* Drawn on the line rather than in a panel: the thing being removed is the
+   thing under the cursor, and there is nowhere else the reader is looking. */
+function drawEdgeBadge(layer, line, triple) {
+  let at;
+  try {
+    at = line.getPointAtLength(line.getTotalLength() / 2);
+  } catch (error) {
+    return; // a path with no length has no middle
+  }
+  const badge = svgEl("g", { class: "edge-drop" }, layer);
+  svgEl("circle", { cx: at.x, cy: at.y, r: 8, class: "edge-drop-disc" }, badge);
+  const sign = svgEl("text", {
+    x: at.x, y: at.y + 3.5, class: "edge-drop-sign", "text-anchor": "middle",
+  }, badge);
+  sign.textContent = "\u00d7";
+  svgEl("title", {}, badge).textContent = "Remove this connection";
+  badge.addEventListener("pointerdown", (ev) => {
+    ev.stopPropagation();
+    pickedEdge = null;
+    if (annotationCfg.onDisconnect) annotationCfg.onDisconnect(triple);
+  });
+}
+
 //  edge hover tooltip 
 function positionTip(ev) {
   const pad = 14;
@@ -830,6 +880,18 @@ function init() {
   tipBox = document.createElement("div");
   tipBox.className = "edge-tip hidden";
   wrap.appendChild(tipBox);
+  /* Delete and Backspace, because that is what every diagram editor binds -
+     and never while a field has focus, or a name being typed loses characters. */
+  window.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Delete" && ev.key !== "Backspace") return;
+    if (!pickedEdge) return;
+    const on = document.activeElement;
+    if (on && on.closest && on.closest("input, textarea, select, [contenteditable]")) return;
+    ev.preventDefault();
+    const triple = pickedEdge;
+    pickedEdge = null;
+    if (annotationCfg.onDisconnect) annotationCfg.onDisconnect(triple);
+  });
   svg.addEventListener("pointerover", onEdgeOver);
   svg.addEventListener("pointermove", onEdgeMove);
   svg.addEventListener("pointerout", onEdgeOut);

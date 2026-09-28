@@ -15,7 +15,7 @@ pytest.importorskip("websockets")
 
 from test_canvas_renders import STATIC, _browser, _free_port, served  # noqa: E402,F401
 
-from conftest import GRAPH_RAG_NS, WIEN_ENERGIE_NS, example_path  # noqa: E402
+from conftest import AGENT_NS, GRAPH_RAG_NS, TARIFF_NS, WIEN_ENERGIE_NS, example_path  # noqa: E402
 
 pytestmark = pytest.mark.browser
 
@@ -160,6 +160,12 @@ def page(served):
 
     loop = asyncio.new_event_loop()
     connection, handle = loop.run_until_complete(open_page())
+    # Wait for the scene this fixture promises rather than trusting the sleeps
+    # above: under load the server's first graph request outlasts them, and the
+    # first test then finds an empty canvas. A scene that never renders still
+    # fails that test with its own message.
+    _settle(loop, handle,
+            "document.querySelector('.pc-activity.refined .pc-box') ? 1 : 0", 0, tries=150)
     yield loop, handle
     loop.run_until_complete(connection.close())
     loop.close()
@@ -1212,8 +1218,10 @@ def test_motifs_and_data_flow_narrow_to_the_architecture_on_screen(page) -> None
     loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
     # Waited for, not slept through: this scene is three graphs and takes longer
     # than a single example, and a fixed sleep reads the render before it.
+    # The budget is generous on purpose - the assessment behind it runs about
+    # twenty seconds, and 40 tries (16s) read an empty list as "nothing matched".
     _settle(loop, handle, "document.querySelectorAll('#motifs-list .motif-row-name').length", 0,
-            tries=40)
+            tries=120)
     loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
     time.sleep(2)
 
@@ -1742,3 +1750,628 @@ def test_clicking_a_business_element_reveals_its_line(page) -> None:
         loop.run_until_complete(handle.js(
             f"window.PairAI.Editor.setValue({json.dumps(before)})"))
         time.sleep(4)
+
+
+def _open_risk_level(loop, handle):
+    """Load the agentic scene, assess it, and land on the risk level."""
+    loop.run_until_complete(handle.js("""(async () => {
+        const nl = String.fromCharCode(10, 10);
+        const get = async (n) => (await (await fetch('/api/examples/' + n)).json()).ttl;
+        window.PairAI.Editor.setValue(await get('AGENT') + nl + await get('DESK'));
+        return 1;
+    })()""".replace("AGENT", _example(AGENT_NS)).replace("DESK", "it_service_desk")))
+    time.sleep(4)
+    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    _settle(loop, handle,
+            "(window.PairAI.state.lastAssessment && "
+            "window.PairAI.state.lastAssessment.riskView) ? 1 : 0", 0, tries=120)
+    loop.run_until_complete(handle.js('document.querySelector("#level-risk").click()'))
+    time.sleep(2)
+    # A selection survives a re-render on purpose - triage keeps the box you are
+    # judging in view - so a helper that promises a known state has to clear it,
+    # or the rail is still showing whatever the last test picked.
+    loop.run_until_complete(handle.js(
+        'window.PairAI.RiskCanvas.clearSelection(); '
+        'document.querySelector("#level-risk").click(); 1'))
+    time.sleep(1.5)
+    drawn = loop.run_until_complete(handle.js('document.querySelectorAll(".rc-card").length'))
+    assert drawn > 0, "the notation drew nothing, so there is nothing to drag"
+
+
+def _card_centre(loop, handle, index=0):
+    """A card to press: inside the canvas, and actually what a press there hits.
+
+    The notation is wider than its pane, so a card can sit clipped outside it -
+    and a press aimed at one lands on whatever is drawn over that spot instead.
+
+    Scoped to the risk canvas. An activity carries the same data-node on the
+    process canvas, so an unscoped lookup can answer with the hidden copy - and
+    a hidden copy reports a zero rect, which reads as a box that did not move.
+    """
+    return loop.run_until_complete(handle.js(f"""(() => {{
+        const view = document.querySelector('#risk-canvas').getBoundingClientRect();
+        const cards = [...document.querySelectorAll('#risk-canvas .rc-card')].slice({index});
+        for (const card of cards) {{
+            const r = card.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            if (x < view.left || x > view.right || y < view.top || y > view.bottom) continue;
+            const hit = document.elementFromPoint(x, y);
+            if (hit && hit.closest('.rc-card') === card) {{
+                return {{ id: card.getAttribute('data-node'), x, y }};
+            }}
+        }}
+        return null;
+    }})()"""))
+
+
+def _pan(loop, handle):
+    return loop.run_until_complete(handle.js(
+        'document.querySelector("#rc-root").getAttribute("transform")'))
+
+
+def test_the_risk_canvas_stops_panning_when_the_button_comes_up(page) -> None:
+    """The stuck-drag bug, under real input.
+
+    A pointer capture that is taken and never released leaves the canvas glued
+    to the cursor: the reader lets go and the diagram keeps moving. Only real
+    input finds it - a synthetic MouseEvent is delivered to whatever element it
+    is aimed at, capture or no capture.
+    """
+    loop, handle = page
+    _open_risk_level(loop, handle)
+
+    # Somewhere on the background, clear of every box - checked, not assumed.
+    empty = loop.run_until_complete(handle.js("""(() => {
+        const r = document.querySelector('#risk-canvas').getBoundingClientRect();
+        for (let fy = 0.9; fy > 0.1; fy -= 0.1) {
+            for (let fx = 0.1; fx < 0.9; fx += 0.1) {
+                const x = Math.round(r.left + r.width * fx);
+                const y = Math.round(r.top + r.height * fy);
+                const at = document.elementFromPoint(x, y);
+                if (at && at.closest('#risk-canvas') && !at.closest('[data-node]')) {
+                    return { x, y, on: at.tagName };
+                }
+            }
+        }
+        return null;
+    })()"""))
+    assert empty, "no clear background to press on"
+
+    before = _pan(loop, handle)
+    loop.run_until_complete(handle.drag(empty["x"], empty["y"], empty["x"] + 120, empty["y"] - 60))
+    panned = _pan(loop, handle)
+    assert panned != before, "dragging the background did not pan the diagram"
+
+    # The button is up. Moving now must change nothing.
+    loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
+        "type": "mouseMoved", "x": empty["x"] + 300, "y": empty["y"] - 200, "buttons": 0,
+    }))
+    time.sleep(0.5)
+    assert _pan(loop, handle) == panned, (
+        "the diagram kept moving after the button came up - the pan is still "
+        "holding a pointer capture it never released"
+    )
+
+
+def test_a_risk_box_can_be_repositioned_by_hand(page) -> None:
+    """The notation is generated, and a reader still has to be able to tidy it.
+
+    View-only: moving a box must not write anything into the graph - the
+    diagram is derived, and a hand-placed card is a reading aid, not a claim.
+    """
+    loop, handle = page
+    _open_risk_level(loop, handle)
+
+    card = _card_centre(loop, handle)
+    assert card, "no risk box is on screen to move"
+    before = loop.run_until_complete(handle.js('window.PairAI.Editor.getValue().length'))
+
+    loop.run_until_complete(handle.drag(card["x"], card["y"], card["x"] + 140, card["y"] + 90))
+    # The id is an IRI, so the selector is built in Python and passed whole -
+    # quoting it into a JS string literal by hand ends the literal at the IRI.
+    selector = "#risk-canvas [data-node=%s]" % json.dumps(card["id"])
+    moved = loop.run_until_complete(handle.js(f"""(() => {{
+        const card = document.querySelector({json.dumps(selector)});
+        if (!card) return null;
+        const r = card.getBoundingClientRect();
+        return {{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }};
+    }})()"""))
+    assert moved, "the box vanished from the diagram during the drag"
+
+    assert abs(moved["x"] - (card["x"] + 140)) < 40, f"the box did not follow the pointer: {moved}"
+    assert abs(moved["y"] - (card["y"] + 90)) < 40, f"the box did not follow the pointer: {moved}"
+    assert loop.run_until_complete(handle.js('window.PairAI.Editor.getValue().length')) == before, (
+        "moving a box edited the graph - the layout is a reading aid, not a claim"
+    )
+
+    # And it stays put when the diagram is drawn again.
+    loop.run_until_complete(handle.js('window.PairAI.RiskCanvas.fit()'))
+    time.sleep(0.5)
+    again = loop.run_until_complete(handle.js(
+        f"document.querySelector({json.dumps(selector)}) ? 1 : 0"))
+    assert again == 1, "the box vanished when the diagram was redrawn"
+
+
+def _press_a_candidate_risk(loop, handle):
+    """Press a Risk box the library raised, rather than one a person drew."""
+    at = loop.run_until_complete(handle.js("""(() => {
+        const view = document.querySelector('#risk-canvas').getBoundingClientRect();
+        const cards = [...document.querySelectorAll('.rc-card')].filter((c) =>
+            c.querySelector('.rc-chip').textContent === 'Risk'
+            && /^Candidate/.test(c.querySelector('.rc-title').textContent));
+        for (const card of cards) {
+            const r = card.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2);
+            const y = Math.round(r.top + r.height / 2);
+            // On screen, and actually the thing a press at that point would hit:
+            // the diagram is wider than the pane at fit scale, so some boxes sit
+            // outside it and a click there lands on whatever is underneath.
+            if (x < view.left || x > view.right || y < view.top || y > view.bottom) continue;
+            const hit = document.elementFromPoint(x, y);
+            if (hit && hit.closest('.rc-card') === card) return { x, y };
+        }
+        return null;
+    })()"""))
+    assert at, "no candidate risk box is on screen to judge"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(0.6)
+
+
+
+def test_a_risk_is_drawn_on_by_dragging_it_onto_what_it_is_about(page) -> None:
+    """Assessing by hand, as a gesture rather than a form.
+
+    The library covers a fraction of what an assessor wants to record, so what
+    it cannot say still has to reach the graph. Dragging a shape from the
+    palette onto an element writes it in the vocabulary a run emits - marked as
+    the person's, and exported with everything else.
+
+    Real input, because a drag with a drop target is exactly what a synthetic
+    MouseEvent cannot stand in for: it is delivered wherever it is aimed.
+    """
+    loop, handle = page
+    _open_risk_level(loop, handle)
+    loop.run_until_complete(handle.js(
+        'window.prompt = () => "Written by the drag test"; 1'))
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const item = document.querySelector('#risk-palette .pp-item[data-kind="risk"]');
+        if (!item) return null;
+        const view = document.querySelector('#risk-canvas').getBoundingClientRect();
+        for (const box of document.querySelectorAll('#risk-canvas .rc-card')) {
+            if (box.querySelector('.rc-chip').textContent !== 'System') continue;
+            // The box, not the group: the group's rect takes in the type chip
+            // painted above it, so its centre can fall in the gap between.
+            const r = box.querySelector('rect.rc-box').getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            if (x < view.left || x > view.right || y < view.top || y > view.bottom) continue;
+            if (document.elementFromPoint(x, y)?.closest('.rc-card') !== box) continue;
+            const from = item.getBoundingClientRect();
+            return {
+                fromX: Math.round(from.left + from.width / 2),
+                fromY: Math.round(from.top + from.height / 2),
+                toX: x, toY: y,
+                onto: box.getAttribute('data-node'),
+            };
+        }
+        return null;
+    })()"""))
+    assert at, "no system is on screen to drop a risk onto"
+
+    before = loop.run_until_complete(handle.js(
+        'window.PairAI.state.lastAssessment.summary.riskFindingCount'))
+
+    loop.run_until_complete(handle.drag(at["fromX"], at["fromY"], at["toX"], at["toY"]))
+    written = _settle(loop, handle,
+                      'window.PairAI.Editor.getValue().includes("Written by the drag test") ? 1 : 0',
+                      0, tries=120)
+    assert written == 1, "the drag wrote nothing into the graph"
+    # The graph is edited at once; the notation follows the re-run it triggers.
+    _settle(loop, handle, """[...document.querySelectorAll('#risk-canvas .rc-card')]
+        .filter((c) => /Written by the drag test/.test(c.textContent)).length""", 0, tries=150)
+
+    # Read it off the drawing, not off the Turtle: a system is serialized with
+    # its description, so a regex bounded by the next full stop ends inside that
+    # sentence. The attachment is a line somebody drew, so it is painted with a
+    # hit path naming both ends - which is the same claim, and visible.
+    state = loop.run_until_complete(handle.js("""(() => {
+        const mine = [...document.querySelectorAll('#risk-canvas .rc-card')]
+            .filter((c) => /Written by the drag test/.test(c.textContent));
+        const id = mine.length ? mine[0].getAttribute('data-node') : null;
+        return {
+            attached: !!id && [...document.querySelectorAll('#risk-canvas .rc-link-hit')]
+                .some((p) => p.getAttribute('data-from') === id
+                          && p.getAttribute('data-to') === %s),
+            drawn: mine.length,
+            ghosts: document.querySelectorAll('.risk-ghost').length,
+            highlights: document.querySelectorAll('.rc-drop').length,
+            findings: window.PairAI.state.lastAssessment.summary.riskFindingCount,
+        };
+    })()""" % json.dumps(at["onto"])))
+
+    assert state["attached"], "the risk was written but not hung off what it was dropped on"
+    assert state["drawn"] >= 1, "a hand-written risk has to appear in the notation"
+    assert state["ghosts"] == 0, "the drag ghost outlived the drop"
+    assert state["highlights"] == 0, "the drop highlight was left on the target"
+    # Writing a judgement detects nothing and hides nothing.
+    assert state["findings"] == before
+
+
+def test_a_tray_folds_when_its_head_is_actually_pressed(page) -> None:
+    """The two trays over the risk canvas fold from their own head.
+
+    Both heads answered element.click() and neither answered a mouse, because
+    the architecture wrap underneath captured the pointer on pointerdown and
+    every pointerup retargeted to it - so no click was ever composed. That is
+    the retargeting the canvases are driven with real input to catch, and a
+    synthetic event proves nothing about it.
+    """
+    loop, handle = page
+    _open_risk_level(loop, handle)
+
+    for head, tray, what in (("#btn-tools-fold", "#risk-tools", "the tools"),
+                             ("#btn-side-fold", "#risk-side-tray", "the detail")):
+        at = loop.run_until_complete(handle.js("""(() => {
+            const h = document.querySelector('%s');
+            if (!h) return null;
+            const r = h.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            // Pressing where the head is not on top proves nothing either.
+            const hit = document.elementFromPoint(x, y);
+            return hit && hit.closest('%s') === h ? { x, y } : null;
+        })()""" % (head, head)))
+        assert at, f"{what} tray has no head a press would reach"
+
+        loop.run_until_complete(handle.click(at["x"], at["y"]))
+        folded = loop.run_until_complete(handle.js(
+            "document.querySelector('%s').classList.contains('collapsed')" % tray))
+        assert folded, f"a real press on its head did not fold {what}"
+
+        loop.run_until_complete(handle.click(at["x"], at["y"]))
+        back = loop.run_until_complete(handle.js("""(() => {
+            const t = document.querySelector('%s');
+            return { folded: t.classList.contains('collapsed'),
+                     height: Math.round(t.getBoundingClientRect().height) };
+        })()""" % tray))
+        assert not back["folded"], f"{what} did not come back"
+        assert back["height"] > 60, f"{what} came back as a head with nothing under it"
+
+
+def test_a_drag_shows_what_is_being_dragged_even_with_nowhere_to_drop(page) -> None:
+    """A gesture that displays nothing cannot be told from one that never began.
+
+    The ghost used to be removed the instant nothing on screen would accept the
+    kind - which is the first thing a reader tries, since a consequence needs a
+    risk and an impact needs a consequence before either has anywhere to go. All
+    that was left was a line in the status bar, read after the gesture.
+    """
+    loop, handle = page
+    _open_risk_level(loop, handle)
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const item = document.querySelector('#risk-palette .pp-item[data-kind="impact"]');
+        if (!item) return null;
+        const r = item.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert at, "the hand-assessment palette offers no impact to drag"
+
+    loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
+        "type": "mousePressed", "x": at["x"], "y": at["y"],
+        "button": "left", "clickCount": 1, "buttons": 1}))
+    for step in range(1, 4):
+        loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
+            "type": "mouseMoved", "x": at["x"] + 70 * step, "y": at["y"] + 45 * step,
+            "button": "left", "buttons": 1}))
+    time.sleep(0.3)
+
+    mid = loop.run_until_complete(handle.js("""(() => {
+        const g = document.querySelector('.risk-ghost');
+        if (!g) return null;
+        const r = g.getBoundingClientRect();
+        return { text: g.textContent.trim(), width: Math.round(r.width),
+                 band: g.classList.contains('band-impact'),
+                 nowhere: g.classList.contains('nowhere'),
+                 targets: document.querySelectorAll('#risk-canvas .rc-droppable').length };
+    })()"""))
+    assert mid, "nothing followed the cursor, so the drag showed the reader nothing"
+    assert mid["text"] == "Impact", "the shape being dragged has to name what it is"
+    assert mid["band"], "the ghost has to carry the colour of the box it writes"
+    assert mid["width"] >= 80, "a label is not a box"
+    if not mid["targets"]:
+        assert mid["nowhere"], "with nowhere to land the ghost has to say so"
+
+    loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
+        "type": "mouseReleased", "x": at["x"] + 210, "y": at["y"] + 135,
+        "button": "left", "clickCount": 1, "buttons": 0}))
+    time.sleep(0.5)
+    left = loop.run_until_complete(handle.js("""(() => ({
+        ghosts: document.querySelectorAll('.risk-ghost').length,
+        marks: document.querySelectorAll('#risk-canvas .rc-droppable, #risk-canvas .rc-drop').length,
+    }))()"""))
+    assert left["ghosts"] == 0, "the ghost outlived the gesture"
+    assert left["marks"] == 0, "the drop marks were left on the canvas"
+
+
+def test_picking_a_concern_on_a_lens_lights_the_work_it_arises_in(page) -> None:
+    """The process column used to stay dimmed whatever was picked.
+
+    Process cards were linked only to the defined risk, so they sat two hops from
+    every concern. The same lens is drawn on the overview, so this is that page's
+    behaviour too. Drawing the lens is setup; the pick is a real press.
+    """
+    loop, handle = page
+    _open_risk_level(loop, handle)
+    drawn = loop.run_until_complete(handle.js("""(() => {
+        const rows = window.PairAI.state.lastAssessment.riskView.byProcess.systems
+            .filter((row) => row.lens.about.length
+                && row.lens.process.some((p) => (p.concerns || []).length));
+        if (!rows.length) return 0;
+        window.PairAI.RiskCanvas.clearSelection();
+        window.PairAI.RiskCanvas.renderLens(rows[0].lens);
+        return document.querySelectorAll('.rc-card').length;
+    })()"""))
+    assert drawn, "no system on the scene has a lens with process points bearing on a concern"
+    time.sleep(0.8)
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const view = document.querySelector('#risk-canvas').getBoundingClientRect();
+        const why = [];
+        for (const card of document.querySelectorAll('#risk-canvas .rc-card[data-node^="about:"]')) {
+            const r = card.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            if (x < view.left || x > view.right || y < view.top || y > view.bottom) {
+                why.push(`offscreen at ${x},${y}`);
+                continue;
+            }
+            const hit = document.elementFromPoint(x, y);
+            if (hit && hit.closest('.rc-card') === card) return { x, y };
+            why.push(`covered at ${x},${y} by ` + (hit ? (hit.id || hit.getAttribute('class')) : 'nothing'));
+        }
+        return { why: why.join('; ') || 'no about: card is on the lens at all' };
+    })()"""))
+    assert at and at.get("x") is not None, (
+        "no concern on the lens is on screen to pick: " + (at or {}).get("why", "")
+    )
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(0.6)
+
+    state = loop.run_until_complete(handle.js("""(() => {
+        const proc = [...document.querySelectorAll('.rc-card')]
+            .filter((c) => c.querySelector('.rc-chip')
+                && /^(Activity|Data object|Human step)$/i.test(c.querySelector('.rc-chip').textContent));
+        return {
+            process: proc.length,
+            lit: proc.filter((c) => !c.classList.contains('dim')).length,
+            context: document.querySelectorAll('.rc-link.context').length,
+            dimmed: document.querySelectorAll('.rc-card.dim').length,
+        };
+    })()"""))
+    assert state["dimmed"] > 0, f"the pick did not narrow the lens at all: {state}"
+    assert state["lit"] > 0, f"picking a concern left the whole process column dimmed: {state}"
+    assert state["context"] > 0, f"and no line joins the concern to the work: {state}"
+
+
+def test_pressing_a_box_without_moving_selects_it(page) -> None:
+    """Drag and click are one gesture, told apart by distance. A press that goes
+    nowhere has to still be a selection, or nothing on the diagram is readable."""
+    loop, handle = page
+    _open_risk_level(loop, handle)
+
+    # A Risk box, not whichever card sorts first - an Impact box has a detail of
+    # its own and none of the things this test is about.
+    _press_a_candidate_risk(loop, handle)
+
+    state = loop.run_until_complete(handle.js("""(() => {
+        const rail = document.querySelector('#risk-side').textContent || '';
+        return {
+            dimmed: document.querySelectorAll('.rc-card.dim').length,
+            total: document.querySelectorAll('.rc-card').length,
+            why: /why/i.test(rail),
+            leadsTo: /may lead to/i.test(rail),
+            where: /where/i.test(rail),
+        };
+    })()"""))
+    assert 0 < state["dimmed"] < state["total"], (
+        f"pressing a box did not narrow the diagram to its chain: {state}"
+    )
+    # Everything the grouped list used to carry is now the detail of a pick.
+    assert state["why"], "the satisfied condition is why it fired"
+    assert state["leadsTo"], "and the harm it rolls up to is what it may lead to"
+    assert state["where"], "and the evidence is where"
+
+
+def test_a_risk_on_the_diagram_can_be_settled_and_reopened(page) -> None:
+    """The extension point the vocabulary always declared and nothing ever wrote.
+
+    Three risk patterns carry no structural escape at all, so a recorded
+    judgement is the only disposition they have. It has to reach the graph,
+    survive the re-run, and be reversible.
+    """
+    loop, handle = page
+    _open_risk_level(loop, handle)
+    # A judgement nobody can read back is not reviewable, so the page asks.
+    loop.run_until_complete(handle.js(
+        'window.prompt = () => "handled by the engineer approval"; 1'))
+
+    _press_a_candidate_risk(loop, handle)
+    accepted = loop.run_until_complete(handle.js("""(() => {
+        const chip = [...document.querySelectorAll('.concern-triage .chip')]
+            .find((b) => b.textContent === 'Accepted');
+        if (!chip) return 0;
+        chip.click();
+        return 1;
+    })()"""))
+    assert accepted, "a risk box offered no disposition"
+
+    settled = _settle(loop, handle,
+                      "window.PairAI.state.lastAssessment.riskView.summary.settled", 0, tries=120)
+    assert settled == 1, "settling one concern settles exactly one"
+    assert loop.run_until_complete(handle.js(
+        'window.PairAI.Editor.getValue().includes("TriageDecision")')), (
+        "the judgement is written into the graph, not held in the page"
+    )
+    assert loop.run_until_complete(handle.js(
+        'document.querySelectorAll(".rc-mark").length')) >= 1, (
+        "and the diagram says so on the box"
+    )
+
+    # The rail redraws off the re-assessment, which lands after the count does -
+    # so wait for the control rather than for the number.
+    assert _settle(loop, handle,
+                   "[...document.querySelectorAll('.concern-triage .chip')]"
+                   ".some((b) => b.textContent === 'reopen') ? 1 : 0", 0, tries=60) == 1, (
+        "a settled concern never offered a way back"
+    )
+    loop.run_until_complete(handle.js("""(() => {
+        [...document.querySelectorAll('.concern-triage .chip')]
+            .find((b) => b.textContent === 'reopen').click();
+        return 1;
+    })()"""))
+
+    back = _settle(loop, handle,
+                   "window.PairAI.state.lastAssessment.riskView.summary.settled", 1, tries=120)
+    assert back == 0, "reopening did not put it back"
+    assert not loop.run_until_complete(handle.js(
+        'window.PairAI.Editor.getValue().includes("TriageDecision")')), (
+        "reopening removes the decision rather than hiding it"
+    )
+
+
+# ---- taking a connector back out -------------------------------------------
+#
+# Both canvases could draw a line and neither could remove one, so a line drawn
+# wrong cost the boxes at either end: deleting an element was the only thing
+# that took its connectors with it. These two run last in the file because they
+# edit the scene the other tests read.
+
+
+def _reachable_line(loop, handle, canvas, hit_class):
+    """A connector a press would actually land on.
+
+    Both the midpoint and the topmost check matter. The diagram is wider than
+    its pane so a line can sit clipped outside it, and connectors are painted
+    under the boxes, so the middle of one can be covered by whatever crosses it.
+    """
+    return loop.run_until_complete(handle.js("""(() => {
+        const view = document.querySelector('%s').getBoundingClientRect();
+        for (const hit of document.querySelectorAll('%s %s')) {
+            const len = hit.getTotalLength();
+            if (!len) continue;
+            const pt = hit.getPointAtLength(len / 2);
+            const m = hit.getScreenCTM();
+            const x = Math.round(m.a * pt.x + m.c * pt.y + m.e);
+            const y = Math.round(m.b * pt.x + m.d * pt.y + m.f);
+            if (x < view.left + 4 || x > view.right - 4) continue;
+            if (y < view.top + 4 || y > view.bottom - 4) continue;
+            if (document.elementFromPoint(x, y) !== hit) continue;
+            return { x, y };
+        }
+        return null;
+    })()""" % (canvas, canvas, hit_class)))
+
+
+def _badge(loop, handle, canvas, disc_class):
+    return loop.run_until_complete(handle.js("""(() => {
+        const c = document.querySelector('%s %s');
+        if (!c) return null;
+        const r = c.getBoundingClientRect();
+        const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+        const hit = document.elementFromPoint(x, y);
+        // A control under a box is not a control.
+        return { x, y, reachable: !!(hit && hit.closest('%s')) };
+    })()""" % (canvas, disc_class, disc_class.rsplit('-', 1)[0])))
+
+
+def test_an_architecture_connector_goes_without_the_elements_it_joined(page) -> None:
+    """beam:use is drawn backwards on purpose - resource into process - and both
+    use and produce have an inverse form that draws the same line. So the canvas
+    sends the line as drawn and the server holds the table of what wrote it; a
+    client guessing the triple gets it wrong in exactly one of the four cases,
+    which is what the first attempt at this did."""
+    loop, handle = page
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(2)
+
+    before = loop.run_until_complete(handle.js("""(() => ({
+        edges: document.querySelectorAll('#canvas .edge:not(.temp)').length,
+        nodes: document.querySelectorAll('#canvas .node').length,
+    }))()"""))
+    assert before["edges"] > 0 and before["nodes"] > 0
+
+    at = _reachable_line(loop, handle, "#canvas", ".edge-hit")
+    assert at, "no connector on the architecture canvas is reachable to press"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+
+    picked = loop.run_until_complete(handle.js("""(() => ({
+        lines: document.querySelectorAll('#canvas .edge.picked').length,
+        badges: document.querySelectorAll('#canvas .edge-drop').length,
+    }))()"""))
+    assert picked["lines"] == 1, "pressing a connector did not pick it"
+    assert picked["badges"] == 1, "a picked connector has to offer to go"
+
+    badge = _badge(loop, handle, "#canvas", ".edge-drop-disc")
+    assert badge and badge["reachable"], "the remove badge is under something"
+    loop.run_until_complete(handle.click(badge["x"], badge["y"]))
+    _settle(loop, handle,
+            "document.querySelectorAll('#canvas .edge:not(.temp)').length",
+            before["edges"], tries=120)
+
+    after = loop.run_until_complete(handle.js("""(() => ({
+        edges: document.querySelectorAll('#canvas .edge:not(.temp)').length,
+        nodes: document.querySelectorAll('#canvas .node').length,
+    }))()"""))
+    assert after["edges"] == before["edges"] - 1, (
+        f"the connector did not go: {before} -> {after}"
+    )
+    assert after["nodes"] == before["nodes"], (
+        "removing a connector took an element with it, which is the whole "
+        f"thing this replaces: {before} -> {after}"
+    )
+
+
+def test_a_business_connector_goes_without_the_boxes_it_joined(page) -> None:
+    """Same gesture on the process canvas, and the same guarantee.
+
+    The badge is painted over everything rather than in the connector's own
+    group: connectors are drawn under the boxes so a line never sits on one it
+    only passes, which put the badge under a port dot where no press reached it.
+    """
+    loop, handle = page
+    loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
+    time.sleep(3)
+
+    before = loop.run_until_complete(handle.js("""(() => ({
+        flows: document.querySelectorAll('#process-canvas .pc-seq').length,
+        boxes: document.querySelectorAll('#process-canvas [data-node]').length,
+    }))()"""))
+    assert before["flows"] > 0 and before["boxes"] > 0
+
+    at = _reachable_line(loop, handle, "#process-canvas", ".pc-flow-hit")
+    assert at, "no connector on the business canvas is reachable to press"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    assert loop.run_until_complete(handle.js(
+        "document.querySelectorAll('#process-canvas .pc-flow.picked').length")) == 1, (
+        "pressing a connector did not pick it"
+    )
+
+    badge = _badge(loop, handle, "#process-canvas", ".pc-flow-drop-disc")
+    assert badge and badge["reachable"], (
+        "the remove badge is under something - connectors are painted below the "
+        "boxes, so a badge left in that layer cannot be pressed"
+    )
+    loop.run_until_complete(handle.click(badge["x"], badge["y"]))
+    _settle(loop, handle,
+            "document.querySelectorAll('#process-canvas .pc-seq').length",
+            before["flows"], tries=120)
+
+    after = loop.run_until_complete(handle.js("""(() => ({
+        flows: document.querySelectorAll('#process-canvas .pc-seq').length,
+        boxes: document.querySelectorAll('#process-canvas [data-node]').length,
+    }))()"""))
+    assert after["flows"] == before["flows"] - 1, (
+        f"the connector did not go: {before} -> {after}"
+    )
+    assert after["boxes"] == before["boxes"], (
+        f"removing a connector took a box with it: {before} -> {after}"
+    )

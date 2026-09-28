@@ -1,0 +1,301 @@
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix isd:  <http://w3id.org/airiskkg/example/it-service-desk#> .
+@prefix its:  <http://w3id.org/airiskkg/example/it-support#> .
+
+# The second business example, and deliberately a different shape from the
+# energy one.
+#
+# Energy: two pools, two AI activities, two architectures - the case for
+# "one process runs several systems". This one: one AI activity carrying an
+# AGENT, which is the case the energy example cannot make, because an agent
+# plans and acts rather than answering a question.
+#
+# The control here is bp:humanPerformer on an approval step that sits between
+# the agent's decision and the change taking effect. Whether that approval
+# clears anything is a question for the assessment, not an assumption of the
+# model - see docs/notes/business_context_as_built.md on ec:LogInteraction,
+# which correctly clears nothing.
+
+isd:Collaboration a bpmn:collaboration ;
+    bp:name "IT service desk" .
+
+### Who is involved
+
+isd:EmployeePool a bpmn:participant ;
+    bp:name "Employee" ;
+    bp:processRef isd:EmployeeProcess .
+
+isd:ITPool a bpmn:participant ;
+    bp:name "Northwind IT" ;
+    bp:processRef isd:ITProcess .
+
+isd:EmployeeProcess a bpmn:process ;
+    bp:name "Getting access" ;
+    bp:isExecutable false ;
+    bp:contains isd:NeedsAccess, isd:RaiseTicket, isd:ReadOutcome, isd:EmployeeDone .
+
+isd:ITProcess a bpmn:process ;
+    bp:name "Resolving the request" ;
+    bp:isExecutable false ;
+    bp:laneSet isd:ITLaneSet ;
+    bp:contains isd:TicketArrives, isd:ReceiveTicket, isd:TriageAndResolve, isd:ApproveChange,
+                isd:ApprovalTaken, isd:SendOutcome, isd:RequestClosed, isd:RequestDeclined .
+
+isd:ITLaneSet a bpmn:laneSet ;
+    bp:name "Service desk" ;
+    bp:contains isd:AgentLane , isd:EngineerLane .
+
+isd:AgentLane a bpmn:lane ;
+    bp:name "Automated" ;
+    bp:flowNodeRef isd:TicketArrives, isd:ReceiveTicket, isd:TriageAndResolve, isd:SendOutcome ,
+                   isd:RequestClosed .
+
+isd:EngineerLane a bpmn:lane ;
+    bp:name "Service engineer" ;
+    bp:flowNodeRef isd:ApproveChange , isd:ApprovalTaken , isd:RequestDeclined .
+
+### What the employee does
+
+isd:NeedsAccess a bpmn:startEvent ;
+    bp:name "Needs access to something" ;
+    bp:outgoing isd:EFlowStart .
+
+isd:RaiseTicket a bpmn:userTask ;
+    bp:name "Raise an access request" ;
+    bp:incoming isd:EFlowStart ;
+    bp:outgoing isd:EFlow0 .
+
+isd:ReadOutcome a bpmn:userTask ;
+    bp:name "Read what was done" ;
+    bp:incoming isd:EFlow0 ;
+    bp:outgoing isd:EFlowEnd .
+
+isd:EmployeeDone a bpmn:endEvent ;
+    bp:name "Knows the outcome" ;
+    bp:incoming isd:EFlowEnd .
+
+isd:EFlowStart a bpmn:sequenceFlow ;
+    bp:sourceRef isd:NeedsAccess ; bp:targetRef isd:RaiseTicket .
+
+isd:EFlowEnd a bpmn:sequenceFlow ;
+    bp:sourceRef isd:ReadOutcome ; bp:targetRef isd:EmployeeDone .
+
+isd:EFlow0 a bpmn:sequenceFlow ;
+    bp:sourceRef isd:RaiseTicket ;
+    bp:targetRef isd:ReadOutcome .
+
+### What the service desk does
+
+# The request arrives as a message, which is what starts this process.
+isd:TicketArrives a bpmn:startEvent ;
+    bp:name "A request arrives" ;
+    bp:eventDefinition isd:TicketArrivesTrigger ;
+    bp:outgoing isd:SFlowStart .
+
+isd:TicketArrivesTrigger a bpmn:messageEventDefinition ;
+    bp:messageRef isd:RequestMessage .
+
+isd:SFlowStart a bpmn:sequenceFlow ;
+    bp:sourceRef isd:TicketArrives ; bp:targetRef isd:ReceiveTicket .
+
+isd:ReceiveTicket a bpmn:receiveTask ;
+    bp:name "Receive the request" ;
+    bp:dataInputAssociation isd:TicketToDesk ;
+    bp:incoming isd:SFlowStart ;
+    bp:outgoing isd:SFlow0 .
+
+# The AI activity. A sub-process because the agent runs a course of action
+# rather than one step, and refined by the architecture that carries it out.
+isd:TriageAndResolve a bpmn:subProcess ;
+    bp:name "Triage and resolve the request" ;
+    pair:refinedBy its:AgentSystem ;
+    bp:dataInputAssociation isd:TicketToAgent ;
+    bp:incoming isd:SFlow0 ;
+    bp:outgoing isd:SFlow1 .
+
+# The control that lives in the process rather than in the architecture: a
+# person signs off before the account change takes effect.
+isd:ApproveChange a bpmn:userTask ;
+    bp:name "Approve the account change" ;
+    bp:resourceRole isd:Engineer ;
+    bp:incoming isd:SFlow1 ;
+    bp:outgoing isd:SFlow2 .
+
+isd:Engineer a bpmn:humanPerformer ;
+    bp:name "Service engineer" .
+
+isd:ApprovalTaken a bpmn:exclusiveGateway ;
+    bp:name "Approved?" ;
+    bp:gatewayDirection "Diverging" ;
+    bp:incoming isd:SFlow2 ;
+    bp:outgoing isd:SFlowApproved , isd:SFlowDeclined .
+
+isd:SendOutcome a bpmn:sendTask ;
+    bp:name "Send the outcome" ;
+    bp:dataOutputAssociation isd:OutcomeFromDesk ;
+    bp:incoming isd:SFlowApproved ;
+    bp:outgoing isd:SFlowClosed .
+
+isd:RequestClosed a bpmn:endEvent ;
+    bp:name "Request closed" ;
+    bp:incoming isd:SFlowClosed .
+
+isd:RequestDeclined a bpmn:endEvent ;
+    bp:name "Change declined" ;
+    bp:incoming isd:SFlowDeclined .
+
+isd:SFlow0 a bpmn:sequenceFlow ;
+    bp:sourceRef isd:ReceiveTicket ; bp:targetRef isd:TriageAndResolve .
+
+isd:SFlow1 a bpmn:sequenceFlow ;
+    bp:sourceRef isd:TriageAndResolve ; bp:targetRef isd:ApproveChange .
+
+isd:SFlow2 a bpmn:sequenceFlow ;
+    bp:sourceRef isd:ApproveChange ; bp:targetRef isd:ApprovalTaken .
+
+isd:SFlowApproved a bpmn:sequenceFlow ;
+    bp:name "approved" ;
+    bp:conditionExpression isd:Approved ;
+    bp:sourceRef isd:ApprovalTaken ; bp:targetRef isd:SendOutcome .
+
+isd:SFlowDeclined a bpmn:sequenceFlow ;
+    bp:name "declined" ;
+    bp:conditionExpression isd:Declined ;
+    bp:sourceRef isd:ApprovalTaken ; bp:targetRef isd:RequestDeclined .
+
+isd:SFlowClosed a bpmn:sequenceFlow ;
+    bp:sourceRef isd:SendOutcome ; bp:targetRef isd:RequestClosed .
+
+isd:Approved a bpmn:formalExpression ;
+    rdfs:label "the engineer signed the change off" .
+
+isd:Declined a bpmn:formalExpression ;
+    rdfs:label "the engineer refused the change" .
+
+### Across the boundary
+
+isd:RequestMessage a bpmn:message ; bp:name "access request" .
+
+isd:MFlow0 a bpmn:messageFlow ;
+    bp:name "requests" ;
+    bp:sourceRef isd:RaiseTicket ;
+    bp:targetRef isd:ReceiveTicket ;
+    bp:messageRef isd:RequestMessage .
+
+isd:OutcomeMessage a bpmn:message ; bp:name "outcome" .
+
+isd:MFlow1 a bpmn:messageFlow ;
+    bp:name "answers" ;
+    bp:sourceRef isd:SendOutcome ;
+    bp:targetRef isd:ReadOutcome ;
+    bp:messageRef isd:OutcomeMessage .
+
+### The data, and what it is
+#
+# The claim that matters: an access request names the person asking and what
+# they may reach. business_data_bridge.rq turns that into a data category on
+# the agent's input, which is how a fact stated here changes a finding there.
+
+isd:AccessRequest a bpmn:dataObject ;
+    bp:name "Access request" ;
+    bp:itemSubjectRef isd:AccessRequestItem .
+
+isd:AccessRequestItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:PersonalData .
+
+isd:RequestRef a bpmn:dataObjectReference ;
+    bp:dataObjectRef isd:AccessRequest .
+
+isd:TicketToDesk a bpmn:dataInputAssociation ;
+    bp:sourceRef isd:RequestRef ; bp:targetRef isd:ReceiveTicket .
+
+isd:TicketToAgent a bpmn:dataInputAssociation ;
+    bp:sourceRef isd:RequestRef ; bp:targetRef isd:TriageAndResolve .
+
+# Written back out, and deliberately left unclassified: what the desk sends is
+# a statement of what was done, and nobody has said whether it repeats anything
+# personal. Silence here is honest - it is not the same as saying "not personal".
+isd:Outcome a bpmn:dataObject ;
+    bp:name "Resolution note" .
+
+isd:OutcomeRef a bpmn:dataObjectReference ;
+    bp:dataObjectRef isd:Outcome .
+
+isd:OutcomeFromDesk a bpmn:dataOutputAssociation ;
+    bp:sourceRef isd:SendOutcome ; bp:targetRef isd:OutcomeRef .
+
+@prefix beamr: <http://w3id.org/beam/risk#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix mit:   <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> .
+
+### What this assessment is for
+#
+# Written before the run, not after it: the team named the outcome they did not
+# want, and the assessment answers against that rather than handing back a list.
+
+isd:Scope a pair:AssessmentScope ;
+    rdfs:label "Access requests handled by the agent"@en ;
+    pair:statedBy "Service desk lead, IT risk" ;
+    pair:desiredOutcome """An access request is triaged and resolved without a
+        person having to read every ticket, and the employee is told what was
+        done.""" ;
+    pair:scopedToSystem its:AgentSystem ;
+    pair:undesiredOutcome isd:UnauthorisedChange , isd:LeakedRequest .
+
+isd:UnauthorisedChange a beamr:Consequence ;
+    rdfs:label "An account change takes effect that no engineer authorised"@en ;
+    dct:description """The approval step exists in the process. Whether it sits
+        between the agent's decision and the change is what the assessment is
+        being asked.""" ;
+    pair:concernsRiskDomain mit:domain-5 , mit:domain-2 .
+
+isd:LeakedRequest a beamr:Consequence ;
+    rdfs:label "One employee's request is repeated to another"@en ;
+    dct:description "Access requests name the person asking and what they may reach." ;
+    pair:concernsRiskDomain mit:domain-2 .
+
+### What people said before it ran
+#
+# Risk storming, as data: each note is a person's claim, attached to the element
+# they were worried about. A beamr:Risk is somebody's stated risk; a
+# pair:RiskFinding is a structural candidate, and keeping the two types apart is
+# what lets them be reconciled.
+
+isd:RiskTicketSteersAgent a beamr:Risk ;
+    rdfs:label "Ticket text redirects the agent"@en ;
+    dct:description "Anyone who can raise a ticket can write into the text the agent plans from." ;
+    pair:statedBy "Service desk lead" ;
+    pair:statedPriority pair:HighStatedPriority .
+
+its:Ticket beamr:hasRisk isd:RiskTicketSteersAgent .
+
+isd:RiskMemoryCarriesOver a beamr:Risk ;
+    rdfs:label "One case's memory is recalled into another"@en ;
+    dct:description "Raised by IT risk, who asked what the case memory is keyed on." ;
+    pair:statedBy "IT risk" ;
+    pair:statedPriority pair:HighStatedPriority .
+
+its:AgentMemory beamr:hasRisk isd:RiskMemoryCarriesOver .
+
+isd:RiskReplyRepeatsDetails a beamr:Risk ;
+    rdfs:label "The reply repeats more of the ticket than the employee asked for"@en ;
+    dct:description "Raised by the data protection officer, reading the process rather than the architecture." ;
+    pair:statedBy "Data protection officer" ;
+    pair:statedPriority pair:MediumStatedPriority .
+
+its:DraftReply beamr:hasRisk isd:RiskReplyRepeatsDetails .
+
+# Deliberately outside what this library can match: a real concern with no risk
+# pattern behind it, so the view has something to report as stated-only. Saying
+# so is what keeps the rest of the register credible.
+isd:RiskCatalogueStale a beamr:Risk ;
+    rdfs:label "The tool catalogue lists a retired endpoint"@en ;
+    dct:description "A maintenance question, settled by process rather than by design." ;
+    pair:statedBy "Service engineer" ;
+    pair:statedPriority pair:LowStatedPriority .
+
+its:ToolCatalogue beamr:hasRisk isd:RiskCatalogueStale .

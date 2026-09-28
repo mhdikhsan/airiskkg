@@ -223,6 +223,31 @@ def _derive_facts(working_graph: Graph) -> Graph:
     return inferred
 
 
+def _apply_triage(working_graph: Graph, risk_findings: Graph) -> int:
+    """Let a judgement a person recorded stand in for the status a query emitted.
+
+    The output contract allows a finding exactly one pair:findingStatus, so a
+    decision replaces "candidate" rather than accompanying it. Finding IRIs are
+    deterministic, so the judgement survives a re-run; one about a finding this
+    run did not raise is simply not applied.
+
+    This changes no finding's existence - only what it is marked as.
+    """
+    decided = 0
+    for decision in working_graph.subjects(RDF.type, PAIR.TriageDecision):
+        finding = working_graph.value(decision, PAIR.decidesFinding)
+        status = working_graph.value(decision, PAIR.decidedStatus)
+        if finding is None or status is None:
+            continue
+        if (finding, RDF.type, PAIR.RiskFinding) not in risk_findings:
+            continue
+        for graph in (risk_findings, working_graph):
+            graph.remove((finding, PAIR.findingStatus, None))
+            graph.add((finding, PAIR.findingStatus, status))
+        decided += 1
+    return decided
+
+
 def _run_assessment_on_graph(
     working_graph: Graph,
     *,
@@ -243,6 +268,8 @@ def _run_assessment_on_graph(
         constructed = run_construct_query(working_graph, query_path)
         _merge(risk_findings, constructed)
         _merge(working_graph, constructed)
+
+    _apply_triage(working_graph, risk_findings)
 
     version = knowledge_base_fingerprint()
     run_output_dir: Path | None = None

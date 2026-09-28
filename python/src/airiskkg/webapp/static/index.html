@@ -14,7 +14,7 @@
     <div class="brand">
       <!-- Also the way back to the question the workbench opens with. -->
       <button type="button" class="brand-home" id="btn-home"
-              title="Start over — back to choosing what you are describing">
+              title="Start over">
         <h1>PAIR-AI</h1>
       </button>
       <span class="kb-badge hidden" id="kb-badge" title="The library that produced the findings on screen. Editing a .ttl while the server runs does not reload it, so this is how you tell which version answered."></span>
@@ -38,7 +38,6 @@
       </span>
       <span class="tool-group">
         <button type="button" class="btn" id="btn-overview" title="A one-page view of the business context and what was found in it — for showing to people who are not editing the graph"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.8" y="2.6" width="12.4" height="8.4" rx="1.2"/><line x1="8" y1="11" x2="8" y2="13.4"/><line x1="5.6" y1="13.4" x2="10.4" y2="13.4"/></svg><span>Overview</span></button>
-        <button type="button" class="btn" id="btn-export-svg" title="Download the diagram as a standalone SVG image"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="1.2"/><circle cx="5.6" cy="6.4" r="1.1"/><path d="M2.6 11.6L6 8.6l2.2 1.9L10.6 8l2.8 2.6"/></svg><span>Diagram</span></button>
         <!-- The format belongs to the button it formats. It used to sit two
              controls away, so "Turtle" read as a setting for nothing. -->
         <span class="btn-split">
@@ -103,12 +102,48 @@
         <span class="level-switch hidden" id="level-switch">
           <button type="button" class="level" id="level-business" title="The business process this system sits in">Business</button>
           <button type="button" class="level active" id="level-architecture" title="How the AI system is built">Architecture</button>
+          <button type="button" class="level" id="level-risk" title="What this assessment is for, and what it found against that">Risk</button>
         </span>
         <span class="breadcrumb hidden" id="breadcrumb"></span>
       </div>
       <div class="canvas-wrap" id="canvas-wrap">
         <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
         <svg id="process-canvas" class="hidden" xmlns="http://www.w3.org/2000/svg"></svg>
+        <!-- The third level. Not a canvas: the reading of a run, against the
+             question somebody asked it. Opens before a graph exists, which is
+             the point - it is where an assessment starts. -->
+        <section id="risk-view" class="risk-view hidden">
+          <div class="risk-body">
+            <div class="risk-main" id="risk-main">
+              <!-- The notation itself. A list makes a reader carry the graph in
+                   their head; the diagram puts each risk above what it concerns. -->
+              <svg id="risk-canvas" class="risk-canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+              <div class="risk-canvas-empty hidden" id="risk-canvas-empty"></div>
+              <!-- Two trays over the drawing, shaped like the architecture
+                   palettes: a head that folds them and a body sized to what is
+                   in it. The head is the way back, so a folded tray stays where
+                   the reader left it. -->
+              <div class="risk-tray risk-tools" id="risk-tools">
+                <button type="button" class="tray-head" id="btn-tools-fold"
+                        title="Hide the tools">Assess<span class="tray-toggle">&#9652;</span></button>
+                <div class="tray-body">
+                  <div class="risk-layers hidden" id="risk-layers"></div>
+                  <div class="risk-palette hidden" id="risk-palette"></div>
+                </div>
+              </div>
+              <aside class="risk-tray risk-side" id="risk-side-tray">
+                <button type="button" class="tray-head" id="btn-side-fold"
+                        title="Hide the detail">Detail<span class="tray-toggle">&#9652;</span></button>
+                <div class="tray-body" id="risk-side"></div>
+              </aside>
+              <div class="canvas-controls risk-canvas-controls">
+                <button type="button" class="ctl" id="btn-risk-zoom-in" title="Zoom in">+</button>
+                <button type="button" class="ctl" id="btn-risk-zoom-out" title="Zoom out">&minus;</button>
+                <button type="button" class="ctl" id="btn-risk-fit" title="Fit to view">&#8862;</button>
+              </div>
+            </div>
+          </div>
+        </section>
         <div class="process-palette hidden" id="process-palette" title="Click a pool to select it, then click a shape to add one"></div>
         <div class="node-detail hidden" id="process-detail"></div>
         <div class="palette" id="palette" title="Drag a symbol onto the canvas"></div>
@@ -220,6 +255,7 @@
       <span class="library-lead-actions">
         <button type="button" class="btn small" id="library-start-business">Draw a business process</button>
         <button type="button" class="btn small" id="library-start-architecture">Draw an architecture</button>
+        <button type="button" class="btn small" id="library-start-risk">Start from a risk</button>
       </span>
     </div>
 
@@ -241,12 +277,18 @@
     <div class="overview-head">
       <h2 id="overview-title">Business context</h2>
       <span class="overview-actions">
-        <button type="button" class="btn small" id="btn-overview-svg" title="Download this page's diagram as an SVG">Export diagram</button>
+        <button type="button" class="btn small" id="btn-overview-svg" title="Download the business process diagram on this page as an SVG">Export process</button>
+        <button type="button" class="btn small" id="btn-export-svg" title="Download the AI architecture diagram as a standalone SVG image"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="1.2"/><circle cx="5.6" cy="6.4" r="1.1"/><path d="M2.6 11.6L6 8.6l2.2 1.9L10.6 8l2.8 2.6"/></svg><span>Export architecture</span></button>
         <button type="button" class="btn small" id="btn-overview-close">Close</button>
       </span>
     </div>
     <div class="overview-body">
-      <div class="overview-diagram" id="overview-diagram"></div>
+      <div class="overview-main">
+        <div class="overview-diagram" id="overview-diagram"></div>
+        <!-- The architecture behind one activity, revealed in place: the
+             overview has no level to descend to. -->
+        <div class="overview-system hidden" id="overview-system"></div>
+      </div>
       <div class="overview-side" id="overview-side"></div>
     </div>
   </div>

@@ -21,8 +21,24 @@ Reading the graph
                                      edit-element, add-motif, delete-element.
     ``POST /api/import/t4b``         Tool4Boxology export (N-Triples/Turtle)
     ``POST /api/validate``           SHACL input contract + annotation guidance
+    ``GET  /api/backward``           Reading the library right to left: the
+                                     outcomes that must not happen and the
+                                     capabilities a system has, each mapped to
+                                     the risk patterns that reach them and the
+                                     motifs those apply to. Needs no graph.
+    ``POST /api/scope``              What a person has stated on this graph -
+                                     the scope and the stated risks - read live
+                                     from the editor without running anything.
+    ``POST /api/scope-edit``         One edit to what a person stated before the
+                                     run: set-scope, add-outcome, remove-outcome,
+                                     scope-to-system, set-agenda, define-risk, state-risk,
+                                     remove-risk,
+                                     triage (record or clear a judgement about a
+                                     finding; it replaces the emitted status).
     ``POST /api/assess``             Findings, motif matches, derived categories,
-                                     and the near-miss motif gap report.
+                                     the near-miss motif gap report, and the
+                                     risk view: the same run grouped into
+                                     concerns and read against the stated scope.
     ``POST /api/apply-control``      Insert a control onto the path a finding
                                      cites, via the registered SPARQL rewrite,
                                      and return the amended architecture.

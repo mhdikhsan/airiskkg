@@ -20,6 +20,7 @@ GRAPH_RAG_NS = "http://tool4boxology.org/Boxology/graphrag-example"
 WIEN_ENERGIE_NS = "http://w3id.org/airiskkg/example/wien-energie#"
 TARIFF_NS = "http://w3id.org/airiskkg/example/wien-energie-tariff#"
 AGENT_NS = "http://w3id.org/airiskkg/example/it-support#"
+PROMPT_INJECTION_NS = "http://w3id.org/airiskkg/example/prompt-injection#"
 
 
 def _declaring(directory: Path, namespace: str) -> list[Path]:

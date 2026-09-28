@@ -765,6 +765,68 @@ def test_whether_a_connection_is_a_message_follows_from_the_pools(client) -> Non
     assert view["messageFlows"][0]["source"] == ask
 
 
+def test_a_business_connector_can_go_on_its_own(client) -> None:
+    """Deliberately not the `delete` op.
+
+    `delete` takes an element and everything it owns, so the same IRI field
+    holding an activity by accident would take the activity. `disconnect`
+    refuses anything that is not a connector, and leaves both ends standing.
+    """
+    ttl = ""
+    ttl, pool = _draw(client, ttl, op="add-pool", label="Retailer")
+    ttl, first = _draw(client, ttl, op="add-activity", pool=pool, kind="task", label="Check")
+    ttl, second = _draw(client, ttl, op="add-activity", pool=pool, kind="task", label="Decide")
+    ttl, flow = _draw(client, ttl, op="connect", source=first, target=second)
+
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+    assert len(view["sequenceFlows"]) == 1
+
+    refused = client.post("/api/process-edit",
+                          json={"ttl": ttl, "op": "disconnect", "flow": first})
+    assert refused.status_code == 400, "an activity is not a connector"
+
+    ttl, _ = _draw(client, ttl, op="disconnect", flow=flow)
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+    assert view["sequenceFlows"] == [], "the connector is still there"
+    names = {row["id"] for row in view["activities"]}
+    assert {first, second} <= names, "removing a connector took an activity with it"
+
+
+def test_an_architecture_connector_is_named_as_drawn_not_as_a_triple(client) -> None:
+    """beam:use is drawn backwards - resource into process - so the line as
+    drawn and the triple that wrote it are not the same thing. The canvas sends
+    what it drew and the server holds the mapping, because a client guessing
+    would get exactly the use case wrong."""
+    ttl = (
+        "@prefix beam: <http://w3id.org/beam/core#> .\n"
+        "@prefix ex: <http://example.org/x#> .\n"
+        "ex:Step a beam:Infer ; beam:use ex:Doc ; beam:produce ex:Answer .\n"
+        "ex:Doc a beam:Data .\n"
+        "ex:Answer a beam:Data .\n"
+    )
+    view = client.post("/api/graph", json={"ttl": ttl}).get_json()
+    drawn = {(e["source"], e["target"], e["kind"]) for e in view["edges"]}
+    assert ("http://example.org/x#Doc", "http://example.org/x#Step", "use") in drawn, (
+        "beam:use is drawn resource into process"
+    )
+
+    # The line as drawn. Sent as a triple in that direction it would not exist.
+    response = client.post("/api/graph-edit", json={
+        "ttl": ttl, "op": "remove-edge",
+        "source": "http://example.org/x#Doc",
+        "target": "http://example.org/x#Step",
+        "kind": "use",
+    })
+    assert response.status_code == 200, response.get_json()
+    after = client.post("/api/graph", json={"ttl": response.get_json()["ttl"]}).get_json()
+    kinds = {e["kind"] for e in after["edges"]}
+    assert "use" not in kinds, "the use connector is still there"
+    assert "produce" in kinds, "the other connector went too"
+    assert len(after["nodes"]) == len(view["nodes"]), (
+        "removing a connector took an element with it"
+    )
+
+
 def test_deleting_a_participant_takes_its_process_and_connectors(client) -> None:
     """A pool owns its process."""
     ttl = ""

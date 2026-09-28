@@ -2,21 +2,20 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
+from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, URIRef
 
 from airiskkg.assessment_runner import PAIR, load_base_graph
 from airiskkg.workbench.templates import motif_templates
-from airiskkg.workbench.terms import display_label, label, short, source_pair
+from airiskkg.workbench.terms import (
+    display_label,
+    domain_of,
+    label,
+    risk_domains,
+    short,
+    source_pair,
+)
 
 _BEAMR_CONTROL = URIRef("http://w3id.org/beam/risk#RiskControl")
-_NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
-# The one loaded taxonomy whose top level is a taxonomy of *harms* rather than
-# of weaknesses - it says so itself: "a domain taxonomy of AI risks organized
-# into high-level AI risk domains and subdomains". OWASP numbers weaknesses, so
-# it names where a pattern came from, not what it may lead to.
-_MIT_DOMAIN_TAXONOMY = URIRef(
-    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy"
-)
 _PAT = "http://w3id.org/airiskkg/patterns#"
 _TECHNICAL = PAIR.TechnicalControl
 _NON_TECHNICAL = PAIR.NonTechnicalControl
@@ -58,6 +57,19 @@ def _ref(graph: Graph, resource: URIRef) -> dict:
     name = str(stated) if stated else (
         str(resource).split("//", 1)[-1].split("/", 1)[0] if url else label(graph, resource)
     )
+    # A design pattern citation is minted in pat: but stands for somebody else's
+    # catalogue, so its namespace is the wrong answer to "where did this come
+    # from?" - reading it off the IRI would credit Fowler's patterns to PAIR-AI.
+    if (resource, RDF.type, PAIR.DesignPatternCitation) in graph:
+        cited = graph.value(resource, DCTERMS.source)
+        if cited is not None:
+            url = _external(cited) or url
+            full = brief = str(cited).split("//", 1)[-1].split("/", 1)[0]
+        # A DOI host says "doi.org", which reads as a peer of "martinfowler.com".
+        # The venue is the answer to "where did this come from?", so prefer it.
+        venue = graph.value(resource, DCTERMS.isPartOf)
+        if venue is not None:
+            full = brief = str(venue)
     return {
         "id": str(resource),
         "label": name,
@@ -89,22 +101,6 @@ def _control_ref(graph: Graph, control: URIRef) -> dict:
 def _sorted_refs(graph: Graph, subject: URIRef, predicate: URIRef) -> list[dict]:
     refs = [_ref(graph, obj) for obj in graph.objects(subject, predicate)]
     return sorted(refs, key=lambda ref: (ref["sourceShort"], ref["label"].lower()))
-
-
-def _risk_domains(graph: Graph) -> set[URIRef]:
-    return {
-        group
-        for group in graph.subjects(RDF.type, _NEXUS.RiskGroup)
-        if (group, SKOS.inScheme, _MIT_DOMAIN_TAXONOMY) in graph
-    }
-
-
-def _domain_of(graph: Graph, entry: URIRef, domains: set[URIRef]) -> URIRef | None:
-    """The domain of harm this taxonomy entry rolls up to, if it has one."""
-    for broader in graph.objects(entry, SKOS.broader):
-        if broader in domains:
-            return broader
-    return None
 
 
 def _family(graph: Graph, motif: URIRef) -> dict | None:
@@ -146,7 +142,7 @@ def _risk_pattern_entry(graph: Graph, pattern: URIRef, domains: set[URIRef]) -> 
     reached: dict[str, dict] = {}
     for term in graph.objects(pattern, PAIR.mayIndicateRisk):
         ref = _ref(graph, term)
-        domain = _domain_of(graph, term, domains)
+        domain = domain_of(graph, term, domains)
         ref["domain"] = label(graph, domain) if domain is not None else None
         taxonomy.append(ref)
         if domain is not None:
@@ -188,7 +184,7 @@ def library_catalogue() -> dict:
          for motif in set(graph.subjects(RDF.type, PAIR.GraphMotif))),
         key=lambda entry: entry["label"].lower(),
     )
-    domains = _risk_domains(graph)
+    domains = risk_domains(graph)
     patterns = sorted(
         (_risk_pattern_entry(graph, pattern, domains)
          for pattern in set(graph.subjects(RDF.type, PAIR.RiskPattern))),

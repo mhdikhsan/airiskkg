@@ -1,0 +1,187 @@
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ex:   <http://w3id.org/airiskkg/example/prompt-injection#> .
+
+# Four minimal systems, written to be drawn rather than to be realistic.
+#
+# Each one is the smallest graph that makes one point about how a candidate
+# risk is raised, so a figure can show the whole chain - motif, data category,
+# applicability condition, finding - without anything else on the page.
+#
+#   A  Direct injection      untrusted user input reaches generation
+#   B  Indirect injection    untrusted knowledge source reaches it through retrieval
+#   C  Screened              the same shape as A, with an input guardrail
+#   D  Internal content      the same shape as A, with content stated not untrusted
+#
+# A and D share a motif and differ only in an annotated data category; A and B
+# share a risk pattern and differ in the motif that carries it. Those two
+# contrasts are the point.
+#
+# A carries a second category as well. The customer's question is personal as
+# well as untrusted, and the two travel the same path for different reasons: one
+# raises prompt injection at the point content enters the prompt, the other
+# raises sensitive information disclosure at the point content leaves for a
+# reader. A candidate risk does not stop at the vulnerability that raised it.
+
+
+### A — direct prompt injection, and what it extends to
+#
+# The user's own text is the untrusted content, and the generation step reads
+# it. OWASP calls this the direct kind. The same text is also personal, so a
+# second risk pattern reads the same path and reaches a different harm.
+
+ex:DirectAssistant a beam:Element , beam:System ;
+    rdfs:label "A — Direct assistant" ;
+    beam:description "A question goes straight to the model." ;
+    beam:hasProcess ex:A_Answering ;
+    beam:hasResource ex:A_Question , ex:A_LLM , ex:A_Answer .
+
+ex:A_Question a beam:Data ;
+    rdfs:label "Customer question" ;
+    pair:playsRole pair:UserInput ;
+    pair:containsDataCategory pair:ExternalUserContent , pair:UntrustedContent ,
+                              pair:SensitiveInformation .
+
+ex:A_LLM a beam:StatisticalModel ;
+    rdfs:label "Assistant model" ;
+    pair:playsRole pair:GenerativeModel .
+
+ex:A_Answering a beam:Infer , beam:Process ;
+    rdfs:label "Answer the question" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use ex:A_Question , ex:A_LLM ;
+    beam:produce ex:A_Answer .
+
+ex:A_Answer a beam:Data ;
+    rdfs:label "Answer to the customer" ;
+    pair:playsRole pair:UserFacingOutput .
+
+
+### B — indirect prompt injection
+#
+# The user's question is internal; the knowledge source is what carries
+# untrusted content, and it reaches the prompt by being retrieved. The category
+# travels along the flow, so the risk is raised where it lands rather than
+# where it was annotated.
+
+ex:GroundedAssistant a beam:Element , beam:System ;
+    rdfs:label "B — Grounded assistant" ;
+    beam:description "A question answered from retrieved documents." ;
+    beam:hasProcess ex:B_Retrieving , ex:B_BuildPrompt , ex:B_Generating ;
+    beam:hasResource ex:B_Question , ex:B_DocumentStore , ex:B_Context ,
+                     ex:B_Prompt , ex:B_LLM , ex:B_Response .
+
+ex:B_Question a beam:Data ;
+    rdfs:label "Support question" ;
+    pair:playsRole pair:UserInput ;
+    pair:containsDataCategory pair:Information .
+
+ex:B_DocumentStore a beam:Data ;
+    rdfs:label "Connected document store" ;
+    pair:playsRole pair:KnowledgeSource ;
+    pair:containsDataCategory pair:UntrustedContent .
+
+ex:B_Retrieving a beam:Process ;
+    rdfs:label "Retrieve documents" ;
+    pair:playsRole pair:RetrievalStep ;
+    beam:use ex:B_Question , ex:B_DocumentStore ;
+    beam:produce ex:B_Context .
+
+ex:B_Context a beam:Data ;
+    rdfs:label "Retrieved passages" ;
+    pair:playsRole pair:RetrievedContext .
+
+ex:B_BuildPrompt a beam:Transform , beam:Process ;
+    rdfs:label "Assemble the prompt" ;
+    pair:playsRole pair:PromptConstructionStep ;
+    beam:use ex:B_Context , ex:B_Question ;
+    beam:produce ex:B_Prompt .
+
+ex:B_Prompt a beam:Data ;
+    rdfs:label "Prompt with passages" ;
+    pair:playsRole pair:PromptTemplate .
+
+ex:B_LLM a beam:StatisticalModel ;
+    rdfs:label "Foundation model" ;
+    pair:playsRole pair:FoundationLLM , pair:GenerativeModel .
+
+ex:B_Generating a beam:Infer , beam:Process ;
+    rdfs:label "Generate the answer" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use ex:B_LLM , ex:B_Prompt ;
+    beam:produce ex:B_Response .
+
+ex:B_Response a beam:Data ;
+    rdfs:label "Grounded answer" ;
+    pair:playsRole pair:LLMResponse , pair:UserFacingOutput .
+
+
+### C — the same shape as A, screened
+#
+# One step is added: a guardrail that reads the question and informs the
+# generation step. The applicability condition no longer holds, so no candidate
+# prompt injection is raised - a control clears a finding by being built.
+
+ex:ScreenedAssistant a beam:Element , beam:System ;
+    rdfs:label "C — Screened assistant" ;
+    beam:description "The same assistant, with the question screened first." ;
+    beam:hasProcess ex:C_Screening , ex:C_Answering ;
+    beam:hasResource ex:C_Question , ex:C_LLM , ex:C_Answer .
+
+ex:C_Question a beam:Data ;
+    rdfs:label "Customer question (screened)" ;
+    pair:playsRole pair:UserInput ;
+    pair:containsDataCategory pair:ExternalUserContent , pair:UntrustedContent .
+
+ex:C_Screening a beam:Process ;
+    rdfs:label "Screen the question" ;
+    pair:playsRole pair:InputGuardrailStep ;
+    beam:use ex:C_Question ;
+    beam:inform ex:C_Answering .
+
+ex:C_LLM a beam:StatisticalModel ;
+    rdfs:label "Assistant model" ;
+    pair:playsRole pair:GenerativeModel .
+
+ex:C_Answering a beam:Infer , beam:Process ;
+    rdfs:label "Answer the screened question" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use ex:C_Question , ex:C_LLM ;
+    beam:produce ex:C_Answer .
+
+ex:C_Answer a beam:Data ;
+    rdfs:label "Answer to the customer" ;
+    pair:playsRole pair:UserFacingOutput .
+
+
+### D — the same shape as A, over content stated to be internal
+#
+# Structurally identical to A. The one difference is the data category on the
+# input, and it is stated rather than left silent: saying "this is internal
+# content" is a claim, and saying nothing is not.
+
+ex:InternalSummariser a beam:Element , beam:System ;
+    rdfs:label "D — Internal summariser" ;
+    beam:description "The same shape, over content the modeller states is internal." ;
+    beam:hasProcess ex:D_Summarising ;
+    beam:hasResource ex:D_Note , ex:D_LLM , ex:D_Summary .
+
+ex:D_Note a beam:Data ;
+    rdfs:label "Internal meeting note" ;
+    pair:playsRole pair:UserInput ;
+    pair:containsDataCategory pair:Information .
+
+ex:D_LLM a beam:StatisticalModel ;
+    rdfs:label "Summarising model" ;
+    pair:playsRole pair:GenerativeModel .
+
+ex:D_Summarising a beam:Infer , beam:Process ;
+    rdfs:label "Summarise the note" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use ex:D_Note , ex:D_LLM ;
+    beam:produce ex:D_Summary .
+
+ex:D_Summary a beam:Data ;
+    rdfs:label "Summary for the team" ;
+    pair:playsRole pair:UserFacingOutput .

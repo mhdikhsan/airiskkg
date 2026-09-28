@@ -1433,4 +1433,13 @@ export function initLibrary() {
         closeLibrary();
       }
     );
+
+  $("#library-start-risk")
+    .addEventListener(
+      "click",
+      () => {
+        startDrawing("risk");
+        closeLibrary();
+      }
+    );
 }

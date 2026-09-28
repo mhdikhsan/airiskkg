@@ -2,7 +2,7 @@ from __future__ import annotations
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 from airiskkg.assessment_runner import PAIR, AssessmentResult, applicable_controls
 from airiskkg.knowledge_base import graph_fingerprint
-from airiskkg.workbench.terms import source_pair
+from airiskkg.workbench.terms import domain_of, risk_domains, source_pair
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 PROV = Namespace("http://www.w3.org/ns/prov#")
@@ -106,7 +106,7 @@ def _motif_ref(graph: Graph, motif: URIRef | None) -> dict | None:
     return _element_ref(graph, motif) if motif is not None else None
 
 
-def _finding_view(graph: Graph, finding: URIRef) -> dict:
+def _finding_view(graph: Graph, finding: URIRef, domains: set[URIRef]) -> dict:
     motif = graph.value(finding, PAIR.generatedByMotif)
     mechanism = graph.value(finding, PAIR.hasDerivedMechanism)
     status = graph.value(finding, PAIR.findingStatus)
@@ -119,18 +119,46 @@ def _finding_view(graph: Graph, finding: URIRef) -> dict:
     applicable = applicable_controls(graph, finding)
     evidence = sorted(graph.objects(finding, PAIR.hasEvidence), key=str)
 
+    # The three the risk queries emit on every finding and this view used to
+    # drop: which risk pattern fired, which match it fired over, and why.
+    risk_pattern = graph.value(finding, PAIR.generatedByRiskPattern)
+    from_match = graph.value(finding, PAIR.generatedFromMatch)
+    conditions = sorted(graph.objects(finding, PAIR.hasSatisfiedCondition), key=str)
+
     return {
         "id": str(finding),
         "label": _label(graph, finding),
         "description": str(description) if description else None,
         "motif": _motif_ref(graph, motif),
+        "riskPattern": _motif_ref(graph, risk_pattern),
+        "fromMatch": str(from_match) if from_match is not None else None,
         "mechanism": _element_ref(graph, mechanism) if mechanism is not None else None,
         "status": str(status) if status else None,
+        "satisfiedConditions": [_ref(graph, c) for c in conditions],
+        "riskDomains": _harm_domains(graph, taxonomy_entries, domains),
         "taxonomyEntries": [_ref(graph, entry) for entry in taxonomy_entries],
         "suggestedControls": [_control_ref(graph, c, applicable) for c in suggested_controls],
+        "applicableControlCount": len(applicable),
         "groundedControlFamilies": _grounded_control_families(graph, taxonomy_entries),
         "evidence": [_element_ref(graph, element) for element in evidence],
     }
+
+
+def _harm_domains(graph: Graph, entries: list[URIRef], domains: set[URIRef]) -> list[dict]:
+    """What this finding may lead to — traversed, never asserted.
+
+    An entry no upstream mapping reaches contributes nothing, so a finding can
+    legitimately roll up to no domain at all.
+    """
+    reached = {
+        domain
+        for entry in entries
+        if (domain := domain_of(graph, entry, domains)) is not None
+    }
+    return sorted(
+        (_element_ref(graph, domain) for domain in reached),
+        key=lambda row: row["label"].lower(),
+    )
 
 
 def _motif_match_view(graph: Graph, match: URIRef) -> dict:
@@ -275,6 +303,7 @@ def _run_view(result: AssessmentResult, architecture: Graph | None) -> dict:
 
 def summarize_result(result: AssessmentResult, *, architecture: Graph | None = None) -> dict:
     findings = sorted(result.risk_findings.subjects(RDF.type, PAIR.RiskFinding), key=str)
+    domains = risk_domains(result.combined_graph)
     matches = sorted(result.motif_matches.subjects(RDF.type, PAIR.MotifMatch), key=str)
     derived = _derived_categories(result)
     derived_facts = {(row["element"]["id"], row["category"]["id"]) for row in derived}
@@ -286,7 +315,9 @@ def summarize_result(result: AssessmentResult, *, architecture: Graph | None = N
             "derivedCategoryCount": len(derived_facts),
             "findingsByOwaspCategory": _findings_by_owasp_category(result.combined_graph, findings),
         },
-        "findings": [_finding_view(result.combined_graph, finding) for finding in findings],
+        "findings": [
+            _finding_view(result.combined_graph, finding, domains) for finding in findings
+        ],
         "motifMatches": [_motif_match_view(result.combined_graph, match) for match in matches],
         "derivedCategories": derived,
         "run": _run_view(result, architecture),

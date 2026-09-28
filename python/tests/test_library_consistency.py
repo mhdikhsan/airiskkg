@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 import pytest
-from rdflib import DCTERMS, RDF, Graph, Namespace, URIRef
+from rdflib import DCTERMS, RDF, RDFS, Graph, Namespace, URIRef
 
 from airiskkg.knowledge_base import ontology_files  # noqa: E402
 
@@ -462,6 +462,46 @@ def test_every_motif_and_risk_pattern_states_its_source(libraries) -> None:
         f"{len(missing_source)} entries without dct:source or pair:derivedFrom: "
         + ", ".join(missing_source)
     )
+
+
+def test_derived_from_points_at_an_entity_never_at_a_document(libraries) -> None:
+    """Pointed at a URL it repeats dct:source, and "which motifs came from this
+    design pattern?" stops being answerable - what 23 references to one Fowler
+    article URL cost."""
+    offenders = [
+        f"{subject} derivedFrom {origin}"
+        for rdf_type in (PAIR.GraphMotif, PAIR.RiskPattern)
+        for subject in sorted(libraries.subjects(RDF.type, rdf_type), key=str)
+        for origin in libraries.objects(subject, PAIR.derivedFrom)
+        if not str(origin).startswith(("http://w3id.org/airiskkg", "http://w3id.org/beam"))
+    ]
+    assert not offenders, (
+        "pair:derivedFrom must name an entity (a taxonomy concept or a "
+        "pair:DesignPatternCitation), not a document URL:\n" + "\n".join(offenders)
+    )
+
+
+def test_a_design_pattern_citation_stays_a_citation(libraries) -> None:
+    """A description here would start modelling the design pattern, which the
+    method says it does not: structure belongs to the motif, consequences to the
+    risk pattern, intent and applicability nowhere."""
+    allowed = {RDF.type, RDFS.label, SKOS_NS.prefLabel, DCTERMS.source,
+               DCTERMS.isPartOf, DCTERMS.bibliographicCitation}
+    citations = set(libraries.subjects(RDF.type, PAIR.DesignPatternCitation))
+    assert citations, "the citation layer is registered but loaded nothing"
+    offenders = [
+        f"{subject} carries {predicate}"
+        for subject in sorted(citations, key=str)
+        for predicate in libraries.predicates(subject, None)
+        if predicate not in allowed
+    ]
+    assert not offenders, (
+        "A pair:DesignPatternCitation may carry only a label and dct:source:\n"
+        + "\n".join(sorted(set(offenders)))
+    )
+    unsourced = [str(c) for c in sorted(citations, key=str)
+                 if libraries.value(c, DCTERMS.source) is None]
+    assert not unsourced, "citations with no document to cite: " + ", ".join(unsourced)
 
 
 def test_every_pattern_role_states_its_provenance(libraries) -> None:

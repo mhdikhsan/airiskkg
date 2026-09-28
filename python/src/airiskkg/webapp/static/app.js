@@ -16,8 +16,10 @@ import { clearFindings, reReadFindings, renderFindings } from "./panels/findings
 import { renderHistory } from "./panels/history.js";
 import { closeLibrary, initLibrary, isLibraryOpen, openLibrary } from "./panels/library.js";
 import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
-import { applyConnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
+import { applyConnect, applyDisconnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
 import { openOverview } from "./panels/overview.js";
+import { clearRisk, initRisk } from "./panels/risk.js";
+import { RiskCanvas } from "./lib/risk_canvas.js";
 import { STARTER_BPMN, STARTER_TTL, initPalette } from "./panels/palette.js";
 import { noteChange } from "./panels/run.js";
 import { clearValidation, renderValidation } from "./panels/validation.js";
@@ -91,6 +93,8 @@ async function init() {
     clearMotifs();
     clearDerivedCategories();
     clearValidation();
+    clearRisk();
+    ProcessCanvas.forgetLayout();
   };
 
   on("document:replaced", forgetTheLastDocument);
@@ -121,6 +125,7 @@ async function init() {
   GraphView.setAnnotation({
     vocabulary, classes,
     onEdit: applyEdit, onDelete: applyDelete, onConnect: applyConnect, onStatus: setStatus,
+    onDisconnect: applyDisconnect,
     onSelect: (id) => revealInSource([id]),
     // Picking an architecture changes what the palette adds to, and the bar is
     // where that is said - so it has to be redrawn without a round trip.
@@ -130,6 +135,7 @@ async function init() {
   Annotate.init({ vocabulary, onStatus: setStatus });
 
   initPalette();
+  initRisk();
   initMotifPalette(vocabulary.motifTemplates || []);
   renderHistory();
 
@@ -190,6 +196,9 @@ async function init() {
     state.levelChosenByHand = true;
     setLevel("business");
   });
+  /* The one level that is useful before a graph exists: a reader with no
+   * drawing can still say what must not happen and be told what to look for. */
+  $("#level-risk").addEventListener("click", () => startDrawing("risk"));
   $("#level-architecture").addEventListener("click", () => {
     state.levelChosenByHand = true;
     // By hand means the whole layer, not the activity descended through.
@@ -423,4 +432,4 @@ async function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
-window.PairAI = { Editor, GraphView, ProcessCanvas, VersionHistory, state };
+window.PairAI = { Editor, GraphView, ProcessCanvas, RiskCanvas, VersionHistory, state };
