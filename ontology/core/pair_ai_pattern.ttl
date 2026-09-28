@@ -42,6 +42,10 @@ pair:GraphMotif a owl:Class ;
     rdfs:label "Graph Motif"@en ;
     rdfs:comment "A reusable, descriptive graph pattern over pattern roles and flow relations that captures a recurring system configuration."@en .
 
+pair:DesignPatternCitation a owl:Class ;
+    rdfs:label "Design Pattern Citation"@en ;
+    rdfs:comment "Identity handle for one architecture design pattern a motif was read from, so pair:derivedFrom names an entity. A citation, not a model: label and dct:source only."@en .
+
 pair:PatternNode a owl:Class ;
     rdfs:label "Pattern Node"@en ;
     rdfs:comment "An abstract node of a graph motif, constrained by an expected Boxology class and/or an expected pattern role."@en .
@@ -223,7 +227,7 @@ pair:operationalizesRiskCondition a owl:ObjectProperty ;
 
 pair:derivedFrom a owl:ObjectProperty ;
     rdfs:label "derived from"@en ;
-    rdfs:comment "Derivation provenance for curated motifs and risk patterns."@en ;
+    rdfs:comment "Derivation provenance for curated motifs and risk patterns. Its object is always an entity - a taxonomy concept or a pair:DesignPatternCitation - never a document URL, which is what dct:source is for."@en ;
     rdfs:domain [
         a owl:Class ;
         owl:unionOf (pair:GraphMotif pair:RiskPattern)
