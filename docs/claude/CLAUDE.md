@@ -24,7 +24,7 @@ Rules are stated first and justified in one clause. The incidents behind them ar
 
   | Level | Term | Carries | Modeled as |
   | --- | --- | --- | --- |
-  | Type, with rationale | architecture design pattern (RAG, agentic loop) | structure + intent + applicability + consequences | **not modelled**; cited via `dct:source` / `pair:derivedFrom` |
+  | Type, with rationale | architecture design pattern (RAG, agentic loop) | structure + intent + applicability + consequences | **not modelled**; identified only by a `pair:DesignPatternCitation` |
   | Type, structure only | **architectural motif** | pattern roles + flow relations | `pair:GraphMotif` |
   | Instance | **motif match** | bindings from pattern nodes to elements | `pair:MotifMatch` |
 
@@ -36,25 +36,91 @@ Rules are stated first and justified in one clause. The incidents behind them ar
   **motif is never used for an occurrence**; that is a motif match. Compounds are fine
   (`pattern role`, `pattern node`, Risk Pattern Library); see the glossary Section B naming
   exception for why `pair:Pattern*` term names keep the word.
+
+- **A shared name is not a shared thing.** Fowler documents a gen-AI design pattern called
+  Direct Prompting, and the library declares `pat:DirectPromptingMotif`. These are different
+  kinds of entity, not two names for one:
+
+  | | Fowler's *Direct Prompting* | `pat:DirectPromptingMotif` |
+  | --- | --- | --- |
+  | In the graph? | No. Only a citation handle | Yes: 4 pattern nodes, 3 pattern edges |
+  | Read when? | While designing, to decide what to build | Afterwards, matched against what was built |
+  | Says anything about risk? | Yes, its *consequences* warn it is ungrounded | No. Risk-neutral by construction (R2) |
+
+  A design pattern's four sections land in three places, which is the shortest statement of
+  the method: **structure** becomes the motif, **intent and applicability** are dropped, and
+  **consequences** are re-attached by the AI risk pattern. That is why
+  `pat:DirectPromptingWithoutGroundingRiskPattern` exists and carries the negative a motif name
+  may not (R9).
+
+  The collision is a coincidence of this one case. The relation is m:n, so RAG induces three
+  motifs while Direct Prompting happens to induce one, which is what makes it misleading. In
+  identifiers the `Motif` suffix disambiguates. In prose, never let "Direct Prompting" stand
+  alone: name the level.
+
+- **`pair:derivedFrom` names an entity; `dct:source` names a document.** All 31 motifs and 15
+  risk patterns now derive from an entity, held by
+  `test_derived_from_points_at_an_entity_never_at_a_document`. Pointed at a URL, `derivedFrom`
+  only repeats `dct:source`, and *"which motifs came from this design pattern?"* stops being
+  answerable. That is what 23 motif references to one Fowler article URL cost.
+- **A design pattern is identified by a `pair:DesignPatternCitation`, never modelled.** The 22
+  handles at the top of `motif.ttl` carry a label and a `dct:source`, and nothing else.
+  `test_a_design_pattern_citation_stays_a_citation` fails on any other predicate, because a
+  `dct:description` there would start modelling the intent and consequences the method drops.
+  The handles are what turn the m:n relation into a traversal: `Cite_Guardrails` is reached by
+  Guardrails, Input Screening and Output Screening.
+- **A handle is minted in `pat:` but stands for someone else's catalogue.** So `library.py`
+  reads its origin off its own `dct:source`. Reading it off the IRI would credit Fowler's
+  patterns to PAIR-AI.
+- **Not every motif derives from a design pattern, and the graph says which.** The 4 agentic
+  motifs point `derivedFrom` straight at their OWASP ASI concepts and carry no handle, because
+  their structural signature was inferred from a *risk* entry rather than read off a catalogue.
+  `ExternalDependencyMotif` names `owasp:llm03-supply-chain` for the same reason. Keep that
+  visible; it is a weaker derivation and must be described as one.
+- **The Fowler handles cite the article, not a section.** The article has per-pattern anchors,
+  and using them is a one-line change per handle once they are verified against the live page.
+  Identity does not wait on that: it is the handle's IRI and label. Do not invent anchors.
 - **Ask before any change that alters the semantics of existing motif SPARQL queries.**
 
 ---
 
 ## What this project is
 
-PAIR-AI is a **pattern-based AI risk assessment method** working over **two views of the
+PAIR-AI is a **pattern-based AI risk assessment method** working over **three views of the
 same system**:
 
 - the **architecture view** — an RDF graph of the AI system (BEAM, the Boxology Notation
   vocabulary);
 - the **process view** — the business process that runs it (sBPMN 2.0), joined to the
-  architecture by `pair:refinedBy`.
+  architecture by `pair:refinedBy`;
+- the **risk view** — what a run produced and what people said about it, reconciled on one
+  diagram. It reads the other two; it never writes to them.
 
 It serves **both phases of a system's life**: assessing a design before it is built, and
 auditing a system already in production. **What it reads is always the represented
-structure, never runtime behaviour** — auditing a running system means describing what was
+structure, never runtime behaviour.** Auditing a running system means describing what was
 actually built and assessing that description. Nothing here observes traffic, logs, or
 model outputs, and no finding may be worded as if it did (R4).
+
+**The word "data" is where that line gets crossed.** A `beam:Data` node declares that a kind
+of resource exists at this point in the design. It is a labelled box, never the data itself,
+and no value ever flows anywhere. The graph describes a system; it is not a trace of one
+running.
+
+| The method reads this (structure) | It never reads this (runtime behaviour) |
+| --- | --- |
+| a node exists and is typed `beam:Data` | the bytes, rows, or values in it |
+| it is annotated `facet:hasPersonalDataCategory dpv:Name` | whether a name is genuinely present |
+| a generation step `beam:use`s it | how often that step runs, or with what latency |
+| that step `beam:produce`s a user-facing output | what the model actually answered |
+| no validation step is represented on that path | whether validation happens in code nobody modelled |
+
+Two consequences follow. Annotations are claims by a modeler rather than measurements (R8),
+which is why a missing facet means "not filled in" and never "false" (R10). And the submitted
+graph is the entire universe an absence check ranges over (R4), so every finding says *the
+submitted graph does not represent a control here*, never *this system has no control*.
+Wording a finding as though the second had been checked is the one error that breaks candidate
+framing.
 
 It matches **architectural motifs** — reusable, type-level configurations of **pattern
 roles** connected by flow relations — against those graphs. A motif is not itself executed:
@@ -198,6 +264,8 @@ Read before non-trivial changes.
   AgentO later) enter only through alignment adapters in `ontology/alignments/` plus
   normalizer scripts. Nothing tool-specific in `beam_core.ttl`.
 - **Task ≠ Capability ≠ Application Type** — three separate axes, SKOS-mapped, never merged.
+  The rule is preventive and **nothing in the pipeline exercises it yet**; see *Declared but
+  not implemented* before describing it as a capability of the method.
 - **Declared-but-unused vocabulary gets removed, not documented.** `pair:maturity` and
   `pair:identifiesCandidateRisk` were deleted because nothing wrote them and nothing read them
   — they described intentions rather than the pipeline. Reinstate such a term only together
@@ -320,6 +388,77 @@ in `NOTICE.md`.
 
 ---
 
+## Locked decisions — the risk view
+
+Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
+
+- **Elicited context scopes the reading. It never gates detection.** Everything else here
+  follows from this. Gating detection on an annotation would make "we did not ask" and "it
+  does not apply" indistinguishable, which is the failure R4 exists to prevent and an R10
+  violation besides. `test_stating_a_scope_does_not_change_what_is_detected` strips every
+  scope and stated-risk triple and asserts an identical finding set, and
+  `test_a_judgement_changes_no_finding_into_or_out_of_existence` does the same for triage.
+  **No `.rq` file was touched to build this view, and none may be.**
+- **The method is risk storming** (Simon Brown, in the *Design It!* adaptation), not an
+  invention. PAIR-AI turned out to be risk storming with steps 2 and 4 missing and step 1
+  automated. Step 1 is stronger here than in C4: two machine-readable levels joined by
+  `pair:refinedBy`.
+- **A stated risk and a finding are different types, and stay apart.** A `beamr:Risk` attached
+  by `beamr:hasRisk` is a person's claim; a `pair:RiskFinding` is a structural candidate.
+  Keeping them apart is what lets them be reconciled, and the reconciliation is **computed
+  from shared evidence elements, never asserted as a triple**. Asserting it would claim the
+  person and the library meant the same thing. No third term was minted, because AIRO already
+  had one.
+- **Severity is never computed, and that is the method rather than a gap.** In risk storming
+  the priority is a judgement recorded by named participants, and the review step exists to
+  surface disagreement. So the tool stays scoreless and `pair:statedPriority` carries human
+  priority with `pair:statedBy` provenance, which is R8-shaped like every other facet.
+  `test_priority_is_carried_from_the_person_never_computed` holds it.
+- **Findings group into concerns, and grouping loses nothing.** Motifs nest, so the same
+  weakness at the same place arrives once per structure that reached it. Onyx raised
+  `improper output handling` four times with byte-identical evidence. A concern is the
+  (risk pattern, evidence set) group; `test_grouping_loses_no_finding` and
+  `test_co_matching_motifs_collapse_to_one_concern` pin both halves.
+- **`scopeMatch` has three values, and `unclassified` is not a polite `out`.** Nothing upstream
+  maps `GoalHijack` or `InsecureAgentCommunication` to a MIT domain, so a domain filter would
+  hide exactly the agentic risks a service-desk owner needs: 4 of 8 findings on the IT support
+  agent reach no domain at all. The scope cannot speak to them, so the concern is shown.
+  Pinned by `test_a_concern_with_no_risk_domain_is_unclassified_never_out`.
+- **What narrows a review is the system boundary, not the harm domain.** Filtering Onyx's 22
+  findings by MIT domain keeps 21, 12, 5 and 1, which barely narrows anything. Scoping the
+  tariff scene to `CustomerRecords` marks 9 of 10 concerns out and keeps 1, while still listing
+  all 10. That is what `pair:scopedToSystem` is for.
+- **Triage is a node, not a literal.** `assessment_output_contract.ttl` requires exactly one
+  `pair:findingStatus` per finding from a closed list of five, so a judgement has to *replace*
+  the emitted status rather than sit beside it. A bare literal also cannot say who decided,
+  when, or why. Hence `pair:TriageDecision` with `pair:decidesFinding` and
+  `pair:decidedStatus`, living in the submitted graph and applied by `_apply_triage`. Use
+  `decidedStatus` and not `findingStatus`, which is declared with
+  `rdfs:domain pair:RiskFinding`. The four decidable values are the contract's own vocabulary
+  minus `candidate`; they were not chosen here.
+- **A decision about a finding the run no longer raises is not applied.** Finding IRIs are
+  deterministic so a judgement survives a re-run, but a design that changed may not raise the
+  thing that was judged, and a decision must never resurrect it.
+- **A concern settles only when every finding under it is decided.** Settling half of them
+  would report a decision nobody made.
+- **The view is a diagram because a list made the reader carry the graph in their head.**
+  `risk_diagram.py` maps a run onto the AIRO chain BEAM already declares
+  (`beamr:RiskSource → beamr:Risk → beamr:Consequence → beamr:Impact`, with
+  `beamr:RiskControl` modifying) rather than inventing a presentation. Two properties the
+  drawing must keep: **a risk sits above the elements it concerns**, inheriting its horizontal
+  position from what it attaches to, which is risk storming step 3 and the whole reason the
+  notation reads; and **stated is solid, derived is dashed**, without which the diagram is a
+  pile rather than a reconciliation.
+- **Storming is offered, never enforced.** Showing machine findings before a team elicits
+  anchors the room completely: everyone ratifies the machine and identifies nothing it missed.
+  So the toggle hides concerns while the register stays usable. Enforcing it would break the
+  ordinary "load example, assess" flow, and the discipline is the team's to keep.
+- **"Stated only" is a bucket, not a dropped row.** An expert concern with no risk pattern in
+  this library, such as provider unavailability or weak API auth, is reported as unmatched.
+  Saying so is what keeps the rest credible.
+
+---
+
 ## Locked decisions — the workbench
 
 ### The canvas
@@ -405,9 +544,12 @@ in `NOTICE.md`.
   (self-contained renderers and widgets) + `panels/` (one file per thing on screen).
   `test_webapp_module_layout.py` holds three rules: **no import cycles**, **every imported name
   is actually exported**, and **exactly one browser global** (`window.PairAI`).
-- **`core/bus.js` exists for one case** — a scope change redraws both the canvas and the
-  findings list, and the two panels that trigger it are the two that draw it, so they emit
-  rather than call across.
+- **`core/bus.js` carries four events, and each one earns its place.** A panel emits rather
+  than calling across only when the thing it changes is drawn by a panel it must not import.
+  Counted 2026-09-14: `scope:changed` (canvas and findings both redraw), `choice:settled`,
+  `document:replaced`, and `assessment:rendered` (the risk level reads a run it does not
+  draw). **Adding a fifth means naming which two panels must not import each other.** A bus
+  that grows without that justification is calling across with extra steps.
 - **`state.js` is one mutated object, not exported variables.** An imported binding is
   read-only for the importer, so `scopedSystem = null` in a panel would not reach the canvas
   that draws the scope — and would not even be legal.
@@ -673,6 +815,43 @@ because two runs at different times genuinely are two events.
 Graph fingerprints canonicalize blank nodes and sort N-Triples before hashing — **never
 `to_isomorphic(...).graph_digest()`**, whose value is rdflib's own and would break comparability
 across an rdflib upgrade.
+
+---
+
+## Declared but not implemented
+
+Modelled, sound, and read by nothing. **Never describe one of these as a capability of the
+method**, in a paper, a demo, or a docstring. Each is an enabler waiting for the query that
+consumes it, and the bar for leaving this list is a reader rather than an intention.
+
+These are the standing exceptions to *"declared-but-unused vocabulary gets removed, not
+documented"*. They are kept because the modelling is correct and externally anchored, not
+because the intention is good. An item that never acquires a reader should eventually be
+deleted, as `pair:maturity` was.
+
+- **Task ≠ Capability ≠ Application Type (R7): the rule holds, the axes do not exist yet.**
+  Measured 2026-09-14. **Task** has 20 SKOS concepts in `ontology/facets/task.ttl` and a
+  declared `facet:hasTaskCategory`, but is read by 0 queries, 0 examples and 0 Python;
+  `beam:Task` is instantiated in no graph at all, `beam:perform` is used zero times, and the
+  builder offers neither term. **Capability** has no axis of its own, appearing only as two
+  outbound SKOS mappings to DPV-AI. **Application Type** does not exist at all: no property,
+  no concept, not even a mapping, and no home for one while OECD stays absorbed rather than
+  represented.
+
+  So R7 prevents a merge rather than enabling an analysis. That is still worth keeping, since
+  the three are routinely conflated and the conflation cannot be undone once annotations
+  exist. But a write-up must say one axis is modelled, two are empty, and none is consumed.
+- **`facet:hasDomain`, `facet:hasPurpose`, `facet:hasAutonomyLevel`** and the rest of the
+  situational layer remain inert. The risk-view work did not activate them, and `ctx:Domain`
+  and `ctx:Purpose` are declared empty on purpose.
+- **The direct-read facet route.** Of the two sanctioned routes, only the bridge is live. No
+  applicability condition reads a facet directly.
+- **`pair:identifiesCandidateRisk`.** Declared, never emitted. No finding links to a
+  `beamr:Risk`, and no alignment exists between `nexus:Risk` and `beamr:Risk`. The stated-risk
+  layer deliberately does not close this, because reconciliation is computed from shared
+  evidence rather than asserted.
+- **R6's own-SSSOM export.** Never generated. The project consumes upstream sets, so say that
+  rather than implying the export exists.
 
 ---
 
