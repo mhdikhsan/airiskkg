@@ -2,8 +2,8 @@
 
 The library covers 15 risk patterns over 31 motifs. That is a fraction of what
 an assessor will want to record, and everything outside it would otherwise be
-lost - so a person can write a risk, a risk source, a consequence and an impact
-directly onto the graph, with no query matching anything.
+lost - so a person can write a risk, a risk source, a consequence, an impact
+and a risk control directly onto the graph, with no query matching anything.
 
 What is under test is that these are real graph facts rather than a drawing:
 they use the classes BEAM already declares, they attach the way AIRO says they
@@ -63,8 +63,10 @@ def _chain(client, scene: str) -> tuple[str, dict]:
                               attach=[risk])
     ttl, impact = _state(client, ttl, "impact", "A customer acts on a wrong answer",
                          attach=[consequence])
-    return ttl, {"risk": risk, "source": source,
-                 "consequence": consequence, "impact": impact}
+    ttl, control = _state(client, ttl, "control", "Screen the chat text before the agent reads it",
+                          attach=[risk])
+    return ttl, {"risk": risk, "source": source, "consequence": consequence,
+                 "impact": impact, "control": control}
 
 
 # ---- the facts that get written ----
@@ -74,7 +76,8 @@ def test_each_concept_is_written_with_the_class_beam_declares(client, scene) -> 
     ttl, made = _chain(client, scene)
     graph = Graph().parse(data=ttl, format="turtle")
     for kind, cls in (("risk", BEAMR.Risk), ("source", BEAMR.RiskSource),
-                      ("consequence", BEAMR.Consequence), ("impact", BEAMR.Impact)):
+                      ("consequence", BEAMR.Consequence), ("impact", BEAMR.Impact),
+                      ("control", BEAMR.RiskControl)):
         assert (URIRef(made[kind]), RDF.type, cls) in graph, f"{kind} was not written as {cls}"
 
 
@@ -87,6 +90,8 @@ def test_the_chain_runs_the_way_airo_says_it_does(client, scene) -> None:
     assert (URIRef(made["source"]), BEAMR.originatedFrom, URIRef(CHAT)) in graph
     assert (URIRef(made["risk"]), BEAMR.hasConsequence, URIRef(made["consequence"])) in graph
     assert (URIRef(made["consequence"]), BEAMR.hasImpact, URIRef(made["impact"])) in graph
+    # The control is the one that points outward at what it changes.
+    assert (URIRef(made["control"]), BEAMR.modifiesRiskConcept, URIRef(made["risk"])) in graph
 
 
 def test_a_source_attached_to_a_risk_points_at_the_risk(client, scene) -> None:
@@ -206,8 +211,11 @@ def test_only_a_line_somebody_drew_is_offered_for_removal(client, scene) -> None
         assert any(
             (URIRef(link["source"]), predicate, URIRef(link["target"])) in graph
             or (URIRef(link["target"]), predicate, URIRef(link["source"])) in graph
+            # The same set the server will take back out, which is what makes
+            # "offered for removal" and "removable" the same list.
             for predicate in (BEAMR.hasRisk, BEAMR.originatedFrom, BEAMR.isRiskSourceFor,
-                              BEAMR.hasConsequence, BEAMR.hasImpact)
+                              BEAMR.hasConsequence, BEAMR.hasImpact,
+                              BEAMR.modifiesRiskConcept)
         ), f"{link} is offered for removal but stands for no triple"
 
     derived = [link for link in view["diagram"]["links"]
@@ -265,3 +273,86 @@ def test_only_a_hand_written_concept_can_be_removed(client, scene) -> None:
     assert body.status_code == 400
     assert Graph().parse(data=scene, format="turtle").value(URIRef(AGENT), RDF.type) is not None
     assert PAIR is not None
+
+
+# ---- the control somebody says is already there ----
+
+
+def test_a_control_can_modify_any_of_the_four(client, scene) -> None:
+    """beamr:modifiesRiskConcept ranges over beamr:RiskConcept, and all four -
+    risk, source, consequence, impact - are one. A control that could only hang
+    off a risk would refuse the commonest case an assessor writes: something
+    that limits the damage rather than stopping the cause."""
+    ttl, risk = _state(client, scene, "risk", "Chat text is read as an instruction",
+                       attach=[CHAT])
+    ttl, source = _state(client, ttl, "source", "The chat message", attach=[CHAT])
+    ttl, consequence = _state(client, ttl, "consequence", "The agent answers off-policy",
+                              attach=[risk])
+    ttl, impact = _state(client, ttl, "impact", "A customer acts on it", attach=[consequence])
+
+    made = {}
+    for name, target in (("on the risk", risk), ("on the source", source),
+                         ("on the consequence", consequence), ("on the impact", impact)):
+        ttl, made[name] = _state(client, ttl, "control", f"Control {name}", attach=[target])
+
+    graph = Graph().parse(data=ttl, format="turtle")
+    for name, target in (("on the risk", risk), ("on the source", source),
+                         ("on the consequence", consequence), ("on the impact", impact)):
+        assert (URIRef(made[name]), RDF.type, BEAMR.RiskControl) in graph
+        assert (URIRef(made[name]), BEAMR.modifiesRiskConcept, URIRef(target)) in graph, (
+            f"a control written {name} did not point at it"
+        )
+
+
+def test_a_control_on_an_element_of_the_design_is_refused(client, scene) -> None:
+    """A control modifies a risk concept, not a box in the architecture. What
+    goes on the architecture is a control motif the canvas inserts, and that is
+    a different act - it changes the design, and a re-run reads the change."""
+    body = client.post("/api/scope-edit", json={
+        "ttl": scene, "op": "state-concept", "kind": "control",
+        "label": "Straight onto an element", "attachTo": [CHAT],
+    })
+    assert body.status_code == 400
+    assert "control" in body.get_json()["error"].lower()
+
+
+def test_writing_a_control_by_hand_clears_no_finding(client, scene) -> None:
+    """The distinction the whole method rests on.
+
+    A control clears a finding by being built, not by being asserted - the
+    escape in a risk query is a structural shape, and saying the words does not
+    put it in the design. So this records a claim beside the run and the run
+    says exactly what it said before. Clearing one is triage, which is a
+    different act with an author and a reason.
+    """
+    plain = summarize_result(run_assessment_from_text(scene))
+    ttl, risk = _state(client, scene, "risk", "Something a person noticed", attach=[CHAT])
+    ttl, _ = _state(client, ttl, "control", "We screen it in the gateway", attach=[risk])
+    after = summarize_result(run_assessment_from_text(ttl))
+    assert {f["id"] for f in plain["findings"]} == {f["id"] for f in after["findings"]}
+    assert {f["status"] for f in after["findings"]} == {"candidate"}, (
+        "a hand-written control must not decide anything about a finding"
+    )
+
+
+def test_a_hand_written_control_is_drawn_and_marked_as_somebody_s(client, scene) -> None:
+    """Beside the controls the library suggested, and told apart from them: one
+    is a person's claim that something is handled, the other is what a
+    registered rewrite could build."""
+    ttl, made = _chain(client, scene)
+    result = run_assessment_from_text(ttl)
+    view = risk_view(summarize_result(result), result.combined_graph)
+
+    drawn = {node["id"]: node for node in view["diagram"]["nodes"]}
+    mine = drawn.get(made["control"])
+    assert mine, "a control written by hand is not on the notation"
+    assert mine["band"] == "control", f"drawn in the {mine['band']} band"
+    assert mine["origin"] == "stated", "a person's control is drawn as a person's"
+
+    derived = [n for n in drawn.values() if n["band"] == "control" and n["origin"] == "derived"]
+    assert derived, "the library's own suggested controls are still drawn"
+
+    joined = {(link["source"], link["target"]) for link in view["diagram"]["links"]}
+    assert (made["control"], made["risk"]) in joined, (
+        "nothing joins the control to the risk it modifies"
+    )

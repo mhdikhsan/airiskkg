@@ -92,6 +92,7 @@ def _stated_layer(graph: Graph, nodes: dict, links: list) -> None:
         (BEAMR.Consequence, "consequence"),
         (BEAMR.Risk, "risk"),
         (BEAMR.RiskSource, "source"),
+        (BEAMR.RiskControl, "control"),
     )
     for cls, band in hand:
         for node in graph.subjects(RDF.type, cls):

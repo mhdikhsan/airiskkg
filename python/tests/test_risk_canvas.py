@@ -366,9 +366,11 @@ def test_an_assessment_can_be_written_before_anything_is_run(served) -> None:
 
     fields = _fields(report)
     assert fields["assessed"] == "false", "this is the state before any run"
-    assert int(fields["palette"]) == 4, "a risk, a source, a consequence and an impact"
+    assert int(fields["palette"]) == 5, (
+        "a risk, a source, a consequence, an impact and a control"
+    )
     assert int(fields["systems"]) > 0, "the architecture has to be there to drop onto"
-    assert int(fields["saysWhere"]) == 4, "each shape says what it may be dropped on"
+    assert int(fields["saysWhere"]) == 5, "each shape says what it may be dropped on"
     assert int(fields["droppable"]) > 0, (
         "starting a drag has to show where it would be accepted - 'drag this "
         "somewhere' is not an instruction"

@@ -1997,6 +1997,81 @@ def test_a_risk_is_drawn_on_by_dragging_it_onto_what_it_is_about(page) -> None:
     assert state["findings"] == before
 
 
+def test_a_control_is_offered_only_on_what_somebody_wrote(page) -> None:
+    """A control written by hand attaches to a risk somebody wrote, and to
+    nothing the library raised.
+
+    A concern from a run is a group of findings keyed by (risk pattern,
+    evidence). There is no such subject in the graph to hang a control off - and
+    hanging one off it would be the conflation the method forbids anyway: a
+    control clears a finding by being built, not by being asserted, so a finding
+    is answered by triage. Before this, every concern on screen lit up as a drop
+    target and the drop then failed on the server.
+    """
+    loop, handle = page
+    _open_risk_level(loop, handle)
+
+    kinds = loop.run_until_complete(handle.js(
+        "JSON.stringify([...document.querySelectorAll('#risk-palette .pp-item')]"
+        ".map((n) => n.getAttribute('data-kind')))"))
+    assert json.loads(kinds) == ["risk", "source", "consequence", "impact", "control"], (
+        f"the hand palette offers {kinds}"
+    )
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const item = document.querySelector('#risk-palette .pp-item[data-kind="control"]');
+        if (!item) return null;
+        const r = item.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert at, "the palette offers no control to drag"
+
+    loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
+        "type": "mousePressed", "x": at["x"], "y": at["y"],
+        "button": "left", "clickCount": 1, "buttons": 1}))
+    for step in range(1, 4):
+        loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
+            "type": "mouseMoved", "x": at["x"] + 80 * step, "y": at["y"] + 30 * step,
+            "button": "left", "buttons": 1}))
+    time.sleep(0.3)
+
+    offered = loop.run_until_complete(handle.js("""(() => {
+        /* Stated and derived are told apart on the drawing itself: a person's
+           claim is solid, what the run produced is dashed. */
+        const stated = (card) =>
+            card.querySelector('rect.rc-box').getAttribute('stroke-dasharray') === 'none';
+        const cards = [...document.querySelectorAll('#risk-canvas .rc-card')];
+        const marked = cards.filter((c) => c.classList.contains('rc-droppable'));
+        return {
+            marked: marked.length,
+            allStated: marked.every(stated),
+            derivedConcerns: cards.filter((c) =>
+                c.querySelector('.rc-chip').textContent === 'Risk' && !stated(c)).length,
+            derivedMarked: marked.filter((c) => !stated(c)).length,
+            ghost: (document.querySelector('.risk-ghost') || {}).textContent || null,
+        };
+    })()"""))
+
+    loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
+        "type": "mouseReleased", "x": at["x"] + 240, "y": at["y"] + 90,
+        "button": "left", "clickCount": 1, "buttons": 0}))
+    time.sleep(0.5)
+
+    assert offered["ghost"] == "Risk control", "the drag has to show what it is"
+    assert offered["derivedConcerns"] > 0, (
+        "this scene raises concerns, which is what makes the distinction testable"
+    )
+    assert offered["marked"] > 0, "the scene states risks, so a control has somewhere to go"
+    assert offered["derivedMarked"] == 0, (
+        f"{offered['derivedMarked']} concerns from the run were offered as drop targets"
+    )
+    assert offered["allStated"], "a control was offered on something nobody wrote"
+
+    left = loop.run_until_complete(handle.js(
+        "document.querySelectorAll('.risk-ghost, #risk-canvas .rc-droppable').length"))
+    assert left == 0, "the drag left its marks on the canvas"
+
+
 def test_a_tray_folds_when_its_head_is_actually_pressed(page) -> None:
     """The two trays over the risk canvas fold from their own head.
 

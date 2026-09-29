@@ -121,14 +121,28 @@ const HAND_DROP = {
   source: { bands: ["risk", "system"], element: true, where: "an element or a risk" },
   consequence: { bands: ["risk"], element: false, where: "a risk" },
   impact: { bands: ["consequence"], element: false, where: "a consequence" },
+  /* A control is the one that points outward at what it changes, and
+     beamr:modifiesRiskConcept ranges over every one of the four. Writing one
+     down is not applying it - nothing is inserted into the design and no
+     finding clears; it records that somebody says this is handled. */
+  control: {
+    bands: ["risk", "source", "consequence", "impact"], element: false,
+    where: "a risk, source or consequence",
+  },
 };
 
 /* Every box a drop would be accepted on, marked before the drag starts rather
-   than discovered by trying: "drag this somewhere" is not an instruction. */
+   than discovered by trying: "drag this somewhere" is not an instruction.
+ *
+ * Only boxes that stand for a node in the graph. A concern the library raised
+ * is a group of findings keyed by (risk pattern, evidence) - there is no such
+ * subject to hang anything off, and hanging one off it is the conflation the
+ * method forbids anyway: a control clears a finding by being built, not by
+ * being asserted, and a finding is answered by triage. */
 function markDroppable(kind, view) {
   const rule = HAND_DROP[kind];
   const bands = new Set((((view || {}).diagram || {}).nodes || [])
-    .filter((node) => rule.bands.includes(node.band))
+    .filter((node) => rule.bands.includes(node.band) && node.origin === "stated")
     .map((node) => node.id));
   const marked = [];
   $$("#risk-canvas [data-node]").forEach((card) => {
@@ -182,10 +196,14 @@ function startPaletteDrag(kind, event, view) {
     const found = droppable.length ? dropTargetAt(ev) : null;
     droppable.forEach((card) => card.classList.remove("rc-droppable", "rc-drop"));
     if (!found) {
+      const noun = HAND_LABEL[kind].toLowerCase();
+      // Said once, where it is needed: what the library raised is triaged.
       setStatus("error", droppable.length
-        ? `Drop a ${HAND_LABEL[kind].toLowerCase()} on ${HAND_DROP[kind].where}.`
-        : `Nothing to drop it on yet: a ${HAND_LABEL[kind].toLowerCase()} needs `
-          + `${HAND_DROP[kind].where}.`);
+        ? `Drop a ${noun} on ${HAND_DROP[kind].where}.`
+        : HAND_DROP[kind].element
+          ? `Nothing to drop it on yet: a ${noun} needs ${HAND_DROP[kind].where}.`
+          : `A ${noun} attaches to a risk written by hand. `
+            + "What the library raised is answered by triage instead.");
       return;
     }
     const label = window.prompt(`Name the ${HAND_LABEL[kind].toLowerCase()}:`, "");
@@ -201,6 +219,7 @@ function startPaletteDrag(kind, event, view) {
 
 const HAND_LABEL = {
   risk: "Risk", source: "Risk source", consequence: "Consequence", impact: "Impact",
+  control: "Risk control",
 };
 
 function renderPalette(show, view) {
@@ -682,7 +701,7 @@ function nodeDetail(node, view) {
   return box;
 }
 
-const HAND_BANDS = new Set(["risk", "source", "consequence", "impact"]);
+const HAND_BANDS = new Set(["risk", "source", "consequence", "impact", "control"]);
 
 /* A name for anything on the diagram, including the architecture underneath it,
    so a connection can say what it joins rather than showing two IRIs. */

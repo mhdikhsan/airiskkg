@@ -2649,6 +2649,7 @@ body.editor-hidden .pane-head { display: none; }
 .band-source .pal-swatch, .risk-ghost.band-source { background: #fff3e0; color: #c77800; }
 .band-consequence .pal-swatch, .risk-ghost.band-consequence { background: #fdeef7; color: #d81b8c; }
 .band-impact .pal-swatch, .risk-ghost.band-impact { background: #fdecef; color: #c2185b; }
+.band-control .pal-swatch, .risk-ghost.band-control { background: #eaf6ec; color: #2e7d32; }
 
 /* Shaped like the box it writes, not labelled like a tooltip: what is being
    dragged has to be recognisable as what will land. */

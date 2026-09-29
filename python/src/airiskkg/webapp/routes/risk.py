@@ -67,19 +67,25 @@ _CONCEPT_CLASS = {
     "source": BEAMR.RiskSource,
     "consequence": BEAMR.Consequence,
     "impact": BEAMR.Impact,
+    "control": BEAMR.RiskControl,
 }
+
+# What a control may modify, which is the range beamr:modifiesRiskConcept
+# declares: every one of the four is a beamr:RiskConcept.
+_RISK_CONCEPTS = (BEAMR.Risk, BEAMR.RiskSource, BEAMR.Consequence, BEAMR.Impact)
 
 
 _RELATIONS = (BEAMR.hasRisk, BEAMR.originatedFrom, BEAMR.isRiskSourceFor,
-              BEAMR.hasConsequence, BEAMR.hasImpact)
+              BEAMR.hasConsequence, BEAMR.hasImpact, BEAMR.modifiesRiskConcept)
 
 
 def _kind_of(data: Graph, node: URIRef) -> str | None:
-    """Which of the four a node is. Impact first: it is a kind of Consequence,
+    """Which of the five a node is. Impact first: it is a kind of Consequence,
     so testing the parent first would call every impact a consequence."""
     types = set(data.objects(node, RDF.type))
     for cls, kind in ((BEAMR.Impact, "impact"), (BEAMR.RiskSource, "source"),
-                      (BEAMR.Risk, "risk"), (BEAMR.Consequence, "consequence")):
+                      (BEAMR.Risk, "risk"), (BEAMR.Consequence, "consequence"),
+                      (BEAMR.RiskControl, "control")):
         if cls in types:
             return kind
     return None
@@ -107,6 +113,16 @@ def _attachment(data: Graph, kind: str, node: URIRef, target: URIRef) -> tuple:
         if BEAMR.Risk not in types:
             raise ValueError("A consequence follows from a risk, so attach it to one.")
         return (target, BEAMR.hasConsequence, node)
+    if kind == "control":
+        # A control is the one concept that points outward at what it changes,
+        # and it may change any of the four - beamr:modifiesRiskConcept ranges
+        # over beamr:RiskConcept, not over Risk alone. Writing one by hand is
+        # not applying it: nothing is inserted into the design and no finding
+        # clears. It records that somebody says this is handled.
+        if not types & set(_RISK_CONCEPTS):
+            raise ValueError(
+                "A control modifies a risk, a source, a consequence or an impact.")
+        return (node, BEAMR.modifiesRiskConcept, target)
     if BEAMR.Consequence not in types or BEAMR.Impact in types:
         raise ValueError("An impact is the impact of a consequence, so attach it to one.")
     return (target, BEAMR.hasImpact, node)

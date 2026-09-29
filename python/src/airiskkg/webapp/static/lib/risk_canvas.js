@@ -47,7 +47,7 @@ const BAND_STYLE = {
 
 /* The four a person writes themselves. Marked, so a reader can tell their own
    assessment from the library's at a glance. */
-const HAND_BANDS = new Set(["risk", "source", "consequence", "impact"]);
+const HAND_BANDS = new Set(["risk", "source", "consequence", "impact", "control"]);
 
 const LENS_CHIP = {
   activity: "Activity", "data object": "Data object", "human step": "Human step",
