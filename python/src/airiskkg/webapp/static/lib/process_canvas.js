@@ -35,6 +35,12 @@ let expanded = new Set();
 let onOpenArchitecture = null;
 let onEdit = null;
 let onSelect = null;
+/* Which connector the reader has picked, by its flow IRI. View state: picking
+   a line changes nothing in the model until they say so. */
+let pickedFlow = null;
+/* Where the picked connector's remove badge goes, filled while the connectors
+   are drawn and painted once everything else is down. */
+let pendingBadge = null;
 let systems = [];
 let dataClasses = [];
 let selectedPool = null;
@@ -47,6 +53,16 @@ let view = { x: 0, y: 0, k: 1 };
 let paletteFolded = false;
 let paletteTouched = false;       // once the reader chooses, the choice sticks
 let collapsedPools = new Set();   // BPMN black-box pools: banded, not opened
+/* Where a reader has put a box by hand. View-only, like the architecture
+   canvas: the process model is the source, and a moved box is a reading aid,
+   never an edit. Keyed by node id, so a layout survives a re-render. */
+let manualPositions = new Map();
+/* The structure the view was last fitted to. A redraw of the same model keeps
+   the reader's pan and zoom; only a changed structure refits. Refitting on
+   every redraw is what snapped the view back each time a lane, a pool or a
+   risk badge was clicked. */
+let lastFitIds = null;
+let pendingFrame = 0;
 
 function node(tag, attrs = {}, parent = null) {
   const element = document.createElementNS(SVG_NS, tag);
@@ -294,8 +310,9 @@ function layout() {
       lastGap = COL_GAP + (branching.has(at) ? BRANCH_GAP : 0);
       cursor += columns.get(at) + lastGap;
     });
-    const poolW = Math.max(cursor - lastGap + POOL_PAD,
+    let poolW = Math.max(cursor - lastGap + POOL_PAD,
       POOL_LABEL_W + LANE_LABEL_W + BOX_W + POOL_PAD * 2);
+    let rightmost = 0;
 
     // The branches that give up the main row: the default flow's target, and a
     // path that only ends.
@@ -355,19 +372,33 @@ function layout() {
         rowY.set(at, stack);
         stack += rowHeight.get(at) + ROW_GAP;
       });
-      const laneH = Math.max(stack - ROW_GAP + POOL_PAD / 2 - laneY, BOX_H + POOL_PAD);
+      let laneH = Math.max(stack - ROW_GAP + POOL_PAD / 2 - laneY, BOX_H + POOL_PAD);
+      let laneBottom = laneY + laneH;
 
       mine.forEach((id) => {
         const item = index.get(id);
         const { w, h } = sizeOf(item);
         const at = rank.get(id);
+        const band = rowBand.get(row.get(id)) || 0;
+        let x = columnX.get(at) + (columns.get(at) - w) / 2;
+        let y = rowY.get(row.get(id));
+        const hand = manualPositions.get(id);
+        if (hand) {
+          /* Held inside its own lane. A box drawn in another lane would say
+             someone else does the work, and lane membership is the model's to
+             state (bp:flowNodeRef), not the layout's. Pulled past the right or
+             the bottom edge, the lane grows to take it instead. */
+          x = Math.max(POOL_LABEL_W + LANE_LABEL_W + 6, hand.x);
+          y = Math.max(laneY + band + 6, hand.y);
+        }
+        laneBottom = Math.max(laneBottom, y + h + POOL_PAD / 2);
+        rightmost = Math.max(rightmost, x + w + POOL_PAD);
         placed.set(id, {
-          x: columnX.get(at) + (columns.get(at) - w) / 2,
-          y: rowY.get(row.get(id)),
-          w, h, item, band: rowBand.get(row.get(id)) || 0,
+          x, y, w, h, item, band,
           head: item.shape === "activity" ? headHeight(item) : h,
         });
       });
+      laneH = Math.max(laneH, laneBottom - laneY);
       attached.forEach(([noteId, anchor], seat) => {
         const host = placed.get(anchor);
         notes.push({
@@ -398,6 +429,7 @@ function layout() {
       });
     });
 
+    poolW = Math.max(poolW, rightmost);
     const poolH = Math.max(laneY + POOL_PAD - poolY, BOX_H + POOL_PAD * 2);
     pools.push({
       participant, x: 0, y: poolY, w: poolW, h: poolH,
@@ -695,12 +727,15 @@ function routeSequence(from, to) {
 
 function sequenceArrow(parent, from, to, flow) {
   const points = routeSequence(from, to);
+  const picked = flow.id && flow.id === pickedFlow;
   const group = node("g", { class: "pc-seq" }, parent);
+  if (flow.id) group.setAttribute("data-flow", flow.id);
   node("path", {
     d: orthPath(points),
-    class: "pc-flow",
+    class: "pc-flow" + (picked ? " picked" : ""),
     "marker-end": "url(#pc-arrow)",
   }, group);
+  wireConnector(group, orthPath(points), flow.id, picked, points);
   // A default flow carries a tick through its tail; a conditional one a diamond.
   const start = points[0];
   const after = points[1];
@@ -748,17 +783,73 @@ function sequenceArrow(parent, from, to, flow) {
 }
 
 /** A message crosses a boundary: leave the source downward, enter the target. */
-function messageArrow(parent, from, to, label) {
+function messageArrow(parent, from, to, label, id) {
   const downward = to.y > from.y;
   const a = port(from, downward ? "bottom" : "top");
   const b = port(to, downward ? "top" : "bottom");
   const midY = (a.y + b.y) / 2;
   const points = [a, { x: a.x, y: midY }, { x: b.x, y: midY }, b];
+  const picked = id && id === pickedFlow;
+  const group = node("g", { class: "pc-msg" }, parent);
+  if (id) group.setAttribute("data-flow", id);
   node("path", {
-    d: orthPath(points), class: "pc-flow message", "marker-end": "url(#pc-arrow-msg)",
-  }, parent);
-  node("circle", { cx: a.x, cy: a.y, r: 3.5, class: "pc-msg-start" }, parent);
-  if (label) centred(parent, (a.x + b.x) / 2, midY - 5, truncate(label, 26), "pc-flow-label");
+    d: orthPath(points), class: "pc-flow message" + (picked ? " picked" : ""),
+    "marker-end": "url(#pc-arrow-msg)",
+  }, group);
+  node("circle", { cx: a.x, cy: a.y, r: 3.5, class: "pc-msg-start" }, group);
+  if (label) centred(group, (a.x + b.x) / 2, midY - 5, truncate(label, 26), "pc-flow-label");
+  wireConnector(group, orthPath(points), id, picked, points);
+}
+
+/* One gesture for every connector: a wide invisible path takes the press, and
+ * a picked one carries the badge that removes it.
+ *
+ * A line drawn wrong used to cost the boxes at either end - deleting a node was
+ * the only thing that took its connectors with it. A 1.5px stroke cannot be hit
+ * reliably, so the press lands on a fat copy of the same route. */
+function wireConnector(group, d, id, picked, points) {
+  if (!id) return;
+  const hit = node("path", { d, class: "pc-flow-hit", fill: "none" }, group);
+  hit.addEventListener("pointerdown", (ev) => {
+    ev.stopPropagation();
+    pickedFlow = picked ? null : id;
+    redraw();
+  });
+  if (!picked) return;
+  // On the longest run, so the badge does not land on a corner.
+  let best = null;
+  for (let i = 1; i < points.length; i += 1) {
+    const run = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    if (!best || run > best.run) best = { run, from: points[i - 1], to: points[i] };
+  }
+  /* Recorded rather than drawn here. Connectors are painted under the boxes so
+     a line never sits on one it only passes - which put the badge under a port
+     dot, where no press could reach it. A control goes on top. */
+  pendingBadge = {
+    id,
+    at: best
+      ? { x: (best.from.x + best.to.x) / 2, y: (best.from.y + best.to.y) / 2 }
+      : points[0],
+  };
+}
+
+/* Drawn last, over everything, because it is the only thing on the canvas that
+   is purely a control. */
+function drawPickedBadge(parent) {
+  if (!pendingBadge) return;
+  const { id, at } = pendingBadge;
+  const badge = node("g", { class: "pc-flow-drop" }, parent);
+  node("circle", { cx: at.x, cy: at.y, r: 8, class: "pc-flow-drop-disc" }, badge);
+  const sign = node("text", {
+    x: at.x, y: at.y + 3.5, class: "pc-flow-drop-sign", "text-anchor": "middle",
+  }, badge);
+  sign.textContent = "\u00d7";
+  node("title", {}, badge).textContent = "Remove this connector";
+  badge.addEventListener("pointerdown", async (ev) => {
+    ev.stopPropagation();
+    pickedFlow = null;
+    if (onEdit) await onEdit("disconnect", { flow: id });
+  });
 }
 
 /* A data object is a folded page and a data store a cylinder, which is what
@@ -1037,6 +1128,30 @@ function wireSimpleNode(group, slot) {
     if (onSelect) onSelect(item.id);
     showNodeDetail(item, ev);
   });
+}
+
+/* The last layout's placement for a node, so a drag starts from where the box
+   actually is rather than from where the automatic layout would put it. */
+let lastPlaced = new Map();
+let lastPools = [];
+
+/* What the view is fitted to: the model's structure, not just its flow nodes.
+   Keyed on node ids alone - the architecture canvas's rule - a new lane or a
+   new pool changed nothing the key could see, so the view stayed put while
+   the diagram grew off the bottom of it. A selection, a fold or a moved box
+   leaves this unchanged, which is what keeps the reader's view. */
+function structureKey() {
+  return [
+    ...lastPools.map((pool) => "pool:" + pool.participant.id),
+    ...lastPools.flatMap((pool) => pool.lanes.map((lane) => "lane:" + pool.participant.id + "/" + lane.id)),
+    ...lastPlaced.keys(),
+  ].sort().join("|");
+}
+
+function currentPlacement(id) {
+  const slot = lastPlaced.get(id);
+  return slot && slot.item && ["activity", "event", "gateway"].includes(slot.item.shape)
+    ? slot : null;
 }
 
 function svgPoint(clientX, clientY) {
@@ -1407,9 +1522,12 @@ function draw() {
   svg.innerHTML = "";
   defineMarkers(node("defs", {}, svg));
 
+  pendingBadge = null;
   root = node("g", { id: "pc-root" }, svg);
   portsSizedAt = null;   // a fresh DOM: the handles have to be measured again
   const { pools, placed, notes } = layout();
+  lastPlaced = placed;
+  lastPools = pools;
 
   drawGroups(root, placed);
 
@@ -1593,10 +1711,23 @@ function draw() {
   (data.messageFlows || []).forEach((flow) => {
     const from = placed.get(flow.source);
     const to = placed.get(flow.target);
-    if (from && to) messageArrow(root, from, to, flow.message || flow.label);
+    if (from && to) messageArrow(root, from, to, flow.message || flow.label, flow.id);
   });
 
-  fit();
+  drawPickedBadge(root);
+  if (structureKey() !== lastFitIds && fit()) return;
+  applyView();
+}
+
+/* Coalesced onto animation frames: a drag fires pointermove far faster than a
+   whole process can be rebuilt, and a canvas that trails the cursor reads as
+   stiffness. */
+function redraw() {
+  if (pendingFrame) return;
+  pendingFrame = requestAnimationFrame(() => {
+    pendingFrame = 0;
+    draw();
+  });
 }
 
 /* The connector handle is measured on screen, not in the diagram. */
@@ -1633,7 +1764,7 @@ function fit() {
   renderPalette();
   const box = root.getBBox();
   const rect = svg.getBoundingClientRect();
-  if (!box.width || !box.height || !rect.width) return;
+  if (!box.width || !box.height || !rect.width) return false;
   /* Capped at half the canvas. */
   const inset = Math.min(paletteInset(), rect.height * 0.5);
   const usable = Math.max(rect.height - inset, 140);
@@ -1644,6 +1775,10 @@ function fit() {
     y: inset + (usable - box.height * k) / 2 - box.y * k,
   };
   applyView();
+  // Whoever asked for the fit, this is now the model the view was fitted to -
+  // or the first click after showing the canvas would snap it back again.
+  lastFitIds = structureKey();
+  return true;
 }
 
 function initPanZoom() {
@@ -1653,15 +1788,39 @@ function initPanZoom() {
   const DRAG_THRESHOLD = 4;
   let pan = null;
 
+  window.addEventListener("keydown", async (ev) => {
+    if (ev.key !== "Delete" && ev.key !== "Backspace") return;
+    if (!pickedFlow) return;
+    const on = document.activeElement;
+    if (on && on.closest && on.closest("input, textarea, select, [contenteditable]")) return;
+    ev.preventDefault();
+    const id = pickedFlow;
+    pickedFlow = null;
+    if (onEdit) await onEdit("disconnect", { flow: id });
+  });
   svg.addEventListener("pointerdown", (ev) => {
     // Clear here: a flag left armed eats the next real click.
     swallowNextClick = false;
     if (ev.target.closest(".pc-open, .pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
+    // A press anywhere else puts a picked connector down, like any selection.
+    if (pickedFlow && !ev.target.closest(".pc-flow-hit, .pc-flow-drop")) {
+      pickedFlow = null;
+      redraw();
+    }
     closeDetail();
+    /* Pressed on a box: the same gesture moves it, the way the architecture
+       canvas does. Only a flow node of an open pool moves - a collapsed pool
+       draws nothing inside to move. */
+    const hit = ev.target.closest("[data-node]");
+    const box = hit && hit.getAttribute("data-node");
+    const drawnAt = box ? currentPlacement(box) : null;
     pan = {
       id: ev.pointerId,
       fromX: ev.clientX, fromY: ev.clientY,
       originX: view.x, originY: view.y,
+      node: drawnAt ? box : null,
+      nodeFrom: drawnAt ? svgPoint(ev.clientX, ev.clientY) : null,
+      nodeOrigin: drawnAt ? { x: drawnAt.x, y: drawnAt.y } : null,
       moved: false,
     };
   });
@@ -1674,8 +1833,18 @@ function initPanZoom() {
     if (!pan.moved) {
       if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
       pan.moved = true;
-      svg.classList.add("panning");
+      svg.classList.add(pan.node ? "dragging-node" : "panning");
       try { svg.setPointerCapture(pan.id); } catch (error) { /* already gone */ }
+    }
+    if (pan.node) {
+      // In diagram units, so the box tracks the pointer at any zoom.
+      const at = svgPoint(ev.clientX, ev.clientY);
+      manualPositions.set(pan.node, {
+        x: Math.round(pan.nodeOrigin.x + at.x - pan.nodeFrom.x),
+        y: Math.round(pan.nodeOrigin.y + at.y - pan.nodeFrom.y),
+      });
+      redraw();
+      return;
     }
     view.x = pan.originX + dx;
     view.y = pan.originY + dy;
@@ -1685,8 +1854,9 @@ function initPanZoom() {
   const release = (ev) => {
     if (connecting) endConnect(ev);
     if (pan && pan.moved) {
-      svg.classList.remove("panning");
+      svg.classList.remove("panning", "dragging-node");
       try { svg.releasePointerCapture(pan.id); } catch (error) { /* already gone */ }
+      // A move is a move, never also a click that opens the box's editor.
       swallowNextClick = true;
     }
     pan = null;
@@ -1702,7 +1872,12 @@ function initPanZoom() {
   svg.addEventListener("pointerup", release);
   svg.addEventListener("pointercancel", release);
   svg.addEventListener("lostpointercapture", () => {
-    svg.classList.remove("panning");
+    svg.classList.remove("panning", "dragging-node");
+    pan = null;
+  });
+  // A press released off the window still has to end - never leave a drag armed.
+  window.addEventListener("blur", () => {
+    svg.classList.remove("panning", "dragging-node");
     pan = null;
   });
 
@@ -1712,9 +1887,12 @@ function initPanZoom() {
     const rect = svg.getBoundingClientRect();
     const cx = ev.clientX - rect.left;
     const cy = ev.clientY - rect.top;
-    view.x = cx - (cx - view.x) * factor;
-    view.y = cy - (cy - view.y) * factor;
-    view.k *= factor;
+    // Clamped, like the other canvases: past these a diagram is a dot or a pixel.
+    const next = Math.min(3, Math.max(0.15, view.k * factor));
+    const ratio = next / view.k;
+    view.x = cx - (cx - view.x) * ratio;
+    view.y = cy - (cy - view.y) * ratio;
+    view.k = next;
     applyView();
   }, { passive: false });
 }
@@ -1973,6 +2151,14 @@ function hasProcess() {
   return Boolean(data && data.stats && data.stats.activities);
 }
 
+/* A different document: positions from the last one would land on boxes that
+   are not the same boxes, and the next render should fit what it draws. */
+function forgetLayout() {
+  manualPositions = new Map();
+  lastFitIds = null;
+}
+
 export const ProcessCanvas = {
-  init, render, fit, hasProcess, setSystems, setDataClasses, setFindings, svgRoot: () => svg,
+  init, render, fit, hasProcess, setSystems, setDataClasses, setFindings, forgetLayout,
+  svgRoot: () => svg,
 };

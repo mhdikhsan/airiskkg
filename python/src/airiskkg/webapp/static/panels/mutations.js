@@ -44,6 +44,26 @@ export function applyDelete(elementId) {
 }
 
 // Add a BEAM flow edge from a canvas port-drag.
+/* Taking a connector back out.
+ *
+ * Both canvases could draw a line and neither could remove one, so a line drawn
+ * wrong cost the boxes at either end - deleting an element was the only thing
+ * that took its edges with it. */
+export function applyDisconnect(triple) {
+  return runMutation(async () => {
+    try {
+      const { ttl } = await postJson("/api/graph-edit", {
+        ttl: Editor.getValue(), op: "remove-edge", ...triple,
+      });
+      noteChange(`removed a ${triple.kind} connection`);
+      Editor.setValue(ttl);
+      setStatus("ok", `Removed: ${triple.kind}`);
+    } catch (error) {
+      setStatus("error", "Could not remove it: " + error.message.split("\n")[0]);
+    }
+  });
+}
+
 export function applyConnect(triple) {
   return runMutation(async () => {
     try {

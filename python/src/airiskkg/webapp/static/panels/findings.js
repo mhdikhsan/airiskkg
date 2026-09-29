@@ -248,11 +248,27 @@ export function renderFindings(data) {
   }
   shown.forEach((f) => list.appendChild(findingCard(f)));
   $("#findings-count").textContent = shown.length ? String(shown.length) : "";
+  /* The risk level reads the same run and is not this panel, so it is told
+   * rather than called into - applying a control re-renders from here, and a
+   * direct call back would be a cycle. */
+  emit("assessment:rendered");
+}
+
+
+/* Run again and redraw every panel that reads a run. Shared, because an edit
+ * that changes what a finding says is worthless until the page catches up -
+ * and there is more than one such edit now. */
+export async function reassess(ttl) {
+  const data = await postJson("/api/assess", { ttl });
+  renderFindings(data);
+  renderMotifs(data.motifMatches, data.motifGaps);
+  renderDerivedCategories(data.derivedCategories);
+  return data;
 }
 
 // ---- applying a control ----
 
-function applyControl(control, finding) {
+export function applyControl(control, finding) {
   return runMutation(async () => {
     try {
       const { ttl, addedTriples, newIds } = await postJson("/api/apply-control", {
@@ -266,10 +282,7 @@ function applyControl(control, finding) {
       Editor.setValue(ttl);
       GraphView.setHighlight(newIds || []);
       setStatus("busy", `Applied "${control.label}" - re-assessing...`);
-      const data = await postJson("/api/assess", { ttl });
-      renderFindings(data);
-      renderMotifs(data.motifMatches, data.motifGaps);
-      renderDerivedCategories(data.derivedCategories);
+      const data = await reassess(ttl);
       setStatus("ok", `Applied "${control.label}"`,
         `${data.summary.riskFindingCount} findings · ${data.summary.motifMatchCount} matches`);
     } catch (error) {

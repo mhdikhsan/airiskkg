@@ -1,0 +1,176 @@
+@prefix pair:  <http://w3id.org/airiskkg/pair-ai#> .
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix beamr: <http://w3id.org/beam/risk#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix vann:  <http://purl.org/vocab/vann/> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+<http://w3id.org/airiskkg/context/assessment-scope>
+    a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:title "PAIR-AI Assessment Scope and Stated Risks"@en ;
+    dct:description """What one assessment is for, and what people said before it ran.
+
+Backward entry to the method: an analyst states the outcome the system is to
+achieve and the outcomes that must not happen, and states risks against the
+elements they are worried about. None of it is detected - all of it is an
+annotated base fact (Rule R8), submitted with the graph.
+
+Nothing here is read by a motif match query or a risk query. Detection stays
+monotone and complete (R2, R9); a scope narrows the reading, never the run.
+
+Stated risks reuse the AIRO-aligned beamr:Risk / beamr:Consequence chain rather
+than minting a term: a beamr:Risk is a person's stated risk, a pair:RiskFinding
+is a structural candidate, and keeping the two types apart is what lets them be
+reconciled.""" ;
+    dct:source <https://riskstorming.com/> ;
+    vann:preferredNamespacePrefix "pair" ;
+    vann:preferredNamespaceUri "http://w3id.org/airiskkg/pair-ai#" ;
+    owl:imports <http://w3id.org/beam/risk#> .
+
+### The frame of one assessment
+
+pair:AssessmentScope a owl:Class ;
+    rdfs:label "Assessment Scope"@en ;
+    rdfs:comment "What this assessment is for: the outcome wanted, the outcomes that must not happen, and the part of the graph under review."@en ;
+    dct:source <https://riskstorming.com/> .
+
+pair:desiredOutcome a owl:DatatypeProperty ;
+    rdfs:label "desired outcome"@en ;
+    rdfs:comment "What the system is meant to achieve, in the analyst's words. Never matched on; it is what the undesired outcomes are stated against."@en ;
+    rdfs:domain pair:AssessmentScope ;
+    rdfs:range rdfs:Literal .
+
+pair:undesiredOutcome a owl:ObjectProperty ;
+    rdfs:label "undesired outcome"@en ;
+    rdfs:comment "An outcome this assessment exists to avoid, as a beamr:Consequence stated by a person."@en ;
+    rdfs:domain pair:AssessmentScope ;
+    rdfs:range beamr:Consequence .
+
+# The bridge from a stated outcome to the catalogued domain of harm the library
+# already reaches through pair:mayIndicateRisk. Without it a scope cannot say
+# which findings answer it.
+pair:concernsRiskDomain a owl:ObjectProperty ;
+    rdfs:label "concerns risk domain"@en ;
+    rdfs:comment "The catalogued risk domain or subdomain a stated outcome corresponds to. A modelling act by the analyst, not an adopted cross-taxonomy mapping."@en ;
+    rdfs:domain beamr:Consequence ;
+    rdfs:range skos:Concept .
+
+pair:scopedToSystem a owl:ObjectProperty ;
+    rdfs:label "scoped to system"@en ;
+    rdfs:comment "The architecture under review. Absent means the whole submitted graph."@en ;
+    rdfs:domain pair:AssessmentScope ;
+    rdfs:range beam:System .
+
+pair:statedBy a owl:DatatypeProperty ;
+    rdfs:label "stated by"@en ;
+    rdfs:comment "Who stated this scope or risk. A judgement without an author cannot be weighed against another."@en ;
+    rdfs:range rdfs:Literal .
+
+### Priority on a stated risk
+#
+# Risk storming scores probability x impact and colours the note. The score is
+# the person's, never the tool's: PAIR-AI computes no severity for its own
+# candidate findings and must not start here.
+
+pair:statedPriority a owl:ObjectProperty ;
+    rdfs:label "stated priority"@en ;
+    rdfs:comment "Priority a person assigned to a stated risk. Carried, never computed, and never applied to a pair:RiskFinding."@en ;
+    rdfs:domain beamr:Risk ;
+    rdfs:range skos:Concept .
+
+pair:StatedPriorityScheme a skos:ConceptScheme ;
+    skos:prefLabel "Stated Priority"@en ;
+    skos:definition "Priority a person assigned to a risk they stated, from probability against impact."@en ;
+    dct:source <https://riskstorming.com/> .
+
+pair:HighStatedPriority a skos:Concept ;
+    skos:inScheme pair:StatedPriorityScheme ;
+    skos:prefLabel "High"@en ;
+    skos:definition "High probability against high impact; address before the design is built."@en .
+
+pair:MediumStatedPriority a skos:Concept ;
+    skos:inScheme pair:StatedPriorityScheme ;
+    skos:prefLabel "Medium"@en ;
+    skos:definition "Worth addressing, but not ahead of the high-priority risks."@en .
+
+pair:LowStatedPriority a skos:Concept ;
+    skos:inScheme pair:StatedPriorityScheme ;
+    skos:prefLabel "Low"@en ;
+    skos:definition "Recorded and accepted; kept so that the judgement survives a re-run."@en .
+
+### Triage: what a person concluded about a finding
+#
+# The output contract allows a finding exactly one pair:findingStatus, so a
+# judgement replaces the "candidate" the query emitted rather than sitting
+# beside it. It is recorded as its own node because a decision that cannot say
+# who made it, when, and why is not reviewable - and risk storming keeps the
+# things decided NOT to be risks for exactly that reason.
+#
+# Finding IRIs are deterministic, so a judgement survives a re-run. One made
+# about a finding that no longer fires is simply not applied.
+
+pair:TriageDecision a owl:Class ;
+    rdfs:label "Triage Decision"@en ;
+    rdfs:comment "A person's conclusion about a candidate risk finding: what they decided, who decided it, and why."@en .
+
+pair:decidesFinding a owl:ObjectProperty ;
+    rdfs:label "decides finding"@en ;
+    rdfs:comment "The candidate risk finding this decision is about."@en ;
+    rdfs:domain pair:TriageDecision ;
+    rdfs:range pair:RiskFinding .
+
+# Not pair:findingStatus: that is declared on pair:RiskFinding, and the value
+# reaches the finding by replacing the emitted one, not by being read off here.
+pair:decidedStatus a owl:DatatypeProperty ;
+    rdfs:label "decided status"@en ;
+    rdfs:comment "What was concluded: confirmed, refuted, mitigated, or accepted. The output contract's vocabulary, minus the candidate a run starts from."@en ;
+    rdfs:domain pair:TriageDecision ;
+    rdfs:range xsd:string .
+
+### The agenda: which risks this assessment set out to answer
+#
+# Backward reasoning needs a question before it has an answer. The run stays
+# whole - detection is monotone and complete (R2, R9) - but the report is made
+# against the agenda, so a risk nobody asked about is reported as not examined
+# rather than passing silently for absent.
+#
+# Absent, the agenda is derived from the stated undesired outcomes, so naming a
+# harm is enough to have one.
+
+pair:checksRiskPattern a owl:ObjectProperty ;
+    rdfs:label "checks risk pattern"@en ;
+    rdfs:comment "A risk this assessment set out to answer. Chooses what is reported on, never what the pipeline is allowed to detect."@en ;
+    rdfs:domain pair:AssessmentScope ;
+    rdfs:range pair:RiskPattern .
+
+### A risk defined before anything is found
+#
+# Backward reasoning at its sharpest: somebody names the risk they want to look
+# at - what data, where, which weakness - and the view shows only the points in
+# the architecture and the process that bear on it. Everything else stays in
+# the run and off the page.
+#
+# Each of the three is optional and each narrows. None of them decides what the
+# pipeline may detect (R2, R9): the lens reads a complete run.
+
+pair:concernsSystem a owl:ObjectProperty ;
+    rdfs:label "concerns system"@en ;
+    rdfs:comment "Where a defined risk is looked for: the architecture it is about."@en ;
+    rdfs:domain beamr:Risk ;
+    rdfs:range beam:System .
+
+pair:concernsDataCategory a owl:ObjectProperty ;
+    rdfs:label "concerns data category"@en ;
+    rdfs:comment "What a defined risk is about: the kind of content whose involvement is in question."@en ;
+    rdfs:domain beamr:Risk ;
+    rdfs:range pair:DataCategory .
+
+pair:concernsRiskPattern a owl:ObjectProperty ;
+    rdfs:label "concerns risk pattern"@en ;
+    rdfs:comment "Which weakness a defined risk is about, when the person knows it by name."@en ;
+    rdfs:domain beamr:Risk ;
+    rdfs:range pair:RiskPattern .

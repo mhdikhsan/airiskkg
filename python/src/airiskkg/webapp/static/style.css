@@ -219,6 +219,29 @@ label.btn { display: inline-flex; align-items: center; }
 .draw-actions .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* ---- canvas ---- */
+/* One treatment for every panel that sits beside a canvas.
+ *
+ * The architecture palette was light and the business and risk ones dark, so
+ * the same control looked like two different things depending on the level.
+ * These redefine the tokens rather than restating every colour: the panels'
+ * own rules already read them. */
+.process-palette,
+.risk-tools,
+.risk-side {
+  --bg: rgba(255, 255, 255, 0.96);
+  --bg-panel: #f6f7fa;
+  --bg-editor: #eef0f5;
+  --border: #c6ccd8;
+  --text: #2a2f38;
+  --text-dim: #6a7383;
+  --accent-dim: #8fb0ef;
+  --good: #1f8a4c;
+  --warn: #8a6100;
+  --error: #c0392b;
+  background: var(--bg);
+  color: var(--text);
+}
+
 .canvas-wrap { flex: 1 1 auto; position: relative; min-height: 0; overflow: hidden; touch-action: none; }
 #canvas { width: 100%; height: 100%; display: block; cursor: grab; }
 #canvas:active { cursor: grabbing; }
@@ -988,6 +1011,27 @@ label.btn { display: inline-flex; align-items: center; }
 }
 .proc-lane:first-child { padding-top: 4px; }
 
+/* The list is nested the way the canvas is: pool, then lane, then activity.
+   The pool is the outer heading, a lane sits indented under it, and an
+   activity under its lane - or straight under the pool when it has none. */
+.proc-pool {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 12px; font-weight: 700; color: var(--text);
+  padding: 14px 8px 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.proc-pool:first-child { padding-top: 4px; }
+.proc-lane { display: flex; justify-content: space-between; align-items: baseline; margin-left: 14px; }
+.proc-count { font-weight: 400; color: var(--text-dim); font-size: 11px; letter-spacing: 0; }
+.proc-row.depth-1 { padding-left: 22px; }
+.proc-row.depth-2 { padding-left: 36px; }
+.proc-row.depth-3 { padding-left: 50px; }
+.proc-row.refined.depth-1 { padding-left: 20px; }
+.proc-row.refined.depth-2 { padding-left: 34px; }
+.proc-row.refined.depth-3 { padding-left: 48px; }
+/* The one heading that states a gap: a pool with lanes, and a step in none. */
+.proc-pool.unassigned, .proc-lane.unassigned { color: var(--warn); border-left-color: var(--warn); }
+
 .proc-row {
   display: flex;
   align-items: center;
@@ -1297,6 +1341,32 @@ label.btn { display: inline-flex; align-items: center; }
 .pp-fold:hover { border-color: #4a72c4; }
 .process-palette.folded { max-height: none; }
 
+/* Picking a connector, on either canvas.
+ *
+ * Both could draw a line and neither could take one out, so a line drawn wrong
+ * cost the boxes at either end. Pressing a line picks it and it offers to go -
+ * the gesture every diagram editor uses - and Delete does the same thing. */
+.edge.picked, .pc-flow.picked {
+  stroke: #c0392b;
+  stroke-width: 2.4;
+}
+.pc-flow-hit { stroke: transparent; stroke-width: 14; cursor: pointer; }
+/* It was a tooltip target and is a control as well now. */
+.edge-hit { cursor: pointer; }
+.edge-drop, .pc-flow-drop { cursor: pointer; }
+.edge-drop-disc, .pc-flow-drop-disc {
+  fill: #ffffff;
+  stroke: #c0392b;
+  stroke-width: 1.4;
+}
+.edge-drop:hover .edge-drop-disc,
+.pc-flow-drop:hover .pc-flow-drop-disc { fill: #fdecef; }
+.edge-drop-sign, .pc-flow-drop-sign {
+  fill: #c0392b;
+  font: 700 12px system-ui, sans-serif;
+  pointer-events: none;
+}
+
 .pc-pool-fold .pc-marker-box { fill: #ffffff; stroke: #9aa4b8; stroke-width: 1.2; }
 .pc-pool-fold:hover .pc-marker-box { stroke: #4a72c4; }
 
@@ -1375,6 +1445,9 @@ label.btn { display: inline-flex; align-items: center; }
   padding: 12px;
   overflow-x: auto;
   background: var(--bg-panel);
+  /* The column scrolls, so neither child gives up height to the other: a
+     process diagram squeezed to a strip by the panel below it is unreadable. */
+  flex-shrink: 0;
 }
 .overview-diagram svg { display: block; max-width: 100%; }
 .overview-side h3 {
@@ -2043,6 +2116,69 @@ body.editor-hidden .pane-head { display: none; }
   .library-search { width: 150px; }
 }
 
+/* ---- overview: the architecture behind one activity ---- */
+.overview-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+/* Only a refined activity opens anything, so only it looks pressable. */
+.overview-diagram [data-node].ov-openable { cursor: pointer; }
+.overview-diagram [data-node].ov-openable:hover { filter: brightness(1.08); }
+.overview-diagram [data-node].ov-open .pc-box { stroke-width: 2.2px; }
+
+.overview-system {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-panel);
+  padding: 14px 16px 16px;
+  flex-shrink: 0;
+}
+.overview-system.hidden { display: none; }
+.ov-sys-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.ov-sys-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.ov-sys-for { color: var(--text-dim); font-size: 12px; }
+.ov-sys-close,
+.ov-sys-act {
+  margin-left: auto;
+  font: inherit;
+  font-size: 12px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+/* Only the first of the pair is pushed right; the rest sit beside it. */
+.ov-sys-act + .ov-sys-close { margin-left: 0; }
+.ov-sys-close:hover,
+.ov-sys-act:hover { color: var(--accent); }
+.ov-row.clickable { cursor: pointer; }
+.ov-row.clickable:hover { color: var(--accent); }
+.ov-sys-note { margin: 4px 0 10px; font-size: 12.5px; line-height: 1.6; color: var(--text-dim); }
+.ov-sys-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px 14px;
+}
+.ov-sys-group-name {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b95ab;
+  margin-bottom: 4px;
+}
+.ov-sys-item { font-size: 12.5px; padding: 2px 0; }
+.ov-sys-roles { color: var(--accent); font-size: 11.5px; }
+.ov-sys-roles.none { color: #8b95ab; font-style: italic; }
+
 /* ---- small screens ---- */
 
 /* Labels below are hidden from sight, not from the accessibility tree: each of
@@ -2120,3 +2256,478 @@ body.editor-hidden .pane-head { display: none; }
   .palette-item { font-size: 11px; padding: 5px 7px; }
   .start-card { width: auto; max-width: 300px; }
 }
+
+/* ==== the risk level ====================================================
+   A document rather than a drawing: it scrolls, it has no zoom, and it is
+   the one level that is useful before a graph exists. */
+
+/* The architecture's own widgets, put away while the risk level is on. The risk
+   canvas has controls of its own and they are not one of them. */
+.canvas-wrap.risk .canvas-empty,
+.canvas-wrap.risk .canvas-controls:not(.risk-canvas-controls),
+.canvas-wrap.risk .system-badge,
+.canvas-wrap.risk .palette,
+.canvas-wrap.risk .motif-palette,
+.canvas-wrap.risk .node-detail { display: none !important; }
+
+.risk-view {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg-panel);
+  overflow: hidden;
+  /* The wrap disables touch gestures so a drag pans the canvas; this level is
+     a document and has to scroll. */
+  touch-action: auto;
+}
+.risk-view.hidden { display: none; }
+
+.scope-input {
+  flex: 1 1 auto; min-width: 0;
+  background: var(--bg-editor); color: var(--text);
+  border: 1px solid var(--border); border-radius: 5px;
+  padding: 4px 8px; font: inherit; font-size: 12px;
+}
+.scope-select {
+  background: var(--bg-editor); color: var(--text);
+  border: 1px solid var(--border); border-radius: 5px;
+  padding: 3px 6px; font: inherit; font-size: 12px; width: 100%;
+}
+.scope-add { font-size: 12px; }
+.scope-add > summary { cursor: pointer; color: var(--accent); padding: 3px 6px; }
+.scope-add-body {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 8px; margin-top: 4px; width: 320px;
+  background: var(--bg-editor); border: 1px solid var(--border); border-radius: 6px;
+}
+.scope-hint { font-size: 11px; color: var(--text-dim); }
+
+.risk-body { flex: 1 1 auto; display: flex; min-height: 0; }
+
+/* Detached, and no taller than what is in them: a tray over the drawing rather
+ * than a column beside it, because a full-height panel reads as the page and
+ * leaves the notation a slot. Same shape as the architecture palettes. */
+.risk-tray {
+  position: absolute; z-index: 3;
+  display: flex; flex-direction: column;
+  padding: 8px; border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+  max-height: calc(100% - 20px); overflow: auto;
+}
+.risk-tools { top: 10px; left: 10px; width: 186px; }
+.risk-side { top: 10px; right: 10px; width: 288px; }
+/* A button rather than a div: the canvas wrap below exempts real controls from
+   the pointer capture it uses to pan, and a head that folds a panel is one. */
+.risk-tray .tray-head {
+  width: 100%; padding: 0; cursor: pointer; font: inherit;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  background: none; border: 0; color: var(--text-dim);
+}
+.risk-tray .tray-head:hover { color: var(--accent); }
+.risk-tray .tray-toggle { margin-left: auto; }
+.risk-tray.collapsed .tray-body { display: none; }
+.risk-side h3, .risk-starter h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--text-dim); }
+
+/* ---- one concern ---- */
+.concern-card {
+  border: 1px solid var(--border); border-left: 3px solid var(--border);
+  border-radius: 6px; background: var(--bg); padding: 9px 11px; margin-bottom: 8px;
+  cursor: pointer;
+}
+.concern-card:hover { border-color: var(--accent-dim); }
+.concern-card.selected { border-left-color: var(--accent); background: var(--bg-editor); }
+.concern-head { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.concern-desc { margin: 5px 0; font-size: 12px; color: var(--text-dim); }
+/* One shape for every line of a concern: label, then the value beneath it at
+   full width. The rail is too narrow for a label column, and a value that
+   sometimes sits inline and sometimes wraps under is what read as untidy. */
+.concern-row { margin-top: 7px; font-size: 12px; }
+.concern-key {
+  display: block; margin-bottom: 2px;
+  font-size: 10px; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--text-dim);
+}
+.concern-val {
+  display: flex; flex-wrap: wrap; gap: 5px 7px; align-items: baseline;
+  min-width: 0; line-height: 1.5;
+}
+.concern-row.concern-triage {
+  margin-top: 9px; padding-top: 8px; border-top: 1px dashed var(--border);
+}
+
+/* The rail folds: one section per box, and the reader chooses what is open. */
+.rail-section { border-bottom: 1px solid var(--border); }
+.rail-section > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 2px; font-size: 11px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim);
+}
+.rail-section > summary::-webkit-details-marker { display: none; }
+.rail-section > summary::before {
+  content: "b8"; font-size: 9px; transition: transform .12s ease;
+}
+.rail-section[open] > summary::before { transform: rotate(90deg); }
+.rail-section > summary:hover { color: var(--accent); }
+.rail-section > *:not(summary) { padding-bottom: 10px; }
+
+/* Whether this concern answers the question that was asked. "unclassified" is
+   not a quieter "out": nothing upstream maps it, so the scope cannot speak. */
+.scope-tag {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
+  border-radius: 3px; padding: 1px 5px; border: 1px solid transparent;
+}
+.scope-tag.in { color: var(--good); border-color: var(--good); }
+.scope-tag.out { color: var(--text-dim); border-color: var(--border); }
+.scope-tag.unclassified { color: var(--warn); border-color: var(--warn); }
+.scope-tag.all { display: none; }
+
+.chip.corroborated { border-color: var(--accent); color: var(--accent); }
+.chip.clearable { border-color: var(--good); color: var(--good); }
+.chip.stated { border-color: var(--accent-dim); }
+.chip.stated.high { border-color: var(--error); color: var(--error); }
+
+.stat.warn { color: var(--warn); }
+
+/* ---- the register ---- */
+.stated-row { display: flex; gap: 8px; padding: 7px 0; border-top: 1px solid var(--border); }
+.stated-dot { flex: 0 0 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--text-dim); }
+.stated-dot.high { background: var(--error); }
+.stated-dot.medium { background: var(--warn); }
+.stated-dot.low { background: var(--good); }
+.stated-name { font-size: 12px; }
+.stated-where, .stated-by { font-size: 11px; color: var(--text-dim); }
+.stated-verdict.none { font-size: 11px; color: var(--warn); margin-top: 3px; }
+
+/* ---- the backward starter ---- */
+.risk-starter { margin-top: 16px; }
+.risk-starter p.dim { font-size: 11px; color: var(--text-dim); margin: 0 0 8px; }
+.risk-starter p.small { font-size: 10px; }
+.starter-outcomes { display: flex; flex-direction: column; gap: 4px; }
+.starter-outcome {
+  display: flex; justify-content: space-between; gap: 8px; align-items: center;
+  background: var(--bg-editor); color: var(--text); text-align: left;
+  border: 1px solid var(--border); border-radius: 5px;
+  padding: 5px 9px; font: inherit; font-size: 12px; cursor: pointer;
+}
+.starter-outcome:hover { border-color: var(--accent-dim); }
+.starter-outcome.active { border-color: var(--accent); color: var(--accent); }
+.starter-count { color: var(--text-dim); font-size: 11px; }
+
+.work-plan { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+.work-plan h4 { margin: 0 0 8px; font-size: 12px; font-weight: 600; }
+.plan-row { margin-bottom: 10px; }
+.plan-name { font-size: 12px; font-weight: 600; }
+.plan-why { margin: 3px 0; padding-left: 16px; font-size: 11px; color: var(--text-dim); }
+.plan-motifs { display: flex; flex-wrap: wrap; gap: 5px; align-items: baseline; font-size: 11px; }
+.plan-motifs-lead { color: var(--text-dim); }
+.plan-motifs.dim { color: var(--text-dim); font-style: italic; }
+
+@media (max-width: 900px) {
+  .risk-tools { width: 150px; }
+  .risk-side { width: 220px; }
+  .risk-tray { max-height: calc(100% - 16px); }
+}
+
+.start-backward {
+  display: block; margin: 14px auto 0; max-width: 480px;
+  background: none; border: none; color: var(--accent);
+  font: inherit; font-size: 12px; cursor: pointer; text-align: center;
+}
+.start-backward:hover { text-decoration: underline; }
+.stated-verdict.pending { font-size: 11px; color: var(--text-dim); margin-top: 3px; font-style: italic; }
+
+/* ---- triage, questions, assurance ---- */
+.triage-note { font-size: 12px; }
+.chip.clickable { cursor: pointer; background: none; color: var(--text); font: inherit; }
+.chip.clickable:hover { border-color: var(--accent); color: var(--accent); }
+
+/* A settled concern is still on the page - it recedes rather than leaving. */
+.concern-card.settled { opacity: .62; }
+.concern-card.settled:hover { opacity: 1; }
+.chip.decided { text-transform: uppercase; letter-spacing: .04em; font-size: 10px; }
+.chip.decided.confirmed { border-color: var(--error); color: var(--error); }
+.chip.decided.mitigated,
+.chip.decided.refuted { border-color: var(--good); color: var(--good); }
+.chip.decided.accepted { border-color: var(--warn); color: var(--warn); }
+.stat.good { color: var(--good); }
+
+.risk-questions { margin-bottom: 16px; }
+.risk-questions p.dim { font-size: 11px; color: var(--text-dim); margin: 0 0 8px; }
+.question-row {
+  border-left: 2px solid var(--warn); padding: 6px 0 6px 9px; margin-bottom: 8px;
+}
+.question-head { font-size: 12px; }
+.question-text { font-size: 11px; color: var(--text-dim); margin: 4px 0 0; }
+
+/* In the toolbar with the layer toggles, and shaped like them - but not one of
+   them: it hides what the run found, not a layer. */
+.storm-toggle {
+  font: inherit; font-size: 11px; padding: 3px 9px; cursor: pointer; text-align: left;
+  background: var(--bg-panel); color: var(--text-dim);
+  border: 1px dashed var(--border); border-radius: 999px;
+}
+.storm-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.storm-toggle.on {
+  color: var(--accent); border-color: var(--accent); border-style: solid;
+  background: var(--bg);
+}
+
+/* ---- the notation, drawn ---- */
+.risk-main {
+  flex: 1 1 auto; position: relative; min-width: 0; background: var(--canvas-bg);
+  display: flex;
+}
+.risk-tools.hidden { display: none; }
+.risk-canvas { flex: 1 1 auto; width: auto; height: 100%; display: block; cursor: grab; }
+.risk-canvas:active { cursor: grabbing; }
+.risk-canvas-controls { right: 12px; bottom: 12px; }
+.risk-canvas-empty {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 40px; color: #5f6368; font-size: 13px;
+}
+.risk-canvas-empty.hidden { display: none; }
+
+.rc-card { cursor: pointer; }
+.rc-card.dim { opacity: .45; }
+.rc-card.sel rect { filter: drop-shadow(0 2px 6px rgba(0,0,0,.28)); }
+.rc-title { font: 600 12px system-ui, sans-serif; fill: #16181d; }
+.rc-body { font: 10.5px system-ui, sans-serif; fill: #4a4f57; }
+.rc-chip { font: 9px system-ui, sans-serif; }
+.rc-mark { font: 9px system-ui, sans-serif; }
+.rc-flow { cursor: pointer; }
+.rc-flow-label { font: 11.5px system-ui, sans-serif; fill: #16181d; }
+/* One frame per architecture, drawn behind its own boxes.
+ *
+ * This is the same device the architecture canvas uses for a system boundary,
+ * and it replaces a line from the system to every part it holds: containment
+ * reads off the enclosure, and the lines that are left all mean something
+ * else. Four grounds, so neighbouring frames stay apart. */
+.rc-frame-box {
+  fill: rgba(74, 114, 196, 0.035);
+  stroke: #9aa4b8;
+  stroke-width: 1.2;
+  stroke-dasharray: 7 5;
+}
+.rc-frame-label {
+  fill: #6b7488;
+  font: 700 10px system-ui, sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.rc-frame.s1 .rc-frame-box { fill: rgba(79, 154, 106, 0.04); stroke: #8fb39c; }
+.rc-frame.s1 .rc-frame-label { fill: #5d8a6f; }
+.rc-frame.s2 .rc-frame-box { fill: rgba(179, 160, 107, 0.05); stroke: #bfae83; }
+.rc-frame.s2 .rc-frame-label { fill: #8a7a4f; }
+.rc-frame.s3 .rc-frame-box { fill: rgba(160, 106, 160, 0.04); stroke: #b394b3; }
+.rc-frame.s3 .rc-frame-label { fill: #8a6b8a; }
+.rc-frame.sel .rc-frame-box { stroke-width: 2.2; stroke-dasharray: none; }
+
+/* What an element carries, on the element: the categories a risk pattern's
+   conditions are read against, so the reason a risk lands here is visible
+   where it lands rather than only in the panel. */
+.rc-carries { font: 9px system-ui, sans-serif; fill: #8a6100; }
+
+/* What each arrow means, on the arrow. The halo is what keeps it legible where
+   a line runs underneath it. */
+.rc-edge-label {
+  font: 9px system-ui, sans-serif; fill: #5f6b7d;
+  stroke: var(--canvas-bg, #f4f6f9); stroke-width: 3px; paint-order: stroke;
+  pointer-events: none;
+}
+.rc-edge-label.dim { opacity: .2; }
+
+/* The handle that unfolds a system into its parts. */
+.rc-unfold { cursor: pointer; }
+.rc-unfold-box { fill: #ffffff; stroke: #1f7a34; stroke-width: 1; }
+.rc-unfold-text { font: 9px system-ui, sans-serif; fill: #1f7a34; }
+.rc-unfold:hover .rc-unfold-box { fill: #d6ecdc; }
+.rc-unfold.open .rc-unfold-box { fill: #e6f4ea; }
+
+.rc-link { stroke: #9aa1af; stroke-width: 1; stroke-dasharray: 4 3; }
+.rc-link.chain { stroke: #7b8494; }
+.rc-link.dim { opacity: .15; }
+.rc-flow-edge { stroke: #5f6368; stroke-width: 1.4; }
+.rail-detail { margin-bottom: 14px; }
+/* No coloured bar down the side: the panel only ever shows the one thing that
+   is selected, so there is nothing for a marker to distinguish it from. */
+.rail-detail.concern-card {
+  cursor: default; border-left: 1px solid var(--border); padding: 11px 12px;
+}
+
+/* Chips are styled for the dark finding list. In the light trays they have to
+   be read, so the base is restated here rather than in ten variants. */
+.risk-side .chip {
+  background: var(--bg-editor); color: var(--text); border-color: var(--border);
+}
+.risk-side .chip.clearable { background: #e8f5ec; border-color: var(--good); color: #15693a; }
+.risk-side .chip.corroborated { background: #eaf0fd; border-color: var(--accent); }
+
+/* One condition per line. As a run-together paragraph this was the longest
+   thing on the panel and the least read. */
+.why-list { margin: 0; padding-left: 15px; }
+.why-list li { font-size: 11.5px; line-height: 1.45; margin-bottom: 2px; }
+.why-more { margin-top: 3px; }
+.why-more > summary { font-size: 11px; color: var(--text-dim); cursor: pointer; }
+
+/* A concern named under the system or part it lands in, and a way back to it. */
+.frame-risk {
+  display: block; width: 100%; text-align: left;
+  font: inherit; font-size: 11.5px; line-height: 1.35;
+  padding: 4px 7px; margin-bottom: 3px; cursor: pointer;
+  background: var(--bg-editor); color: var(--text);
+  border: 1px solid var(--border); border-radius: 4px;
+}
+.frame-risk:hover { border-color: var(--accent); color: var(--accent); }
+.frame-risk-settled .frame-risk { opacity: .6; }
+.dim.small, p.dim.small { font-size: 11px; color: var(--text-dim); }
+
+/* ---- the agenda: a named risk, and what the graph said about it ---- */
+.risk-agenda { margin-bottom: 16px; }
+.risk-agenda p.dim { font-size: 11px; color: var(--text-dim); margin: 0 0 8px; }
+.verdict-row {
+  border-left: 2px solid var(--border); padding: 6px 0 7px 9px; margin-bottom: 8px;
+}
+.verdict-row.raised { border-left-color: var(--error); }
+.verdict-row.structure-present,
+.verdict-row.structure-incomplete { border-left-color: var(--warn); }
+.verdict-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; font-size: 12px; }
+.verdict-tag {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
+  border: 1px solid transparent; border-radius: 3px; padding: 1px 5px;
+}
+.verdict-tag.bad { color: var(--error); border-color: var(--error); }
+.verdict-tag.warn { color: var(--warn); border-color: var(--warn); }
+.verdict-tag.quiet { color: var(--text-dim); border-color: var(--border); }
+/* The sentence that stops "did not fire" being read as "safe". */
+.verdict-detail { font-size: 11px; margin-top: 3px; }
+.verdict-detail.dim { color: var(--text-dim); }
+.stat.bad { color: var(--error); }
+
+/* ---- the lens: one risk, the process one side, the architecture the other ---- */
+.rc-lens-head { font: 600 11px system-ui, sans-serif; fill: #5f6368; text-transform: uppercase; letter-spacing: .05em; }
+.rc-link.lens-side { stroke: #b0b6c2; stroke-dasharray: 3 3; }
+.rc-link.lens-flow { stroke: #5f6368; stroke-dasharray: none; stroke-width: 1.3; }
+.rc-link.evidence { stroke: #e08800; stroke-dasharray: 5 3; }
+
+/* Layer toggles and the architecture being read, over the notation. */
+.risk-layers { display: flex; flex-direction: column; gap: 5px; align-items: stretch; }
+.risk-layers.hidden { display: none; }
+.layer-toggle {
+  font: inherit; font-size: 11px; padding: 3px 9px; cursor: pointer;
+  background: var(--bg-panel); color: var(--text-dim);
+  border: 1px solid var(--border); border-radius: 999px;
+}
+.layer-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.layer-toggle.on { color: var(--accent); border-color: var(--accent); background: var(--bg); }
+.layer-focus {
+  font: inherit; font-size: 11px; padding: 3px 6px; max-width: 220px;
+  background: var(--bg-panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 4px;
+}
+
+/* The hand-assessment palette: drag a shape onto what it is about. */
+.risk-palette {
+  display: flex; flex-direction: column; gap: 3px; align-items: stretch;
+  padding-top: 8px; border-top: 1px solid var(--border);
+}
+.risk-palette.hidden { display: none; }
+.risk-palette .pp-item {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  font: inherit; font-size: 11px; padding: 4px 8px; cursor: grab;
+  background: none; color: var(--text); text-align: left;
+  border: 1px solid transparent; border-radius: 4px;
+}
+.risk-palette .pp-item:hover { border-color: var(--accent); color: var(--accent); }
+.risk-palette .pp-item:active { cursor: grabbing; }
+.pal-swatch {
+  width: 14px; height: 11px; border-radius: 2px; flex: 0 0 auto;
+  border: 1px solid currentColor;
+}
+/* The notation's own colours, so the palette cannot drift from what it draws. */
+.band-risk .pal-swatch, .risk-ghost.band-risk { background: #fff6e6; color: #e08800; }
+.band-source .pal-swatch, .risk-ghost.band-source { background: #fff3e0; color: #c77800; }
+.band-consequence .pal-swatch, .risk-ghost.band-consequence { background: #fdeef7; color: #d81b8c; }
+.band-impact .pal-swatch, .risk-ghost.band-impact { background: #fdecef; color: #c2185b; }
+.band-control .pal-swatch, .risk-ghost.band-control { background: #eaf6ec; color: #2e7d32; }
+
+/* Shaped like the box it writes, not labelled like a tooltip: what is being
+   dragged has to be recognisable as what will land. */
+.risk-ghost {
+  position: fixed; z-index: 90; pointer-events: none;
+  min-width: 92px; text-align: center;
+  font-size: 11px; font-weight: 600; padding: 7px 11px; border-radius: 3px;
+  border: 1.5px solid currentColor; opacity: .95;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+.risk-ghost.over { box-shadow: 0 0 0 2px currentColor, 0 2px 8px rgba(0, 0, 0, .18); }
+.risk-ghost.nowhere { border-style: dashed; opacity: .7; }
+.pal-text { display: flex; flex-direction: column; line-height: 1.25; }
+.pal-where { font-size: 9.5px; color: var(--text-dim); }
+
+/* Where a drop would be accepted, marked for the whole drag; and the one it
+   would land on right now. "Drag this somewhere" is not an instruction. */
+.rc-droppable rect { stroke-dasharray: 4 2; }
+.rc-droppable { filter: drop-shadow(0 0 3px rgba(79, 70, 229, .55)); }
+.rc-drop rect { stroke-width: 2.4px; stroke-dasharray: none; }
+.rc-drop { filter: drop-shadow(0 0 7px rgba(224, 136, 0, .85)); }
+
+/* A line somebody drew: wide enough to press, invisible until it is. */
+.rc-link-hit { stroke: transparent; stroke-width: 12px; cursor: pointer; }
+.rc-link.picked { stroke: var(--accent); stroke-width: 2.2px; stroke-dasharray: none; }
+/* Process side of a pick: the lane colour, so it reads as the other half of the chain. */
+.rc-link.context { stroke: #4f46e5; stroke-dasharray: 5 3; }
+
+/* ---- defined risks, and a lens explaining itself ---- */
+.lens-list { margin-bottom: 14px; }
+.lens-list p.dim { font-size: 11px; color: var(--text-dim); margin: 0 0 8px; }
+.lens-row { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; margin-bottom: 6px; padding: 7px 9px; background: var(--bg-editor); color: var(--text); border: 1px solid var(--border); border-radius: 5px; font: inherit; font-size: 12px; cursor: pointer; }
+.lens-row:hover { border-color: var(--accent-dim); }
+.lens-row.active { border-color: var(--accent); }
+.lens-row .dim { font-size: 11px; color: var(--text-dim); }
+.define-risk > summary { font-weight: 600; }
+.lens-points { margin-top: 12px; }
+.lens-point { padding: 5px 0; border-top: 1px solid var(--border); font-size: 12px; }
+.lens-kind { display: inline-block; min-width: 76px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-dim); }
+
+/* A box being moved on the process canvas: the same feedback as the architecture canvas. */
+#process-canvas.dragging-node, #process-canvas.dragging-node * { cursor: grabbing !important; }
+
+/* ---- the overview carries the risk on the work ---- */
+.ov-risk-mark circle { fill: #c2185b; stroke: #ffffff; stroke-width: 1.5; }
+.ov-risk-count { font: 700 11px system-ui, sans-serif; fill: #ffffff; }
+.ov-risk-mark.dim { opacity: .2; }
+.ov-at-risk .pc-box { stroke: #c2185b; stroke-width: 1.8; }
+.ov-cap { border: 1px solid var(--border); border-left: 3px solid var(--error); border-radius: 6px; padding: 9px 11px; margin-bottom: 8px; cursor: pointer; }
+.ov-cap.clean { border-left-color: var(--good); opacity: .75; }
+.ov-cap:hover { border-color: var(--accent-dim); }
+.ov-cap-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ov-cap-work { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+.ov-cap-detail { margin-top: 6px; }
+.ov-concern { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; font-size: 12px; padding: 3px 0; border-top: 1px solid var(--border); }
+.ov-domains { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+.ov-count.clean { color: var(--good); }
+.chip.dim { color: var(--text-dim); border-color: var(--border); }
+.ov-cap-detail > summary { cursor: pointer; font-size: 11px; color: var(--accent); padding: 4px 0; }
+.ov-where { font-size: 10.5px; color: var(--text-dim); margin-top: 2px; }
+
+/* The overview panel under the diagram: the risk on one AI system. */
+/* Sized off the viewport rather than a fixed 460px: the lens is three bands
+   tall and a short frame clamps fit() to its floor, which means panning to
+   read. Dragged taller by the reader if they want more, and refitted when
+   they do. */
+.ov-sys-canvas {
+  height: clamp(420px, 72vh, 1040px);
+  min-height: 320px;
+  resize: vertical;
+  background: var(--canvas-bg);
+  border-radius: 6px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+/* Two systems behind one activity share the page, so neither takes all of it. */
+.ov-sys-canvas.multi { height: clamp(360px, 44vh, 640px); }
+.ov-sys-canvas svg { width: 100%; height: 100%; display: block; cursor: grab; }
+.ov-sys-canvas svg:active { cursor: grabbing; }
+.ov-sys-detail:not(:empty) { padding: 6px 2px; }
+.ov-sys-note.dim { color: var(--text-dim); font-style: italic; }

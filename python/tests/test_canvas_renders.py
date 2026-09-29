@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from airiskkg.paths import REPO_ROOT
-from conftest import process_path  # noqa: E402
+from conftest import AGENT_NS, TARIFF_NS, example_path, process_path  # noqa: E402
 
 pytestmark = pytest.mark.browser
 
@@ -586,4 +586,278 @@ def test_the_motifs_tab_explains_an_annotation_that_cannot_bind(served) -> None:
     assert seen["leafClassNoise"] == 0, (
         "the input contract's warnings leaked in - they fire on every plain "
         "beam:Data and say nothing about anyone's annotation"
+    )
+
+
+def test_the_overview_fits_the_diagram_it_shows(served) -> None:
+    """The stakeholder page is a diagram plus a summary, and the diagram is the
+    half someone came to see.
+
+    It is fitted with getBBox, which measures nothing inside display:none - so
+    fitting it before the page is on screen collapsed it to a 40px line while
+    every activity was present in the markup. Assert on the height that got
+    painted, not on whether the elements are there."""
+    report = _drive(served, """
+    const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+    window.addEventListener("load", async () => {
+      const nl = String.fromCharCode(10, 10);
+      const a = await (await fetch("/api/examples/ARCH")).json();
+      const p = await (await fetch("/api/examples/PROC")).json();
+      window.PairAI.Editor.setValue(a.ttl + nl + p.ttl);
+      setTimeout(() => {
+        document.querySelector("#btn-library-close")?.click();
+        document.querySelector("#btn-overview").click();
+        setTimeout(() => {
+          const svg = document.querySelector("#overview-diagram svg");
+          if (!svg) return log("svg=none");
+          const box = svg.getBoundingClientRect();
+          log("acts=" + svg.querySelectorAll(".pc-activity, .pc-task, [class*='pc-act']").length);
+          log("height=" + Math.round(box.height));
+          log("viewBox=" + (svg.getAttribute("viewBox") || "").split(" ").slice(2).join("x"));
+        }, 1200);
+      }, 3500);
+    });
+    """.replace("ARCH", example_path(TARIFF_NS).stem)
+        .replace("PROC", process_path("energy_tariff_change").stem),
+    budget=30000)
+
+    assert "svg=none|" not in report, "the overview drew no diagram at all"
+    height = int(re.search(r"height=(\d+)\|", report).group(1))
+    assert height > 200, (
+        f"the overview diagram collapsed to {height}px - it was fitted while hidden: {report}"
+    )
+    width = float(re.search(r"viewBox=([\d.]+)x", report).group(1))
+    assert width > 500, f"the viewBox was computed from an empty box: {report}"
+
+
+def test_an_activity_in_the_overview_opens_the_architecture_behind_it(served) -> None:
+    """`pair:refinedBy` names the system and beam:has* say what it holds, so the
+    overview can answer "what carries this out" without leaving the page.
+
+    Only a refined activity opens anything - the rest have no architecture to
+    show, and a click that sometimes does nothing is worse than no click."""
+    report = _drive(served, """
+    const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+    window.addEventListener("load", async () => {
+      const nl = String.fromCharCode(10, 10);
+      const a = await (await fetch("/api/examples/ARCH")).json();
+      const p = await (await fetch("/api/examples/PROC")).json();
+      window.PairAI.Editor.setValue(a.ttl + nl + p.ttl);
+      setTimeout(() => {
+        document.querySelector("#btn-library-close")?.click();
+        document.querySelector("#btn-overview").click();
+        setTimeout(() => {
+          const all = document.querySelectorAll("#overview-diagram [data-node]").length;
+          const open = document.querySelectorAll("#overview-diagram .ov-openable").length;
+          log("openable=" + open);
+          log("someNotOpenable=" + (all > open));
+          document.querySelector("#overview-side .ov-row.clickable").click();
+          setTimeout(() => {
+            const box = document.querySelector("#overview-system");
+            log("shown=" + !box.classList.contains("hidden"));
+            log("named=" + !!(box.querySelector(".ov-sys-head h3") || {}).textContent);
+            log("members=" + box.querySelectorAll(".ov-sys-item").length);
+          }, 2500);
+        }, 1500);
+      }, 3500);
+    });
+    """.replace("ARCH", example_path(TARIFF_NS).stem)
+        .replace("PROC", process_path("energy_tariff_change").stem),
+    budget=40000)
+
+    assert "openable=0|" not in report, f"no activity offered its architecture: {report}"
+    assert "someNotOpenable=true|" in report, (
+        f"every node was made clickable, including ones with no architecture: {report}"
+    )
+    assert "shown=true|" in report, f"clicking an AI activity revealed nothing: {report}"
+    assert "named=true|" in report, f"the revealed architecture had no name: {report}"
+    members = int(re.search(r"members=(\d+)\|", report).group(1))
+    assert members > 0, f"the architecture was revealed but listed no elements: {report}"
+
+
+def test_the_process_list_nests_pool_lane_activity_and_says_each_once(served) -> None:
+    """The Process tab, read the way the canvas is drawn.
+
+    It grouped by runs of the flow order, which interleaves the pools - so in
+    the tariff scene "No lane" appeared five times and "LLM agent" three. And
+    "No lane" was false: the customer's pool declares no lanes at all, so its
+    activities are not missing one, they are the pool's.
+    """
+    report = _drive(served, """
+    const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+    window.addEventListener("load", async () => {
+      const nl = String.fromCharCode(10, 10);
+      const a = await (await fetch("/api/examples/ARCH")).json();
+      const p = await (await fetch("/api/examples/PROC")).json();
+      window.PairAI.Editor.setValue(a.ttl + nl + p.ttl);
+      setTimeout(() => {
+        const list = document.querySelector("#process-list");
+        const text = (sel) => [...list.querySelectorAll(sel)]
+          .map((n) => n.firstChild ? n.firstChild.textContent : n.textContent);
+        const pools = text(".proc-pool");
+        const lanes = text(".proc-lane");
+        log("pools=" + JSON.stringify(pools));
+        log("lanes=" + JSON.stringify(lanes));
+        log("noLane=" + /no lane/i.test(list.textContent));
+        const names = [...list.querySelectorAll(".proc-row .proc-name")].map((n) => n.textContent);
+        log("rows=" + names.length);
+        log("unique=" + new Set(names).size);
+        log("activities=" + window.PairAI.state.lastProcess.activities.length);
+        // Walk the list: which heading does each row sit under?
+        let pool = null, lane = null;
+        const under = {};
+        for (const node of list.children) {
+          if (node.classList.contains("proc-pool")) { pool = node.firstChild.textContent; lane = null; }
+          else if (node.classList.contains("proc-lane")) { lane = node.firstChild.textContent; }
+          else if (node.classList.contains("proc-row")) {
+            under[node.querySelector(".proc-name").textContent] = pool + " / " + (lane || "-");
+          }
+        }
+        log("under=" + JSON.stringify(under));
+      }, 4000);
+    });
+    """.replace("ARCH", example_path(TARIFF_NS).stem).replace("PROC", process_path("energy_tariff_change").stem))
+
+    fields = dict(part.split("=", 1) for part in report.split("|") if "=" in part)
+    pools = json.loads(fields["pools"])
+    lanes = json.loads(fields["lanes"])
+    under = json.loads(fields["under"])
+
+    assert len(pools) == len(set(pools)), f"a pool heading repeated: {pools}"
+    assert len(lanes) == len(set(lanes)), f"a lane heading repeated: {lanes}"
+    assert fields["noLane"] == "false", (
+        "the list says 'No lane' - a pool with no lanes has nothing missing"
+    )
+    assert fields["rows"] == fields["unique"] == fields["activities"], (
+        "every activity is listed, and listed once"
+    )
+    # The customer's pool declares no lanes: its steps sit straight under it.
+    assert under["Change tariff (service plan)"] == "Customer / -"
+    # The utility's pool does: each step sits under its own lane.
+    assert under["Authenticate the customer"] == "Wien Energie / Customer portal"
+    assert under["Change the plan"] == "Wien Energie / Customer service agent"
+    # And inside a group the steps follow the work, not the alphabet: flow runs
+    # through gateways, and ordering over activities alone lost every such link.
+    # The journey as the model states it: portal, chat, then the change itself.
+    customer = [name for name, where in under.items() if where == "Customer / -"]
+    assert customer == [
+        "Log into the customer portal",
+        "Start a chat session",
+        "Change tariff (service plan)",
+        "Fill out the form",
+        "Receive the confirmation",
+    ], f"the customer's steps are not in the order they happen: {customer}"
+
+
+def test_the_overview_carries_the_risk_on_the_work_it_belongs_to(served) -> None:
+    """The stakeholder page, filtered to this process and drawn on it.
+
+    It listed findings per activity, and attribution is not partition: one
+    capability carries three activities in this scene, so ten concerns read as
+    thirty. The capability is named once, the activities it carries out sit
+    under it, and the diagram is marked where the work is.
+    """
+    report = _drive(served, """
+    const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+    window.addEventListener("load", async () => {
+      const nl = String.fromCharCode(10, 10);
+      const a = await (await fetch("/api/examples/ARCH")).json();
+      const p = await (await fetch("/api/examples/PROC")).json();
+      window.PairAI.Editor.setValue(a.ttl + nl + p.ttl);
+      setTimeout(() => {
+        document.querySelector("#btn-library-close")?.click();
+        document.querySelector("#btn-assess").click();
+        setTimeout(() => {
+          document.querySelector("#btn-overview").click();
+          setTimeout(() => {
+            const view = window.PairAI.state.lastAssessment.riskView.byProcess;
+            log("marks=" + document.querySelectorAll("#overview-diagram .ov-risk-mark").length);
+            log("atRisk=" + document.querySelectorAll("#overview-diagram .ov-at-risk").length);
+            log("cards=" + document.querySelectorAll(".ov-cap").length);
+            log("clean=" + document.querySelectorAll(".ov-cap.clean").length);
+            log("aiSystems=" + view.summary.aiSystems);
+            log("withConcerns=" + view.summary.withConcerns);
+            log("concerns=" + view.summary.concerns);
+            log("inProcess=" + view.summary.inProcess);
+            // Marks go on the activities the concerned capabilities carry out.
+            const expected = view.systems
+              .filter((s) => s.concerns.length)
+              .reduce((n, s) => n + s.activities.length, 0);
+            log("expected=" + expected);
+            log("noStaleBadge=" + !document.querySelector("#overview-diagram .pc-risk"));
+            log("summary=" + document.querySelector("#overview-side").textContent.includes("of "));
+          }, 1500);
+        }, 30000);
+      }, 2500);
+    });
+    """.replace("ARCH", example_path(TARIFF_NS).stem).replace("PROC", process_path("energy_tariff_change").stem),
+    budget=70000)
+
+    fields = dict(part.split("=", 1) for part in report.split("|") if "=" in part)
+    assert int(fields["marks"]) == int(fields["expected"]) > 0, (
+        "the diagram is marked where the concerned capabilities do their work"
+    )
+    assert fields["atRisk"] == fields["marks"]
+    assert fields["noStaleBadge"] == "true", (
+        "the cloned per-activity finding badges are still there, showing a second number"
+    )
+    # Every capability is carded, including the ones that raise nothing.
+    assert int(fields["cards"]) == int(fields["aiSystems"])
+    assert int(fields["clean"]) == int(fields["aiSystems"]) - int(fields["withConcerns"]) > 0
+    assert fields["inProcess"] == fields["concerns"], (
+        "this scene's concerns all arise under the process, so none is set aside"
+    )
+
+
+def test_opening_an_ai_system_on_the_overview_draws_its_risk(served) -> None:
+    """The panel under the diagram shows the risk on that system, not a parts list.
+
+    It used to list the steps and resources inside the architecture, which says
+    what is in there and nothing about what was found. With a run in hand it
+    draws the same lens the risk level draws, scoped to the one system the
+    activity names - the process around it on one side, what it holds on the
+    other.
+    """
+    report = _drive(served, """
+    const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+    window.addEventListener("load", async () => {
+      const nl = String.fromCharCode(10, 10);
+      const a = await (await fetch("/api/examples/ARCH")).json();
+      const p = await (await fetch("/api/examples/PROC")).json();
+      window.PairAI.Editor.setValue(a.ttl + nl + p.ttl);
+      setTimeout(() => {
+        document.querySelector("#btn-library-close")?.click();
+        document.querySelector("#btn-assess").click();
+        setTimeout(() => {
+          document.querySelector("#btn-overview").click();
+          setTimeout(() => document.querySelector("#overview-side .ov-row.clickable").click(), 800);
+          setTimeout(() => {
+            const panel = document.querySelector("#overview-system");
+            log("open=" + !panel.classList.contains("hidden"));
+            log("named=" + (panel.querySelector(".ov-sys-head h3") || {}).textContent);
+            log("cards=" + panel.querySelectorAll(".rc-card").length);
+            log("heads=" + [...panel.querySelectorAll(".rc-lens-head")].map((h) => h.textContent).join(" / "));
+            log("parts=" + panel.querySelectorAll(".ov-sys-item").length);
+            // The risk level draws into its own mount on every run, even while
+            // hidden. It must still hold the notation, not this panel's lens.
+            log("levelCards=" + document.querySelectorAll("#risk-canvas .rc-card").length);
+            log("levelIsLens=" + (document.querySelectorAll("#risk-canvas .rc-lens-head").length > 0));
+          }, 2600);
+        }, 30000);
+      }, 2500);
+    });
+    """.replace("ARCH", example_path(TARIFF_NS).stem).replace("PROC", process_path("energy_tariff_change").stem),
+    budget=70000)
+
+    fields = dict(part.split("=", 1) for part in report.split("|") if "=" in part)
+    assert fields["open"] == "true", "opening an AI activity revealed nothing"
+    assert fields["named"], "the panel did not name the system it opened"
+    assert int(fields["cards"]) > 0, "the panel drew no risk diagram"
+    assert "In the process" in fields["heads"] and "In the architecture" in fields["heads"], (
+        f"the panel is not the lens: {fields['heads']!r}"
+    )
+    assert fields["parts"] == "0", "the parts list is still there instead of the risk"
+    assert int(fields["levelCards"]) > 0 and fields["levelIsLens"] == "false", (
+        "mounting the overview's canvas took over the risk level's - the renderer "
+        "is a factory so the two mounts must not share state"
     )

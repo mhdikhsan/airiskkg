@@ -2,9 +2,17 @@ from __future__ import annotations
 
 import re
 
-from rdflib import RDFS, SKOS, Graph, URIRef
+from rdflib import RDF, RDFS, SKOS, Graph, Namespace, URIRef
 
 from airiskkg.assessment_runner import BEAM
+
+_NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
+# The one loaded taxonomy whose top level is a taxonomy of *harms* rather than
+# of weaknesses. OWASP numbers weaknesses, so it names where a risk pattern came
+# from, not what it may lead to.
+MIT_DOMAIN_TAXONOMY = URIRef(
+    "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy"
+)
 
 RESOURCE_CLASSES = [
     (BEAM.Data, "Data"),
@@ -75,3 +83,24 @@ def display_label(text: str) -> str:
 
 def class_terms(pairs: list[tuple[URIRef, str]]) -> list[dict[str, str]]:
     return [{"id": str(uri), "label": text} for uri, text in pairs]
+
+
+def risk_domains(graph: Graph) -> set[URIRef]:
+    """The domains of harm the loaded taxonomy offers as a top level."""
+    return {
+        group
+        for group in graph.subjects(RDF.type, _NEXUS.RiskGroup)
+        if (group, SKOS.inScheme, MIT_DOMAIN_TAXONOMY) in graph
+    }
+
+
+def domain_of(graph: Graph, entry: URIRef, domains: set[URIRef]) -> URIRef | None:
+    """The domain of harm a taxonomy entry rolls up to, if it has one.
+
+    Traversed rather than asserted: an entry no upstream mapping reaches has no
+    domain, and saying so is the honest answer.
+    """
+    for broader in graph.objects(entry, SKOS.broader):
+        if broader in domains:
+            return broader
+    return None

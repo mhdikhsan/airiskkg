@@ -2,6 +2,7 @@
 @prefix pair:    <http://w3id.org/airiskkg/pair-ai#> .
 @prefix beam:  <http://w3id.org/beam/core#> .
 @prefix asi:   <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
+@prefix owasp: <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
@@ -22,6 +23,138 @@
                 <http://w3id.org/airiskkg/pair-ai#> .
 
 
+# Design pattern citations: what pair:derivedFrom points at, so the m:n relation
+# is a traversal. Citations only - a description here would model the pattern.
+
+pat:Cite_DirectPrompting a pair:DesignPatternCitation ;
+    skos:prefLabel "Direct Prompting"@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:Cite_RetrievalAugmentedGeneration a pair:DesignPatternCitation ;
+    skos:prefLabel "Retrieval Augmented Generation (RAG)"@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:Cite_Embeddings a pair:DesignPatternCitation ;
+    skos:prefLabel "Embeddings"@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:Cite_QueryRewriting a pair:DesignPatternCitation ;
+    skos:prefLabel "Query Rewriting"@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:Cite_Reranker a pair:DesignPatternCitation ;
+    skos:prefLabel "Reranker"@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:Cite_HybridRetriever a pair:DesignPatternCitation ;
+    skos:prefLabel "Hybrid Retriever"@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:Cite_Guardrails a pair:DesignPatternCitation ;
+    skos:prefLabel "Guardrails"@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:Cite_Evals a pair:DesignPatternCitation ;
+    skos:prefLabel "Evals"@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:Cite_FineTuning a pair:DesignPatternCitation ;
+    skos:prefLabel "Fine Tuning"@en ;
+    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:Cite_SynchronousPrediction a pair:DesignPatternCitation ;
+    skos:prefLabel "Synchronous pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> .
+
+pat:Cite_AsynchronousPrediction a pair:DesignPatternCitation ;
+    skos:prefLabel "Asynchronous pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> .
+
+pat:Cite_BatchPrediction a pair:DesignPatternCitation ;
+    skos:prefLabel "Batch pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> .
+
+pat:Cite_PreprocessPrediction a pair:DesignPatternCitation ;
+    skos:prefLabel "Prep-pred pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> .
+
+pat:Cite_MultiStagePrediction a pair:DesignPatternCitation ;
+    skos:prefLabel "Multiple stage prediction pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> .
+
+pat:Cite_BatchTraining a pair:DesignPatternCitation ;
+    skos:prefLabel "Batch training pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> .
+
+pat:Cite_PipelineTraining a pair:DesignPatternCitation ;
+    skos:prefLabel "Pipeline training pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Pipeline-training-pattern/design_en.html> .
+
+pat:Cite_TrainThenServe a pair:DesignPatternCitation ;
+    skos:prefLabel "Train-then-serve pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> .
+
+pat:Cite_TrainingToServing a pair:DesignPatternCitation ;
+    skos:prefLabel "Training-to-serving pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> .
+
+pat:Cite_PredictionLog a pair:DesignPatternCitation ;
+    skos:prefLabel "Prediction log pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> .
+
+pat:Cite_PredictionMonitoring a pair:DesignPatternCitation ;
+    skos:prefLabel "Prediction monitoring pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .
+
+pat:Cite_ModelLoad a pair:DesignPatternCitation ;
+    skos:prefLabel "Model load pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> .
+
+pat:Cite_ModelInImage a pair:DesignPatternCitation ;
+    skos:prefLabel "Model in image pattern"@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> .
+
+# Liu et al., Agent Design Pattern Catalogue (J. Systems & Software 220, 2025).
+# Peer-reviewed, 18 patterns from an SLR of 57 studies, each with the full
+# context/problem/forces/solution/consequences anatomy.
+
+pat:Cite_AgentRetrievalAugmentedGeneration a pair:DesignPatternCitation ;
+    skos:prefLabel "Retrieval augmented generation (agent design pattern catalogue)"@en ;
+    dct:isPartOf "The Journal of Systems & Software"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_MultimodalGuardrails a pair:DesignPatternCitation ;
+    skos:prefLabel "Multimodal guardrails"@en ;
+    dct:isPartOf "The Journal of Systems & Software"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_AgentEvaluator a pair:DesignPatternCitation ;
+    skos:prefLabel "Agent evaluator"@en ;
+    dct:isPartOf "The Journal of Systems & Software"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_HumanReflection a pair:DesignPatternCitation ;
+    skos:prefLabel "Human reflection"@en ;
+    dct:isPartOf "The Journal of Systems & Software"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_RoleBasedCooperation a pair:DesignPatternCitation ;
+    skos:prefLabel "Role-based cooperation"@en ;
+    dct:isPartOf "The Journal of Systems & Software"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_AgentAdapter a pair:DesignPatternCitation ;
+    skos:prefLabel "Agent adapter"@en ;
+    dct:isPartOf "The Journal of Systems & Software"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+
 # Motif 0: Information Retrieval
 #
 # The general shape: a retrieval step reads a query and a knowledge source and
@@ -39,7 +172,8 @@ pat:InformationRetrievalMotif
     Architectural motif in which a retrieval process uses a query and a
     knowledge source and produces retrieved context.
     """@en ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_RetrievalAugmentedGeneration ,
+        pat:Cite_AgentRetrievalAugmentedGeneration ;
     pair:hasPatternNode
         pat:IR_QueryNode ,
         pat:IR_KnowledgeSourceNode ,
@@ -105,7 +239,8 @@ pat:VectorBasedInformationRetrievalMotif
     Architectural motif in which a retrieval process uses a vector store or
     knowledge source and produces a retrieved result or retrieved context..
     """@en ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_RetrievalAugmentedGeneration ,
+        pat:Cite_AgentRetrievalAugmentedGeneration ;
     pair:hasPatternNode
         pat:VectorIR_QueryNode ,
         pat:VectorIR_VectorStoreNode ,
@@ -170,7 +305,7 @@ pat:SynchronousPredictionMotif
     rdfs:label "Synchronous Prediction Motif"@en ;
     dct:description "Architectural motif in which a prediction step runs inline with a request workflow and produces a result before the workflow proceeds."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_SynchronousPrediction ;
     pair:hasPatternNode
         pat:SyncPred_RequestNode ,
         pat:SyncPred_ModelNode ,
@@ -246,7 +381,7 @@ pat:AsynchronousPredictionMotif
     rdfs:label "Asynchronous Prediction Motif"@en ;
     dct:description "Architectural motif in which prediction requests are decoupled from prediction execution through a queue, cache, or similar intermediary resource."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_AsynchronousPrediction ;
     pair:hasPatternNode
         pat:AsyncPred_RequestNode ,
         pat:AsyncPred_EnqueueStepNode ,
@@ -322,7 +457,7 @@ pat:BatchPredictionMotif
     rdfs:label "Batch Prediction Motif"@en ;
     dct:description "Architectural motif in which a scheduled job runs prediction over a batch dataset and stores batch prediction results."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_BatchPrediction ;
     pair:hasPatternNode
         pat:BatchPred_SchedulerNode ,
         pat:BatchPred_DatasetNode ,
@@ -399,7 +534,7 @@ pat:PreprocessPredictionMotif
     rdfs:label "Prep-Pred / Preprocess-Prediction Motif"@en ;
     dct:description "Architectural motif in which preprocessing and prediction are represented as separate steps connected by preprocessed data."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_PreprocessPrediction ;
     pair:hasPatternNode
         pat:PrepPred_InputNode ,
         pat:PrepPred_PreprocessStepNode ,
@@ -499,7 +634,7 @@ pat:MultiStagePredictionMotif
     rdfs:label "Multi-stage Prediction Motif"@en ;
     dct:description "Architectural motif in which one prediction path returns a quick result while another prediction path produces a slower or richer result."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_MultiStagePrediction ;
     pair:hasPatternNode
         pat:MultiStage_RequestNode ,
         pat:MultiStage_FastModelNode ,
@@ -617,7 +752,7 @@ pat:BatchTrainingMotif
     rdfs:label "Batch Training Motif"@en ;
     dct:description "Architectural motif in which a scheduled training job prepares data, trains a model, evaluates it, and records the resulting model artifact and evaluation result."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_BatchTraining ;
     pair:hasPatternNode
         pat:BatchTrain_SchedulerNode ,
         pat:BatchTrain_DatasetNode ,
@@ -755,7 +890,7 @@ pat:PipelineTrainingMotif
     rdfs:label "Pipeline Training Motif"@en ;
     dct:description "Architectural motif in which training is decomposed into independently executable pipeline jobs connected by intermediate data and workflow dependencies."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Pipeline-training-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Pipeline-training-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_PipelineTraining ;
     pair:hasPatternNode
         pat:PipeTrain_SourceDataNode ,
         pat:PipeTrain_PreprocessJobNode ,
@@ -881,7 +1016,7 @@ pat:TrainThenServeMotif
     rdfs:label "Train-Then-Serve Motif"@en ;
     dct:description "Lifecycle motif in which training and serving are separated by evaluation, approval, and a release step before the model is used for production prediction."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_TrainThenServe ;
     pair:hasPatternNode
         pat:TrainServe_TrainingStepNode ,
         pat:TrainServe_CandidateModelNode ,
@@ -1012,7 +1147,7 @@ pat:TrainingToServingMotif
     rdfs:label "Training-to-Serving Motif"@en ;
     dct:description "Lifecycle motif in which a training pipeline automatically produces a model artifact that is built or deployed into a serving prediction path."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_TrainingToServing ;
     pair:hasPatternNode
         pat:TrainToServe_TrainingPipelineNode ,
         pat:TrainToServe_ModelArtifactNode ,
@@ -1107,7 +1242,7 @@ pat:PredictionLoggingMotif
     rdfs:label "Prediction Logging Motif"@en ;
     dct:description "Operational motif in which prediction inputs, results, latency, or related events are collected into prediction logs for analysis and service improvement."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_PredictionLog ;
     pair:hasPatternNode
         pat:PredLog_RequestNode ,
         pat:PredLog_ResultNode ,
@@ -1200,7 +1335,7 @@ pat:PredictionMonitoringMotif
     rdfs:label "Prediction Monitoring Motif"@en ;
     dct:description "Operational motif in which prediction logs or prediction result trends are monitored against expected behavior and may produce alerts."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_PredictionMonitoring ;
     pair:hasPatternNode
         pat:PredMon_LogNode ,
         pat:PredMon_BaselineNode ,
@@ -1262,7 +1397,7 @@ pat:ModelLoadMotif
     rdfs:label "Model Load Motif"@en ;
     dct:description "Operational motif in which a prediction server image and model artifact are managed separately, and the model is loaded by the server before prediction."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_ModelLoad ;
     pair:hasPatternNode
         pat:ModelLoad_ServerImageNode ,
         pat:ModelLoad_ModelArtifactNode ,
@@ -1347,7 +1482,7 @@ pat:ModelInImageMotif
     rdfs:label "Model-in-Image Motif"@en ;
     dct:description "Operational motif in which a trained model artifact is packaged into a serving image that is deployed as the prediction service runtime."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> ;
-    pair:derivedFrom <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_ModelInImage ;
     pair:hasPatternNode
         pat:ModelImage_TrainingStepNode ,
         pat:ModelImage_ModelArtifactNode ,
@@ -1451,7 +1586,7 @@ pat:DirectPromptingMotif
     generative model step and produces a user-facing answer. 
     """@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_DirectPrompting ;
     pair:hasPatternNode
         pat:DP_QueryNode ,
         pat:DP_ModelNode ,
@@ -1514,7 +1649,8 @@ pat:EvalsMotif
     rdfs:label "Evals Motif"@en ;
     dct:description "GenAI motif in which model input, generated output, expected output, and optional retrieval context are scored or judged to produce evaluation results for a task."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_Evals ,
+        pat:Cite_AgentEvaluator ;
     pair:hasPatternNode
         pat:Evals_InputNode ,
         pat:Evals_ModelOutputNode ,
@@ -1621,7 +1757,8 @@ pat:EmbeddingsMotif
     dct:description "GenAI motif in which source documents or data blocks are chunked and transformed into vectors stored in a vector index."@en ;
     rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included an embedding-model node (pat:Embedding_ModelNode) the OQP never bound - removed. The OQP additionally matches an indexing step (uses chunk + vector, produces the index) that it does not bind as a node."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_Embeddings ,
+        pat:Cite_AgentRetrievalAugmentedGeneration ;
     pair:hasPatternNode
         pat:Embedding_SourceDocumentNode ,
         pat:Embedding_ChunkingStepNode ,
@@ -1715,7 +1852,8 @@ pat:RetrievalAugmentedGenerationMotif
     dct:description "GenAI motif in which a user query drives retrieval of relevant context from a vector store, which is combined with the query into a prompt and sent to an LLM to produce an answer."@en ;
     rdfs:comment "Query-time RAG faithful to Martin Fowler's gen-AI patterns: the retrieval step is DRIVEN BY the user query (it beam:use-s the query) and reads a vector store (a resource under pair:VectorStore or pair:VectorIndex); retrieved context may pass through intermediate steps (reranking, aggregation) before prompt construction - RAG_PromptConstructionUsesContextEdge is path-tolerant, requiring only that the consumed context plays a role under pair:RetrievedContext. Because retrieval is query-driven over a vector store, a RAG graph also satisfies the Vector-based Information Retrieval motif. Offline document embedding/indexing is modelled separately by the Embeddings motif and is intentionally not part of this query-time motif (an earlier version wired a stand-alone query-embedding step whose output dead-ended and left retrieval disconnected from the query - removed)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_RetrievalAugmentedGeneration ,
+        pat:Cite_AgentRetrievalAugmentedGeneration ;
     pair:hasPatternNode
         pat:RAG_QueryNode ,
         pat:RAG_KnowledgeSourceNode ,
@@ -1861,7 +1999,7 @@ pat:HybridRetrieverMotif
     rdfs:label "Hybrid Retriever Motif"@en ;
     dct:description "GenAI motif in which vector search and keyword or structured search are combined and aggregated to produce a candidate context set."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_HybridRetriever ;
     pair:hasPatternNode
         pat:Hybrid_QueryNode ,
         pat:Hybrid_VectorIndexNode ,
@@ -1976,7 +2114,7 @@ pat:QueryRewritingMotif
     dct:description "GenAI motif in which an LLM reformulates a user query into alternative queries that are then used for retrieval."@en ;
     rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included an original-query node and a rewrite-informs-retrieval edge the OQP never bound or checked - removed; the LLM node expected pair:FoundationLLM while the OQP accepts any pair:GenerativeModel."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_QueryRewriting ;
     pair:hasPatternNode
         pat:QueryRewrite_LLMNode ,
         pat:QueryRewrite_RewriteStepNode ,
@@ -2055,7 +2193,8 @@ pat:RerankerMotif
     dct:description "GenAI motif in which a candidate set of retrieved fragments is reranked by a model so that the most useful context is passed on for generation."@en ;
     rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included a query node the OQP never bound (removed) and expected pair:RetrievedCandidateSet / pair:RerankedContext where the OQP checks pair:RetrievedContext for both candidate set and output (modelers typically ALSO tag the specific roles; onyx does both)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_Reranker ,
+        pat:Cite_AgentRetrievalAugmentedGeneration ;
     pair:hasPatternNode
         pat:Reranker_CandidateSetNode ,
         pat:Reranker_ModelNode ,
@@ -2131,7 +2270,8 @@ pat:InputScreeningMotif
     Architectural motif in which a step screens user input and informs the
     generation step it protects.
     """@en ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_Guardrails ,
+        pat:Cite_MultimodalGuardrails ;
     pair:hasPatternNode
         pat:InputScreening_UserInputNode ,
         pat:InputScreening_ScreeningStepNode ,
@@ -2181,7 +2321,8 @@ pat:OutputScreeningMotif
     Architectural motif in which a step screens a generated response before it
     is released.
     """@en ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_Guardrails ,
+        pat:Cite_MultimodalGuardrails ;
     pair:hasPatternNode
         pat:OutputScreening_GenerationStepNode ,
         pat:OutputScreening_ResponseNode ,
@@ -2231,7 +2372,8 @@ pat:GuardrailsMotif
     dct:description "GenAI motif in which input and output guardrail steps screen or sanitize user prompts and generated responses around the primary LLM generation step."@en ;
     rdfs:comment "Flow-agnostic: the guarded generation is anchored by the inform edges (input guardrail informs generation; generation informs output guardrail), so this motif matches whether the generation consumes the user prompt directly (Direct Prompting) or a prompt constructed from it (RAG, where generation uses a PromptTemplate). An earlier version also required the generation step to beam:use the raw user prompt, which excluded RAG+Guardrails compositions - removed."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_Guardrails ,
+        pat:Cite_MultimodalGuardrails ;
     pair:hasPatternNode
         pat:Guardrails_UserPromptNode ,
         pat:Guardrails_InputGuardrailStepNode ,
@@ -2361,7 +2503,7 @@ pat:FineTuningMotif
     rdfs:label "Fine Tuning Motif"@en ;
     dct:description "GenAI motif in which a pre-trained LLM is further trained with a task- or domain-specific dataset to produce a fine-tuned model."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom <https://martinfowler.com/articles/gen-ai-patterns/> ;
+    pair:derivedFrom pat:Cite_FineTuning ;
     pair:hasPatternNode
         pat:FineTune_BaseModelNode ,
         pat:FineTune_DatasetNode ,
@@ -2459,8 +2601,9 @@ pat:ExternalDependencyMotif
     a pair:GraphMotif ;
     rdfs:label "External Dependency Motif"@en ;
     dct:description "A supply-chain-relevant resource (external dependency, pre-trained model, model artifact, or serving image) is used by a process step. Risk-neutral: using external components is normal engineering; risk semantics are added only by the supply chain compromise risk pattern."@en ;
-    dct:source "expert curation; OWASP Top 10 for LLM Applications 2025, LLM03 Supply Chain (scope of supply-chain-relevant resources)" ;
-    pair:derivedFrom <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    rdfs:comment "Project curation: no catalogue defines this shape, so derivedFrom names the LLM03 entry that scopes it rather than a design pattern citation."@en ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
+    pair:derivedFrom owasp:llm03-supply-chain ;
     pair:hasPatternNode
         pat:ExtDep_ExternalResourceNode ,
         pat:ExtDep_UsingStepNode ;
@@ -2491,8 +2634,10 @@ pat:ToolUsingAgentMotif
     a pair:GraphMotif ;
     rdfs:label "Tool-Using Agent Motif"@en ;
     dct:description "Agentic motif in which a planning step decides on an action and hands off to a step that invokes an external tool or changes external state, producing a result the system consumes."@en ;
-    dct:source <https://genai.owasp.org/> ;
-    pair:derivedFrom asi:asi02-tool-misuse ;
+    dct:source <https://genai.owasp.org/> ,
+        <https://doi.org/10.1016/j.jss.2024.112278> ;
+    pair:derivedFrom asi:asi02-tool-misuse ,
+        pat:Cite_AgentAdapter ;
     pair:hasPatternNode
         pat:ToolAgent_PlanningStepNode ,
         pat:ToolAgent_ActionStepNode ,
@@ -2604,8 +2749,10 @@ pat:AgentDelegationMotif
     a pair:GraphMotif ;
     rdfs:label "Agent Delegation Motif"@en ;
     dct:description "Agentic motif in which one agent's planning step produces a message that another agent's handoff step consumes and acts on, so work crosses an agent boundary."@en ;
-    dct:source <https://genai.owasp.org/> ;
-    pair:derivedFrom asi:asi07-insecure-inter-agent-communication ;
+    dct:source <https://genai.owasp.org/> ,
+        <https://doi.org/10.1016/j.jss.2024.112278> ;
+    pair:derivedFrom asi:asi07-insecure-inter-agent-communication ,
+        pat:Cite_RoleBasedCooperation ;
     pair:hasPatternNode
         pat:AgentDelegation_DelegatingStepNode ,
         pat:AgentDelegation_MessageNode ,
@@ -2654,8 +2801,10 @@ pat:HumanOversightMotif
     a pair:GraphMotif ;
     rdfs:label "Human Oversight Motif"@en ;
     dct:description "Agentic control motif in which a human approval step informs the acting step, which produces the action's result."@en ;
-    dct:source <https://genai.owasp.org/> ;
-    pair:derivedFrom asi:asi02-tool-misuse ;
+    dct:source <https://genai.owasp.org/> ,
+        <https://doi.org/10.1016/j.jss.2024.112278> ;
+    pair:derivedFrom asi:asi02-tool-misuse ,
+        pat:Cite_HumanReflection ;
     pair:hasPatternNode
         pat:HumanOversight_ApprovalStepNode ,
         pat:HumanOversight_ActionStepNode ,

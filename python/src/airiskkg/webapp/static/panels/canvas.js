@@ -7,6 +7,7 @@ import { parseErrorLine, setStatus } from "../core/status.js";
 import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
 import { createSystem } from "./palette.js";
+import { refreshRegister, renderRisk } from "./risk.js";
 import { scheduleStaleCheck } from "./run.js";
 import { ProcessCanvas, humanKind } from "../lib/process_canvas.js";
 import { state } from "../state.js";
@@ -54,6 +55,19 @@ export function startDrawing(level) {
     setStatus("ok", "Business process", "add a participant, then steps inside it");
     return;
   }
+  /* The backward route, and the only one that needs no graph: say what must
+   * not happen and the library says what would have to be there to raise it. */
+  if (level === "risk") {
+    /* A notation squeezed into a third of the window is unreadable, and this
+       level is the one meant to be shown to somebody. Folded, not locked: the
+       rail and the drawer handle both bring them straight back. */
+    document.body.classList.add("editor-hidden");
+    $("#drawer").classList.add("collapsed");
+    $("#drawer-toggle").innerHTML = "&#9650;";
+    refreshRegister().then(renderRisk);
+    setStatus("ok", "Risk", "state what must not happen, then see what to look for");
+    return;
+  }
   setStatus("ok", "AI architecture", "drag a symbol onto the canvas, or load an example");
 }
 
@@ -66,14 +80,20 @@ export function setLevel(next, activity) {
   state.openedFrom = next === "architecture" ? activity || state.openedFrom : null;
   $("#canvas").classList.toggle("hidden", next !== "architecture");
   $("#process-canvas").classList.toggle("hidden", next !== "business");
+  $("#risk-view").classList.toggle("hidden", next !== "risk");
   $("#level-business").classList.toggle("active", next === "business");
   $("#level-architecture").classList.toggle("active", next === "architecture");
+  $("#level-risk").classList.toggle("active", next === "risk");
   $("#process-palette").classList.toggle("hidden", next !== "business");
   $("#palette").classList.toggle("hidden", next !== "architecture");
   $("#motif-palette").classList.toggle("hidden", next !== "architecture");
   $("#process-detail").classList.add("hidden");
   $("#canvas-wrap").classList.toggle("business", next === "business");
+  /* The risk level is a document, not a drawing: the zoom controls and the
+   * system bar act on a canvas that is not on screen. */
+  $("#canvas-wrap").classList.toggle("risk", next === "risk");
   renderBreadcrumb();
+  if (next === "risk") return;
   requestAnimationFrame(() => {
     if (next === "business") ProcessCanvas.fit();
     else GraphView.fit();
@@ -179,40 +199,143 @@ async function refreshProcess(ttl) {
       : null,
   ]));
 
-  let lane = null;
-  data.activities.forEach((activity) => {
-    if (activity.lane !== lane) {
-      lane = activity.lane;
-      list.appendChild(el("div", { class: "proc-lane" }, lane || "No lane"));
-    }
-    const badges = [];
-    if (activity.refines.length) badges.push(el("span", { class: "proc-badge ai" }, "AI system"));
-    if (activity.human) badges.push(el("span", { class: "proc-badge human" }, "human"));
-    activity.reads.forEach((item) => {
-      item.kinds.forEach((kind) =>
-        badges.push(el("span", { class: "proc-badge data" }, `reads ${humanKind(kind)}`)));
-    });
+  renderProcessList(list, data);
+}
 
-    const row = el("div", { class: "proc-row" }, [
-      el("span", { class: "proc-kind", title: activity.kind }, taskKind(activity.kind)),
-      el("span", { class: "proc-name" }, activity.label),
-      el("span", { class: "proc-badges" }, badges),
-      activity.performers.length
-        ? el("span", { class: "proc-by" }, activity.performers.join(", "))
-        : null,
-    ]);
-
-    if (activity.refines.length) {
-      row.classList.add("refined");
-      row.addEventListener("click", () => {
-        setLevel("architecture", activity);
-        GraphView.setHighlight(activity.refines);
-        revealInSource(activity.refines);
-      });
-      row.title = "Open the AI architecture this activity is carried out by";
-    }
-    list.appendChild(row);
+/* One activity, as a row of the list. */
+function processRow(activity, depth) {
+  const badges = [];
+  if (activity.refines.length) badges.push(el("span", { class: "proc-badge ai" }, "AI system"));
+  if (activity.human) badges.push(el("span", { class: "proc-badge human" }, "human"));
+  activity.reads.forEach((item) => {
+    item.kinds.forEach((kind) =>
+      badges.push(el("span", { class: "proc-badge data" }, `reads ${humanKind(kind)}`)));
   });
+
+  const row = el("div", { class: `proc-row depth-${depth}` }, [
+    el("span", { class: "proc-kind", title: activity.kind }, taskKind(activity.kind)),
+    el("span", { class: "proc-name" }, activity.label),
+    el("span", { class: "proc-badges" }, badges),
+    activity.performers.length
+      ? el("span", { class: "proc-by" }, activity.performers.join(", "))
+      : null,
+  ]);
+
+  if (activity.refines.length) {
+    row.classList.add("refined");
+    row.addEventListener("click", () => {
+      setLevel("architecture", activity);
+      GraphView.setHighlight(activity.refines);
+      revealInSource(activity.refines);
+    });
+    row.title = "Open the AI architecture this activity is carried out by";
+  }
+  return row;
+}
+
+/* Pool, then lane, then the activities in flow order - the same nesting the
+ * canvas draws.
+ *
+ * It used to group by runs of the flow order, and flow order interleaves the
+ * pools, so every heading repeated. It also said "No lane" for the activities
+ * of a pool that declares no lanes at all: nothing is missing there, they are
+ * simply the pool's. A pool that does declare lanes and still has an activity
+ * in none of them is the one real gap, and only that is said so. */
+/* Where each step falls in the work, walking the whole flow - events and
+ * gateways included. The activity array the model hands over is ordered over
+ * activities alone, and flow runs through gateways, so steps joined only by a
+ * gateway had no order between them and the list fell back to alphabetical:
+ * "Start a chat session" came last. The canvas places by that array, so the
+ * list orders itself rather than changing it. */
+function flowRank(data) {
+  const nodes = [...data.activities, ...(data.events || []), ...(data.gateways || [])];
+  const label = new Map(nodes.map((n) => [n.id, n.label || ""]));
+  const next = new Map(nodes.map((n) => [n.id, []]));
+  const incoming = new Map(nodes.map((n) => [n.id, 0]));
+  for (const flow of data.sequenceFlows || []) {
+    if (!next.has(flow.source) || !incoming.has(flow.target)) continue;
+    next.get(flow.source).push(flow.target);
+    incoming.set(flow.target, incoming.get(flow.target) + 1);
+  }
+  const byLabel = (a, b) => label.get(a).localeCompare(label.get(b));
+  const ready = [...incoming.keys()].filter((id) => incoming.get(id) === 0).sort(byLabel);
+  const rank = new Map();
+  while (ready.length) {
+    const id = ready.shift();
+    rank.set(id, rank.size);
+    for (const target of next.get(id)) {
+      incoming.set(target, incoming.get(target) - 1);
+      if (incoming.get(target) === 0) { ready.push(target); ready.sort(byLabel); }
+    }
+  }
+  // A loop leaves its nodes unranked; they follow, in the model's own order.
+  nodes.forEach((n) => { if (!rank.has(n.id)) rank.set(n.id, rank.size); });
+  return rank;
+}
+
+function renderProcessList(list, data) {
+  const byId = new Map(data.activities.map((a) => [a.id, a]));
+  const rank = flowRank(data);
+  const inFlowOrder = (items) => [...items].sort((a, b) => rank.get(a.id) - rank.get(b.id));
+  // A step inside a sub-process is listed by its parent, under the parent's pool.
+  const topOf = (activity) => {
+    let at = activity;
+    while (at.parent && byId.has(at.parent)) at = byId.get(at.parent);
+    return at;
+  };
+  const childrenOf = (activity) => inFlowOrder(data.activities.filter((a) => a.parent === activity.id));
+
+  const addActivity = (activity, depth) => {
+    list.appendChild(processRow(activity, depth));
+    childrenOf(activity).forEach((child) => addActivity(child, depth + 1));
+  };
+  const heading = (cls, label, count) => el("div", { class: cls }, [
+    el("span", {}, label),
+    el("span", { class: "proc-count" }, String(count)),
+  ]);
+
+  const tops = inFlowOrder(data.activities.filter((a) => !a.parent || !byId.has(a.parent)));
+  const pools = data.participants || [];
+  const placed = new Set();
+
+  pools.forEach((pool) => {
+    const mine = tops.filter((a) => topOf(a).process === pool.process);
+    if (!mine.length) return;
+    mine.forEach((a) => placed.add(a.id));
+    list.appendChild(heading("proc-pool", pool.label, mine.length));
+
+    // Declaration order, the order the canvas bands them in.
+    const lanes = (data.lanes || [])
+      .filter((lane) => lane.process === pool.process)
+      .sort((a, b) => (a.line ?? Infinity) - (b.line ?? Infinity)
+        || a.id.localeCompare(b.id, undefined, { numeric: true }));
+
+    if (!lanes.length) {
+      // No lanes declared: the activities are the pool's, directly.
+      mine.forEach((activity) => addActivity(activity, 1));
+      return;
+    }
+    const laneIds = new Set(lanes.map((lane) => lane.id));
+    lanes.forEach((lane) => {
+      const inLane = mine.filter((a) => a.laneId === lane.id);
+      if (!inLane.length) return;
+      list.appendChild(heading("proc-lane", lane.label, inLane.length));
+      inLane.forEach((activity) => addActivity(activity, 2));
+    });
+    const loose = mine.filter((a) => !laneIds.has(a.laneId));
+    if (loose.length) {
+      list.appendChild(heading("proc-lane unassigned",
+        "Not in any of this pool's lanes", loose.length));
+      loose.forEach((activity) => addActivity(activity, 2));
+    }
+  });
+
+  // An activity whose process no participant points at still has to be listed.
+  const outside = tops.filter((a) => !placed.has(a.id));
+  if (outside.length) {
+    list.appendChild(heading("proc-pool unassigned", "In no participant", outside.length));
+    outside.forEach((activity) => addActivity(activity, 1));
+  }
 }
 
 

@@ -227,3 +227,75 @@ isd:OutcomeRef a bpmn:dataObjectReference ;
 
 isd:OutcomeFromDesk a bpmn:dataOutputAssociation ;
     bp:sourceRef isd:SendOutcome ; bp:targetRef isd:OutcomeRef .
+
+@prefix beamr: <http://w3id.org/beam/risk#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix mit:   <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> .
+
+### What this assessment is for
+#
+# Written before the run, not after it: the team named the outcome they did not
+# want, and the assessment answers against that rather than handing back a list.
+
+isd:Scope a pair:AssessmentScope ;
+    rdfs:label "Access requests handled by the agent"@en ;
+    pair:statedBy "Service desk lead, IT risk" ;
+    pair:desiredOutcome """An access request is triaged and resolved without a
+        person having to read every ticket, and the employee is told what was
+        done.""" ;
+    pair:scopedToSystem its:AgentSystem ;
+    pair:undesiredOutcome isd:UnauthorisedChange , isd:LeakedRequest .
+
+isd:UnauthorisedChange a beamr:Consequence ;
+    rdfs:label "An account change takes effect that no engineer authorised"@en ;
+    dct:description """The approval step exists in the process. Whether it sits
+        between the agent's decision and the change is what the assessment is
+        being asked.""" ;
+    pair:concernsRiskDomain mit:domain-5 , mit:domain-2 .
+
+isd:LeakedRequest a beamr:Consequence ;
+    rdfs:label "One employee's request is repeated to another"@en ;
+    dct:description "Access requests name the person asking and what they may reach." ;
+    pair:concernsRiskDomain mit:domain-2 .
+
+### What people said before it ran
+#
+# Risk storming, as data: each note is a person's claim, attached to the element
+# they were worried about. A beamr:Risk is somebody's stated risk; a
+# pair:RiskFinding is a structural candidate, and keeping the two types apart is
+# what lets them be reconciled.
+
+isd:RiskTicketSteersAgent a beamr:Risk ;
+    rdfs:label "Ticket text redirects the agent"@en ;
+    dct:description "Anyone who can raise a ticket can write into the text the agent plans from." ;
+    pair:statedBy "Service desk lead" ;
+    pair:statedPriority pair:HighStatedPriority .
+
+its:Ticket beamr:hasRisk isd:RiskTicketSteersAgent .
+
+isd:RiskMemoryCarriesOver a beamr:Risk ;
+    rdfs:label "One case's memory is recalled into another"@en ;
+    dct:description "Raised by IT risk, who asked what the case memory is keyed on." ;
+    pair:statedBy "IT risk" ;
+    pair:statedPriority pair:HighStatedPriority .
+
+its:AgentMemory beamr:hasRisk isd:RiskMemoryCarriesOver .
+
+isd:RiskReplyRepeatsDetails a beamr:Risk ;
+    rdfs:label "The reply repeats more of the ticket than the employee asked for"@en ;
+    dct:description "Raised by the data protection officer, reading the process rather than the architecture." ;
+    pair:statedBy "Data protection officer" ;
+    pair:statedPriority pair:MediumStatedPriority .
+
+its:DraftReply beamr:hasRisk isd:RiskReplyRepeatsDetails .
+
+# Deliberately outside what this library can match: a real concern with no risk
+# pattern behind it, so the view has something to report as stated-only. Saying
+# so is what keeps the rest of the register credible.
+isd:RiskCatalogueStale a beamr:Risk ;
+    rdfs:label "The tool catalogue lists a retired endpoint"@en ;
+    dct:description "A maintenance question, settled by process rather than by design." ;
+    pair:statedBy "Service engineer" ;
+    pair:statedPriority pair:LowStatedPriority .
+
+its:ToolCatalogue beamr:hasRisk isd:RiskCatalogueStale .
