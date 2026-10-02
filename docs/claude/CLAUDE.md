@@ -483,7 +483,8 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   declare.
 - **A pool collapses to a band.** BPMN's black-box pool: a collapsed participant keeps its band
   and name, its members keep a slot on that band so message flow still lands on the pool, and
-  nothing inside is drawn.
+  nothing inside is drawn. A participant with no process is that band from the start, with no
+  fold to open, and a message flow that names a participant meets the pool's edge.
 - **The palette folds by measurement, not by breakpoint.** Rebuilt unfolded, measured against
   the canvas, folded when it would take more than a third of it — and it decides **both ways,
   every render**; the reader's own toggle wins from then on. Every palette button draws the
