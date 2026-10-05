@@ -1,30 +1,3 @@
-"""One risk, defined first, and only the points of the design that bear on it.
-
-The notation view draws the whole architecture and puts every risk above it -
-which is the forward direction again, just arranged differently. A lens goes
-the other way: somebody says what they want to look at ("sensitive data in the
-conversation agent") and the view is built outward from that, to the process
-on one side and the architecture on the other. Nothing unrelated is drawn.
-
-A defined risk is a beamr:Risk carrying up to three criteria, each optional,
-each narrowing:
-
-    pair:concernsDataCategory   what content is in question
-    pair:concernsSystem         which architecture
-    pair:concernsRiskPattern    which weakness, when known by name
-
-The distinction that makes the lens worth having is between a concern that is
-*about* the risk and one that merely *passes through* it. In the tariff scene
-every one of the conversation agent's eleven findings touches an element that
-carries sensitive data, because the customer's message carries it and feeds
-everything; filtering on that returns the whole list. Only the risk query that
-actually tests the category is about it - and which queries test which
-category is read off the registered query text, which is the ground truth of
-what a risk pattern looks at.
-
-Reads a complete run. Chooses what is shown, never what is detected.
-"""
-
 from __future__ import annotations
 
 import re
@@ -51,13 +24,6 @@ _PAIR_TERM = re.compile(r"pair:([A-Za-z][A-Za-z0-9]*)")
 @lru_cache(maxsize=1)
 def _category_tree() -> tuple[dict[str, set[str]], dict[str, set[str]]]:
     """Each data category's descendants, and its whole family.
-
-    Two different questions use them. What *holds* sensitive data is the
-    category and what is below it - an element carrying a kind of sensitive
-    data is sensitive. What a query is *about* also reaches upward: a query that
-    tests Information tests sensitive information too. Using the family for the
-    first pulled every element carrying generic Information into a lens about
-    sensitive data.
     """
     graph = load_base_graph()
     parents: dict[str, set[str]] = {}
@@ -86,10 +52,6 @@ def _category_tree() -> tuple[dict[str, set[str]], dict[str, set[str]]]:
 @lru_cache(maxsize=1)
 def _categories_tested() -> dict[str, set[str]]:
     """Risk pattern -> the data categories its registered query tests.
-
-    Read off the query text rather than asserted: `.rq` paths are data in this
-    library, and the query is the only exact statement of what a risk pattern
-    reads. A curated list here would drift from it the first time one changed.
     """
     graph = load_base_graph()
     categories = {short(c) for c in graph.subjects(RDF.type, PAIR.DataCategory)}
@@ -168,11 +130,6 @@ def _how_it_got_there(graph: Graph, element: URIRef, family: set[str]) -> str | 
 
 def _derived_from(graph: Graph, origin: URIRef) -> tuple[set[str], set[str]]:
     """What `origin` put into the architecture: the elements, and the categories.
-
-    Walks the prov:Derivation records the business bridge and the propagation
-    rules write, so this is exactly what the run derived, never inferred here.
-    Only the categories `origin` itself seeded are followed - an element on the
-    path also carries content from elsewhere, and that is not this origin's.
     """
     seeds = {graph.value(d, PAIR.derivedCategory) for d in graph.subjects(_PROV.entity, origin)}
     seeds.discard(None)
@@ -239,9 +196,6 @@ def risk_lens(defined: dict, graph: Graph, groups: list[dict]) -> dict:
                 "id": str(step), "label": label(graph, step), "kind": "process",
                 "why": f"{'reads' if reads else 'writes'} {label(graph, element)}",
             })
-
-    # Without a data category the lens has nothing to trace, so it shows the
-    # architecture the named system holds - still narrower than the whole graph.
     if not family and members is not None:
         for element in members:
             if element == system or not isinstance(element, URIRef):
@@ -282,9 +236,6 @@ def risk_lens(defined: dict, graph: Graph, groups: list[dict]) -> dict:
                         + [c["label"] for c in group.get("otherControls", [])],
             "buildable": [c["label"] for c in group.get("applicableControls", [])],
         }
-        # About it: the query tests this kind of content. Named by the reader:
-        # about it by definition. With nothing narrower than the system named
-        # there is nothing to pass through - they are simply its concerns.
         if pattern_iri or not chosen or (reaches and tested.get(pattern or "", set()) & reaches):
             about.append(entry)
             cited_by[group["key"]] = cited
@@ -313,8 +264,6 @@ def risk_lens(defined: dict, graph: Graph, groups: list[dict]) -> dict:
         carried_by = [s for s in activity["refines"] if s in related_systems]
         if not carried_by:
             continue
-        # An activity bears on a concern when the architecture that refines it
-        # holds the concern's evidence: pair:refinedBy, then membership.
         carried = set().union(*(held_by(s) for s in carried_by))
         process[activity["id"]] = {
             "id": activity["id"], "label": activity["label"], "kind": "activity",
@@ -337,10 +286,6 @@ def risk_lens(defined: dict, graph: Graph, groups: list[dict]) -> dict:
                 "activity": activity["id"],
                 "concerns": set(),
             })
-            # A data object bears on a concern only through what it seeded: the
-            # elements its classification was derived onto, and a risk pattern
-            # whose query tests that category. Unclassified, it bears on nothing -
-            # the process said nothing about it.
             reached, seeded = _derived_from(graph, _data_target(graph, key))
             about_seeded = set().union(*(whole.get(c, {c}) for c in seeded)) if seeded else set()
             point["concerns"] |= {

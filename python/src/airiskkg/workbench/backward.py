@@ -1,22 +1,3 @@
-"""Reading the constituent equation right to left.
-
-Forward, the method runs motif -> conditions -> finding. An analyst who has not
-drawn anything yet needs the other direction: name an outcome that must not
-happen, and the library says which risk patterns reach it, what they ask, and
-what structure would have to be present for them to fire.
-
-Two entry axes, because one does not cover the library:
-
-* by **outcome** - the catalogued domain of harm, traversed through
-  pair:mayIndicateRisk. Two risk patterns reach no domain, because nothing
-  upstream maps their OWASP entry to one, and a link must not be curated
-  without a source.
-* by **capability** - pair:motifFamily, which is how the library shelves its
-  own motifs. It is a filing decision about this library, never a reading of a
-  submitted architecture, so it is navigation only and no match query may read
-  it (R2).
-"""
-
 from __future__ import annotations
 
 from functools import lru_cache

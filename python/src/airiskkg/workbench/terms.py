@@ -7,9 +7,6 @@ from rdflib import RDF, RDFS, SKOS, Graph, Namespace, URIRef
 from airiskkg.assessment_runner import BEAM
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
-# The one loaded taxonomy whose top level is a taxonomy of *harms* rather than
-# of weaknesses. OWASP numbers weaknesses, so it names where a risk pattern came
-# from, not what it may lead to.
 MIT_DOMAIN_TAXONOMY = URIRef(
     "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#MIT_AI_Risk_Repository_Domain_Taxonomy"
 )
@@ -30,13 +27,9 @@ PROCESS_CLASSES = [
 EDGE_KINDS = [
     {"id": "use", "label": "uses (process → resource)", "target": "resource"},
     {"id": "produce", "label": "produces (process → resource)", "target": "resource"},
-    {"id": "inform", "label": "informs (process → process)", "target": "process"},
 ]
 
 PROCESS_CLASS_NAMES = {"Transform", "Infer", "Train", "Generate", "Process"}
-
-# Which catalogue an IRI came from. Two views read it - a finding's taxonomy
-# chips and the library browser - and a second copy would drift.
 TAXONOMY_SOURCES = {
     "http://w3id.org/airiskkg/taxonomy/owasp-llm#": ("OWASP LLM Top 10", "OWASP LLM"),
     "http://w3id.org/airiskkg/taxonomy/owasp-asi#": ("OWASP Agentic Top 10", "OWASP ASI"),
@@ -96,9 +89,6 @@ def risk_domains(graph: Graph) -> set[URIRef]:
 
 def domain_of(graph: Graph, entry: URIRef, domains: set[URIRef]) -> URIRef | None:
     """The domain of harm a taxonomy entry rolls up to, if it has one.
-
-    Traversed rather than asserted: an entry no upstream mapping reaches has no
-    domain, and saying so is the honest answer.
     """
     for broader in graph.objects(entry, SKOS.broader):
         if broader in domains:

@@ -1,21 +1,3 @@
-"""The risk view: candidate findings read as concerns rather than as rows.
-
-Three things the findings list cannot do, because it is one row per motif match:
-
-* **Group.** Nested motifs co-match by design, so the same weakness at the same
-  place is reported once per structure that reached it. Collapsing to
-  (risk pattern, evidence set) turns four identical rows into one row that says
-  four structures corroborate it.
-* **Scope.** A stated undesired outcome says which findings answer the question
-  that was asked. It never removes one: an out-of-scope finding is set aside
-  and counted, and a finding that reaches no catalogued domain is neither in
-  nor out - saying so is the only honest option, since the two risk patterns
-  with no upstream domain mapping are agentic ones.
-* **Reconcile.** A person's stated risk and a structural candidate are
-  different claims about the same design. Where they meet is the strongest
-  evidence in the method; where they do not is what each side contributes.
-"""
-
 from __future__ import annotations
 
 from rdflib import Graph, URIRef
@@ -70,9 +52,6 @@ def _merge(findings: list[dict]) -> dict:
         "mechanism": first.get("mechanism"),
         "corroboration": len(findings),
         "motifs": motifs,
-        # By label, not by condition: two conditions in the library carry the
-        # same sentence, and a panel that prints it twice reads as noise. What
-        # is kept is what the reader could tell apart.
         "why": sorted({c["label"] for c in conditions.values()}, key=str.lower),
         "riskDomains": sorted(domains.values(), key=lambda row: row["label"].lower()),
         "taxonomyEntries": first.get("taxonomyEntries", []),
@@ -90,8 +69,6 @@ def _merge(findings: list[dict]) -> dict:
         ),
         "status": first.get("status") or "candidate",
         "findingIds": sorted(f["id"] for f in findings),
-        # The finding a control is applied against: the rewrite is keyed on
-        # (control, risk pattern), so any member of the group routes the same.
         "applyTo": sorted(f["id"] for f in findings)[0],
     }
 
@@ -101,8 +78,6 @@ def group_findings(findings: list[dict]) -> list[dict]:
     for finding in findings:
         buckets.setdefault(_group_key(finding), []).append(finding)
     groups = [_merge(rows) for rows in buckets.values()]
-    # Most corroborated first, then clearable ahead of triage-only: both are
-    # facts about the group, not a computed severity.
     return sorted(
         groups,
         key=lambda row: (-row["corroboration"], not row["clearable"], row["label"].lower()),
@@ -111,9 +86,6 @@ def group_findings(findings: list[dict]) -> list[dict]:
 
 def _scope_match(group: dict, wanted_domains: set[str]) -> str:
     """Does this concern answer the question that was asked?
-
-    ``unclassified`` is not a polite ``out``: nothing upstream maps the entry to
-    a domain of harm, so the scope simply cannot speak to it.
     """
     if not wanted_domains:
         return "all"
@@ -171,6 +143,56 @@ def _reconcile(groups: list[dict], stated: list[dict]) -> dict:
     }
 
 
+def _name_the_place(groups: list[dict]) -> None:
+    """Tell concerns that share a name apart by where they are.
+
+    Prompt injection is raised once per untrusted-content/generation pair, so
+    three boxes reading "Candidate prompt injection exposure" are three true and
+    different answers - and nothing on them said which was which. A concern is
+    the (risk pattern, evidence set) group, so the evidence is what differs.
+    The element fewest siblings cite says it in the fewest words; a set that is
+    a subset of its siblings' has no element of its own, so "unique to me" alone
+    would leave one of the three unnamed.
+    """
+    by_label: dict[str, list[dict]] = {}
+    for group in groups:
+        by_label.setdefault(group["label"], []).append(group)
+
+    for shared in by_label.values():
+        if len(shared) < 2:
+            continue
+        cited: dict[str, int] = {}
+        for group in shared:
+            for element in group["evidence"]:
+                cited[element["id"]] = cited.get(element["id"], 0) + 1
+
+        def named(element: dict) -> str:
+            return element.get("label") or element["id"].rsplit("#", 1)[-1]
+
+        ranked = {
+            id(group): sorted(group["evidence"], key=lambda e: (cited[e["id"]], named(e)))
+            for group in shared
+        }
+        for group in shared:
+            if ranked[id(group)]:
+                group["distinguisher"] = named(ranked[id(group)][0])
+
+        # Two concerns landing on the same name have said nothing: walk each
+        # down its own ranking until the names differ or the evidence runs out.
+        for _ in range(4):
+            taken: dict[str, list[dict]] = {}
+            for group in shared:
+                taken.setdefault(group.get("distinguisher", ""), []).append(group)
+            clashes = [rows for rows in taken.values() if len(rows) > 1]
+            if not clashes:
+                break
+            for rows in clashes:
+                for offset, group in enumerate(rows[1:], start=1):
+                    options = ranked[id(group)]
+                    if offset < len(options):
+                        group["distinguisher"] = named(options[offset])
+
+
 def risk_view(summary: dict, graph: Graph, *, gaps: list[dict] | None = None,
               result=None) -> dict:
     """The assessment, read against what somebody asked it to answer."""
@@ -184,15 +206,10 @@ def risk_view(summary: dict, graph: Graph, *, gaps: list[dict] | None = None,
     for group in groups:
         match = _scope_match(group, wanted)
         cited = {element["id"] for element in group["evidence"]}
-        # Naming a system is the sharpest narrowing the method has, and it
-        # settles the question on its own: a concern in an architecture nobody
-        # asked about is outside the scope however it rolls up.
         group["inScopedSystem"] = (
             any(cited & owned for owned in members.values()) if members else True
         )
         group["scopeMatch"] = "out" if not group["inScopedSystem"] else match
-        # A judgement is recorded against a finding, so a group carries the
-        # decisions made about the findings it collapsed.
         group["decisions"] = [
             dict(decisions[fid], finding=fid)
             for fid in group["findingIds"] if fid in decisions
@@ -201,24 +218,19 @@ def risk_view(summary: dict, graph: Graph, *, gaps: list[dict] | None = None,
             fid in decisions for fid in group["findingIds"]
         )
 
+    _name_the_place(groups)
     reconciliation = _reconcile(groups, stated)
     buckets = {"in": 0, "out": 0, "unclassified": 0, "all": 0}
     for group in groups:
         buckets[group["scopeMatch"]] += 1
 
     questions = open_questions(groups, graph)
-    # Backward: the risks this assessment set out to answer, each with a verdict
-    # - including the ones that did not fire, which are silent everywhere else.
     agenda = agenda_from_scope(scope, scope.get("checks", []))
     verdicts = (
         check_agenda(agenda, result, summary, gaps) if result is not None and agenda else None
     )
     return {
-        # The same concerns placed on the work, for the page shown to people who
-        # are not editing the graph.
         "byProcess": process_risk(graph, groups),
-        # Risks defined first, each seen outward to the process and the
-        # architecture - the view that is not the architecture view again.
         "lenses": [risk_lens(defined, graph, groups) for defined in lens_risks(graph)],
         "agenda": verdicts,
         "scope": scope,
