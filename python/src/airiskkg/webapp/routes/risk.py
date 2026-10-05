@@ -14,6 +14,7 @@ from rdflib import DCTERMS, RDF, RDFS, Graph, Literal, Namespace, URIRef
 
 from airiskkg.assessment_runner import BEAM, PAIR
 from airiskkg.workbench.backward import backward_index
+from airiskkg.workbench.library import library_catalogue
 from airiskkg.workbench.risk_diagram import risk_diagram
 from airiskkg.workbench.scope import TRIAGE_STATUSES, scope_report
 
@@ -79,6 +80,36 @@ _RELATIONS = (BEAMR.hasRisk, BEAMR.originatedFrom, BEAMR.isRiskSourceFor,
               BEAMR.hasConsequence, BEAMR.hasImpact, BEAMR.modifiesRiskConcept)
 
 
+def _library_index() -> tuple[dict, dict]:
+    """What a person may pick instead of writing their own words.
+
+    Read off the loaded library rather than listed here, so the choice offered
+    cannot drift from the library the run uses - the same reason the front door
+    counts its own shelves rather than carrying a hand-written list.
+    """
+    catalogue = library_catalogue()
+    patterns: dict[str, tuple[str, str]] = {}
+    controls: dict[str, tuple[str, str]] = {}
+
+    def remember(into: dict, row: dict) -> None:
+        # A risk pattern carries a short id and a full iri; a control's id is
+        # already the iri. Both are accepted and both resolve to the iri, so a
+        # caller that sends the short form does not end up writing a triple
+        # whose object resolved against the working directory.
+        iri = row.get("iri") or row.get("id")
+        if not iri:
+            return
+        for key in {row.get("id"), iri}:
+            if key:
+                into[key] = (iri, row.get("label") or "")
+
+    for row in catalogue.get("riskPatterns", []):
+        remember(patterns, row)
+        for control in row.get("controls", []):
+            remember(controls, control)
+    return patterns, controls
+
+
 def _kind_of(data: Graph, node: URIRef) -> str | None:
     """Which of the five a node is. Impact first: it is a kind of Consequence,
     so testing the parent first would call every impact a consequence."""
@@ -114,11 +145,6 @@ def _attachment(data: Graph, kind: str, node: URIRef, target: URIRef) -> tuple:
             raise ValueError("A consequence follows from a risk, so attach it to one.")
         return (target, BEAMR.hasConsequence, node)
     if kind == "control":
-        # A control is the one concept that points outward at what it changes,
-        # and it may change any of the four - beamr:modifiesRiskConcept ranges
-        # over beamr:RiskConcept, not over Risk alone. Writing one by hand is
-        # not applying it: nothing is inserted into the design and no finding
-        # clears. It records that somebody says this is handled.
         if not types & set(_RISK_CONCEPTS):
             raise ValueError(
                 "A control modifies a risk, a source, a consequence or an impact.")
@@ -187,8 +213,6 @@ def scope_edit() -> object:
         new_id = str(outcome)
 
     elif op == "remove-outcome":
-        # Every reference, not just the scope's: a stated risk names its
-        # consequence too, and half a removal leaves a dangling claim.
         target = URIRef(payload.get("outcome") or "")
         data.remove((None, None, target))
         data.remove((target, None, None))
@@ -226,19 +250,44 @@ def scope_edit() -> object:
         new_id = str(risk)
 
     elif op == "state-concept":
-        # An assessment made by hand, in the same vocabulary a run emits: the
-        # library is small and its coverage is partial, so what a person judges
-        # has to be able to enter the graph without a query matching anything.
         kind = (payload.get("kind") or "").strip().lower()
         if kind not in _CONCEPT_CLASS:
             return jsonify({
                 "error": f"state-concept needs a kind: {', '.join(sorted(_CONCEPT_CLASS))}.",
             }), 400
         label = (payload.get("label") or "").strip()
+
+        """Named from the library, or in the person's own words.
+
+        Picking a risk the library already knows mints the person's own
+        beamr:Risk and points it at the pattern with pair:concernsRiskPattern -
+        a stated risk is a claim about this system, the pattern is a type, and
+        the two must not be collapsed. Picking a control uses the library
+        control's own IRI, because naming Guardrails is naming that control and
+        nothing else; its type and label are written into the submitted graph so
+        the graph still stands on its own.
+        """
+        chosen = (payload.get("fromLibrary") or "").strip()
+        node = None
+        if chosen:
+            patterns, controls = _library_index()
+            known = patterns if kind == "risk" else controls if kind == "control" else {}
+            if not known:
+                return jsonify({
+                    "error": "Only a risk or a control can be picked from the library.",
+                }), 400
+            if chosen not in known:
+                return jsonify({"error": "That is not in the library."}), 400
+            chosen, known_label = known[chosen]
+            label = label or known_label
+            if kind == "control":
+                node = URIRef(chosen)
+
         if not label:
             return jsonify({"error": "state-concept needs a label."}), 400
 
-        node = _fresh(data, kind)
+        if node is None:
+            node = _fresh(data, kind)
         data.add((node, RDF.type, _CONCEPT_CLASS[kind]))
         data.add((node, RDFS.label, Literal(label, lang="en")))
         _replace(data, node, DCTERMS.description, payload.get("description"))
@@ -247,6 +296,8 @@ def scope_edit() -> object:
             priority = _PRIORITIES.get((payload.get("priority") or "").lower())
             if priority is not None:
                 data.add((node, PAIR.statedPriority, priority))
+            if chosen:
+                data.add((node, PAIR.concernsRiskPattern, URIRef(chosen)))
 
         for target in payload.get("attachTo") or []:
             try:
@@ -276,6 +327,58 @@ def scope_edit() -> object:
                 return jsonify({"error": str(error)}), 400
         new_id = str(node)
 
+    elif op == "rename-concept":
+        """What a hand-written concept is called, and which library entry it is.
+
+        The box is drawn the moment it is dropped and named afterwards, the way
+        a symbol dropped on the architecture canvas is - so naming has to be an
+        edit of something that already exists rather than a question asked
+        before it can.
+        """
+        target = payload.get("concept")
+        if not target:
+            return jsonify({"error": "rename-concept needs a concept."}), 400
+        node = URIRef(target)
+        kind = _kind_of(data, node)
+        if kind is None:
+            return jsonify({"error": "That is not a hand-written risk concept."}), 400
+
+        label = (payload.get("label") or "").strip()
+        chosen = (payload.get("fromLibrary") or "").strip()
+        if chosen:
+            patterns, controls = _library_index()
+            known = patterns if kind == "risk" else controls if kind == "control" else {}
+            if not known:
+                return jsonify({
+                    "error": "Only a risk or a control can be picked from the library.",
+                }), 400
+            if chosen not in known:
+                return jsonify({"error": "That is not in the library."}), 400
+            chosen, known_label = known[chosen]
+            label = label or known_label
+        if not label:
+            return jsonify({"error": "rename-concept needs a label."}), 400
+
+        """A control picked from the library becomes that control.
+        """
+        if kind == "control" and chosen and str(node) != chosen:
+            moved = URIRef(chosen)
+            for predicate, obj in list(data.predicate_objects(node)):
+                data.add((moved, predicate, obj))
+            for subject, predicate in list(data.subject_predicates(node)):
+                data.add((subject, predicate, moved))
+            data.remove((node, None, None))
+            data.remove((None, None, node))
+            node = moved
+
+        data.remove((node, RDFS.label, None))
+        data.add((node, RDFS.label, Literal(label, lang="en")))
+        if kind == "risk":
+            data.remove((node, PAIR.concernsRiskPattern, None))
+            if chosen:
+                data.add((node, PAIR.concernsRiskPattern, URIRef(chosen)))
+        new_id = str(node)
+
     elif op == "remove-concept":
         target = payload.get("concept")
         if not target:
@@ -289,9 +392,6 @@ def scope_edit() -> object:
         new_id = None
 
     elif op == "define-risk":
-        # A risk named before anything is found: what content, where, which
-        # weakness. Each optional, each narrowing; at least one is required, or
-        # there is nothing to look outward from.
         criteria = {
             PAIR.concernsDataCategory: payload.get("dataCategory"),
             PAIR.concernsSystem: payload.get("system"),

@@ -50,9 +50,6 @@ def assess() -> object:
         return jsonify({"error": f"Could not run assessment: {error}"}), 400
     summary = summarize_result(result, architecture=architecture)
     summary["motifGaps"] = gaps
-    # The same run, read against what somebody asked it to answer. The
-    # combined graph, not the submitted one: a stated outcome names a
-    # taxonomy domain whose label only the knowledge base carries.
     summary["riskView"] = risk_view(summary, result.combined_graph, gaps=gaps, result=result)
     return jsonify(summary)
 

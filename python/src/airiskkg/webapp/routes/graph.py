@@ -4,10 +4,21 @@ from flask import Blueprint, jsonify, request
 from rdflib import RDF, RDFS, Graph, Literal, Namespace, URIRef
 
 from airiskkg.assessment_runner import BEAM, PAIR
-from airiskkg.graph_view import _kind_and_type, _members_of, graph_view
+from airiskkg.graph_view import (
+    _kind_and_type,
+    _members_of,
+    flow_endpoint_error,
+    graph_view,
+    node_kind,
+)
 from airiskkg.knowledge_base import graph_fingerprint
 from airiskkg.t4b_import import T4bImportError, t4b_to_ttl
-from airiskkg.workbench.process_view import DATA_CLASSES, process_view
+from airiskkg.workbench.process_view import (
+    context_values,
+    data_class_names,
+    process_view,
+    system_context_options,
+)
 from airiskkg.workbench.templates import motif_templates
 from airiskkg.workbench.terms import PROCESS_CLASS_NAMES
 
@@ -22,14 +33,9 @@ def _parsed(ttl: str) -> Graph:
     return data
 
 
-# How each drawn line is written in the graph, which is not one to one: the
-# canvas draws beam:use backwards (resource into process) and both use and
-# produce have an inverse form that draws the same line. Mirrors
-# graph_view._FLOW_EDGES, and `remove-edge` is the only thing that needs it.
 DRAWN_AS = {
     "use": ((BEAM.use, True), (BEAM.usedBy, False)),
     "produce": ((BEAM.produce, False), (BEAM.producedBy, True)),
-    "inform": ((BEAM.inform, False),),
     "participatedIn": ((BEAM.participatedIn, False),),
 }
 
@@ -162,9 +168,6 @@ def graph_edit() -> object:
         new_id = str(element)
 
     elif op == "add-system":
-        # The architecture-first route. add-system on /api/process-edit needs an
-        # activity to bind, which is the wrong way round for someone who draws
-        # the architecture and only then models the process it serves.
         label = (payload.get("label") or "New AI system").strip()
         system = _fresh(data, "system")
         data.add((system, RDF.type, BEAM.Element))
@@ -181,11 +184,6 @@ def graph_edit() -> object:
             for other in data.subjects(RDF.type, BEAM.System):
                 claimed |= _members_of(data, other)
 
-            # Whatever the canvas counts as an element, which is any BEAM type
-            # or a subclass of one - not beam:Element. A graph exported from
-            # BEAM types its boxes beam:Data and beam:Transform and stops there,
-            # so keying adoption on beam:Element adopted nothing at all and left
-            # the reader with an empty system beside every one of their boxes.
             typed: dict[URIRef, set[URIRef]] = {}
             for subject, obj in data.subject_objects(RDF.type):
                 if isinstance(subject, URIRef) and isinstance(obj, URIRef):
@@ -207,9 +205,16 @@ def graph_edit() -> object:
         obj = payload.get("object")
         if not (subject and predicate and obj):
             return jsonify({"error": "add-edge needs subject, predicate, object."}), 400
-        if predicate not in ("use", "produce", "inform"):
-            return jsonify({"error": "predicate must be use, produce, or inform."}), 400
-        data.add((URIRef(subject), BEAM[predicate], URIRef(obj)))
+        if predicate not in DRAWN_AS:
+            return jsonify({"error": f"{predicate} is not a flow this canvas draws."}), 400
+        head, tail = URIRef(subject), URIRef(obj)
+        # The editor is the source of truth, so a request can arrive without the
+        # canvas having vetted the ends. The contract rejects a malformed edge on
+        # assessment; refusing it here keeps it out of the document.
+        wrong = flow_endpoint_error(data, predicate, head, tail)
+        if wrong:
+            return jsonify({"error": wrong}), 400
+        data.add((head, BEAM[predicate], tail))
     elif op == "remove-edge":
         """A connector drawn wrong used to cost the elements at either end,
         because deleting an element was the only thing that took its edges with
@@ -411,6 +416,69 @@ FLOW_NODE_KINDS = {*ACTIVITY_KINDS, *EVENT_KINDS, *GATEWAY_KINDS}
 
 
 DPV = Namespace("https://w3id.org/dpv#")
+
+
+DATA_REFS = frozenset({BPMN.dataObjectReference, BPMN.dataStoreReference})
+# sBPMN declares bp:dataInputAssociation on activity and throwEvent, and
+# bp:dataOutputAssociation on activity and catchEvent. The canvas does not tell
+# throw from catch, so it joins data to an activity only rather than risk
+# writing an association outside the property's domain.
+ACTIVITY_CLASSES = frozenset(BPMN[kind] for kind in ACTIVITY_KINDS)
+
+
+def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str) -> str | None:
+    """Join a data object or store to a step, as BPMN models it.
+
+    The thing is declared once and shows up through references, so a reference
+    nothing uses yet is the box the reader placed and gets joined, while one
+    already in use is copied. Two readers of one store are two boxes and two
+    short lines, not one box with lines across the diagram.
+    """
+    kinds = set(data.objects(reference, RDF.type))
+    store = BPMN.dataStoreReference in kinds
+    held = data.value(reference, BP.dataStoreRef if store else BP.dataObjectRef)
+    if held is None:
+        return None
+
+    used = {
+        data.value(end, BP.dataStoreRef) or data.value(end, BP.dataObjectRef)
+        for prop, side in ((BP.dataInputAssociation, BP.sourceRef),
+                           (BP.dataOutputAssociation, BP.targetRef))
+        for association in data.objects(activity, prop)
+        for end in data.objects(association, side)
+    }
+    if held in used:
+        return None
+
+    if _in_use(data, reference):
+        appearance = _fresh(data, "dataref")
+        data.add((appearance, RDF.type,
+                  BPMN.dataStoreReference if store else BPMN.dataObjectReference))
+        data.add((appearance, BP.dataStoreRef if store else BP.dataObjectRef, held))
+        reference = appearance
+
+    association = _fresh(data, "dassoc")
+    if direction == "in":
+        data.add((association, RDF.type, BPMN.dataInputAssociation))
+        data.add((association, BP.sourceRef, reference))
+        data.add((association, BP.targetRef, activity))
+        data.add((activity, BP.dataInputAssociation, association))
+    else:
+        data.add((association, RDF.type, BPMN.dataOutputAssociation))
+        data.add((association, BP.sourceRef, activity))
+        data.add((association, BP.targetRef, reference))
+        data.add((activity, BP.dataOutputAssociation, association))
+    return str(association)
+
+
+def _in_use(data: Graph, reference: URIRef) -> bool:
+    """Whether any activity already reads or writes this appearance."""
+    return any(
+        reference in set(data.objects(association, side))
+        for prop, side in ((BP.dataInputAssociation, BP.sourceRef),
+                           (BP.dataOutputAssociation, BP.targetRef))
+        for association in data.objects(None, prop)
+    )
 
 
 def _fresh(data: Graph, prefix: str) -> URIRef:
@@ -649,6 +717,48 @@ def process_edit() -> object:
         if source == target:
             return jsonify({"error": "An activity cannot flow to itself."}), 400
         source_ref, target_ref = URIRef(source), URIRef(target)
+        from_kinds = set(data.objects(source_ref, RDF.type))
+        to_kinds = set(data.objects(target_ref, RDF.type))
+
+        """What the line is follows from what it joins.
+
+        One gesture, four kinds of connector: BPMN does not let the reader pick
+        between them anyway, because the ends decide. A step to a step is a
+        sequence flow, across a pool a message flow, a data object either way
+        round a data association, and anything touching a text annotation an
+        undirected association.
+        """
+        # An annotation says something about whatever it is attached to,
+        # including a data object, so it is read before the data branch.
+        if BPMN.textAnnotation in from_kinds or BPMN.textAnnotation in to_kinds:
+            link = _fresh(data, "assoc")
+            data.add((link, RDF.type, BPMN.association))
+            data.add((link, BP.sourceRef, source_ref))
+            data.add((link, BP.targetRef, target_ref))
+            # It says something about a step; it does not point at it. "None" is
+            # the direction BPMN draws as a plain dotted line.
+            data.add((link, BP.associationDirection, Literal("None")))
+            return _serialized(data, newId=str(link))
+
+        if from_kinds & DATA_REFS or to_kinds & DATA_REFS:
+            reading = bool(from_kinds & DATA_REFS)
+            reference = source_ref if reading else target_ref
+            step = target_ref if reading else source_ref
+            # A data association joins data to a step, never data to data: two
+            # boxes side by side say nothing about who reads either.
+            if from_kinds & DATA_REFS and to_kinds & DATA_REFS:
+                return jsonify(
+                    {"error": "Two data objects can't connect — a step reads one and writes the other."}
+                ), 400
+            if not (set(data.objects(step, RDF.type)) & ACTIVITY_CLASSES):
+                return jsonify(
+                    {"error": "Data is read or written by an activity, not by an event or gateway."}
+                ), 400
+            made = _join_data(data, reference, step, "in" if reading else "out")
+            if made is None:
+                return jsonify({"error": "That step already uses this data."}), 400
+            return _serialized(data, newId=made)
+
         same_process = _process_of(data, source_ref) == _process_of(data, target_ref)
         flow = _fresh(data, "sflow" if same_process else "mflow")
         data.add((flow, RDF.type, BPMN.sequenceFlow if same_process else BPMN.messageFlow))
@@ -689,19 +799,21 @@ def process_edit() -> object:
         new_id = activity
 
     elif op == "add-data":
+        # Free-standing when no activity is named: a store is a thing in its own
+        # right, and one drawn per reader reads as several different stores.
         activity = payload.get("activity")
         direction = payload.get("direction")
-        if not activity or direction not in ("in", "out"):
-            return jsonify({"error": "add-data needs an activity and a direction."}), 400
+        if activity and direction not in ("in", "out"):
+            return jsonify({"error": "add-data needs a direction when it names an activity."}), 400
         classification = payload.get("classification") or ""
-        if classification and classification not in DATA_CLASSES:
+        if classification and classification not in data_class_names():
             return jsonify({"error": f"Unknown data classification: {classification}"}), 400
 
         shape = payload.get("shape") or "object"
         if shape not in ("object", "store"):
             return jsonify({"error": f"Unknown data shape: {shape}"}), 400
 
-        node = URIRef(activity)
+        node = URIRef(activity) if activity else None
         label = (payload.get("label") or "Data").strip()
         obj = _fresh(data, "store" if shape == "store" else "data")
         reference = _fresh(data, "dataref")
@@ -730,6 +842,9 @@ def process_edit() -> object:
         # BPMN puts the association on the activity and gives it both ends; the
         # bridge query reads sourceRef/targetRef, so writing only one side would
         # draw an arrow that derives nothing.
+        if node is None:
+            new_id = str(reference)
+            return _serialized(data, newId=new_id)
         association = _fresh(data, "dassoc")
         if direction == "in":
             data.add((association, RDF.type, BPMN.dataInputAssociation))
@@ -743,12 +858,118 @@ def process_edit() -> object:
             data.add((node, BP.dataOutputAssociation, association))
         new_id = str(reference)
 
+    elif op == "connect-data":
+        """One data node, joined to another activity.
+
+        The whole point of a store existing on its own: two activities that read
+        the same one are two lines to one box, not two boxes that happen to
+        share a name.
+        """
+        reference = payload.get("data")
+        activity = payload.get("activity")
+        direction = payload.get("direction")
+        if not reference or not activity or direction not in ("in", "out"):
+            return jsonify({"error": "connect-data needs data, an activity and a direction."}), 400
+        made = _join_data(data, URIRef(reference), URIRef(activity), direction)
+        if made is None:
+            return jsonify({"error": "That activity already uses this data."}), 400
+        new_id = made
+
+    elif op == "set-condition":
+        """The words on a branch out of a gateway.
+
+        sBPMN models a conditionExpression as its own node and gives it no body
+        property - BPMN puts the expression in XML mixed content, which sBPMN
+        does not model - so the readable text goes on rdfs:label. That is the
+        rule this follows rather than inventing a bp: term for it.
+        """
+        flow = payload.get("flow")
+        if not flow:
+            return jsonify({"error": "set-condition needs a flow."}), 400
+        node = URIRef(flow)
+        if (node, RDF.type, BPMN.sequenceFlow) not in data:
+            return jsonify({"error": "Only a sequence flow carries a condition."}), 400
+        text = (payload.get("text") or "").strip()
+        existing = data.value(node, BP.conditionExpression)
+        if not text:
+            if existing is not None:
+                data.remove((existing, None, None))
+                data.remove((node, BP.conditionExpression, existing))
+            new_id = str(node)
+        else:
+            if existing is None:
+                existing = _fresh(data, "cond")
+                data.add((existing, RDF.type, BPMN.expression))
+                data.add((node, BP.conditionExpression, existing))
+            data.remove((existing, RDFS.label, None))
+            data.add((existing, RDFS.label, Literal(text)))
+            new_id = str(existing)
+
+    elif op == "remove-data":
+        """Take one appearance of a data object or store off the diagram.
+
+        The last appearance takes the thing itself with it, and its item
+        definition - otherwise a classification stays in the graph describing
+        something no longer drawn, and the next reader cannot see it to correct
+        it. Any other appearance is just that: one box, drawn elsewhere.
+        """
+        reference = payload.get("reference")
+        if not reference:
+            return jsonify({"error": "remove-data needs a data reference."}), 400
+        ref = URIRef(reference)
+        kinds = set(data.objects(ref, RDF.type))
+        if not kinds & DATA_REFS:
+            return jsonify({"error": "That is not a data object or a data store."}), 400
+        held = data.value(ref, BP.dataObjectRef) or data.value(ref, BP.dataStoreRef)
+
+        doomed = {ref}
+        for prop, side in ((BP.dataInputAssociation, BP.sourceRef),
+                           (BP.dataOutputAssociation, BP.targetRef)):
+            for association in list(data.subjects(side, ref)):
+                doomed.add(association)
+        for association in list(data.subjects(BP.targetRef, ref)):
+            doomed.add(association)
+
+        others = {
+            appearance
+            for appearance in set(data.subjects(BP.dataObjectRef, held))
+            | set(data.subjects(BP.dataStoreRef, held))
+            if appearance != ref
+        }
+        if held is not None and not others:
+            doomed.add(held)
+            item = data.value(held, BP.itemSubjectRef)
+            if item is not None:
+                doomed.add(item)
+
+        for victim in doomed:
+            for triple in list(data.triples((victim, None, None))):
+                data.remove(triple)
+            for triple in list(data.triples((None, None, victim))):
+                data.remove(triple)
+        new_id = None
+
+    elif op == "set-association-direction":
+        # The one thing the ends cannot say: whether the association points.
+        # BPMN draws no head for "None", an open head at the target for "One",
+        # and one at each end for "Both".
+        link = payload.get("association")
+        direction = payload.get("direction")
+        if not link or direction not in ("None", "One", "Both"):
+            return jsonify({"error": "set-association-direction needs None, One or Both."}), 400
+        node = URIRef(link)
+        if (node, RDF.type, BPMN.association) not in data:
+            return jsonify({"error": "That is not an association."}), 400
+        data.remove((node, BP.associationDirection, None))
+        data.add((node, BP.associationDirection, Literal(direction)))
+        new_id = str(node)
+
     elif op == "classify-data":
         reference = payload.get("reference")
         classification = payload.get("classification") or ""
         if not reference:
             return jsonify({"error": "classify-data needs a data reference."}), 400
-        if classification and classification not in DATA_CLASSES:
+        if classification and classification not in data_class_names():
             return jsonify({"error": f"Unknown data classification: {classification}"}), 400
         ref = URIRef(reference)
         obj = data.value(ref, BP.dataObjectRef) or data.value(ref, BP.dataStoreRef) or ref
@@ -761,6 +982,122 @@ def process_edit() -> object:
             data.remove((item, BP.structureRef, None))
             if classification:
                 data.add((item, BP.structureRef, DPV[classification]))
+        new_id = str(ref)
+
+    elif op == "set-system-context":
+        """The domain and the purpose, stated from the business view.
+
+        Declared rdfs:domain beam:System, and an activity refines exactly one
+        system, so the join is 1:1 - none of the ambiguity the data bridge has.
+        Written straight onto the system rather than derived from a business
+        triple: a facet is an annotated base fact (R8), and propagating one as a
+        facet is the thing the method does not do. Where it is *authored* is the
+        business view; what it is a property of is the system.
+        """
+        system = payload.get("system")
+        if not system:
+            return jsonify({"error": "set-system-context needs a system."}), 400
+        node = URIRef(system)
+        if (node, RDF.type, BEAM.System) not in data:
+            return jsonify({"error": "That is not an AI system in this graph."}), 400
+        allowed = {row["facet"] for row in system_context_options()}
+        facet = payload.get("facet")
+        if facet not in allowed:
+            return jsonify({"error": "set-system-context needs a facet the editor offers."}), 400
+        value = (payload.get("value") or "").strip()
+        if value and value not in context_values():
+            return jsonify({"error": f"Unknown value for {facet}: {value}"}), 400
+        data.remove((node, URIRef(facet), None))
+        if value:
+            data.add((node, URIRef(facet), URIRef(value)))
+        new_id = str(node)
+
+    elif op == "reorder-band":
+        """Drop a pool or a lane at a place in the stack.
+
+        Order was read off the name, so a diagram could only be stacked
+        alphabetically and a participant could not be put where the reader needs
+        it. The whole run of siblings is rewritten on every drop, so a document
+        is either fully ordered or not ordered at all - a half-ordered stack
+        would leave bands interleaving by name in a way nobody chose.
+        """
+        band = payload.get("band")
+        to_index = payload.get("toIndex")
+        if not band or not isinstance(to_index, int):
+            return jsonify({"error": "reorder-band needs a band and a toIndex."}), 400
+        node = URIRef(band)
+
+        kinds = set(data.objects(node, RDF.type))
+        if BPMN.participant in kinds:
+            siblings = list(data.subjects(RDF.type, BPMN.participant))
+        elif BPMN.lane in kinds:
+            # Only the lanes it shares a pool with: a lane moving past one in
+            # another participant is not a move anybody can see.
+            holder = next(iter(data.subjects(BP.flowNodeRef, node)), None)
+            siblings = [
+                other for other in data.subjects(RDF.type, BPMN.lane)
+                if next(iter(data.subjects(BP.flowNodeRef, other)), None) == holder
+            ]
+        else:
+            return jsonify({"error": "Only a pool or a lane is stacked."}), 400
+
+        def at(element):
+            order = data.value(element, PAIR.bandOrder)
+            label = str(data.value(element, BP.name) or data.value(element, RDFS.label) or element)
+            if order is None:
+                return (1, 0, label)
+            return (0, int(order), label)
+
+        ordered = sorted(siblings, key=at)
+        if node not in ordered:
+            return jsonify({"error": "That band is not in this diagram."}), 400
+        if not 0 <= to_index < len(ordered):
+            return jsonify({"error": "That is not a place in the stack."}), 400
+
+        ordered.remove(node)
+        ordered.insert(to_index, node)
+        for position, element in enumerate(ordered):
+            data.remove((element, PAIR.bandOrder, None))
+            data.add((element, PAIR.bandOrder, Literal(position)))
+        new_id = str(node)
+
+    elif op == "realise-data":
+        """Which architecture elements this business data object is.
+
+        The analyst knows the data; the bridge has to find the element. Where
+        they do know, saying so beats being found: pair:realisedBy names the
+        element and the derivation stops being a guess. Written on the object
+        rather than the reference, because a store drawn beside three readers is
+        three references to one thing.
+        """
+        reference = payload.get("reference")
+        if not reference:
+            return jsonify({"error": "realise-data needs a data reference."}), 400
+        ref = URIRef(reference)
+        obj = data.value(ref, BP.dataObjectRef) or data.value(ref, BP.dataStoreRef) or ref
+        elements = payload.get("elements") or []
+        if not isinstance(elements, list):
+            return jsonify({"error": "realise-data needs a list of elements."}), 400
+        chosen = [URIRef(e) for e in elements if e]
+        # The architectures the activities reading this object refine, and no
+        # others: naming an element of a system this activity never touches
+        # would mark something the business layer says nothing about.
+        reachable = set()
+        for held, end in ((BP.dataInputAssociation, BP.sourceRef),
+                          (BP.dataOutputAssociation, BP.targetRef)):
+            for activity, _p, association in data.triples((None, held, None)):
+                if ref not in set(data.objects(association, end)):
+                    continue
+                for system in data.objects(activity, PAIR.refinedBy):
+                    reachable |= set(data.objects(system, BEAM.hasResource))
+        outside = [str(e) for e in chosen if e not in reachable]
+        if outside:
+            return jsonify({
+                "error": "That element is not in an architecture this activity refines.",
+            }), 400
+        data.remove((obj, PAIR.realisedBy, None))
+        for element in chosen:
+            data.add((obj, PAIR.realisedBy, element))
         new_id = str(ref)
 
     elif op == "set-data-shape":
@@ -853,9 +1190,13 @@ def process_edit() -> object:
         element = payload.get("element")
         if not element:
             return jsonify({"error": "rename needs an element."}), 400
-        data.remove((URIRef(element), BP.name, None))
+        node = URIRef(element)
+        # A data reference is an appearance of something; the name is on the
+        # thing. Renaming the appearance would change nothing on screen.
+        node = data.value(node, BP.dataObjectRef) or data.value(node, BP.dataStoreRef) or node
+        data.remove((node, BP.name, None))
         if payload.get("label"):
-            data.add((URIRef(element), BP.name, Literal(payload["label"].strip())))
+            data.add((node, BP.name, Literal(payload["label"].strip())))
 
     elif op == "delete":
         element = payload.get("element")
