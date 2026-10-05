@@ -18,7 +18,6 @@ WHERE {
     beam:contain
     beam:use
     beam:produce
-    beam:inform
     beam:usedBy
     pair:playsRole
     pair:containsDataCategory
