@@ -157,11 +157,6 @@ beam:Task a owl:Class ;
 
 ### object properties
 
-beam:inform a owl:TransitiveProperty ;
-    rdfs:label "inform" ;
-	rdfs:domain beam:Process ;
-	rdfs:range beam:Process .
-
 beam:usedBy a owl:ObjectProperty ;
     rdfs:label "used by" ;
 	rdfs:domain beam:Resource ;

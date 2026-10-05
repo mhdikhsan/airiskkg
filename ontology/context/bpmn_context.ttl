@@ -6,6 +6,11 @@
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix vann: <http://purl.org/vocab/vann/> .
+@prefix pat:  <http://w3id.org/airiskkg/patterns#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix facet: <http://w3id.org/airiskkg/facets#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
 
 <http://w3id.org/airiskkg/context>
     a owl:Ontology ;
@@ -28,6 +33,29 @@ in the process diagram, expanded into an architecture graph."""@en ;
     rdfs:range beam:System ;
     rdfs:seeAlso bp:calledElement .
 
+pair:realisedBy a owl:ObjectProperty ;
+    rdfs:label "realised by"@en ;
+    rdfs:domain [
+        a owl:Class ;
+        owl:unionOf (bpmn:dataObject bpmn:dataStore)
+    ] ;
+    rdfs:range beam:Element .
+
+pair:targetInferred a owl:DatatypeProperty ;
+    rdfs:label "target inferred"@en ;
+    rdfs:comment "True where the bridge found the element itself rather than being told which one. A business annotation names its element with pair:realisedBy where the analyst knows it; where they do not, the category lands on the edge the association crosses. Only one of those is somebody's claim, and a reader has to be able to tell them apart."@en ;
+    rdfs:domain prov:Derivation ;
+    rdfs:range xsd:boolean .
+
+pair:bandOrder a owl:DatatypeProperty ;
+    rdfs:label "band order"@en ;
+    rdfs:comment "Where a pool or a lane sits in the stack the diagram draws. BPMN keeps layout in BPMNDI, which sBPMN does not model, and bp:ordering is declared on adHocSubProcess for Parallel/Sequential - so neither can say this. A band with no order falls back to its name, which is how every band was ordered before one could be moved."@en ;
+    rdfs:domain [
+        a owl:Class ;
+        owl:unionOf (bpmn:participant bpmn:lane)
+    ] ;
+    rdfs:range xsd:integer .
+
 pair:businessFollows a owl:ObjectProperty , owl:TransitiveProperty ;
     rdfs:label "business follows"@en ;
     rdfs:domain bpmn:flowNode ;
@@ -35,6 +63,93 @@ pair:businessFollows a owl:ObjectProperty , owl:TransitiveProperty ;
 
 pair:BusinessFlowDerivation a owl:Class ;
     rdfs:label "Business Flow Derivation"@en .
+
+pair:DataClassificationOption a owl:Class ;
+    rdfs:label "Data Classification Option"@en ;
+    rdfs:comment """One entry in the list the business editor offers for
+classifying a data object or store."""@en ;
+    dct:source <https://w3id.org/dpv> .
+
+pair:classifiesAs a owl:ObjectProperty ;
+    rdfs:label "classifies as"@en ;
+    rdfs:comment "The DPV term this option writes onto a bpmn:itemDefinition."@en ;
+    rdfs:domain pair:DataClassificationOption .
+
+pair:meansPersonalData a owl:DatatypeProperty ;
+    rdfs:label "means personal data"@en ;
+    rdfs:domain pair:DataClassificationOption ;
+    rdfs:range xsd:boolean .
+
+pat:Classification_PersonalData a pair:DataClassificationOption ;
+    rdfs:label "Personal data"@en ;
+    pair:classifiesAs dpv:PersonalData ;
+    pair:meansPersonalData true .
+
+pat:Classification_SensitivePersonalData a pair:DataClassificationOption ;
+    rdfs:label "Sensitive personal data"@en ;
+    pair:classifiesAs dpv:SensitivePersonalData ;
+    pair:meansPersonalData true .
+
+pat:Classification_SpecialCategoryPersonalData a pair:DataClassificationOption ;
+    rdfs:label "Special category personal data"@en ;
+    pair:classifiesAs dpv:SpecialCategoryPersonalData ;
+    pair:meansPersonalData true .
+
+pat:Classification_PseudonymisedData a pair:DataClassificationOption ;
+    rdfs:label "Pseudonymised"@en ;
+    pair:classifiesAs dpv:PseudonymisedData ;
+    pair:meansPersonalData true .
+
+pat:Classification_AnonymisedData a pair:DataClassificationOption ;
+    rdfs:label "Anonymised"@en ;
+    pair:classifiesAs dpv:AnonymisedData ;
+    pair:meansPersonalData false .
+
+pair:SystemContextOption a owl:Class ;
+    rdfs:label "System context option"@en ;
+    rdfs:comment "One entry the editor offers for a system's domain or purpose."@en .
+
+pair:contextFacet a owl:ObjectProperty ;
+    rdfs:label "context facet"@en ;
+    rdfs:comment "Which facet property this option writes: facet:hasDomain or facet:hasPurpose."@en ;
+    rdfs:domain pair:SystemContextOption .
+
+pair:contextValue a owl:ObjectProperty ;
+    rdfs:label "context value"@en ;
+    rdfs:comment "The term this option writes onto the beam:System."@en ;
+    rdfs:domain pair:SystemContextOption .
+
+# Purpose: DPV core publishes these, and each IRI resolves.
+pat:Purpose_ServiceProvision a pair:SystemContextOption ;
+    rdfs:label "Service provision"@en ;
+    pair:contextFacet facet:hasPurpose ;
+    pair:contextValue <https://w3id.org/dpv#ServiceProvision> .
+
+pat:Purpose_CustomerCare a pair:SystemContextOption ;
+    rdfs:label "Customer care"@en ;
+    pair:contextFacet facet:hasPurpose ;
+    pair:contextValue <https://w3id.org/dpv#CustomerCare> .
+
+pat:Purpose_Personalisation a pair:SystemContextOption ;
+    rdfs:label "Personalisation"@en ;
+    pair:contextFacet facet:hasPurpose ;
+    pair:contextValue <https://w3id.org/dpv#Personalisation> .
+
+pat:Purpose_FraudPreventionAndDetection a pair:SystemContextOption ;
+    rdfs:label "Fraud prevention and detection"@en ;
+    pair:contextFacet facet:hasPurpose ;
+    pair:contextValue <https://w3id.org/dpv#FraudPreventionAndDetection> .
+
+pat:Purpose_ResearchAndDevelopment a pair:SystemContextOption ;
+    rdfs:label "Research and development"@en ;
+    pair:contextFacet facet:hasPurpose ;
+    pair:contextValue <https://w3id.org/dpv#ResearchAndDevelopment> .
+
+pat:Purpose_Marketing a pair:SystemContextOption ;
+    rdfs:label "Marketing"@en ;
+    pair:contextFacet facet:hasPurpose ;
+    pair:contextValue <https://w3id.org/dpv#Marketing> .
+
 
 ## Registration
 

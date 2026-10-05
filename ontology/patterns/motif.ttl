@@ -23,9 +23,6 @@
                 <http://w3id.org/airiskkg/pair-ai#> .
 
 
-# Design pattern citations: what pair:derivedFrom points at, so the m:n relation
-# is a traversal. Citations only - a description here would model the pattern.
-
 pat:Cite_DirectPrompting a pair:DesignPatternCitation ;
     skos:prefLabel "Direct Prompting"@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
@@ -156,15 +153,7 @@ pat:Cite_AgentAdapter a pair:DesignPatternCitation ;
 
 
 # Motif 0: Information Retrieval
-#
-# The general shape: a retrieval step reads a query and a knowledge source and
-# produces retrieved context. What the source is - vector store, keyword index,
-# knowledge graph, relational store, API - is not part of the shape.
-#
-# Vector-based IR below is its specialization, and both match a vector system:
-# motifs nest here by design. Before this existed, the vector motif was the only
-# retrieval motif, so retrieval from a knowledge graph matched nothing and
-# simple_graph_rag had to call its Event KG a vector store to be assessable.
+
 pat:InformationRetrievalMotif
     a pair:GraphMotif ;
     rdfs:label "Information Retrieval Motif"@en ;
@@ -316,7 +305,7 @@ pat:SynchronousPredictionMotif
         pat:SyncPred_PredictionUsesRequestEdge ,
         pat:SyncPred_PredictionUsesModelEdge ,
         pat:SyncPred_PredictionProducesResultEdge ,
-        pat:SyncPred_PredictionInformsDownstreamEdge .
+        pat:SyncPred_DownstreamUsesResultEdge .
 
 pat:SyncPred_RequestNode
     a pair:PatternNode ;
@@ -368,12 +357,13 @@ pat:SyncPred_PredictionProducesResultEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:SyncPred_ResultNode .
 
-pat:SyncPred_PredictionInformsDownstreamEdge
+
+pat:SyncPred_DownstreamUsesResultEdge
     a pair:PatternEdge ;
-    rdfs:label "synchronous prediction informs downstream step"@en ;
-    pair:sourcePatternNode pat:SyncPred_PredictionStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:SyncPred_DownstreamStepNode .
+    rdfs:label "downstream step uses the prediction result"@en ;
+    pair:sourcePatternNode pat:SyncPred_DownstreamStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:SyncPred_ResultNode .
 
 pat:AsynchronousPredictionMotif
     a pair:GraphMotif ;
@@ -463,11 +453,13 @@ pat:BatchPredictionMotif
         pat:BatchPred_DatasetNode ,
         pat:BatchPred_ModelNode ,
         pat:BatchPred_JobNode ,
+        pat:BatchPred_JobRequestNode ,
         pat:BatchPred_ResultNode ;
     pair:hasPatternEdge
-        pat:BatchPred_SchedulerInformsJobEdge ,
         pat:BatchPred_JobUsesDatasetEdge ,
         pat:BatchPred_JobUsesModelEdge ,
+        pat:BatchPred_SchedulerProducesJobRequestEdge ,
+        pat:BatchPred_JobUsesJobRequestEdge ,
         pat:BatchPred_JobProducesResultEdge .
 
 pat:BatchPred_SchedulerNode
@@ -494,18 +486,17 @@ pat:BatchPred_JobNode
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
+pat:BatchPred_JobRequestNode
+    a pair:PatternNode ;
+    rdfs:label "Job request node"@en ;
+    pair:expectedClass beam:Data .
+
 pat:BatchPred_ResultNode
     a pair:PatternNode ;
     rdfs:label "Batch prediction result node"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionResult .
 
-pat:BatchPred_SchedulerInformsJobEdge
-    a pair:PatternEdge ;
-    rdfs:label "batch scheduler informs prediction job"@en ;
-    pair:sourcePatternNode pat:BatchPred_SchedulerNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:BatchPred_JobNode .
 
 pat:BatchPred_JobUsesDatasetEdge
     a pair:PatternEdge ;
@@ -528,6 +519,20 @@ pat:BatchPred_JobProducesResultEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:BatchPred_ResultNode .
 
+pat:BatchPred_JobUsesJobRequestEdge
+    a pair:PatternEdge ;
+    rdfs:label "the job reads the request that started it"@en ;
+    pair:sourcePatternNode pat:BatchPred_JobNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:BatchPred_JobRequestNode .
+
+pat:BatchPred_SchedulerProducesJobRequestEdge
+    a pair:PatternEdge ;
+    rdfs:label "scheduler issues the job request"@en ;
+    pair:sourcePatternNode pat:BatchPred_SchedulerNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:BatchPred_JobRequestNode .
+
 pat:PreprocessPredictionMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:PrepPred_MatchingOQP ;
@@ -545,7 +550,6 @@ pat:PreprocessPredictionMotif
     pair:hasPatternEdge
         pat:PrepPred_PreprocessUsesInputEdge ,
         pat:PrepPred_PreprocessProducesDataEdge ,
-        pat:PrepPred_PreprocessInformsPredictionEdge ,
         pat:PrepPred_PredictionUsesDataEdge ,
         pat:PrepPred_PredictionUsesModelEdge ,
         pat:PrepPred_PredictionProducesResultEdge .
@@ -600,12 +604,6 @@ pat:PrepPred_PreprocessProducesDataEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:PrepPred_PreprocessedDataNode .
 
-pat:PrepPred_PreprocessInformsPredictionEdge
-    a pair:PatternEdge ;
-    rdfs:label "preprocess informs prediction"@en ;
-    pair:sourcePatternNode pat:PrepPred_PreprocessStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:PrepPred_PredictionStepNode .
 
 pat:PrepPred_PredictionUsesDataEdge
     a pair:PatternEdge ;
@@ -647,7 +645,6 @@ pat:MultiStagePredictionMotif
         pat:MultiStage_FastUsesRequestEdge ,
         pat:MultiStage_FastUsesModelEdge ,
         pat:MultiStage_FastProducesResultEdge ,
-        pat:MultiStage_FastInformsSlowEdge ,
         pat:MultiStage_SlowUsesRequestEdge ,
         pat:MultiStage_SlowUsesModelEdge ,
         pat:MultiStage_SlowProducesResultEdge .
@@ -715,12 +712,6 @@ pat:MultiStage_FastProducesResultEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:MultiStage_QuickResultNode .
 
-pat:MultiStage_FastInformsSlowEdge
-    a pair:PatternEdge ;
-    rdfs:label "fast prediction informs slow prediction"@en ;
-    pair:sourcePatternNode pat:MultiStage_FastPredictionStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:MultiStage_SlowPredictionStepNode .
 
 pat:MultiStage_SlowUsesRequestEdge
     a pair:PatternEdge ;
@@ -757,19 +748,19 @@ pat:BatchTrainingMotif
         pat:BatchTrain_SchedulerNode ,
         pat:BatchTrain_DatasetNode ,
         pat:BatchTrain_PreprocessStepNode ,
+        pat:BatchTrain_JobRequestNode ,
         pat:BatchTrain_TrainingDataNode ,
         pat:BatchTrain_TrainingStepNode ,
         pat:BatchTrain_ModelArtifactNode ,
         pat:BatchTrain_EvaluationStepNode ,
         pat:BatchTrain_EvaluationResultNode ;
     pair:hasPatternEdge
-        pat:BatchTrain_SchedulerInformsPreprocessEdge ,
         pat:BatchTrain_PreprocessUsesDatasetEdge ,
+        pat:BatchTrain_JobUsesJobRequestEdge ,
+        pat:BatchTrain_SchedulerProducesJobRequestEdge ,
         pat:BatchTrain_PreprocessProducesTrainingDataEdge ,
-        pat:BatchTrain_PreprocessInformsTrainingEdge ,
         pat:BatchTrain_TrainingUsesDataEdge ,
         pat:BatchTrain_TrainingProducesModelEdge ,
-        pat:BatchTrain_TrainingInformsEvaluationEdge ,
         pat:BatchTrain_EvaluationUsesModelEdge ,
         pat:BatchTrain_EvaluationProducesResultEdge .
 
@@ -790,6 +781,11 @@ pat:BatchTrain_PreprocessStepNode
     rdfs:label "Batch training preprocessing step node"@en ;
     pair:expectedClass beam:Transform ;
     pair:expectedRole pair:PreprocessingStep .
+
+pat:BatchTrain_JobRequestNode
+    a pair:PatternNode ;
+    rdfs:label "Job request node"@en ;
+    pair:expectedClass beam:Data .
 
 pat:BatchTrain_TrainingDataNode
     a pair:PatternNode ;
@@ -821,12 +817,6 @@ pat:BatchTrain_EvaluationResultNode
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:EvaluationResult .
 
-pat:BatchTrain_SchedulerInformsPreprocessEdge
-    a pair:PatternEdge ;
-    rdfs:label "batch training scheduler informs preprocessing"@en ;
-    pair:sourcePatternNode pat:BatchTrain_SchedulerNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:BatchTrain_PreprocessStepNode .
 
 pat:BatchTrain_PreprocessUsesDatasetEdge
     a pair:PatternEdge ;
@@ -835,6 +825,20 @@ pat:BatchTrain_PreprocessUsesDatasetEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:BatchTrain_DatasetNode .
 
+pat:BatchTrain_JobUsesJobRequestEdge
+    a pair:PatternEdge ;
+    rdfs:label "the job reads the request that started it"@en ;
+    pair:sourcePatternNode pat:BatchTrain_PreprocessStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:BatchTrain_JobRequestNode .
+
+pat:BatchTrain_SchedulerProducesJobRequestEdge
+    a pair:PatternEdge ;
+    rdfs:label "scheduler issues the job request"@en ;
+    pair:sourcePatternNode pat:BatchTrain_SchedulerNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:BatchTrain_JobRequestNode .
+
 pat:BatchTrain_PreprocessProducesTrainingDataEdge
     a pair:PatternEdge ;
     rdfs:label "training preprocess produces prepared data"@en ;
@@ -842,12 +846,6 @@ pat:BatchTrain_PreprocessProducesTrainingDataEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:BatchTrain_TrainingDataNode .
 
-pat:BatchTrain_PreprocessInformsTrainingEdge
-    a pair:PatternEdge ;
-    rdfs:label "training preprocess informs training"@en ;
-    pair:sourcePatternNode pat:BatchTrain_PreprocessStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:BatchTrain_TrainingStepNode .
 
 pat:BatchTrain_TrainingUsesDataEdge
     a pair:PatternEdge ;
@@ -863,12 +861,6 @@ pat:BatchTrain_TrainingProducesModelEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:BatchTrain_ModelArtifactNode .
 
-pat:BatchTrain_TrainingInformsEvaluationEdge
-    a pair:PatternEdge ;
-    rdfs:label "training informs evaluation"@en ;
-    pair:sourcePatternNode pat:BatchTrain_TrainingStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:BatchTrain_EvaluationStepNode .
 
 pat:BatchTrain_EvaluationUsesModelEdge
     a pair:PatternEdge ;
@@ -902,10 +894,8 @@ pat:PipelineTrainingMotif
     pair:hasPatternEdge
         pat:PipeTrain_PreprocessUsesSourceEdge ,
         pat:PipeTrain_PreprocessProducesIntermediateEdge ,
-        pat:PipeTrain_PreprocessInformsTrainingEdge ,
         pat:PipeTrain_TrainingUsesIntermediateEdge ,
         pat:PipeTrain_TrainingProducesModelEdge ,
-        pat:PipeTrain_TrainingInformsEvaluationEdge ,
         pat:PipeTrain_EvaluationUsesModelEdge ,
         pat:PipeTrain_EvaluationProducesResultEdge .
 
@@ -965,12 +955,6 @@ pat:PipeTrain_PreprocessProducesIntermediateEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:PipeTrain_IntermediateDataNode .
 
-pat:PipeTrain_PreprocessInformsTrainingEdge
-    a pair:PatternEdge ;
-    rdfs:label "pipeline preprocess informs training"@en ;
-    pair:sourcePatternNode pat:PipeTrain_PreprocessJobNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:PipeTrain_TrainingJobNode .
 
 pat:PipeTrain_TrainingUsesIntermediateEdge
     a pair:PatternEdge ;
@@ -986,12 +970,6 @@ pat:PipeTrain_TrainingProducesModelEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:PipeTrain_ModelArtifactNode .
 
-pat:PipeTrain_TrainingInformsEvaluationEdge
-    a pair:PatternEdge ;
-    rdfs:label "pipeline training informs evaluation"@en ;
-    pair:sourcePatternNode pat:PipeTrain_TrainingJobNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:PipeTrain_EvaluationJobNode .
 
 pat:PipeTrain_EvaluationUsesModelEdge
     a pair:PatternEdge ;
@@ -1027,13 +1005,11 @@ pat:TrainThenServeMotif
         pat:TrainServe_PredictionStepNode ;
     pair:hasPatternEdge
         pat:TrainServe_TrainingProducesCandidateEdge ,
-        pat:TrainServe_TrainingInformsEvaluationEdge ,
         pat:TrainServe_EvaluationUsesCandidateEdge ,
         pat:TrainServe_EvaluationProducesApprovalEdge ,
         pat:TrainServe_ReleaseUsesApprovalEdge ,
         pat:TrainServe_ReleaseUsesCandidateEdge ,
         pat:TrainServe_ReleaseProducesDeployedModelEdge ,
-        pat:TrainServe_ReleaseInformsPredictionEdge ,
         pat:TrainServe_PredictionUsesModelEdge .
 
 pat:TrainServe_TrainingStepNode
@@ -1085,12 +1061,6 @@ pat:TrainServe_TrainingProducesCandidateEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:TrainServe_CandidateModelNode .
 
-pat:TrainServe_TrainingInformsEvaluationEdge
-    a pair:PatternEdge ;
-    rdfs:label "training informs evaluation"@en ;
-    pair:sourcePatternNode pat:TrainServe_TrainingStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:TrainServe_EvaluationStepNode .
 
 pat:TrainServe_EvaluationUsesCandidateEdge
     a pair:PatternEdge ;
@@ -1127,12 +1097,6 @@ pat:TrainServe_ReleaseProducesDeployedModelEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:TrainServe_DeployedModelNode .
 
-pat:TrainServe_ReleaseInformsPredictionEdge
-    a pair:PatternEdge ;
-    rdfs:label "release informs production prediction"@en ;
-    pair:sourcePatternNode pat:TrainServe_ReleaseStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:TrainServe_PredictionStepNode .
 
 pat:TrainServe_PredictionUsesModelEdge
     a pair:PatternEdge ;
@@ -1156,10 +1120,8 @@ pat:TrainingToServingMotif
         pat:TrainToServe_PredictionStepNode ;
     pair:hasPatternEdge
         pat:TrainToServe_TrainingProducesModelEdge ,
-        pat:TrainToServe_TrainingInformsDeploymentEdge ,
         pat:TrainToServe_DeploymentUsesModelEdge ,
         pat:TrainToServe_DeploymentProducesDeployedModelEdge ,
-        pat:TrainToServe_DeploymentInformsPredictionEdge ,
         pat:TrainToServe_PredictionUsesModelEdge .
 
 pat:TrainToServe_TrainingPipelineNode
@@ -1199,12 +1161,6 @@ pat:TrainToServe_TrainingProducesModelEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:TrainToServe_ModelArtifactNode .
 
-pat:TrainToServe_TrainingInformsDeploymentEdge
-    a pair:PatternEdge ;
-    rdfs:label "training pipeline informs deployment"@en ;
-    pair:sourcePatternNode pat:TrainToServe_TrainingPipelineNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:TrainToServe_AutoDeploymentNode .
 
 pat:TrainToServe_DeploymentUsesModelEdge
     a pair:PatternEdge ;
@@ -1220,12 +1176,6 @@ pat:TrainToServe_DeploymentProducesDeployedModelEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:TrainToServe_DeployedModelNode .
 
-pat:TrainToServe_DeploymentInformsPredictionEdge
-    a pair:PatternEdge ;
-    rdfs:label "automatic deployment informs prediction"@en ;
-    pair:sourcePatternNode pat:TrainToServe_AutoDeploymentNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:TrainToServe_PredictionStepNode .
 
 pat:TrainToServe_PredictionUsesModelEdge
     a pair:PatternEdge ;
@@ -1252,7 +1202,6 @@ pat:PredictionLoggingMotif
     pair:hasPatternEdge
         pat:PredLog_PredictionUsesRequestEdge ,
         pat:PredLog_PredictionProducesResultEdge ,
-        pat:PredLog_PredictionInformsLoggingEdge ,
         pat:PredLog_LoggingUsesRequestEdge ,
         pat:PredLog_LoggingUsesResultEdge ,
         pat:PredLog_LoggingProducesLogEdge .
@@ -1301,12 +1250,6 @@ pat:PredLog_PredictionProducesResultEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:PredLog_ResultNode .
 
-pat:PredLog_PredictionInformsLoggingEdge
-    a pair:PatternEdge ;
-    rdfs:label "prediction informs logging"@en ;
-    pair:sourcePatternNode pat:PredLog_PredictionStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:PredLog_LoggingStepNode .
 
 pat:PredLog_LoggingUsesRequestEdge
     a pair:PatternEdge ;
@@ -1408,7 +1351,6 @@ pat:ModelLoadMotif
         pat:ModelLoad_LoadUsesImageEdge ,
         pat:ModelLoad_LoadUsesModelArtifactEdge ,
         pat:ModelLoad_LoadProducesLoadedModelEdge ,
-        pat:ModelLoad_LoadInformsPredictionEdge ,
         pat:ModelLoad_PredictionUsesLoadedModelEdge .
 
 pat:ModelLoad_ServerImageNode
@@ -1462,12 +1404,6 @@ pat:ModelLoad_LoadProducesLoadedModelEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:ModelLoad_LoadedModelNode .
 
-pat:ModelLoad_LoadInformsPredictionEdge
-    a pair:PatternEdge ;
-    rdfs:label "model load informs prediction"@en ;
-    pair:sourcePatternNode pat:ModelLoad_LoadStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:ModelLoad_PredictionStepNode .
 
 pat:ModelLoad_PredictionUsesLoadedModelEdge
     a pair:PatternEdge ;
@@ -1489,14 +1425,15 @@ pat:ModelInImageMotif
         pat:ModelImage_ImageBuildStepNode ,
         pat:ModelImage_ServingImageNode ,
         pat:ModelImage_DeploymentStepNode ,
+        pat:ModelImage_DeployedModelNode ,
         pat:ModelImage_PredictionStepNode ;
     pair:hasPatternEdge
         pat:ModelImage_TrainingProducesModelEdge ,
-        pat:ModelImage_TrainingInformsImageBuildEdge ,
         pat:ModelImage_ImageBuildUsesModelEdge ,
         pat:ModelImage_ImageBuildProducesImageEdge ,
         pat:ModelImage_DeploymentUsesImageEdge ,
-        pat:ModelImage_DeploymentInformsPredictionEdge .
+        pat:ModelImage_PredictionUsesDeployedModelEdge ,
+        pat:ModelImage_DeploymentProducesDeployedModelEdge .
 
 pat:ModelImage_TrainingStepNode
     a pair:PatternNode ;
@@ -1522,6 +1459,12 @@ pat:ModelImage_ServingImageNode
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:ServingImage .
 
+pat:ModelImage_DeployedModelNode
+    a pair:PatternNode ;
+    rdfs:label "Deployed model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:LoadedModel .
+
 pat:ModelImage_DeploymentStepNode
     a pair:PatternNode ;
     rdfs:label "Model-in-image deployment step node"@en ;
@@ -1541,12 +1484,6 @@ pat:ModelImage_TrainingProducesModelEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:ModelImage_ModelArtifactNode .
 
-pat:ModelImage_TrainingInformsImageBuildEdge
-    a pair:PatternEdge ;
-    rdfs:label "training informs image build"@en ;
-    pair:sourcePatternNode pat:ModelImage_TrainingStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:ModelImage_ImageBuildStepNode .
 
 pat:ModelImage_ImageBuildUsesModelEdge
     a pair:PatternEdge ;
@@ -1569,12 +1506,20 @@ pat:ModelImage_DeploymentUsesImageEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:ModelImage_ServingImageNode .
 
-pat:ModelImage_DeploymentInformsPredictionEdge
+pat:ModelImage_PredictionUsesDeployedModelEdge
     a pair:PatternEdge ;
-    rdfs:label "deployment informs prediction"@en ;
+    rdfs:label "prediction uses the deployed model"@en ;
+    pair:sourcePatternNode pat:ModelImage_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ModelImage_DeployedModelNode .
+
+pat:ModelImage_DeploymentProducesDeployedModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "deployment produces the deployed model"@en ;
     pair:sourcePatternNode pat:ModelImage_DeploymentStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:ModelImage_PredictionStepNode .
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ModelImage_DeployedModelNode .
+
 
 # GenAI product motifs 
 
@@ -1765,13 +1710,16 @@ pat:EmbeddingsMotif
         pat:Embedding_DocumentChunkNode ,
         pat:Embedding_GenerationStepNode ,
         pat:Embedding_VectorNode ,
+        pat:Embedding_IndexingStepNode ,
         pat:Embedding_VectorIndexNode ;
     pair:hasPatternEdge
         pat:Embedding_ChunkingUsesSourceEdge ,
         pat:Embedding_ChunkingProducesChunkEdge ,
         pat:Embedding_GenerationUsesChunkEdge ,
         pat:Embedding_GenerationProducesVectorEdge ,
-        pat:Embedding_VectorIndexUsesVectorEdge ;
+        pat:Embedding_IndexingUsesChunkEdge ,
+        pat:Embedding_IndexingProducesIndexEdge ,
+        pat:Embedding_IndexingUsesVectorEdge ;
     pair:implementedBy pat:Embeddings_MatchingOQP .
 
 pat:Embedding_SourceDocumentNode
@@ -1811,6 +1759,11 @@ pat:Embedding_VectorIndexNode
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:VectorStore .
 
+pat:Embedding_IndexingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Vector indexing step node"@en ;
+    pair:expectedClass beam:Process .
+
 pat:Embedding_ChunkingUsesSourceEdge
     a pair:PatternEdge ;
     rdfs:label "chunking uses source document"@en ;
@@ -1839,12 +1792,26 @@ pat:Embedding_GenerationProducesVectorEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:Embedding_VectorNode .
 
-pat:Embedding_VectorIndexUsesVectorEdge
+pat:Embedding_IndexingUsesVectorEdge
     a pair:PatternEdge ;
-    rdfs:label "vector index uses embedding vector"@en ;
-    pair:sourcePatternNode pat:Embedding_VectorIndexNode ;
+    rdfs:label "indexing step uses the embedding vector"@en ;
+    pair:sourcePatternNode pat:Embedding_IndexingStepNode ;
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:Embedding_VectorNode .
+
+pat:Embedding_IndexingProducesIndexEdge
+    a pair:PatternEdge ;
+    rdfs:label "indexing step produces the vector index"@en ;
+    pair:sourcePatternNode pat:Embedding_IndexingStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Embedding_VectorIndexNode .
+
+pat:Embedding_IndexingUsesChunkEdge
+    a pair:PatternEdge ;
+    rdfs:label "indexing step uses the document chunk"@en ;
+    pair:sourcePatternNode pat:Embedding_IndexingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Embedding_DocumentChunkNode .
 
 pat:RetrievalAugmentedGenerationMotif
     a pair:GraphMotif ;
@@ -2007,14 +1974,18 @@ pat:HybridRetrieverMotif
         pat:Hybrid_VectorSearchNode ,
         pat:Hybrid_KeywordSearchNode ,
         pat:Hybrid_AggregationNode ,
+        pat:Hybrid_VectorResultsNode ,
+        pat:Hybrid_KeywordResultsNode ,
         pat:Hybrid_CandidateSetNode ;
     pair:hasPatternEdge
         pat:Hybrid_VectorSearchUsesQueryEdge ,
         pat:Hybrid_VectorSearchUsesIndexEdge ,
         pat:Hybrid_KeywordSearchUsesQueryEdge ,
         pat:Hybrid_KeywordSearchUsesIndexEdge ,
-        pat:Hybrid_VectorSearchInformsAggregationEdge ,
-        pat:Hybrid_KeywordSearchInformsAggregationEdge ,
+        pat:Hybrid_VectorSearchProducesResultsEdge ,
+        pat:Hybrid_KeywordSearchProducesResultsEdge ,
+        pat:Hybrid_AggregationUsesVectorResultsEdge ,
+        pat:Hybrid_AggregationUsesKeywordResultsEdge ,
         pat:Hybrid_AggregationProducesCandidateSetEdge .
 
 pat:Hybrid_QueryNode
@@ -2059,6 +2030,18 @@ pat:Hybrid_CandidateSetNode
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedCandidateSet .
 
+pat:Hybrid_VectorResultsNode
+    a pair:PatternNode ;
+    rdfs:label "Hybrid vector search result set node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedCandidateSet .
+
+pat:Hybrid_KeywordResultsNode
+    a pair:PatternNode ;
+    rdfs:label "Hybrid keyword search result set node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedCandidateSet .
+
 pat:Hybrid_VectorSearchUsesQueryEdge
     a pair:PatternEdge ;
     rdfs:label "vector search uses query"@en ;
@@ -2087,19 +2070,7 @@ pat:Hybrid_KeywordSearchUsesIndexEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:Hybrid_KeywordIndexNode .
 
-pat:Hybrid_VectorSearchInformsAggregationEdge
-    a pair:PatternEdge ;
-    rdfs:label "vector search informs aggregation"@en ;
-    pair:sourcePatternNode pat:Hybrid_VectorSearchNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:Hybrid_AggregationNode .
 
-pat:Hybrid_KeywordSearchInformsAggregationEdge
-    a pair:PatternEdge ;
-    rdfs:label "keyword search informs aggregation"@en ;
-    pair:sourcePatternNode pat:Hybrid_KeywordSearchNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:Hybrid_AggregationNode .
 
 pat:Hybrid_AggregationProducesCandidateSetEdge
     a pair:PatternEdge ;
@@ -2107,6 +2078,34 @@ pat:Hybrid_AggregationProducesCandidateSetEdge
     pair:sourcePatternNode pat:Hybrid_AggregationNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:Hybrid_CandidateSetNode .
+
+pat:Hybrid_AggregationUsesKeywordResultsEdge
+    a pair:PatternEdge ;
+    rdfs:label "aggregation uses the keyword result set"@en ;
+    pair:sourcePatternNode pat:Hybrid_AggregationNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Hybrid_KeywordResultsNode .
+
+pat:Hybrid_AggregationUsesVectorResultsEdge
+    a pair:PatternEdge ;
+    rdfs:label "aggregation uses the vector result set"@en ;
+    pair:sourcePatternNode pat:Hybrid_AggregationNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Hybrid_VectorResultsNode .
+
+pat:Hybrid_KeywordSearchProducesResultsEdge
+    a pair:PatternEdge ;
+    rdfs:label "keyword search produces its result set"@en ;
+    pair:sourcePatternNode pat:Hybrid_KeywordSearchNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Hybrid_KeywordResultsNode .
+
+pat:Hybrid_VectorSearchProducesResultsEdge
+    a pair:PatternEdge ;
+    rdfs:label "vector search produces its result set"@en ;
+    pair:sourcePatternNode pat:Hybrid_VectorSearchNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Hybrid_VectorResultsNode .
 
 pat:QueryRewritingMotif
     a pair:GraphMotif ;
@@ -2275,10 +2274,12 @@ pat:InputScreeningMotif
     pair:hasPatternNode
         pat:InputScreening_UserInputNode ,
         pat:InputScreening_ScreeningStepNode ,
+        pat:InputScreening_DecisionNode ,
         pat:InputScreening_GenerationStepNode ;
     pair:hasPatternEdge
         pat:InputScreening_ScreeningUsesInputEdge ,
-        pat:InputScreening_ScreeningInformsGenerationEdge ;
+        pat:InputScreening_ScreeningProducesDecisionEdge ,
+        pat:InputScreening_GenerationUsesDecisionEdge ;
     pair:implementedBy pat:InputScreening_MatchingOQP .
 
 pat:InputScreening_UserInputNode
@@ -2293,6 +2294,12 @@ pat:InputScreening_ScreeningStepNode
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:InputGuardrailStep .
 
+pat:InputScreening_DecisionNode
+    a pair:PatternNode ;
+    rdfs:label "Input screening decision node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:GuardrailDecision .
+
 pat:InputScreening_GenerationStepNode
     a pair:PatternNode ;
     rdfs:label "Protected generation step node"@en ;
@@ -2306,12 +2313,20 @@ pat:InputScreening_ScreeningUsesInputEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:InputScreening_UserInputNode .
 
-pat:InputScreening_ScreeningInformsGenerationEdge
+
+pat:InputScreening_ScreeningProducesDecisionEdge
     a pair:PatternEdge ;
-    rdfs:label "screening step informs generation"@en ;
+    rdfs:label "input screening step produces a decision"@en ;
     pair:sourcePatternNode pat:InputScreening_ScreeningStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:InputScreening_GenerationStepNode .
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:InputScreening_DecisionNode .
+
+pat:InputScreening_GenerationUsesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation uses the input screening decision"@en ;
+    pair:sourcePatternNode pat:InputScreening_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:InputScreening_DecisionNode .
 
 
 pat:OutputScreeningMotif
@@ -2370,7 +2385,7 @@ pat:GuardrailsMotif
     pair:implementedBy pat:Guardrails_MatchingOQP ;
     rdfs:label "Guardrails Motif"@en ;
     dct:description "GenAI motif in which input and output guardrail steps screen or sanitize user prompts and generated responses around the primary LLM generation step."@en ;
-    rdfs:comment "Flow-agnostic: the guarded generation is anchored by the inform edges (input guardrail informs generation; generation informs output guardrail), so this motif matches whether the generation consumes the user prompt directly (Direct Prompting) or a prompt constructed from it (RAG, where generation uses a PromptTemplate). An earlier version also required the generation step to beam:use the raw user prompt, which excluded RAG+Guardrails compositions - removed."@en ;
+    rdfs:comment "Flow-agnostic: the guarded generation is anchored by the guardrail decision it consumes rather than by the user prompt, so it matches whether generation reads the prompt directly or a prompt built from it."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_Guardrails ,
         pat:Cite_MultimodalGuardrails ;
@@ -2386,10 +2401,9 @@ pat:GuardrailsMotif
     pair:hasPatternEdge
         pat:Guardrails_InputGuardrailUsesPromptEdge ,
         pat:Guardrails_InputGuardrailProducesDecisionEdge ,
-        pat:Guardrails_InputGuardrailInformsGenerationEdge ,
+        pat:Guardrails_GenerationUsesInputDecisionEdge ,
         pat:Guardrails_GenerationUsesLLMEdge ,
         pat:Guardrails_GenerationProducesRawResponseEdge ,
-        pat:Guardrails_GenerationInformsOutputGuardrailEdge ,
         pat:Guardrails_OutputGuardrailUsesRawResponseEdge ,
         pat:Guardrails_OutputGuardrailProducesSanitizedResponseEdge .
 
@@ -2455,12 +2469,13 @@ pat:Guardrails_InputGuardrailProducesDecisionEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:Guardrails_InputDecisionNode .
 
-pat:Guardrails_InputGuardrailInformsGenerationEdge
+pat:Guardrails_GenerationUsesInputDecisionEdge
     a pair:PatternEdge ;
-    rdfs:label "input guardrail informs generation"@en ;
-    pair:sourcePatternNode pat:Guardrails_InputGuardrailStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:Guardrails_GenerationStepNode .
+    rdfs:label "guarded generation uses the input guardrail decision"@en ;
+    pair:sourcePatternNode pat:Guardrails_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Guardrails_InputDecisionNode .
+
 
 pat:Guardrails_GenerationUsesLLMEdge
     a pair:PatternEdge ;
@@ -2476,12 +2491,6 @@ pat:Guardrails_GenerationProducesRawResponseEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:Guardrails_RawResponseNode .
 
-pat:Guardrails_GenerationInformsOutputGuardrailEdge
-    a pair:PatternEdge ;
-    rdfs:label "generation informs output guardrail"@en ;
-    pair:sourcePatternNode pat:Guardrails_GenerationStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:Guardrails_OutputGuardrailStepNode .
 
 pat:Guardrails_OutputGuardrailUsesRawResponseEdge
     a pair:PatternEdge ;
@@ -2515,7 +2524,6 @@ pat:FineTuningMotif
         pat:FineTune_TrainingUsesBaseModelEdge ,
         pat:FineTune_TrainingUsesDatasetEdge ,
         pat:FineTune_TrainingProducesModelEdge ,
-        pat:FineTune_TrainingInformsEvaluationEdge ,
         pat:FineTune_EvaluationUsesModelEdge ,
         pat:FineTune_EvaluationProducesScoreEdge .
 
@@ -2576,12 +2584,6 @@ pat:FineTune_TrainingProducesModelEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:FineTune_FineTunedModelNode .
 
-pat:FineTune_TrainingInformsEvaluationEdge
-    a pair:PatternEdge ;
-    rdfs:label "fine tuning informs evaluation"@en ;
-    pair:sourcePatternNode pat:FineTune_TrainingStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:FineTune_EvaluationStepNode .
 
 pat:FineTune_EvaluationUsesModelEdge
     a pair:PatternEdge ;
@@ -2615,6 +2617,7 @@ pat:ExtDep_ExternalResourceNode
     a pair:PatternNode ;
     rdfs:label "External resource node"@en ;
     rdfs:comment "Expected role is a disjunction the ODP vocabulary cannot express: subRoleOf* of pair:ExternalDependency, pair:PretrainedModel, pair:ModelArtifact, or pair:ServingImage (see match_external_dependency.rq)."@en ;
+    pair:expectedClass beam:Resource ;
     pair:expectedRole pair:ExternalDependency .
 
 pat:ExtDep_UsingStepNode
@@ -2641,9 +2644,11 @@ pat:ToolUsingAgentMotif
     pair:hasPatternNode
         pat:ToolAgent_PlanningStepNode ,
         pat:ToolAgent_ActionStepNode ,
+        pat:ToolAgent_PlanNode ,
         pat:ToolAgent_ActionResultNode ;
     pair:hasPatternEdge
-        pat:ToolAgent_PlanningInformsActionEdge ,
+        pat:ToolAgent_PlanningProducesPlanEdge ,
+        pat:ToolAgent_ActionUsesPlanEdge ,
         pat:ToolAgent_ActionProducesResultEdge ;
     pair:hasRiskPattern pat:ToolMisuseRiskPattern ,
                         pat:GoalHijackRiskPattern ;
@@ -2652,6 +2657,7 @@ pat:ToolUsingAgentMotif
 pat:ToolAgent_PlanningStepNode
     a pair:PatternNode ;
     rdfs:label "agent planning step node"@en ;
+    pair:expectedClass beam:Process ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:PlanningStep .
 
@@ -2666,12 +2672,11 @@ pat:ToolAgent_ActionResultNode
     rdfs:label "agent action result node"@en ;
     pair:expectedClass beam:Data .
 
-pat:ToolAgent_PlanningInformsActionEdge
-    a pair:PatternEdge ;
-    rdfs:label "planning informs action"@en ;
-    pair:sourcePatternNode pat:ToolAgent_PlanningStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:ToolAgent_ActionStepNode .
+pat:ToolAgent_PlanNode
+    a pair:PatternNode ;
+    rdfs:label "agent action plan node"@en ;
+    pair:expectedClass beam:Data .
+
 
 pat:ToolAgent_ActionProducesResultEdge
     a pair:PatternEdge ;
@@ -2679,6 +2684,20 @@ pat:ToolAgent_ActionProducesResultEdge
     pair:sourcePatternNode pat:ToolAgent_ActionStepNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:ToolAgent_ActionResultNode .
+
+pat:ToolAgent_PlanningProducesPlanEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning step produces the action plan"@en ;
+    pair:sourcePatternNode pat:ToolAgent_PlanningStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ToolAgent_PlanNode .
+
+pat:ToolAgent_ActionUsesPlanEdge
+    a pair:PatternEdge ;
+    rdfs:label "action step uses the action plan"@en ;
+    pair:sourcePatternNode pat:ToolAgent_ActionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ToolAgent_PlanNode .
 
 pat:AgentMemoryLoopMotif
     a pair:GraphMotif ;
@@ -2808,9 +2827,11 @@ pat:HumanOversightMotif
     pair:hasPatternNode
         pat:HumanOversight_ApprovalStepNode ,
         pat:HumanOversight_ActionStepNode ,
+        pat:HumanOversight_ApprovalNode ,
         pat:HumanOversight_ActionResultNode ;
     pair:hasPatternEdge
-        pat:HumanOversight_ApprovalInformsActionEdge ,
+        pat:HumanOversight_ApprovalProducesDecisionEdge ,
+        pat:HumanOversight_ActionUsesApprovalEdge ,
         pat:HumanOversight_ActionProducesResultEdge ;
     pair:implementedBy pat:HumanOversight_MatchingOQP .
 
@@ -2832,12 +2853,11 @@ pat:HumanOversight_ActionResultNode
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:ResourceRole .
 
-pat:HumanOversight_ApprovalInformsActionEdge
-    a pair:PatternEdge ;
-    rdfs:label "approval informs action"@en ;
-    pair:sourcePatternNode pat:HumanOversight_ApprovalStepNode ;
-    pair:patternPredicate beam:inform ;
-    pair:targetPatternNode pat:HumanOversight_ActionStepNode .
+pat:HumanOversight_ApprovalNode
+    a pair:PatternNode ;
+    rdfs:label "human approval node"@en ;
+    pair:expectedClass beam:Data .
+
 
 pat:HumanOversight_ActionProducesResultEdge
     a pair:PatternEdge ;
@@ -2845,6 +2865,20 @@ pat:HumanOversight_ActionProducesResultEdge
     pair:sourcePatternNode pat:HumanOversight_ActionStepNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:HumanOversight_ActionResultNode .
+
+pat:HumanOversight_ApprovalProducesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "approval step produces the approval"@en ;
+    pair:sourcePatternNode pat:HumanOversight_ApprovalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:HumanOversight_ApprovalNode .
+
+pat:HumanOversight_ActionUsesApprovalEdge
+    a pair:PatternEdge ;
+    rdfs:label "action step uses the approval"@en ;
+    pair:sourcePatternNode pat:HumanOversight_ActionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:HumanOversight_ApprovalNode .
 
 
 #################################################################
