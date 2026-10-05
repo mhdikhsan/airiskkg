@@ -22,9 +22,6 @@ function overviewDiagram() {
   return copy;
 }
 
-/* Unscoped on purpose: the reader may have scoped the canvas to one system,
-   and the overview answers for the whole process. Refetched per opening, so a
-   changed graph is never answered from the last one. */
 let architecture = null;
 
 async function architectureGraph() {
@@ -67,8 +64,6 @@ function memberList(system, nodes) {
       ]));
 }
 
-/* Mounted per opening: the renderer is a factory, so this panel and the risk
-   level each keep their own selection, pan and hand-placed boxes. */
 let openLenses = [];
 
 function lensPanel(box, row, activity, many) {
@@ -101,14 +96,11 @@ function lensPanel(box, row, activity, many) {
       }
     },
   });
-  /* Drawn now, not on the next frame: the frame is already in the document
-     with a height of its own, so there is nothing to wait for - and a canvas
-     that waits draws nothing at all where animation frames do not run. */
+ 
   canvas.renderLens(row.lens);
   requestAnimationFrame(() => canvas.fit());
 
-  /* Dragging the frame's own resize handle is only useful if the drawing
-     follows it. The first callback is the mount, which fit() already handled. */
+
   if (typeof ResizeObserver === "function") {
     let mounted = false;
     new ResizeObserver(() => {
@@ -119,7 +111,6 @@ function lensPanel(box, row, activity, many) {
   return frame;
 }
 
-/* Panning away is cheap; getting back should be too. */
 function fitLenses() {
   openLenses.forEach((canvas) => canvas.fit());
 }
@@ -145,8 +136,7 @@ async function showSystem(activity) {
     el("button", { class: "ov-sys-close", type: "button", onclick: closeSystem }, "Close"),
   ]));
 
-  /* The run placed on this one system: what it holds, what bears on it in the
-     work either side, and what the library raised about it. */
+
   if (rows.length) {
     rows.forEach((row) => {
       const many = rows.length > 1;
@@ -195,12 +185,6 @@ async function showSystem(activity) {
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-/* Concerns, drawn on the work they arise under.
- *
- * Attribution is not partition: one AI system carries several activities, so
- * the mark on each says what that system carries, and the count beside it is
- * the system's - never a per-activity total that would add up to more concerns
- * than the run produced. */
 function markRisk(svg, byProcess) {
   const marked = [];
   (byProcess.systems || []).forEach((system) => {
@@ -248,10 +232,6 @@ function domainChips(domains) {
       : [el("span", { class: "chip dim" }, "no risk domain linked")]);
 }
 
-/* One card per AI system the process calls, named once however many activities
- * it carries out. A system with nothing found is still listed: on a page shown
- * to stakeholders, "we looked and found nothing represented here" is half the
- * message. */
 function capabilityCard(system, onFocus) {
   const card = el("div", {
     class: "ov-cap" + (system.concerns.length ? "" : " clean"),

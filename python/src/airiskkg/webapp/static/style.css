@@ -242,6 +242,15 @@ label.btn { display: inline-flex; align-items: center; }
   color: var(--text);
 }
 
+/* A drag on a drawing pans it; it does not sweep a selection across the
+ * labels. Without this every pan painted the text it passed over blue, which
+ * then had to be clicked away. Scoped to the three drawings so the panels that
+ * float over them stay selectable - their text is there to be copied. */
+#canvas, #process-canvas, #risk-canvas {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .canvas-wrap { flex: 1 1 auto; position: relative; min-height: 0; overflow: hidden; touch-action: none; }
 #canvas { width: 100%; height: 100%; display: block; cursor: grab; }
 #canvas:active { cursor: grabbing; }
@@ -1305,6 +1314,12 @@ label.btn { display: inline-flex; align-items: center; }
   padding: 6px;
   z-index: 3;
 }
+/* The DPV term a classification writes, under its picker. */
+.nd-source { font-size: 10.5px; color: #9aa4b8; margin: -2px 0 6px; word-break: break-all; }
+
+/* What an artifact is joined to, under its own editor. */
+.nd-note { font-size: 11px; color: #6b7280; margin: 6px 0 2px; }
+
 .nd-check { display: flex; align-items: center; gap: 8px; }
 .nd-check input { width: auto; }
 .process-palette.hidden { display: none; }
@@ -2355,6 +2370,31 @@ body.editor-hidden .pane-head { display: none; }
   margin-top: 9px; padding-top: 8px; border-top: 1px dashed var(--border);
 }
 
+/* A folded row. The key doubles as the control, so the summary carries the
+   marker and the hint beside it rather than a second line of its own. */
+.concern-fold > summary {
+  display: flex; align-items: center; gap: 7px;
+  cursor: pointer; list-style: none; padding: 3px 0;
+  min-height: 18px;
+}
+.concern-fold > summary::-webkit-details-marker { display: none; }
+/* Drawn, not a glyph: the escape for a triangle has been mangled twice by the
+   tooling that writes this file, and a character also needs a font that has it. */
+.concern-fold > summary::before {
+  content: ""; flex: none;
+  width: 0; height: 0;
+  border-left: 4px solid var(--text-dim);
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  transition: transform .12s ease;
+  transform-origin: 2px 50%;
+}
+.concern-fold[open] > summary::before { transform: rotate(90deg); }
+.concern-fold > summary:hover::before { border-left-color: var(--text); }
+.concern-fold > summary .concern-key { margin-bottom: 0; }
+.concern-fold > summary:hover .concern-key { color: var(--text); }
+.concern-fold > .concern-val { margin-top: 4px; padding-left: 11px; }
+
 /* The rail folds: one section per box, and the reader chooses what is open. */
 .rail-section { border-bottom: 1px solid var(--border); }
 .rail-section > summary {
@@ -2365,7 +2405,13 @@ body.editor-hidden .pane-head { display: none; }
 }
 .rail-section > summary::-webkit-details-marker { display: none; }
 .rail-section > summary::before {
-  content: "b8"; font-size: 9px; transition: transform .12s ease;
+  content: ""; flex: none;
+  width: 0; height: 0;
+  border-left: 4px solid currentColor;
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  transition: transform .12s ease;
+  transform-origin: 2px 50%;
 }
 .rail-section[open] > summary::before { transform: rotate(90deg); }
 .rail-section > summary:hover { color: var(--accent); }
@@ -2487,6 +2533,17 @@ body.editor-hidden .pane-head { display: none; }
   text-align: center; padding: 40px; color: #5f6368; font-size: 13px;
 }
 .risk-canvas-empty.hidden { display: none; }
+/* Over a drawing rather than over nothing: a line along the top that takes no
+   presses, because the boxes underneath are what it is telling you to use. */
+.risk-canvas-empty.over-drawing {
+  inset: 0 0 auto 0; padding: 10px 0 0; pointer-events: none;
+  align-items: flex-start;
+}
+.risk-canvas-empty.over-drawing .empty-note {
+  padding: 4px 12px; border-radius: 999px;
+  background: rgba(255, 255, 255, .92); border: 1px solid var(--border);
+  font-size: 11.5px; color: var(--text-dim);
+}
 
 .rc-card { cursor: pointer; }
 .rc-card.dim { opacity: .45; }
@@ -2555,6 +2612,25 @@ body.editor-hidden .pane-head { display: none; }
   cursor: default; border-left: 1px solid var(--border); padding: 11px 12px;
 }
 
+/* Buttons are styled for the dark chrome: a dark ground with light text. The
+   trays redefine --text to dark, so the label went dark-on-dark and the primary
+   one pale-on-pale. Restated once, like the chips. */
+.risk-side .btn, .risk-tools .btn {
+  background: #ffffff;
+  color: var(--text);
+  border-color: var(--border);
+}
+.risk-side .btn:hover, .risk-tools .btn:hover { border-color: var(--accent); }
+/* Not --accent: that blue carries white text at 3.2:1, which is under the 4.5
+   a body-sized label needs. #2563c9 is the same hue at 5.7:1. */
+.risk-side .btn.primary, .risk-tools .btn.primary {
+  background: #2563c9;
+  color: #ffffff;
+  border-color: #2563c9;
+}
+.risk-side .btn.primary:hover, .risk-tools .btn.primary:hover { background: #1f57b5; }
+.risk-side .btn:disabled, .risk-tools .btn:disabled { opacity: .45; }
+
 /* Chips are styled for the dark finding list. In the light trays they have to
    be read, so the base is restated here rather than in ten variants. */
 .risk-side .chip {
@@ -2567,8 +2643,13 @@ body.editor-hidden .pane-head { display: none; }
    thing on the panel and the least read. */
 .why-list { margin: 0; padding-left: 15px; }
 .why-list li { font-size: 11.5px; line-height: 1.45; margin-bottom: 2px; }
-.why-more { margin-top: 3px; }
-.why-more > summary { font-size: 11px; color: var(--text-dim); cursor: pointer; }
+
+/* Which of the chain is written and which is not, at a glance. */
+.chain-has, .chain-missing {
+  display: inline-block; margin-right: 10px; font-size: 11.5px;
+}
+.chain-has { color: var(--good); }
+.chain-missing { color: var(--text-dim); }
 
 /* A concern named under the system or part it lands in, and a way back to it. */
 .frame-risk {
@@ -2731,3 +2812,108 @@ body.editor-hidden .pane-head { display: none; }
 .ov-sys-canvas svg:active { cursor: grabbing; }
 .ov-sys-detail:not(:empty) { padding: 6px 2px; }
 .ov-sys-note.dim { color: var(--text-dim); font-style: italic; }
+
+/* Restacking a band. The strip is the handle, so it says so before the press;
+   the line is where the band would land if the pointer were released now. */
+#process-canvas .pc-pool-strip,
+#process-canvas .pc-lane-strip,
+#process-canvas .pc-pool-label,
+#process-canvas .pc-lane-label { cursor: grab; }
+#process-canvas.dragging-band { cursor: grabbing; }
+#process-canvas.dragging-band .pc-pool-strip,
+#process-canvas.dragging-band .pc-lane-strip,
+#process-canvas.dragging-band .pc-pool-label,
+#process-canvas.dragging-band .pc-lane-label { cursor: grabbing; }
+.pc-band-drop {
+  stroke: var(--accent, #2563c9);
+  stroke-width: 3;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* Which of the same-named concerns this one is. Beside the type chip, never on
+   it: the chip is the notation's type label. */
+.rc-where { font-size: 9px; fill: var(--text-dim); }
+
+/* ---- one control scale ----------------------------------------------------
+   Three tiers, one height. A row mixing them reads as a row rather than as
+   three things that happened to land together:
+     .btn.small.primary  the committing action
+     .btn.small          a secondary action
+     .chip.clickable     a quiet inline action, in a row of metadata
+   A destructive one takes .danger in whichever tier it sits.                 */
+:root { --control-h: 26px; --control-r: 6px; }
+
+.btn.small,
+button.chip.clickable {
+  box-sizing: border-box;
+  min-height: var(--control-h);
+  border-radius: var(--control-r);
+  font-size: 12px;
+  line-height: 1.25;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* The quiet tier. It was a .chip with a click handler and no rule of its own,
+   so it carried chip padding and a pill radius into rows of real buttons. */
+button.chip.clickable {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+button.chip.clickable:hover {
+  background: var(--bg-editor);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+button.chip.clickable:active { transform: translateY(0.5px); }
+
+/* Destructive reads as destructive wherever it sits, and never shouts: an
+   outline until the pointer is on it. */
+button.chip.clickable.danger,
+.btn.small.danger {
+  color: #b3261e;
+  border-color: #e3b4b0;
+  background: transparent;
+  margin-top: 0;
+}
+button.chip.clickable.danger:hover,
+.btn.small.danger:hover {
+  background: #fdeceb;
+  border-color: #b3261e;
+  color: #8c1d18;
+}
+
+/* One focus ring for everything a keyboard can reach. */
+.btn:focus-visible,
+button.chip.clickable:focus-visible,
+.scope-input:focus-visible,
+.scope-select:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--control-r);
+}
+
+/* ---- the rail holds its width --------------------------------------------
+   A fixed 320px body inside a narrower rail is what put a horizontal scrollbar
+   under the whole panel. */
+.scope-add-body { width: auto; max-width: 100%; box-sizing: border-box; }
+.scope-add > summary {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 0; min-height: var(--control-h);
+}
+.rail-detail, .rail-detail * { min-width: 0; }
+.rail-detail .scope-input,
+.rail-detail .scope-select { max-width: 100%; box-sizing: border-box; }
+.rail-detail .concern-val { overflow-wrap: anywhere; }
+
+/* A row of actions wraps rather than widening the rail. */
+.concern-row.concern-triage .concern-val { gap: 6px; row-gap: 6px; }

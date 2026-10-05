@@ -1,25 +1,6 @@
-/* The BEAM risk notation, drawn.
- *
- * The architecture flow along the bottom, and above it the AIRO chain BEAM
- * declares - Risk Source -> Risk -> Consequence -> Impact, with Risk Controls
- * hanging off the risk they modify. A risk box sits above the elements it
- * concerns, because that adjacency is the whole point of the notation: a
- * reader should not have to hold the graph in their head to see where a risk
- * lands.
- *
- * Bands are rows, top to bottom. Horizontal position is inherited: a risk
- * takes the average x of what it attaches to, and everything on the chain
- * takes the average x of the risks it reaches. */
-
-/* A system is its own band, below the risks that concern it and above the parts
-   it holds. It used to sit in the Context band, which read as though the four
-   architectures of the tariff graph were four statements of scope. */
 const BAND_ORDER = ["business", "impact", "consequence", "context",
                     "risk", "source", "control", "system"];
 
-/* Which of the three layers a band belongs to, so each can be turned off. The
-   Context box is the assessment's own frame rather than a piece of the design,
-   so it travels with the risk layer; the architecture it frames does not. */
 const LAYER_OF_BAND = {
   business: "business",
   system: "architecture",
@@ -75,34 +56,16 @@ const PAD = 40;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-/* One renderer, mounted more than once.
- *
- * Everything below is per-mount state - what is selected, where the reader has
- * dragged a box, the pan and zoom - so a module-level copy would mean the
- * overview and the risk level fighting over one selection. A widget in `lib/`
- * that can exist only once is the anomaly; this is the fix.
- */
 export function createRiskCanvas() {
   let root = null;
   let svg = null;
-  /* The pan surface is the container, not the <svg>: an SVG root only hit-tests
-     where something is painted, so a press on empty diagram never reached it.
-     The architecture canvas binds to its wrap for the same reason. */
   let surface = null;
   let onSelect = null;
-  /* Unfolding is the panel's state, not the canvas's - it survives a re-run and
-     belongs beside the layer toggles. The canvas only reports the press and
-     reads back what it was handed. */
   let onUnfold = null;
   let currentExpanded = new Set();
   let view = { x: 0, y: 0, k: 1 };
-  /* Where a reader has put a box by hand. View-only: the notation is generated,
-     so moving a card must never write anything into the graph. Keyed by node id,
-     which is stable across a re-run, so a layout survives re-assessment. */
   let manualPositions = new Map();
   let selected = null;
-  /* A line somebody drew, picked so it can be taken back. Exclusive with the
-     card selection: a rail showing both would not say which one a press acts on. */
   let pickedLink = null;
   let lastDraw = null;
 
@@ -131,9 +94,6 @@ export function createRiskCanvas() {
   }
 
   // ---- layout ----
-
-  /* Longest path from a source, the same shape the architecture canvas uses:
-     flow reads left to right and a step never sits left of what feeds it. */
   function layoutFlow(nodes, edges) {
     const ids = new Set(nodes.map((n) => n.id));
     const flow = edges.filter((e) => ids.has(e.source) && ids.has(e.target));
@@ -170,15 +130,11 @@ export function createRiskCanvas() {
     return positions;
   }
 
-  /* A risk source carries the reason it is one - "carries Sensitive
-     Information", "enters the path here" - and that reason is the traceability
-     from a risk back to what gives rise to it. It belongs on the card. */
+
   const showsBody = (entry) =>
     String(entry.band || "").startsWith("lens-") || entry.band === "source";
 
-  /* In the notation, title only: a card names the thing and the detail panel
-     explains it, so the same paragraph on forty boxes is read by nobody. The
-     lens is a handful of cards where the body says why each one is there. */
+
   function cardHeight(entry) {
     const titleLines = wrap(entry.title, CARD_W - 20, 12).length;
     const bodyLines = entry.body && showsBody(entry)
@@ -186,8 +142,7 @@ export function createRiskCanvas() {
     return Math.max(CARD_MIN_H, (bodyLines ? 20 : 14) + titleLines * 15 + bodyLines * 13);
   }
 
-  /* Spread a band so nothing overlaps, keeping the order the inherited x gave
-     it - a card that drifts away from what it points at stops being adjacent. */
+ 
   function spread(entries) {
     entries.sort((a, b) => a.x - b.x || a.id.localeCompare(b.id));
     let cursor = -Infinity;
@@ -197,15 +152,7 @@ export function createRiskCanvas() {
     }
   }
 
-  /* One risk at a time, one layer at a time, and one architecture unfolded at a
-   * time.
-   *
-   * The risk is the anchor. Opening on every element of every architecture made
-   * the notation a wiring diagram with risks stuck to it, so a system arrives
-   * folded: its parts are left out and what a risk attaches to inside it is
-   * drawn to the system instead. Unfolding one puts its parts back and the
-   * lines land where they were always aimed. Filtering happens before layout,
-   * so what is folded away takes no space. */
+
   function narrow(diagram, architecture, options) {
     const layers = options.layers || {};
     const on = (layer) => layers[layer] !== false;
@@ -236,8 +183,7 @@ export function createRiskCanvas() {
       for (const member of system.members || []) ownerOf.set(member, system.id);
     }
 
-    /* An element no system claims has no box to fold it into, so folding would
-       put it out of reach altogether. */
+   
     let flowNodes = on("architecture")
       ? (architecture.nodes || []).filter((n) => {
         const owner = ownerOf.get(n.id);
@@ -247,6 +193,9 @@ export function createRiskCanvas() {
       : [];
     const flowIds = new Set(flowNodes.map((n) => n.id));
 
+    const nameOf = new Map();
+    for (const node of architecture.nodes || []) nameOf.set(node.id, node.label || node.id);
+
     const links = [];
     const seen = new Set();
     const keep = (link) => {
@@ -255,17 +204,40 @@ export function createRiskCanvas() {
       seen.add(key);
       links.push(link);
     };
+
+    /* Every line into a system lands on its band, folded or not, and several
+       land on the same spot. Drawn one per evidence element they were three
+       quarters of the ink on the diagram and all of it said "where", not
+       "what": a concern cites three to eight elements, so nine concerns drew
+       seventy-four lines. They merge into one line that names what it stands
+       for - deduplicating instead would report one attachment where the
+       assessment found eight.
+
+       The exception is the concern the reader picked. Unfolding a system is
+       how you ask which element exactly, and a merged line stops at the band,
+       so the selected concern keeps its own lines to the boxes it cites. */
+    const rolled = new Map();
     for (const link of diagram.links) {
       if (!drawn.has(link.source)) continue;
-      const there = drawn.has(link.target) || flowIds.has(link.target);
-      /* Containment is drawn as a frame around the architecture, so the line
-         per part is not needed - and at six parts it was most of the diagram. */
       if (link.contains) continue;
-      if (there) { keep(link); continue; }
       const owner = ownerOf.get(link.target);
-      if (owner && drawn.has(owner)) {
-        keep({ ...link, target: owner, label: link.label || "concerns", rolledUp: true });
+      const asked = selected && (link.source === selected || link.target === selected);
+      const there = drawn.has(link.target) || (flowIds.has(link.target) && asked);
+      if (there) { keep(link); continue; }
+      if (!owner || !drawn.has(owner)) continue;
+      const key = `${link.source}|${owner}|${link.kind}`;
+      if (!rolled.has(key)) {
+        rolled.set(key, { link: { ...link, target: owner, rolledUp: true }, of: [] });
       }
+      rolled.get(key).of.push(nameOf.get(link.target) || link.target);
+    }
+    for (const { link, of } of rolled.values()) {
+      const names = [...new Set(of)].sort();
+      keep({
+        ...link,
+        rolledUpOf: names,
+        label: names.length > 2 ? `${names.length} elements` : names.join(", "),
+      });
     }
 
     return {
@@ -279,27 +251,10 @@ export function createRiskCanvas() {
     };
   }
 
-  /* Grouped by architecture, then layered.
-   *
-   * Two things made this a hairball at six elements. Every band was one row
-   * across the whole diagram, so a risk in one architecture sat beside a risk
-   * in another and the line between each one and its own elements crossed
-   * everything in between. And containment was drawn as a line per part, which
-   * is the densest possible way to say what a frame says for free.
-   *
-   * So each architecture gets a column and a frame - the way the architecture
-   * canvas already frames a system - and the order inside each band is chosen
-   * by the median of what each box joins. That ordering step is the middle
-   * phase of Sugiyama layered drawing, and it is what takes the crossings out;
-   * before it the order was whatever the payload happened to list. Bands stay
-   * global rows, so the notation still reads top to bottom.
-   */
+
   const GROUP_PAD = 20;
   const GROUP_GAP = 52;
   const PART_COLS = 3;
-  /* A band inside one architecture wraps rather than running on. Ten concerns
-     on one system drew a row wider than everything else put together, and a
-     group that wide stops being a group a reader can take in. */
   const BAND_COLS = 4;
 
   function median(values) {
@@ -309,9 +264,7 @@ export function createRiskCanvas() {
     return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
-  /* Which architecture each box belongs to. Most say so themselves; the rest -
-     a consequence, an impact, a control - take the group of whatever they join,
-     which is the only thing that puts them near what they are about. */
+
   function groupsOf(diagram, ownerOf) {
     const of = new Map();
     for (const entry of diagram.nodes) {
@@ -362,8 +315,7 @@ export function createRiskCanvas() {
       }
       return byGroup.get(key);
     };
-    // A column per architecture first, so the columns read in the order the
-    // system band gives them rather than in whatever order a risk arrived.
+  
     for (const entry of diagram.nodes) if (entry.isSystem) slot(entry.id);
     for (const entry of diagram.nodes) {
       slot(group.get(entry.id) || SHARED_GROUP).bands.get(entry.band).push({ ...entry });
@@ -404,8 +356,7 @@ export function createRiskCanvas() {
       });
     };
 
-    // Down the bands, then back up: one sweep only orders against what happened
-    // to be placed first, which on the top band is nothing at all.
+  
     for (let sweep = 0; sweep < 2; sweep += 1) {
       const order = sweep ? [...BAND_ORDER].reverse() : BAND_ORDER;
       for (const band of order) {
@@ -427,9 +378,7 @@ export function createRiskCanvas() {
       }
     }
 
-    /* Bands are global rows, so the notation still reads top to bottom - a
-       band that wrapped inside one architecture is that many lines tall for
-       every architecture, which is what keeps the rows aligned across them. */
+
     let y = 0;
     for (const band of BAND_ORDER) {
       const rows = columns.flatMap((column) => column.bands.get(band));
@@ -442,8 +391,7 @@ export function createRiskCanvas() {
 
     const positions = new Map();
     for (const column of columns) {
-      // Flow order across, then wrapped: the parts of one architecture are a
-      // block under it, not a row stretching past everything else.
+  
       column.parts.sort((a, b) => a.x - b.x || a.id.localeCompare(b.id));
       const across = Math.min(Math.max(column.parts.length, 1), PART_COLS);
       const span = across * FLOW_W + (across - 1) * FLOW_GAP_X;
@@ -460,8 +408,7 @@ export function createRiskCanvas() {
       }
     }
 
-    /* The frames, drawn behind everything. Containment is the frame rather than
-       a line per part, which is what lets the parts be shown at all. */
+  
     const frames = [];
     columns.forEach((column) => {
       if (column.key === SHARED_GROUP || !byId.has(column.key)) return;
@@ -482,7 +429,7 @@ export function createRiskCanvas() {
       });
     });
 
-    // Last word to the reader: a box they moved stays where they put it.
+  
     for (const [id, at] of manualPositions) {
       const current = positions.get(id);
       if (current) positions.set(id, { ...current, x: at.x, y: at.y });
@@ -497,9 +444,7 @@ export function createRiskCanvas() {
   const LENS_GAP_Y = 18;
   const LENS_X = { proc: 0, centre: 330, arch: 680 };
 
-  /* Topological order over the flow among the architecture points, so the right
-     column reads as a trail - where the content enters, then what it passes
-     through - rather than alphabetically. */
+ 
   function flowOrder(points, flow) {
     const ids = points.map((p) => p.id);
     const depth = new Map(ids.map((id) => [id, 0]));
@@ -572,9 +517,6 @@ export function createRiskCanvas() {
     const architecture = flowOrder(lens.architecture, lens.flow).map((point) => lensCard(point.id,
       "lens-arch", point.label, point.why, LENS_X.arch, { chip: LENS_CHIP[point.kind] || point.kind }));
     for (const point of process) links.push({ source: riskId, target: point.id, kind: "lens-side" });
-    /* Which concerns a process point bears on is worked out on the server, from
-       refinedBy and the derivation trail. Without it the process column was two
-       hops from every concern and never lit up when one was picked. */
     for (const point of lens.process) {
       for (const key of point.concerns || []) {
         links.push({ source: point.id, target: "about:" + key, kind: "context" });
@@ -601,8 +543,7 @@ export function createRiskCanvas() {
     return { positions, links, headers };
   }
 
-  /* Across columns a connector runs side to side; down a column it hooks past
-     the cards. A vertical curve between two columns crosses everything between. */
+ 
   function lensPath(from, to) {
     if (Math.abs(from.x - to.x) < 20) {
       // Out past the right edge, further for a longer hop: several links leaving
@@ -637,6 +578,15 @@ export function createRiskCanvas() {
     // The type label the notation puts above every box.
     group.appendChild(make("text", { x: 2, y: -5, class: "rc-chip", fill: style.stroke }, chipText));
 
+    /* Where this one is, when another box carries the same name. Opposite the
+       type chip and above the box, so the notation keeps its type label and the
+       card keeps its height. */
+    if (entry.where) {
+      group.appendChild(make("text", {
+        x: entry.w - 2, y: -5, class: "rc-where", "text-anchor": "end",
+      }, "at " + (entry.where.length > 22 ? entry.where.slice(0, 21) + "…" : entry.where)));
+    }
+
     group.appendChild(make("rect", {
       class: "rc-box",
       width: entry.w, height: entry.h, rx: 3,
@@ -658,8 +608,7 @@ export function createRiskCanvas() {
       });
     }
 
-    /* The only mark left is the one a person put there. Everything the library
-       worked out about a card belongs in the detail panel, in words. */
+   
     const marks = [];
     if (entry.origin === "stated" && HAND_BANDS.has(entry.band)) marks.push("by hand");
     if (entry.settled) marks.push(entry.status);
@@ -670,8 +619,7 @@ export function createRiskCanvas() {
       }, marks.join(" · ")));
     }
 
-    /* One control per box: the box selects, this unfolds. A system that holds
-       nothing offers nothing to unfold, so it gets no handle. */
+   
     if (entry.isSystem && (entry.members || []).length) {
       const open = currentExpanded.has(entry.id);
       const handle = make("g", {
@@ -717,8 +665,6 @@ export function createRiskCanvas() {
       group.appendChild(make("text", { x: 8, y: cursor, class: "rc-flow-label" }, line));
       cursor += 14;
     });
-    /* Why anything here is worth a risk at all: the categories this element
-       carries are what a risk pattern's conditions are read against. */
     const carried = entry.node.categories || [];
     if (carried.length) {
       group.appendChild(make("text", {
@@ -737,9 +683,7 @@ export function createRiskCanvas() {
     return `M${x1},${y1} C${x1},${mid} ${x2},${mid} ${x2},${y2}`;
   }
 
-  /* A drag fires pointermove far faster than a diagram of this size can redraw,
-     so redraws are coalesced onto animation frames. Without it the canvas lags
-     behind the cursor, which reads as stiffness rather than as slowness. */
+ 
   let pendingFrame = 0;
 
   function redraw() {
@@ -761,10 +705,7 @@ export function createRiskCanvas() {
     };
   }
 
-  /* Drag and click are one gesture, told apart by distance - the same way the
-   * architecture canvas does it. Listeners go on the window rather than on the
-   * shape: a pointer released outside the canvas has to end the drag too, and
-   * that is what left the old pan stuck to the cursor. */
+
   function startDrag(event, id, positions) {
     event.stopPropagation();
     const base = positions.get(id);
@@ -813,16 +754,11 @@ export function createRiskCanvas() {
       root = make("g", { id: "rc-root" });
       svg.appendChild(root);
 
-      /* Window listeners, not pointer capture. Capture is the obvious way to
-         hold a drag and it is what left the canvas glued to the cursor: a press
-         that ends off-canvas never delivers its pointerup, so the pan never
-         stops. The window always gets it. */
+  
       let panning = null;
 
       const panMove = (event) => {
         if (!panning) return;
-        // Incremental, like the architecture canvas: the delta is consumed each
-        // move rather than accumulated from the start of the gesture.
         view.x += event.clientX - panning.x;
         view.y += event.clientY - panning.y;
         panning = { x: event.clientX, y: event.clientY };
@@ -837,8 +773,7 @@ export function createRiskCanvas() {
       };
 
       surface.addEventListener("pointerdown", (event) => {
-        // A box handles its own gesture; this is the background.
-        if (event.target.closest("[data-node], .canvas-controls, button")) return;
+        if (event.target.closest("[data-node], .canvas-controls, button, .risk-tray")) return;
         panning = { x: event.clientX, y: event.clientY };
         window.addEventListener("pointermove", panMove);
         window.addEventListener("pointerup", panEnd);
@@ -854,8 +789,6 @@ export function createRiskCanvas() {
 
       surface.addEventListener("wheel", (event) => {
         event.preventDefault();
-        // About the cursor, not the origin: zooming away from what you are
-        // pointing at is what makes a canvas feel stiff.
         const rect = svg.getBoundingClientRect();
         const cx = event.clientX - rect.left;
         const cy = event.clientY - rect.top;
@@ -882,8 +815,6 @@ export function createRiskCanvas() {
       return pickedLink;
     },
 
-    /* A different document is a different diagram: positions from the last one
-       would land on boxes that are not the same boxes. */
     forgetLayout() {
       manualPositions = new Map();
       selected = null;
@@ -893,8 +824,6 @@ export function createRiskCanvas() {
       return selected;
     },
 
-    /* Picked from somewhere other than the canvas - the detail panel lists the
-       concerns in a system, and naming one has to be able to go to it. */
     select(id) {
       selected = id || null;
       pickedLink = null;
@@ -905,16 +834,12 @@ export function createRiskCanvas() {
       if (!svg || !diagram) return;
       currentExpanded = new Set(options.expanded || []);
       const view = narrow(diagram, architecture || { nodes: [], edges: [] }, options);
-      // Kept whole: a later redraw re-narrows from the full run rather than
-      // from what the last filter left behind.
       lastDraw = { mode: "notation", diagram, architecture, options };
       root.innerHTML = "";
 
       const { positions, flowIds, frames } = layoutDiagram(view.diagram, view.architecture);
       diagram = view.diagram;
 
-      /* What the selection is about: the card, what it points at, and what it
-         reaches along the chain. Everything else recedes rather than leaving. */
       const related = new Set();
       if (selected) {
         related.add(selected);
@@ -931,9 +856,6 @@ export function createRiskCanvas() {
       root.appendChild(edgeLayer);
       root.appendChild(nodeLayer);
 
-      /* One frame per architecture, behind its own boxes. Everything about a
-         system is inside it, so a reader sees which risks belong to which
-         without following a line to find out. */
       for (const frame of frames || []) {
         const box = make("g", {
           class: `rc-frame s${frame.index % 4}`
@@ -962,8 +884,6 @@ export function createRiskCanvas() {
           class: `rc-link ${link.kind}` + (active ? "" : " dim") + (picked ? " picked" : ""),
           fill: "none",
         }));
-        /* What the line means, on the line. Unlabelled, the notation asked the
-           reader to know which relation each arrow stood for. */
         if (link.label) {
           edgeLayer.appendChild(make("text", {
             x: (from.x + from.w / 2 + to.x + to.w / 2) / 2,
@@ -972,8 +892,6 @@ export function createRiskCanvas() {
             "text-anchor": "middle",
           }, link.label));
         }
-        /* A line somebody drew can be taken back, so it has to be clickable -
-           and a 1px stroke is not. An invisible fat copy carries the press. */
         if (!link.editable) continue;
         const hit = make("path", {
           d, class: "rc-link-hit", fill: "none",
@@ -989,10 +907,6 @@ export function createRiskCanvas() {
         edgeLayer.appendChild(hit);
       }
 
-      /* The architecture's own use/produce edges are not drawn here. They are
-         what the architecture level is for; over the risk layer they read as a
-         second, unlabelled set of lines crossing the first. */
-
       for (const entry of positions.values()) {
         if (entry.band === "flow") drawFlowNode(entry, nodeLayer, related.has(entry.id), positions);
         else drawCard(entry, nodeLayer, selected && !related.has(entry.id), positions);
@@ -1001,7 +915,6 @@ export function createRiskCanvas() {
       if (!options.keepView) this.fit();
     },
 
-    /* One defined risk in the middle, and only what bears on it either side. */
     renderLens(lens, options = {}) {
       if (!svg || !lens) return;
       lastDraw = { mode: "lens", lens };
@@ -1050,6 +963,15 @@ export function createRiskCanvas() {
       return lastDraw ? lastDraw.mode : null;
     },
 
+    painted() {
+      return !!root && !!root.querySelector(".rc-card, .rc-flow");
+    },
+
+    clear() {
+      if (root) root.innerHTML = "";
+      lastDraw = null;
+    },
+
     fit() {
       if (!svg || !root) return;
       const box = root.getBBox ? root.getBBox() : null;
@@ -1059,13 +981,8 @@ export function createRiskCanvas() {
       const left = Math.min(trayInset("#risk-tools"), rect.width * 0.3);
       const right = Math.min(trayInset("#risk-side-tray"), rect.width * 0.3);
       const usable = Math.max(rect.width - left - right, 220);
-      /* Clamped: a notation scaled to fit a narrow pane is a grey smear. Below
-         this the reader pans instead, which is the honest trade. */
       const k = Math.min(1.2, (usable - PAD) / box.width, (rect.height - PAD) / box.height);
       view.k = Math.max(0.42, k > 0 ? k : 1);
-      /* Centred inside the room between the trays, and never past its left
-         edge: a drawing wider than that room, centred, starts under the tray
-         and the reader cannot press what is under there. */
       view.x = left + Math.max(0, (usable - box.width * view.k) / 2) - box.x * view.k;
       view.y = Math.max(PAD / 2, (rect.height - box.height * view.k) / 2) - box.y * view.k;
       this.apply();
@@ -1079,8 +996,6 @@ export function createRiskCanvas() {
   return canvas;
 }
 
-/* Fit between the trays, not behind them. Measured rather than assumed: a
-   folded tray is a head, and the drawing gets the room back. */
 function trayInset(selector) {
   const tray = document.querySelector(selector);
   if (!tray || tray.classList.contains("hidden")) return 0;
@@ -1088,5 +1003,4 @@ function trayInset(selector) {
   return width ? width + 18 : 0;
 }
 
-/* The risk level's own mount. Every existing caller keeps working. */
 export const RiskCanvas = createRiskCanvas();

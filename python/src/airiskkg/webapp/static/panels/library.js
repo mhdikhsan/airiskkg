@@ -1,4 +1,4 @@
-/* The library, browsed before anything is drawn. */
+/* The library */
 
 import { api } from "../core/api.js";
 import { on } from "../core/bus.js";

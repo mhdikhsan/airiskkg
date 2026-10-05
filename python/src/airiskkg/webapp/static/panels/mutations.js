@@ -43,12 +43,6 @@ export function applyDelete(elementId) {
   });
 }
 
-// Add a BEAM flow edge from a canvas port-drag.
-/* Taking a connector back out.
- *
- * Both canvases could draw a line and neither could remove one, so a line drawn
- * wrong cost the boxes at either end - deleting an element was the only thing
- * that took its edges with it. */
 export function applyDisconnect(triple) {
   return runMutation(async () => {
     try {

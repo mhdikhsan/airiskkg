@@ -12,7 +12,6 @@ const ROW_GAP = 34;
 const EDGE_MEANINGS = {
   use:            { title: "uses",           dir: "process → resource", body: "The process reads this resource as input." },
   produce:        { title: "produces",       dir: "process → resource", body: "The process writes this resource as output." },
-  inform:         { title: "informs",        dir: "process → process",  body: "One step hands off to the next; data or control flows between processes." },
   participatedIn: { title: "participates in", dir: "resource ↔ process", body: "Imported participation link between a resource and a process." },
 };
 
@@ -398,7 +397,7 @@ function getSelectedSystem() {
 function draw() {
   svg.innerHTML = "";
   const defs = svgEl("defs", {}, svg);
-  for (const kind of ["use", "produce", "inform", "participatedIn"]) {
+  for (const kind of ["use", "produce", "participatedIn"]) {
     const marker = svgEl("marker", {
       id: `arrow-${kind}`, viewBox: "0 0 10 10", refX: 9, refY: 5,
       markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse",
@@ -532,13 +531,36 @@ function startDrag(ev, node) {
   window.addEventListener("pointerup", up);
 }
 
+/* Which line the two ends make, or null when BEAM declares none. An agent and a
+   system are siblings of beam:Resource rather than kinds of it, so "not a
+   process" is not the same as "a resource" and must not stand at the resource
+   end of a flow edge. */
+const RESOURCE_KINDS = new Set(["data", "symbol", "model", "resource"]);
+
 function edgeTriple(source, target) {
   const sp = source.kind === "process";
   const tp = target.kind === "process";
-  if (!sp && tp) return { subject: target.id, predicate: "use", object: source.id };
-  if (sp && !tp) return { subject: source.id, predicate: "produce", object: target.id };
-  if (sp && tp) return { subject: source.id, predicate: "inform", object: target.id };
+  const sr = RESOURCE_KINDS.has(source.kind);
+  const tr = RESOURCE_KINDS.has(target.kind);
+  if (sr && tp) return { subject: target.id, predicate: "use", object: source.id };
+  if (sp && tr) return { subject: source.id, predicate: "produce", object: target.id };
+  if (source.kind === "agent" && tp) {
+    return { subject: source.id, predicate: "participatedIn", object: target.id };
+  }
   return null;
+}
+
+function whyNotConnectable(source, target) {
+  if (RESOURCE_KINDS.has(source.kind) && RESOURCE_KINDS.has(target.kind)) {
+    return "Two resources can't connect directly — flow passes through a process.";
+  }
+  if (source.kind === "process" && target.kind === "process") {
+    return "Two steps can't connect directly — one produces what the other uses.";
+  }
+  if (source.kind === "process" && target.kind === "agent") {
+    return "Draw this from the agent to the step: an agent participates in a process.";
+  }
+  return `A ${source.kind} and a ${target.kind} have no flow edge in BEAM.`;
 }
 
 function startConnect(ev, sourceNode) {
@@ -563,7 +585,7 @@ function startConnect(ev, sourceNode) {
     const src = current.nodes.find((n) => n.id === sourceNode.id) || sourceNode;
     const triple = edgeTriple(src, target);
     if (!triple) {
-      if (annotationCfg.onStatus) annotationCfg.onStatus("error", "Two resources can't connect directly — flow passes through a process.");
+      if (annotationCfg.onStatus) annotationCfg.onStatus("error", whyNotConnectable(src, target));
       return;
     }
     if (annotationCfg.onConnect) annotationCfg.onConnect(triple);
@@ -816,15 +838,38 @@ function clear() {
   detailBox.classList.add("hidden");
 }
 
+/* Where on the line the badge can actually be pressed.
+ *
+ * The middle, unless the middle is under one of the panels that float over the
+ * canvas - the palette sits at its top left, and a line running beneath it got
+ * a remove badge nobody could reach. HTML over SVG always wins, so the badge
+ * moves along the line instead. */
+function badgeSpot(line) {
+  let total = 0;
+  try {
+    total = line.getTotalLength();
+  } catch (error) {
+    return null; // a path with no length has no middle
+  }
+  if (!total) return null;
+  const matrix = line.getScreenCTM();
+  const middle = line.getPointAtLength(total / 2);
+  if (!matrix) return middle;
+  for (const along of [0.5, 0.35, 0.65, 0.2, 0.8]) {
+    const point = line.getPointAtLength(total * along);
+    const x = Math.round(matrix.a * point.x + matrix.c * point.y + matrix.e);
+    const y = Math.round(matrix.b * point.x + matrix.d * point.y + matrix.f);
+    const over = document.elementFromPoint(x, y);
+    if (over && over.closest("#canvas")) return point;
+  }
+  return middle;
+}
+
 /* Drawn on the line rather than in a panel: the thing being removed is the
    thing under the cursor, and there is nowhere else the reader is looking. */
 function drawEdgeBadge(layer, line, triple) {
-  let at;
-  try {
-    at = line.getPointAtLength(line.getTotalLength() / 2);
-  } catch (error) {
-    return; // a path with no length has no middle
-  }
+  const at = badgeSpot(line);
+  if (!at) return;
   const badge = svgEl("g", { class: "edge-drop" }, layer);
   svgEl("circle", { cx: at.x, cy: at.y, r: 8, class: "edge-drop-disc" }, badge);
   const sign = svgEl("text", {

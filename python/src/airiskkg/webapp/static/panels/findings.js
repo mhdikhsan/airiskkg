@@ -19,10 +19,7 @@ let selectedFinding = null;
 function controlItem(control, finding) {
   const motifs = control.realizedByMotifs || [];
   const children = [el("span", { class: "ctrl-label" }, control.label)];
-  /* Technical or not. pair:controlNature has always been carried in the payload
-   * and never shown, so the one distinction a reader needs - can this be built,
-   * or is it something an organisation has to do - was invisible. */
-  if (control.nature) {
+   if (control.nature) {
     children.push(el("span", { class: `ctrl-nature ${control.nature}` }, control.nature));
   }
   if (control.applicable) {
@@ -48,7 +45,6 @@ function controlItem(control, finding) {
   return el("li", { title: control.definition || "" }, children);
 }
 
-/* A different list from a different place, and the two used to sit under headings that gave no clue of it. */
 function groundedFamiliesSection(families) {
   if (!families || !families.length) return null;
   return el("div", { class: "ctrl-group evidence" }, [
@@ -141,9 +137,6 @@ function findingCard(finding) {
   return card;
 }
 
-/* Which findings belong to the architecture currently open. The assessment
- * stays whole; only the reading narrows. */
-/* The last run described a document that is gone. */
 export function clearFindings() {
   state.lastAssessment = null;
   state.lastRun = null;
@@ -248,16 +241,9 @@ export function renderFindings(data) {
   }
   shown.forEach((f) => list.appendChild(findingCard(f)));
   $("#findings-count").textContent = shown.length ? String(shown.length) : "";
-  /* The risk level reads the same run and is not this panel, so it is told
-   * rather than called into - applying a control re-renders from here, and a
-   * direct call back would be a cycle. */
   emit("assessment:rendered");
 }
 
-
-/* Run again and redraw every panel that reads a run. Shared, because an edit
- * that changes what a finding says is worthless until the page catches up -
- * and there is more than one such edit now. */
 export async function reassess(ttl) {
   const data = await postJson("/api/assess", { ttl });
   renderFindings(data);
