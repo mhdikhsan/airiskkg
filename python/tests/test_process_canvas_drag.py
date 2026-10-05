@@ -208,10 +208,21 @@ def test_a_refined_box_moves_and_its_chip_still_descends(page) -> None:
     assert not _on_architecture(loop, handle), "moving an AI activity descended into it"
 
     chip = loop.run_until_complete(handle.js(f"""(() => {{
-        const group = document.querySelector({json.dumps('[data-node=' + json.dumps(box['id']) + ']')});
-        const r = group.querySelector('.pc-open').getBoundingClientRect();
-        return {{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }};
+        const group = document.querySelector({json.dumps('#process-canvas [data-node=' + json.dumps(box['id']) + ']')});
+        if (!group) return {{ why: 'the box is gone from the canvas' }};
+        const open = group.querySelector('.pc-open');
+        if (!open) return {{ why: 'the box carries no chip after the move' }};
+        const r = open.getBoundingClientRect();
+        const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+        // What a press there reaches, not what is drawn there.
+        const hit = document.elementFromPoint(x, y);
+        if (!hit || !hit.closest('.pc-open')) {{
+            return {{ why: 'the chip is under '
+                + (hit ? (hit.id || hit.getAttribute('class') || hit.tagName) : 'nothing') }};
+        }}
+        return {{ x, y }};
     }})()"""))
+    assert chip.get("x") is not None, chip.get("why")
     loop.run_until_complete(handle.click(chip["x"], chip["y"]))
     time.sleep(0.8)
     assert _on_architecture(loop, handle), "after a move, the chip no longer opens the architecture"

@@ -518,14 +518,28 @@ def test_the_risk_badge_folds_the_findings_it_counts(page) -> None:
             'Number(document.querySelector("#findings-count").textContent || 0)', 0, tries=75)
     loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
     _settle(loop, handle, 'document.querySelectorAll(".pc-risk").length', 0, tries=25)
+    # Fitted first: an earlier test leaves its pan behind, and a badge panned
+    # off the pane cannot be pressed however well it folds.
+    loop.run_until_complete(handle.js('window.PairAI.ProcessCanvas.fit(); 1'))
+    time.sleep(0.5)
 
     badge = loop.run_until_complete(handle.js("""(() => {
         const b = document.querySelector('.pc-risk .pc-risk-box');
-        if (!b) return null;
+        if (!b) return { why: 'no activity reported any candidate risk' };
         const r = b.getBoundingClientRect();
-        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+        const pane = document.querySelector('#process-canvas').getBoundingClientRect();
+        const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+        if (x < pane.left || x > pane.right || y < pane.top || y > pane.bottom) {
+            return { why: `the badge is off the pane at ${x},${y}` };
+        }
+        // What a press there would actually reach, not what is drawn there.
+        const hit = document.elementFromPoint(x, y);
+        if (!hit || !hit.closest('.pc-risk')) {
+            return { why: 'the badge is under ' + (hit ? (hit.id || hit.getAttribute('class')) : 'nothing') };
+        }
+        return { x, y };
     })()"""))
-    assert badge, "no activity reported any candidate risk"
+    assert badge.get("x") is not None, badge.get("why")
 
     before = loop.run_until_complete(handle.js('document.querySelectorAll(".pc-risk-item").length'))
     loop.run_until_complete(handle.click(badge["x"], badge["y"]))
@@ -1962,6 +1976,25 @@ def test_a_risk_is_drawn_on_by_dragging_it_onto_what_it_is_about(page) -> None:
         'window.PairAI.state.lastAssessment.summary.riskFindingCount'))
 
     loop.run_until_complete(handle.drag(at["fromX"], at["fromY"], at["toX"], at["toY"]))
+
+    # The box is drawn by the drop and named on the box afterwards.
+    _settle(loop, handle, 'document.querySelector("#risk-side input") ? 1 : 0', 0, tries=60)
+    asked = loop.run_until_complete(handle.js("""(() => {
+        const side = document.querySelector('#risk-side');
+        return { picker: !!side.querySelector('select'),
+                 field: !!side.querySelector('input'),
+                 drawn: document.querySelectorAll('#risk-canvas .rc-card').length };
+    })()"""))
+    assert asked["drawn"] > 0, "the drop drew nothing before anything was named"
+    assert asked["picker"] and asked["field"], (
+        f"the box's editor does not offer the library and a name: {asked}"
+    )
+    loop.run_until_complete(handle.js("""(() => {
+        document.querySelector('#risk-side input').value = 'Written by the drag test';
+        [...document.querySelectorAll('#risk-side button')]
+            .find((b) => b.textContent === 'Apply').click();
+        return 1;
+    })()"""))
     written = _settle(loop, handle,
                       'window.PairAI.Editor.getValue().includes("Written by the drag test") ? 1 : 0',
                       0, tries=120)
@@ -2052,8 +2085,10 @@ def test_a_control_is_offered_only_on_what_somebody_wrote(page) -> None:
         };
     })()"""))
 
+    # Released back over the tray it came from: a drop on a box now writes one,
+    # and this test is about what the drag offers, not about adding a control.
     loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
-        "type": "mouseReleased", "x": at["x"] + 240, "y": at["y"] + 90,
+        "type": "mouseReleased", "x": at["x"], "y": at["y"] + 40,
         "button": "left", "clickCount": 1, "buttons": 0}))
     time.sleep(0.5)
 
@@ -2330,17 +2365,24 @@ def _reachable_line(loop, handle, canvas, hit_class):
     """
     return loop.run_until_complete(handle.js("""(() => {
         const view = document.querySelector('%s').getBoundingClientRect();
+        /* Along the line, not only at its middle. Connector hit paths are
+           painted under the boxes - so that a press over a box belongs to the
+           box - which means the midpoint of a line that runs under one is not
+           reachable even though the line plainly is. */
+        const along = [0.5, 0.3, 0.7, 0.15, 0.85];
         for (const hit of document.querySelectorAll('%s %s')) {
             const len = hit.getTotalLength();
             if (!len) continue;
-            const pt = hit.getPointAtLength(len / 2);
             const m = hit.getScreenCTM();
-            const x = Math.round(m.a * pt.x + m.c * pt.y + m.e);
-            const y = Math.round(m.b * pt.x + m.d * pt.y + m.f);
-            if (x < view.left + 4 || x > view.right - 4) continue;
-            if (y < view.top + 4 || y > view.bottom - 4) continue;
-            if (document.elementFromPoint(x, y) !== hit) continue;
-            return { x, y };
+            for (const at of along) {
+                const pt = hit.getPointAtLength(len * at);
+                const x = Math.round(m.a * pt.x + m.c * pt.y + m.e);
+                const y = Math.round(m.b * pt.x + m.d * pt.y + m.f);
+                if (x < view.left + 4 || x > view.right - 4) continue;
+                if (y < view.top + 4 || y > view.bottom - 4) continue;
+                if (document.elementFromPoint(x, y) !== hit) continue;
+                return { x, y };
+            }
         }
         return null;
     })()""" % (canvas, canvas, hit_class)))
@@ -2354,7 +2396,8 @@ def _badge(loop, handle, canvas, disc_class):
         const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
         const hit = document.elementFromPoint(x, y);
         // A control under a box is not a control.
-        return { x, y, reachable: !!(hit && hit.closest('%s')) };
+        return { x, y, reachable: !!(hit && hit.closest('%s')),
+                 covered: hit ? (hit.id || hit.getAttribute('class') || hit.tagName) : 'nothing' };
     })()""" % (canvas, disc_class, disc_class.rsplit('-', 1)[0])))
 
 
@@ -2386,7 +2429,8 @@ def test_an_architecture_connector_goes_without_the_elements_it_joined(page) -> 
     assert picked["badges"] == 1, "a picked connector has to offer to go"
 
     badge = _badge(loop, handle, "#canvas", ".edge-drop-disc")
-    assert badge and badge["reachable"], "the remove badge is under something"
+    assert badge and badge["reachable"], (
+        f"the remove badge is under {badge and badge.get('covered')}")
     loop.run_until_complete(handle.click(badge["x"], badge["y"]))
     _settle(loop, handle,
             "document.querySelectorAll('#canvas .edge:not(.temp)').length",
@@ -2450,3 +2494,86 @@ def test_a_business_connector_goes_without_the_boxes_it_joined(page) -> None:
     assert after["boxes"] == before["boxes"], (
         f"removing a connector took a box with it: {before} -> {after}"
     )
+
+
+def test_a_pool_is_restacked_by_dragging_its_name_strip(scene_restored) -> None:
+    """Pools stacked in whatever order their names fell in, and nothing could
+    move one: the reading order of the whole diagram was a side effect of naming.
+
+    Dragged, not stepped through with buttons - the stack is a thing you arrange.
+    The strip is the handle because it is the part of a band that is always
+    there: a collapsed pool draws nothing else, and a press in the body is a pan
+    across a diagram the reader meant to leave alone.
+    """
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    _fold_palette(loop, handle)
+
+    strips = loop.run_until_complete(handle.js("""(() => {
+        const rows = [];
+        document.querySelectorAll('#process-canvas .pc-pool').forEach((pool) => {
+            const strip = pool.querySelector('.pc-pool-strip');
+            if (!strip) return;
+            const r = strip.getBoundingClientRect();
+            rows.push({
+                band: pool.getAttribute('data-band'),
+                x: Math.round(r.left + r.width / 2),
+                y: Math.round(r.top + r.height / 2),
+                top: Math.round(r.top), bottom: Math.round(r.bottom),
+            });
+        });
+        return rows;
+    })()"""))
+    assert len(strips) >= 2, f"this test needs two pools on screen, saw {len(strips)}"
+    assert all(row["band"] for row in strips), "a band does not say which one it is"
+
+    order_before = loop.run_until_complete(handle.js(
+        "window.PairAI.state.lastProcess.participants.map((p) => p.id)"))
+    first, second = strips[0], strips[1]
+
+    # Grab the first pool's strip and carry it past the middle of the second.
+    loop.run_until_complete(handle.drag(
+        first["x"], first["y"], first["x"], second["bottom"] - 4))
+
+    order_after = loop.run_until_complete(handle.js(
+        "window.PairAI.state.lastProcess.participants.map((p) => p.id)"))
+    assert order_after != order_before, (
+        "dragging the name strip restacked nothing: "
+        f"{order_before} unchanged"
+    )
+    assert order_after[0] == order_before[1] and order_after[1] == order_before[0], (
+        f"the pool landed somewhere unasked for: {order_before} -> {order_after}"
+    )
+
+    # It is in the document, not just on screen: a hand-drawn stack has to
+    # survive a reload, unlike a nudged box.
+    ttl = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+    assert "bandOrder" in ttl, "the new order was never written down"
+
+
+def test_a_press_on_a_pool_body_still_pans(scene_restored) -> None:
+    """The strip restacks; everything else is the canvas. Arming the restack on
+    the whole band would make every pan across a pool reorder the diagram."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    _fold_palette(loop, handle)
+
+    before = loop.run_until_complete(handle.js(
+        "window.PairAI.state.lastProcess.participants.map((p) => p.id)"))
+    spot = loop.run_until_complete(handle.js("""(() => {
+        const pool = document.querySelector('#process-canvas .pc-pool');
+        const box = pool.querySelector('.pc-pool-box').getBoundingClientRect();
+        const strip = pool.querySelector('.pc-pool-strip').getBoundingClientRect();
+        // Right of the name strip, and clear of anything drawn inside.
+        const x = Math.round(strip.right + (box.right - strip.right) * 0.92);
+        const y = Math.round(box.top + 6);
+        const at = document.elementFromPoint(x, y);
+        return { x, y, onBox: !!(at && at.closest('.pc-pool') && !at.closest('[data-node]')) };
+    })()"""))
+    if not spot["onBox"]:
+        pytest.skip("no clear patch of pool body to press on at this size")
+
+    loop.run_until_complete(handle.drag(spot["x"], spot["y"], spot["x"], spot["y"] + 120))
+    after = loop.run_until_complete(handle.js(
+        "window.PairAI.state.lastProcess.participants.map((p) => p.id)"))
+    assert after == before, "a pan across a pool restacked the diagram"

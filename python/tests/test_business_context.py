@@ -5,9 +5,15 @@ from __future__ import annotations
 from collections import Counter
 
 import pytest
-from rdflib import RDF, Graph
+from rdflib import RDF, Graph, Namespace, URIRef
 
-from airiskkg.assessment_runner import PAIR, load_base_graph, run_assessment
+from airiskkg.assessment_runner import (
+    PAIR,
+    load_base_graph,
+    run_assessment,
+    run_assessment_from_text,
+)
+from airiskkg.assessment_view import summarize_result
 from airiskkg.paths import EXAMPLE_DIR
 from conftest import TARIFF_NS, WIEN_ENERGIE_NS, example_path, process_path  # noqa: E402
 
@@ -16,6 +22,7 @@ from conftest import TARIFF_NS, WIEN_ENERGIE_NS, example_path, process_path  # n
 # them. process_path finds either home.
 PROCESS = process_path("energy_customer_service")
 TARIFF_PROCESS = process_path("energy_tariff_change")
+PROV = Namespace("http://www.w3.org/ns/prov#")
 IMPROPER_OUTPUT = "ImproperOutputHandlingRiskPattern"
 DISCLOSURE = "SensitiveInformationDisclosureRiskPattern"
 
@@ -123,7 +130,9 @@ def test_the_process_raises_what_the_pipeline_could_not(architecture_only, with_
     after = _findings_by_pattern(with_process)
 
     assert before[DISCLOSURE] == 0
-    assert after[DISCLOSURE] == 1
+    # Two: the store reaches the user along both generation paths, the answer
+    # and the explanation. One per path is how every other risk is counted.
+    assert after[DISCLOSURE] == 2
 
     assert with_process.motif_match_count == architecture_only.motif_match_count
     for pattern in set(before) | set(after):
@@ -531,3 +540,286 @@ def test_the_tariff_process_names_a_system_for_each_capability() -> None:
     assert rows["Explain the conditions"] > 0, "the agent that writes to the customer carries none"
     assert rows["Check the contract conditions"] == 0, "the rules check carries the chat findings"
     assert rows["Show the change form"] == 0, "the form machinery carries the chat findings"
+
+
+# ---- naming the element a business data object is ----
+
+# One architecture, two inputs, two activities - which is the shape the
+# system-wide bridge cannot tell apart. Every shipped example happens to give a
+# shared system exactly one input-playing element, so the coarseness never shows
+# there; it shows the moment an architecture has two.
+TWO_INPUTS = """
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix ex:   <http://example.org/two#> .
+
+ex:Assistant a beam:System ;
+    beam:hasResource ex:ChatText , ex:UploadedFile , ex:Answer ;
+    beam:hasProcess ex:Generate .
+ex:ChatText a beam:Data ; pair:playsRole pair:UserInput .
+ex:UploadedFile a beam:Data ; pair:playsRole pair:UserInput .
+ex:Answer a beam:Data ; pair:playsRole pair:UserFacingOutput .
+ex:Generate a beam:Generate ; beam:use ex:ChatText ; beam:produce ex:Answer .
+
+ex:Chat a bpmn:serviceTask ;
+    bp:name "Take the question" ;
+    pair:refinedBy ex:Assistant ;
+    bp:dataInputAssociation ex:ChatIn .
+ex:ChatIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ex:ChatRef ; bp:targetRef ex:Chat .
+ex:ChatRef a bpmn:dataObjectReference ; bp:dataObjectRef ex:TypedMessage .
+ex:TypedMessage a bpmn:dataObject ;
+    bp:name "Typed message" ;
+    bp:itemSubjectRef ex:MessageItem .
+ex:MessageItem a bpmn:itemDefinition ; bp:structureRef dpv:PersonalData .
+
+ex:Upload a bpmn:serviceTask ;
+    bp:name "Take the file" ;
+    pair:refinedBy ex:Assistant .
+"""
+
+NAMED = """
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix ex:   <http://example.org/two#> .
+
+ex:TypedMessage pair:realisedBy ex:ChatText .
+"""
+
+
+def _sensitive(ttl: str) -> set[str]:
+    graph = run_assessment_from_text(ttl).combined_graph
+    return {
+        str(subject).split("#")[-1]
+        for subject in graph.subjects(PAIR.containsDataCategory, PAIR.SensitiveInformation)
+    }
+
+
+def test_without_the_finer_join_every_input_of_the_system_is_marked() -> None:
+    """The bridge maps an activity to a whole architecture, so a personal-data
+    annotation on one activity reaches every input-playing element of the system
+    it refines - including the ones that activity never reads."""
+    marked = _sensitive(TWO_INPUTS)
+    assert {"ChatText", "UploadedFile"} <= marked, (
+        f"the coarse bridge marks both inputs: {sorted(marked)}"
+    )
+
+
+def test_naming_the_element_narrows_it_to_that_element() -> None:
+    """pair:realisedBy says which element of the architecture a business data
+    object is. Said, the annotation goes there and nowhere else."""
+    marked = _sensitive(TWO_INPUTS + NAMED)
+    assert "ChatText" in marked, "the element the data object names has to be marked"
+    assert "UploadedFile" not in marked, (
+        f"a file nothing declared personal is still marked: {sorted(marked)}"
+    )
+
+
+def test_naming_one_data_object_does_not_silence_the_others() -> None:
+    """The fallback is per data object, not per graph: one annotation naming its
+    element must not turn the coarse route off for an annotation that does not.
+    Otherwise adding precision in one place loses coverage everywhere else."""
+    both = TWO_INPUTS + NAMED + """
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix ex:   <http://example.org/two#> .
+
+ex:Upload bp:dataInputAssociation ex:FileIn .
+ex:FileIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ex:FileRef ; bp:targetRef ex:Upload .
+ex:FileRef a bpmn:dataObjectReference ; bp:dataObjectRef ex:CustomerFile .
+ex:CustomerFile a bpmn:dataObject ;
+    bp:name "Customer file" ;
+    bp:itemSubjectRef ex:FileItem .
+ex:FileItem a bpmn:itemDefinition ; bp:structureRef dpv:PersonalData .
+"""
+    marked = _sensitive(both)
+    assert {"ChatText", "UploadedFile"} <= marked, (
+        "the second annotation names no element, so it still reaches every input"
+    )
+
+
+def test_the_finer_join_changes_nothing_on_the_shipped_graphs() -> None:
+    """Nothing shipped names its element, so the fallback decides both scenes.
+
+    The energy scene moved to 11 on 2026-10-04 and the move is the point: the
+    fallback used to reach only elements playing pair:UserInput or
+    pair:PredictionRequest, four of the fifty resource-side roles, so a document
+    store declared to hold personal data on the business process reached nothing
+    at all. DocumentStore is now marked, its category travels the flow it
+    already had, and the second sensitive-information-disclosure finding is the
+    one that was previously invisible.
+    """
+    for architecture, process, matches, findings in (
+        (TARIFF_NS, "energy_tariff_change", 3, 11),
+        (WIEN_ENERGIE_NS, "energy_customer_service", 5, 11),
+    ):
+        result = run_assessment(
+            [str(example_path(architecture)), str(process_path(process))],
+            write_outputs=False,
+        )
+        summary = summarize_result(result)["summary"]
+        assert (summary["motifMatchCount"], summary["riskFindingCount"]) == (matches, findings), (
+            f"{architecture} moved to "
+            f"{summary['motifMatchCount']}/{summary['riskFindingCount']}"
+        )
+
+
+# ---- what a business annotation can reach ----
+
+# A store nobody calls an input, which is the shape the role test could not see:
+# patient records, a case file, a document store. It is read by the system and
+# produced by nothing in it, so it is where content crosses the edge.
+STORE_NOT_AN_INPUT = """
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix ex:   <http://example.org/records#> .
+
+ex:Service a beam:System ;
+    beam:hasResource ex:CaseFiles , ex:Retrieved , ex:Summary , ex:LLM ;
+    beam:hasProcess ex:Retrieve , ex:Write .
+ex:CaseFiles a beam:Data ; pair:playsRole pair:KnowledgeSource .
+ex:Retrieved a beam:Data ; pair:playsRole pair:RetrievedContext .
+ex:Summary a beam:Data ; pair:playsRole pair:UserFacingOutput , pair:LLMResponse .
+ex:LLM a beam:StatisticalModel ; pair:playsRole pair:GenerativeModel , pair:FoundationLLM .
+ex:Retrieve a beam:Transform ; pair:playsRole pair:RetrievalStep ;
+    beam:use ex:CaseFiles ; beam:produce ex:Retrieved .
+ex:Write a beam:Generate ; pair:playsRole pair:GenerationStep ;
+    beam:use ex:Retrieved , ex:LLM ; beam:produce ex:Summary .
+
+ex:Consult a bpmn:serviceTask ;
+    bp:name "Consult the case file" ;
+    pair:refinedBy ex:Service ;
+    bp:dataInputAssociation ex:ConsultIn .
+ex:ConsultIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ex:FileRef ; bp:targetRef ex:Consult .
+ex:FileRef a bpmn:dataObjectReference ; bp:dataStoreRef ex:PatientRecords .
+ex:PatientRecords a bpmn:dataStore ;
+    bp:name "Patient records" ;
+    bp:itemSubjectRef ex:RecordItem .
+ex:RecordItem a bpmn:itemDefinition ; bp:structureRef dpv:MedicalHealth .
+"""
+
+
+def _marked(result) -> set[str]:
+    """Elements the bridge put a category on, by local name."""
+    graph = result.combined_graph
+    out = set()
+    for derivation in graph.subjects(RDF.type, PROV.Derivation):
+        if graph.value(derivation, PAIR.derivedCategory) != PAIR.SensitiveInformation:
+            continue
+        if graph.value(derivation, PAIR.targetInferred) is None:
+            continue  # a propagation derivation, not this bridge's
+        for element in graph.subjects(PROV.qualifiedDerivation, derivation):
+            out.add(str(element).rsplit("#", 1)[-1])
+    return out
+
+
+def test_a_store_carries_personal_data_without_anyone_calling_it_an_input() -> None:
+    """Personal data does not only arrive as something a person typed.
+
+    Patient records, a case file, a document store: necessary to the system,
+    disclosure-relevant, and nobody's idea of user input. The fallback used to
+    test for pair:UserInput or pair:PredictionRequest, four of the fifty
+    resource-side roles, so a store reached nothing however it was annotated.
+    """
+    result = run_assessment_from_text(STORE_NOT_AN_INPUT)
+
+    assert "CaseFiles" in _marked(result), (
+        "the store the process declared as holding health records was not "
+        "reached, so the annotation changed nothing"
+    )
+    assert "LLM" not in _marked(result), (
+        "the model is read by the step that handles the records and sits on the "
+        "same edge, but it contains nobody's health record"
+    )
+    # And it travels: facet:hasPersonalDataCategory is declared on beam:Data for
+    # the same reason the bridge targets it, and content_categories.rq does the rest.
+    categories = set(result.combined_graph.objects(
+        URIRef("http://example.org/records#Summary"), PAIR.containsDataCategory))
+    assert PAIR.SensitiveInformation in categories, (
+        "the category reached the store but never travelled to the output"
+    )
+
+
+def test_the_derivation_says_whether_the_element_was_named_or_found() -> None:
+    """Only one of those is somebody's claim. A reader who cannot tell them
+    apart cannot tell a statement from a match."""
+    found = run_assessment_from_text(STORE_NOT_AN_INPUT)
+    graph = found.combined_graph
+    inferred = [
+        graph.value(d, PAIR.targetInferred)
+        for d in graph.subjects(RDF.type, PROV.Derivation)
+        if graph.value(d, PAIR.derivedCategory) == PAIR.SensitiveInformation
+        and graph.value(d, PAIR.targetInferred) is not None
+    ]
+    assert inferred and all(bool(flag) for flag in inferred), (
+        "nothing named an element here, so every derivation should say so"
+    )
+
+    named = run_assessment_from_text(
+        STORE_NOT_AN_INPUT + "\nex:PatientRecords pair:realisedBy ex:CaseFiles .\n")
+    graph = named.combined_graph
+    flags = {
+        str(graph.value(d, PAIR.targetInferred))
+        for d in graph.subjects(RDF.type, PROV.Derivation)
+        if graph.value(d, PAIR.derivedCategory) == PAIR.SensitiveInformation
+        and graph.value(d, PAIR.targetInferred) is not None
+    }
+    assert flags == {"false"}, f"naming the element should stop it being a guess: {flags}"
+    assert _marked(named) == {"CaseFiles"}, "the named element and no other"
+
+
+def test_what_an_activity_writes_is_annotated_too() -> None:
+    """A record a step writes carries the same kind of content as one it reads,
+    and sBPMN runs the two associations in opposite directions. Reading only the
+    input side left a step that produces a patient summary saying nothing."""
+    writes = STORE_NOT_AN_INPUT.replace(
+        "    bp:dataInputAssociation ex:ConsultIn .",
+        "    bp:dataOutputAssociation ex:ConsultOut .",
+    ).replace(
+        """ex:ConsultIn a bpmn:dataInputAssociation ;
+    bp:sourceRef ex:FileRef ; bp:targetRef ex:Consult .""",
+        """ex:ConsultOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef ex:Consult ; bp:targetRef ex:FileRef .""",
+    )
+    marked = _marked(run_assessment_from_text(writes))
+    assert "Summary" in marked, (
+        "an activity that writes personal data reached nothing: only "
+        "bp:dataInputAssociation was read"
+    )
+    assert "CaseFiles" not in marked, (
+        "a write landed on the system's entry rather than on what it produces"
+    )
+
+
+def test_a_dpv_term_the_editor_does_not_list_still_counts_as_personal() -> None:
+    """The option list says which terms mean *not* personal. Everything else
+    stays personal, because saying nothing about a term is not saying it is safe.
+
+    The guard was written `!BOUND(?x) || ?x`, and rdflib does not short-circuit
+    `||`: the second operand was evaluated unbound, the filter errored, and the
+    row was dropped. Every DPV term outside the five the editor offers was
+    silently discarded, which is the reverse of what the list means.
+    """
+    options = {
+        str(term) for term in load_base_graph().objects(None, PAIR.classifiesAs)
+    }
+    assert "https://w3id.org/dpv#MedicalHealth" not in options, (
+        "this test needs a DPV term the editor does not list"
+    )
+    assert "CaseFiles" in _marked(run_assessment_from_text(STORE_NOT_AN_INPUT)), (
+        "an unlisted DPV term was treated as though it meant 'not personal'"
+    )
+
+    # And the two that do mean not personal are still excluded.
+    anonymised = STORE_NOT_AN_INPUT.replace("dpv:MedicalHealth", "dpv:AnonymisedData")
+    assert not _marked(run_assessment_from_text(anonymised)), (
+        "'checked, and not personal' must not raise anything"
+    )

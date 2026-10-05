@@ -8,6 +8,8 @@ from rdflib import RDF, RDFS, Graph, URIRef
 from airiskkg.paths import REPO_ROOT, SBPMN_DIR
 from conftest import process_path  # noqa: E402
 
+PAIR_BAND_ORDER = "http://w3id.org/airiskkg/pair-ai#bandOrder"
+
 pytestmark = pytest.mark.ui
 
 CONTEXT = process_path("energy_customer_service")
@@ -463,3 +465,57 @@ def test_every_edit_writes_only_terms_sbpmn_declares(client, process_ttl) -> Non
                 violations.append(f"{predicate} on {subject}")
     assert not violations, "written outside the domain sBPMN declares: " + "; ".join(
         sorted(violations))
+
+
+def test_a_pool_can_be_dropped_lower_in_the_stack(client, process_ttl) -> None:
+    """Pools stacked in the order their names fell in, which is no order at all
+    for a reader: a participant could not be put where the diagram needs it.
+
+    BPMN keeps this in BPMNDI, which sBPMN does not model, so it is carried by
+    pair:bandOrder - PAIR's own, like pair:refinedBy, rather than a bp: term
+    invented outside the vocabulary ceiling.
+    """
+    before = [row["label"] for row in view(client, process_ttl)["participants"]]
+    assert len(before) >= 2, "this test needs two pools to restack"
+    first = view(client, process_ttl)["participants"][0]
+
+    moved = edit(client, process_ttl, "reorder-band", band=first["id"], toIndex=1)
+    after = [row["label"] for row in view(client, moved)["participants"]]
+    assert after[0] == before[1] and after[1] == before[0], (
+        f"the pool did not move: {before} -> {after}"
+    )
+
+    back = edit(client, moved, "reorder-band", band=first["id"], toIndex=0)
+    assert [row["label"] for row in view(client, back)["participants"]] == before, (
+        "dropping it back did not restore the order"
+    )
+
+
+def test_a_band_cannot_be_dropped_outside_the_stack(client, process_ttl) -> None:
+    """A drop the stack has no room for is refused rather than clamped: an index
+    nobody can point at is a bug in the caller, not a gesture to interpret."""
+    pools = view(client, process_ttl)["participants"]
+    for bad in (-1, len(pools)):
+        response = client.post("/api/process-edit", json={
+            "ttl": process_ttl, "op": "reorder-band", "band": pools[0]["id"], "toIndex": bad,
+        })
+        assert response.status_code == 400, f"accepted a drop at {bad}"
+
+    missing = client.post("/api/process-edit", json={
+        "ttl": process_ttl, "op": "reorder-band", "band": pools[0]["id"],
+    })
+    assert missing.status_code == 400, "accepted a reorder with no index at all"
+
+
+def test_restacking_one_band_orders_the_whole_stack(client, process_ttl) -> None:
+    """A half-ordered stack leaves the rest interleaving by name in a way nobody
+    chose, so every sibling is rewritten on each drop."""
+    from rdflib import Graph as _Graph
+
+    pools = view(client, process_ttl)["participants"]
+    moved = edit(client, process_ttl, "reorder-band", band=pools[0]["id"], toIndex=1)
+    graph = _Graph().parse(data=moved, format="turtle")
+    ordered = {str(band) for band in graph.subjects(URIRef(PAIR_BAND_ORDER), None)}
+    assert ordered == {row["id"] for row in pools}, (
+        "only some of the stack carries an order, so the rest still sorts by name"
+    )

@@ -37,6 +37,14 @@ def agent_scene():
 
 
 @pytest.fixture(scope="module")
+def repeating_view():
+    """Onyx raises the same concern several times over, which is what makes it
+    the scene for telling repeats apart."""
+    summary, result = _assess([example_path(ONYX_NS)])
+    return risk_view(summary, result.combined_graph)
+
+
+@pytest.fixture(scope="module")
 def onyx_view():
     summary, result = _assess([example_path(ONYX_NS)])
     return risk_view(summary, result.combined_graph), summary
@@ -751,3 +759,59 @@ def test_stating_a_harm_is_enough_to_have_an_agenda() -> None:
     assert {d["verdict"] for d in agenda["checked"]} > {"raised"}, (
         "an agenda of only raised risks would mean the un-fired ones went silent again"
     )
+
+
+def test_concerns_that_share_a_name_say_where_they_are(repeating_view) -> None:
+    """Prompt injection is raised once per untrusted-content/generation pair, so
+    three boxes reading "Candidate prompt injection exposure" are three true and
+    different answers - and nothing on them said which was which.
+
+    A concern is the (risk pattern, evidence set) group, so the evidence is what
+    differs. The element fewest siblings cite says it in the fewest words.
+    """
+    view = repeating_view
+    by_label: dict[str, list[dict]] = {}
+    for group in view["groups"]:
+        by_label.setdefault(group["label"], []).append(group)
+
+    repeated = {label: rows for label, rows in by_label.items() if len(rows) > 1}
+    assert repeated, "this scene no longer raises the same concern twice"
+
+    for label, rows in repeated.items():
+        places = [row.get("distinguisher") for row in rows]
+        assert all(places), f"a repeat of {label!r} says nothing about where it is"
+        assert len(set(places)) == len(places), (
+            f"two concerns called {label!r} name the same place: {places}"
+        )
+
+    alone = [row for rows in by_label.values() if len(rows) == 1 for row in rows]
+    assert all(not row.get("distinguisher") for row in alone), (
+        "a concern with a name of its own does not need telling apart"
+    )
+
+
+def test_a_concern_drawn_once_carries_its_place_beside_the_chip(repeating_view) -> None:
+    """Beside the type chip, never on it and never in the title.
+
+    The chip is the notation's type label and has to keep reading "Risk" -
+    overloading it with which one this is broke the test that reads the notation
+    off the canvas. The title would wrap the card onto another line.
+    """
+    view = repeating_view
+    where = {
+        group["key"]: group.get("distinguisher")
+        for group in view["groups"] if group.get("distinguisher")
+    }
+    assert where, "nothing to tell apart in this scene"
+    for node in view["diagram"]["nodes"]:
+        if node["band"] != "risk" or node["id"] not in where:
+            continue
+        assert node.get("where") == where[node["id"]], (
+            f"the box does not say where it is: {node.get('where')!r}"
+        )
+        assert not node.get("chip"), (
+            "the place is on the type chip, which has to keep reading 'Risk'"
+        )
+        assert where[node["id"]] not in node["title"], (
+            "the place is in the title as well, which wraps the box onto another line"
+        )

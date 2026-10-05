@@ -13,7 +13,7 @@ AGENT_GRAPH = """
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 local:sys a beam:System ; rdfs:label "Agentic probe" ;
-    beam:contain local:userRequest, local:planning, local:toolCall, local:toolResult,
+    beam:contain local:userRequest, local:planning, local:plan, local:toolCall, local:toolResult,
                  local:memoryWrite, local:agentMemory, local:memoryRead,
                  local:recalledContext, local:llm, local:generation, local:answer .
 
@@ -26,9 +26,11 @@ local:llm a beam:StatisticalModel ; rdfs:label "LLM" ;
 local:planning a beam:Infer, beam:Process ; rdfs:label "Planning" ;
     pair:playsRole pair:PlanningStep ;
     beam:use local:userRequest, local:llm ;
-    beam:inform local:toolCall .
+    beam:produce local:plan .
+local:plan a beam:Data ; rdfs:label "Chosen action" .
 local:toolCall a beam:Process ; rdfs:label "Tool call" ;
     pair:playsRole pair:ToolInvocationStep ;
+    beam:use local:plan ;
     beam:produce local:toolResult .
 local:toolResult a beam:Data ; rdfs:label "Tool result" ;
     pair:playsRole pair:RetrievedContext .
@@ -57,12 +59,16 @@ local:answer a beam:Data ; rdfs:label "Answer" ;
 
 POLICY_GATE = """
 local:policyGate a beam:Process ; rdfs:label "Policy Gate" ;
-    pair:playsRole pair:PolicyEnforcementStep ; beam:inform local:toolCall .
+    pair:playsRole pair:PolicyEnforcementStep ; beam:produce local:verdict .
+local:verdict a beam:Data ; rdfs:label "Policy verdict" .
+local:toolCall beam:use local:verdict .
 """
 
 MEMORY_SCREENING = """
 local:memScreen a beam:Process ; rdfs:label "Memory Screening" ;
-    pair:playsRole pair:MemoryValidationStep ; beam:inform local:memoryWrite .
+    pair:playsRole pair:MemoryValidationStep ; beam:produce local:screened .
+local:screened a beam:Data ; rdfs:label "Screened content" .
+local:memoryWrite beam:use local:screened .
 """
 
 

@@ -14,7 +14,7 @@ survive the round trip out to Turtle and back.
 from __future__ import annotations
 
 import pytest
-from rdflib import RDF, Graph, Namespace, URIRef
+from rdflib import RDF, RDFS, Graph, Namespace, URIRef
 
 from airiskkg.assessment_runner import PAIR, run_assessment_from_text
 from airiskkg.assessment_view import summarize_result
@@ -356,3 +356,89 @@ def test_a_hand_written_control_is_drawn_and_marked_as_somebody_s(client, scene)
     assert (made["control"], made["risk"]) in joined, (
         "nothing joins the control to the risk it modifies"
     )
+
+
+# ---- naming it from the library, or in one's own words ----
+
+
+def _library(client) -> dict:
+    return client.get("/api/library").get_json()
+
+
+def test_a_stated_risk_can_name_the_pattern_the_library_already_has(client, scene) -> None:
+    """A person who recognises the weakness should not have to retype its name,
+    and the graph should record which one they meant.
+
+    The stated risk is still their own node: pair:concernsRiskPattern points at
+    the pattern, rather than the risk being the pattern. A claim about this
+    system and a type in the library are different things, and collapsing them
+    would make the reconciliation meaningless."""
+    pattern = _library(client)["riskPatterns"][0]
+    ttl, rid = _state(client, scene, "risk", "", attach=[CHAT], fromLibrary=pattern["id"])
+    graph = Graph().parse(data=ttl, format="turtle")
+
+    assert (URIRef(rid), RDF.type, BEAMR.Risk) in graph, "it is still a stated risk"
+    assert (URIRef(rid), PAIR.concernsRiskPattern, URIRef(pattern["iri"])) in graph
+    assert str(graph.value(URIRef(rid), RDFS.label)) == pattern["label"], (
+        "an empty name takes the library's wording"
+    )
+
+
+def test_either_form_of_the_library_identifier_is_accepted(client, scene) -> None:
+    """A risk pattern is served with a short id and a full iri, a control with
+    only the iri. Sent the short form, the triple written must still be the
+    iri - an unresolved name becomes a file:// IRI against the working
+    directory, which looks right in the editor and matches nothing."""
+    pattern = _library(client)["riskPatterns"][0]
+    for sent in ("id", "iri"):
+        ttl, rid = _state(client, scene, "risk", "", attach=[CHAT], fromLibrary=pattern[sent])
+        graph = Graph().parse(data=ttl, format="turtle")
+        named = graph.value(URIRef(rid), PAIR.concernsRiskPattern)
+        assert str(named) == pattern["iri"], f"sending the {sent} wrote {named}"
+
+
+def test_a_stated_control_from_the_library_is_that_control(client, scene) -> None:
+    """Naming Guardrails is naming that control and nothing else, so the stated
+    control uses the library control's own IRI. Its type and label are written
+    into the submitted graph as well, because the graph has to stand alone."""
+    pattern = next(row for row in _library(client)["riskPatterns"] if row["controls"])
+    control = pattern["controls"][0]
+    ttl, rid = _state(client, scene, "risk", "Something noticed", attach=[CHAT])
+    ttl, cid = _state(client, ttl, "control", "", attach=[rid], fromLibrary=control["id"])
+
+    assert cid == control["id"], "a library control keeps its own identity"
+    graph = Graph().parse(data=ttl, format="turtle")
+    assert (URIRef(cid), RDF.type, BEAMR.RiskControl) in graph
+    assert (URIRef(cid), BEAMR.modifiesRiskConcept, URIRef(rid)) in graph
+    assert str(graph.value(URIRef(cid), RDFS.label)) == control["label"]
+
+
+def test_what_is_not_in_the_library_is_refused(client, scene) -> None:
+    """The picker is filled from the library, so anything else arriving in that
+    field is not a choice the reader could have made."""
+    body = client.post("/api/scope-edit", json={
+        "ttl": scene, "op": "state-concept", "kind": "risk",
+        "fromLibrary": "http://example.org/invented", "attachTo": [CHAT],
+    })
+    assert body.status_code == 400
+    assert "library" in body.get_json()["error"].lower()
+
+
+def test_only_a_risk_or_a_control_has_a_library_to_pick_from(client, scene) -> None:
+    """There is no shelf of consequences or impacts, so the field means nothing
+    on one and must not look as though it worked."""
+    body = client.post("/api/scope-edit", json={
+        "ttl": scene, "op": "state-concept", "kind": "consequence",
+        "label": "A consequence", "fromLibrary": "whatever", "attachTo": [CHAT],
+    })
+    assert body.status_code == 400
+
+
+def test_a_risk_written_from_the_library_still_detects_nothing(client, scene) -> None:
+    """Picking the library's name for a risk is still a person speaking. It
+    must not become a finding, and it must not change the ones the run makes."""
+    pattern = _library(client)["riskPatterns"][0]
+    plain = summarize_result(run_assessment_from_text(scene))
+    ttl, _ = _state(client, scene, "risk", "", attach=[CHAT], fromLibrary=pattern["id"])
+    after = summarize_result(run_assessment_from_text(ttl))
+    assert {f["id"] for f in plain["findings"]} == {f["id"] for f in after["findings"]}

@@ -325,7 +325,8 @@ def test_an_assessment_can_be_written_before_anything_is_run(served) -> None:
             // Drop it on an element for real, and see what that costs. The box
             // has to be one a press there would actually reach: the notation is
             // wider than its pane, so the first one can be clipped out of it.
-            window.prompt = () => "Written with no run";
+            // A prompt would be the old way; if one is reached the test says so.
+            window.prompt = () => { window.__prompted = true; return "a prompt"; };
             const pane = document.querySelector("#risk-canvas").getBoundingClientRect();
             let x = 0, y = 0;
             for (const box of document.querySelectorAll("#risk-canvas .rc-card")) {
@@ -344,6 +345,19 @@ def test_an_assessment_can_be_written_before_anything_is_run(served) -> None:
               { bubbles: true, clientX: x, clientY: y }));
             window.dispatchEvent(new PointerEvent("pointerup",
               { bubbles: true, clientX: x, clientY: y }));
+            /* The box is drawn by the drop and named afterwards, on the box:
+               its editor offers the library first and the person's own words
+               always. */
+            const named = () => {
+              const field = document.querySelector("#risk-side input");
+              if (!field) { setTimeout(named, 200); return; }
+              log("askedFirst=" + !!document.querySelector("#risk-side select"));
+              log("boxFirst=" + document.querySelectorAll("#risk-canvas .rc-card").length);
+              field.value = "Written with no run";
+              [...document.querySelectorAll("#risk-side button")]
+                .find((b) => b.textContent === "Apply").click();
+              setTimeout(settle, 900);
+            };
             /* Polled, not waited on: virtual time fast-forwards the timer but
                not the request behind it, so a fixed pause proves nothing. */
             let tries = 0;
@@ -356,8 +370,9 @@ def test_an_assessment_can_be_written_before_anything_is_run(served) -> None:
               log("inGraph=" + window.PairAI.Editor.getValue().includes("Written with no run"));
               log("drawn=" + !!mine);
               log("mark=" + (mine ? (mine.querySelector(".rc-mark") || {}).textContent : "-"));
+              log("prompted=" + !!window.__prompted);
             };
-            setTimeout(settle, 600);
+            setTimeout(named, 600);
           }, 400);
         }, 4000);
       }, 3000);
@@ -381,6 +396,16 @@ def test_an_assessment_can_be_written_before_anything_is_run(served) -> None:
     # Writing one down must not start a run. An assessment is expensive and the
     # decision to make one is the reader's.
     assert fields["dropOn"] == "found", "no system was reachable to drop onto"
+    assert fields["askedFirst"] == "true", (
+        "the box's own editor has to offer the library: whether this is a risk "
+        "the library already knows is a different question from what to call it"
+    )
+    assert int(fields["boxFirst"]) > 0, (
+        "the drop has to put the box on the diagram before anything is named - "
+        "asked first, nothing was drawn while the question was being answered "
+        "and the drop looked like it had done nothing"
+    )
+    assert fields["prompted"] == "false", "a browser prompt is not the form"
     assert fields["inGraph"] == "true", "the drop wrote nothing into the graph"
     assert fields["ranAssessment"] == "false", (
         "recording a risk by hand started an assessment nobody asked for"
@@ -446,3 +471,266 @@ def test_storming_takes_the_derived_boxes_off_the_diagram(served) -> None:
 
 
 
+
+def test_a_risk_can_be_carried_by_an_activity_as_well_as_an_element(served) -> None:
+    """A risk is as often carried by a step of the process as by a part of the
+    architecture. The two layers are joined by pair:refinedBy rather than one
+    standing in for the other, and beamr:hasRisk ranges over the element that
+    carries the risk - so the activity band has to accept a drop like any other.
+    """
+    report = _drive(served, _scene("""
+      const item = document.querySelector('#risk-palette .pp-item[data-kind="risk"]');
+      const r = item.getBoundingClientRect();
+      item.dispatchEvent(new PointerEvent("pointerdown", {
+        bubbles: true, clientX: r.left + 5, clientY: r.top + 5 }));
+      setTimeout(() => {
+        // An activity card, and one a press would really reach.
+        const pane = document.querySelector("#risk-canvas").getBoundingClientRect();
+        let x = 0, y = 0, name = "";
+        for (const box of document.querySelectorAll("#risk-canvas .rc-card.rc-droppable, #risk-canvas .rc-droppable")) {
+          const chip = box.querySelector(".rc-chip");
+          if (!chip || chip.textContent !== "Activity") continue;
+          const rect = box.querySelector("rect.rc-box");
+          if (!rect) continue;
+          const b = rect.getBoundingClientRect();
+          const cx = Math.round(b.left + b.width / 2), cy = Math.round(b.top + b.height / 2);
+          if (cx < pane.left || cx > pane.right || cy < pane.top || cy > pane.bottom) continue;
+          if (document.elementFromPoint(cx, cy)?.closest("[data-node]") !== box) continue;
+          x = cx; y = cy; name = box.querySelector(".rc-title").textContent; break;
+        }
+        log("activityDroppable=" + (x > 0));
+        log("onto=" + name);
+        window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: x, clientY: y }));
+        window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: x, clientY: y }));
+        setTimeout(() => {
+          const ttl = window.PairAI.Editor.getValue();
+          log("wroteRisk=" + (ttl.indexOf("beamr:Risk") >= 0 || ttl.indexOf("risk#Risk") >= 0));
+          log("carried=" + /hasRisk/.test(ttl));
+          log("drawn=" + [...document.querySelectorAll("#risk-canvas .rc-chip")]
+            .filter((t) => t.textContent === "Risk").length);
+        }, 2600);
+      }, 700);
+    """))
+
+    fields = _fields(report)
+    assert fields["activityDroppable"] == "true", (
+        "an activity card never offered itself as a drop target, so a risk on a "
+        "business step could not be written at all"
+    )
+    assert fields["onto"], "the probe could not name the activity it dropped on"
+    assert fields["wroteRisk"] == "true", "the drop wrote no beamr:Risk"
+    assert fields["carried"] == "true", "nothing carries it: no beamr:hasRisk was written"
+    assert int(fields["drawn"]) >= 1, "the risk it wrote is not drawn"
+
+
+def test_a_line_into_a_folded_system_says_which_parts_it_stands_for(served) -> None:
+    """Attachments to parts of a folded system all land on its band. Drawing one
+    line per attachment would stack them on the same spot, and deduplicating
+    them reports one attachment where the person made several - so the line
+    names what it stands for instead. Without that, picking a second element
+    looks like it did nothing at all.
+    """
+    report = _drive(served, _scene("""
+      const sysId = (window.PairAI.state.lastGraph.systems[0] || {}).id;
+      const members = ((window.PairAI.state.lastGraph.systems[0] || {}).members || []).slice(0, 2);
+      log("twoMembers=" + (members.length === 2));
+      const post = (op, extra) => fetch("/api/scope-edit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ttl: window.PairAI.Editor.getValue(), op, ...extra }),
+      }).then((r) => r.json());
+      post("state-concept", { kind: "risk", label: "Carried by two parts", attachTo: members })
+        .then((made) => {
+          window.PairAI.Editor.setValue(made.ttl);
+          setTimeout(() => {
+            const labels = [...document.querySelectorAll("#risk-canvas .rc-edge-label")]
+              .map((t) => t.textContent);
+            log("names=" + labels.filter((t) => t.includes(",")).length);
+            log("anyLabel=" + labels.length);
+          }, 2600);
+        });
+    """))
+
+    fields = _fields(report)
+    assert fields["twoMembers"] == "true", "this test needs a system with two parts"
+    assert int(fields["anyLabel"]) >= 1, (
+        "the attachment to a folded system drew no labelled line, so the person "
+        "cannot tell what the line stands for"
+    )
+    assert int(fields["names"]) >= 1, (
+        "a line standing for two attachments does not name them, so the second "
+        "attachment is invisible"
+    )
+
+
+def test_unfolding_a_system_does_not_fill_the_diagram_with_lines(served) -> None:
+    """Drawn one per evidence element, the attachment lines were three quarters
+    of the ink on the diagram and all of it said "where", not "what": a concern
+    cites three to eight elements, so nine concerns drew seventy-four lines.
+
+    They merge into one line per system, which names what it stands for.
+    Deduplicating instead would report one attachment where the assessment found
+    eight, which is the error the folded case already had to avoid.
+    """
+    report = _drive(served, _scene("""
+      const lines = () => document.querySelectorAll("#risk-canvas .rc-link.attaches").length;
+      log("folded=" + lines());
+      // The handle listens for pointerdown, not click.
+      const unfold = [...document.querySelectorAll("#risk-canvas .rc-unfold[data-unfold]")];
+      log("unfoldable=" + unfold.length);
+      for (const handle of unfold) {
+        handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      }
+      setTimeout(() => {
+        log("unfolded=" + lines());
+        log("parts=" + document.querySelectorAll("#risk-canvas .rc-flow").length);
+      }, 900);
+    """))
+
+    fields = _fields(report)
+    assert int(fields["unfoldable"]) >= 1, "no system on this scene can be opened"
+    assert int(fields["parts"]) >= 1, "opening a system drew none of its parts"
+    assert int(fields["unfolded"]) <= int(fields["folded"]) + 2, (
+        "opening a system multiplied the attachment lines: "
+        f"{fields['folded']} -> {fields['unfolded']}"
+    )
+
+
+def test_the_detail_opens_folded_and_the_reader_chooses_what_to_read(served) -> None:
+    """The panel carried a paragraph, nine conditions and a chain of elements all
+    open at once, and the parts worth acting on sat below all of it.
+
+    What a concern may lead to, and what can be done about it, stay in view; the
+    long prose folds behind its own key, with a hint of how much is there so a
+    reader can tell whether to open it.
+    """
+    report = _drive(served, _scene("""
+      // The canvas picks a box on pointerdown then pointerup, never on click.
+      // A hand-written risk, because its panel is where the three tiers meet:
+      // Apply is a primary button, Connect a plain one, remove this a chip.
+      fetch("/api/scope-edit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ttl: window.PairAI.Editor.getValue(), op: "state-concept",
+          kind: "risk", label: "Sizing probe",
+        }),
+      }).then((r) => r.json()).then((made) => {
+        window.PairAI.Editor.setValue(made.ttl);
+        setTimeout(() => {
+          const card = [...document.querySelectorAll("#risk-canvas .rc-card")]
+            .find((c) => c.querySelector(".rc-title")?.textContent === "Sizing probe");
+          log("probeDrawn=" + !!card);
+          card.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+          window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+          setTimeout(() => {
+        const folds = [...document.querySelectorAll(".rail-detail .concern-fold")];
+        log("folds=" + folds.length);
+        log("openAtFirst=" + folds.filter((f) => f.open).length);
+        log("keys=" + folds.map((f) => f.querySelector(".concern-key")?.textContent).join("/"));
+        // What to do about it is not hidden behind a fold.
+        log("leadsToVisible=" + [...document.querySelectorAll(".rail-detail .concern-row")]
+          .some((r) => r.querySelector(".concern-key")?.textContent === "may lead to"));
+        const why = folds.find((f) => f.querySelector(".concern-key")?.textContent === "why");
+        // checkVisibility reports what is rendered; a closed <details> keeps its
+        // children in the DOM, so their presence proves nothing.
+        const shown = (fold) => {
+          const list = fold.querySelector(".why-list");
+          return list.checkVisibility ? list.checkVisibility() : list.offsetParent !== null;
+        };
+        log("whyHidden=" + (why ? !shown(why) : "none"));
+        if (why) why.querySelector("summary").click();
+        setTimeout(() => {
+          log("whyShownAfterClick=" + (why ? shown(why) : "none"));
+        }, 300);
+      }, 900);
+    """))
+
+    fields = _fields(report)
+    assert int(fields["folds"]) >= 2, f"nothing folds in the detail: {fields}"
+    assert fields["openAtFirst"] == "0", "a fold is open before anybody asked for it"
+    assert fields["leadsToVisible"] == "true", (
+        "what the concern may lead to was folded away; that is the part worth seeing"
+    )
+    assert fields["whyHidden"] == "true", "the conditions are on screen before being asked for"
+    assert fields["whyShownAfterClick"] == "true", "opening the fold showed nothing"
+
+
+def test_the_control_tiers_render_at_one_size(served) -> None:
+    """The rail mixed .btn.small with a bare .chip that had a click handler and
+    no rule of its own, so a row of actions was several heights. The three tiers
+    are a contract now - committing, secondary, quiet - and they share a height,
+    a radius and a focus ring. Measured under the real stylesheet rather than
+    read off it, because that is the thing that can drift.
+    """
+    report = _drive(served, """
+      window.addEventListener("load", function () {
+        var log = function (m) { document.getElementById("probe-log").textContent += m + "|"; };
+        var host = document.createElement("div");
+        host.className = "risk-side";
+        host.innerHTML =
+          '<button type="button" class="btn small primary">Apply</button>' +
+          '<button type="button" class="btn small">Connect</button>' +
+          '<button type="button" class="chip clickable">remove this</button>' +
+          '<button type="button" class="chip clickable danger">remove that</button>';
+        document.body.appendChild(host);
+        setTimeout(function () {
+          var buttons = [].slice.call(host.querySelectorAll("button"));
+          var heights = buttons.map(function (b) {
+            return Math.round(b.getBoundingClientRect().height);
+          });
+          var radii = buttons.map(function (b) { return getComputedStyle(b).borderTopLeftRadius; });
+          log("heights=" + heights.join(","));
+          log("radii=" + radii.filter(function (r, i) { return radii.indexOf(r) === i; }).join(","));
+          log("danger=" + (getComputedStyle(buttons[3]).color !== getComputedStyle(buttons[1]).color));
+        }, 400);
+      });
+    """)
+
+    fields = _fields(report)
+    sizes = [int(h) for h in fields["heights"].split(",") if h]
+    assert len(sizes) == 4, f"the probe did not render all four tiers: {fields}"
+    assert max(sizes) - min(sizes) <= 1, (
+        f"the control tiers are different heights: {sizes}"
+    )
+    assert len(fields["radii"].split(",")) == 1, (
+        f"the tiers do not share a corner radius: {fields['radii']}"
+    )
+    assert fields["danger"] == "true", "a destructive action looks like an ordinary one"
+
+
+def test_a_disclosure_marker_is_drawn_rather_than_typed(served) -> None:
+    """Both markers were a CSS escape, and the tooling that writes the
+    stylesheet turned it into a raw control byte - so every arrow in the rail
+    rendered as tofu followed by "b8". Drawn with borders now: no glyph, no
+    escape, and no font to depend on.
+    """
+    report = _drive(served, _scene("""
+      var card = pickRisk();
+      card.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+      setTimeout(function () {
+        var summaries = [].slice.call(document.querySelectorAll(
+          ".concern-fold > summary, .rail-section > summary"));
+        log("markers=" + summaries.length);
+        log("content=" + summaries.map(function (s) {
+          return getComputedStyle(s, "::before").content;
+        }).filter(function (c, i, all) { return all.indexOf(c) === i; }).join(" "));
+        log("widths=" + summaries.map(function (s) {
+          return getComputedStyle(s, "::before").borderLeftWidth;
+        }).filter(function (w, i, all) { return all.indexOf(w) === i; }).join(" "));
+        var rail = document.querySelector(".rail-detail");
+        log("overflows=" + (rail ? rail.scrollWidth > rail.clientWidth + 1 : "none"));
+      }, 900);
+    """))
+
+    fields = _fields(report)
+    assert int(fields["markers"]) >= 2, "no disclosure markers in the rail"
+    assert "b8" not in fields["content"], (
+        f"a marker is rendering as text: {fields['content']!r}"
+    )
+    assert fields["content"].strip() in ('""', '"none"', 'none', '""'), (
+        f"a marker still carries a glyph: {fields['content']!r}"
+    )
+    assert "4px" in fields["widths"], (
+        f"the marker is not the drawn triangle: {fields['widths']!r}"
+    )
+    assert fields["overflows"] == "false", "the detail scrolls sideways"
