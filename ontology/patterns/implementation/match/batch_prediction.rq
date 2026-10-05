@@ -8,7 +8,8 @@ CONSTRUCT {
         a pair:MotifMatch ;
         rdfs:label "Batch Prediction Motif match"@en ;
         pair:matchesMotif pat:BatchPredictionMotif ;
-        pair:hasNodeBinding ?datasetBinding ,
+        pair:hasNodeBinding ?jobRequestBinding ,
+            ?datasetBinding ,
             ?jobBinding ,
             ?modelBinding ,
             ?resultBinding ,
@@ -18,6 +19,7 @@ CONSTRUCT {
     ?jobBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchPred_JobNode ; pair:matchedElement ?job .
     ?modelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchPred_ModelNode ; pair:matchedElement ?model .
     ?resultBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchPred_ResultNode ; pair:matchedElement ?result .
+    ?jobRequestBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchPred_JobRequestNode ; pair:matchedElement ?jobRequest .
     ?schedulerBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchPred_SchedulerNode ; pair:matchedElement ?scheduler .
 }
 WHERE {
@@ -29,10 +31,12 @@ WHERE {
            pair:playsRole/pair:subRoleOf* pair:Model .
     ?result a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:PredictionResult .
+    ?jobRequest a beam:Data .
     ?scheduler a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:JobScheduler .
 
-    ?scheduler beam:inform ?job .
+    ?scheduler beam:produce ?jobRequest .
+    ?job beam:use ?jobRequest .
     ?job beam:use ?dataset .
     ?job beam:use ?model .
     ?job beam:produce ?result .
@@ -53,5 +57,6 @@ WHERE {
     BIND(IRI(CONCAT(STR(?match), "/binding/job")) AS ?jobBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/model")) AS ?modelBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/result")) AS ?resultBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/job-request")) AS ?jobRequestBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/scheduler")) AS ?schedulerBinding)
 }

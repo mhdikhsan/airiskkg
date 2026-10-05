@@ -9,6 +9,7 @@ CONSTRUCT {
         rdfs:label "Model-in-Image Motif match"@en ;
         pair:matchesMotif pat:ModelInImageMotif ;
         pair:hasNodeBinding ?deploymentStepBinding ,
+            ?deployedModelBinding ,
             ?imageBuildStepBinding ,
             ?modelArtifactBinding ,
             ?predictionStepBinding ,
@@ -16,6 +17,7 @@ CONSTRUCT {
             ?trainingStepBinding .
 
     ?deploymentStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelImage_DeploymentStepNode ; pair:matchedElement ?deploymentStep .
+    ?deployedModelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelImage_DeployedModelNode ; pair:matchedElement ?deployedModel .
     ?imageBuildStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelImage_ImageBuildStepNode ; pair:matchedElement ?imageBuildStep .
     ?modelArtifactBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelImage_ModelArtifactNode ; pair:matchedElement ?modelArtifact .
     ?predictionStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:ModelImage_PredictionStepNode ; pair:matchedElement ?predictionStep .
@@ -33,15 +35,17 @@ WHERE {
            pair:playsRole/pair:subRoleOf* pair:PredictionStep .
     ?servingImage a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:ServingImage .
+    ?deployedModel a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:LoadedModel .
     ?trainingStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:TrainingStep .
 
     ?trainingStep beam:produce ?modelArtifact .
-    ?trainingStep beam:inform ?imageBuildStep .
     ?imageBuildStep beam:use ?modelArtifact .
     ?imageBuildStep beam:produce ?servingImage .
     ?deploymentStep beam:use ?servingImage .
-    ?deploymentStep beam:inform ?predictionStep .
+    ?deploymentStep beam:produce ?deployedModel .
+    ?predictionStep beam:use ?deployedModel .
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/model-in-image/",
         ENCODE_FOR_URI(STR(?deploymentStep)),
@@ -54,10 +58,13 @@ WHERE {
         "/",
         ENCODE_FOR_URI(STR(?servingImage)),
         "/",
-        ENCODE_FOR_URI(STR(?trainingStep))
+        ENCODE_FOR_URI(STR(?trainingStep)),
+        "/",
+        ENCODE_FOR_URI(STR(?deployedModel))
     )) AS ?match)
 
     BIND(IRI(CONCAT(STR(?match), "/binding/deployment-step")) AS ?deploymentStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/deployed-model")) AS ?deployedModelBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/image-build-step")) AS ?imageBuildStepBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/model-artifact")) AS ?modelArtifactBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/prediction-step")) AS ?predictionStepBinding)

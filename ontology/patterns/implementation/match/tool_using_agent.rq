@@ -8,20 +8,22 @@ CONSTRUCT {
         a pair:MotifMatch ;
         rdfs:label "Tool-Using Agent motif match"@en ;
         pair:matchesMotif pat:ToolUsingAgentMotif ;
-        pair:hasNodeBinding ?planningB , ?actionB , ?resultB .
+        pair:hasNodeBinding ?planningB , ?actionB , ?resultB , ?boxB .
 
     ?planningB a pair:NodeBinding ; pair:bindsPatternNode pat:ToolAgent_PlanningStepNode ; pair:matchedElement ?planningStep .
     ?actionB   a pair:NodeBinding ; pair:bindsPatternNode pat:ToolAgent_ActionStepNode ;   pair:matchedElement ?actionStep .
     ?resultB   a pair:NodeBinding ; pair:bindsPatternNode pat:ToolAgent_ActionResultNode ; pair:matchedElement ?actionResult .
+    ?boxB     a pair:NodeBinding ; pair:bindsPatternNode pat:ToolAgent_PlanNode ; pair:matchedElement ?plan .
 }
 WHERE {
     ?planningStep a/rdfs:subClassOf* beam:Process ;
                   pair:playsRole/pair:subRoleOf* pair:PlanningStep ;
-                  beam:inform ?actionStep .
+                  beam:produce ?plan .
 
     # The action reaches outside the system: a tool call or a direct state
     # change. Both are ProcessingStep specializations, so bind either.
     ?actionStep a/rdfs:subClassOf* beam:Process ;
+                beam:use ?plan ;
                 pair:playsRole ?actionRole ;
                 beam:produce ?actionResult .
     { ?actionRole pair:subRoleOf* pair:ToolInvocationStep }
@@ -29,14 +31,18 @@ WHERE {
     { ?actionRole pair:subRoleOf* pair:StateChangingStep }
 
     ?actionResult a beam:Data .
+    ?plan a beam:Data .
 
     FILTER(?planningStep != ?actionStep)
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/tool-using-agent/",
         ENCODE_FOR_URI(STR(?planningStep)), "/",
-        ENCODE_FOR_URI(STR(?actionStep))
+        ENCODE_FOR_URI(STR(?actionStep)), "/",
+        ENCODE_FOR_URI(STR(?plan))
     )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/plan")) AS ?boxB)
 
     BIND(IRI(CONCAT(STR(?match), "/binding/planning-step")) AS ?planningB)
     BIND(IRI(CONCAT(STR(?match), "/binding/action-step"))   AS ?actionB)

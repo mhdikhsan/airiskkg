@@ -48,7 +48,7 @@ WHERE {
             UNION
             { ?validationRole pair:subRoleOf* pair:OutputValidationStep }
             {
-                ?validationStep beam:inform ?writeStep .
+                ?validationStep beam:produce/^beam:use ?writeStep .
             }
             UNION
             {

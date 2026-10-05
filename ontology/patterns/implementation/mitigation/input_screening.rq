@@ -11,9 +11,17 @@ CONSTRUCT {
         rdfs:label "Input screening"@en ;
         pair:playsRole pair:InputGuardrailStep ;
         beam:use ?untrustedContent ;
-        beam:inform ?generationStep .
+        beam:produce ?decision .
 
-    ?system beam:hasProcess ?screeningStep .
+    ?decision
+        a beam:Data ;
+        rdfs:label "Input screening decision"@en ;
+        pair:playsRole pair:GuardrailDecision .
+
+    ?generationStep beam:use ?decision .
+
+    ?system beam:hasProcess ?screeningStep ;
+        beam:hasResource ?decision .
 }
 WHERE {
     ?finding
@@ -40,7 +48,7 @@ WHERE {
         ?existingScreen pair:playsRole/pair:subRoleOf* pair:InputGuardrailStep .
         {
             ?existingScreen beam:use ?untrustedContent ;
-                beam:inform ?generationStep .
+                beam:produce/^beam:use ?generationStep .
         }
         UNION
         {
@@ -59,4 +67,6 @@ WHERE {
         ENCODE_FOR_URI(STR(?untrustedContent)), "/",
         ENCODE_FOR_URI(STR(?generationStep))
     )) AS ?screeningStep)
+
+    BIND(IRI(CONCAT(STR(?screeningStep), "/decision")) AS ?decision)
 }

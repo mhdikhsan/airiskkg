@@ -11,31 +11,60 @@ CONSTRUCT {
 
     ?derivation
         a prov:Derivation ;
-        rdfs:label "Personal data declared on the business process"@en ;
+        rdfs:label ?how ;
         prov:entity ?dataObject ;
         prov:hadActivity ?activity ;
-        pair:derivedCategory pair:SensitiveInformation .
+        pair:derivedCategory pair:SensitiveInformation ;
+        pair:targetInferred ?inferred .
     ?input prov:qualifiedDerivation ?derivation .
 }
 WHERE {
-    ?activity
-        pair:refinedBy ?system ;
-        bp:dataInputAssociation ?association .
+    ?activity pair:refinedBy ?system .
 
-    ?association
-        bp:targetRef ?activity ;
-        bp:sourceRef ?dataReference .
+    {
+        ?activity bp:dataInputAssociation ?association .
+        ?association bp:targetRef ?activity ; bp:sourceRef ?dataReference .
+        BIND(true AS ?reads)
+    }
+    UNION
+    {
+        ?activity bp:dataOutputAssociation ?association .
+        ?association bp:sourceRef ?activity ; bp:targetRef ?dataReference .
+    }
 
     # A store as well as an object.
     ?dataReference bp:dataObjectRef|bp:dataStoreRef ?dataObject .
     ?dataObject bp:itemSubjectRef ?item .
     ?item bp:structureRef ?personalDataKind .
 
-    FILTER (?personalDataKind NOT IN (dpv:AnonymisedData, dpv:NonPersonalData))
+    OPTIONAL {
+        ?option pair:classifiesAs ?personalDataKind ;
+                pair:meansPersonalData ?meansPersonal .
+    }
+   
+    FILTER (COALESCE(?meansPersonal, true))
 
+    OPTIONAL { ?dataObject pair:realisedBy ?named }
     ?system beam:hasResource ?input .
-    ?input pair:playsRole/pair:subRoleOf* ?inputRole .
-    VALUES ?inputRole { pair:UserInput pair:PredictionRequest }
+    ?input a/rdfs:subClassOf* beam:Data .
+
+    BIND(EXISTS {
+        ?system beam:hasProcess ?maker .
+        ?maker beam:produce ?input .
+    } AS ?madeHere)
+    BIND(EXISTS {
+        ?system beam:hasProcess ?consumer .
+        ?consumer beam:use ?input .
+    } AS ?readHere)
+
+    FILTER (IF(BOUND(?named), ?input = ?named,
+               IF(BOUND(?reads), !?madeHere, !?readHere)))
+
+    BIND(!BOUND(?named) AS ?inferred)
+    BIND(IF(BOUND(?named),
+            STRLANG("Personal data declared on the business process, on the named element", "en"),
+            STRLANG("Personal data declared on the business process, matched to this element by flow", "en"))
+         AS ?how)
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/derivation/business-data/",

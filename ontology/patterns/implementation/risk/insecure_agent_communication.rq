@@ -50,7 +50,7 @@ WHERE {
             }
             UNION
             {
-                ?mediatingStep beam:inform ?receivingStep .
+                ?mediatingStep beam:produce/^beam:use ?receivingStep .
             }
         }
 

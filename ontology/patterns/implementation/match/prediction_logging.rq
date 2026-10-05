@@ -34,7 +34,6 @@ WHERE {
 
     ?predictionStep beam:use ?request .
     ?predictionStep beam:produce ?result .
-    ?predictionStep beam:inform ?loggingStep .
     ?loggingStep beam:use ?request .
     ?loggingStep beam:use ?result .
     ?loggingStep beam:produce ?logRecord .

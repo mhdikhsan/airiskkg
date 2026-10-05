@@ -56,7 +56,7 @@ WHERE {
             ?screeningStep pair:playsRole/pair:subRoleOf* pair:InputGuardrailStep .
             {
                 ?screeningStep beam:use ?untrustedContent ;
-                    beam:inform ?generationStep .
+                    beam:produce/^beam:use ?generationStep .
             }
             UNION
             {

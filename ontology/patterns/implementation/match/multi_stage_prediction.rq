@@ -43,7 +43,6 @@ WHERE {
     ?fastPredictionStep beam:use ?request .
     ?fastPredictionStep beam:use ?fastModel .
     ?fastPredictionStep beam:produce ?quickResult .
-    ?fastPredictionStep beam:inform ?slowPredictionStep .
     ?slowPredictionStep beam:use ?request .
     ?slowPredictionStep beam:use ?slowModel .
     ?slowPredictionStep beam:produce ?improvedResult .

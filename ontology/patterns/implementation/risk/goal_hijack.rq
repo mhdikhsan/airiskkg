@@ -52,7 +52,7 @@ WHERE {
             }
             UNION
             {
-                ?screeningStep beam:inform ?planningStep .
+                ?screeningStep beam:produce/^beam:use ?planningStep .
             }
         }
 

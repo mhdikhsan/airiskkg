@@ -8,7 +8,8 @@ CONSTRUCT {
         a pair:MotifMatch ;
         rdfs:label "Batch Training Motif match"@en ;
         pair:matchesMotif pat:BatchTrainingMotif ;
-        pair:hasNodeBinding ?datasetBinding ,
+        pair:hasNodeBinding ?jobRequestBinding ,
+            ?datasetBinding ,
             ?evaluationResultBinding ,
             ?evaluationStepBinding ,
             ?modelArtifactBinding ,
@@ -22,6 +23,7 @@ CONSTRUCT {
     ?evaluationStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_EvaluationStepNode ; pair:matchedElement ?evaluationStep .
     ?modelArtifactBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_ModelArtifactNode ; pair:matchedElement ?modelArtifact .
     ?preprocessStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_PreprocessStepNode ; pair:matchedElement ?preprocessStep .
+    ?jobRequestBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_JobRequestNode ; pair:matchedElement ?jobRequest .
     ?schedulerBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_SchedulerNode ; pair:matchedElement ?scheduler .
     ?trainingDataBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_TrainingDataNode ; pair:matchedElement ?trainingData .
     ?trainingStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:BatchTrain_TrainingStepNode ; pair:matchedElement ?trainingStep .
@@ -37,6 +39,7 @@ WHERE {
            pair:playsRole/pair:subRoleOf* pair:ModelArtifact .
     ?preprocessStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:PreprocessingStep .
+    ?jobRequest a beam:Data .
     ?scheduler a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:JobScheduler .
     ?trainingData a beam:Data ;
@@ -44,13 +47,12 @@ WHERE {
     ?trainingStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:TrainingStep .
 
-    ?scheduler beam:inform ?preprocessStep .
+    ?scheduler beam:produce ?jobRequest .
+    ?preprocessStep beam:use ?jobRequest .
     ?preprocessStep beam:use ?dataset .
     ?preprocessStep beam:produce ?trainingData .
-    ?preprocessStep beam:inform ?trainingStep .
     ?trainingStep beam:use ?trainingData .
     ?trainingStep beam:produce ?modelArtifact .
-    ?trainingStep beam:inform ?evaluationStep .
     ?evaluationStep beam:use ?modelArtifact .
     ?evaluationStep beam:produce ?evaluationResult .
     BIND(IRI(CONCAT(
@@ -77,6 +79,7 @@ WHERE {
     BIND(IRI(CONCAT(STR(?match), "/binding/evaluation-step")) AS ?evaluationStepBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/model-artifact")) AS ?modelArtifactBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/preprocess-step")) AS ?preprocessStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/job-request")) AS ?jobRequestBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/scheduler")) AS ?schedulerBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/training-data")) AS ?trainingDataBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/training-step")) AS ?trainingStepBinding)

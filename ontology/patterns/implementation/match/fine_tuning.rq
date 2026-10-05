@@ -39,7 +39,6 @@ WHERE {
     ?trainingStep beam:use ?baseModel .
     ?trainingStep beam:use ?dataset .
     ?trainingStep beam:produce ?fineTunedModel .
-    ?trainingStep beam:inform ?evaluationStep .
     ?evaluationStep beam:use ?fineTunedModel .
     ?evaluationStep beam:produce ?evaluationScore .
     BIND(IRI(CONCAT(
