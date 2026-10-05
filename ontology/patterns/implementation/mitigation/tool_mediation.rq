@@ -10,9 +10,17 @@ CONSTRUCT {
         a beam:Process ;
         rdfs:label "Tool policy enforcement"@en ;
         pair:playsRole pair:PolicyEnforcementStep ;
-        beam:inform ?actionStep .
+        beam:produce ?verdict .
 
-    ?system beam:hasProcess ?mediatingStep .
+    ?verdict
+        a beam:Data ;
+        rdfs:label "Policy verdict"@en ;
+        pair:playsRole pair:GuardrailDecision .
+
+    ?actionStep beam:use ?verdict .
+
+    ?system beam:hasProcess ?mediatingStep ;
+        beam:hasResource ?verdict .
 }
 WHERE {
     ?finding
@@ -29,7 +37,7 @@ WHERE {
         { ?existingRole pair:subRoleOf* pair:HumanApprovalStep }
         UNION
         { ?existingRole pair:subRoleOf* pair:RateLimitControlStep }
-        ?existing beam:inform ?actionStep .
+        ?existing beam:produce/^beam:use ?actionStep .
     }
 
     OPTIONAL { ?system a beam:System . }
@@ -38,4 +46,6 @@ WHERE {
         "http://w3id.org/airiskkg/generated/mitigation/tool-mediation/",
         ENCODE_FOR_URI(STR(?actionStep))
     )) AS ?mediatingStep)
+
+    BIND(IRI(CONCAT(STR(?mediatingStep), "/verdict")) AS ?verdict)
 }

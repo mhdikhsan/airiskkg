@@ -861,3 +861,65 @@ def test_opening_an_ai_system_on_the_overview_draws_its_risk(served) -> None:
         "mounting the overview's canvas took over the risk level's - the renderer "
         "is a factory so the two mounts must not share state"
     )
+
+
+BLACK_BOX = """
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix bb:   <http://example.org/black-box#> .
+
+bb:Buyer a bpmn:participant ; bp:name "Buyer" ; bp:processRef bb:Ordering .
+bb:Supplier a bpmn:participant ; bp:name "Supplier" .
+
+bb:Ordering a bpmn:process ; bp:contains bb:Received , bb:Enrich , bb:Done .
+bb:Received a bpmn:startEvent ; bp:name "Product data received" ;
+    bp:eventDefinition bb:Trigger ; bp:outgoing bb:F1 .
+bb:Trigger a bpmn:messageEventDefinition .
+bb:Enrich a bpmn:task ; bp:name "Enrich the catalogue" ; bp:incoming bb:F1 ; bp:outgoing bb:F2 .
+bb:Done a bpmn:endEvent ; bp:incoming bb:F2 .
+bb:F1 a bpmn:sequenceFlow ; bp:sourceRef bb:Received ; bp:targetRef bb:Enrich .
+bb:F2 a bpmn:sequenceFlow ; bp:sourceRef bb:Enrich ; bp:targetRef bb:Done .
+
+bb:Sends a bpmn:messageFlow ; bp:name "product data" ;
+    bp:sourceRef bb:Supplier ; bp:targetRef bb:Received .
+"""
+
+
+def test_a_message_flow_from_a_black_box_pool_is_drawn(served) -> None:
+    """A participant with no process is BPMN's black box, so a message flow can
+    only name the pool itself. The canvas drew the pool and dropped the arrow."""
+    report = _drive(served, """
+    const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+    window.addEventListener("load", () => setTimeout(() => {
+      window.PairAI.Editor.setValue(GRAPH_TTL);
+      setTimeout(() => {
+        document.querySelector("#level-business").click();
+        setTimeout(() => {
+          const canvas = document.querySelector("#process-canvas");
+          const flow = canvas.querySelector('[data-flow="http://example.org/black-box#Sends"]');
+          log("drawn=" + (flow ? 1 : 0));
+          if (!flow) return;
+          const pool = [...canvas.querySelectorAll(".pc-pool")]
+            .find((g) => g.querySelector(".pc-pool-label").textContent === "Supplier");
+          const box = pool.querySelector(".pc-pool-box");
+          const top = Number(box.getAttribute("y"));
+          const bottom = top + Number(box.getAttribute("height"));
+          const cy = Number(flow.querySelector(".pc-msg-start").getAttribute("cy"));
+          log("onEdge=" + (Math.abs(cy - top) < 1 || Math.abs(cy - bottom) < 1 ? 1 : 0));
+          const xs = flow.querySelector(".pc-flow.message").getAttribute("d")
+            .match(/-?[\\d.]+/g).map(Number).filter((_, i) => i % 2 === 0);
+          log("straight=" + (Math.max(...xs) - Math.min(...xs) < 1 ? 1 : 0));
+          log("pools=" + canvas.querySelectorAll(".pc-pool").length);
+          log("folds=" + canvas.querySelectorAll(".pc-pool-fold").length);
+        }, 1500);
+      }, 2500);
+    }, 2000));
+    """.replace("GRAPH_TTL", json.dumps(BLACK_BOX)), budget=20000)
+
+    seen = {k: int(v) for k, v in re.findall(r"(\w+)=(\d+)", report)}
+    assert seen.get("drawn") == 1, f"the message flow from the black-box pool was not drawn: {report}"
+    assert seen["onEdge"] == 1, f"the arrow does not start on the pool's edge: {report}"
+    assert seen["straight"] == 1, f"the arrow does not run straight across to its target: {report}"
+    assert seen["pools"] == 2 and seen["folds"] == 1, (
+        f"the black-box pool offers to open, and there is nothing inside it: {report}"
+    )

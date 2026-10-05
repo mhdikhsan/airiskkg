@@ -24,7 +24,7 @@ its:AgentSystem a beam:Element, beam:System ;
                     its:MemoryRead, its:ReplyDrafting, its:Handoff ;
     beam:hasResource its:Ticket, its:AgentLLM, its:ToolCatalogue, its:ToolResult,
                      its:AgentMemory, its:RecalledHistory, its:DraftReply,
-                     its:HandoffRequest, its:EscalationNote .
+                     its:HandoffRequest, its:EscalationNote, its:ActionPlan .
 
 ### What comes in
 
@@ -46,13 +46,15 @@ its:Planning a beam:Infer, beam:Process ;
     rdfs:label "Decide what to do" ;
     pair:playsRole pair:PlanningStep ;
     beam:use its:Ticket, its:AgentLLM, its:ToolCatalogue ;
-    beam:inform its:ToolInvocation, its:AccountChange, its:Handoff ;
-    beam:produce its:HandoffRequest .
+    beam:produce its:ActionPlan, its:HandoffRequest .
+
+its:ActionPlan a beam:Data ;
+    rdfs:label "Chosen course of action" .
 
 its:ToolInvocation a beam:Process ;
     rdfs:label "Look up the account" ;
     pair:playsRole pair:ToolInvocationStep ;
-    beam:use its:Ticket ;
+    beam:use its:ActionPlan, its:Ticket ;
     beam:produce its:ToolResult .
 
 its:ToolResult a beam:Data ;
@@ -64,7 +66,7 @@ its:ToolResult a beam:Data ;
 its:AccountChange a beam:Process ;
     rdfs:label "Apply the account change" ;
     pair:playsRole pair:StateChangingStep ;
-    beam:use its:ToolResult ;
+    beam:use its:ActionPlan, its:ToolResult ;
     beam:produce its:DraftReply .
 
 ### What it remembers

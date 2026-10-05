@@ -33,10 +33,8 @@ WHERE {
            pair:playsRole/pair:subRoleOf* pair:TrainingPipeline .
 
     ?trainingPipeline beam:produce ?modelArtifact .
-    ?trainingPipeline beam:inform ?autoDeployment .
     ?autoDeployment beam:use ?modelArtifact .
     ?autoDeployment beam:produce ?deployedModel .
-    ?autoDeployment beam:inform ?predictionStep .
     ?predictionStep beam:use ?deployedModel .
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/training-to-serving/",

@@ -8,20 +8,22 @@ CONSTRUCT {
         a pair:MotifMatch ;
         rdfs:label "Human Oversight motif match"@en ;
         pair:matchesMotif pat:HumanOversightMotif ;
-        pair:hasNodeBinding ?approvalB , ?actionB , ?resultB .
+        pair:hasNodeBinding ?approvalB , ?actionB , ?resultB , ?boxB .
 
     ?approvalB a pair:NodeBinding ; pair:bindsPatternNode pat:HumanOversight_ApprovalStepNode ; pair:matchedElement ?approvalStep .
     ?actionB   a pair:NodeBinding ; pair:bindsPatternNode pat:HumanOversight_ActionStepNode ;   pair:matchedElement ?actionStep .
     ?resultB   a pair:NodeBinding ; pair:bindsPatternNode pat:HumanOversight_ActionResultNode ; pair:matchedElement ?actionResult .
+    ?boxB     a pair:NodeBinding ; pair:bindsPatternNode pat:HumanOversight_ApprovalNode ; pair:matchedElement ?approval .
 }
 WHERE {
     ?approvalStep a/rdfs:subClassOf* beam:Process ;
                   pair:playsRole/pair:subRoleOf* pair:HumanApprovalStep ;
-                  beam:inform ?actionStep .
+                  beam:produce ?approval .
 
     # Same action side as the Tool-Using Agent motif: a tool call or a direct
     # state change, so oversight of either shape is recognised.
     ?actionStep a/rdfs:subClassOf* beam:Process ;
+                beam:use ?approval ;
                 pair:playsRole ?actionRole ;
                 beam:produce ?actionResult .
     { ?actionRole pair:subRoleOf* pair:ToolInvocationStep }
@@ -29,14 +31,18 @@ WHERE {
     { ?actionRole pair:subRoleOf* pair:StateChangingStep }
 
     ?actionResult a beam:Data .
+    ?approval a beam:Data .
 
     FILTER(?approvalStep != ?actionStep)
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/human-oversight/",
         ENCODE_FOR_URI(STR(?approvalStep)), "/",
-        ENCODE_FOR_URI(STR(?actionStep))
+        ENCODE_FOR_URI(STR(?actionStep)), "/",
+        ENCODE_FOR_URI(STR(?approval))
     )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/approval")) AS ?boxB)
 
     BIND(IRI(CONCAT(STR(?match), "/binding/approval-step")) AS ?approvalB)
     BIND(IRI(CONCAT(STR(?match), "/binding/action-step"))   AS ?actionB)

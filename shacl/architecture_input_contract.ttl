@@ -86,6 +86,97 @@ aic:ResourceRoleShape
         sh:message "Resource has no pair:playsRole; motifs match on roles, so this element cannot participate in motif matching." ;
     ] .
 
+# Flow edges join a process to a resource, never two of a kind. BEAM declares a
+# domain and range for each, but no reasoner runs, so a data-to-data edge parses
+# cleanly and only a shape rejects it.
+
+aic:UseSubjectShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf beam:use ;
+    sh:severity sh:Violation ;
+    sh:class beam:Process ;
+    sh:message "Only a beam:Process may beam:use something. Two resources never connect directly; flow between them passes through a process." .
+
+aic:UseObjectShape
+    a sh:NodeShape ;
+    sh:targetObjectsOf beam:use ;
+    sh:severity sh:Violation ;
+    sh:class beam:Resource ;
+    sh:message "beam:use must point at a beam:Resource. An agent is reached with beam:participatedIn." .
+
+aic:ProduceSubjectShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf beam:produce ;
+    sh:severity sh:Violation ;
+    sh:class beam:Process ;
+    sh:message "Only a beam:Process may beam:produce something. A resource does not produce another resource." .
+
+aic:ProduceObjectShape
+    a sh:NodeShape ;
+    sh:targetObjectsOf beam:produce ;
+    sh:severity sh:Violation ;
+    sh:class beam:Resource ;
+    sh:message "beam:produce must point at a beam:Resource." .
+
+aic:NoProcessToProcessEdgeShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf beam:inform ;
+    sh:severity sh:Violation ;
+    sh:message "A process never reaches a process directly, exactly as data never reaches data: the two are joined by the resource one produces and the other uses. beam:inform is no longer part of BEAM." ;
+    sh:not [ sh:path beam:inform ; sh:minCount 1 ] .
+
+aic:UsedBySubjectShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf beam:usedBy ;
+    sh:severity sh:Violation ;
+    sh:class beam:Resource ;
+    sh:message "beam:usedBy reads from a beam:Resource. A process declares its own inputs with beam:use." .
+
+aic:UsedByObjectShape
+    a sh:NodeShape ;
+    sh:targetObjectsOf beam:usedBy ;
+    sh:severity sh:Violation ;
+    sh:class beam:Process ;
+    sh:message "beam:usedBy must point at a beam:Process." .
+
+aic:ProducedBySubjectShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf beam:producedBy ;
+    sh:severity sh:Violation ;
+    sh:class beam:Resource ;
+    sh:message "beam:producedBy reads from a beam:Resource." .
+
+aic:ProducedByObjectShape
+    a sh:NodeShape ;
+    sh:targetObjectsOf beam:producedBy ;
+    sh:severity sh:Violation ;
+    sh:class beam:Process ;
+    sh:message "beam:producedBy must point at a beam:Process." .
+
+aic:ParticipatedInSubjectShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf beam:participatedIn ;
+    sh:severity sh:Violation ;
+    sh:class beam:Agent ;
+    sh:message "Only a beam:Agent may beam:participatedIn a process." .
+
+aic:ParticipatedInObjectShape
+    a sh:NodeShape ;
+    sh:targetObjectsOf beam:participatedIn ;
+    sh:severity sh:Violation ;
+    sh:class beam:Process ;
+    sh:message "beam:participatedIn must point at a beam:Process." .
+
+# An agent and a system are siblings of beam:Resource, not kinds of it, so
+# neither can stand at the resource end of a flow edge.
+
+aic:ElementIsOneKindShape
+    a sh:NodeShape ;
+    sh:targetClass beam:Element ;
+    sh:severity sh:Violation ;
+    sh:not [ sh:and ( [ sh:class beam:Process ] [ sh:class beam:Resource ] ) ] ;
+    sh:message "An element is a process or a resource, not both: the two carry different edges." .
+
 # Shared prefix declarations for the SPARQL constraints above.
 
 <http://w3id.org/airiskkg/shacl/architecture-input-contract>

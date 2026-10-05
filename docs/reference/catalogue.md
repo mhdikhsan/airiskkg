@@ -13,7 +13,8 @@ changes and this page does not, this page is wrong.
   element (a box) — one element may carry several roles.
 - **Motifs** are the *structure a rule matches*, not the rule. A motif is a
   type-level configuration of **role-tagged elements plus the flow edges between
-  them** (`beam:use` / `beam:produce` / `beam:inform`). Matching finds the
+  them** (`beam:use` / `beam:produce`). The graph is bipartite, so every edge
+  crosses between a step and a resource. Matching finds the
   configuration; a motif is **risk-neutral by itself** — it says what structure is
   present, never whether that structure is dangerous.
 - **Risk patterns** are the *rules*. When a motif match also satisfies a risk
@@ -83,15 +84,15 @@ matches several families at once.
 | **EmbeddingsMotif** | Source documents/data chunked and transformed into vectors stored in a vector index. | LLM04, LLM08 |
 | **QueryRewritingMotif** | An LLM reformulates a user query into alternative queries used for retrieval. | LLM01, LLM10 |
 | **RerankerMotif** | A candidate set of retrieved fragments is reranked by a model to select context. | LLM08 |
-| **InputScreeningMotif** | A step screens user input and informs the generation step it protects. Nests inside GuardrailsMotif; realizes input validation without requiring the whole guarded-generation topology. | — (clears LLM01) |
+| **InputScreeningMotif** | A step screens user input and produces a decision the generation step reads. Nests inside GuardrailsMotif; realizes input validation without requiring the whole guarded-generation topology. | — (clears LLM01) |
 | **OutputScreeningMotif** | A step screens a generated response before release. Nests inside GuardrailsMotif. | — |
-| **HybridRetrieverMotif** | Vector search and keyword/structured search combined and aggregated into a candidate context set. | — |
+| **HybridRetrieverMotif** | Vector search and keyword/structured search each produce a result set, aggregated into a candidate context set. | — |
 
 ### Gen AI — controls & evaluation
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **GuardrailsMotif** | Input/output guardrail steps screen or sanitize prompts and responses around the LLM. Flow-agnostic: anchored on the `inform` edges, so it matches whether generation consumes the user prompt directly or a constructed prompt. | LLM05, LLM07 |
+| **GuardrailsMotif** | Input/output guardrail steps screen or sanitize prompts and responses around the LLM. Flow-agnostic: anchored on the guardrail decision the generation reads, so it matches whether generation consumes the user prompt directly or a constructed prompt. | LLM05, LLM07 |
 | **EvalsMotif** | Model input, output, expected output, and optional context are scored/judged into evaluation results. | — |
 
 > **A control motif is not a safe motif.** Guardrails and Evals are what
@@ -114,10 +115,10 @@ matches several families at once.
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **ToolUsingAgentMotif** | A planning step decides on an action and hands off (`inform`) to a step that invokes an external tool or changes external state, producing a result the system consumes. Risk-neutral: acting through tools is what makes an agent useful. | ASI02 |
+| **ToolUsingAgentMotif** | A planning step decides on an action and produces that plan; a step reads it to invoke an external tool or change external state, producing a result the system consumes. Risk-neutral: acting through tools is what makes an agent useful. | ASI02 |
 | **AgentMemoryLoopMotif** | A step writes content to an agent memory store and a later step reads that same store back into a working context — the loop through a store is the distinguishing shape, and why one bad write outlives the turn that produced it. | ASI06 |
 | **AgentDelegationMotif** | One agent's planning step produces a message that another agent's handoff step consumes and acts on, so work crosses an agent boundary. The named message is what makes the crossing assessable. | ASI07 |
-| **HumanOversightMotif** | A human approval step informs an acting step, which produces the action's result. A **control** motif: matching it *suppresses* the tool-misuse finding on the mediated path rather than raising anything. | — (suppresses ASI02) |
+| **HumanOversightMotif** | A human approval step produces an approval the acting step reads before it produces the action's result. A **control** motif: matching it *suppresses* the tool-misuse finding on the mediated path rather than raising anything. | — (suppresses ASI02) |
 
 ### Prediction / serving (classic ML)
 
@@ -148,7 +149,7 @@ matches several families at once.
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
 | **ModelLoadMotif** | Server image and model artifact managed separately; model loaded before prediction. | LLM03 |
-| **ModelInImageMotif** | A trained artifact packaged into a serving image deployed as the runtime. | LLM03 |
+| **ModelInImageMotif** | A trained artifact packaged into a serving image, deployed as the model the prediction step serves from. | LLM03 |
 | **PredictionLoggingMotif** | Prediction inputs/results/latency collected into logs. | — |
 | **PredictionMonitoringMotif** | Logs/result trends monitored against expected behavior; may raise alerts. | — |
 
@@ -175,7 +176,7 @@ mitigations attached to the finding.
 | **LLM03** | Supply chain compromise | An external model / data / dependency / artifact is used, with no control on it. | External Dependency, Fine Tuning, Model Load, Model-in-Image, Training-to-Serving | Model & dependency provenance; logging/monitoring/evals |
 | **LLM04** | Data & model poisoning | A bound source tagged `UntrustedContent` enters embeddings / fine-tuning / training-to-serving. | Embeddings, Fine Tuning, Training-to-Serving | Trusted training & indexing data; model & dependency provenance; logging/monitoring/evals |
 | **LLM05** | Improper output handling | Generation → user output with no `OutputValidationStep` / `OutputGuardrailStep`. | Direct Prompting, Guardrails | Output validation & sanitization; guardrails |
-| **LLM06** | Excessive agency | The generation step `inform`s a `ToolInvocationStep` / `StateChangingStep`, no control on it. | *none — deliberately role-anchored, applies to any match binding the generation step* | Tool permission boundaries; rate/budget/loop control; logging/monitoring/evals |
+| **LLM06** | Excessive agency | What the generation step produces reaches a `ToolInvocationStep` / `StateChangingStep` along a chain of resources, with no control on it. | *none — deliberately role-anchored, applies to any match binding the generation step* | Tool permission boundaries; rate/budget/loop control; logging/monitoring/evals |
 | **LLM07** | System prompt leakage | A `SystemPrompt` feeds generation → user output, no control. | Guardrails | System prompt secrecy; output validation & sanitization; guardrails |
 | **LLM08** | Vector & embedding weakness | A vector retrieval or embedding index supplies generation context. | RAG, Embeddings, Reranker | Trusted training & indexing data; retrieval access control; grounding & verification |
 | **LLM09** | Misinformation (weak grounding) | A RAG generation reaches a response with no `EvaluationStep` / `ScoringStep`. | RAG | Grounding & verification; logging/monitoring/evals |

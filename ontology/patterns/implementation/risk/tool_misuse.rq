@@ -34,7 +34,7 @@ WHERE {
         ?actionBinding   pair:bindsPatternNode pat:ToolAgent_ActionStepNode ;
                          pair:matchedElement ?actionStep .
 
-        ?planningStep beam:inform ?actionStep .
+        ?planningStep beam:produce/^beam:use ?actionStep .
         ?actionStep beam:produce ?actionResult .
 
         FILTER NOT EXISTS {
@@ -45,11 +45,11 @@ WHERE {
             UNION
             { ?mediatingRole pair:subRoleOf* pair:RateLimitControlStep }
             {
-                ?mediatingStep beam:inform ?actionStep .
+                ?mediatingStep beam:produce/^beam:use ?actionStep .
             }
             UNION
             {
-                ?planningStep beam:inform ?mediatingStep .
+                ?planningStep beam:produce/^beam:use ?mediatingStep .
             }
         }
 

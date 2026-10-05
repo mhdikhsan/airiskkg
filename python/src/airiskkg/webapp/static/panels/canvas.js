@@ -36,16 +36,9 @@ export function settleChoice() {
   $("#canvas-wrap").classList.remove("unstarted");
   $("#canvas-wrap").classList.add("started");
   $("#level-switch").classList.remove("hidden");
-  /* There is something on the canvas now, so the front door steps aside -
-   * whichever way the content arrived. Announced rather than done here: the
-   * library is what listens, and it must not be imported from the panel it
-   * opens on top of. */
   emit("choice:settled");
 }
 
-/* The opening choice, wherever it is made: the question on the canvas, the two
- * options under the library, or a motif added from it. One function, so a
- * second entry point cannot answer the question differently from the first. */
 export function startDrawing(level) {
   settleChoice();
   state.levelChosenByHand = true;
@@ -55,12 +48,7 @@ export function startDrawing(level) {
     setStatus("ok", "Business process", "add a participant, then steps inside it");
     return;
   }
-  /* The backward route, and the only one that needs no graph: say what must
-   * not happen and the library says what would have to be there to raise it. */
   if (level === "risk") {
-    /* A notation squeezed into a third of the window is unreadable, and this
-       level is the one meant to be shown to somebody. Folded, not locked: the
-       rail and the drawer handle both bring them straight back. */
     document.body.classList.add("editor-hidden");
     $("#drawer").classList.add("collapsed");
     $("#drawer-toggle").innerHTML = "&#9650;";
@@ -162,14 +150,12 @@ async function refreshProcess(ttl) {
   ProcessCanvas.setSystems(
     (state.lastGraph && state.lastGraph.systems ? state.lastGraph.systems : []).map((s) => ({ id: s.id, label: s.label }))
   );
+  ProcessCanvas.setSystemContext(data.refinedSystems, data.contextOptions);
   state.lastProcess = data;
   if (awaitingChoice && (data.stats.activities || architectureHasContent())) settleChoice();
   ProcessCanvas.render(data);
   mapSource([...data.participants, ...data.activities, ...(data.events || []),
     ...(data.gateways || []), ...(data.lanes || [])], "business");
-  /* A participant with no activities yet is still a process model being
-   * drawn. Counting only activities threw the reader to the architecture level
-   * the moment they added their first pool. */
   const hasProcess = data.stats.activities > 0 || (data.participants || []).length > 0;
   $("#level-switch").classList.toggle("hidden", awaitingChoice && !hasProcess);
   setTabVisible("process", hasProcess);
@@ -233,20 +219,6 @@ function processRow(activity, depth) {
   return row;
 }
 
-/* Pool, then lane, then the activities in flow order - the same nesting the
- * canvas draws.
- *
- * It used to group by runs of the flow order, and flow order interleaves the
- * pools, so every heading repeated. It also said "No lane" for the activities
- * of a pool that declares no lanes at all: nothing is missing there, they are
- * simply the pool's. A pool that does declare lanes and still has an activity
- * in none of them is the one real gap, and only that is said so. */
-/* Where each step falls in the work, walking the whole flow - events and
- * gateways included. The activity array the model hands over is ordered over
- * activities alone, and flow runs through gateways, so steps joined only by a
- * gateway had no order between them and the list fell back to alphabetical:
- * "Start a chat session" came last. The canvas places by that array, so the
- * list orders itself rather than changing it. */
 function flowRank(data) {
   const nodes = [...data.activities, ...(data.events || []), ...(data.gateways || [])];
   const label = new Map(nodes.map((n) => [n.id, n.label || ""]));
@@ -338,10 +310,6 @@ function renderProcessList(list, data) {
   }
 }
 
-
-/* The system bar: which architectures are here, which one a new element joins,
-   what belongs to none of them, and how to make another. Its own function
-   because selecting a system has to redraw it without a round trip. */
 export function refreshSystemBar() {
   if (state.lastGraph) renderSystemBar(state.lastGraph);
 }
@@ -350,13 +318,11 @@ function renderSystemBar(data) {
   const badge = $("#system-badge");
   const unclaimed = (data.unclaimed || []).length;
   if (data.systems.length || data.nodes.length) {
-    /* When the canvas is narrowed, name the one system on screen. Listing
-     * every system the document holds would caption a drawing that shows
-     * only one of them. */
+
     const shown = data.scopedTo
       ? data.systems.filter((s) => s.id === data.scopedTo)
       : data.systems;
-    // Each name opens its own editor.
+
     badge.innerHTML = "";
     shown.forEach((system, index) => {
       if (index) badge.appendChild(document.createTextNode(" · "));

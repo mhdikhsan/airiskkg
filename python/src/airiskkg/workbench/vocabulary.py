@@ -5,7 +5,7 @@ from functools import lru_cache
 from rdflib import RDF, RDFS, Graph, URIRef
 
 from airiskkg.assessment_runner import BEAM, PAIR, load_base_graph
-from airiskkg.workbench.process_view import DATA_CLASSES
+from airiskkg.workbench.process_view import data_classifications
 from airiskkg.workbench.templates import motif_template_list
 from airiskkg.workbench.terms import (
     EDGE_KINDS,
@@ -96,7 +96,5 @@ def vocabulary() -> dict:
         "processClasses": class_terms(PROCESS_CLASSES),
         "edgeKinds": EDGE_KINDS,
         "motifTemplates": motif_template_list(),
-        "dataClasses": [
-            {"id": name, "label": label} for name, label in DATA_CLASSES.items()
-        ],
+        "dataClasses": list(data_classifications()),
     }

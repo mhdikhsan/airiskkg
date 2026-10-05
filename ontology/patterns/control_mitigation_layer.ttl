@@ -41,10 +41,7 @@ pat:Control_Guardrails
                          pat:InputScreeningMotif ,
                          pat:OutputScreeningMotif .
 
-# One side each, not the whole guarded-generation topology. Pointing these at
-# GuardrailsMotif asked for 16 constraints to express a control that needs 5,
-# and the risk each addresses lives on one side: nothing about prompt injection
-# requires an output guardrail.
+
 pat:Control_InputValidationAndPromptIsolation
     pair:controlNature pair:TechnicalControl ;
     pair:realizedByMotif pat:InputScreeningMotif .
@@ -61,16 +58,7 @@ pat:Control_LoggingMonitoringAndEvals
 
 
 # Executable rewrites: how a control is applied to a graph.
-#
-# A control says what should be true; these say which triples make it so. They
-# are to a control what a match query is to a motif, and they are registered the
-# same way - except that pair:MitigationApplication is a distinct output type,
-# so the assessment pipeline (which asks only for MotifMatch and RiskFinding)
-# never runs them. A mitigation query inside an assessment would mitigate every
-# finding it could see, and nothing would ever be reported.
-#
-# Each is bound to the risk pattern it answers, because it reads that finding's
-# evidence to know where the control belongs.
+
 
 pat:InputScreening_MitigationOQP
     a pair:PatternImplementation ;

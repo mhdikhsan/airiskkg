@@ -139,10 +139,18 @@ def reload_knowledge_base() -> None:
     # Everything read off the graph once and kept. Imported here, not at module
     # scope: workbench reads this module, so the dependency only runs one way.
     from airiskkg.workbench.library import library_catalogue
+    from airiskkg.workbench.process_view import (
+        _data_classes,
+        data_classifications,
+        system_context_options,
+    )
     from airiskkg.workbench.templates import motif_templates
     from airiskkg.workbench.vocabulary import vocabulary
 
     library_catalogue.cache_clear()
+    data_classifications.cache_clear()
+    system_context_options.cache_clear()
+    _data_classes.cache_clear()
     motif_templates.cache_clear()
     vocabulary.cache_clear()
 

@@ -24,7 +24,6 @@ _FLOW_EDGES = [
     (BEAM.usedBy, "use", False),        # already resource->process
     (BEAM.produce, "produce", False),   # process->resource
     (BEAM.producedBy, "produce", True),
-    (BEAM.inform, "inform", False),     # process->process
     (BEAM.participatedIn, "participatedIn", False),  # agent->process
 ]
 
@@ -106,6 +105,47 @@ def _kind_and_type(types: set[URIRef]) -> tuple[str, str | None]:
         if root in ancestry:
             return kind, _local_name(chosen)
     return "other", _local_name(chosen)
+
+
+# What each drawn flow predicate joins. Every one crosses between an oval and a
+# box: a process never reaches a process, as data never reaches data. beam:Agent
+# and beam:System are siblings of beam:Resource rather than kinds of it, so "not
+# a process" is not the same as "a resource" at either end.
+_RESOURCE_KINDS = frozenset({"data", "symbol", "model", "resource"})
+_FLOW_ENDS = {
+    "use": ("process", "resource"),
+    "produce": ("process", "resource"),
+    "participatedIn": ("agent", "process"),
+}
+
+
+def node_kind(graph: Graph, node: URIRef) -> str:
+    """Which BEAM family a node belongs to, or "other" when nothing says."""
+    kind, _ = _kind_and_type(set(graph.objects(node, RDF.type)))
+    return kind
+
+
+def _article(word: str) -> str:
+    return "an" if word[:1].lower() in "aeiou" else "a"
+
+
+def flow_endpoint_error(graph: Graph, predicate: str, subject: URIRef, obj: URIRef) -> str | None:
+    """Why BEAM does not allow this flow edge between these two ends, if it does
+    not. An end carrying no BEAM type at all passes, so an edge can be drawn
+    before the node is typed; the input contract still rejects it either way."""
+    ends = _FLOW_ENDS.get(predicate)
+    if ends is None:
+        return f"{predicate} is not a flow BEAM declares."
+    for node, want, side in ((subject, ends[0], "from"), (obj, ends[1], "to")):
+        kind, type_label = _kind_and_type(set(graph.objects(node, RDF.type)))
+        if kind == "other" and type_label is None:
+            continue
+        got = "resource" if kind in _RESOURCE_KINDS else kind
+        if got != want:
+            named = type_label or kind
+            return (f"beam:{predicate} goes {side} {_article(want)} {want}, "
+                    f"not {_article(named)} {named}.")
+    return None
 
 
 _PREFIX_RE = re.compile(r"^\s*@prefix\s+([A-Za-z][\w.-]*)?:\s*<([^>]*)>\s*\.", re.M)

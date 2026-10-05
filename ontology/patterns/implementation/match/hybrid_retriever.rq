@@ -14,7 +14,9 @@ CONSTRUCT {
             ?keywordSearchBinding ,
             ?queryBinding ,
             ?vectorIndexBinding ,
-            ?vectorSearchBinding .
+            ?vectorSearchBinding ,
+            ?vectorResultsBinding ,
+            ?keywordResultsBinding .
 
     ?aggregationBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_AggregationNode ; pair:matchedElement ?aggregation .
     ?candidateSetBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_CandidateSetNode ; pair:matchedElement ?candidateSet .
@@ -23,6 +25,8 @@ CONSTRUCT {
     ?queryBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_QueryNode ; pair:matchedElement ?query .
     ?vectorIndexBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_VectorIndexNode ; pair:matchedElement ?vectorIndex .
     ?vectorSearchBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_VectorSearchNode ; pair:matchedElement ?vectorSearch .
+    ?vectorResultsBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_VectorResultsNode ; pair:matchedElement ?vectorResults .
+    ?keywordResultsBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Hybrid_KeywordResultsNode ; pair:matchedElement ?keywordResults .
 }
 WHERE {
     ?aggregation a/rdfs:subClassOf* beam:Process ;
@@ -39,13 +43,19 @@ WHERE {
            pair:playsRole/pair:subRoleOf* pair:VectorIndex .
     ?vectorSearch a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:VectorSearchStep .
+    ?vectorResults a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:RetrievedCandidateSet .
+    ?keywordResults a beam:Data ;
+           pair:playsRole/pair:subRoleOf* pair:RetrievedCandidateSet .
 
     ?vectorSearch beam:use ?query .
     ?vectorSearch beam:use ?vectorIndex .
     ?keywordSearch beam:use ?query .
     ?keywordSearch beam:use ?keywordIndex .
-    ?vectorSearch beam:inform ?aggregation .
-    ?keywordSearch beam:inform ?aggregation .
+    ?vectorSearch beam:produce ?vectorResults .
+    ?keywordSearch beam:produce ?keywordResults .
+    ?aggregation beam:use ?vectorResults .
+    ?aggregation beam:use ?keywordResults .
     ?aggregation beam:produce ?candidateSet .
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/hybrid-retriever/",
@@ -61,7 +71,11 @@ WHERE {
         "/",
         ENCODE_FOR_URI(STR(?vectorIndex)),
         "/",
-        ENCODE_FOR_URI(STR(?vectorSearch))
+        ENCODE_FOR_URI(STR(?vectorSearch)),
+        "/",
+        ENCODE_FOR_URI(STR(?vectorResults)),
+        "/",
+        ENCODE_FOR_URI(STR(?keywordResults))
     )) AS ?match)
 
     BIND(IRI(CONCAT(STR(?match), "/binding/aggregation")) AS ?aggregationBinding)
@@ -71,4 +85,6 @@ WHERE {
     BIND(IRI(CONCAT(STR(?match), "/binding/query")) AS ?queryBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/vector-index")) AS ?vectorIndexBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/vector-search")) AS ?vectorSearchBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/vector-results")) AS ?vectorResultsBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/keyword-results")) AS ?keywordResultsBinding)
 }

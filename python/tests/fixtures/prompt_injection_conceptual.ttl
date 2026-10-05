@@ -127,7 +127,7 @@ ex:ScreenedAssistant a beam:Element , beam:System ;
     rdfs:label "C — Screened assistant" ;
     beam:description "The same assistant, with the question screened first." ;
     beam:hasProcess ex:C_Screening , ex:C_Answering ;
-    beam:hasResource ex:C_Question , ex:C_LLM , ex:C_Answer .
+    beam:hasResource ex:C_Question , ex:C_LLM , ex:C_Answer , ex:C_Verdict .
 
 ex:C_Question a beam:Data ;
     rdfs:label "Customer question (screened)" ;
@@ -138,7 +138,11 @@ ex:C_Screening a beam:Process ;
     rdfs:label "Screen the question" ;
     pair:playsRole pair:InputGuardrailStep ;
     beam:use ex:C_Question ;
-    beam:inform ex:C_Answering .
+    beam:produce ex:C_Verdict .
+
+ex:C_Verdict a beam:Data ;
+    rdfs:label "Screening verdict" ;
+    pair:playsRole pair:GuardrailDecision .
 
 ex:C_LLM a beam:StatisticalModel ;
     rdfs:label "Assistant model" ;
@@ -147,7 +151,7 @@ ex:C_LLM a beam:StatisticalModel ;
 ex:C_Answering a beam:Infer , beam:Process ;
     rdfs:label "Answer the screened question" ;
     pair:playsRole pair:GenerationStep ;
-    beam:use ex:C_Question , ex:C_LLM ;
+    beam:use ex:C_Question , ex:C_LLM , ex:C_Verdict ;
     beam:produce ex:C_Answer .
 
 ex:C_Answer a beam:Data ;

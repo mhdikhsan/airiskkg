@@ -44,8 +44,7 @@ wt:RecogniseIntent a beam:Infer , beam:Process ;
     rdfs:comment "The How can I help step: what the customer is asking for." ;
     pair:playsRole pair:PredictionStep ;
     beam:use wt:ChatMessage , wt:LLM , wt:AgentPrompt ;
-    beam:produce wt:CustomerIntent ;
-    beam:inform wt:RetrieveContract .
+    beam:produce wt:CustomerIntent .
 
 wt:CustomerIntent a beam:Data ;
     rdfs:label "Recognised intent" ;
@@ -58,8 +57,7 @@ wt:ExplainConditions a beam:Generate , beam:Infer , beam:Process ;
     rdfs:comment "Grounded in the contract on file, and read by nobody at Wien Energie before it reaches the customer." ;
     pair:playsRole pair:GenerationStep ;
     beam:use wt:ChatMessage , wt:ContractRecord , wt:EligibilityDecision , wt:LLM , wt:AgentPrompt ;
-    beam:produce wt:ConditionExplanation ;
-    beam:inform wt:PrepareForm .
+    beam:produce wt:ConditionExplanation .
 
 wt:ConditionExplanation a beam:Data ;
     rdfs:label "Condition explanation" ;
@@ -100,8 +98,7 @@ wt:CheckConditions a beam:Transform , beam:Process ;
     rdfs:label "Contract condition check" ;
     pair:playsRole pair:PolicyEnforcementStep ;
     beam:use wt:CustomerIntent , wt:ContractRecord , wt:TariffConditions ;
-    beam:produce wt:EligibilityDecision ;
-    beam:inform wt:ExplainConditions , wt:DeclineChange .
+    beam:produce wt:EligibilityDecision .
 
 wt:EligibilityDecision a beam:Data ;
     rdfs:label "Eligibility decision" ;
@@ -175,8 +172,7 @@ wt:RetrieveContract a beam:Transform , beam:Process ;
     rdfs:label "Current contract retrieval" ;
     pair:playsRole pair:RetrievalStep ;
     beam:use wt:CustomerReference , wt:CustomerDatabase ;
-    beam:produce wt:ContractRecord ;
-    beam:inform wt:CheckConditions .
+    beam:produce wt:ContractRecord .
 
 wt:ContractRecord a beam:Data ;
     rdfs:label "Current contract record" ;

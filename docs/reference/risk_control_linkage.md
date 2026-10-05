@@ -144,7 +144,7 @@ Families with no action beneath them (6): `governance-oversight-controls`, `mode
 
 ---
 
-## 7. Motif library - all 26, by source catalogue
+## 7. Motif library - all 31, by source catalogue
 
 Motifs are risk-neutral: they describe a shape, not a problem. The grouping below
 is the *published catalogue each was derived from* (`pair:derivedFrom`), because

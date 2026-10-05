@@ -1,26 +1,3 @@
-"""The BEAM risk notation, drawn from a run rather than by hand.
-
-A list of findings makes a reader carry the graph in their head. The notation
-does not: a risk sits above the element it concerns, its source points at what
-produces it, its consequence and impact sit above that, and a control hangs off
-the risk it modifies. Everything in it is already in the graph -
-
-    beamr:RiskSource  -> beamr:Risk -> beamr:Consequence -> beamr:Impact
-    beamr:RiskControl -> the risk concept it modifies
-
-so this module maps what an assessment produced onto the AIRO-aligned chain
-BEAM already declares, and adds what a person drew by hand alongside it. The
-two are marked apart: a candidate risk finding is the library's claim, a
-beamr:Risk is somebody's.
-
-Impact is drawn only where a person stated one. The harm domain a finding rolls
-up to is a taxonomy link, not an impact on this system, and drawing it as one
-said more than the run knows.
-
-Bands are the notation's rows, top to bottom, and the canvas draws them in this
-order above the architecture flow.
-"""
-
 from __future__ import annotations
 
 from rdflib import RDF, Graph, Namespace, URIRef
@@ -72,14 +49,9 @@ def _link(source: str, target: str, kind: str, *, label_text: str | None = None,
           editable: bool = False, contains: bool = False) -> dict:
     """`attaches` reaches down to an architecture element; `chain` runs along
     the AIRO relation it is named for.
-
-    `editable` marks a line that stands for one triple somebody wrote, so it can
-    be taken back. A derived line is recomputed by the next run, and removing it
-    would only mean it came straight back.
     """
     entry = {"source": source, "target": target, "kind": kind, "label": label_text,
              "editable": editable}
-    # A system down to one of its own parts, drawn only where that part is.
     if contains:
         entry["contains"] = True
     return entry
@@ -99,8 +71,10 @@ def _stated_layer(graph: Graph, nodes: dict, links: list) -> None:
             key = str(node)
             if key in nodes:
                 continue
+            named = graph.value(node, PAIR.concernsRiskPattern)
             nodes[key] = _node(key, band, label(graph, node),
-                               body=_text(graph, node), origin="stated")
+                               body=_text(graph, node), origin="stated",
+                               extra={"concernsRiskPattern": str(named)} if named else None)
 
     # element -> risk, the attachment risk storming is built on
     for element, _p, risk in graph.triples((None, BEAMR.hasRisk, None)):
@@ -171,11 +145,6 @@ def _business_layer(graph: Graph, nodes: dict, links: list) -> None:
 
 def _system_layer(graph: Graph, nodes: dict, links: list) -> None:
     """The architecture as one box, and a line down to each part it holds.
-
-    A risk view that opens on every element of every architecture is read as a
-    wiring diagram with risks stuck to it. The system is the coarse handle: it
-    is what a risk is rolled up to while its parts are folded away, and the
-    lines to those parts are what the canvas draws once they are unfolded.
     """
     for system in graph.subjects(RDF.type, BEAM.System):
         key = str(system)
@@ -196,13 +165,6 @@ def _is_step(graph: Graph, element: URIRef) -> bool:
 
 def _risk_sources(graph: Graph, group: dict, tested: dict, below: dict) -> dict[URIRef, str]:
     """AIRO's Risk Source: an element with the potential to give rise to the risk.
-
-    Read off this run rather than curated. Among the elements the finding cites
-    and the ones its steps read, an element counts when it carries a data
-    category the risk pattern's query actually tests. Where the pattern tests no
-    category, what enters the path is what the risk arises from. Anything the
-    cited path produces is excluded: that is where the risk ends up, not where
-    it comes from.
     """
     cited = {URIRef(element["id"]) for element in group["evidence"]}
     steps = {element for element in cited if _is_step(graph, element)}
@@ -224,34 +186,32 @@ def _risk_sources(graph: Graph, group: dict, tested: dict, below: dict) -> dict[
         )
         if carried:
             carrying[element] = "carries " + ", ".join(carried)
-        else:
-            entering[element] = "enters the path here"
-    return carrying or entering
+    return carrying 
 
 
 def _finding_layer(graph: Graph, groups: list[dict], nodes: dict, links: list) -> None:
     """Each concern as a Risk box, above the elements it cites.
-
-    Suggested controls become Risk Controls, and one that a registered rewrite
-    can actually build is marked - a control nothing can satisfy is not a
-    control.
     """
     tested = _categories_tested()
     below, _family = _category_tree()
     held = _owners(graph)
-    # Which work each architecture is put to, so a risk can name it without the
-    # reader following pair:refinedBy by eye.
     work: dict[str, list[str]] = {}
     for activity, _p, system in graph.triples((None, PAIR.refinedBy, None)):
         work.setdefault(str(system), []).append(str(activity))
     for group in groups:
         key = group["key"]
+        # Concerns that share a name are told apart by where they are. Beside
+        # the type chip rather than on it: the chip is the notation's type label
+        # and must keep saying Risk. Above the box either way, so neither costs
+        # the card a line.
+        where = group.get("distinguisher")
         nodes[key] = _node(
             key, "risk", group["label"],
             body=group.get("description"),
             origin="derived",
             status=group.get("status"),
             extra={
+                "where": where,
                 "corroboration": group["corroboration"],
                 "scopeMatch": group.get("scopeMatch"),
                 "settled": group.get("settled", False),
@@ -260,8 +220,6 @@ def _finding_layer(graph: Graph, groups: list[dict], nodes: dict, links: list) -
                 "findingIds": group.get("findingIds", []),
                 "clearable": group.get("clearable", False),
                 "statedRisks": [r["id"] for r in group.get("statedRisks", [])],
-                # Which architectures this concern stands in, so the reader can
-                # focus on one instead of reading every risk at once.
                 "systems": sorted({
                     system
                     for element in group["evidence"]
@@ -276,9 +234,6 @@ def _finding_layer(graph: Graph, groups: list[dict], nodes: dict, links: list) -
         })
         for element in group["evidence"]:
             links.append(_link(key, element["id"], "attaches", label_text="concerns"))
-
-        # The Risk Source is an element of the design, so the box names that
-        # element and hangs off it - beamr:originatedFrom, drawn.
         for element, why in _risk_sources(graph, group, tested, below).items():
             source_id = "source:" + str(element)
             nodes.setdefault(source_id, _node(
@@ -306,11 +261,40 @@ def _finding_layer(graph: Graph, groups: list[dict], nodes: dict, links: list) -
             links.append(_link(stated["id"], key, "chain", label_text="corroborates"))
 
 
+def _place_by_hand(graph: Graph, nodes: dict, links: list) -> None:
+    """Which architecture a hand-written concept stands in.
+    """
+    held = _owners(graph)
+    systems = {key for key, node in nodes.items() if node.get("isSystem")}
+    movable = {
+        key for key, node in nodes.items()
+        if not node.get("isSystem") and not node.get("isActivity")
+    }
+    anchored = {key for key, node in nodes.items() if node.get("systems")}
+    reach: dict[str, set[str]] = {key: set(nodes[key]["systems"]) for key in anchored}
+    for link in links:
+        if link["source"] not in movable:
+            continue
+        found = set(held.get(link["target"], ()))
+        if link["target"] in systems:
+            found.add(link["target"])
+        if found:
+            reach.setdefault(link["source"], set()).update(found)
+    for _ in range(3):
+        for link in links:
+            for near, far in ((link["source"], link["target"]),
+                              (link["target"], link["source"])):
+                if near in movable and far in reach:
+                    reach.setdefault(near, set()).update(reach[far] & systems)
+
+    for key in movable - anchored:
+        standing = sorted(reach.get(key, set()) & systems)
+        if standing:
+            nodes[key]["systems"] = standing
+
+
 def risk_diagram(graph: Graph, scope: dict, groups: list[dict]) -> dict:
     """The risk layer that sits above the architecture flow on the canvas.
-
-    The flow itself is not repeated here - the canvas already has it from
-    ``/api/graph``, and a second copy would drift from the first.
     """
     nodes: dict[str, dict] = {}
     links: list[dict] = []
@@ -321,6 +305,7 @@ def risk_diagram(graph: Graph, scope: dict, groups: list[dict]) -> dict:
     _business_layer(graph, nodes, links)
 
     _system_layer(graph, nodes, links)
+    _place_by_hand(graph, nodes, links)
 
     for note in graph.subjects(RDF.type, BEAM.Note):
         key = str(note)

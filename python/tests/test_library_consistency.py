@@ -19,6 +19,7 @@ TAXONOMY = REPO_ROOT / "ontology" / "taxonomy"
 
 PAIR = Namespace("http://w3id.org/airiskkg/pair-ai#")
 PAT = Namespace("http://w3id.org/airiskkg/patterns#")
+BEAM = Namespace("http://w3id.org/beam/core#")
 
 NAMESPACES = {
     "pair": PAIR,
@@ -377,6 +378,96 @@ def test_no_match_query_reads_the_motif_family(libraries) -> None:
     assert not offenders, "motif family read during matching: " + ", ".join(offenders)
 
 
+def test_every_pattern_edge_crosses_between_an_oval_and_a_box(libraries) -> None:
+    """Boxology is bipartite. Every edge a motif declares joins a process to a
+    resource: no data to data, no data to symbol, no process to process. The
+    declaration has to say so, because the generated template is built from it."""
+    expected = {
+        BEAM.use: ("process", "resource"),
+        BEAM.produce: ("process", "resource"),
+        BEAM.participatedIn: ("agent", "process"),
+    }
+
+    def family(cls):
+        if cls is None:
+            return "unstated"
+        chain = {cls} | set(libraries.transitive_objects(cls, RDFS.subClassOf))
+        for root, name in ((BEAM.Process, "process"), (BEAM.Resource, "resource"),
+                           (BEAM.Agent, "agent")):
+            if root in chain:
+                return name
+        return "other"
+
+    offenders = []
+    for motif in sorted(libraries.subjects(RDF.type, PAIR.GraphMotif)):
+        for edge in libraries.objects(motif, PAIR.hasPatternEdge):
+            predicate = libraries.value(edge, PAIR.patternPredicate)
+            source = libraries.value(edge, PAIR.sourcePatternNode)
+            target = libraries.value(edge, PAIR.targetPatternNode)
+            want = expected.get(predicate)
+            if want is None:
+                offenders.append(f"{libraries.qname(edge)} uses {predicate}")
+                continue
+            ends = (family(libraries.value(source, PAIR.expectedClass)),
+                    family(libraries.value(target, PAIR.expectedClass)))
+            if ends != want:
+                offenders.append(
+                    f"{libraries.qname(edge)} joins {ends[0]} to {ends[1]}, want {want[0]} to {want[1]}"
+                )
+    assert not offenders, "pattern edges between the wrong kinds: " + "; ".join(offenders)
+
+
+def test_every_motif_template_matches_its_own_motif() -> None:
+    """Templates are generated from the declaration; matching runs off the .rq. A
+    template that cannot match itself is the two having drifted apart."""
+    from rdflib import Literal
+    from airiskkg.assessment_runner import run_assessment_from_text
+    from airiskkg.webapp.routes.graph import PROCESS_CLASS_NAMES
+    from airiskkg.workbench.templates import motif_templates
+
+    BEAM = Namespace("http://w3id.org/beam/core#")
+    local = Namespace("http://example.org/template-probe#")
+
+    def built(template) -> str:
+        # The same construction /api/graph-edit add-motif performs.
+        data = Graph()
+        system = local["system"]
+        data.add((system, RDF.type, BEAM.System))
+        data.add((system, RDFS.label, Literal("template probe")))
+        key_to_uri = {}
+        for index, node in enumerate(template["nodes"], start=1):
+            uri = local[f"e{index}"]
+            key_to_uri[node["key"]] = uri
+            is_process = node["cls"] in PROCESS_CLASS_NAMES
+            data.add((uri, RDF.type, BEAM[node["cls"]]))
+            if is_process and node["cls"] != "Process":
+                data.add((uri, RDF.type, BEAM.Process))
+            data.add((uri, RDFS.label, Literal(node["label"])))
+            for role in node.get("roles", []):
+                data.add((uri, PAIR.playsRole, PAIR[role]))
+            for category in node.get("cats", []):
+                data.add((uri, PAIR.containsDataCategory, PAIR[category]))
+            data.add((system, BEAM.hasProcess if is_process else BEAM.hasResource, uri))
+        for source, edge, target in template["edges"]:
+            data.add((key_to_uri[source], BEAM[edge], key_to_uri[target]))
+        return data.serialize(format="turtle")
+
+    offenders = []
+    for motif_id, template in sorted(motif_templates().items()):
+        expected = motif_id.split(":")[-1]
+        result = run_assessment_from_text(built(template))
+        matched = {
+            str(m).rsplit("#", 1)[-1]
+            for m in result.combined_graph.objects(None, PAIR.matchesMotif)
+        }
+        if expected not in matched:
+            offenders.append(f"{expected} (matched {sorted(matched) or 'nothing'})")
+    assert not offenders, (
+        "templates that cannot match the motif they were generated from: "
+        + "; ".join(offenders)
+    )
+
+
 def test_every_motif_has_a_matching_oqp(libraries) -> None:
     matched = set(libraries.objects(None, PAIR.implementsMotif))
     offenders = sorted(
@@ -564,9 +655,12 @@ def test_process_typing_does_not_change_what_matches() -> None:
     @prefix ex: <http://example.org/typing#> .
     @prefix beam: <http://w3id.org/beam/core#> .
     @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
-    ex:sys a beam:System ; beam:contain ex:plan, ex:act, ex:res .
-    ex:plan a beam:%s ; pair:playsRole pair:PlanningStep ; beam:inform ex:act .
-    ex:act a beam:%s ; pair:playsRole pair:ToolInvocationStep ; beam:produce ex:res .
+    ex:sys a beam:System ; beam:contain ex:plan, ex:act, ex:res, ex:planOut .
+    ex:plan a beam:%s ; pair:playsRole pair:PlanningStep ;
+        beam:produce ex:planOut .
+    ex:planOut a beam:Data .
+    ex:act a beam:%s ; pair:playsRole pair:ToolInvocationStep ;
+        beam:use ex:planOut ; beam:produce ex:res .
     ex:res a beam:Data ; pair:playsRole pair:RetrievedContext .
     """
 

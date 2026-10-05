@@ -42,10 +42,8 @@ WHERE {
 
     ?preprocessJob beam:use ?sourceData .
     ?preprocessJob beam:produce ?intermediateData .
-    ?preprocessJob beam:inform ?trainingJob .
     ?trainingJob beam:use ?intermediateData .
     ?trainingJob beam:produce ?modelArtifact .
-    ?trainingJob beam:inform ?evaluationJob .
     ?evaluationJob beam:use ?modelArtifact .
     ?evaluationJob beam:produce ?evaluationResult .
     BIND(IRI(CONCAT(

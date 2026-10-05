@@ -1,9 +1,3 @@
-"""What a person said before the assessment ran: the scope, and the stated risks.
-
-Everything here is an annotated base fact read straight off the submitted graph.
-Nothing is derived, and nothing decides whether a motif matches.
-"""
-
 from __future__ import annotations
 
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
@@ -12,14 +6,7 @@ from airiskkg.assessment_runner import BEAM, PAIR
 from airiskkg.workbench.terms import label, source_pair
 
 BEAMR = Namespace("http://w3id.org/beam/risk#")
-
-# Tool4Boxology writes beam:description on a hand-annotated risk; the workbench
-# writes dct:description. A reader should not have to know which tool wrote it.
 _DESCRIPTIONS = (DCTERMS.description, BEAM.description, RDFS.comment, SKOS.definition)
-
-# Ordered, and named by something other than the label: a graph read without
-# the library resolves no prefLabel, and a colour keyed on the label would then
-# silently fall back to "no priority stated".
 _PRIORITIES = {
     str(PAIR.HighStatedPriority): ("high", 0),
     str(PAIR.MediumStatedPriority): ("medium", 1),
@@ -28,8 +15,6 @@ _PRIORITIES = {
 
 
 def _present(value: object) -> object | None:
-    """A literal that says something. An earlier writer stored "None" as a value;
-    reading it back as a name is how "stated by None" reached the page."""
     if value is None or str(value).strip() in ("", "None"):
         return None
     return value
@@ -124,14 +109,9 @@ def _priority(graph: Graph, risk: URIRef) -> dict | None:
 
 def stated_risks(graph: Graph) -> list[dict]:
     """Risks a person attached to elements — risk storming's sticky notes, as data.
-
-    A beamr:Risk is somebody's claim; a pair:RiskFinding is a structural
-    candidate. Reconciling them is the point of keeping the types apart.
     """
     rows: list[dict] = []
     for risk in sorted(graph.subjects(RDF.type, BEAMR.Risk), key=str):
-        # A risk defined by what it is about is a lens, not a sticky note: it
-        # has no element to be corroborated at, so it is not reconciled here.
         if any(graph.value(risk, p) is not None for p in (
                 PAIR.concernsDataCategory, PAIR.concernsSystem, PAIR.concernsRiskPattern)):
             continue
@@ -164,11 +144,6 @@ def stated_notes(graph: Graph) -> list[dict]:
 
 def scope_report(ttl: str) -> dict:
     """The register as it stands in the editor, without running anything.
-
-    A scope is a document fact and reads back the moment it is written; the
-    concerns beside it are a run result and stay stale until the run is
-    repeated. Parsed into the knowledge base because a stated outcome names a
-    taxonomy domain whose label only the library carries.
     """
     from airiskkg.assessment_runner import load_base_graph
 

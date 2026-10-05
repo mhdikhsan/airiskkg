@@ -108,6 +108,46 @@ def test_detaching_data_leaves_nothing_behind(client, tariff_ttl) -> None:
     assert "CustomerChatMessage" not in after, "the data object outlived its only reference"
 
 
+def test_a_data_association_joins_data_to_an_activity_and_nothing_else(client, tariff_ttl) -> None:
+    """One gesture picks the connector from what it joins, so the ends have to be
+    checked: dragging between two data boxes used to write a data association
+    from data to data, which says nothing about who reads either one."""
+    view = client.post("/api/process", json={"ttl": tariff_ttl}).get_json()
+    data_ids = [row["id"] for row in view["dataNodes"]]
+    activity = view["activities"][0]["id"]
+    assert len(data_ids) >= 2, "this test needs two data boxes to drag between"
+
+    def connect(source, target):
+        return client.post("/api/process-edit", json={
+            "ttl": tariff_ttl, "op": "connect", "source": source, "target": target,
+        })
+
+    refused = connect(data_ids[0], data_ids[1])
+    assert refused.status_code == 400, "accepted a data-to-data association"
+
+    # sBPMN declares the two data-association properties on activity plus one of
+    # throwEvent / catchEvent; the canvas cannot tell those apart, so it joins
+    # data to an activity only.
+    for kind in ("events", "gateways"):
+        for row in view.get(kind) or []:
+            response = connect(data_ids[0], row["id"])
+            assert response.status_code == 400, f"accepted a data association on a {kind[:-1]}"
+
+    # The counterpart: joining data to an activity is still accepted, and where
+    # it is not, the reason is that the step already reads it - never the ends.
+    accepted = 0
+    for reference in data_ids:
+        for row in view["activities"]:
+            response = connect(reference, row["id"])
+            if response.status_code == 200:
+                accepted += 1
+                continue
+            assert response.get_json()["error"] == "That step already uses this data.", (
+                f"refused a well-formed data association: {response.get_json()}"
+            )
+    assert accepted, "no data box could be joined to any activity"
+
+
 def test_an_unknown_classification_is_refused(client, tariff_ttl) -> None:
     """The picker is built from the same table the writer validates against, so
     anything else arriving here is a bug or a hand-made request."""
@@ -119,35 +159,54 @@ def test_an_unknown_classification_is_refused(client, tariff_ttl) -> None:
 
 
 def test_the_classification_is_what_moves_the_assessment(client, scene) -> None:
-    """The whole reason the business layer exists."""
+    """The whole reason the business layer exists.
+
+    It is the classification that is taken away here, not the association. The
+    fallback is coarse on purpose - one annotation marks every element content
+    enters the refined system by - so detaching a reference from two of the
+    activities that read it leaves the rest of them saying the same thing. What
+    the annotation says is the thing under test.
+    """
     shipped = findings(client, scene)
 
-    without = scene
-    for activity in (DOMAIN_CLASSIFICATION, QUERY_EXTRACTION):
-        without = edit(client, without, "detach-data", reference=QUESTION_REF, activity=activity)
+    without = edit(client, scene, "classify-data", reference=QUESTION_REF, classification="")
     assert findings(client, without) < shipped, (
         "removing the personal data the bridge reads changed no finding"
     )
 
-    personal = edit(client, without, "add-data", activity=DOMAIN_CLASSIFICATION, direction="in",
-                    label="Customer question", classification="PersonalData")
+    personal = edit(client, without, "classify-data",
+                    reference=QUESTION_REF, classification="PersonalData")
     assert findings(client, personal) == shipped, (
         "re-declaring it as personal data did not bring the finding back"
     )
 
-    anonymised = edit(client, without, "add-data", activity=DOMAIN_CLASSIFICATION, direction="in",
-                      label="Customer question", classification="AnonymisedData")
+    anonymised = edit(client, without, "classify-data",
+                      reference=QUESTION_REF, classification="AnonymisedData")
     assert findings(client, anonymised) == findings(client, without), (
         "anonymised data raised a sensitive-information category; the bridge excludes it"
     )
 
 
 def test_the_picker_offers_exactly_what_the_writer_accepts(client) -> None:
-    """Two lists that must not drift: one fills a dropdown, the other validates."""
-    from airiskkg.workbench.process_view import DATA_CLASSES
+    """Two lists that must not drift: one fills a dropdown, the other validates.
 
-    offered = {row["id"] for row in client.get("/api/vocabulary").get_json()["dataClasses"]}
-    assert offered == set(DATA_CLASSES)
+    Both are now read off the declarations in ontology/context/bpmn_context.ttl
+    rather than typed in Python, which is what makes the offered set reviewable
+    with the rest of the model - and what lets the bridge read the same fact
+    instead of naming the non-personal terms a second time.
+    """
+    from airiskkg.workbench.process_view import data_class_names
+
+    served = client.get("/api/vocabulary").get_json()["dataClasses"]
+    offered = {row["id"] for row in served}
+    assert offered == set(data_class_names())
+    assert offered, "the editor offers no classification at all"
+    for row in served:
+        assert row["iri"].startswith("https://w3id.org/dpv#"), (
+            f"{row['label']} does not write a DPV term: {row['iri']}"
+        )
+    # The distinction the bridge acts on has to survive the trip to the screen.
+    assert {row["personal"] for row in served} == {True, False}
 
 
 def test_each_architecture_says_which_elements_are_its_own(scene) -> None:
@@ -285,3 +344,79 @@ ex:Thing a bpmn:dataObject ; bp:name "Customer DB" ; bp:itemSubjectRef ex:Item .
     assert derived(shapes["store"].replace("dpv:PersonalData", "dpv:AnonymisedData")) == 0, (
         "an anonymised store still derived a category"
     )
+
+
+def test_the_editor_can_name_the_element_a_data_object_is(client, scene) -> None:
+    """pair:realisedBy was declared, read by the bridge and tested, and nothing
+    wrote it - so the only way to be exact was to hand-edit Turtle. The picker
+    offers the resources of the architectures the reading activities refine, and
+    nothing else: naming an element of a system this activity never touches
+    would mark something the business layer says nothing about."""
+    view = client.post("/api/process", json={"ttl": scene}).get_json()
+    store = next(row for row in view["dataNodes"] if row["candidates"])
+    chosen = store["candidates"][0]["id"]
+
+    named = edit(client, scene, "realise-data", reference=store["id"], elements=[chosen])
+    after = client.post("/api/process", json={"ttl": named}).get_json()
+    row = next(r for r in after["dataNodes"] if r["id"] == store["id"])
+    assert row["realisedBy"] == [chosen], "the element was not written"
+
+    outside = next(
+        row["id"]
+        for row in view["dataNodes"]
+        for row2 in [row]
+        if row2["candidates"]
+    )
+    elsewhere = next(
+        c["id"]
+        for other in view["dataNodes"]
+        for c in other["candidates"]
+        if c["id"] not in {x["id"] for x in store["candidates"]}
+    )
+    refused = client.post("/api/process-edit", json={
+        "ttl": scene, "op": "realise-data", "reference": outside, "elements": [elsewhere],
+    })
+    assert refused.status_code == 400, (
+        "named an element of an architecture this activity does not refine"
+    )
+
+    cleared = edit(client, named, "realise-data", reference=store["id"], elements=[])
+    back = client.post("/api/process", json={"ttl": cleared}).get_json()
+    assert next(r for r in back["dataNodes"] if r["id"] == store["id"])["realisedBy"] == []
+
+
+def test_a_system_says_what_it_is_for_from_the_business_view(client, scene) -> None:
+    """Domain and purpose are declared about a beam:System, and an activity
+    refines exactly one, so the business-to-architecture join is 1:1 - none of
+    the ambiguity the data bridge has. The analyst knows the sector and the
+    purpose; the architect knows how it was built.
+
+    Written straight onto the system rather than derived from a business triple:
+    a facet is an annotated base fact, and propagating one as a facet is the one
+    thing the method does not do.
+    """
+    view = client.post("/api/process", json={"ttl": scene}).get_json()
+    assert view["refinedSystems"], "no architecture is refined by this process"
+    system = view["refinedSystems"][0]
+    purposes = [o for o in view["contextOptions"] if o["facet"].endswith("hasPurpose")]
+    assert purposes, "the editor offers no purpose to state"
+
+    stated = edit(client, scene, "set-system-context",
+                  system=system["id"], facet=purposes[0]["facet"], value=purposes[0]["value"])
+    after = client.post("/api/process", json={"ttl": stated}).get_json()
+    row = next(r for r in after["refinedSystems"] if r["id"] == system["id"])
+    assert row["hasPurpose"] == [purposes[0]["value"]], "the purpose did not reach the system"
+
+    invented = client.post("/api/process-edit", json={
+        "ttl": scene, "op": "set-system-context", "system": system["id"],
+        "facet": purposes[0]["facet"], "value": "https://example.org/made-up",
+    })
+    assert invented.status_code == 400, (
+        "a term the editor does not offer was written: the picker and the writer "
+        "have to read the same list"
+    )
+
+    cleared = edit(client, stated, "set-system-context",
+                   system=system["id"], facet=purposes[0]["facet"], value="")
+    back = client.post("/api/process", json={"ttl": cleared}).get_json()
+    assert next(r for r in back["refinedSystems"] if r["id"] == system["id"])["hasPurpose"] == []

@@ -1,24 +1,3 @@
-"""The run, as the business process sees it.
-
-The overview is the page shown to people who are not editing the graph, and a
-list of every concern the library found is the wrong thing to hand them: most
-of it is about architectures this process never calls. What belongs there is
-the work they recognise, with the risk drawn on it.
-
-**Grouped by the system, not by the activity.** A concern is attributed to an
-activity through the architecture that carries it out, and one architecture
-usually carries out several activities - in the tariff scene one conversation
-agent carries three. Listing per activity repeats every concern once per
-activity it was attributed to, which is how ten concerns become thirty rows and
-a reader learns to distrust the page. The system is named once, with the work
-it does underneath it.
-
-What reaches no activity is **named, never dropped**. An architecture in the
-graph that no activity carries out is a real thing to say about a process
-model, and silently filtering it would make "not in this process" and "not
-found" the same answer.
-"""
-
 from __future__ import annotations
 
 from rdflib import RDF, Graph, Namespace, URIRef

@@ -34,7 +34,7 @@ WHERE {
     ?predictionStep beam:use ?request .
     ?predictionStep beam:use ?model .
     ?predictionStep beam:produce ?result .
-    ?predictionStep beam:inform ?downstreamStep .
+    ?downstreamStep beam:use ?result .
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/synchronous-prediction/",
         ENCODE_FOR_URI(STR(?downstreamStep)),

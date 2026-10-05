@@ -9,7 +9,7 @@ CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
         rdfs:label "Candidate excessive agency exposure"@en ;
-        dct:description "An LLM generation step can inform a tool invocation or state-changing process."@en ;
+        dct:description "What an LLM generation step produces can reach a tool invocation or state-changing process."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:ExcessiveAgencyRiskPattern ;
         pair:generatedFromMatch ?match ;
@@ -38,7 +38,7 @@ WHERE {
         {
             ?actionRole pair:subRoleOf* pair:StateChangingStep .
         }
-        ?generationStep beam:inform+ ?toolOrActionStep .
+        ?generationStep (beam:produce/^beam:use)+ ?toolOrActionStep .
 
 
         # Nothing mediates the path from generation to the action.
@@ -56,11 +56,11 @@ WHERE {
                 ?mediatingRole pair:subRoleOf* pair:RateLimitControlStep .
             }
             {
-                ?mediatingStep beam:inform ?toolOrActionStep .
+                ?mediatingStep beam:produce/^beam:use ?toolOrActionStep .
             }
             UNION
             {
-                ?generationStep beam:inform ?mediatingStep .
+                ?generationStep beam:produce/^beam:use ?mediatingStep .
             }
         }
     }

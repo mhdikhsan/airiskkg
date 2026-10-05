@@ -218,8 +218,7 @@ onyx:ChunkDocuments
     rdfs:label "Chunk connected documents"@en ;
     pair:playsRole pair:ChunkingStep ;
     beam:use onyx:ConnectedSourceDocuments ;
-    beam:produce onyx:DocumentChunks ;
-    beam:inform onyx:EmbedChunks .
+    beam:produce onyx:DocumentChunks .
 
 onyx:EmbedChunks
     a beam:Transform ;
@@ -227,8 +226,7 @@ onyx:EmbedChunks
     pair:playsRole pair:EmbeddingStep ;
     beam:use onyx:DocumentChunks ,
         onyx:EmbeddingModel ;
-    beam:produce onyx:ChunkEmbeddings ;
-    beam:inform onyx:IndexInVespa .
+    beam:produce onyx:ChunkEmbeddings .
 
 onyx:IndexInVespa
     a beam:Transform ;
@@ -246,8 +244,7 @@ onyx:RephraseQuery
     beam:use onyx:UserQuery ,
         onyx:GeneratorLLM ,
         onyx:ProviderCredentials ;
-    beam:produce onyx:RephrasedQuery ;
-    beam:inform onyx:EmbedQuery .
+    beam:produce onyx:RephrasedQuery .
 
 onyx:EmbedQuery
     a beam:Transform ;
@@ -255,8 +252,7 @@ onyx:EmbedQuery
     pair:playsRole pair:EmbeddingStep ;
     beam:use onyx:RephrasedQuery ,
         onyx:EmbeddingModel ;
-    beam:produce onyx:QueryEmbedding ;
-    beam:inform onyx:HybridSearch .
+    beam:produce onyx:QueryEmbedding .
 
 onyx:HybridSearch
     a beam:Infer ;
@@ -267,8 +263,7 @@ onyx:HybridSearch
     beam:use onyx:QueryEmbedding ,
         onyx:RephrasedQuery ,
         onyx:VespaHybridIndex ;
-    beam:produce onyx:RetrievedSections ;
-    beam:inform onyx:RerankSections .
+    beam:produce onyx:RetrievedSections .
 
 onyx:RerankSections
     a beam:Infer ;
@@ -276,8 +271,7 @@ onyx:RerankSections
     pair:playsRole pair:RerankingStep ;
     beam:use onyx:RetrievedSections ,
         onyx:RerankerModel ;
-    beam:produce onyx:RerankedSections ;
-    beam:inform onyx:BuildPrompt .
+    beam:produce onyx:RerankedSections .
 
 onyx:BuildPrompt
     a beam:Transform ;
@@ -286,8 +280,7 @@ onyx:BuildPrompt
     beam:use onyx:UserQuery ,
         onyx:RephrasedQuery ,
         onyx:RerankedSections ;
-    beam:produce onyx:AnswerPrompt ;
-    beam:inform onyx:GenerateAnswer .
+    beam:produce onyx:AnswerPrompt .
 
 onyx:GenerateAnswer
     a beam:Infer ;

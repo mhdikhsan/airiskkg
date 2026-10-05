@@ -271,7 +271,7 @@ def main() -> int:
     add("")
     add("---")
     add("")
-    add("## 7. Motif library - all 26, by source catalogue")
+    add(f"## 7. Motif library - all {len(motifs)}, by source catalogue")
     add("")
     add("Motifs are risk-neutral: they describe a shape, not a problem. The grouping below")
     add("is the *published catalogue each was derived from* (`pair:derivedFrom`), because")
@@ -280,17 +280,20 @@ def main() -> int:
     add("")
 
     def catalogue(motif):
+        # derivedFrom names an entity, not a document: for a design pattern that
+        # entity is a pair:DesignPatternCitation whose own dct:source is the
+        # catalogue. Reading the IRI alone would credit every one to PAIR-AI.
         for obj in g.objects(motif, PAIR.derivedFrom):
-            url = str(obj)
-            if "mercari" in url:
-                section = url.split("ml-system-design-pattern/")[-1].split("/")[0]
-                return "Mercari ML System Design Patterns", section.replace("-patterns", "")
-            if "martinfowler" in url:
-                return "Fowler - Patterns of Generative AI", "GenAI"
-            if "owasp-asi" in url:
-                return "OWASP Agentic Top 10 (ASI)", "agentic"
-            if "owasp" in url:
-                return "OWASP LLM Top 10", "supply chain"
+            for url in [str(obj)] + [str(s) for s in g.objects(obj, DCTERMS.source)]:
+                if "mercari" in url:
+                    section = url.split("ml-system-design-pattern/")[-1].split("/")[0]
+                    return "Mercari ML System Design Patterns", section.replace("-patterns", "")
+                if "martinfowler" in url:
+                    return "Fowler - Patterns of Generative AI", "GenAI"
+                if "owasp-asi" in url:
+                    return "OWASP Agentic Top 10 (ASI)", "agentic"
+                if "owasp" in url:
+                    return "OWASP LLM Top 10", "supply chain"
         return "unrecorded", ""
 
     grouped = defaultdict(lambda: defaultdict(list))

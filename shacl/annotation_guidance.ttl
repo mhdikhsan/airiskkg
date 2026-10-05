@@ -1,6 +1,7 @@
 @prefix sh:   <http://www.w3.org/ns/shacl#> .
 @prefix beam: <http://w3id.org/beam/core#> .
 @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
@@ -220,6 +221,36 @@ ag:UserInputDeclaresReachabilityShape
                 FILTER NOT EXISTS { $this pair:playsRole/pair:subRoleOf* pair:PublicUserInput . }
                 ?generationStep beam:use $this ;
                     pair:playsRole/pair:subRoleOf* pair:GenerationStep .
+            }
+        """ ;
+    ] .
+
+ag:BusinessDataReachesTheArchitectureShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf bp:itemSubjectRef ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Classified, but it reaches no architecture element: the step that reads it names no AI system, or that system holds no data." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX beam: <http://w3id.org/beam/core#>
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            PREFIX bp:   <https://sBPMN.github.io/2.0/properties#>
+            SELECT $this
+            WHERE {
+                $this bp:itemSubjectRef ?item .
+                ?item bp:structureRef ?kind .
+                FILTER NOT EXISTS { $this pair:realisedBy ?named }
+                FILTER NOT EXISTS {
+                    ?reference bp:dataObjectRef|bp:dataStoreRef $this .
+                    { ?association bp:sourceRef ?reference ; bp:targetRef ?activity }
+                    UNION
+                    { ?association bp:sourceRef ?activity ; bp:targetRef ?reference }
+                    ?activity pair:refinedBy ?system .
+                    ?system beam:hasResource ?input .
+                    ?input a beam:Data .
+                }
             }
         """ ;
     ] .

@@ -19,6 +19,7 @@ CONSTRUCT {
         pair:bindsPatternNode pat:Embedding_SourceDocumentNode ;
         pair:matchedElement ?sourceDocument .
 
+    ?indexingStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Embedding_IndexingStepNode ; pair:matchedElement ?indexingStep .
     ?chunkingStepBinding a pair:NodeBinding ;
         pair:bindsPatternNode pat:Embedding_ChunkingStepNode ;
         pair:matchedElement ?chunkingStep .
@@ -41,23 +42,30 @@ CONSTRUCT {
 }
 WHERE {
     ?chunkingStep
+        a/rdfs:subClassOf* beam:Process ;
         pair:playsRole/pair:subRoleOf* pair:ChunkingStep ;
         beam:use ?sourceDocument ;
         beam:produce ?documentChunk .
-    ?sourceDocument pair:playsRole/pair:subRoleOf* pair:SourceDocument .
+    ?sourceDocument a beam:Data ;
+        pair:playsRole/pair:subRoleOf* pair:SourceDocument .
+    ?documentChunk a beam:Data .
+    ?embeddingVector a beam:Data .
 
     ?embeddingStep
+        a/rdfs:subClassOf* beam:Process ;
         beam:use ?documentChunk ;
         beam:produce ?embeddingVector ;
         pair:playsRole ?embeddingRole .
     ?embeddingRole pair:subRoleOf* pair:EmbeddingStep .
 
     ?indexingStep
+        a/rdfs:subClassOf* beam:Process ;
         beam:use ?documentChunk ;
         beam:use ?embeddingVector ;
         beam:produce ?vectorIndex .
 
-    ?vectorIndex pair:playsRole ?vectorIndexRole .
+    ?vectorIndex a beam:Data ;
+        pair:playsRole ?vectorIndexRole .
     {
         ?vectorIndexRole pair:subRoleOf* pair:VectorStore .
     }
@@ -80,5 +88,6 @@ WHERE {
     BIND(IRI(CONCAT(STR(?match), "/binding/document-chunk")) AS ?chunkBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/embedding-step")) AS ?embeddingStepBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/embedding-vector")) AS ?embeddingVectorBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/indexing-step")) AS ?indexingStepBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/vector-index")) AS ?vectorIndexBinding)
 }

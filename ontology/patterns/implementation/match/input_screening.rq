@@ -10,6 +10,11 @@ CONSTRUCT {
         pair:matchesMotif pat:InputScreeningMotif ;
         pair:hasNodeBinding ?inputBinding , ?screeningBinding , ?generationBinding .
 
+    ?decisionBinding
+        a pair:NodeBinding ;
+        pair:bindsPatternNode pat:InputScreening_DecisionNode ;
+        pair:matchedElement ?decision .
+
     ?inputBinding
         a pair:NodeBinding ;
         pair:bindsPatternNode pat:InputScreening_UserInputNode ;
@@ -29,22 +34,27 @@ WHERE {
     ?screeningStep
         a/rdfs:subClassOf* beam:Process ;
         beam:use ?userInput ;
-        beam:inform ?generationStep ;
+        beam:produce ?decision ;
         pair:playsRole/pair:subRoleOf* pair:InputGuardrailStep .
 
     ?userInput a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
 
+    ?decision a beam:Data ; pair:playsRole/pair:subRoleOf* pair:GuardrailDecision .
+
     ?generationStep
         a/rdfs:subClassOf* beam:Process ;
+        beam:use ?decision ;
         pair:playsRole/pair:subRoleOf* pair:GenerationStep .
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/input-screening/",
         ENCODE_FOR_URI(STR(?screeningStep)), "/",
         ENCODE_FOR_URI(STR(?userInput)), "/",
+        ENCODE_FOR_URI(STR(?decision)), "/",
         ENCODE_FOR_URI(STR(?generationStep))
     )) AS ?match)
 
+    BIND(IRI(CONCAT(STR(?match), "/binding/decision")) AS ?decisionBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/user-input")) AS ?inputBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/screening-step")) AS ?screeningBinding)
     BIND(IRI(CONCAT(STR(?match), "/binding/generation-step")) AS ?generationBinding)

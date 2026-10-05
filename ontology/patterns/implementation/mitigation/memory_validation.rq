@@ -10,9 +10,17 @@ CONSTRUCT {
         a beam:Process ;
         rdfs:label "Memory write validation"@en ;
         pair:playsRole pair:MemoryValidationStep ;
-        beam:inform ?writeStep .
+        beam:produce ?screened .
 
-    ?system beam:hasProcess ?validationStep .
+    ?screened
+        a beam:Data ;
+        rdfs:label "Validated memory content"@en ;
+        pair:playsRole pair:SanitizedOutput .
+
+    ?writeStep beam:use ?screened .
+
+    ?system beam:hasProcess ?validationStep ;
+        beam:hasResource ?screened .
 }
 WHERE {
     ?finding
@@ -32,7 +40,7 @@ WHERE {
         { ?existingRole pair:subRoleOf* pair:InputGuardrailStep }
         UNION
         { ?existingRole pair:subRoleOf* pair:OutputValidationStep }
-        { ?existing beam:inform ?writeStep }
+        { ?existing beam:produce/^beam:use ?writeStep }
         UNION
         { ?writeStep beam:use ?screened . ?existing beam:produce ?screened }
     }
@@ -43,4 +51,6 @@ WHERE {
         "http://w3id.org/airiskkg/generated/mitigation/memory-validation/",
         ENCODE_FOR_URI(STR(?writeStep))
     )) AS ?validationStep)
+
+    BIND(IRI(CONCAT(STR(?validationStep), "/screened")) AS ?screened)
 }

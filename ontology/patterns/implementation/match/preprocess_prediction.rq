@@ -38,7 +38,6 @@ WHERE {
 
     ?preprocessStep beam:use ?input .
     ?preprocessStep beam:produce ?preprocessedData .
-    ?preprocessStep beam:inform ?predictionStep .
     ?predictionStep beam:use ?preprocessedData .
     ?predictionStep beam:use ?model .
     ?predictionStep beam:produce ?result .

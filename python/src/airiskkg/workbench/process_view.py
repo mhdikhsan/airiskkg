@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from functools import lru_cache
+
 from rdflib import RDF, RDFS, Graph, URIRef
 
 from airiskkg.assessment_runner import BEAM, PAIR
@@ -8,14 +10,67 @@ from airiskkg.workbench.terms import display_label, short
 
 BPMN = "https://sBPMN.github.io/2.0/classes#"
 BP = "https://sBPMN.github.io/2.0/properties#"
-DATA_CLASSES = {
-    "PersonalData": "Personal data",
-    "SensitivePersonalData": "Sensitive personal data",
-    "SpecialCategoryPersonalData": "Special category personal data",
-    "PseudonymisedData": "Pseudonymised (still personal)",
-    "AnonymisedData": "Anonymised - not personal",
-    "NonPersonalData": "Not personal",
-}
+DPV = "https://w3id.org/dpv#"
+
+
+@lru_cache(maxsize=1)
+def system_context_options() -> tuple[dict, ...]:
+    """What the editor offers for a system's domain and purpose.
+
+    Read off the graph like the data classifications, so the list and the writer
+    cannot disagree. Domain is empty on purpose: DPV publishes sector extensions
+    rather than sector concepts, so there is nothing to assign yet.
+    """
+    from airiskkg.assessment_runner import load_base_graph
+
+    graph = load_base_graph()
+    rows = []
+    for option in graph.subjects(RDF.type, PAIR.SystemContextOption):
+        facet = graph.value(option, PAIR.contextFacet)
+        value = graph.value(option, PAIR.contextValue)
+        label = graph.value(option, RDFS.label)
+        if facet is None or value is None or label is None:
+            continue
+        rows.append({
+            "facet": str(facet),
+            "value": str(value),
+            "label": str(label),
+        })
+    return tuple(sorted(rows, key=lambda row: (row["facet"], row["label"])))
+
+
+def context_values() -> set[str]:
+    """Every term the editor is allowed to write, so the writer can refuse the rest."""
+    return {row["value"] for row in system_context_options()}
+
+
+@lru_cache(maxsize=1)
+def data_classifications() -> tuple[dict, ...]:
+    """What the editor offers, read off the graph rather than typed here.
+    """
+    from airiskkg.assessment_runner import load_base_graph
+
+    graph = load_base_graph()
+    rows = []
+    for option in graph.subjects(RDF.type, PAIR.DataClassificationOption):
+        term = graph.value(option, PAIR.classifiesAs)
+        label = graph.value(option, RDFS.label)
+        if term is None or label is None:
+            continue
+        personal = graph.value(option, PAIR.meansPersonalData)
+        rows.append({
+            "id": str(term).removeprefix(DPV),
+            "iri": str(term),
+            "label": str(label),
+            "personal": bool(personal) and bool(personal.toPython()),
+        })
+    # Personal first, then the two claims that it is not; alphabetical inside.
+    return tuple(sorted(rows, key=lambda row: (not row["personal"], row["label"])))
+
+
+def data_class_names() -> frozenset[str]:
+    """The local names the editor will accept, for validating an edit."""
+    return frozenset(row["id"] for row in data_classifications())
 
 
 def _cls(name: str) -> URIRef:
@@ -43,9 +98,6 @@ _ACTIVITY_CLASSES = (
 )
 
 _HUMAN_KINDS = {"userTask", "manualTask"}
-
-# The five event positions BPMN draws differently. Order matters: a boundary
-# event is also a catch event, and the first match wins.
 _EVENT_CLASSES = (
     "boundaryEvent",
     "startEvent",
@@ -106,28 +158,126 @@ def _flag(graph: Graph, node: URIRef, name: str, default: bool = False) -> bool:
     return default if value is None else bool(value.toPython())
 
 
+@lru_cache(maxsize=1)
+def _data_classes() -> frozenset:
+    """Every class that counts as beam:Data, resolved once.
+
+    load_base_graph() copies the knowledge base on each call, so asking it per
+    resource cost seconds per request and slowed the browser suites enough to
+    time them out.
+    """
+    from airiskkg.assessment_runner import load_base_graph
+
+    ontology = load_base_graph()
+    kinds = {BEAM.Data}
+    for kind in set(ontology.subjects(RDFS.subClassOf, None)):
+        if BEAM.Data in set(ontology.transitive_objects(kind, RDFS.subClassOf)):
+            kinds.add(kind)
+    return frozenset(kinds)
+
+
+def _is_data(graph: Graph, resource: URIRef) -> bool:
+    """Personal data is a property of data. facet:hasPersonalDataCategory is
+    declared rdfs:domain beam:Data, and the bridge targets the same, so the
+    picker must not offer a model or a prompt the bridge would then ignore."""
+    return bool(set(graph.objects(resource, RDF.type)) & _data_classes())
+
+
+def _resolve_data(graph: Graph, reference: URIRef) -> dict:
+    store = graph.value(reference, _prop("dataStoreRef"))
+    target = store or graph.value(reference, _prop("dataObjectRef")) or reference
+    types = _types(graph, reference) | _types(graph, target)
+    item = graph.value(target, _prop("itemSubjectRef"))
+    kinds = [short(k) for k in graph.objects(item, _prop("structureRef"))] if item else []
+    collection = graph.value(target, _prop("isCollection"))
+    state = graph.value(target, _prop("dataState")) or graph.value(reference, _prop("dataState"))
+    return {
+        "id": str(reference),
+        "label": _label_of(graph, target),
+        # A store is drawn as a cylinder and an object as a folded page, so
+        # the shape has to survive the trip rather than be guessed here.
+        "store": bool(store) or "dataStore" in types or "dataStoreReference" in types,
+        "collection": bool(collection and collection.toPython()),
+        "input": "dataInput" in types,
+        "output": "dataOutput" in types,
+        "state": _label_of(graph, state) if state is not None else None,
+        "item": str(item) if item is not None else None,
+        "kinds": sorted(kinds),
+        # The thing itself, not the appearance: a store drawn beside three
+        # readers is three references to one object, and what it is annotated
+        # with belongs to the object.
+        "object": str(target),
+        "realisedBy": sorted(str(e) for e in graph.objects(target, PAIR.realisedBy)),
+    }
+
+
+def _refined_systems(graph: Graph) -> list[dict]:
+    """Every architecture a step of this process refines, with what it says
+    about itself."""
+    facets = {row["facet"] for row in system_context_options()}
+    rows = []
+    for system in sorted(set(graph.objects(None, PAIR.refinedBy)), key=str):
+        entry = {"id": str(system), "label": _label_of(graph, system)}
+        for facet in sorted(facets):
+            entry[short(URIRef(facet))] = sorted(
+                str(value) for value in graph.objects(system, URIRef(facet))
+            )
+        rows.append(entry)
+    return sorted(rows, key=lambda row: (row["label"], row["id"]))
+
+
+def _data_nodes(graph: Graph) -> list[dict]:
+    """Every data reference in the model once, with everything it is joined to.
+    """
+    nodes: dict[str, dict] = {}
+    for kind in ("dataObjectReference", "dataStoreReference"):
+        for reference in graph.subjects(RDF.type, _cls(kind)):
+            entry = _resolve_data(graph, reference)
+            entry["links"] = []
+            nodes[str(reference)] = entry
+
+    ends = (
+        (_prop("dataInputAssociation"), _prop("sourceRef"), "in"),
+        (_prop("dataOutputAssociation"), _prop("targetRef"), "out"),
+    )
+    for held, end, direction in ends:
+        for activity, _p, association in graph.triples((None, held, None)):
+            for reference in graph.objects(association, end):
+                entry = nodes.get(str(reference))
+                if entry is None:
+                    continue
+                entry["links"].append({
+                    "activity": str(activity),
+                    "direction": direction,
+                    "association": str(association),
+                })
+
+    # Which architecture elements this data object could be. The analyst does
+    # not know the architecture's names, so the editor has to offer them rather
+    # than ask - and only from the systems the activities reading it refine,
+    # because anything else is not what this activity touches.
+    for entry in nodes.values():
+        systems = {
+            system
+            for link in entry["links"]
+            for system in graph.objects(URIRef(link["activity"]), PAIR.refinedBy)
+        }
+        candidates = {
+            resource
+            for system in systems
+            for resource in graph.objects(system, BEAM.hasResource)
+            if _is_data(graph, resource)
+        }
+        entry["candidates"] = sorted(
+            ({"id": str(c), "label": _label_of(graph, c)} for c in candidates),
+            key=lambda row: (row["label"], row["id"]),
+        )
+    return sorted(nodes.values(), key=lambda row: (row["label"], row["id"]))
+
+
 def _data_around(graph: Graph, activity: URIRef) -> tuple[list[dict], list[dict]]:
     def resolve(reference: URIRef) -> dict:
-        store = graph.value(reference, _prop("dataStoreRef"))
-        target = store or graph.value(reference, _prop("dataObjectRef")) or reference
-        types = _types(graph, reference) | _types(graph, target)
-        item = graph.value(target, _prop("itemSubjectRef"))
-        kinds = [short(k) for k in graph.objects(item, _prop("structureRef"))] if item else []
-        collection = graph.value(target, _prop("isCollection"))
-        state = graph.value(target, _prop("dataState")) or graph.value(reference, _prop("dataState"))
-        return {
-            "id": str(reference),
-            "label": _label_of(graph, target),
-            # A store is drawn as a cylinder and an object as a folded page, so
-            # the shape has to survive the trip rather than be guessed here.
-            "store": bool(store) or "dataStore" in types or "dataStoreReference" in types,
-            "collection": bool(collection and collection.toPython()),
-            "input": "dataInput" in types,
-            "output": "dataOutput" in types,
-            "state": _label_of(graph, state) if state is not None else None,
-            "item": str(item) if item is not None else None,
-            "kinds": sorted(kinds),
-        }
+        return _resolve_data(graph, reference)
 
     reads = [
         resolve(source)
@@ -242,6 +392,18 @@ def _ordered(graph: Graph, nodes: list[URIRef]) -> list[URIRef]:
     return ordered
 
 
+def _band_key(graph: Graph, band: URIRef, label: str) -> tuple:
+    """Where a band sits in the stack. Ordered bands lead, in their order; the
+    rest keep the alphabetical place they had before one could be moved."""
+    order = graph.value(band, PAIR.bandOrder)
+    if order is None:
+        return (1, 0, label)
+    try:
+        return (0, int(order), label)
+    except (TypeError, ValueError):
+        return (1, 0, label)
+
+
 def _participants(graph: Graph) -> list[dict]:
     rows = []
     for participant in graph.subjects(RDF.type, _cls("participant")):
@@ -253,9 +415,13 @@ def _participants(graph: Graph) -> list[dict]:
                 "label": _label_of(graph, participant),
                 "process": str(process) if process is not None else None,
                 "multiple": multiplicity is not None,
+                "order": _band_key(graph, participant, _label_of(graph, participant)),
             }
         )
-    return sorted(rows, key=lambda row: row["label"])
+    rows.sort(key=lambda row: row["order"])
+    for row in rows:
+        del row["order"]
+    return rows
 
 
 def _sequence_flows(graph: Graph) -> list[dict]:
@@ -339,9 +505,13 @@ def _lanes(graph: Graph) -> list[dict]:
                 "process": str(process) if process is not None else None,
                 "parent": str(parent[lane]) if lane in parent else None,
                 "members": sorted(members),
+                "order": _band_key(graph, lane, _label_of(graph, lane)),
             }
         )
-    return sorted(rows, key=lambda row: row["label"])
+    rows.sort(key=lambda row: row["order"])
+    for row in rows:
+        del row["order"]
+    return rows
 
 
 def _artifacts(graph: Graph) -> tuple[list[dict], list[dict]]:
@@ -553,9 +723,16 @@ def process_view(graph: Graph, ttl_text: str | None = None) -> dict:
         "gateways": gateway_rows,
         "sequenceFlows": _sequence_flows(graph),
         "messageFlows": _message_flows(graph),
+        "dataNodes": _data_nodes(graph),
         "artifacts": artifacts,
         "associations": associations,
         "unrefinedSystems": unrefined,
+        # The situational context of each architecture a step refines, beside
+        # the options the editor may write. Stated from here because the analyst
+        # knows the sector and the purpose; held on the system because that is
+        # what facet:hasDomain and facet:hasPurpose are declared about.
+        "refinedSystems": _refined_systems(graph),
+        "contextOptions": list(system_context_options()),
         "stats": {
             "participants": len(_participants(graph)),
             "processes": len(processes),

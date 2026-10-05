@@ -1,11 +1,4 @@
-/* The risk view: the third level, and the only one that opens before a graph.
- *
- * Architecture answers "what is built", process answers "who is exposed". This
- * one answers "what did we come here to find out, and did we find it" - so it
- * carries the scope a person states, the concerns the run raised, and the
- * reconciliation between the two. */
-
-import { postJson } from "../core/api.js";
+import { api, postJson } from "../core/api.js";
 import { on } from "../core/bus.js";
 import { $, $$, el } from "../core/dom.js";
 import { revealInSource } from "../core/source.js";
@@ -19,9 +12,6 @@ import { noteChange } from "./run.js";
 import { state } from "../state.js";
 
 let register = null;
-/* Risk storming identifies risks in silence first, on purpose: a reader who
- * has seen the library's answers will not add one it missed. Offered, never
- * enforced - the discipline is the team's to keep. */
 let storming = false;
 const SCOPE_LABELS = {
   in: "answers the scope",
@@ -29,9 +19,6 @@ const SCOPE_LABELS = {
   unclassified: "no risk domain linked",
   all: "no scope stated",
 };
-
-/* An out-of-scope concern is set aside, never removed - and one that reaches no
- * catalogued domain is neither in nor out, because nothing upstream maps it. */
 
 const BAND_LABEL = {
   impact: "Impact", consequence: "Consequence", context: "Context",
@@ -47,19 +34,19 @@ const TRIAGE = [
 ];
 
 export async function initRisk() {
-  RiskCanvas.init("#risk-canvas", { onSelect: () => renderRail(), onUnfold: unfold });
+  RiskCanvas.init("#risk-canvas", {
+       onSelect: () => renderRail(),
+    onUnfold: unfold,
+  });
   $("#btn-risk-zoom-in").addEventListener("click", () => RiskCanvas.zoom(1.2));
   $("#btn-risk-zoom-out").addEventListener("click", () => RiskCanvas.zoom(0.83));
   $("#btn-risk-fit").addEventListener("click", () => RiskCanvas.fit());
-  // Told rather than called into: the panel that draws a run is not this one.
+
   on("assessment:rendered", () => refreshRegister().then(renderRisk));
+  knownRisks();
   foldable("#btn-tools-fold", "#risk-tools", "the tools");
   foldable("#btn-side-fold", "#risk-side-tray", "the detail");
 }
-
-/* Both trays fold the way the architecture palettes do: the head stays, so what
-   folded a tray is also what brings it back, and the canvas refits because the
-   room it has to draw in just changed. */
 function foldable(handle, tray, name) {
   const head = $(handle);
   const box = $(tray);
@@ -73,9 +60,6 @@ function foldable(handle, tray, name) {
   });
 }
 
-/* `rerun` for the edits whose whole point is what the run then says: a
- * judgement recorded against a finding is invisible until the finding carries
- * it. A scope edit needs none - the band reads the document, not the run. */
 async function edit(op, payload, cause, { rerun = false, onMade = null } = {}) {
   return runMutation(async () => {
     try {
@@ -101,44 +85,25 @@ async function edit(op, payload, cause, { rerun = false, onMade = null } = {}) {
   });
 }
 
-/* Assessing by hand.
- *
- * The library is 15 risk patterns over 31 motifs, which is a fraction of what
- * an assessor wants to record. Everything outside it would otherwise be lost,
- * so a person writes the same four concepts directly onto the graph and they
- * travel with it - drawn beside what the run found, marked as theirs, and
- * exported as Turtle like everything else. No query matches anything here. */
 
-/* What each kind may be dropped on, which is what the vocabulary allows: a risk
-   hangs off an element of the design, a consequence off a risk, an impact off a
-   consequence, and a source off either an element or the risk it gives rise to. */
 const HAND_DROP = {
-  /* A system is a beam:Element too, so a risk hangs off a whole architecture
-     with the relation the vocabulary already has. That is what makes a first
-     pass possible before any part is unfolded. A business activity is neither
-     an Element nor a Task, so it is not offered. */
-  risk: { bands: ["system"], element: true, where: "a system or an element" },
-  source: { bands: ["risk", "system"], element: true, where: "an element or a risk" },
+  risk: {
+    bands: ["system", "business"], element: true,
+    where: "a system, an element or an activity",
+  },
+  source: {
+    bands: ["risk", "system", "business"], element: true,
+    where: "an element, an activity or a risk",
+    aims: "an element or activity it comes from, or a risk it causes",
+  },
   consequence: { bands: ["risk"], element: false, where: "a risk" },
   impact: { bands: ["consequence"], element: false, where: "a consequence" },
-  /* A control is the one that points outward at what it changes, and
-     beamr:modifiesRiskConcept ranges over every one of the four. Writing one
-     down is not applying it - nothing is inserted into the design and no
-     finding clears; it records that somebody says this is handled. */
   control: {
     bands: ["risk", "source", "consequence", "impact"], element: false,
     where: "a risk, source or consequence",
   },
 };
 
-/* Every box a drop would be accepted on, marked before the drag starts rather
-   than discovered by trying: "drag this somewhere" is not an instruction.
- *
- * Only boxes that stand for a node in the graph. A concern the library raised
- * is a group of findings keyed by (risk pattern, evidence) - there is no such
- * subject to hang anything off, and hanging one off it is the conflation the
- * method forbids anyway: a control clears a finding by being built, not by
- * being asserted, and a finding is answered by triage. */
 function markDroppable(kind, view) {
   const rule = HAND_DROP[kind];
   const bands = new Set((((view || {}).diagram || {}).nodes || [])
@@ -161,18 +126,9 @@ function dropTargetAt(event) {
   return card ? { id: card.getAttribute("data-node"), card } : null;
 }
 
-/* Drawn on, rather than filled in: drag the shape onto what it is about.
- *
- * Nothing is matched here - this is the assessor's own judgement, written in
- * the same vocabulary a run emits so it travels with the graph and exports with
- * it. The library is small, and what it cannot say still has to be recordable. */
 function startPaletteDrag(kind, event, view) {
   event.preventDefault();
   event.stopPropagation();
-  /* The box that will be written, following the cursor, the way the
-     architecture palette drags a symbol. It stays for the whole gesture even
-     when there is nowhere to put it: a drag that shows nothing cannot be told
-     from one that never started, and the status bar is read afterwards. */
   const ghost = el("div", { class: `risk-ghost band-${kind}` }, HAND_LABEL[kind]);
   document.body.appendChild(ghost);
   const droppable = markDroppable(kind, view);
@@ -197,7 +153,6 @@ function startPaletteDrag(kind, event, view) {
     droppable.forEach((card) => card.classList.remove("rc-droppable", "rc-drop"));
     if (!found) {
       const noun = HAND_LABEL[kind].toLowerCase();
-      // Said once, where it is needed: what the library raised is triaged.
       setStatus("error", droppable.length
         ? `Drop a ${noun} on ${HAND_DROP[kind].where}.`
         : HAND_DROP[kind].element
@@ -206,15 +161,41 @@ function startPaletteDrag(kind, event, view) {
             + "What the library raised is answered by triage instead.");
       return;
     }
-    const label = window.prompt(`Name the ${HAND_LABEL[kind].toLowerCase()}:`, "");
-    if (!label || !label.trim()) return;
-    edit("state-concept", { kind, label: label.trim(), attachTo: [found.id] },
-      `wrote a ${HAND_LABEL[kind].toLowerCase()} by hand`);
+    unfoldDetail();
+    edit("state-concept", { kind, label: HAND_LABEL[kind], attachTo: [found.id] },
+      `wrote a ${HAND_LABEL[kind].toLowerCase()} by hand`,
+      { onMade: (id) => { RiskCanvas.select(id); } });
   };
 
   window.addEventListener("pointermove", place);
   window.addEventListener("pointerup", finish);
   place(event);
+}
+
+let shelf = null;
+
+async function knownRisks() {
+  if (shelf) return shelf;
+  try {
+    const catalogue = await api("/api/library");
+    const patterns = (catalogue.riskPatterns || []).map((row) => ({
+      id: row.iri || row.id, label: row.label,
+    }));
+    const controls = new Map();
+    (catalogue.riskPatterns || []).forEach((row) => {
+      (row.controls || []).forEach((control) => {
+        controls.set(control.iri || control.id, control.label);
+      });
+    });
+    shelf = {
+      risk: patterns.sort((a, b) => a.label.localeCompare(b.label)),
+      control: [...controls].map(([id, label]) => ({ id, label }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    };
+  } catch (_) {
+    shelf = { risk: [], control: [] }; 
+  }
+  return shelf;
 }
 
 const HAND_LABEL = {
@@ -237,7 +218,8 @@ function renderPalette(show, view) {
       el("span", { class: `pal-swatch band-${kind}` }),
       el("span", { class: "pal-text" }, [
         el("span", {}, HAND_LABEL[kind]),
-        el("span", { class: "pal-where" }, `onto ${HAND_DROP[kind].where}`),
+        el("span", { class: "pal-where" },
+          `onto ${HAND_DROP[kind].aims || HAND_DROP[kind].where}`),
       ]),
     ]);
     item.addEventListener("pointerdown", (event) => startPaletteDrag(kind, event, view));
@@ -248,13 +230,14 @@ function renderPalette(show, view) {
 function concernDetail(group) {
   const evidenceIds = group.evidence.map((e) => e.id);
   const domains = group.riskDomains.map((d) => d.label).join(", ");
-  // Selecting on the canvas is also selecting in the architecture and the source.
   GraphView.setHighlight(evidenceIds);
   revealInSource(evidenceIds);
 
   const head = el("div", { class: "concern-head" }, [
     el("span", { class: `scope-tag ${group.scopeMatch}` }, SCOPE_LABELS[group.scopeMatch]),
     el("strong", {}, group.label),
+    // Concerns that share a name say where, here as on the diagram.
+    group.distinguisher ? el("span", { class: "chip" }, "at " + group.distinguisher) : null,
     group.corroboration > 1
       ? el("span", { class: "chip corroborated" }, `${group.corroboration} structures`)
       : null,
@@ -264,15 +247,21 @@ function concernDetail(group) {
 
   const body = [head];
 
-  if (group.description) body.push(el("p", { class: "concern-desc" }, group.description));
-
-  if (group.why.length) body.push(detailRow("why", whyList(group.why)));
-
   body.push(detailRow("may lead to", domains
     ? domains
     : el("span", { class: "dim" }, "no risk domain linked")));
 
-  body.push(detailRow("where", group.evidence.map((e) => e.label).join(" → ")));
+  if (group.description) {
+    body.push(foldRow("what this is", "", el("p", { class: "concern-desc" }, group.description)));
+  }
+
+  if (group.why.length) {
+    body.push(foldRow("why", `${group.why.length} condition${group.why.length > 1 ? "s" : ""}`,
+      whyList(group.why)));
+  }
+
+  body.push(foldRow("where", `${group.evidence.length} element${group.evidence.length > 1 ? "s" : ""}`,
+    group.evidence.map((e) => e.label).join(" → ")));
 
   if (group.statedRisks.length) {
     body.push(detailRow("also stated", group.statedRisks.map((r) => el("span", {
@@ -302,7 +291,8 @@ function concernDetail(group) {
   }
 
   if (group.motifs.length) {
-    body.push(detailRow("raised by", el("span", { class: "dim" }, group.motifs.join(", "))));
+    body.push(foldRow("raised by", `${group.motifs.length} motif${group.motifs.length > 1 ? "s" : ""}`,
+      el("span", { class: "dim" }, group.motifs.join(", "))));
   }
   body.push(triageRow(group));
 
@@ -312,25 +302,23 @@ function concernDetail(group) {
 }
 
 
-/* The extension point the vocabulary always declared and nothing ever wrote.
- * Three risk patterns carry no structural escape at all, so for those this is
- * the only honest disposition - and risk storming keeps what was decided NOT
- * to be a risk for the same reason. */
-/* Every line in a concern is the same shape: a small label, then the value on
-   its own full-width line. Mixing inline and stacked rows is what made the
-   card read as unsorted. */
-/* The conditions that held, one per line and the tail folded away.
-   Run together with separators they were a paragraph nobody finished. */
-const WHY_SHOWN = 3;
-
 function whyList(why) {
-  const line = (text) => el("li", {}, text);
-  const list = el("ul", { class: "why-list" }, why.slice(0, WHY_SHOWN).map(line));
-  if (why.length <= WHY_SHOWN) return list;
-  return [list, el("details", { class: "why-more" }, [
-    el("summary", {}, `${why.length - WHY_SHOWN} more`),
-    el("ul", { class: "why-list" }, why.slice(WHY_SHOWN).map(line)),
-  ])];
+  return el("ul", { class: "why-list" }, why.map((text) => el("li", {}, text)));
+}
+
+/* A folded row: the key is the control, and the hint says how much is behind it
+   so a reader can tell whether to open it. The panel carried a paragraph, nine
+   conditions and a chain of elements all open at once, which is more than
+   anyone reads at a glance - and the parts worth acting on were below it. */
+function foldRow(key, hint, value, extra) {
+  const values = Array.isArray(value) ? value : [value];
+  return el("details", { class: "concern-row concern-fold" + (extra ? " " + extra : "") }, [
+    el("summary", {}, [
+      el("span", { class: "concern-key" }, key),
+      hint ? el("span", { class: "dim small" }, hint) : null,
+    ]),
+    el("div", { class: "concern-val" }, values),
+  ]);
 }
 
 function detailRow(key, value, extra) {
@@ -372,11 +360,7 @@ function decide(group, status) {
     return edit("triage", { findings: group.findingIds, status: "" },
       `reopened ${group.label}`, { rerun: true });
   }
-  const rationale = window.prompt(
-    `Why is "${group.label}" ${status}?
-
-A judgement nobody can read back is not reviewable.`,
-    "");
+  const rationale = window.prompt(`Why is "${group.label}" ${status}?`, "");
   if (rationale === null) return Promise.resolve();
   const statedBy = window.prompt("Who decided that?", "") || "";
   return edit("triage",
@@ -384,8 +368,6 @@ A judgement nobody can read back is not reviewable.`,
     `${status}: ${group.label}`, { rerun: true });
 }
 
-/* Offered, never enforced: a team shown the library's answers first will
-   ratify them and add nothing it missed. */
 function stormToggle(view) {
   const button = el("button", {
     type: "button",
@@ -400,8 +382,6 @@ function stormToggle(view) {
 
 // ---- render ----
 
-/* The graph read back without running anything: what people stated, and the
-   notation drawn from it. An assessment written by hand shows up through this. */
 export async function refreshRegister() {
   try {
     register = await postJson("/api/scope", { ttl: Editor.getValue() });
@@ -413,7 +393,13 @@ export async function refreshRegister() {
 export function clearRisk() {
   storming = false;
   register = null;
+  expanded.clear();
+  focus = null;
   RiskCanvas.forgetLayout();
+
+  RiskCanvas.clear();
+  const empty = $("#risk-canvas-empty");
+  if (empty) empty.classList.add("hidden");
   const side = $("#risk-side");
   if (side) side.innerHTML = "";
 }
@@ -424,35 +410,30 @@ export function renderRisk() {
 
   const view = drawable();
   const empty = $("#risk-canvas-empty");
-  // Assessing by hand needs no run: the architecture is on screen, the palette
-  // is on it, and what is written lands in the graph either way.
+  
   renderLayerBar(true);
   renderPalette(true, view);
 
   if (!view || !view.diagram.nodes.length) {
-    empty.classList.remove("hidden");
-    empty.textContent = currentView()
-      ? "Nothing was raised and nothing was stated on this graph."
-      : "Nothing has been assessed yet. Drag a risk from the palette onto an element "
-        + "to record one of your own, or run the assessment to see what the library finds.";
     RiskCanvas.render({ nodes: [], links: [], bands: [] }, state.lastGraph,
       { layers, focus, expanded });
+    const bare = !RiskCanvas.painted();
+    empty.classList.remove("hidden");
+    empty.classList.toggle("over-drawing", !bare);
+    empty.innerHTML = "";
+    empty.appendChild(el("span", { class: "empty-note" }, currentView()
+      ? "Nothing was raised and nothing was stated on this graph."
+      : "No assessment yet - drag a risk onto a box, or run the assessment."));
     return;
   }
   empty.classList.add("hidden");
+  empty.classList.remove("over-drawing");
   RiskCanvas.render(storming ? statedOnly(view.diagram) : view.diagram, state.lastGraph,
     { layers, focus, expanded });
 }
 
-/* Which layers are on screen, and which architecture is being read.
- *
- * The notation draws every risk in every architecture at once, which is what
- * made it hard to follow. Business starts off because it is the outermost
- * frame, not what a reader opens the risk level for. */
 const layers = { business: true, architecture: true, risk: true };
 let focus = null;
-/* Which architectures have been unfolded. Empty on purpose: the risk view opens
-   on the work and the systems, and the parts are asked for. */
 const expanded = new Set();
 
 function unfold(system, open) {
@@ -506,8 +487,12 @@ function renderLayerBar(show) {
   bar.appendChild(picker);
 }
 
-/* Everything that used to be a list is now the detail of what the canvas has
- * selected: pick a risk box and this is what stands behind it. */
+function unfoldDetail() {
+  const tray = $("#risk-side-tray");
+  if (tray) tray.classList.remove("collapsed");
+}
+
+
 function renderRail() {
   const side = $("#risk-side");
   if (!side) return;
@@ -526,15 +511,10 @@ function renderRail() {
     if (part) { side.appendChild(part); return; }
   }
 
-  /* Nothing picked, nothing to say. What the rail used to stack up here was
-     read past rather than read. */
   side.appendChild(el("p", { class: "dim small rail-empty" },
     view ? "Pick a box to see what stands behind it." : "Nothing to read yet."));
 }
 
-/* What is on the canvas. After a run that is the run, with the hand-written
-   layer taken from the graph as it is now; before one it is only what people
-   wrote - an assessment does not have to wait for a query to match. */
 function drawable() {
   const view = currentView();
   const stated = (register && register.diagram) || null;
@@ -550,9 +530,6 @@ function drawable() {
   };
 }
 
-/* The run's own layer, with the hand-written one taken from the graph as it is
-   now. Stated nodes are replaced rather than added to: the graph is the truth
-   about them, and the run's copy is as old as the run. */
 function mergeStated(run, stated) {
   const nodes = run.nodes.filter((node) => node.origin !== "stated");
   const links = run.links.filter((link) => !link.editable);
@@ -565,8 +542,7 @@ function currentView() {
   return (state.lastAssessment || {}).riskView || null;
 }
 
-/* Storming, on the diagram: what the run derived comes off, what people drew
- * stays. The architecture underneath is what they are storming over. */
+
 function statedOnly(diagram) {
   const kept = new Set(diagram.nodes.filter((n) => n.origin === "stated").map((n) => n.id));
   return {
@@ -576,11 +552,7 @@ function statedOnly(diagram) {
   };
 }
 
-/* A box that is not a concern still has something to say - which is why it is
- * on the diagram at all. */
-/* One part of an architecture, picked once its system is unfolded: where it
-   sits and what was raised on it. Unfolding is only worth doing if the parts
-   answer something the system box could not. */
+
 function elementDetail(id, view) {
   const graph = state.lastGraph || {};
   const element = (graph.nodes || []).find((node) => node.id === id);
@@ -612,8 +584,6 @@ function elementDetail(id, view) {
   return box;
 }
 
-/* A system or an activity, picked. The coarse boxes are the anchor now, so
-   picking one has to answer what stands in it - not just repeat its name. */
 function frameDetail(node, view) {
   const mine = node.isSystem ? [node.id] : (node.refines || []);
   const groups = new Map((view.groups || []).map((group) => [group.key, group]));
@@ -666,7 +636,7 @@ function nodeDetail(node, view) {
     el("div", { class: "concern-head" }, [el("strong", {}, node.title)]),
     node.body ? el("p", { class: "concern-desc" }, node.body) : null,
     el("p", { class: "dim small" }, node.origin === "stated"
-      ? "Stated by a person. Solid border on the diagram."
+      ? "Manual entry."
       : "Derived from this run. Dashed border on the diagram."),
   ]);
   const reaching = view.groups.filter((g) =>
@@ -676,20 +646,23 @@ function nodeDetail(node, view) {
     box.appendChild(el("h3", {}, `Reaches ${reaching.length} concern${reaching.length > 1 ? "s" : ""}`));
     reaching.forEach((g) => box.appendChild(el("div", { class: "ov-row" }, g.label)));
   }
-  /* What it hangs off, which is the question a box on its own cannot answer:
-     a risk source attaches to any element of the design - a step, a data node,
-     a model, an agent or a whole system. */
   const joins = ((view.diagram || {}).links || [])
     .filter((link) => link.source === node.id && link.editable)
     .map((link) => nameOf(link.target, view));
   if (joins.length) box.appendChild(detailRow("attached to", joins.join(" · ")));
 
-  // Written by hand, so it can be taken back the same way.
+  if (node.origin === "stated" && node.band === "risk") {
+    box.appendChild(verdictRow(node, view));
+    box.appendChild(chainRow(node, view));
+  }
+
+  // Written by hand, so it is named, joined up and taken back the same way.
   if (node.origin === "stated" && HAND_BANDS.has(node.band)) {
+    box.appendChild(nameForm(node));
     const connect = connectForm(node, view);
     if (connect) box.appendChild(connect);
     const remove = el("button", {
-      type: "button", class: "chip clickable",
+      type: "button", class: "chip clickable danger",
       title: "Removes it from the graph, along with what pointed at it.",
     }, "remove this");
     remove.addEventListener("click", () => {
@@ -703,8 +676,38 @@ function nodeDetail(node, view) {
 
 const HAND_BANDS = new Set(["risk", "source", "consequence", "impact", "control"]);
 
-/* A name for anything on the diagram, including the architecture underneath it,
-   so a connection can say what it joins rather than showing two IRIs. */
+function verdictRow(node, view) {
+  const also = (view.groups || []).filter(
+    (group) => (group.statedRisks || []).some((stated) => stated.id === node.id));
+  if (!also.length) {
+    return detailRow("the run", el("span", { class: "dim" }, "raised nothing here"));
+  }
+  return detailRow("the run", also.map((group) => {
+    const row = el("button", { type: "button", class: "frame-risk" },
+      `also raised ${group.label}`);
+    row.addEventListener("click", () => { RiskCanvas.select(group.key); renderRail(); });
+    return row;
+  }));
+}
+
+const CHAIN_PARTS = [
+  ["source", "isRiskSourceFor"],
+  ["consequence", "hasConsequence"],
+  ["control", "modifiesRiskConcept"],
+];
+
+function chainRow(node, view) {
+  const links = (view.diagram || {}).links || [];
+  const marks = CHAIN_PARTS.map(([part, relation]) => {
+    const there = links.some((link) => link.label === relation
+      && (link.target === node.id || link.source === node.id));
+    return el("span", { class: there ? "chain-has" : "chain-missing" },
+      `${there ? "✓" : "–"} ${part}`);
+  });
+  return detailRow("chain", marks);
+}
+
+
 function nameOf(id, view) {
   const drawn = ((view.diagram || {}).nodes || []).find((node) => node.id === id);
   if (drawn) return drawn.title;
@@ -713,8 +716,7 @@ function nameOf(id, view) {
   return element ? element.label : id.split(/[#/]/).pop();
 }
 
-/* One line, picked. A connection drawn wrong should cost that connection - not
-   the assessment it is part of. */
+
 function connectionDetail(line, view) {
   const box = el("div", { class: "rail-detail" }, [
     el("h3", {}, "Connection"),
@@ -723,7 +725,7 @@ function connectionDetail(line, view) {
     detailRow("as", el("span", { class: "mono" }, line.label)),
   ]);
   const remove = el("button", {
-    type: "button", class: "chip clickable",
+    type: "button", class: "chip clickable danger",
     title: "Removes this one relation. Nothing else on the assessment changes.",
   }, "remove this connection");
   remove.addEventListener("click", () => {
@@ -735,7 +737,46 @@ function connectionDetail(line, view) {
   return box;
 }
 
-/* Joining a hand-written concept to something else, after the fact. */
+
+function nameForm(node) {
+  const kind = node.band;
+  const offered = (shelf && shelf[kind]) || [];
+  const rows = [];
+
+  const name = el("input", { type: "text", class: "scope-input", value: node.title || "" });
+  let picker = null;
+  if (offered.length) {
+    const named = (node.concernsRiskPattern || node.id);
+    picker = el("select", { class: "scope-select" }, [
+      el("option", { value: "" }, "choose from the library…"),
+      ...offered.map((row) => el("option",
+        row.id === named ? { value: row.id, selected: "selected" } : { value: row.id },
+        row.label)),
+    ]);
+    picker.addEventListener("change", () => {
+      const row = offered.find((entry) => entry.id === picker.value);
+      if (row) name.value = row.label;
+    });
+    rows.push(detailRow(
+      kind === "control" ? "a control the library knows" : "a risk the library knows", picker));
+  }
+  rows.push(detailRow("called", name));
+
+  const apply = el("button", { type: "button", class: "btn small primary" }, "Apply");
+  apply.addEventListener("click", () => {
+    const label = name.value.trim();
+    const chosen = picker ? picker.value : "";
+    if (!label && !chosen) { name.focus(); return; }
+    const payload = { concept: node.id };
+    if (label) payload.label = label;
+    if (chosen) payload.fromLibrary = chosen;
+    edit("rename-concept", payload, `named it ${label || "from the library"}`,
+      { onMade: (id) => { if (id) RiskCanvas.select(id); } });
+  });
+  rows.push(detailRow("", apply));
+  return el("div", { class: "name-form" }, rows);
+}
+
 function connectForm(node, view) {
   const rule = HAND_DROP[node.band];
   if (!rule) return null;

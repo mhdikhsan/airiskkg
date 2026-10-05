@@ -9,6 +9,8 @@ flask = pytest.importorskip("flask")
 from airiskkg.paths import EXAMPLE_DIR, REPO_ROOT  # noqa: E402
 from airiskkg.webapp.app import create_app  # noqa: E402
 from conftest import (  # noqa: E402
+    AGENT_NS,
+    FIXTURE_DIR,
     GRAPH_RAG_NS,
     ONYX_NS,
     WIEN_ENERGIE_NS,
@@ -656,6 +658,56 @@ def test_an_assessment_says_what_it_ran_on(client) -> None:
     assert run["knowledgeBase"]["fingerprint"]
 
 
+def test_the_editor_only_writes_an_edge_that_crosses_the_two_sides(client) -> None:
+    """The editor is the source of truth, so a payload can arrive that the canvas
+    never vetted. BEAM declares the domain and range but nothing reasons over
+    them, so without this check a data-to-data edge enters the document."""
+    ttl = """
+    @prefix beam: <http://w3id.org/beam/core#> .
+    @prefix ex:   <http://example.org/edge#> .
+    ex:sys a beam:System ; beam:hasProcess ex:step , ex:later ; beam:hasResource ex:a , ex:b .
+    ex:step a beam:Process ; beam:use ex:a ; beam:produce ex:b .
+    ex:later a beam:Process ; beam:use ex:b .
+    ex:a a beam:Data .
+    ex:b a beam:Data .
+    ex:who a beam:Agent .
+    """
+
+    def edit(subject, predicate, obj):
+        return client.post("/api/graph-edit", json={
+            "ttl": ttl, "op": "add-edge",
+            "subject": subject, "predicate": predicate, "object": obj,
+        })
+
+    refused = {
+        "data uses data": ("ex:a", "use", "ex:b"),
+        # A process reaching a process is the same defect, and there is no longer
+        # a predicate that could say it.
+        "a step uses a step": ("ex:step", "use", "ex:later"),
+        "a step produces a step": ("ex:step", "produce", "ex:later"),
+        # An agent is a sibling of beam:Resource, not a kind of it.
+        "a step uses an agent": ("ex:step", "use", "ex:who"),
+        "a step uses its own system": ("ex:step", "use", "ex:sys"),
+    }
+    for name, (subject, predicate, obj) in refused.items():
+        response = edit(subject.replace("ex:", "http://example.org/edge#"), predicate,
+                        obj.replace("ex:", "http://example.org/edge#"))
+        assert response.status_code == 400, f"accepted a malformed edge: {name}"
+        assert "beam:" in response.get_json()["error"], name
+
+    withdrawn = edit("http://example.org/edge#step", "inform", "http://example.org/edge#later")
+    assert withdrawn.status_code == 400, "beam:inform is no longer a flow BEAM declares"
+
+    allowed = client.post("/api/graph-edit", json={
+        "ttl": ttl, "op": "add-edge",
+        "subject": "http://example.org/edge#who",
+        "predicate": "participatedIn",
+        "object": "http://example.org/edge#step",
+    })
+    assert allowed.status_code == 200, "refused the edge BEAM does declare"
+    assert "participatedIn" in allowed.get_json()["ttl"]
+
+
 def test_the_fingerprint_endpoint_agrees_with_the_run(client) -> None:
     """Otherwise the staleness check compares two different things and either
     never fires or never stops firing."""
@@ -675,7 +727,7 @@ def test_reserializing_the_graph_does_not_look_like_an_edit(client) -> None:
     reserialized = flask.json.loads(
         client.post(
             "/api/graph-edit",
-            json={"ttl": ttl, "op": "add-edge", "subject": "urn:x", "predicate": "inform", "object": "urn:y"},
+            json={"ttl": ttl, "op": "add-edge", "subject": "urn:x", "predicate": "use", "object": "urn:y"},
         ).data
     )["ttl"]
 
@@ -886,14 +938,24 @@ def test_an_architecture_with_no_process_attributes_nothing(client) -> None:
     assert assessed["findingsByActivity"] == []
 
 
-def test_a_process_example_says_which_architectures_it_needs(client) -> None:
-    """A process names the systems its activities are carried out by and does not contain them."""
-    # A shipped process, since this is a claim about what the deployment offers.
-    body = client.get("/api/examples/it_service_desk").get_json()
+def test_a_process_example_says_which_architectures_it_needs() -> None:
+    """A process names the systems its activities are carried out by and does
+    not contain them.
+
+    Offered from the fixtures, not from the shipped set: the deployment offers
+    no process example any more, and this is a claim about what the endpoint
+    says of a process - not about which graphs happen to be on the shelf.
+    """
+    app = create_app(extra_example_dirs=[FIXTURE_DIR])
+    app.testing = True
+    process = process_path("it_service_desk").stem
+    architecture = example_path(AGENT_NS).stem
+
+    body = app.test_client().get(f"/api/examples/{process}").get_json()
 
     assert body["kind"] == "process"
-    assert {row["example"] for row in body["requires"]} == {"it_support_agent"}
-    assert body["missing"] == [], "the shipped process refines something we do not ship"
+    assert {row["example"] for row in body["requires"]} == {architecture}
+    assert body["missing"] == [], "the process refines something that is not offered"
 
 
 def test_an_architecture_example_needs_nothing(client) -> None:

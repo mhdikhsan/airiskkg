@@ -167,11 +167,10 @@ Read before non-trivial changes.
 
 | Document | What it is |
 | --- | --- |
-| `docs/reference/PAIR-AI_glossary_v1_3.md` | Terminology and modeling rules. **v1.3** supersedes v1.2 (deleted). Sections: **A** core terms, **B** internal terms, **C** rules **R1–R10**, **D** grounding references. A reference to `PAIR-AI_glossary_v1.2.md` is a broken link to fix; v1.2's Sections E/F are gone — do not cite them. |
-| `docs/reference/PAIR-AI_method_and_construction.md` | How the knowledge base was built and how an assessment runs. |
+| `docs/reference/PAIR-AI_glossary_v1_3.md` | Terminology and modeling rules. **v1.3** supersedes v1.2 (deleted). Sections: **A** core terms, **B** internal terms, **C** rules **R1–R10**, **D** grounding references. A reference to `PAIR-AI_glossary_v1.2.md` is a broken link to fix; v1.2's Sections E/F are gone — do not cite them. **Stale on one point as of 2026-10-04:** lines 26, 122 and 135–137 still list `inform` as a flow relation and still say flow relations are not data flow. The implementation removed it; **this file wins** until the glossary is reissued. |
+| `docs/reference/PAIR-AI_method_and_construction.md` | How the knowledge base was built and how an assessment runs. **Stale on one point as of 2026-10-04:** lines 459, 546 and 695 still name `beam:inform`. `docs/reference/mitigation_and_gap_mechanics.md` likewise, at lines 191, 227 and 234. |
 | `docs/reference/catalogue.md` | Inventory of every motif, risk pattern, role, and data category. **Hand-written, so it goes stale silently** — re-check its counts whenever the library changes. |
-| `docs/reference/risk_control_linkage.md` | How risk patterns reach controls, including the MIT evidence layer. **Generated** — regenerate, never hand-edit. |
-| `docs/reference/competency_questions.md` + `competency_questions/*.rq` | What the knowledge base can be asked, as 27 runnable SPARQL SELECTs. `test_competency_questions.py` checks every question is listed and none has gone silent. **A question that returns nothing is drift, not a passing test.** |
+| `docs/reference/risk_control_linkage.md` | How risk patterns reach controls, including the MIT evidence layer. **Generated** — regenerate, never hand-edit. `test_generated_documents.py` re-runs the generator and diffs it against what is checked in, because nothing did: when `pair:derivedFrom` moved from naming a URL to naming a `pair:DesignPatternCitation`, the generator kept producing a document while every motif silently fell into *"unrecorded"*. **A generated artifact nothing re-generates is not reproducible, it is just checked in.** |
 | `NOTICE.md` | Third-party attributions and the licence posture of each ingested source. |
 
 **Local-only (gitignored — absent from a fresh clone):**
@@ -213,6 +212,13 @@ Read before non-trivial changes.
   registered CONSTRUCT is the ontology query pattern derived from it. The OQP may differ
   topologically where matching requires it but must not violate the ODP's semantics — a
   declaration that drifts from its `.rq` is a defect, not a stylistic mismatch.
+  **`test_every_motif_template_matches_its_own_motif` now holds that end to end**: it builds
+  each of the 31 templates exactly as `add-motif` does and asserts the motif matches what it
+  produced. It caught `EmbeddingsMotif` declaring no indexing-step node at all and papering
+  over the gap with a `VectorIndex beam:use Vector` edge — a data-to-data edge in the library
+  itself — and `ExternalDependencyMotif` stating no `pair:expectedClass` on either end.
+  **`test_every_pattern_edge_crosses_between_an_oval_and_a_box`** holds the bipartite rule over
+  all 143 declared edges.
 - **Process typing never decides whether a motif matches.** Every step-node check is
   `?step a/rdfs:subClassOf* beam:Process` — the same shape as the role idiom
   `pair:playsRole/pair:subRoleOf*`. It walks the class hierarchy already in the graph, so no
@@ -256,9 +262,27 @@ Read before non-trivial changes.
 - **OWL class vs SKOS concept (R1).** OWL classes only for instantiated, query-traversed
   structure (BEAM elements). SKOS concepts for classification values (pattern roles, data
   categories, all facets). **Never instantiate a facet value.**
-- **Flow relations are not data flow.** `inform` is process-to-process ordering with no
-  resource transfer, and it is load-bearing — the Guardrails motif is constituted by a
-  guardrail step *informing* a generation step. Never redefine a motif over "data flow".
+- **The graph is bipartite, and nothing may cross that.** Boxology alternates ovals and boxes:
+  a process reaches a process only through the resource one produces and the other uses,
+  exactly as data reaches data only through a process. **No data→data, no data→symbol, no
+  process→process** — and the same for every other same-kind pair. Only `beam:use`,
+  `beam:produce` and their inverses cross between the two sides, plus `beam:participatedIn`
+  from an agent. `beam:Agent` and `beam:System` are siblings of `beam:Resource` rather than
+  kinds of it, so *"not a process"* is not the same as *"a resource"*; treating them as
+  interchangeable is what put `process beam:use agent` on the canvas.
+- **`beam:inform` was removed, and this reverses the earlier rule.** It was declared
+  `rdfs:domain beam:Process ; rdfs:range beam:Process`, which Boxology does not permit, and
+  the library leaned on it in 25 pattern edges across 17 of 31 match queries. Removed
+  2026-10-04 from BEAM, every motif, every risk and mitigation query, and all five tracked
+  graphs: **every match and every finding came out identical**, which is the measurement that
+  settles it — the relation was carrying nothing the assessment read once the boxes were
+  there. Where a step genuinely hands something over, the box is now declared; where a motif
+  had none, one was added (a `JobScheduler` issues a job request; a planner produces its plan;
+  a guardrail produces its decision). Where nothing is handed over, the edge is simply gone:
+  the two parallel paths of `MultiStagePredictionMotif` are joined by the request they share.
+  **In a query, the replacement for `beam:inform` is the property path
+  `beam:produce/^beam:use`**, and for `beam:inform+` it is `(beam:produce/^beam:use)+`. Do not
+  reintroduce a process-to-process predicate under any name.
 - **Predicate economy.** No new flow predicates in BEAM core; node types carry edge semantics.
 - **BEAM is the canonical internal model.** External tool vocabularies (Tool4Boxology now,
   AgentO later) enter only through alignment adapters in `ontology/alignments/` plus
@@ -357,12 +381,61 @@ in `NOTICE.md`.
   `sbpmn:calledElement`, whose unconstrained range would hard-code the sBPMN namespace into
   every submitted architecture.
 - **One bridge, and R8 stays intact.** `business_data_bridge.rq` reads a personal-data kind off
-  a `bpmn:itemDefinition` and emits `pair:SensitiveInformation` on the input-playing elements
-  of the refined system, with a `prov:Derivation` naming the annotation that produced it. What
+  a `bpmn:itemDefinition` and emits `pair:SensitiveInformation` on elements of the refined
+  system, with a `prov:Derivation` naming the annotation that produced it. What
   is *annotated* stays annotated; what is *derived* is the data category. **No facet is
-  propagated as a facet and no BPMN triple enters the architecture.** The mapping goes by role,
-  not by name, because nothing in the business layer names an architecture element — that is
-  the point, since the analyst does not know them.
+  propagated as a facet and no BPMN triple enters the architecture.**
+- **The bridge marks the edge, never the inside.** Content enters where nothing inside the
+  system produced it and leaves where nothing inside consumes it; `content_categories.rq`
+  carries it the rest of the way and **refuses to carry it through a redaction, output-guardrail
+  or output-validation step**. Marking further in is worse than imprecise: a category asserted
+  on an element that sits *after* a control never passes through that filter, so the control
+  stops clearing the finding it was built to clear. Measured on the redaction fixture — the
+  screened element went from carrying no `SensitiveInformation` to carrying it, and the answer
+  with it. **Target `beam:Data` only**, which is where `facet:hasPersonalDataCategory` is
+  declared: a model and a prompt sit on the same edge and contain nobody's name.
+- **Rewritten 2026-10-04, because the old rule reached almost nothing.** The fallback tested for
+  `pair:UserInput` or `pair:PredictionRequest` — **4 of the 50 resource-side roles** — so a
+  document store, a knowledge graph, a ticket or a patient record reached nothing however it was
+  annotated. Four of the eight systems in the bundled scenes could not be marked at all. Personal
+  data does not only arrive as something a person typed, and the consuming risk query already
+  knew that: `sensitive_information_disclosure.rq` has a branch reading the category off a
+  knowledge source. **The architecture-side route, `personal_data_category.rq`, never had a role
+  restriction** — only the business-analyst route did, which is the one route used by the person
+  most likely to know the data is personal.
+- **`pair:realisedBy` is the statement; the edge rule is the fallback.** Named, that element and
+  no other; unnamed, the edge. `pair:targetInferred` on the derivation says which, because only
+  one of them is somebody's claim. The picker offers the resources of the architectures the
+  reading activities refine and refuses anything else, since naming an element of a system this
+  activity never touches would mark something the business layer says nothing about.
+- **The fallback is coarse on purpose, and coarser than it was.** One annotation marks every
+  element content enters the refined system by, so removing one of several annotations changes
+  nothing. That is what `realisedBy` is for. `ag:BusinessDataReachesTheArchitectureShape` warns
+  when a classification reaches no element at all, which used to fail in silence.
+- **`!BOUND(?x) || ?x` is not safe in rdflib**, which does not short-circuit `||`: the second
+  operand is evaluated unbound, the filter errors, and the row is dropped. The bridge's
+  "means personal" guard was written that way, so **every DPV term outside the five the editor
+  lists was silently discarded** — `dpv:MedicalHealth` among them — which is the reverse of what
+  the list means. Use `COALESCE(?x, true)`.
+- **The business layer carries what the business knows.** Not "everything is stated in the
+  process": the test is *who knows it*, because R8 makes every annotation a claim by a modeller.
+  What data is involved, what sector, what purpose — the analyst knows. How the thing was built
+  — implementation type, deployment setting — the architect knows, and writing it on an activity
+  would record a guess as a claim. The declared domains say the same: `facet:hasPersonalDataCategory`
+  is about a `beam:Data`, `facet:hasDomain` and `facet:hasPurpose` about a `beam:System`, and
+  `facet:hasImplementationType` about a **`beam:Model`** — one system holds several, and an
+  activity cannot say which.
+- **Domain and purpose are stated from the business view and written on the system.** An activity
+  refines exactly one system, so that join is **1:1** with none of the ambiguity the data bridge
+  has. Written straight onto the `beam:System` by `set-system-context` rather than derived from a
+  business triple, because propagating a facet as a facet is the one thing the method does not
+  do. Where it is *authored* is the business view; what it is a property of is the system.
+  `pair:SystemContextOption` is the list the editor offers and the writer validates against, so
+  the two cannot disagree. **Purpose carries six DPV core terms; domain is empty**, because DPV
+  publishes sector *extensions* — six namespaces, each contributing purposes — and no sector
+  concepts to assign (checked against the 2.3 index, 2026-10-04). Minting local sectors breaks
+  R3 and using an extension's namespace IRI as a `skos:Concept` is type-incorrect. Filling the
+  list in is a data change and nothing else.
 - **"Not personal" is a claim, not silence.** The two DPV values meaning not personal
   (`dpv:AnonymisedData`, `dpv:NonPersonalData`) are excluded from the bridge *and* offered in
   the UI on purpose: "checked, and not personal" must not collapse into the silence of never
@@ -409,6 +482,39 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   from shared evidence elements, never asserted as a triple**. Asserting it would claim the
   person and the library meant the same thing. No third term was minted, because AIRO already
   had one.
+- **A risk is carried by an activity as readily as by an element.** `beamr:hasRisk` ranges over
+  whatever carries the risk, so the triple is the same either way and `_attachment` always
+  accepted it — what blocked it was `HAND_DROP` in `risk.js` listing only `["system"]` as a
+  band a drop lands on, which left activity cards unmarked and absent from the connect picker.
+  `["system", "business"]` since 2026-10-04, for a risk and for a risk source. **The business
+  layer joins by refinement, so neither layer stands in for the other**: a risk on the step and
+  a risk on the element it refines are different claims, and both must be writable.
+- **A concern draws one line per system, not one per evidence element.** Measured on the energy
+  scene: the server emits 110 links, **74 of them `attaches`**, because a concern cites three to
+  eight elements and drew a line to each. Three quarters of the ink said *where*, not *what*,
+  which is what made the risk view read as an architecture diagram. Opening a system took the
+  drawn links from 53 to 84. They now merge into one labelled line per system in `narrow()`,
+  folded or not: 84 → **53**, attaches 48 → 17. **The picked concern is the exception** — a
+  merged line stops at the band, and opening a system is how a reader asks which element
+  exactly, so the selected concern keeps its own lines to the boxes it cites.
+- **A line into a folded system names the parts it stands for.** Attachments to members of a
+  folded system all land on its band, and `narrow()` deduplicated them on
+  `source|target|kind` — so a risk attached to two elements drew **one** line, and picking the
+  second element looked like it did nothing. They now merge into one line labelled with the
+  element names (`"N elements"` past two). **Deduplicating an attachment is reporting a
+  judgement nobody made**, the same error as settling half a concern.
+- **Concerns that share a name say where they are.** Prompt injection is raised once per
+  untrusted-content/generation pair, so three boxes reading "Candidate prompt injection
+  exposure" are three true and different answers, and nothing on them said which was which.
+  A concern is the (risk pattern, evidence set) group, so the **evidence is what differs**:
+  `_name_the_place` picks the element fewest siblings cite, because a concern whose evidence is
+  a subset of its siblings' has no element of its own and "unique to me" would leave it unnamed.
+  It rides **beside** the type chip, right-aligned above the box, so it costs the card no height
+  and no wrapped line. **Not on the chip**: that is the notation's type label and has to keep
+  reading "Risk" — putting the place there broke
+  `test_the_notation_is_drawn_rather_than_listed`, which reads the notation off the canvas, and
+  it conflated the type with which instance this is. Built in the presentation layer from
+  evidence labels, never stored in the graph.
 - **Severity is never computed, and that is the method rather than a gap.** In risk storming
   the priority is a judgement recorded by named participants, and the review step exists to
   surface disagreement. So the tool stays scoreless and `pair:statedPriority` carries human
@@ -449,6 +555,13 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   position from what it attaches to, which is risk storming step 3 and the whole reason the
   notation reads; and **stated is solid, derived is dashed**, without which the diagram is a
   pile rather than a reconciliation.
+- **The concern detail opens folded.** It carried a paragraph, up to nine conditions and a chain
+  of elements all open at once, and the parts worth acting on sat below all of it. What a concern
+  **may lead to**, and the **fix** and **triage** rows, stay in view; what it is, why it fired,
+  where it is and what raised it fold behind their own keys, each with a hint of how much is
+  there so a reader can tell whether to open it. A closed `<details>` keeps its children in the
+  DOM, so a test has to assert on `checkVisibility()` rather than on their presence or their box
+  height.
 - **Storming is offered, never enforced.** Showing machine findings before a team elicits
   anchors the room completely: everyone ratifies the machine and identifies nothing it missed.
   So the toggle hides concerns while the register stays usable. Enforcing it would break the
@@ -476,14 +589,40 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   flow is read from the containment, never asked.
 - **Editing is a server-side rewrite.** `/api/process-edit` and `/api/graph-edit` keep the
   Turtle in the editor as the single source of truth.
+- **One gesture picks the connector, so `connect` has to check the ends.** A data box dragged
+  onto another data box used to write a data association *from data to data*, which says
+  nothing about who reads either one; dragged onto an event or gateway it wrote
+  `bp:dataInputAssociation` outside the domain sBPMN declares for it (activity plus one of
+  throwEvent / catchEvent, which the canvas cannot tell apart — so it joins data to an
+  **activity** only). Both are refused as of 2026-10-04. The text-annotation branch is read
+  **before** the data branch, because an annotation can be attached to a data object and what
+  it needs is a plain `bpmn:association`.
 - **A document is not a database, and the editor can say which.** `add-data` takes a `shape`
   (`object` | `store`); `set-data-shape` retypes in place, keeping the name, classification
   and associations a finding reads. `bp:isCollection` is declared on `dataObject` and not on
   `dataStore`, so it is dropped on a retype rather than carried into a domain sBPMN does not
   declare.
+- **A band's place in the stack is the reader's to choose, and it is dragged.** Pools and lanes
+  sorted by label, so a participant could not be moved where the diagram needs it — the order
+  was a side effect of naming. The gesture is a grab on the band's **name strip**, which is a
+  third mode of the one pointer gesture beside a node move and a pan. `reorder-band` takes the
+  index the drop lands on and rewrites **every sibling**, because a half-ordered stack leaves
+  the rest interleaving by name in a way nobody chose. A band with no order still falls back to
+  its label, so an untouched document draws exactly as before.
+  **The handle is the strip and the name, not the band.** The rotated label is painted over the
+  strip rect and is a *sibling* of it, so `closest(".pc-pool-strip")` from a press on the name
+  finds nothing — `elementFromPoint` at the strip's own centre returns `pc-pool-label`. Arming
+  on the whole band instead would make every pan across a pool reorder the diagram, which
+  `test_a_press_on_a_pool_body_still_pans` holds.
+  **It is a `pair:` term on purpose**: BPMN keeps layout in BPMNDI, which sBPMN does not model,
+  and `bp:ordering` is declared on `adHocSubProcess` for Parallel/Sequential — neither can say
+  this, and inventing a `bp:` term is what the vocabulary ceiling forbids. Unlike a dragged box,
+  which stays in `manualPositions` and is forgotten on reload, this is in the Turtle: it is the
+  diagram's reading order, not a nudge.
 - **A pool collapses to a band.** BPMN's black-box pool: a collapsed participant keeps its band
   and name, its members keep a slot on that band so message flow still lands on the pool, and
-  nothing inside is drawn.
+  nothing inside is drawn. A participant with no process is that band from the start, with no
+  fold to open, and a message flow that names a participant meets the pool's edge.
 - **The palette folds by measurement, not by breakpoint.** Rebuilt unfolded, measured against
   the canvas, folded when it would take more than a third of it — and it decides **both ways,
   every render**; the reader's own toggle wins from then on. Every palette button draws the
@@ -536,6 +675,26 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   `test_no_match_query_reads_the_motif_family` enforces it), and one system routinely matches
   several families at once. A motif shelved twice or not at all fails
   `test_library_consistency.py`.
+
+### Controls and chrome
+
+- **Three control tiers, one size.** `.btn.small.primary` commits, `.btn.small` is secondary,
+  `button.chip.clickable` is a quiet inline action in a row of metadata, and `.danger` marks a
+  destructive one in whichever tier it sits. They share a height, a corner radius and a focus
+  ring. The quiet tier was a bare `.chip` with a click handler and **no rule of its own**, so a
+  row mixing it with real buttons measured **21, 21, 27, 27** — which is what made the rail look
+  assembled by accident. `test_the_control_tiers_render_at_one_size` measures all four under the
+  real stylesheet, because the contract is what drifts.
+- **A disclosure marker is drawn, never typed.** Both `.concern-fold` and `.rail-section` wrote
+  their triangle as a CSS escape, and the tooling that writes this stylesheet turned it into a
+  **raw U+0015 byte**, so every arrow in the rail rendered as tofu followed by `b8`. They are
+  CSS triangles made of borders now: no glyph, no escape, no font to depend on, and the open
+  state is a `rotate(90deg)` rather than a second character. **Do not reintroduce a `content:`
+  escape in this file** — it has been mangled twice.
+- **Nothing in the rail may be wider than the rail.** `.scope-add-body` carried a fixed
+  `width: 320px` inside a narrower panel, which put a horizontal scrollbar under the whole
+  detail. Widths there are `max-width: 100%` with `min-width: 0` on the descendants, since a
+  flex child defaults to `min-width: auto` and refuses to shrink.
 
 ### The front end
 
@@ -607,8 +766,8 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **A risk that fires on several paths needs a control on each.** Prompt injection is per
   untrusted-content/generation pair.
 - **Control motifs are sized to the risk, not to the vocabulary.** `GuardrailsMotif` is 8 nodes
-  and 8 edges; prompt injection needs an input screen and nothing else, so
-  `InputScreeningMotif` / `OutputScreeningMotif` are 3 nodes and 2 edges each and nest inside it.
+  and 7 edges; prompt injection needs an input screen and nothing else, so
+  `InputScreeningMotif` (4 nodes, 3 edges) and `OutputScreeningMotif` (3 and 2) nest inside it.
   A control whose `pair:realizedByMotif` points at a motif far larger than the risk it addresses
   is not actionable — that motif is what the canvas offers to insert.
 - **`pair:realizedByMotif` marks a candidate structural mitigation**, not proof that inserting
@@ -657,6 +816,7 @@ and code (`python/`).
 | `ontology/taxonomy/` | IBM Atlas, OWASP LLM, OWASP Agentic (ASI), MIT, NIST AI 600-1, plus the tiered cross-taxonomy mappings. |
 | `ontology/context/` | The business layer bridge. `bpmn_context.ttl` declares `pair:refinedBy`, `pair:businessFollows`, `pair:BusinessFlowDerivation`, and registers `business_flow.rq` and `business_data_bridge.rq` in `context/implementation/`. |
 | `ontology/visualization/` | Standalone SPARQL run by hand, referenced by no declaration. |
+| `data/mappings/` | **Source data, not knowledge.** `Final_Mapped_Taxonomy_Table_Output.csv` is the 93-row OWASP → IBM Atlas → MIT action cross-walk that `mit_mitigation_action.ttl` names as its `dct:source` and `generate_mit_action_layer.py` reads. Tracked, and deliberately outside the `.dockerignore` allow-list — the image does not need it, but a clone cannot regenerate the action layer without it. |
 
 **`.rq` paths are data.** Each query is registered by a `pair:PatternImplementation` whose
 `pair:implementationPath` is a literal string, so **moving or renaming a query means updating
@@ -675,6 +835,25 @@ path. New taxonomy files need no wiring: `load_base_graph` globs `ontology/taxon
 **Every guidance shape is `sh:Info` or `sh:Warning`, never `sh:Violation`** — it cannot change
 whether a graph conforms, and a test enforces that.
 
+**A malformed edge is caught in three places, and all three must agree.** BEAM declares a domain
+and range for every flow predicate, but **no reasoner runs**, so `ex:a beam:use ex:b` between two
+data nodes parses cleanly and used to reach the graph unchallenged. Now: `edgeTriple()` in
+`graph_view.js` refuses the drag, `flow_endpoint_error()` in `airiskkg/graph_view.py` refuses the
+`add-edge` request (the editor is the source of truth, so a payload can arrive the canvas never
+vetted), and `sh:Violation` shapes in `architecture_input_contract.ttl` reject the graph — the
+flow-predicate ends, `aic:NoProcessToProcessEdgeShape` for a surviving `beam:inform`, and
+`aic:ElementIsOneKindShape` for an element typed both ways. Added 2026-10-04; all 274 flow edges
+in the tracked graphs already conformed. **The deciding fact is that an end's kind decides the
+edge**: an end carrying no BEAM type at all is allowed through the editor so an edge can be drawn
+before the node is typed, and the contract still rejects it.
+
+**The process canvas has the same rule.** `connect` picks the connector from what it joins, so a
+data box dragged onto another data box used to write a data association *from data to data*, and
+onto an event or gateway wrote `bp:dataInputAssociation` outside the domain sBPMN declares for it
+(activity plus one of throwEvent / catchEvent, which the canvas cannot tell apart — so it joins
+data to an **activity** only). The text-annotation branch is read **before** the data branch,
+because an annotation can be attached to a data object and needs a plain `bpmn:association`.
+
 ### Code
 
 | Path | Contents |
@@ -687,14 +866,21 @@ whether a graph conforms, and a test enforces that.
 | `outputs/` | Generated matches and findings — assessment output, not knowledge. Untracked. |
 
 **A script earns `python/scripts/` by being depended on**: a test imports or invokes it
-(`validate_graphs.py`, `normalize_t4b.py`, `run_competency_questions.py`,
-`generate_mapping_provenance.py`), or it rewrites a tracked file
+(`validate_graphs.py`, `normalize_t4b.py`, `generate_mapping_provenance.py`), or it rewrites a tracked file
 (`generate_mit_action_layer.py` writes `ontology/taxonomy/mit_mitigation_action.ttl`,
 `generate_risk_control_linkage.py` writes `docs/reference/risk_control_linkage.md`).
-`export_ontology.py`, `pattern_provenance_worklist.py` and `role_provenance_export.py` meet
-none of those and belong in `local/`. **A tracked file that says "regenerate with X" while X
+`export_ontology.py`, `pattern_provenance_worklist.py` and `role_provenance_export.py` met none
+of those and now sit in `local/`. **A tracked file that says "regenerate with X" while X
 is gitignored cannot be regenerated from a clone** — the artifact stops being reproducible, which is the
 whole reason it is checked in. Moving a script means updating its callers in the same commit.
+
+**Removed 2026-10-04: the competency questions and everything that ran them.** Commit `20dc12b`
+deleted all 27 `docs/reference/competency_questions/*.rq`, which left `run_competency_questions.py`
+globbing a directory that no longer exists and `test_competency_questions.py` erroring at module
+setup on every run. The script, the test and `competency_questions.md` are gone with them. They
+are one command away if the questions are ever reinstated:
+`git checkout 20dc12b^ -- docs/reference/competency_questions/` plus
+`git checkout 20dc12b~1 -- python/scripts/run_competency_questions.py`.
 
 `assessment_runner` and `paths` keep their import paths on purpose: the evaluation harness in
 the gitignored `docs/evaluation/` imports them and cannot be updated from a clone.
@@ -796,6 +982,13 @@ nothing regenerates it.
   graph — callers parse an architecture into it — so **never return the cached instance**.
   Editing a `.ttl` in a live server needs `reload_knowledge_base()`; Flask's reloader watches
   Python only.
+- **`load_base_graph()` copies ~7 800 triples, so never call it inside a loop.** Resolve what
+  you need from it once and cache that. `_is_data` asked it per resource and took
+  `/api/process` from 0.02 s to **4.24 s**, which slowed the browser suites enough that ten of
+  them timed out — the full run went from 13:43 to 30:55 and the failures looked like flakes,
+  not like a performance bug. **Anything `@lru_cache`d off the knowledge base must also be
+  cleared in `reload_knowledge_base()`**, beside `data_classifications` and the rest, or a
+  `.ttl` edit in a live server is invisible to it.
 - **Motif templates and the gap report are generated from the declared
   `pair:hasPatternNode` / `pair:hasPatternEdge` structure**, so declaration and match query must
   stay in sync — a motif whose declaration drifts from its `.rq` produces a template that cannot
@@ -841,9 +1034,12 @@ deleted, as `pair:maturity` was.
   So R7 prevents a merge rather than enabling an analysis. That is still worth keeping, since
   the three are routinely conflated and the conflation cannot be undone once annotations
   exist. But a write-up must say one axis is modelled, two are empty, and none is consumed.
-- **`facet:hasDomain`, `facet:hasPurpose`, `facet:hasAutonomyLevel`** and the rest of the
-  situational layer remain inert. The risk-view work did not activate them, and `ctx:Domain`
-  and `ctx:Purpose` are declared empty on purpose.
+- **`facet:hasPurpose` is now written, and `facet:hasDomain` still is not.** The business view
+  states a purpose on the system it refines (`set-system-context`), so the property has an
+  author and a reader. Domain has the same machinery and an empty option list, for the DPV
+  reason above. **No applicability condition reads either**, so neither is yet a capability of
+  the method — the direct-read route is still unused. `facet:hasAutonomyLevel` and the rest of
+  the situational layer remain inert.
 - **The direct-read facet route.** Of the two sanctioned routes, only the bridge is live. No
   applicability condition reads a facet directly.
 - **`pair:identifiesCandidateRisk`.** Declared, never emitted. No finding links to a
@@ -864,19 +1060,20 @@ anyone noticed:
 len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its siblings
 ```
 
-### Library (counted off the loaded graph, 2026-09-08)
+### Library (counted off the loaded graph, 2026-10-04)
 
 | | |
 | --- | --- |
 | Motifs | **31** — GenAI 13, ML serving and training 13, Agentic 4, Supply chain 1 |
 | Risk patterns | **15** (15 motifs carry one; 16 carry none) |
+| Pattern nodes / pattern edges | **169** / **143** — every edge crosses between an oval and a box |
 | Pattern roles | **97** |
 | Data categories | **7** |
 | Facet concepts | **35** (task 20, data 11, autonomy 4) |
 | Risk mechanisms | **14** |
 | Applicability conditions | **16**, carried on 20 attachments |
 | Controls | **12** `pat:Control_*` |
-| Triples | **7 529** |
+| Triples | **7 783** |
 
 **63 registered implementations** over 62 `.rq` files: 31 match, 15 risk, 6 propagation, 9
 mitigation rewrites over 8 files (`response_verification.rq` is registered twice, under two
@@ -893,7 +1090,8 @@ of those and 1 `BusinessFlowDerivation`.
 | Wien Energie chatbot (BotTina) | 5 | 9 |
 | Wien Energie tariff change (4 systems) | 3 | 9 |
 | IT support agent (agentic) | 4 | 8 |
-| Energy scene: BotTina + the business process | 5 | 10 |
+| Prompt injection, four shapes side by side (fixture) | 6 | 13 |
+| Energy scene: BotTina + the business process | 5 | 11 |
 | Tariff scene: the tariff graph + its business process | 3 | 11 |
 | IT service desk scene: the agent + its business process | 4 | 9 |
 
@@ -902,4 +1100,4 @@ building an approval inline.
 
 ### Test suite
 
-**258 of 308 tests** in ~2.5 min by default; ~10.5 min for all 308.
+**382 of 463 tests** in ~5 min by default; ~14 min for all 463 (counted 2026-10-04, full run green).

@@ -3,26 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PAIR-AI Architecture Workbench</title>
+  <title>PAIR-AI</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <header class="app-header">
-    <!-- Who this is and what it knows. The library is the front door the
-         workbench opens on, so it sits with the identity rather than among the
-         controls that act on a graph - it needs no graph to be useful. -->
     <div class="brand">
-      <!-- Also the way back to the question the workbench opens with. -->
-      <button type="button" class="brand-home" id="btn-home"
+           <button type="button" class="brand-home" id="btn-home"
               title="Start over">
         <h1>PAIR-AI</h1>
       </button>
       <span class="kb-badge hidden" id="kb-badge" title="The library that produced the findings on screen. Editing a .ttl while the server runs does not reload it, so this is how you tell which version answered."></span>
       <button type="button" class="btn" id="btn-library" title="Browse the risk pattern library: what this knowledge base can recognise, and the structures each risk applies to"><svg class="ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.4 3.2h3.4a2 2 0 0 1 2 2v8a1.6 1.6 0 0 0-1.6-1.6H2.4z"/><path d="M13.6 3.2h-3.4a2 2 0 0 0-2 2v8a1.6 1.6 0 0 1 1.6-1.6h3.8z"/></svg><span>Library</span></button>
     </div>
-    <!-- Three groups, in the order the work happens: bring a graph in, run it,
-         take something away. The dividers are drawn between groups by CSS, so a
-         button cannot be moved out of its group and keep its separator. -->
     <div class="toolbar">
       <span class="tool-group">
         <select id="example-select" title="Load a bundled example">
@@ -81,7 +74,7 @@
         <div class="code-scroll" id="code-scroll">
           <pre class="highlight" id="highlight" aria-hidden="true"><code id="highlight-code"></code></pre>
           <textarea id="ttl-source" spellcheck="false" autocomplete="off" autocapitalize="off"
-            placeholder="@prefix ex:   <http://example.org/my-system#> .&#10;@prefix beam: <http://w3id.org/beam/core#> .&#10;@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .&#10;&#10;# Start typing, or load an example from the toolbar…"></textarea>
+            placeholder="@prefix ex:   <http://example.org/my-system#> .&#10;@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .&#10;&#10;# Start typing, or load an example from the toolbar…"></textarea>
         </div>
       </div>
       <div class="statusbar" id="statusbar">
@@ -109,20 +102,11 @@
       <div class="canvas-wrap" id="canvas-wrap">
         <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
         <svg id="process-canvas" class="hidden" xmlns="http://www.w3.org/2000/svg"></svg>
-        <!-- The third level. Not a canvas: the reading of a run, against the
-             question somebody asked it. Opens before a graph exists, which is
-             the point - it is where an assessment starts. -->
         <section id="risk-view" class="risk-view hidden">
           <div class="risk-body">
             <div class="risk-main" id="risk-main">
-              <!-- The notation itself. A list makes a reader carry the graph in
-                   their head; the diagram puts each risk above what it concerns. -->
               <svg id="risk-canvas" class="risk-canvas" xmlns="http://www.w3.org/2000/svg"></svg>
               <div class="risk-canvas-empty hidden" id="risk-canvas-empty"></div>
-              <!-- Two trays over the drawing, shaped like the architecture
-                   palettes: a head that folds them and a body sized to what is
-                   in it. The head is the way back, so a folded tray stays where
-                   the reader left it. -->
               <div class="risk-tray risk-tools" id="risk-tools">
                 <button type="button" class="tray-head" id="btn-tools-fold"
                         title="Hide the tools">Assess<span class="tray-toggle">&#9652;</span></button>
@@ -231,10 +215,7 @@
       </div>
     </section>
   </main>
-
-  <!-- The library: what the knowledge base can recognise, read before a graph
-       exists. The workbench opens on it, and the toolbar button brings it back. -->
-  <!-- Open in the markup, not by script. -->
+  
   <div class="library" id="library">
     <div class="library-head">
       <div class="library-title">

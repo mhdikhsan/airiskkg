@@ -10,9 +10,17 @@ CONSTRUCT {
         a beam:Process ;
         rdfs:label "Rate and budget control"@en ;
         pair:playsRole pair:RateLimitControlStep ;
-        beam:inform ?loopSource .
+        beam:produce ?budget .
 
-    ?system beam:hasProcess ?controlStep .
+    ?budget
+        a beam:Data ;
+        rdfs:label "Remaining budget"@en ;
+        pair:playsRole pair:GuardrailDecision .
+
+    ?loopSource beam:use ?budget .
+
+    ?system beam:hasProcess ?controlStep ;
+        beam:hasResource ?budget .
 }
 WHERE {
     ?finding
@@ -24,7 +32,7 @@ WHERE {
 
     FILTER NOT EXISTS {
         ?existing pair:playsRole/pair:subRoleOf* pair:RateLimitControlStep .
-        ?existing beam:inform* ?loopSource .
+        ?existing (beam:produce/^beam:use)* ?loopSource .
     }
 
     OPTIONAL { ?system a beam:System . }
@@ -33,4 +41,6 @@ WHERE {
         "http://w3id.org/airiskkg/generated/mitigation/rate-limiting/",
         ENCODE_FOR_URI(STR(?loopSource))
     )) AS ?controlStep)
+
+    BIND(IRI(CONCAT(STR(?controlStep), "/budget")) AS ?budget)
 }

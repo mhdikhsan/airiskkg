@@ -41,13 +41,11 @@ WHERE {
            pair:playsRole/pair:subRoleOf* pair:TrainingStep .
 
     ?trainingStep beam:produce ?candidateModel .
-    ?trainingStep beam:inform ?evaluationStep .
     ?evaluationStep beam:use ?candidateModel .
     ?evaluationStep beam:produce ?approval .
     ?releaseStep beam:use ?approval .
     ?releaseStep beam:use ?candidateModel .
     ?releaseStep beam:produce ?deployedModel .
-    ?releaseStep beam:inform ?predictionStep .
     ?predictionStep beam:use ?deployedModel .
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/train-then-serve/",

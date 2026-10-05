@@ -35,7 +35,6 @@ WHERE {
     ?loadStep beam:use ?serverImage .
     ?loadStep beam:use ?modelArtifact .
     ?loadStep beam:produce ?loadedModel .
-    ?loadStep beam:inform ?predictionStep .
     ?predictionStep beam:use ?loadedModel .
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/model-load/",

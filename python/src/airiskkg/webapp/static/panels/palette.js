@@ -150,8 +150,7 @@ ex:Retrieve a beam:Infer ;
   rdfs:label "Vector retrieval" ;
   pair:playsRole pair:RetrievalStep ;
   beam:use ex:Question, ex:VectorDB ;
-  beam:produce ex:Context ;
-  beam:inform ex:Generate .
+  beam:produce ex:Context .
 
 ex:Generate a beam:Transform ;
   rdfs:label "LLM generation" ;

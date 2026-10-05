@@ -58,8 +58,7 @@ we:ClassifyDomain a beam:Infer , beam:Process ;
     rdfs:comment "A zero- or few-shot LLM prompt placing the question in one of the subdomains the shapes support." ;
     pair:playsRole pair:PredictionStep ;
     beam:use we:Question , we:DomainShapes , we:LLM , we:SystemPrompt ;
-    beam:produce we:DomainLabel ;
-    beam:inform we:IdentifyAnswerSource .
+    beam:produce we:DomainLabel .
 
 we:DomainLabel a beam:Data ;
     rdfs:label "Identified subdomain" ;
@@ -72,8 +71,7 @@ we:IdentifyAnswerSource a beam:Infer , beam:Process ;
     rdfs:comment "Reads the schema for the identified domain and decides whether the knowledge graph can answer, whether the document store must, or whether the question splits across both." ;
     pair:playsRole pair:PlanningStep ;
     beam:use we:Question , we:DomainLabel , we:DomainShapes , we:LLM , we:SystemPrompt ;
-    beam:produce we:AnswerPlan ;
-    beam:inform we:ExtractQueryParameters , we:RetrieveDocuments .
+    beam:produce we:AnswerPlan .
 
 we:AnswerPlan a beam:Data ;
     rdfs:label "Answer plan" ;
@@ -87,8 +85,7 @@ we:ExtractQueryParameters a beam:Infer , beam:Process ;
     rdfs:comment "Recognises the parameters of the graph query from the question, so the query put to the knowledge graph is written by the model rather than by the modeller." ;
     pair:playsRole pair:QueryReformulationStep ;
     beam:use we:Question , we:AnswerPlan , we:DomainShapes , we:LLM , we:SystemPrompt ;
-    beam:produce we:KGQueryParameters ;
-    beam:inform we:QueryKnowledgeGraph .
+    beam:produce we:KGQueryParameters .
 
 we:KGQueryParameters a beam:Data ;
     rdfs:label "Recognised query parameters" ;
@@ -100,8 +97,7 @@ we:AssemblePrompt a beam:Transform , beam:Process ;
     rdfs:comment "Not a box in the business diagram, which draws business steps. The paper implements the approach as a chain of prompts using LLM agents, and generates the answer using the context provided by the knowledge graph, the document store or both: this is the step that puts that context in front of the model." ;
     pair:playsRole pair:PromptConstructionStep ;
     beam:use we:Question , we:KGResult , we:RetrievedPassages , we:SystemPrompt ;
-    beam:produce we:AnsweringPrompt ;
-    beam:inform we:GenerateAnswer .
+    beam:produce we:AnsweringPrompt .
 
 we:AnsweringPrompt a beam:Data ;
     rdfs:label "Answering prompt" ;
@@ -113,8 +109,7 @@ we:GenerateAnswer a beam:Generate , beam:Infer , beam:Process ;
     rdfs:label "Answer generation" ;
     pair:playsRole pair:GenerationStep ;
     beam:use we:AnsweringPrompt , we:LLM , we:SystemPrompt ;
-    beam:produce we:Answer ;
-    beam:inform we:GenerateExplanation .
+    beam:produce we:Answer .
 
 we:Answer a beam:Data ;
     rdfs:label "Answer" ;
@@ -157,8 +152,7 @@ we:QueryKnowledgeGraph a beam:Transform , beam:Process ;
     rdfs:label "Knowledge graph query" ;
     pair:playsRole pair:RetrievalStep ;
     beam:use we:KGQueryParameters , we:KnowledgeGraph ;
-    beam:produce we:KGResult ;
-    beam:inform we:AssemblePrompt .
+    beam:produce we:KGResult .
 
 we:KGResult a beam:Data ;
     rdfs:label "Knowledge graph result" ;
@@ -186,8 +180,7 @@ we:RetrieveDocuments a beam:Transform , beam:Process ;
     rdfs:label "Document retrieval (RAG)" ;
     pair:playsRole pair:VectorSearchStep ;
     beam:use we:Question , we:AnswerPlan , we:DocumentStore ;
-    beam:produce we:RetrievedPassages ;
-    beam:inform we:AssemblePrompt .
+    beam:produce we:RetrievedPassages .
 
 we:RetrievedPassages a beam:Data ;
     rdfs:label "Retrieved document passages" ;

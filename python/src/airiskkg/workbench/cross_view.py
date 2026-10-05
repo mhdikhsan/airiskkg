@@ -1,12 +1,3 @@
-"""Where the two views disagree, and what the design never says at all.
-
-Neither view can pose these on its own. The architecture knows a step is
-unmediated; the process knows a person signs the change off. Putting them side
-by side is the question worth asking, and it stays a question: a control clears
-a finding by being built, not by being asserted, so a BPMN user task must never
-clear anything here.
-"""
-
 from __future__ import annotations
 
 from functools import lru_cache

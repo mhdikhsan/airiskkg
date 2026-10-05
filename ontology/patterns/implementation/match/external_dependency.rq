@@ -25,9 +25,11 @@ WHERE {
         pair:ModelArtifact
         pair:ServingImage
     }
-    ?externalResource pair:playsRole ?externalRole .
+    ?externalResource a/rdfs:subClassOf* beam:Resource ;
+        pair:playsRole ?externalRole .
     ?externalRole pair:subRoleOf* ?externalRootRole .
-    ?usingStep beam:use ?externalResource .
+    ?usingStep a/rdfs:subClassOf* beam:Process ;
+        beam:use ?externalResource .
 
     BIND(IRI(CONCAT(
         "http://w3id.org/airiskkg/generated/motif-match/external-dependency/",
