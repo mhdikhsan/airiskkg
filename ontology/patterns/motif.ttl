@@ -151,6 +151,50 @@ pat:Cite_AgentAdapter a pair:DesignPatternCitation ;
     dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
     dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 
+# Gao et al., Retrieval-Augmented Generation for Large Language Models: A Survey
+# (arXiv, 2023). Each handle is a section of the survey that draws the structure.
+
+pat:Cite_NaiveRAG a pair:DesignPatternCitation ;
+    skos:prefLabel "Naive RAG (RAG survey)"@en ;
+    dct:isPartOf "arXiv"@en ;
+    dct:bibliographicCitation "Gao, Y., Xiong, Y., Gao, X., Jia, K., Pan, J., Bi, Y., Dai, Y., Sun, J., Wang, M., & Wang, H. (2023). Retrieval-augmented generation for large language models: A survey (arXiv:2312.10997). arXiv."@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
+
+pat:Cite_HybridRetrieval a pair:DesignPatternCitation ;
+    skos:prefLabel "Mix/hybrid retrieval (RAG survey)"@en ;
+    dct:isPartOf "arXiv"@en ;
+    dct:bibliographicCitation "Gao, Y., Xiong, Y., Gao, X., Jia, K., Pan, J., Bi, Y., Dai, Y., Sun, J., Wang, M., & Wang, H. (2023). Retrieval-augmented generation for large language models: A survey (arXiv:2312.10997). arXiv."@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
+
+pat:Cite_Reranking a pair:DesignPatternCitation ;
+    skos:prefLabel "Reranking (RAG survey)"@en ;
+    dct:isPartOf "arXiv"@en ;
+    dct:bibliographicCitation "Gao, Y., Xiong, Y., Gao, X., Jia, K., Pan, J., Bi, Y., Dai, Y., Sun, J., Wang, M., & Wang, H. (2023). Retrieval-augmented generation for large language models: A survey (arXiv:2312.10997). arXiv."@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
+
+# Ma et al., Query Rewriting for Retrieval-Augmented Large Language Models (arXiv, 2023).
+
+pat:Cite_RewriteRetrieveRead a pair:DesignPatternCitation ;
+    skos:prefLabel "Rewrite-retrieve-read"@en ;
+    dct:isPartOf "arXiv"@en ;
+    dct:bibliographicCitation "Ma, X., Gong, Y., He, P., Zhao, H., & Duan, N. (2023). Query rewriting for retrieval-augmented large language models (arXiv:2305.14283). arXiv."@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2305.14283> .
+
+# Wei et al., Finetuned Language Models Are Zero-Shot Learners (arXiv, 2021).
+# Cited for the two paradigms its Figure 2 draws beside instruction tuning.
+
+pat:Cite_Prompting a pair:DesignPatternCitation ;
+    skos:prefLabel "Prompting (FLAN paper)"@en ;
+    dct:isPartOf "arXiv"@en ;
+    dct:bibliographicCitation "Wei, J., Bosma, M., Zhao, V. Y., Guu, K., Yu, A. W., Lester, B., Du, N., Dai, A. M., & Le, Q. V. (2021). Finetuned language models are zero-shot learners (arXiv:2109.01652). arXiv."@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2109.01652> .
+
+pat:Cite_PretrainFinetune a pair:DesignPatternCitation ;
+    skos:prefLabel "Pretrain-finetune (FLAN paper)"@en ;
+    dct:isPartOf "arXiv"@en ;
+    dct:bibliographicCitation "Wei, J., Bosma, M., Zhao, V. Y., Guu, K., Yu, A. W., Lester, B., Du, N., Dai, A. M., & Le, Q. V. (2021). Finetuned language models are zero-shot learners (arXiv:2109.01652). arXiv."@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2109.01652> .
+
 
 # Motif 0: Information Retrieval
 
@@ -162,7 +206,8 @@ pat:InformationRetrievalMotif
     knowledge source and produces retrieved context.
     """@en ;
     pair:derivedFrom pat:Cite_RetrievalAugmentedGeneration ,
-        pat:Cite_AgentRetrievalAugmentedGeneration ;
+        pat:Cite_AgentRetrievalAugmentedGeneration ,
+        pat:Cite_NaiveRAG ;
     pair:hasPatternNode
         pat:IR_QueryNode ,
         pat:IR_KnowledgeSourceNode ,
@@ -229,7 +274,8 @@ pat:VectorBasedInformationRetrievalMotif
     knowledge source and produces a retrieved result or retrieved context..
     """@en ;
     pair:derivedFrom pat:Cite_RetrievalAugmentedGeneration ,
-        pat:Cite_AgentRetrievalAugmentedGeneration ;
+        pat:Cite_AgentRetrievalAugmentedGeneration ,
+        pat:Cite_NaiveRAG ;
     pair:hasPatternNode
         pat:VectorIR_QueryNode ,
         pat:VectorIR_VectorStoreNode ,
@@ -1531,7 +1577,8 @@ pat:DirectPromptingMotif
     generative model step and produces a user-facing answer. 
     """@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom pat:Cite_DirectPrompting ;
+    pair:derivedFrom pat:Cite_DirectPrompting ,
+        pat:Cite_Prompting ;
     pair:hasPatternNode
         pat:DP_QueryNode ,
         pat:DP_ModelNode ,
@@ -1703,7 +1750,8 @@ pat:EmbeddingsMotif
     rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included an embedding-model node (pat:Embedding_ModelNode) the OQP never bound - removed. The OQP additionally matches an indexing step (uses chunk + vector, produces the index) that it does not bind as a node."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_Embeddings ,
-        pat:Cite_AgentRetrievalAugmentedGeneration ;
+        pat:Cite_AgentRetrievalAugmentedGeneration ,
+        pat:Cite_NaiveRAG ;
     pair:hasPatternNode
         pat:Embedding_SourceDocumentNode ,
         pat:Embedding_ChunkingStepNode ,
@@ -1820,7 +1868,8 @@ pat:RetrievalAugmentedGenerationMotif
     rdfs:comment "Query-time RAG faithful to Martin Fowler's gen-AI patterns: the retrieval step is DRIVEN BY the user query (it beam:use-s the query) and reads a vector store (a resource under pair:VectorStore or pair:VectorIndex); retrieved context may pass through intermediate steps (reranking, aggregation) before prompt construction - RAG_PromptConstructionUsesContextEdge is path-tolerant, requiring only that the consumed context plays a role under pair:RetrievedContext. Because retrieval is query-driven over a vector store, a RAG graph also satisfies the Vector-based Information Retrieval motif. Offline document embedding/indexing is modelled separately by the Embeddings motif and is intentionally not part of this query-time motif (an earlier version wired a stand-alone query-embedding step whose output dead-ended and left retrieval disconnected from the query - removed)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_RetrievalAugmentedGeneration ,
-        pat:Cite_AgentRetrievalAugmentedGeneration ;
+        pat:Cite_AgentRetrievalAugmentedGeneration ,
+        pat:Cite_NaiveRAG ;
     pair:hasPatternNode
         pat:RAG_QueryNode ,
         pat:RAG_KnowledgeSourceNode ,
@@ -1966,7 +2015,8 @@ pat:HybridRetrieverMotif
     rdfs:label "Hybrid Retriever Motif"@en ;
     dct:description "GenAI motif in which vector search and keyword or structured search are combined and aggregated to produce a candidate context set."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom pat:Cite_HybridRetriever ;
+    pair:derivedFrom pat:Cite_HybridRetriever ,
+        pat:Cite_HybridRetrieval ;
     pair:hasPatternNode
         pat:Hybrid_QueryNode ,
         pat:Hybrid_VectorIndexNode ,
@@ -2113,7 +2163,8 @@ pat:QueryRewritingMotif
     dct:description "GenAI motif in which an LLM reformulates a user query into alternative queries that are then used for retrieval."@en ;
     rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included an original-query node and a rewrite-informs-retrieval edge the OQP never bound or checked - removed; the LLM node expected pair:FoundationLLM while the OQP accepts any pair:GenerativeModel."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom pat:Cite_QueryRewriting ;
+    pair:derivedFrom pat:Cite_QueryRewriting ,
+        pat:Cite_RewriteRetrieveRead ;
     pair:hasPatternNode
         pat:QueryRewrite_LLMNode ,
         pat:QueryRewrite_RewriteStepNode ,
@@ -2193,7 +2244,8 @@ pat:RerankerMotif
     rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included a query node the OQP never bound (removed) and expected pair:RetrievedCandidateSet / pair:RerankedContext where the OQP checks pair:RetrievedContext for both candidate set and output (modelers typically ALSO tag the specific roles; onyx does both)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_Reranker ,
-        pat:Cite_AgentRetrievalAugmentedGeneration ;
+        pat:Cite_AgentRetrievalAugmentedGeneration ,
+        pat:Cite_Reranking ;
     pair:hasPatternNode
         pat:Reranker_CandidateSetNode ,
         pat:Reranker_ModelNode ,
@@ -2512,7 +2564,8 @@ pat:FineTuningMotif
     rdfs:label "Fine Tuning Motif"@en ;
     dct:description "GenAI motif in which a pre-trained LLM is further trained with a task- or domain-specific dataset to produce a fine-tuned model."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
-    pair:derivedFrom pat:Cite_FineTuning ;
+    pair:derivedFrom pat:Cite_FineTuning ,
+        pat:Cite_PretrainFinetune ;
     pair:hasPatternNode
         pat:FineTune_BaseModelNode ,
         pat:FineTune_DatasetNode ,

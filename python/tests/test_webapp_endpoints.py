@@ -342,6 +342,183 @@ def test_vocabulary_roles_declare_which_element_kind_they_apply_to(client) -> No
     assert by_group["Resource Role"] == {"resource"}
 
 
+BEAM_NS = "http://w3id.org/beam/core#"
+
+
+def test_every_term_offers_its_own_definition(client) -> None:
+    """All 97 roles and all 7 data categories carry a skos:definition, and the
+    picker served none of them - which is what made a scroll of bare labels
+    undecidable between RetrievedContext, RetrievedResult and DocumentChunk."""
+    data = client.get("/api/vocabulary").get_json()
+
+    assert all(role.get("definition") for role in data["roles"])
+    assert all(cat.get("definition") for cat in data["dataCategories"])
+
+
+def test_a_term_is_shelved_by_the_class_it_goes_on(client) -> None:
+    """The role hierarchy's four top-level terms cannot shelve 97 of them: 50
+    sit under Resource Role alone. The BEAM class a term is annotated on is the
+    question a reader settles first, and it files every term."""
+    roles = client.get("/api/vocabulary").get_json()["roles"]
+
+    assert all(role.get("shelf") for role in roles)
+    shelves: dict[str, int] = {}
+    for role in roles:
+        shelves[role["shelf"]] = shelves.get(role["shelf"], 0) + 1
+
+    # more shelves than the four top-level roles, and none holding half of them
+    assert len(shelves) > 4, shelves
+    assert max(shelves.values()) < len(roles) / 2, shelves
+
+
+def test_the_shelf_is_the_same_on_every_read() -> None:
+    """A role with several parents resolves its shelf through the first one, and
+    rdflib hands parents back in set order - so `ExternalModel` shelved
+    differently from run to run and the picker's headings moved with it."""
+    from airiskkg.assessment_runner import load_base_graph
+    from airiskkg.workbench.vocabulary import role_shelf
+
+    readings = [
+        {str(role): str(shelf) for role, shelf in role_shelf(load_base_graph()).items()}
+        for _ in range(3)
+    ]
+    assert readings[0] == readings[1] == readings[2]
+
+    multi_parent = "http://w3id.org/airiskkg/pair-ai#ExternalModel"
+    assert readings[0][multi_parent], "the role with several parents is unshelved"
+
+
+def test_what_a_term_applies_to_follows_what_the_queries_write(client) -> None:
+    """`appliesTo` is derived from what a match query actually constrains, not
+    from the declared class. A step is guarded `a/rdfs:subClassOf* beam:Process`
+    in all 62 places one appears, so a term declared `beam:Infer` binds a
+    `beam:Generate` element - without which 8 process-side annotations in the
+    tracked examples would be reported as not fitting their own element.
+
+    It orders the picker's shelves; it is not a filter. Some queries are looser
+    than their declaration - information_retrieval.rq puts no class constraint
+    on its resource nodes - so hiding on it would hide a term that binds.
+    """
+    roles = client.get("/api/vocabulary").get_json()["roles"]
+    by_label = {role["label"]: role for role in roles}
+
+    generation = by_label["Generation Step"]
+    assert f"{BEAM_NS}Generate" in generation["appliesTo"], (
+        "a Generate step is what the examples actually type, and it binds"
+    )
+    assert f"{BEAM_NS}Data" not in generation["appliesTo"]
+
+    # the resource side is typed with a bare `a beam:Data`, which walks nothing
+    context = by_label["Retrieved Context"]
+    assert context["appliesTo"] == [f"{BEAM_NS}Data"]
+
+    offered_for = lambda cls: sum(
+        1 for role in roles if f"{BEAM_NS}{cls}" in role["appliesTo"]
+    )
+    assert offered_for("StatisticalModel") < offered_for("Data")
+    assert offered_for("Infer") == offered_for("Generate")
+
+
+def test_no_annotation_in_a_tracked_graph_is_reported_as_not_fitting(client) -> None:
+    """The guard on deriving the shelf from `pair:expectedClass`.
+
+    Picking one declared class per term put 13 annotations in baseline-pinned
+    graphs on the wrong side of their own element: `GenerationStep` is declared
+    `beam:Infer` while every example types the step `beam:Generate`. The shelf
+    orders the picker rather than filtering it, so a mismatch is not fatal - but
+    a term the examples themselves use must not sort below the terms that do
+    not apply.
+    """
+    roles = {role["id"]: role for role in client.get("/api/vocabulary").get_json()["roles"]}
+
+    graphs = [example_path(ns) for ns in (GRAPH_RAG_NS, AGENT_NS, WIEN_ENERGIE_NS, ONYX_NS)]
+    misfits = []
+    checked = 0
+    for path in graphs:
+        data = client.post(
+            "/api/graph", json={"ttl": path.read_text(encoding="utf-8")}
+        ).get_json()
+        for node in data["nodes"]:
+            for role_id in node.get("roleIds", []):
+                role = roles.get(role_id)
+                if not role or not role.get("appliesTo") or not node.get("typeUri"):
+                    continue
+                checked += 1
+                if node["typeUri"] not in role["appliesTo"]:
+                    misfits.append(
+                        f"{path.stem}: {node['label']} "
+                        f"({node['typeUri'].rsplit('#', 1)[-1]}) plays {role['label']}"
+                    )
+
+    assert checked > 50, "the graphs carried almost no annotations to check"
+    # beam:Symbol is the known exception: the resource side of a match query is
+    # typed with a bare `a beam:Data`, and these annotations lean on the queries
+    # that constrain no class at all.
+    unexpected = [m for m in misfits if "(Symbol)" not in m]
+    assert not unexpected, unexpected
+    assert len(misfits) <= 5, misfits
+
+
+def test_a_refinement_carries_no_family_so_a_filter_cannot_hide_it(client) -> None:
+    """A family is read off the motifs naming a term, never inherited: one motif
+    declares a ResourceRole wildcard, so inheriting through it would tag all 53
+    resource-side terms Agentic. A refinement therefore has no family of its
+    own, and `serves` is what says it is read anyway."""
+    roles = client.get("/api/vocabulary").get_json()["roles"]
+    by_label = {role["label"]: role for role in roles}
+
+    rewritten = by_label["Rewritten Query"]
+    assert rewritten["motifs"] == []
+    assert rewritten["families"] == []
+    assert rewritten["serves"], "a refinement no pattern node names still reads"
+
+    agentic = [r for r in roles if "Agentic" in r["families"]]
+    assert len(agentic) < len(roles) / 2, "a family matching everything is not a filter"
+
+
+def test_the_annotation_vocabulary_is_in_the_library(client) -> None:
+    """The library counted 97 roles in its stats and offered no way to read one.
+    Each is served with what names it and the risk patterns related to it, so a reader
+    can work backwards from the term as they already can from the risk."""
+    catalogue = client.get("/api/library").get_json()
+    vocabulary = catalogue["vocabulary"]
+
+    assert len(vocabulary["roles"]) == catalogue["stats"]["patternRoles"]
+    assert len(vocabulary["dataCategories"]) == catalogue["stats"]["dataCategories"]
+
+    by_label = {role["label"]: role for role in vocabulary["roles"]}
+    source = by_label["Knowledge Source"]
+    assert source["definition"]
+    assert source["motifs"], "a term named by pattern nodes says which"
+    assert source["riskPatterns"], "and which risk patterns those motifs carry"
+
+    # every risk pattern and motif a term names is one the library also serves
+    motifs = {entry["id"] for entry in catalogue["motifs"]}
+    patterns = {entry["id"] for entry in catalogue["riskPatterns"]}
+    for role in vocabulary["roles"]:
+        assert set(role["motifs"]) <= motifs, role["label"]
+        assert set(role["serves"]) <= motifs, role["label"]
+        assert set(role["riskPatterns"]) <= patterns, role["label"]
+
+
+def test_every_term_says_where_it_comes_from(client) -> None:
+    """R6 traces a role three ways - its own dct:source, a SKOS mapping, or
+    inheritance through pair:subRoleOf - and the chain is walked, so a
+    refinement reports the term that grounds it rather than reporting nothing."""
+    roles = client.get("/api/library").get_json()["vocabulary"]["roles"]
+
+    routes: dict[str, int] = {}
+    for role in roles:
+        provenance = role["provenance"]
+        assert provenance["route"], f"{role['label']} states no origin"
+        assert provenance["refs"], f"{role['label']} names no source"
+        routes[provenance["route"]] = routes.get(provenance["route"], 0) + 1
+        if provenance["route"] == "inherited":
+            assert provenance["via"], "an inherited origin names the term it came through"
+
+    assert set(routes) == {"stated", "mapped", "inherited"}, routes
+
+
 # Inline RAG fixture.
 _RAG_GRAPH = """
 @prefix local: <http://example.org/rag#> .

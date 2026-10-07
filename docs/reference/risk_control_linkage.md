@@ -148,30 +148,30 @@ Families with no action beneath them (6): `governance-oversight-controls`, `mode
 
 Motifs are risk-neutral: they describe a shape, not a problem. The grouping below
 is the *published catalogue each was derived from* (`pair:derivedFrom`), because
-that is the only classification the data actually carries - PAIR-AI does not
-assign motifs to families of its own.
+that is the only classification the data actually carries. The relation is m:n,
+so a motif derived from several catalogues is listed under each of them.
 
 ### Fowler - Patterns of Generative AI (13)
 
-| Motif | Catalogue section | Risk patterns it feeds |
+| Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
-| `DirectPromptingMotif` | GenAI | DirectPromptingWithoutGrounding, ImproperOutputHandling, PromptInjection, UnboundedConsumption |
-| `EmbeddingsMotif` | GenAI | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
-| `EvalsMotif` | GenAI | *(risk-neutral - none)* |
-| `FineTuningMotif` | GenAI | DataAndModelPoisoning, SupplyChainCompromise |
-| `GuardrailsMotif` | GenAI | ImproperOutputHandling, SystemPromptLeakage |
-| `HybridRetrieverMotif` | GenAI | *(risk-neutral - none)* |
-| `InformationRetrievalMotif` | GenAI | *(risk-neutral - none)* |
-| `InputScreeningMotif` | GenAI | *(risk-neutral - none)* |
-| `OutputScreeningMotif` | GenAI | *(risk-neutral - none)* |
-| `QueryRewritingMotif` | GenAI | PromptInjection, UnboundedConsumption |
-| `RerankerMotif` | GenAI | VectorAndEmbeddingWeakness |
-| `RetrievalAugmentedGenerationMotif` | GenAI | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
-| `VectorBasedInformationRetrievalMotif` | GenAI | VectorAndEmbeddingWeakness |
+| `DirectPromptingMotif` | Direct Prompting | DirectPromptingWithoutGrounding, ImproperOutputHandling, PromptInjection, UnboundedConsumption |
+| `EmbeddingsMotif` | Embeddings | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
+| `EvalsMotif` | Evals | *(risk-neutral - none)* |
+| `FineTuningMotif` | Fine Tuning | DataAndModelPoisoning, SupplyChainCompromise |
+| `GuardrailsMotif` | Guardrails | ImproperOutputHandling, SystemPromptLeakage |
+| `InputScreeningMotif` | Guardrails | *(risk-neutral - none)* |
+| `OutputScreeningMotif` | Guardrails | *(risk-neutral - none)* |
+| `HybridRetrieverMotif` | Hybrid Retriever | *(risk-neutral - none)* |
+| `QueryRewritingMotif` | Query Rewriting | PromptInjection, UnboundedConsumption |
+| `RerankerMotif` | Reranker | VectorAndEmbeddingWeakness |
+| `InformationRetrievalMotif` | Retrieval Augmented Generation (RAG) | *(risk-neutral - none)* |
+| `RetrievalAugmentedGenerationMotif` | Retrieval Augmented Generation (RAG) | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
+| `VectorBasedInformationRetrievalMotif` | Retrieval Augmented Generation (RAG) | VectorAndEmbeddingWeakness |
 
 ### Mercari ML System Design Patterns (13)
 
-| Motif | Catalogue section | Risk patterns it feeds |
+| Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
 | `TrainThenServeMotif` | Lifecycle | *(risk-neutral - none)* |
 | `TrainingToServingMotif` | Lifecycle | DataAndModelPoisoning, SupplyChainCompromise |
@@ -187,24 +187,65 @@ assign motifs to families of its own.
 | `BatchTrainingMotif` | Training | *(risk-neutral - none)* |
 | `PipelineTrainingMotif` | Training | *(risk-neutral - none)* |
 
+### Liu et al. (2025) - Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents (12)
+
+| Motif | Pattern or section cited | Risk patterns it feeds |
+|---|---|---|
+| `ToolUsingAgentMotif` | Agent adapter | GoalHijack, ToolMisuse |
+| `EvalsMotif` | Agent evaluator | *(risk-neutral - none)* |
+| `HumanOversightMotif` | Human reflection | *(risk-neutral - none)* |
+| `GuardrailsMotif` | Multimodal guardrails | ImproperOutputHandling, SystemPromptLeakage |
+| `InputScreeningMotif` | Multimodal guardrails | *(risk-neutral - none)* |
+| `OutputScreeningMotif` | Multimodal guardrails | *(risk-neutral - none)* |
+| `EmbeddingsMotif` | Retrieval augmented generation (agent design pattern catalogue) | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
+| `InformationRetrievalMotif` | Retrieval augmented generation (agent design pattern catalogue) | *(risk-neutral - none)* |
+| `RerankerMotif` | Retrieval augmented generation (agent design pattern catalogue) | VectorAndEmbeddingWeakness |
+| `RetrievalAugmentedGenerationMotif` | Retrieval augmented generation (agent design pattern catalogue) | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
+| `VectorBasedInformationRetrievalMotif` | Retrieval augmented generation (agent design pattern catalogue) | VectorAndEmbeddingWeakness |
+| `AgentDelegationMotif` | Role-based cooperation | InsecureAgentCommunication |
+
+### Gao et al. (2023) - Retrieval-augmented generation for large language models: A survey (6)
+
+| Motif | Pattern or section cited | Risk patterns it feeds |
+|---|---|---|
+| `HybridRetrieverMotif` | Mix/hybrid retrieval (RAG survey) | *(risk-neutral - none)* |
+| `EmbeddingsMotif` | Naive RAG (RAG survey) | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
+| `InformationRetrievalMotif` | Naive RAG (RAG survey) | *(risk-neutral - none)* |
+| `RetrievalAugmentedGenerationMotif` | Naive RAG (RAG survey) | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
+| `VectorBasedInformationRetrievalMotif` | Naive RAG (RAG survey) | VectorAndEmbeddingWeakness |
+| `RerankerMotif` | Reranking (RAG survey) | VectorAndEmbeddingWeakness |
+
 ### OWASP Agentic Top 10 (ASI) (4)
 
-| Motif | Catalogue section | Risk patterns it feeds |
+| Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
 | `AgentDelegationMotif` | agentic | InsecureAgentCommunication |
 | `AgentMemoryLoopMotif` | agentic | MemoryPoisoning |
 | `HumanOversightMotif` | agentic | *(risk-neutral - none)* |
 | `ToolUsingAgentMotif` | agentic | GoalHijack, ToolMisuse |
 
+### Wei et al. (2021) - Finetuned language models are zero-shot learners (2)
+
+| Motif | Pattern or section cited | Risk patterns it feeds |
+|---|---|---|
+| `FineTuningMotif` | Pretrain-finetune (FLAN paper) | DataAndModelPoisoning, SupplyChainCompromise |
+| `DirectPromptingMotif` | Prompting (FLAN paper) | DirectPromptingWithoutGrounding, ImproperOutputHandling, PromptInjection, UnboundedConsumption |
+
+### Ma et al. (2023) - Query rewriting for retrieval-augmented large language models (1)
+
+| Motif | Pattern or section cited | Risk patterns it feeds |
+|---|---|---|
+| `QueryRewritingMotif` | Rewrite-retrieve-read | PromptInjection, UnboundedConsumption |
+
 ### OWASP LLM Top 10 (1)
 
-| Motif | Catalogue section | Risk patterns it feeds |
+| Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
 | `ExternalDependencyMotif` | supply chain | SupplyChainCompromise |
 
 ---
 
-## 8. Risk patterns - all 13
+## 8. Risk patterns - all 15
 
 | Risk pattern | Anchor | Motifs | Suggested controls |
 |---|---|---|---|

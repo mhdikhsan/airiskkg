@@ -14,6 +14,19 @@ from airiskkg.workbench.terms import (
     short,
     source_pair,
 )
+from airiskkg.workbench.vocabulary import (
+    annotatable_under,
+    role_reach,
+    role_shelf,
+)
+
+_MAPPING_PREDICATES = (
+    SKOS.exactMatch,
+    SKOS.closeMatch,
+    SKOS.broadMatch,
+    SKOS.narrowMatch,
+    SKOS.relatedMatch,
+)
 
 _BEAMR_CONTROL = URIRef("http://w3id.org/beam/risk#RiskControl")
 _PAT = "http://w3id.org/airiskkg/patterns#"
@@ -173,6 +186,97 @@ def _risk_pattern_entry(graph: Graph, pattern: URIRef, domains: set[URIRef]) -> 
     }
 
 
+def _provenance(graph: Graph, role: URIRef) -> dict:
+    """Where a role came from, by R6's three routes, naming which one answered.
+
+    A role introduced to refine another is grounded by the role it specializes,
+    so the chain is walked rather than reported as absent.
+    """
+    own = [_ref(graph, s) for s in graph.objects(role, DCTERMS.source) if isinstance(s, URIRef)]
+    mapped = [
+        _ref(graph, target)
+        for predicate in _MAPPING_PREDICATES
+        for target in graph.objects(role, predicate)
+        if isinstance(target, URIRef)
+    ]
+    if own or mapped:
+        return {"route": "stated" if own else "mapped", "refs": own + mapped, "via": None}
+
+    seen = {role}
+    queue = [p for p in graph.objects(role, PAIR.subRoleOf) if isinstance(p, URIRef)]
+    while queue:
+        parent = queue.pop(0)
+        if parent in seen:
+            continue
+        seen.add(parent)
+        inherited = _provenance(graph, parent)
+        if inherited["refs"]:
+            return {
+                "route": "inherited",
+                "refs": inherited["refs"],
+                "via": {"id": short(parent), "label": display_label(label(graph, parent))},
+            }
+        queue.extend(p for p in graph.objects(parent, PAIR.subRoleOf) if isinstance(p, URIRef))
+    return {"route": None, "refs": [], "via": None}
+
+
+def _role_entry(graph: Graph, role: URIRef, shelf: URIRef | None, reach: dict) -> dict:
+    return {
+        "id": short(role),
+        "iri": str(role),
+        "label": display_label(label(graph, role)),
+        "definition": _definition(graph, role),
+        "shelf": label(graph, shelf) if shelf is not None else None,
+        "shelfId": str(shelf) if shelf is not None else None,
+        "appliesTo": annotatable_under(graph, shelf) if shelf is not None else [],
+        "refines": sorted(
+            (
+                {"id": short(parent), "label": display_label(label(graph, parent))}
+                for parent in graph.objects(role, PAIR.subRoleOf)
+                if isinstance(parent, URIRef)
+            ),
+            key=lambda ref: ref["label"].lower(),
+        ),
+        "provenance": _provenance(graph, role),
+        "motifs": reach.get("motifs", []),
+        "serves": reach.get("serves", []),
+        "families": reach.get("families", []),
+        "riskPatterns": reach.get("riskPatterns", []),
+    }
+
+
+def _vocabulary_section(graph: Graph) -> dict:
+    """The annotation vocabulary, shelved by the BEAM class a term goes on.
+
+    The shelf answers the question a reader has first - can this term go on this
+    element at all - which the role hierarchy's four top-level terms cannot:
+    half of them sit under one.
+    """
+    shelves = role_shelf(graph)
+    reach = role_reach(graph)
+    roles = sorted(
+        (
+            _role_entry(graph, role, shelves.get(role), reach.get(role, {}))
+            for role in set(graph.subjects(RDF.type, PAIR.PatternRole))
+        ),
+        key=lambda entry: entry["label"].lower(),
+    )
+    categories = sorted(
+        (
+            {
+                "id": short(category),
+                "iri": str(category),
+                "label": display_label(label(graph, category)),
+                "definition": _definition(graph, category),
+                "derived": True,
+            }
+            for category in set(graph.subjects(RDF.type, PAIR.DataCategory))
+        ),
+        key=lambda entry: entry["label"].lower(),
+    )
+    return {"roles": roles, "dataCategories": categories}
+
+
 @lru_cache(maxsize=1)
 def library_catalogue() -> dict:
     """What the knowledge base can recognise, read off the loaded graph."""
@@ -195,14 +299,17 @@ def library_catalogue() -> dict:
         for control in graph.subjects(RDF.type, _BEAMR_CONTROL)
         if str(control).startswith(_PAT)
     }
+    vocabulary = _vocabulary_section(graph)
     return {
         "riskPatterns": patterns,
         "motifs": motifs,
+        "vocabulary": vocabulary,
         "stats": {
             "riskPatterns": len(patterns),
             "motifs": len(motifs),
-            "patternRoles": len(set(graph.subjects(RDF.type, PAIR.PatternRole))),
-            "dataCategories": len(set(graph.subjects(RDF.type, PAIR.DataCategory))),
+            "patternRoles": len(vocabulary["roles"]),
+            "dataCategories": len(vocabulary["dataCategories"]),
+            "roleShelves": len({r["shelf"] for r in vocabulary["roles"] if r["shelf"]}),
             "controls": len(project_controls),
             "motifFamilies": len(
                 {m["family"]["id"] for m in motifs if m["family"]}

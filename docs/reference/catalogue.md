@@ -203,6 +203,11 @@ Assign with `pair:playsRole`. Roles are organised into sub-role hierarchies
 sub-roles (`pair:subRoleOf*`). The four top-level roles are `ResourceRole`,
 `ProcessingStep`, `ControlStep`, and `UserInput`.
 
+The groups below are the sub-role hierarchy, which is the ontology's own
+organisation. The workbench shelves the same 97 roles differently — by the BEAM
+class each is annotated on — because the four top-level roles hold 50, 32, 12 and
+3 of them. Neither view is read by a match query.
+
 > **Parent choice is load-bearing.** Match queries walk
 > `pair:playsRole/pair:subRoleOf*` from a general role, so a precise role parented
 > to the wrong abstraction is inert — tagging an element with the obviously-correct

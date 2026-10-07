@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from rdflib import RDF, RDFS
+from rdflib import RDF, RDFS, SKOS
 
 from airiskkg.assessment_runner import PAIR, load_base_graph
 from airiskkg.workbench.terms import PROCESS_CLASS_NAMES, display_label, short
@@ -61,8 +61,10 @@ def motif_templates() -> dict:
             nodes.extend(supplement["nodes"])
             edges.extend(supplement["edges"])
         label = graph.value(motif, RDFS.label)
+        family = next(iter(sorted(graph.objects(motif, PAIR.motifFamily), key=str)), None)
         templates[motif_id] = {
             "label": str(label) if label else display_label(motif_id),
+            "family": str(graph.value(family, SKOS.prefLabel) or short(family)) if family else None,
             "nodes": nodes,
             "edges": edges,
         }
@@ -70,7 +72,12 @@ def motif_templates() -> dict:
 
 
 def motif_template_list() -> list[dict[str, str]]:
+    """The palette's list. The family shelves it: 31 motifs in one alphabetical
+    column say nothing about which kind of AI system each one is a shape of."""
     return sorted(
-        ({"id": key, "label": tpl["label"]} for key, tpl in motif_templates().items()),
+        (
+            {"id": key, "label": tpl["label"], "family": tpl["family"]}
+            for key, tpl in motif_templates().items()
+        ),
         key=lambda item: item["label"].lower(),
     )

@@ -233,16 +233,39 @@ export function addMotif(item) {
   });
 }
 
+/* The library shelves motifs by the kind of AI system each is a shape of, and
+ * 31 of them in one alphabetical column said nothing about that. */
+function byFamily(templates) {
+  const bins = new Map();
+  templates.forEach((item) => {
+    const name = item.family || "Unshelved";
+    if (!bins.has(name)) bins.set(name, []);
+    bins.get(name).push(item);
+  });
+  return [...bins.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+}
+
 export function initMotifPalette(templates) {
   const panel = $("#motif-palette");
   if (!panel) return;
   if (!templates || !templates.length) { panel.style.display = "none"; return; }
   const wrap = $("#canvas-wrap");
   const body = el("div", { class: "tray-body" });
-  templates.forEach((item) => {
-    const chip = el("div", { class: "motif-item", title: `Add ${item.label} — click or drag onto the canvas` }, item.label);
-    chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, () => addMotif(item)));
-    body.appendChild(chip);
+
+  byFamily(templates).forEach(([family, items]) => {
+    body.appendChild(el("div", { class: "motif-family" }, [
+      el("span", {}, family),
+      el("span", { class: "motif-family-count" }, String(items.length)),
+    ]));
+    items.forEach((item) => {
+      const chip = el("div", {
+        class: "motif-item",
+        title: `Add ${item.label} — click or drag onto the canvas`,
+      }, item.label);
+      chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, () => addMotif(item)));
+      body.appendChild(chip);
+    });
   });
-  buildTray(panel, "Motifs", body, true); 
+
+  buildTray(panel, "Motifs", body, true);
 }

@@ -45,7 +45,10 @@ function setCount(n) {
 
 function annotateRow(node) {
   const rolePicker = MultiPicker(vocab.roles, node.roleIds || [], {
-    placeholder: "+ add role", grouped: true, filterKind: roleKindFor(node),
+    placeholder: "+ add role", grouped: true,
+    // The element's own BEAM class, so the offer narrows by subsumption rather
+    // than by the two-way process/resource split.
+    typeUri: node.typeUri, filterKind: roleKindFor(node),
   });
   const catPicker = MultiPicker(vocab.dataCategories, node.categoryIds || [],
     { placeholder: "+ add category" });

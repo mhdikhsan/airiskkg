@@ -103,6 +103,10 @@ their prose into the ontology.
 | --- | --- |
 | Martin Fowler, *Emerging patterns in building GenAI products* — <https://martinfowler.com/articles/gen-ai-patterns/> | GenAI motifs and roles |
 | mercari, *ML System Design Patterns* — <https://mercari.github.io/ml-system-design-pattern/> | ML serving, training, and lifecycle motifs |
+| Liu, Y., Lo, S. K., Lu, Q., et al. (2025). Agent design pattern catalogue. *The Journal of Systems & Software, 220*, 112278 — <https://doi.org/10.1016/j.jss.2024.112278> | Agentic, guardrail, evaluation and RAG motifs |
+| Gao, Y., Xiong, Y., Gao, X., et al. (2023). Retrieval-augmented generation for large language models: A survey. arXiv — <https://doi.org/10.48550/arXiv.2312.10997> | RAG, retrieval, embedding, reranking and hybrid-retrieval motifs |
+| Ma, X., Gong, Y., He, P., Zhao, H., & Duan, N. (2023). Query rewriting for retrieval-augmented large language models. arXiv — <https://doi.org/10.48550/arXiv.2305.14283> | Query rewriting motif |
+| Wei, J., Bosma, M., Zhao, V. Y., et al. (2021). Finetuned language models are zero-shot learners. arXiv — <https://doi.org/10.48550/arXiv.2109.01652> | Direct prompting and fine-tuning motifs (the paradigms its Figure 2 compares) |
 | van Bekkum et al. (2021), Boxology / Tool4Boxology | BEAM element and flow vocabulary |
 | W3C Data Privacy Vocabulary (DPV, DPV-AI) — <https://w3id.org/dpv> | Referenced concepts, never copied (glossary rule) |
 | AIRO — <https://w3id.org/airo> | Risk control alignment |
