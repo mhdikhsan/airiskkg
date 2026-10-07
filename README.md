@@ -1,7 +1,6 @@
 # AI Risk Knowledge Graph
 
-This repository supports the working paper *A Pattern-Based Method for
-Design-Time AI Risk Assessment Using Knowledge Graphs Operationalization*.
+This repository supports the working paper *A Pattern-Based Method for AI Risk Assessment in System Design*.
 
 It contains ontology files and a small Python workspace for AI risk knowledge
 graph assessment.
