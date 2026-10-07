@@ -368,14 +368,80 @@ def test_a_motif_family_says_what_it_covers_and_where_it_came_from(libraries) ->
         assert libraries.value(family, DCTERMS.source), f"{family} states no source"
 
 
+def test_every_motif_is_filed_in_exactly_one_group_of_its_own_family(libraries) -> None:
+    """Groups keep the variants of one shape side by side - the retrieval shapes,
+    the RAG loops, the guardrails - and the rail draws them under the family. A
+    group that sat under another family would file a motif in two places."""
+    groups = set(libraries.subjects(SKOS_NS.inScheme, PAIR.MotifGroupScheme))
+    assert groups, "no motif groups are declared"
+
+    offenders = []
+    for motif in sorted(libraries.subjects(RDF.type, PAIR.GraphMotif), key=str):
+        filed = list(libraries.objects(motif, PAIR.motifGroup))
+        if len(filed) != 1:
+            offenders.append(f"{motif} is in {len(filed)} groups")
+            continue
+        group = filed[0]
+        if group not in groups:
+            offenders.append(f"{motif} names {group}, which is not in the scheme")
+        elif libraries.value(group, SKOS_NS.broader) != libraries.value(motif, PAIR.motifFamily):
+            offenders.append(f"{motif} is filed in {group}, which sits under another family")
+    assert not offenders, "\n".join(offenders)
+
+
+def test_a_motif_group_says_what_it_collects(libraries) -> None:
+    for group in sorted(libraries.subjects(SKOS_NS.inScheme, PAIR.MotifGroupScheme), key=str):
+        assert libraries.value(group, SKOS_NS.prefLabel), f"{group} has no label"
+        assert libraries.value(group, SKOS_NS.definition), f"{group} says nothing about what it collects"
+        assert libraries.value(group, SKOS_NS.broader), f"{group} sits under no family"
+        assert libraries.value(group, DCTERMS.source), f"{group} states no source"
+        assert set(libraries.subjects(PAIR.motifGroup, group)), f"{group} files no motif"
+
+
 def test_no_match_query_reads_the_motif_family(libraries) -> None:
-    """Shelving is not matching."""
+    """Shelving is not matching, at either level."""
     offenders = [
         path.relative_to(REPO_ROOT).as_posix()
         for path in sorted((REPO_ROOT / "ontology").rglob("*.rq"))
-        if "motifFamily" in path.read_text(encoding="utf-8")
+        if any(term in path.read_text(encoding="utf-8") for term in ("motifFamily", "motifGroup"))
     ]
-    assert not offenders, "motif family read during matching: " + ", ".join(offenders)
+    assert not offenders, "motif shelving read during matching: " + ", ".join(offenders)
+
+
+def _control_structures(libraries) -> set:
+    """Motifs whose structure contains a control step."""
+    found = set()
+    for motif in libraries.subjects(RDF.type, PAIR.GraphMotif):
+        for node in libraries.objects(motif, PAIR.hasPatternNode):
+            role = libraries.value(node, PAIR.expectedRole)
+            if role is not None and (
+                role == PAIR.ControlStep
+                or PAIR.ControlStep in set(libraries.transitive_objects(role, PAIR.subRoleOf))
+            ):
+                found.add(motif)
+    return found
+
+
+def test_a_control_structure_carries_no_risk_pattern(libraries) -> None:
+    """A guardrail, an approval or a policy step is what a risk query accepts as
+    the escape, never what raises it. Listing improper output handling and system
+    prompt leakage under the Guardrails motif read as if guardrails caused them."""
+    controls = _control_structures(libraries)
+    assert {PAT.GuardrailsMotif, PAT.InputScreeningMotif, PAT.HumanOversightMotif} <= controls
+    offenders = sorted(
+        f"{motif} carries {pattern}"
+        for motif in controls
+        for pattern in libraries.objects(motif, PAIR.hasRiskPattern)
+    )
+    assert not offenders, "\n".join(offenders)
+
+
+def test_every_control_structure_realizes_a_control(libraries) -> None:
+    """The library presents a control structure by the control it realizes, so
+    one that realizes none would be presented by nothing at all."""
+    realized = set(libraries.objects(None, PAIR.realizedByMotif))
+    offenders = sorted(str(m) for m in _control_structures(libraries) if m not in realized)
+    assert not offenders, "control structures no control is realized by: " + ", ".join(offenders)
 
 
 def test_every_pattern_edge_crosses_between_an_oval_and_a_box(libraries) -> None:
@@ -577,7 +643,7 @@ def test_a_design_pattern_citation_stays_a_citation(libraries) -> None:
     method says it does not: structure belongs to the motif, consequences to the
     risk pattern, intent and applicability nowhere."""
     allowed = {RDF.type, RDFS.label, SKOS_NS.prefLabel, DCTERMS.source,
-               DCTERMS.isPartOf, DCTERMS.bibliographicCitation}
+               DCTERMS.bibliographicCitation}
     citations = set(libraries.subjects(RDF.type, PAIR.DesignPatternCitation))
     assert citations, "the citation layer is registered but loaded nothing"
     offenders = [
@@ -688,6 +754,18 @@ def test_specific_roles_are_subroles_of_the_role_their_motif_queries(libraries) 
         # generative model. Sitting under Model instead forced every example to
         # double-tag, and any that did not silently lost generation-side matches.
         PAIR.FoundationLLM: PAIR.GenerativeModel,
+        # The refinements added with the agentic and RAG-variant motifs, each
+        # under the role its motif's query walks from.
+        PAIR.SubQuery: PAIR.UserInput,
+        PAIR.UserFeedback: PAIR.UserInput,
+        PAIR.GoalCreationStep: PAIR.PlanningStep,
+        PAIR.SyntheticDataGenerationStep: PAIR.GenerationStep,
+        PAIR.PromptOptimisationStep: PAIR.PromptConstructionStep,
+        PAIR.RetrievalGuardrailStep: PAIR.InputGuardrailStep,
+        PAIR.ExecutionGuardrailStep: PAIR.PolicyEnforcementStep,
+        PAIR.DebateArgument: PAIR.AgentMessage,
+        PAIR.VoteAggregationStep: PAIR.AggregationStep,
+        PAIR.SyntheticTrainingData: PAIR.TrainingDataset,
     }
     for role, parent in expected_parents.items():
         ancestors = set(libraries.transitive_objects(role, PAIR.subRoleOf))

@@ -61,29 +61,29 @@ def _external(resource: URIRef) -> str | None:
     return text if text.startswith(("http://", "https://")) else None
 
 
+def _doi(resource: URIRef) -> str | None:
+    """`10.1016/j.jss.2024.112278`, when the source is a DOI handle."""
+    host, _, rest = str(resource).partition("doi.org/")
+    return rest if rest and host in ("https://", "http://", "https://dx.", "http://dx.") else None
+
+
 def _ref(graph: Graph, resource: URIRef) -> dict:
     full, brief = source_pair(resource)
     stated = graph.value(resource, SKOS.prefLabel) or graph.value(resource, RDFS.label)
     url = _external(resource)
-    # Without this a source cited as a URL is named by its last path segment,
-    # so half the motif library reported its provenance as "design_en.html".
     name = str(stated) if stated else (
         str(resource).split("//", 1)[-1].split("/", 1)[0] if url else label(graph, resource)
     )
-    # A design pattern citation is minted in pat: but stands for somebody else's
-    # catalogue, so its namespace is the wrong answer to "where did this come
-    # from?" - reading it off the IRI would credit Fowler's patterns to PAIR-AI.
+    doi = None
     if (resource, RDF.type, PAIR.DesignPatternCitation) in graph:
         cited = graph.value(resource, DCTERMS.source)
         if cited is not None:
             url = _external(cited) or url
             full = brief = str(cited).split("//", 1)[-1].split("/", 1)[0]
-        # A DOI host says "doi.org", which reads as a peer of "martinfowler.com".
-        # The venue is the answer to "where did this come from?", so prefer it.
-        venue = graph.value(resource, DCTERMS.isPartOf)
-        if venue is not None:
-            full = brief = str(venue)
-    return {
+            doi = _doi(cited)
+            if doi:
+                full, brief = str(cited), doi
+    ref = {
         "id": str(resource),
         "label": name,
         "definition": _definition(graph, resource),
@@ -91,6 +91,9 @@ def _ref(graph: Graph, resource: URIRef) -> dict:
         "sourceShort": brief,
         "url": url,
     }
+    if doi:
+        ref["doi"] = doi
+    return ref
 
 
 def _nature(graph: Graph, control: URIRef) -> str | None:
@@ -111,21 +114,64 @@ def _control_ref(graph: Graph, control: URIRef) -> dict:
     return ref
 
 
+def _evidence_rank(ref: dict) -> int:
+    """A paper with a DOI is the most checkable source, then a published
+    catalogue or article, then a taxonomy entry the shape was inferred from."""
+    if ref.get("doi"):
+        return 0
+    return 1 if ref.get("url") else 2
+
+
 def _sorted_refs(graph: Graph, subject: URIRef, predicate: URIRef) -> list[dict]:
     refs = [_ref(graph, obj) for obj in graph.objects(subject, predicate)]
-    return sorted(refs, key=lambda ref: (ref["sourceShort"], ref["label"].lower()))
+    return sorted(
+        refs, key=lambda ref: (_evidence_rank(ref), ref["sourceShort"], ref["label"].lower())
+    )
+
+
+def _shelf(graph: Graph, motif: URIRef, predicate: URIRef) -> dict | None:
+    concept = next(iter(sorted(graph.objects(motif, predicate), key=str)), None)
+    if concept is None:
+        return None
+    return {
+        "id": short(concept),
+        "label": label(graph, concept),
+        "definition": _definition(graph, concept),
+    }
 
 
 def _family(graph: Graph, motif: URIRef) -> dict | None:
     """Which family of AI system this motif is a shape of, as the library shelves it."""
-    family = next(iter(sorted(graph.objects(motif, PAIR.motifFamily), key=str)), None)
-    if family is None:
-        return None
-    return {
-        "id": short(family),
-        "label": label(graph, family),
-        "definition": _definition(graph, family),
-    }
+    return _shelf(graph, motif, PAIR.motifFamily)
+
+
+def _group(graph: Graph, motif: URIRef) -> dict | None:
+    """The related motifs it is filed with inside its family."""
+    return _shelf(graph, motif, PAIR.motifGroup)
+
+
+def _has_control_step(graph: Graph, motif: URIRef) -> bool:
+    """A structure that contains a control step exists to clear risk patterns,
+    so the library presents it by the controls it realizes rather than by risk."""
+    for node in graph.objects(motif, PAIR.hasPatternNode):
+        role = graph.value(node, PAIR.expectedRole)
+        if role is not None and (
+            role == PAIR.ControlStep
+            or PAIR.ControlStep in set(graph.transitive_objects(role, PAIR.subRoleOf))
+        ):
+            return True
+    return False
+
+
+def _realized_controls(graph: Graph, motif: URIRef) -> list[dict]:
+    controls = []
+    for control in graph.subjects(PAIR.realizedByMotif, motif):
+        ref = _control_ref(graph, control)
+        ref["suggestedBy"] = sorted(
+            short(pattern) for pattern in graph.subjects(PAIR.suggestedControl, control)
+        )
+        controls.append(ref)
+    return sorted(controls, key=lambda ref: ref["label"].lower())
 
 
 def _motif_entry(graph: Graph, motif: URIRef, template: dict | None) -> dict:
@@ -138,6 +184,7 @@ def _motif_entry(graph: Graph, motif: URIRef, template: dict | None) -> dict:
         "label": label(graph, motif),
         "description": _definition(graph, motif),
         "family": _family(graph, motif),
+        "group": _group(graph, motif),
         "derivedFrom": _sorted_refs(graph, motif, PAIR.derivedFrom),
         "roles": [{"id": role, "label": display_label(role)} for role in roles],
         "nodes": nodes,
@@ -145,6 +192,8 @@ def _motif_entry(graph: Graph, motif: URIRef, template: dict | None) -> dict:
         "riskPatterns": sorted(
             short(pattern) for pattern in graph.objects(motif, PAIR.hasRiskPattern)
         ),
+        "control": _has_control_step(graph, motif),
+        "controls": _realized_controls(graph, motif),
     }
 
 
@@ -242,6 +291,7 @@ def _role_entry(graph: Graph, role: URIRef, shelf: URIRef | None, reach: dict) -
         "serves": reach.get("serves", []),
         "families": reach.get("families", []),
         "riskPatterns": reach.get("riskPatterns", []),
+        "controlFor": reach.get("controlFor", []),
     }
 
 
@@ -313,6 +363,9 @@ def library_catalogue() -> dict:
             "controls": len(project_controls),
             "motifFamilies": len(
                 {m["family"]["id"] for m in motifs if m["family"]}
+            ),
+            "motifGroups": len(
+                {m["group"]["id"] for m in motifs if m["group"]}
             ),
             "riskDomains": len(
                 {d["id"] for p in patterns for d in p["riskDomains"]}

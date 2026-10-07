@@ -332,6 +332,10 @@ label.btn { display: inline-flex; align-items: center; }
 }
 .motif-family:first-child { margin-top: 0; }
 .motif-family-count { font-weight: 600; color: #a7aebb; }
+.motif-group {
+  margin-top: 4px; padding: 0 2px 0 8px;
+  font-size: 10px; color: #9aa1ad;
+}
 .motif-palette { overscroll-behavior: contain; }
 .motif-item:hover { background: #e2ecfb; }
 .motif-item:active { cursor: grabbing; }
@@ -815,14 +819,34 @@ label.btn { display: inline-flex; align-items: center; }
 .mp-fam.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 .mp-list { overflow-y: auto; overscroll-behavior: contain; padding: 4px 0; }
+/* The shelf is the BEAM class a term goes on, which is the first thing a reader
+   settles, so it is a band that stays in view while its terms scroll under it. */
 .mp-shelf {
-  display: flex; justify-content: space-between; gap: 8px;
-  padding: 5px 9px 3px; font-size: 10px; text-transform: uppercase;
-  letter-spacing: 0.4px; color: #8a93a5;
+  position: sticky; top: -4px; z-index: 1;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px 6px 8px;
+  background: #262c3b; border-left: 3px solid var(--node-other-border);
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  font-size: 11.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text);
 }
-.mp-shelf-count { color: #6b7483; }
+.mp-group + .mp-group { margin-top: 4px; }
+.mp-shelf.data, .mp-shelf.symbol { border-left-color: var(--node-data-border); }
+.mp-shelf.process { border-left-color: var(--node-process-border); }
+.mp-shelf.model { border-left-color: var(--node-model-border); }
+.mp-shelf .lib-swatch { width: 18px; height: 11px; }
+.mp-shelf-name { flex: 1 1 auto; min-width: 0; }
+.mp-shelf-note {
+  font-size: 10px; font-weight: 500; letter-spacing: 0; text-transform: none;
+  color: #9aa1af;
+}
+.mp-shelf-count {
+  padding: 0 7px; border-radius: 9px; background: rgba(255, 255, 255, 0.10);
+  font-size: 10.5px; letter-spacing: 0;
+}
 /* A shelf that does not go on this element is still reachable, just last. */
-.mp-shelf.off { opacity: 0.6; }
+.mp-shelf.off { color: #9aa1af; }
+.mp-shelf.off .lib-swatch { opacity: 0.55; }
 .mp-opt {
   display: block; width: 100%; text-align: left; cursor: pointer;
   background: transparent; border: 0; padding: 4px 9px; color: var(--text);
@@ -850,6 +874,10 @@ label.btn { display: inline-flex; align-items: center; }
 .node-detail .mp-opt { color: #2a2f38; }
 .node-detail .mp-opt-def { color: #6b7483; }
 .node-detail .mp-fam { border-color: #d7dce6; color: #6b7483; }
+.node-detail .mp-shelf { background: #eef1f6; border-top-color: #dde2ea; border-bottom-color: #dde2ea; color: #1f2430; }
+.node-detail .mp-shelf.off { color: #7a8394; }
+.node-detail .mp-shelf-count { background: #dde2ea; }
+.node-detail .mp-shelf-note { color: #7a8394; }
 
 /* The activity popup. Never styled before now, because a rule meant to hide
    the architecture's popup on the business level was hiding this one too - so
@@ -1783,6 +1811,12 @@ pre::-webkit-scrollbar-thumb:hover {
   text-transform: uppercase;
   opacity: 0.85;
 }
+/* A DOI is case-preserving text, not a catalogue tag. */
+.chip-source.doi {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
 
 /* Which catalogue a control section came from, and whether a control is
    something you can build or something an organisation has to do. */
@@ -2076,7 +2110,79 @@ body.editor-hidden .pane-head { display: none; }
 .lib-row-count { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); }
 /* No risk pattern applies to this structure - an answer, not a blank. */
 .lib-row-count.zero { color: #545c6b; }
+/* A control structure carries no risk pattern by design: marked, not counted. */
+.lib-row-count.control {
+  font-family: inherit; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: #8fd19e; border: 1px solid rgba(143, 209, 158, 0.35); border-radius: 4px; padding: 0 4px;
+}
+/* Inside an open family, the motifs filed together. A label, not a fold. */
+
+.lib-motif-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 4px;
+}
+
+.lib-motif-shelf-note {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.lib-subgroup {
+  --subgroup-line: rgba(255, 255, 255, 0.08);
+  margin: 8px 0 2px;
+}
+
+.lib-subgroup-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+  cursor: default;
+}
+
+.lib-subgroup-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lib-subgroup-head::after {
+  content: "";
+  order: 1;
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--subgroup-line);
+}
+
+.lib-subgroup-count {
+  order: 2;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #6d7483;
+}
+
+.lib-subgroup-items {
+  margin-left: 18px;
+  border-left: 1px solid var(--subgroup-line);
+}
+
+
 .chip.family { background: #2b3547; color: #b6c6e0; border-color: #3c4a63; }
+.chip.group { background: none; color: #b6c6e0; border-color: #3c4a63; }
+.lib-group-head {
+  display: flex; align-items: baseline; gap: 8px;
+  margin: 14px 0 2px; font-size: 12.5px; font-weight: 600; color: var(--text);
+}
+.lib-group-head-count { font-family: var(--mono); font-size: 11px; font-weight: 400; color: var(--text-dim); }
+.lib-note.small { font-size: 11.5px; margin-top: 0; }
+.lib-tile-control { color: #8fd19e; }
 
 /* ---- detail pages --------------------------------------------------------
    A hero that says what this is, then a main column and an aside of cards with

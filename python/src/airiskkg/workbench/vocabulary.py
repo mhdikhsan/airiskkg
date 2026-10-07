@@ -211,6 +211,13 @@ def role_reach(graph: Graph) -> dict[URIRef, dict[str, list[str]]]:
             queue.extend(parents.get(node, ()))
         return out
 
+    def suggested_against(motif: URIRef) -> set[str]:
+        return {
+            short(pattern)
+            for control in graph.subjects(PAIR.realizedByMotif, motif)
+            for pattern in graph.subjects(PAIR.suggestedControl, control)
+        }
+
     reach = {}
     for role in parents:
         named = motifs.get(role, set())
@@ -219,11 +226,18 @@ def role_reach(graph: Graph) -> dict[URIRef, dict[str, list[str]]]:
         for motif in named:
             families.update(label(graph, f) for f in graph.objects(motif, PAIR.motifFamily))
             patterns.update(short(p) for p in graph.objects(motif, PAIR.hasRiskPattern))
+        # A control step clears risk patterns rather than raising them, so what it
+        # is related to is read through the controls its motifs realize.
+        control_for: set[str] = set()
+        if role == PAIR.ControlStep or PAIR.ControlStep in ancestors(role):
+            for motif in named | inherited:
+                control_for |= suggested_against(motif)
         reach[role] = {
             "motifs": sorted(short(m) for m in named),
             "families": sorted(families),
             "riskPatterns": sorted(patterns),
             "serves": sorted(short(m) for m in inherited),
+            "controlFor": sorted(control_for),
         }
     return reach
 

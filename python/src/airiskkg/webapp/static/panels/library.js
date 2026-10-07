@@ -13,9 +13,7 @@ let query = "";
 let selected = { risks: null, motifs: null, terms: null };
 let addedCount = 0;
 
-/* The rail folds by group and opens folded, so the first view is the shelves
- * rather than 128 rows. Risks stay flat - 15 of them are a list, not a filing
- * problem. This records which groups the reader opened. */
+
 const opened = { motifs: new Set(), terms: new Set() };
 
 // Open as the front door, rather than opened deliberately from the toolbar.
@@ -23,7 +21,7 @@ let openingMode = false;
 
 const byId = { risks: new Map(), motifs: new Map(), terms: new Map() };
 
-// Motifs a control names as a candidate structural realization: the same list
+// Motifs a control names as a candidate structural realization.
 let controlMotifs = new Set();
 
 const RISK_SUFFIX = /\s*risk pattern$/i;
@@ -50,6 +48,8 @@ function haystack(entry) {
     entry.description || "",
     entry.definition || "",
     entry.shelf || "",
+    entry.family && entry.family.label ? entry.family.label : "",
+    entry.group && entry.group.label ? entry.group.label : "",
     ...(entry.derivedFrom || []).map((d) => d.label),
     ...(entry.taxonomy || []).map((t) => t.label + " " + t.sourceShort),
     ...(entry.roles || []).map((r) => r.label),
@@ -93,6 +93,23 @@ function groupsOfMotifs(entries) {
 
   return [...groups.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+/* Inside a family, the motifs that are variants or companions of each other sit
+   together: the retrieval shapes, the RAG loops, the guardrails. */
+function groupsWithin(entries) {
+  const groups = new Map();
+  entries.forEach((entry) => {
+    const name = entry.group ? entry.group.label : "Other";
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(entry);
+  });
+  return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+// A family filed as one group says nothing more under a second heading.
+function groupHeadingsShown(groups) {
+  return groups.length > 1;
 }
 
 
@@ -142,8 +159,15 @@ function termRow(entry) {
   return row;
 }
 
-/* How many risk patterns apply to a motif */
+/* How many risk patterns apply to a motif. A control structure carries none by
+   design, so it is marked as a control rather than counted as a zero. */
 function motifRiskCount(entry) {
+  if (entry.control && !entry.riskPatterns.length) {
+    return el("span", {
+      class: "lib-row-count control",
+      title: "A control: it realizes a control rather than carrying a risk pattern",
+    }, "control");
+  }
   return el(
     "span",
     {
@@ -153,6 +177,10 @@ function motifRiskCount(entry) {
     },
     String(entry.riskPatterns.length)
   );
+}
+
+function suggestedAgainst(entry) {
+  return [...new Set((entry.controls || []).flatMap((control) => control.suggestedBy || []))];
 }
 
 function railRow(entry, kind) {
@@ -191,10 +219,14 @@ function railRow(entry, kind) {
               entry.riskPatterns.length
                 ? entry.riskPatterns.length
                   + " risk pattern(s) apply to it"
-                : "no risk pattern in the library applies to it"
+                : entry.control
+                  ? "a control, suggested against "
+                    + suggestedAgainst(entry).length
+                    + " risk pattern(s)"
+                  : "no risk pattern in the library applies to it"
             )
           + (
-              controlMotifs.has(entry.id)
+              controlMotifs.has(entry.id) && !entry.control
                 ? "; a control can be realized by it"
                 : ""
             ),
@@ -277,8 +309,29 @@ function renderRail() {
     list.appendChild(head);
 
     if (!isOpen) return;
-    items.forEach((entry) => {
-      list.appendChild(tab === "terms" ? termRow(entry) : railRow(entry, tab));
+    if (tab === "terms") {
+      items.forEach((entry) => list.appendChild(termRow(entry)));
+      return;
+    }
+    const within = groupsWithin(items);
+    const showHeads = groupHeadingsShown(within);
+     within.forEach(([groupName, members]) => {
+      const rows = members.map((entry) => railRow(entry, tab));
+
+      if (!showHeads) {
+        rows.forEach((row) => list.appendChild(row));
+        return;
+      }
+
+      const definition = members[0].group && members[0].group.definition;
+
+      list.appendChild(el("div", { class: "lib-subgroup" }, [
+        el("div", { class: "lib-subgroup-head", title: definition || groupName }, [
+          el("span", { class: "lib-subgroup-name" }, groupName),
+          el("span", { class: "lib-subgroup-count" }, String(members.length)),
+        ]),
+        el("div", { class: "lib-subgroup-items" }, rows),
+      ]));
     });
   });
 }
@@ -295,8 +348,8 @@ function refChip(ref, extraClass) {
       ? null
       : el(
           "span",
-          { class: "chip-source" },
-          ref.sourceShort
+          { class: ref.doi ? "chip-source doi" : "chip-source" },
+          ref.doi ? "doi:" + ref.doi : ref.sourceShort
         ),
 
     el("span", {}, ref.label),
@@ -515,7 +568,7 @@ function riskDetail(entry) {
       [
         panel("Structures it applies to", {
           count: motifs.length,
-          hint: motifs.length ? "A match alone is not a finding." : null,
+          hint: motifs.length ? " " : null,
           body: motifs.length
             ? motifs.map(motifCard)
             : emptyLine("Names no motif of its own: evaluated over any motif match whose conditions hold."),
@@ -623,25 +676,64 @@ function controlsPanel(entry) {
   });
 }
 
-function controlsRealizedBy(motifId) {
-  const found = new Map();
-  catalogue.riskPatterns.forEach((pattern) => pattern.controls.forEach((control) => {
-    if ((control.realizedByMotifs || []).includes(motifId)) found.set(control.id, control);
-  }));
-  return [...found.values()].sort((a, b) => a.label.localeCompare(b.label));
+/* A control the motif realizes, with the risk patterns that suggest it: the
+   link runs through the control, so the page says which control it is. */
+function realizedControlItem(control) {
+  const against = (control.suggestedBy || []).map((id) => byId.risks.get(id)).filter(Boolean);
+  return el("div", { class: "lib-control", title: control.definition || "" }, [
+    el("div", { class: "lib-control-head" }, [
+      el("span", { class: "lib-control-name" }, control.label),
+      control.nature ? el("span", { class: "ctrl-nature " + control.nature }, control.nature) : null,
+    ]),
+    against.length
+      ? el("div", { class: "lib-control-motifs" }, [
+          el("span", { class: "lib-meta-lead" }, "suggested against"),
+          ...against.map((risk) => chipTo("risks", risk, RISK_SUFFIX)),
+        ])
+      : null,
+  ]);
+}
+
+function realizedControlsPanel(entry) {
+  const controls = entry.controls || [];
+  return panel("Realizes a control", {
+    count: controls.length,
+    hint: "A candidate structure, not proof the risk is removed.",
+    body: el("div", { class: "lib-controls" }, controls.map(realizedControlItem)),
+  });
+}
+
+/* The motifs filed with this one, drawn as silhouettes: the variants of a shape
+   read as variants only side by side. */
+function relatedMotifsPanel(entry) {
+  if (!entry.group) return null;
+  const siblings = catalogue.motifs.filter((motif) =>
+    motif.id !== entry.id && motif.group && motif.group.id === entry.group.id);
+  if (!siblings.length) return null;
+  return panel("Related motifs", {
+    count: siblings.length,
+    tip: entry.group.definition || "",
+    body: el("div", { class: "lib-uses" }, siblings.map((motif) => usageCard(motif, [], false))),
+  });
 }
 
 function motifDetail(entry) {
   const risks = entry.riskPatterns.map((id) => byId.risks.get(id)).filter(Boolean);
-  const controls = controlsRealizedBy(entry.id);
+  const controls = entry.controls || [];
+  // A control structure is what clears risk patterns, never what raises them.
+  const asControl = entry.control && !risks.length;
+  const against = suggestedAgainst(entry);
 
   return [
     hero({
-      eyebrow: "Motif",
+      eyebrow: asControl ? "Control motif" : "Motif",
       title: shortName(entry.label, MOTIF_SUFFIX),
       meta: [
         entry.family
           ? el("span", { class: "chip family", title: entry.family.definition || "" }, entry.family.label)
+          : null,
+        entry.group
+          ? el("span", { class: "chip group", title: entry.group.definition || "" }, entry.group.label)
           : null,
         ...sourceMeta(entry),
       ].filter(Boolean),
@@ -652,11 +744,17 @@ function motifDetail(entry) {
         title: "Add this motif's elements to the graph, already annotated with the roles it matches on",
         onclick: () => insertMotif(entry),
       }, "Add to canvas")],
-      stats: [
-        [entry.nodes.length, plural(entry.nodes.length, "element", "elements")],
-        [entry.edges.length, plural(entry.edges.length, "relation", "relations")],
-        [risks.length, plural(risks.length, "risk pattern", "risk patterns")],
-      ],
+      stats: asControl
+        ? [
+            [entry.nodes.length, plural(entry.nodes.length, "element", "elements")],
+            [controls.length, plural(controls.length, "control realized", "controls realized")],
+            [against.length, "suggested against"],
+          ]
+        : [
+            [entry.nodes.length, plural(entry.nodes.length, "element", "elements")],
+            [entry.edges.length, plural(entry.edges.length, "relation", "relations")],
+            [risks.length, plural(risks.length, "risk pattern", "risk patterns")],
+          ],
     }),
     layout(
       [
@@ -678,24 +776,20 @@ function motifDetail(entry) {
               : null,
           ],
         }),
+        relatedMotifsPanel(entry),
       ],
-      [
-        panel("Risk patterns that apply", {
-          count: risks.length,
-          hint: risks.length ? "A match alone is not a finding." : null,
-          body: risks.length
-            ? el("div", { class: "lib-chips" }, risks.map((risk) => chipTo("risks", risk, RISK_SUFFIX)))
-            : emptyLine("None on its own; it can still sit inside a larger match."),
-        }),
-        controls.length
-          ? panel("Realizes a control", {
-              count: controls.length,
-              hint: "A candidate structure, not proof the risk is removed.",
-              body: el("div", { class: "lib-chips" }, controls.map((control) =>
-                el("span", { class: "chip", title: control.definition || "" }, control.label))),
-            })
-          : null,
-      ],
+      asControl
+        ? [realizedControlsPanel(entry)]
+        : [
+            panel("Risk patterns that apply", {
+              count: risks.length,
+              hint: risks.length ? "A match alone is not a finding." : null,
+              body: risks.length
+                ? el("div", { class: "lib-chips" }, risks.map((risk) => chipTo("risks", risk, RISK_SUFFIX)))
+                : emptyLine("None on its own; it can still sit inside a larger match."),
+            }),
+            controls.length ? realizedControlsPanel(entry) : null,
+          ],
     ),
   ];
 }
@@ -750,6 +844,17 @@ function domainRow(entry) {
 }
 
 
+// Motif Shelf head
+function motifShelfHead(name, count, definition) {
+  return el("div", { class: "lib-shelf lib-motif-shelf" }, [
+    el("h4", {}, name),
+    el("span", { class: "lib-shelf-count" }, String(count)),
+    definition
+      ? el("p", { class: "lib-note lib-motif-shelf-note" }, definition)
+      : null,
+  ]);
+}
+
 /* The vocabulary drawn in the notation it annotates: each shelf carries the
  * canvas's own shape and colour for its class, and so does every term on it. */
 function shelfHead(name, count) {
@@ -759,6 +864,7 @@ function shelfHead(name, count) {
     el("span", { class: "lib-shelf-count" }, String(count)),
   ]);
 }
+
 
 function termKind(entry) {
   return entry && entry.shelfId ? kindOf(entry.shelfId.split(/[#/]/).pop()) : "other";
@@ -852,6 +958,7 @@ function termDetail(entry) {
   const asked = (entry.motifs || []).map((id) => byId.motifs.get(id)).filter(Boolean);
   const served = (entry.serves || []).map((id) => byId.motifs.get(id)).filter(Boolean);
   const risks = (entry.riskPatterns || []).map((id) => byId.risks.get(id)).filter(Boolean);
+  const controlFor = (entry.controlFor || []).map((id) => byId.risks.get(id)).filter(Boolean);
   const lineage = [...ancestorsOf(entry)];
   const provenance = entry.provenance || { route: null, refs: [] };
 
@@ -876,7 +983,9 @@ function termDetail(entry) {
       stats: [
         [asked.length, plural(asked.length, "motif names it", "motifs name it")],
         [served.length, "reached by refining"],
-        [risks.length, plural(risks.length, "risk pattern", "risk patterns")],
+        risks.length || !controlFor.length
+          ? [risks.length, plural(risks.length, "risk pattern", "risk patterns")]
+          : [controlFor.length, "suggested against"],
       ],
     }),
     layout(
@@ -901,15 +1010,26 @@ function termDetail(entry) {
                 }, parent.label))),
             })
           : null,
-        // Related, not raised: in a guardrail's case the term is what clears the
-        // risk pattern its motif carries, never what triggers it.
-        panel("Related risk patterns", {
-          count: risks.length,
-          tip: "Carried by a motif that names this term. The term may be what the risk pattern needs, or what clears it.",
-          body: risks.length
-            ? el("div", { class: "lib-chips" }, risks.map((risk) => chipTo("risks", risk, RISK_SUFFIX)))
-            : emptyLine("No risk pattern is carried by a motif that names it."),
-        }),
+        // Related, not raised: a term can be what a risk pattern needs, or a
+        // step its query accepts as the escape.
+        risks.length || !controlFor.length
+          ? panel("Related risk patterns", {
+              count: risks.length,
+              tip: "Carried by a motif that names this term. The term may be what the risk pattern needs, or what clears it.",
+              body: risks.length
+                ? el("div", { class: "lib-chips" }, risks.map((risk) => chipTo("risks", risk, RISK_SUFFIX)))
+                : emptyLine("No risk pattern is carried by a motif that names it."),
+            })
+          : null,
+        // A control step clears risk patterns, so it is read through the
+        // controls its motifs realize.
+        controlFor.length
+          ? panel("Suggested against", {
+              count: controlFor.length,
+              hint: "Through the controls its motifs realize. Candidates, not proof a risk is removed.",
+              body: el("div", { class: "lib-chips" }, controlFor.map((risk) => chipTo("risks", risk, RISK_SUFFIX))),
+            })
+          : null,
         SHOW_TERM_PROVENANCE && panel("Where it comes from", {
           body: provenance.refs.length
             ? el("div", { class: "lib-chips" }, [
@@ -1024,21 +1144,27 @@ function landingTile(entry, kind) {
                   + " relations"
               ),
 
-              el(
-                "span",
-                {},
-                entry.riskPatterns.length
-                  ? entry.riskPatterns.length
-                    + " risk pattern"
-                    + (
-                        entry.riskPatterns.length > 1
-                          ? "s"
-                          : ""
-                      )
-                  : "no risk pattern"
-              ),
+              entry.control && !entry.riskPatterns.length
+                ? el(
+                    "span",
+                    { class: "lib-tile-control" },
+                    "control · suggested against " + suggestedAgainst(entry).length
+                  )
+                : el(
+                    "span",
+                    {},
+                    entry.riskPatterns.length
+                      ? entry.riskPatterns.length
+                        + " risk pattern"
+                        + (
+                            entry.riskPatterns.length > 1
+                              ? "s"
+                              : ""
+                          )
+                      : "no risk pattern"
+                  ),
 
-              controlMotifs.has(entry.id)
+              controlMotifs.has(entry.id) && !entry.control
                 ? el(
                     "span",
                     {},
@@ -1068,10 +1194,10 @@ const LANDING_TITLE = {
   terms: "Every term you can annotate an element with",
 };
 
-const LANDING_NOTE = {
-  risks: "A weakness in a design that may lead to harm: a candidate to triage, never an observed outcome.",
-  motifs: "Structures the library recognises in an architecture. A match says what is present, never that it is dangerous.",
-  terms: "Tag your architecture's elements with these terms so the library can recognise its structures.",
+const LANDING_NOTE = { 
+  risks: "A weakness in a system design and process that may lead to harm.",
+  motifs: "Structures the library recognises in an architecture.",
+  terms: "Annotation vocabulary for the library's motifs and risk patterns.",
 };
 
 function landing() {
@@ -1134,43 +1260,21 @@ function landing() {
     return parts;
   }
 
-  groupsOfMotifs(entries).forEach((group) => {
-    parts.push(
-      el(
-        "h4",
-        {},
-        group[0]
-      )
-    );
+   groupsOfMotifs(entries).forEach(([familyName, members]) => {
+    const family = members[0] ? members[0].family : null;
 
-    const family = group[1][0] ? group[1][0].family : null;
+    parts.push(motifShelfHead(
+      familyName,
+      members.length,
+      family && family.definition
+    ));
 
-    if (family && family.definition) {
-      parts.push(
-        el(
-          "p",
-          { class: "lib-note" },
-          family.definition
-        )
-      );
-    }
+    const sorted = [...members].sort((a, b) =>
+      String(a.label || "").localeCompare(String(b.label || "")));
 
-    parts.push(
-      el(
-        "div",
-        { class: "lib-grid shapes" },
-
-        group[1].map(
-          (entry) =>
-            landingTile(
-              entry,
-              tab
-            )
-        )
-      )
-    );
+    parts.push(el("div", { class: "lib-grid shapes" },
+      sorted.map((entry) => landingTile(entry, tab))));
   });
-
   return parts;
 }
 
@@ -1392,16 +1496,11 @@ async function load() {
       )
   );
 
-  controlMotifs =
-    new Set(
-      catalogue.riskPatterns.flatMap(
-        (pattern) =>
-          pattern.controls.flatMap(
-            (control) =>
-              control.realizedByMotifs
-          )
-      )
-    );
+  controlMotifs = new Set(
+    catalogue.motifs
+      .filter((motif) => (motif.controls || []).length)
+      .map((motif) => motif.id)
+  );
 
   renderStats();
 
