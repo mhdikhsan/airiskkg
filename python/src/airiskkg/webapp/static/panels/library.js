@@ -3,20 +3,25 @@
 import { api } from "../core/api.js";
 import { on } from "../core/bus.js";
 import { $, $$, el } from "../core/dom.js";
-import { motifPreview } from "../lib/motif_preview.js";
+import { kindOf, motifPreview } from "../lib/motif_preview.js";
 import { startDrawing } from "./canvas.js";
 import { addMotif } from "./motifs.js";
 
 let catalogue = null;
 let tab = "risks";
 let query = "";
-let selected = { risks: null, motifs: null };
+let selected = { risks: null, motifs: null, terms: null };
 let addedCount = 0;
+
+/* The rail folds by group and opens folded, so the first view is the shelves
+ * rather than 128 rows. Risks stay flat - 15 of them are a list, not a filing
+ * problem. This records which groups the reader opened. */
+const opened = { motifs: new Set(), terms: new Set() };
 
 // Open as the front door, rather than opened deliberately from the toolbar.
 let openingMode = false;
 
-const byId = { risks: new Map(), motifs: new Map() };
+const byId = { risks: new Map(), motifs: new Map(), terms: new Map() };
 
 // Motifs a control names as a candidate structural realization: the same list
 let controlMotifs = new Set();
@@ -43,15 +48,26 @@ function haystack(entry) {
   return [
     entry.label,
     entry.description || "",
+    entry.definition || "",
+    entry.shelf || "",
     ...(entry.derivedFrom || []).map((d) => d.label),
     ...(entry.taxonomy || []).map((t) => t.label + " " + t.sourceShort),
     ...(entry.roles || []).map((r) => r.label),
     ...(entry.controls || []).map((c) => c.label),
+    ...(entry.refines || []).map((r) => r.label),
+    ...(entry.families || []),
+    ...(entry.motifs || []),
   ].join(" ").toLowerCase();
 }
 
 function hits(entry) {
   return !query || haystack(entry).includes(query);
+}
+
+function entriesOf(kind) {
+  if (kind === "risks") return catalogue.riskPatterns;
+  if (kind === "motifs") return catalogue.motifs;
+  return catalogue.vocabulary.roles;
 }
 
 
@@ -79,6 +95,52 @@ function groupsOfMotifs(entries) {
     .sort((a, b) => a[0].localeCompare(b[0]));
 }
 
+
+/* Terms shelve by the BEAM class they go on. The role hierarchy's four
+   top-level terms cannot shelve them: half of the 97 sit under one of them. */
+function groupsOfTerms(entries) {
+  const groups = new Map();
+
+  entries.forEach((entry) => {
+    const name = entry.shelf || "Unshelved";
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(entry);
+  });
+
+  return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+/* A term is read by a query wherever it, or a term it refines, is named on a
+   pattern node - so "nothing" has to mean both, or it would read as inert. */
+function termReach(entry) {
+  const direct = (entry.motifs || []).length;
+  const inherited = (entry.serves || []).length;
+
+  if (direct) {
+    return direct + " motif" + (direct > 1 ? "s" : "") + " ask for it by name";
+  }
+  if (inherited) {
+    return "serves " + inherited + " motif" + (inherited > 1 ? "s" : "")
+      + " through the term it refines";
+  }
+  return "no motif in the library reads it";
+}
+
+function termRow(entry) {
+  const row = el("button", {
+    type: "button",
+    class: "lib-row" + (selected.terms === entry.id ? " selected" : ""),
+    title: entry.label + " - goes on a " + (entry.shelf || "?") + "; " + termReach(entry),
+  }, [
+    el("span", { class: "lib-row-name" }, entry.label),
+    el("span", {
+      class: "lib-row-count" + ((entry.motifs || []).length ? "" : " zero"),
+    }, String((entry.motifs || []).length)),
+  ]);
+
+  row.addEventListener("click", () => select("terms", entry.id));
+  return row;
+}
 
 /* How many risk patterns apply to a motif */
 function motifRiskCount(entry) {
@@ -168,11 +230,7 @@ function renderRail() {
 
   list.innerHTML = "";
 
-  const entries = (
-    tab === "risks"
-      ? catalogue.riskPatterns
-      : catalogue.motifs
-  ).filter(hits);
+  const entries = entriesOf(tab).filter(hits);
 
   if (!entries.length) {
     list.appendChild(
@@ -194,27 +252,33 @@ function renderRail() {
     return;
   }
 
-  groupsOfMotifs(entries).forEach((group) => {
-    list.appendChild(
-      el(
-        "div",
-        { class: "lib-group" },
-        [
-          el("span", {}, group[0]),
+  const groups = tab === "terms" ? groupsOfTerms(entries) : groupsOfMotifs(entries);
+  const open = opened[tab];
 
-          el(
-            "span",
-            { class: "lib-group-count" },
-            String(group[1].length)
-          ),
-        ]
-      )
-    );
+  groups.forEach(([name, items]) => {
+    // A search that matched inside a folded group would otherwise find nothing.
+    const isOpen = open.has(name) || Boolean(query);
 
-    group[1].forEach((entry) => {
-      list.appendChild(
-        railRow(entry, tab)
-      );
+    const head = el("button", {
+      type: "button",
+      class: "lib-group" + (isOpen ? "" : " shut"),
+      "aria-expanded": isOpen ? "true" : "false",
+      title: isOpen ? "Hide " + name : "Show " + name,
+    }, [
+      el("span", { class: "lib-group-mark" }),
+      el("span", { class: "lib-group-name" }, name),
+      el("span", { class: "lib-group-count" }, String(items.length)),
+    ]);
+    head.addEventListener("click", () => {
+      if (open.has(name)) open.delete(name);
+      else open.add(name);
+      renderRail();
+    });
+    list.appendChild(head);
+
+    if (!isOpen) return;
+    items.forEach((entry) => {
+      list.appendChild(tab === "terms" ? termRow(entry) : railRow(entry, tab));
     });
   });
 }
@@ -271,323 +335,369 @@ function refChip(ref, extraClass) {
   );
 }
 
-function section(title, note, children) {
-  return el(
-    "section",
-    { class: "lib-section" },
-    [
-      el("h4", {}, title),
+// ---- the detail pages ----
 
-      note
-        ? el(
-            "p",
-            { class: "lib-note" },
-            note
-          )
-        : null,
+/* One shape for every detail page: a hero that says what this is, then a main
+ * column and an aside. The structure sits on the left and the aside reads down
+ * the rest of the constituent equation - mechanism, what it may lead to,
+ * controls. */
 
-      ...[]
-        .concat(children)
-        .filter(Boolean),
-    ]
-  );
+const BACK_LABEL = {
+  risks: "All risk patterns",
+  motifs: "All motifs",
+  terms: "All terms",
+};
+
+function backButton() {
+  return el("button", {
+    type: "button",
+    class: "btn lib-back",
+    title: "Back to the whole catalogue",
+    onclick: () => {
+      selected[tab] = null;
+      renderRail();
+      renderDetail();
+    },
+  }, [el("span", { class: "lib-back-arrow" }), BACK_LABEL[tab]]);
 }
 
-function motifCard(motif, compact) {
-  return el(
-    "div",
-    { class: "lib-card" },
-    [
-      el(
-        "div",
-        { class: "lib-card-head" },
-        [
-          el(
-            "strong",
-            {},
-            shortName(
-              motif.label,
-              MOTIF_SUFFIX
-            )
-          ),
-
-          el(
-            "span",
-            { class: "lib-card-size" },
-            motif.nodes.length
-              + " elements · "
-              + motif.edges.length
-              + " relations"
-          ),
-        ]
-      ),
-
-      // On the motif's own page the description is already above the card.
-      compact && motif.description
-        ? el(
-            "p",
-            { class: "lib-card-desc" },
-            motif.description
-          )
-        : null,
-
-      el(
-        "div",
-        { class: "lib-preview" },
-        motifPreview(motif)
-      ),
-
-      motif.roles.length
-        ? el(
-            "div",
-            { class: "lib-roles" },
-            [
-              el(
-                "span",
-                { class: "lib-roles-lead" },
-                "roles it matches on: "
-              ),
-
-              ...motif.roles.map(
-                (role) =>
-                  el(
-                    "span",
-                    { class: "chip role" },
-                    role.label
-                  )
-              ),
-            ]
-          )
-        : null,
-
-      el(
-        "div",
-        { class: "lib-card-actions" },
-        [
-          el(
-            "button",
-            {
-              type: "button",
-              class: "btn small primary",
-
-              title:
-                "Add this motif's elements to the graph, "
-                + "already annotated with the roles it matches on",
-
-              onclick: () => insertMotif(motif),
-            },
-            "Add to canvas"
-          ),
-
-          compact
-            ? el(
-                "button",
-                {
-                  type: "button",
-                  class: "btn small",
-
-                  title:
-                    "Read this motif on its own",
-
-                  onclick: () =>
-                    select(
-                      "motifs",
-                      motif.id
-                    ),
-                },
-                "Open motif"
-              )
-            : null,
-        ]
-      ),
-    ]
-  );
+function plural(count, one, many) {
+  return count === 1 ? one : many;
 }
 
-function detailHead(entry, extra) {
-  return el(
-    "div",
-    { class: "lib-detail-head" },
-    [
-      el(
-        "button",
-        {
-          type: "button",
-          class: "lib-back",
-
-          title:
-            "Back to the whole catalogue",
-
-          onclick: () => {
-            selected[tab] = null;
-            renderRail();
-            renderDetail();
-          },
-        },
-        "‹ all"
-      ),
-
-      el(
-        "h3",
-        {},
-        entry.label
-      ),
-
-      el(
-        "div",
-        { class: "lib-detail-source" },
-        [
-          extra || null,
-
-          (entry.derivedFrom || []).length
-            ? el(
-                "span",
-                { class: "lib-roles-lead" },
-                "source:"
-              )
-            : null,
-
-          ...(entry.derivedFrom || [])
-            .map((ref) =>
-              refChip(ref, "tax")
-            ),
-        ].filter(Boolean)
-      ),
-    ]
-  );
+function statStrip(stats) {
+  return el("div", { class: "lib-stats" }, stats.map(([value, label]) =>
+    el("div", { class: "lib-stat" }, [
+      el("span", { class: "lib-stat-value" }, String(value)),
+      el("span", { class: "lib-stat-label" }, label),
+    ])));
 }
 
-function describedParagraph(entry) {
+function hero({ eyebrow, title, mark, meta, lede, actions, stats }) {
+  return el("header", { class: "lib-hero" }, [
+    el("div", { class: "lib-hero-top" }, [
+      el("span", { class: "lib-eyebrow" }, eyebrow),
+      el("div", { class: "lib-hero-actions" }, [...(actions || []), backButton()]),
+    ]),
+    el("h2", { class: "lib-hero-title" }, [mark || null, el("span", {}, title)]),
+    meta && meta.length ? el("div", { class: "lib-hero-meta" }, meta) : null,
+    lede || null,
+    stats && stats.length ? statStrip(stats) : null,
+  ]);
+}
+
+// One line at most under a heading; anything longer goes on the heading's tip.
+function panel(title, { count, hint, tip, body } = {}) {
+  return el("section", { class: "lib-panel" }, [
+    el("div", { class: "lib-panel-head", title: tip || "" }, [
+      el("h3", {}, title),
+      count ? el("span", { class: "lib-panel-count" }, String(count)) : null,
+    ]),
+    hint ? el("p", { class: "lib-panel-hint" }, hint) : null,
+    el("div", { class: "lib-panel-body" }, [].concat(body).filter(Boolean)),
+  ]);
+}
+
+/* `lead` is the panel a reader needs before anything else: it heads the aside
+ * on a wide screen and the whole page on a narrow one, where an aside stacked
+ * under the main column would put it below every diagram. */
+function layout(main, aside, lead) {
+  return el("div", { class: "lib-layout" + (lead ? " has-lead" : "") }, [
+    lead ? el("div", { class: "lib-lead" }, [lead]) : null,
+    el("div", { class: "lib-main" }, main.filter(Boolean)),
+    el("aside", { class: "lib-aside" }, aside.filter(Boolean)),
+  ]);
+}
+
+function emptyLine(text) {
+  return el("p", { class: "lib-empty-line" }, text);
+}
+
+function lede(entry) {
   const told = describe(entry);
+  if (!told.text) return null;
+  return el("p", { class: "lib-lede" + (told.from ? " borrowed" : "") }, [
+    told.from ? el("span", { class: "lib-from" }, told.from + " — ") : null,
+    el("span", {}, told.text),
+  ]);
+}
 
-  if (!told.text) {
-    return null;
-  }
+// OWASP is a source beside the name, never a category.
+function sourceMeta(entry) {
+  const refs = entry.derivedFrom || [];
+  return refs.length
+    ? [el("span", { class: "lib-meta-lead" }, "source"), ...refs.map((ref) => refChip(ref, "tax"))]
+    : [];
+}
 
-  return el(
-    "p",
-    { class: "lib-detail-desc" },
-    [
-      told.from
-        ? el(
-            "span",
-            { class: "lib-from" },
-            told.from + " — "
-          )
-        : null,
+function chipTo(kind, entry, suffix, extraClass) {
+  return el("button", {
+    type: "button",
+    class: "chip clickable " + (extraClass || "tax"),
+    title: entry.description || entry.label,
+    onclick: () => select(kind, entry.id),
+  }, shortName(entry.label, suffix));
+}
 
-      el(
-        "span",
-        {},
-        told.text
-      ),
-    ].filter(Boolean)
-  );
+/* The canvas's own shapes and colours, so a step is told apart from what flows
+ * between steps without anyone saying so. */
+const KIND_NAME = {
+  data: "Data",
+  symbol: "Symbol",
+  model: "Model",
+  resource: "Resource",
+  process: "Process",
+  agent: "Agent",
+  other: "Untyped",
+};
+
+function swatch(kind) {
+  return el("span", { class: "lib-swatch " + kind, title: KIND_NAME[kind] || kind });
+}
+
+function legend(template) {
+  const kinds = [...new Set((template.nodes || []).map((node) => kindOf(node.cls)))];
+  return el("div", { class: "lib-legend" }, kinds.map((kind) =>
+    el("span", { class: "lib-legend-item" }, [swatch(kind), KIND_NAME[kind] || kind])));
+}
+
+function motifCard(motif) {
+  return el("div", { class: "lib-card" }, [
+    el("div", { class: "lib-card-head" }, [
+      el("strong", {}, shortName(motif.label, MOTIF_SUFFIX)),
+      motif.family ? el("span", { class: "chip family" }, motif.family.label) : null,
+      el("span", { class: "lib-card-size" },
+        motif.nodes.length + " elements · " + motif.edges.length + " relations"),
+    ]),
+    el("div", { class: "lib-preview" }, motifPreview(motif)),
+    el("div", { class: "lib-card-foot" }, [
+      motif.roles.length
+        ? el("div", { class: "lib-roles" }, [
+            el("span", { class: "lib-meta-lead" }, "matches on"),
+            ...motif.roles.map((role) => el("span", { class: "chip role" }, role.label)),
+          ])
+        : el("span"),
+      el("div", { class: "lib-card-actions" }, [
+        el("button", {
+          type: "button",
+          class: "btn small",
+          title: "Read this motif on its own",
+          onclick: () => select("motifs", motif.id),
+        }, "Open motif"),
+        el("button", {
+          type: "button",
+          class: "btn small primary",
+          title: "Add this motif's elements to the graph, already annotated with the roles it matches on",
+          onclick: () => insertMotif(motif),
+        }, "Add to canvas"),
+      ]),
+    ]),
+  ]);
 }
 
 function riskDetail(entry) {
-  const motifs = entry.motifs
-    .map((id) =>
-      byId.motifs.get(id)
-    )
-    .filter(Boolean);
+  const motifs = entry.motifs.map((id) => byId.motifs.get(id)).filter(Boolean);
+  const domains = entry.riskDomains || [];
 
-  const parts = [
-    detailHead(entry),
-
-    describedParagraph(entry),
+  return [
+    hero({
+      eyebrow: "Risk pattern",
+      title: shortName(entry.label, RISK_SUFFIX),
+      meta: sourceMeta(entry),
+      lede: lede(entry),
+      stats: [
+        [motifs.length || "any", motifs.length > 1 ? "structures" : "structure"],
+        [domains.length, plural(domains.length, "domain of harm", "domains of harm")],
+        [entry.controls.length, plural(entry.controls.length, "suggested control", "suggested controls")],
+      ],
+    }),
+    layout(
+      [
+        panel("Structures it applies to", {
+          count: motifs.length,
+          hint: motifs.length ? "A match alone is not a finding." : null,
+          body: motifs.length
+            ? motifs.map(motifCard)
+            : emptyLine("Names no motif of its own: evaluated over any motif match whose conditions hold."),
+        }),
+      ],
+      [harmPanel(entry), controlsPanel(entry)],
+      mechanismPanel(entry),
+    ),
   ];
+}
 
-  parts.push(
-    section(
-      motifs.length
-        ? "Structures it applies to (" + motifs.length + ")"
-        : "Structures it applies to",
+/* The mechanism and the conditions that raise it, read as one thing: how this
+ * weakness becomes a candidate finding. */
+function mechanismPanel(entry) {
+  const mechanism = entry.mechanism;
+  const conditions = entry.conditions || [];
 
-      motifs.length
-        ? "A motif states what is present, never that it is dangerous. Add one to start a graph the assessment can already read."
-        : "This pattern names no motif of its own: it is evaluated over any motif match whose conditions hold.",
+  return panel("Risk mechanism", {
+    tip: "Curated and carried by reference, so the same explanation reproduces on every system.",
+    body: [
+      mechanism ? el("div", { class: "lib-chips" }, [refChip(mechanism, "mech")]) : null,
+      mechanism && mechanism.definition
+        ? el("p", { class: "lib-mech-text" }, mechanism.definition)
+        : null,
+      conditions.length
+        ? el("div", { class: "lib-mech-when" }, [
+            el("span", { class: "lib-meta-lead" }, "raised when"),
+            el("ul", { class: "lib-when-list" }, conditions.map((condition) =>
+              el("li", { title: condition.definition || condition.id }, condition.label))),
+          ])
+        : null,
+    ],
+  });
+}
 
-      motifs.map(
-        (motif) =>
-          motifCard(motif, true)
-      )
-    )
-  );
+/* Grouped by the domain each entry rolls up to, so a reader sees which link
+ * produced which domain. An entry rolling up to nothing is a citation, not an
+ * outcome, and is listed apart. */
+function harmPanel(entry) {
+  const byDomain = new Map();
+  const alsoCalled = [];
 
-  parts.push(
-    section(
-      "Applicability conditions (" + entry.conditions.length + ")",
+  entry.taxonomy.forEach((ref) => {
+    if (!ref.domain) {
+      alsoCalled.push(ref);
+      return;
+    }
+    if (!byDomain.has(ref.domain)) byDomain.set(ref.domain, []);
+    byDomain.get(ref.domain).push(ref);
+  });
 
-      "Evaluated over a motif match, not over the graph at large. Only when these hold does the pattern raise a candidate finding.",
+  const body = [...byDomain.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([domain, refs]) => el("div", { class: "lib-domain" }, [
+      el("span", { class: "chip domain" }, domain),
+      el("div", { class: "lib-chips" }, refs.map((ref) => refChip(ref, "tax"))),
+    ]));
 
-      el(
-        "ul",
-        { class: "lib-list" },
-
-        entry.conditions.map(
-          (condition) =>
-            el(
-              "li",
-              {
-                title:
-                  condition.definition
-                  || condition.id,
-              },
-              condition.label
-            )
-        )
-      )
-    )
-  );
-
-  if (entry.mechanism) {
-    parts.push(
-      section(
-        "Mechanism",
-
-        "Curated, and carried by reference: the same explanation reproduces unchanged across systems and runs.",
-
-        el(
-          "div",
-          { class: "lib-mechanism" },
-          [
-            refChip(
-              entry.mechanism,
-              "mech"
-            ),
-
-            entry.mechanism.definition
-              ? el(
-                  "p",
-                  { class: "lib-card-desc" },
-                  entry.mechanism.definition
-                )
-              : null,
-          ]
-        )
-      )
-    );
+  if (!byDomain.size) {
+    body.push(el("span", {
+      class: "chip domain none",
+      title: "Nothing upstream maps this pattern to a domain of harm, and writing that link here would be curation with no source.",
+    }, "no risk domain linked"));
   }
 
-  parts.push(consequenceSection(entry));
+  if (alsoCalled.length) {
+    body.push(el("div", { class: "lib-domain also" }, [
+      el("span", { class: "lib-meta-lead" }, "also catalogued as"),
+      el("div", { class: "lib-chips" }, alsoCalled.map((ref) => refChip(ref, "tax"))),
+    ]));
+  }
 
-  parts.push(
-    section(
-      "Suggested controls (" + entry.controls.length + ")",
+  return panel("May lead to", {
+    hint: "Possible harm, never an observed outcome.",
+    body: el("div", { class: "lib-harm" }, body),
+  });
+}
 
-      "Suggested, not verified. A control realized by a motif names a candidate structure, not proof that inserting it removes the risk.",
+function controlItem(control) {
+  const realizing = (control.realizedByMotifs || [])
+    .map((id) => byId.motifs.get(id))
+    .filter(Boolean);
 
-      el(
-        "ul",
-        { class: "lib-list" },
+  return el("div", { class: "lib-control", title: control.definition || "" }, [
+    el("div", { class: "lib-control-head" }, [
+      el("span", { class: "lib-control-name" }, control.label),
+      control.nature ? el("span", { class: "ctrl-nature " + control.nature }, control.nature) : null,
+    ]),
+    realizing.length
+      ? el("div", { class: "lib-control-motifs" }, [
+          el("span", { class: "lib-meta-lead" }, "candidate structure"),
+          ...realizing.map((motif) => chipTo("motifs", motif, MOTIF_SUFFIX, "motif-suggest")),
+        ])
+      : null,
+  ]);
+}
 
-        entry.controls.map(controlItem)
-      )
-    )
-  );
+function controlsPanel(entry) {
+  return panel("Suggested controls", {
+    count: entry.controls.length,
+    hint: "Candidates, not proof the risk is removed.",
+    body: entry.controls.length
+      ? el("div", { class: "lib-controls" }, entry.controls.map(controlItem))
+      : emptyLine("None suggested."),
+  });
+}
 
-  return parts;
+function controlsRealizedBy(motifId) {
+  const found = new Map();
+  catalogue.riskPatterns.forEach((pattern) => pattern.controls.forEach((control) => {
+    if ((control.realizedByMotifs || []).includes(motifId)) found.set(control.id, control);
+  }));
+  return [...found.values()].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function motifDetail(entry) {
+  const risks = entry.riskPatterns.map((id) => byId.risks.get(id)).filter(Boolean);
+  const controls = controlsRealizedBy(entry.id);
+
+  return [
+    hero({
+      eyebrow: "Motif",
+      title: shortName(entry.label, MOTIF_SUFFIX),
+      meta: [
+        entry.family
+          ? el("span", { class: "chip family", title: entry.family.definition || "" }, entry.family.label)
+          : null,
+        ...sourceMeta(entry),
+      ].filter(Boolean),
+      lede: lede(entry),
+      actions: [el("button", {
+        type: "button",
+        class: "btn primary",
+        title: "Add this motif's elements to the graph, already annotated with the roles it matches on",
+        onclick: () => insertMotif(entry),
+      }, "Add to canvas")],
+      stats: [
+        [entry.nodes.length, plural(entry.nodes.length, "element", "elements")],
+        [entry.edges.length, plural(entry.edges.length, "relation", "relations")],
+        [risks.length, plural(risks.length, "risk pattern", "risk patterns")],
+      ],
+    }),
+    layout(
+      [
+        panel("Structure", {
+          tip: "Drawn from the motif's own declaration.",
+          body: [
+            legend(entry),
+            el("div", { class: "lib-preview large" }, motifPreview(entry)),
+            entry.roles.length
+              ? el("div", { class: "lib-roles" }, [
+                  el("span", { class: "lib-meta-lead" }, "matches on"),
+                  ...entry.roles.map((role) => el("button", {
+                    type: "button",
+                    class: "chip role clickable",
+                    title: "Open this term",
+                    onclick: () => select("terms", role.id),
+                  }, role.label)),
+                ])
+              : null,
+          ],
+        }),
+      ],
+      [
+        panel("Risk patterns that apply", {
+          count: risks.length,
+          hint: risks.length ? "A match alone is not a finding." : null,
+          body: risks.length
+            ? el("div", { class: "lib-chips" }, risks.map((risk) => chipTo("risks", risk, RISK_SUFFIX)))
+            : emptyLine("None on its own; it can still sit inside a larger match."),
+        }),
+        controls.length
+          ? panel("Realizes a control", {
+              count: controls.length,
+              hint: "A candidate structure, not proof the risk is removed.",
+              body: el("div", { class: "lib-chips" }, controls.map((control) =>
+                el("span", { class: "chip", title: control.definition || "" }, control.label))),
+            })
+          : null,
+      ],
+    ),
+  ];
 }
 
 /* What a pattern may lead to, on a card: the domains of harm the entries it may
@@ -639,234 +749,178 @@ function domainRow(entry) {
   );
 }
 
-/* The consequence side, which is what makes a risk a risk. */
-function consequenceSection(entry) {
-  const byDomain = new Map();
-  const alsoCalled = [];
 
-  entry.taxonomy.forEach((ref) => {
-    if (!ref.domain) {
-      alsoCalled.push(ref);
-      return;
-    }
-
-    if (!byDomain.has(ref.domain)) {
-      byDomain.set(ref.domain, []);
-    }
-
-    byDomain.get(ref.domain).push(ref);
-  });
-
-  const body = [];
-
-  if (byDomain.size) {
-    [...byDomain.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .forEach((pair) => {
-        body.push(
-          el(
-            "div",
-            { class: "lib-domain" },
-            [
-              el("span", { class: "chip domain" }, pair[0]),
-
-              el(
-                "div",
-                { class: "lib-chips" },
-                pair[1].map((ref) => refChip(ref, "tax"))
-              ),
-            ]
-          )
-        );
-      });
-  } else {
-    body.push(
-      el(
-        "p",
-        { class: "lib-note" },
-        "Nothing upstream maps this pattern to a domain of harm. The link is "
-        + "not written here: curating one without a source is how a mapping "
-        + "layer stops being evidence."
-      )
-    );
-  }
-
-  if (alsoCalled.length) {
-    body.push(
-      el(
-        "div",
-        { class: "lib-domain" },
-        [
-          el(
-            "span",
-            { class: "lib-roles-lead" },
-            "also catalogued as"
-          ),
-
-          el(
-            "div",
-            { class: "lib-chips" },
-            alsoCalled.map((ref) => refChip(ref, "tax"))
-          ),
-        ]
-      )
-    );
-  }
-
-  return section(
-    "What it may lead to",
-
-    "A pattern names a weakness in the design. The risk is the harm it may end "
-    + "in, and these are the domains the entries it may indicate roll up to.",
-
-    body
-  );
+/* The vocabulary drawn in the notation it annotates: each shelf carries the
+ * canvas's own shape and colour for its class, and so does every term on it. */
+function shelfHead(name, count) {
+  return el("div", { class: "lib-shelf" }, [
+    swatch(shelfKind(name)),
+    el("h4", {}, name),
+    el("span", { class: "lib-shelf-count" }, String(count)),
+  ]);
 }
 
-function controlItem(control) {
-  const realizing = control.realizedByMotifs
-    .map((id) =>
-      byId.motifs.get(id)
-    )
-    .filter(Boolean);
-
-  return el(
-    "li",
-    {
-      title:
-        control.definition || "",
-    },
-    [
-      el(
-        "span",
-        { class: "lib-control-name" },
-        control.label
-      ),
-
-      control.nature
-        ? el(
-            "span",
-            {
-              class:
-                "ctrl-nature "
-                + control.nature,
-            },
-            control.nature
-          )
-        : null,
-
-      realizing.length
-        ? el(
-            "div",
-            { class: "lib-control-motifs" },
-            [
-              el(
-                "span",
-                { class: "lib-roles-lead" },
-                "candidate structure: "
-              ),
-
-              ...realizing.map(
-                (motif) =>
-                  el(
-                    "button",
-                    {
-                      type: "button",
-                      class:
-                        "chip motif-suggest clickable",
-
-                      title:
-                        "Open " + motif.label,
-
-                      onclick: () =>
-                        select(
-                          "motifs",
-                          motif.id
-                        ),
-                    },
-
-                    shortName(
-                      motif.label,
-                      MOTIF_SUFFIX
-                    )
-                  )
-              ),
-            ]
-          )
-        : null,
-    ]
-  );
+function termKind(entry) {
+  return entry && entry.shelfId ? kindOf(entry.shelfId.split(/[#/]/).pop()) : "other";
 }
 
-function motifDetail(entry) {
-  const risks = entry.riskPatterns
-    .map((id) =>
-      byId.risks.get(id)
-    )
-    .filter(Boolean);
+function shelfKind(name) {
+  return termKind((catalogue.vocabulary.roles || []).find((role) => role.shelf === name));
+}
+
+/* How much of the library reads this term. A count, not a gauge: a four-segment
+   bar that tops out at four reads as decoration and cannot say which of the two
+   ways a term is reached. */
+function usageBadge(entry) {
+  const direct = (entry.motifs || []).length;
+  const inherited = (entry.serves || []).length;
+  if (!direct && !inherited) {
+    return el("span", { class: "lib-term-uses none", title: termReach(entry) }, "unread");
+  }
+  return el("span", {
+    class: "lib-term-uses" + (direct ? "" : " indirect"),
+    title: termReach(entry),
+  }, String(direct || inherited));
+}
+
+function termTile(entry) {
+  // Quiet means no motif reaches it at all, not that no pattern node names it:
+  // 14 terms are read only through the term they refine and are in full use.
+  const unread = !(entry.motifs || []).length && !(entry.serves || []).length;
+  return el("button", {
+    type: "button",
+    class: `lib-term ${termKind(entry)}` + (unread ? " quiet" : ""),
+    title: termReach(entry),
+    onclick: () => select("terms", entry.id),
+  }, [
+    el("span", { class: "lib-term-head" }, [
+      el("span", { class: "lib-term-name" }, entry.label),
+      usageBadge(entry),
+    ]),
+    entry.definition ? el("span", { class: "lib-term-def" }, entry.definition) : null,
+    (entry.families || []).length
+      ? el("span", { class: "lib-term-fams" }, entry.families.map((family) =>
+          el("span", {
+            class: "lib-fam-dot " + family.replace(/\W+/g, "-").toLowerCase(),
+            title: family,
+          })))
+      : null,
+  ]);
+}
+
+function ancestorsOf(entry) {
+  const found = new Set();
+  const queue = (entry.refines || []).map((parent) => parent.id);
+  while (queue.length) {
+    const id = queue.shift();
+    if (found.has(id)) continue;
+    found.add(id);
+    const parent = byId.terms.get(id);
+    if (parent) queue.push(...(parent.refines || []).map((p) => p.id));
+  }
+  return found;
+}
+
+/* One structure that reads this term, drawn with the element it would annotate
+ * marked. Dashed when it is reached through a term this one refines. */
+function usageCard(motif, highlight, inherited) {
+  return el("button", {
+    type: "button",
+    class: "lib-use" + (inherited ? " inherited" : ""),
+    title: (inherited ? "Reached through the term it refines: " : "Names this term: ") + motif.label,
+    onclick: () => select("motifs", motif.id),
+  }, [
+    el("span", { class: "lib-use-name" }, shortName(motif.label, MOTIF_SUFFIX)),
+    el("span", { class: "lib-use-shape" }, motifPreview(motif, { highlight })),
+  ]);
+}
+
+/* R6's three routes, named rather than flattened: a term introduced to refine
+ * another is grounded by the term it specializes, which is not the same claim
+ * as having cited a source of its own. */
+const PROVENANCE_LEAD = {
+  stated: "cites",
+  mapped: "mapped to",
+  inherited: "grounded through",
+};
+
+// Hidden until the role mappings are reviewed: several point at a source that
+// does not match the term's name. The API still serves provenance.
+const SHOW_TERM_PROVENANCE = false;
+
+function termDetail(entry) {
+  const asked = (entry.motifs || []).map((id) => byId.motifs.get(id)).filter(Boolean);
+  const served = (entry.serves || []).map((id) => byId.motifs.get(id)).filter(Boolean);
+  const risks = (entry.riskPatterns || []).map((id) => byId.risks.get(id)).filter(Boolean);
+  const lineage = [...ancestorsOf(entry)];
+  const provenance = entry.provenance || { route: null, refs: [] };
+
+  const uses = [
+    ...asked.map((motif) => usageCard(motif, [entry.id], false)),
+    ...served.map((motif) => usageCard(motif, lineage, true)),
+  ];
 
   return [
-    detailHead(
-      entry,
-
-      entry.family
-        ? el(
-            "span",
-            {
-              class: "chip family",
-
-              title:
-                entry.family.definition || "",
-            },
-            entry.family.label
-          )
-        : null
-    ),
-
-    describedParagraph(entry),
-
-    motifCard(entry, false),
-
-    section(
-      risks.length
-        ? "Risk patterns that apply to it (" + risks.length + ")"
-        : "Risk patterns that apply to it",
-
-      risks.length
-        ? "Matching this structure is not a finding. Each of these adds conditions that decide whether one is raised."
-        : "No risk pattern in the library applies to this structure on its own. It can still appear inside a larger match.",
-
-      el(
-        "div",
-        { class: "lib-chips" },
-
-        risks.map(
-          (risk) =>
-            el(
-              "button",
-              {
-                type: "button",
-                class:
-                  "chip tax clickable",
-
-                title:
-                  risk.description
-                  || risk.label,
-
-                onclick: () =>
-                  select(
-                    "risks",
-                    risk.id
-                  ),
-              },
-
-              shortName(
-                risk.label,
-                RISK_SUFFIX
-              )
-            )
-        )
-      )
+    hero({
+      eyebrow: "Annotation term",
+      title: entry.label,
+      mark: swatch(termKind(entry)),
+      meta: [
+        entry.shelf
+          ? el("span", { class: "chip family", title: "The BEAM class this term is annotated on" },
+              "goes on " + entry.shelf)
+          : null,
+        ...(entry.families || []).map((family) => el("span", { class: "chip" }, family)),
+      ].filter(Boolean),
+      lede: entry.definition ? el("p", { class: "lib-lede" }, entry.definition) : null,
+      stats: [
+        [asked.length, plural(asked.length, "motif names it", "motifs name it")],
+        [served.length, "reached by refining"],
+        [risks.length, plural(risks.length, "risk pattern", "risk patterns")],
+      ],
+    }),
+    layout(
+      [
+        panel("Related motifs", {
+          count: uses.length,
+          tip: "Every motif that reads this term, with the element it would annotate marked.",
+          body: uses.length
+            ? el("div", { class: "lib-uses" }, uses)
+            : emptyLine("No motif in the library reads this term."),
+        }),
+      ],
+      [
+        (entry.refines || []).length
+          ? panel("Refines", {
+              tip: "A term that refines another is read wherever the term above it is.",
+              body: el("div", { class: "lib-chips" }, entry.refines.map((parent) =>
+                el("button", {
+                  type: "button",
+                  class: "chip clickable",
+                  onclick: () => select("terms", parent.id),
+                }, parent.label))),
+            })
+          : null,
+        // Related, not raised: in a guardrail's case the term is what clears the
+        // risk pattern its motif carries, never what triggers it.
+        panel("Related risk patterns", {
+          count: risks.length,
+          tip: "Carried by a motif that names this term. The term may be what the risk pattern needs, or what clears it.",
+          body: risks.length
+            ? el("div", { class: "lib-chips" }, risks.map((risk) => chipTo("risks", risk, RISK_SUFFIX)))
+            : emptyLine("No risk pattern is carried by a motif that names it."),
+        }),
+        SHOW_TERM_PROVENANCE && panel("Where it comes from", {
+          body: provenance.refs.length
+            ? el("div", { class: "lib-chips" }, [
+                el("span", { class: "lib-meta-lead" },
+                  PROVENANCE_LEAD[provenance.route]
+                    + (provenance.via ? " " + provenance.via.label : "")),
+                ...provenance.refs.map((ref) => refChip(ref, "tax")),
+              ])
+            : emptyLine("No source, no mapping, and nothing above it carries one."),
+        }),
+      ],
     ),
   ];
 }
@@ -909,17 +963,19 @@ function landingTile(entry, kind) {
         ]
       ),
 
-      el(
-        "p",
-        {
-          class:
-            "lib-tile-desc"
-            + (told.from ? " borrowed" : ""),
-        },
-
-        told.text
-          || "A structure the library can recognise."
-      ),
+      // A motif is a shape, and the shape is what tells two of them apart. The
+      // description repeats it in words; the drawing does not have to be read.
+      isRisk
+        ? el(
+            "p",
+            {
+              class:
+                "lib-tile-desc"
+                + (told.from ? " borrowed" : ""),
+            },
+            told.text
+          )
+        : el("div", { class: "lib-tile-shape" }, motifPreview(entry)),
 
       isRisk
         ? domainRow(entry)
@@ -943,18 +999,6 @@ function landingTile(entry, kind) {
                           : ""
                       )
                   : "any matched motif"
-              ),
-
-              el(
-                "span",
-                {},
-                entry.conditions.length
-                  + " condition"
-                  + (
-                      entry.conditions.length > 1
-                        ? "s"
-                        : ""
-                    )
               ),
 
               el(
@@ -1018,31 +1062,24 @@ function landingTile(entry, kind) {
   return tile;
 }
 
+const LANDING_TITLE = {
+  risks: "Every risk pattern this library can apply",
+  motifs: "Every structure this library can recognise",
+  terms: "Every term you can annotate an element with",
+};
+
+const LANDING_NOTE = {
+  risks: "A weakness in a design that may lead to harm: a candidate to triage, never an observed outcome.",
+  motifs: "Structures the library recognises in an architecture. A match says what is present, never that it is dangerous.",
+  terms: "Tag your architecture's elements with these terms so the library can recognise its structures.",
+};
+
 function landing() {
-  const entries = (
-    tab === "risks"
-      ? catalogue.riskPatterns
-      : catalogue.motifs
-  ).filter(hits);
+  const entries = entriesOf(tab).filter(hits);
 
   const parts = [
-    el(
-      "h3",
-      { class: "lib-landing-title" },
-
-      tab === "risks"
-        ? "Every risk pattern this library can apply"
-        : "Every structure this library can recognise"
-    ),
-
-    el(
-      "p",
-      { class: "lib-note" },
-
-      tab === "risks"
-        ? "A risk pattern is a weakness in a design: a structure, plus the conditions that make it worth raising. It is not the risk. The risk is what it may lead to, and each card says which domains of harm the entries it may indicate roll up to - candidates for triage, never an outcome anyone has observed."
-        : "A motif is risk-neutral: it says what is present, never that it is dangerous. Open one to see its shape and what applies to it."
-    ),
+    el("h3", { class: "lib-landing-title" }, LANDING_TITLE[tab]),
+    el("p", { class: "lib-note" }, LANDING_NOTE[tab]),
   ];
 
   if (!entries.length) {
@@ -1072,6 +1109,31 @@ function landing() {
     return parts;
   }
 
+  if (tab === "terms") {
+    groupsOfTerms(entries).forEach((group) => {
+      parts.push(shelfHead(group[0], group[1].length));
+      parts.push(el("div", { class: "lib-terms" },
+        group[1].map((entry) => termTile(entry))));
+    });
+
+    const categories = catalogue.vocabulary.dataCategories.filter(hits);
+    if (categories.length) {
+      parts.push(el("h4", {}, "Data categories"));
+      parts.push(el("p", { class: "lib-note" },
+        "Set on an element by you, or derived by the assessment from the data flow "
+        + "and the business process."));
+      parts.push(el("div", { class: "lib-terms" }, categories.map((entry) =>
+        el("div", { class: "lib-term lib-term-flat" }, [
+          el("span", { class: "lib-term-name" }, entry.label),
+          entry.definition
+            ? el("span", { class: "lib-term-def" }, entry.definition)
+            : null,
+        ]))));
+    }
+
+    return parts;
+  }
+
   groupsOfMotifs(entries).forEach((group) => {
     parts.push(
       el(
@@ -1096,7 +1158,7 @@ function landing() {
     parts.push(
       el(
         "div",
-        { class: "lib-grid" },
+        { class: "lib-grid shapes" },
 
         group[1].map(
           (entry) =>
@@ -1136,7 +1198,9 @@ function renderDetail() {
   (
     tab === "risks"
       ? riskDetail(entry)
-      : motifDetail(entry)
+      : tab === "terms"
+        ? termDetail(entry)
+        : motifDetail(entry)
   ).forEach(
     (part) => {
       if (part) {
@@ -1160,13 +1224,27 @@ function showTab(next) {
   $("#library-collection").textContent =
     next === "risks"
       ? "Risk pattern library"
-      : "Motif library";
+      : next === "terms"
+        ? "Annotation vocabulary"
+        : "Motif library";
+}
+
+/* Which group in the rail holds this entry, so selecting from the landing does
+   not point at a row inside a folded section. */
+function groupOf(kind, entry) {
+  if (kind === "terms") return entry.shelf || "Unshelved";
+  if (kind === "motifs") return entry.family ? entry.family.label : "Unshelved";
+  return null;
 }
 
 function select(kind, id) {
   showTab(kind);
 
   selected[kind] = id;
+
+  const entry = byId[kind].get(id);
+  const group = entry && groupOf(kind, entry);
+  if (group && opened[kind]) opened[kind].add(group);
 
   renderRail();
   renderDetail();
@@ -1264,6 +1342,9 @@ function renderStats() {
 
   $("#library-motif-count").textContent =
     String(stats.motifs);
+
+  $("#library-term-count").textContent =
+    String(stats.patternRoles);
 }
 
 async function load() {
@@ -1298,6 +1379,14 @@ async function load() {
   catalogue.motifs.forEach(
     (entry) =>
       byId.motifs.set(
+        entry.id,
+        entry
+      )
+  );
+
+  catalogue.vocabulary.roles.forEach(
+    (entry) =>
+      byId.terms.set(
         entry.id,
         entry
       )
@@ -1430,15 +1519,6 @@ export function initLibrary() {
       "click",
       () => {
         startDrawing("architecture");
-        closeLibrary();
-      }
-    );
-
-  $("#library-start-risk")
-    .addEventListener(
-      "click",
-      () => {
-        startDrawing("risk");
         closeLibrary();
       }
     );

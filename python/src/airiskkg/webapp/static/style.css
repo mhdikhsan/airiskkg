@@ -324,6 +324,15 @@ label.btn { display: inline-flex; align-items: center; }
   -webkit-user-select: none; user-select: none;
   line-height: 1.25;
 }
+.motif-family {
+  display: flex; justify-content: space-between; gap: 8px;
+  margin-top: 6px; padding: 0 2px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #8b93a1;
+}
+.motif-family:first-child { margin-top: 0; }
+.motif-family-count { font-weight: 600; color: #a7aebb; }
+.motif-palette { overscroll-behavior: contain; }
 .motif-item:hover { background: #e2ecfb; }
 .motif-item:active { cursor: grabbing; }
 .motif-item .motif-item-desc { display: block; font-size: 10px; color: #6b7280; margin-top: 2px; }
@@ -768,6 +777,80 @@ label.btn { display: inline-flex; align-items: center; }
 .node-detail .mp-x { color: #8a93a5; }
 .node-detail .mp-x:hover { color: #c0392b; }
 
+/* ---- the term picker -----------------------------------------------------
+   A native <select> cannot search and cannot show a definition, which is what
+   made 97 terms a scroll. Trigger plus popover: search, shelves, definitions. */
+.mp { position: relative; }
+.mp-add {
+  width: 100%; text-align: left; cursor: pointer;
+  background: var(--bg-editor); color: var(--text);
+  border: 1px dashed var(--border); border-radius: var(--control-r, 6px);
+  padding: 3px 8px; font-size: 12px; min-height: var(--control-h, 26px);
+}
+.mp-add:hover { border-style: solid; border-color: var(--accent); color: var(--accent); }
+
+/* Fixed, and placed from JS: the node popup it sits in is overflow:auto with a
+   max height, which clipped an absolutely-positioned popover to a few rows. */
+.mp-pop {
+  position: fixed; z-index: 200;
+  display: flex; flex-direction: column;
+  background: var(--bg-panel, #1d2230); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.mp-pop.hidden { display: none; }
+.mp-search {
+  border: 0; border-bottom: 1px solid var(--border); background: transparent;
+  color: var(--text); padding: 7px 9px; font-size: 12.5px; width: 100%;
+  box-sizing: border-box;
+}
+.mp-search:focus { outline: none; border-bottom-color: var(--accent); }
+
+.mp-families { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px 0; }
+.mp-fam {
+  cursor: pointer; font-size: 10.5px; padding: 2px 7px; border-radius: 9px;
+  background: transparent; color: #9aa1af; border: 1px solid var(--border);
+}
+.mp-fam:hover { color: var(--accent); border-color: var(--accent); }
+.mp-fam.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.mp-list { overflow-y: auto; overscroll-behavior: contain; padding: 4px 0; }
+.mp-shelf {
+  display: flex; justify-content: space-between; gap: 8px;
+  padding: 5px 9px 3px; font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.4px; color: #8a93a5;
+}
+.mp-shelf-count { color: #6b7483; }
+/* A shelf that does not go on this element is still reachable, just last. */
+.mp-shelf.off { opacity: 0.6; }
+.mp-opt {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  background: transparent; border: 0; padding: 4px 9px; color: var(--text);
+}
+.mp-opt.at { background: rgba(90, 140, 255, 0.16); }
+.mp-opt-label { display: block; font-size: 12.5px; }
+.mp-opt-def {
+  display: block; font-size: 11px; color: #9aa1af; line-height: 1.35;
+  margin-top: 1px;
+  /* two lines is enough to tell two neighbouring terms apart */
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.mp-none, .mp-note { padding: 8px 9px; font-size: 11.5px; color: #8a93a5; margin: 0; }
+.mp-foot { border-top: 1px solid var(--border); }
+.mp-all {
+  width: 100%; text-align: left; cursor: pointer; background: transparent;
+  border: 0; padding: 6px 9px; font-size: 11.5px; color: #9aa1af;
+}
+.mp-all:hover { color: var(--accent); }
+
+/* light variant, inside the node popup */
+.node-detail .mp-add { background: #fff; color: #2a2f38; border-color: #c6ccd8; }
+.node-detail .mp-pop { background: #fff; border-color: #c6ccd8; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18); }
+.node-detail .mp-search { color: #2a2f38; border-bottom-color: #e2e6ee; }
+.node-detail .mp-opt { color: #2a2f38; }
+.node-detail .mp-opt-def { color: #6b7483; }
+.node-detail .mp-fam { border-color: #d7dce6; color: #6b7483; }
+
 /* The activity popup. Never styled before now, because a rule meant to hide
    the architecture's popup on the business level was hiding this one too - so
    editing a BPMN activity was unreachable rather than missing. */
@@ -898,7 +981,6 @@ label.btn { display: inline-flex; align-items: center; }
 .gap-list li { font-size: 12px; color: #b7c0d4; margin: 3px 0; }
 .gap-list li strong { color: var(--text); font-weight: 600; }
 .gap-hint { color: #7f8ba3; font-style: italic; }
-.mp-show-all { font-style: italic; }
 
 /* ---- derived data categories ---- */
 .derived-section-head {
@@ -1940,17 +2022,39 @@ body.editor-hidden .pane-head { display: none; }
 .library-tab:hover { color: var(--text); }
 .library-list { overflow-y: auto; flex: 1 1 auto; padding-bottom: 12px; }
 
+/* The rail folds by group. A drawn triangle, never a glyph: this stylesheet has
+   had a content: escape mangled into a raw byte twice. */
 .lib-group {
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 12px 14px 5px;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font: inherit;
   font-size: 10.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-dim);
+  text-align: left;
+  padding: 9px 14px 7px;
+  cursor: pointer;
 }
-.lib-group-count { font-family: var(--mono); }
+.lib-group:first-child { border-top: none; }
+.lib-group:hover { color: var(--text); background: rgba(255, 255, 255, 0.03); }
+.lib-group-mark {
+  flex: 0 0 auto;
+  width: 0; height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transform: rotate(90deg);
+  transition: transform .12s ease;
+}
+.lib-group.shut .lib-group-mark { transform: rotate(0deg); }
+.lib-group-name { flex: 1 1 auto; min-width: 0; }
+.lib-group-count { font-family: var(--mono); letter-spacing: 0; }
 .lib-row {
   display: flex;
   align-items: center;
@@ -1974,72 +2078,182 @@ body.editor-hidden .pane-head { display: none; }
 .lib-row-count.zero { color: #545c6b; }
 .chip.family { background: #2b3547; color: #b6c6e0; border-color: #3c4a63; }
 
-.library-detail { overflow-y: auto; padding: 20px 26px 40px; }
-.lib-empty { color: var(--text-dim); font-size: 13px; max-width: 60ch; line-height: 1.6; }
-.lib-detail-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
-.lib-back {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 0;
+/* ---- detail pages --------------------------------------------------------
+   A hero that says what this is, then a main column and an aside of cards with
+   real headings. The 11px uppercase labels they replaced read as footnotes, and
+   a sentence under every one of them made the page a wall. overflow-x is hidden
+   because a preview wider than the column once scrolled the whole page sideways
+   and cut the first letter off every line. */
+.library-detail { overflow-y: auto; overflow-x: hidden; padding: 22px 28px 48px; }
+.lib-empty { color: var(--text-dim); font-size: 13px; line-height: 1.6; }
+.lib-empty-line { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-dim); }
+
+.lib-hero { padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+.lib-hero-top {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-bottom: 8px;
 }
-.lib-back:hover { color: var(--accent); }
-.lib-detail-head h3 { margin: 0; font-size: 18px; font-weight: 500; }
-.lib-detail-source { display: flex; flex-wrap: wrap; gap: 6px; }
-.lib-detail-desc { font-size: 13px; line-height: 1.65; color: var(--text-dim); max-width: 80ch; }
-.lib-equation {
-  font-size: 11.5px;
-  color: var(--text-dim);
-  border-left: 2px solid var(--accent-dim);
-  padding: 4px 0 4px 10px;
-  margin: 12px 0 0;
+.lib-eyebrow {
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent);
 }
-.lib-section { margin-top: 24px; }
-.lib-section h4 {
-  margin: 0 0 4px;
-  font-size: 11px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  font-weight: 600;
+.lib-hero-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-left: auto; }
+.lib-hero-title {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 0 10px; font-size: 26px; font-weight: 600; line-height: 1.2; color: var(--text);
 }
-.lib-note { margin: 0 0 10px; font-size: 12px; line-height: 1.6; color: #7e8698; max-width: 80ch; }
-.lib-list { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; }
-.lib-list li { margin-bottom: 4px; }
-.lib-control-name { margin-right: 8px; }
-.lib-control-motifs { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 2px 0 6px; }
-.lib-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.lib-mechanism { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.lib-hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 12px; }
+.lib-meta-lead { font-size: 11.5px; color: var(--text-dim); margin-right: 2px; }
+.lib-lede { margin: 0 0 16px; font-size: 14.5px; line-height: 1.65; color: #c5cad4; }
+.lib-lede.borrowed { font-style: italic; }
+
+.lib-stats { display: flex; flex-wrap: wrap; gap: 10px; }
+.lib-stat {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 8px 14px; border-radius: 8px;
+  background: var(--bg-panel); border: 1px solid var(--border);
+}
+.lib-stat-value { font-family: var(--mono); font-size: 19px; font-weight: 600; color: var(--text); }
+.lib-stat-label { font-size: 12.5px; color: var(--text-dim); }
+
+/* Back to the catalogue: a full button on the right, beside the page's actions. */
+.btn.lib-back { display: inline-flex; align-items: center; gap: 9px; }
+.lib-back-arrow {
+  width: 7px; height: 7px; margin-left: 3px;
+  border-left: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.lib-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 1280px) {
+  .lib-layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); }
+}
+.lib-main, .lib-aside { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.lib-lead { min-width: 0; }
+.lib-layout.has-lead { grid-template-areas: "lead" "main" "aside"; }
+.lib-layout.has-lead .lib-lead { grid-area: lead; }
+.lib-layout.has-lead .lib-main { grid-area: main; }
+.lib-layout.has-lead .lib-aside { grid-area: aside; }
+@media (min-width: 1280px) {
+  .lib-layout.has-lead { grid-template-areas: "main lead" "main aside"; grid-template-rows: auto 1fr; }
+}
+
+.lib-panel {
+  min-width: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px 18px;
+}
+.lib-panel-head { display: flex; align-items: center; gap: 9px; }
+.lib-panel-head h3 { margin: 0; font-size: 16px; font-weight: 600; color: var(--text); }
+/* A heading with more to say carries it on hover, and shows that it does. */
+.lib-panel-head[title]:not([title=""]) h3 {
+  cursor: help; text-decoration: underline dotted #4a5262; text-underline-offset: 5px;
+}
+.lib-panel-count {
+  font-family: var(--mono); font-size: 11.5px; line-height: 18px;
+  padding: 0 8px; border-radius: 9px;
+  background: rgba(79, 140, 255, 0.16); color: #9dbcff;
+}
+.lib-panel-hint { margin: 4px 0 0; font-size: 12.5px; color: var(--text-dim); }
+.lib-panel-body { margin-top: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+.lib-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
 .lib-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 12px;
-  background: var(--bg-panel);
+  min-width: 0;
+  border: 1px solid var(--border); border-radius: 9px;
+  padding: 12px 14px; background: var(--bg-editor);
 }
-.lib-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.lib-card-size { font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
-.lib-card-desc { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--text-dim); max-width: 80ch; }
+.lib-card-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.lib-card-head strong { font-size: 14.5px; font-weight: 600; }
+.lib-card-size { margin-left: auto; font-size: 11.5px; color: var(--text-dim); font-family: var(--mono); }
 .lib-preview {
-  background: var(--canvas-bg);
-  border-radius: 6px;
-  margin: 10px 0;
-  padding: 8px;
-  overflow-x: auto;
+  display: flex; justify-content: center;
+  margin: 10px 0; padding: 12px;
+  background: var(--canvas-bg); border-radius: 8px; overflow: hidden;
 }
+.lib-preview .motif-preview { max-height: 230px; }
+.lib-preview.large { margin: 0; padding: 22px; }
+.lib-preview.large .motif-preview { max-height: 340px; }
 .motif-preview { display: block; margin: 0 auto; max-width: 100%; height: auto; }
 .mp-label { font-size: 11px; font-weight: 600; fill: #2a2f38; }
 .mp-arrowhead { fill: #7c8698; }
-.lib-roles { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.lib-card-foot { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.lib-roles { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-width: 0; }
 .lib-roles-lead { font-size: 11px; color: var(--text-dim); }
 .chip.role { background: #24313f; color: #9fc3dd; border-color: #33465a; }
 .chip.clickable { cursor: pointer; font: inherit; }
 .chip.clickable:hover { border-color: var(--accent); color: var(--text); }
-.lib-card-actions { display: flex; gap: 8px; margin-top: 10px; }
+.lib-card-actions { display: flex; gap: 8px; margin-left: auto; }
+
+/* The mechanism and what raises it, one panel. */
+.lib-mech-text { margin: 0; font-size: 14px; line-height: 1.65; color: #c5cad4; }
+.lib-mech-when { padding-top: 12px; border-top: 1px dashed var(--border); }
+.lib-when-list { margin: 6px 0 0; padding-left: 18px; font-size: 13.5px; line-height: 1.6; color: var(--text); }
+.lib-when-list li + li { margin-top: 4px; }
+
+.lib-harm { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.lib-domain { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.lib-domain.also { width: 100%; padding-top: 12px; border-top: 1px dashed var(--border); }
+
+.lib-controls { display: flex; flex-direction: column; gap: 10px; }
+.lib-control {
+  padding: 10px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg-editor);
+}
+.lib-control-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lib-control-name { font-size: 13.5px; font-weight: 600; }
+.lib-control-motifs { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 8px; }
+
+/* The notation, with the canvas's own shapes: what flows is drawn rounded and a
+   step square-cornered, a model as a hexagon. A swatch is the shape it names. */
+.lib-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--text-dim); }
+.lib-legend-item { display: inline-flex; align-items: center; gap: 7px; }
+.lib-swatch {
+  flex: 0 0 auto; display: inline-block; position: relative;
+  width: 24px; height: 14px; border-radius: 3px;
+  background: var(--node-other); border: 1.5px solid var(--node-other-border);
+}
+.lib-swatch.data     { background: var(--node-data);    border-color: var(--node-data-border);    border-radius: 7px; }
+.lib-swatch.symbol   { background: var(--node-symbol);  border-color: var(--node-symbol-border);  border-radius: 7px; }
+.lib-swatch.resource { border-radius: 7px; }
+.lib-swatch.process  { background: var(--node-process); border-color: var(--node-process-border); }
+.lib-swatch.agent    { background: var(--node-agent);   border-color: var(--node-agent-border);   border-radius: 50%; }
+.lib-swatch.model {
+  border: none; background: var(--node-model-border);
+  clip-path: polygon(22% 0, 78% 0, 100% 50%, 78% 100%, 22% 100%, 0 50%);
+}
+.lib-swatch.model::after {
+  content: ""; position: absolute; inset: 1.5px; background: var(--node-model);
+  clip-path: polygon(22% 0, 78% 0, 100% 50%, 78% 100%, 22% 100%, 0 50%);
+}
+.lib-hero-title .lib-swatch { width: 32px; height: 19px; }
+.lib-hero-title .lib-swatch.data,
+.lib-hero-title .lib-swatch.symbol,
+.lib-hero-title .lib-swatch.resource { border-radius: 10px; }
+
+/* Where a term sits: every structure that reads it, the element it would
+   annotate marked and everything else stepped back. */
+.lib-uses { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.lib-use {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 10px 11px; border-radius: 8px; text-align: left; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg-editor); color: var(--text); font: inherit;
+}
+.lib-use:hover { border-color: var(--accent); }
+.lib-use.inherited { border-style: dashed; }
+.lib-use-name { font-size: 13px; font-weight: 600; }
+.lib-use-shape {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 74px; padding: 8px; border-radius: 6px; background: var(--canvas-bg);
+}
+.lib-use-shape .motif-preview { width: 100%; height: auto; max-height: 92px; }
+.lib-use-shape .mp-label { display: none; }
+.lib-use-shape .shape { opacity: 0.55; }
+.lib-use-shape .edge { opacity: 0.6; }
+.lib-use-shape .mp-hl .shape { opacity: 1; stroke: var(--accent); stroke-width: 8; }
 
 .library-status {
   flex: 0 0 auto;
@@ -2057,18 +2271,95 @@ body.editor-hidden .pane-head { display: none; }
  * would otherwise leave the opening screen empty. */
 .lib-landing-title { margin: 0 0 4px; font-size: 17px; font-weight: 500; }
 .library-detail h4 {
-  margin: 22px 0 8px;
-  font-size: 11px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  margin: 26px 0 10px;
+  font-size: 14.5px;
   font-weight: 600;
+  color: var(--text);
 }
+/* Landing notes run the full width: they are one line, and capping them at
+   80ch folded one sentence into four. */
+.lib-note { margin: 0 0 12px; font-size: 13px; line-height: 1.6; color: #8f97a6; }
 .lib-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 10px;
 }
+/* Motif cards carry a drawing, so they get the room a drawing needs. */
+.lib-grid.shapes { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+/* ---- the annotation vocabulary ------------------------------------------
+   97 terms as 97 paragraphs is a wall. Drawn in the notation they annotate
+   instead: Boxology alternates ovals and boxes, so the shelf marker carries the
+   shape and the term carries its class colour. Two facts, no sentence. */
+.lib-shelf {
+  display: flex; align-items: baseline; gap: 9px;
+  margin: 22px 0 9px; padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+}
+.lib-shelf:first-child { margin-top: 6px; }
+.lib-shelf .lib-swatch { align-self: center; }
+.lib-shelf h4 { margin: 0; font-size: 13.5px; font-weight: 600; }
+.lib-shelf-count {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 9px; padding: 0 7px;
+}
+.lib-shelf-note { font-size: 11.5px; color: var(--text-dim); }
+
+.lib-terms {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 7px;
+  margin-bottom: 4px;
+}
+.lib-term {
+  display: flex; flex-direction: column; gap: 4px;
+  text-align: left; cursor: pointer;
+  background: var(--bg-panel); color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--node-other-border);
+  border-radius: 6px; padding: 8px 10px;
+}
+.lib-term.process { border-left-color: var(--node-process-border); }
+.lib-term.data    { border-left-color: var(--node-data-border); }
+.lib-term.model   { border-left-color: var(--node-model-border); }
+.lib-term.symbol  { border-left-color: var(--node-symbol-border); }
+.lib-term.agent   { border-left-color: var(--node-agent-border); }
+.lib-term:hover { border-color: var(--accent); border-left-color: var(--accent); }
+/* No pattern node names it: still listed, visibly quieter. */
+.lib-term.quiet { opacity: 0.62; }
+.lib-term.quiet:hover { opacity: 1; }
+
+.lib-term-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lib-term-name { font-size: 12.5px; font-weight: 600; }
+.lib-term-def {
+  font-size: 11px; color: var(--text-dim); line-height: 1.4;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+
+/* Solid is how many motifs name it; outlined is reached by refining one. */
+.lib-term-uses {
+  flex: 0 0 auto; min-width: 17px; text-align: center;
+  font-family: var(--mono); font-size: 10.5px; line-height: 16px;
+  border-radius: 8px; padding: 0 5px;
+  background: rgba(79, 140, 255, 0.16); color: #9dbcff;
+  border: 1px solid transparent;
+}
+.lib-term-uses.indirect { background: none; border-color: #3e4a60; color: #8995ab; }
+.lib-term-uses.none {
+  background: none; border-color: transparent; color: #6d7483;
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.lib-term-fams { display: flex; gap: 4px; }
+.lib-fam-dot { width: 7px; height: 7px; border-radius: 50%; background: #4a5568; }
+.lib-fam-dot.genai { background: #7aa2f7; }
+.lib-fam-dot.agentic { background: #bb9af7; }
+.lib-fam-dot.ml-serving-and-training { background: #7bc67b; }
+.lib-fam-dot.supply-chain { background: #e0af68; }
+
+/* A data category is read, not opened: it has no detail of its own. */
+.lib-term-flat { cursor: default; }
+.lib-term-flat:hover { border-color: var(--border); }
 .lib-tile {
   display: flex;
   flex-direction: column;
@@ -2083,6 +2374,19 @@ body.editor-hidden .pane-head { display: none; }
   cursor: pointer;
 }
 .lib-tile:hover { border-color: var(--accent); background: rgba(79, 140, 255, 0.08); }
+
+/* A motif is a shape. Drawn on the card, the description stops being the only
+   way to tell two of them apart. */
+.lib-tile-shape {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 76px; padding: 2px 0;
+  border-radius: 6px; background: rgba(255, 255, 255, 0.025);
+}
+.lib-tile-shape .motif-preview { width: 100%; height: auto; max-height: 128px; }
+/* A silhouette, not a diagram: a nine-node motif scaled into a card renders its
+   labels at about four pixels, which is decoration. The shape is what tells two
+   motifs apart at this size; the detail view carries the labelled drawing. */
+.lib-tile-shape .mp-label { display: none; }
 .lib-tile-head { display: flex; align-items: baseline; gap: 7px; }
 .lib-tile-head strong { font-size: 13px; font-weight: 600; }
 .lib-tile-desc {
@@ -2107,13 +2411,6 @@ body.editor-hidden .pane-head { display: none; }
 }
 .chip.domain { background: #3a2b2b; color: #e0b6b6; border-color: #5c3f3f; }
 .chip.domain.none { background: none; color: #7e8698; border-color: #3a4050; font-style: italic; }
-.lib-domain {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 8px;
-}
 .lib-tile-foot {
   display: flex;
   flex-wrap: wrap;

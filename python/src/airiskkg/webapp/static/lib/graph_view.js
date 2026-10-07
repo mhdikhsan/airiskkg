@@ -4,6 +4,9 @@ import { MultiPicker } from "./multipicker.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+// Things that sit over the canvas and do their own scrolling.
+const OVERLAYS = ".palette, .motif-palette, .node-detail, .mp-pop";
+
 const NODE_H = 44;
 const LAYER_GAP = 110;
 const ROW_GAP = 34;
@@ -252,7 +255,8 @@ function nodeShape(group, node, pos) {
       ...common, cx: pos.x + pos.w / 2, cy: pos.y + pos.h / 2, rx: pos.w / 2, ry: pos.h / 2,
     }, group);
   } else {
-    const rx = node.kind === "data" || node.kind === "symbol" ? 16 : 4;
+    // A generic beam:Resource is on the box side too; drawn square it reads as a step.
+    const rx = node.kind === "data" || node.kind === "symbol" || node.kind === "resource" ? 16 : 4;
     svgEl("rect", { ...common, x: pos.x, y: pos.y, width: pos.w, height: pos.h, rx }, group);
   }
 }
@@ -799,6 +803,9 @@ function initPanZoom() {
   });
   wrap.addEventListener("wheel", (ev) => {
     if (wrap.classList.contains("business")) return; // the other canvas zooms itself
+    // The trays and the detail popup are children of the wrap and scroll
+    // themselves, so zooming here would eat their wheel.
+    if (ev.target.closest && ev.target.closest(OVERLAYS)) return;
     ev.preventDefault();
     const rect = wrap.getBoundingClientRect();
     zoom(ev.deltaY > 0 ? 1.12 : 1 / 1.12, ev.clientX - rect.left, ev.clientY - rect.top);

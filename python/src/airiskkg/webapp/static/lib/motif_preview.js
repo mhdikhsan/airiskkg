@@ -19,10 +19,22 @@ const KIND_OF = {
   Model: "model",
   Symbol: "symbol",
   Agent: "agent",
+  Resource: "resource",
+  Process: "process",
+  Infer: "process",
+  Transform: "process",
+  Train: "process",
+  Generate: "process",
 };
 
-function kindOf(cls) {
-  return KIND_OF[cls] || "process";
+// Process is named, never assumed: a fallback of "process" drew the one
+// beam:Resource node in the library (External Dependency) as a step, so its
+// `step beam:use resource` edge read as process to process.
+// The box side of the graph shares one silhouette, whatever its colour.
+const RESOURCE_SIDE = new Set(["data", "symbol", "resource"]);
+
+export function kindOf(cls) {
+  return KIND_OF[cls] || "other";
 }
 
 function svgEl(tag, attrs = {}, parent = null) {
@@ -92,7 +104,7 @@ function shapeFor(group, node, box) {
       cx: box.x + box.w / 2, cy: box.y + box.h / 2, rx: box.w / 2, ry: box.h / 2,
     }, group);
   } else {
-    const rx = node.kind === "data" || node.kind === "symbol" ? 13 : 4;
+    const rx = RESOURCE_SIDE.has(node.kind) ? 13 : 4;
     svgEl("rect", { ...common, x: box.x, y: box.y, width: box.w, height: box.h, rx }, group);
   }
 }
@@ -113,7 +125,10 @@ function anchors(from, to) {
   ];
 }
 
-export function motifPreview(template) {
+/* `highlight` names roles; a node playing one is marked, so a page about one
+ * term can show where that term sits inside each structure that reads it. */
+export function motifPreview(template, options = {}) {
+  const highlight = new Set(options.highlight || []);
   const nodes = (template.nodes || []).map((n) => ({ ...n, kind: kindOf(n.cls) }));
   const svg = svgEl("svg", { class: "motif-preview", xmlns: SVG_NS });
   if (!nodes.length) return svg;
@@ -175,7 +190,8 @@ export function motifPreview(template) {
 
   nodes.forEach((node) => {
     const box = boxes.get(node.key);
-    const group = svgEl("g", {}, svg);
+    const marked = (node.roles || []).some((role) => highlight.has(role));
+    const group = svgEl("g", marked ? { class: "mp-hl" } : {}, svg);
     shapeFor(group, node, box);
     const lines = wrap(node.label, 17);
     const top = box.y + box.h / 2 + 4 - (lines.length - 1) * 6;
