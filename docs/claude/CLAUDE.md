@@ -63,8 +63,9 @@ Rules are stated first and justified in one clause. The incidents behind them ar
   `test_derived_from_points_at_an_entity_never_at_a_document`. Pointed at a URL, `derivedFrom`
   only repeats `dct:source`, and *"which motifs came from this design pattern?"* stops being
   answerable. That is what 23 motif references to one Fowler article URL cost.
-- **A design pattern is identified by a `pair:DesignPatternCitation`, never modelled.** The 22
-  handles at the top of `motif.ttl` carry a label and a `dct:source`, and nothing else.
+- **A design pattern is identified by a `pair:DesignPatternCitation`, never modelled.** The 34
+  handles at the top of `motif.ttl` carry a label and a `dct:source` (a DOI handle adds its
+  venue as `dct:isPartOf` and an APA `dct:bibliographicCitation`), and nothing else.
   `test_a_design_pattern_citation_stays_a_citation` fails on any other predicate, because a
   `dct:description` there would start modelling the intent and consequences the method drops.
   The handles are what turn the m:n relation into a traversal: `Cite_Guardrails` is reached by
@@ -72,11 +73,32 @@ Rules are stated first and justified in one clause. The incidents behind them ar
 - **A handle is minted in `pat:` but stands for someone else's catalogue.** So `library.py`
   reads its origin off its own `dct:source`. Reading it off the IRI would credit Fowler's
   patterns to PAIR-AI.
-- **Not every motif derives from a design pattern, and the graph says which.** The 4 agentic
-  motifs point `derivedFrom` straight at their OWASP ASI concepts and carry no handle, because
-  their structural signature was inferred from a *risk* entry rather than read off a catalogue.
-  `ExternalDependencyMotif` names `owasp:llm03-supply-chain` for the same reason. Keep that
-  visible; it is a weaker derivation and must be described as one.
+- **Not every motif derives from a design pattern, and the graph says which.** The agentic
+  motifs point `derivedFrom` at their OWASP ASI concepts, because their structural signature was
+  inferred from a *risk* entry; three of them have since gained a handle in the agent design
+  pattern catalogue, and `AgentMemoryLoopMotif` still has none. `ExternalDependencyMotif` names
+  `owasp:llm03-supply-chain` for the same reason and has no handle either. Keep that visible; it
+  is a weaker derivation and must be described as one.
+- **No motif rests on a blog alone (2026-10-07).** Four motifs cited only Fowler's article:
+  Direct Prompting, Fine Tuning, Hybrid Retriever and Query Rewriting. Each now also cites a
+  DOI: Wei et al. (2021) for prompting and pretrain–finetune (the paradigms its Figure 2
+  draws), Gao et al.'s RAG survey (2023) for Naive RAG, mix/hybrid retrieval and reranking,
+  and Ma et al. (2023) for rewrite-retrieve-read. Handles by host: **doi.org 12, Mercari 13,
+  Fowler 9**. **Link a source only where it draws the motif's own structure**: `derivedFrom`
+  claims the shape was read off that design pattern, so a source that is merely *about* the
+  topic does not qualify. Every tracked graph's finding set was triple-identical after the
+  change, because no query reads `derivedFrom`.
+- **What the 2026-10-07 reference set did not become, and why.** *Lost in the Middle* (Liu et
+  al., 2024) is an empirical finding about long contexts, not a structure: evidence for a risk
+  pattern's mechanism if anywhere, never a motif's derivation. Breuer et al. (2025) is an
+  overview of LLMs in IR, and the figure filed under it in the reference PDF is actually Figure 4
+  of Zhu et al.'s LLM-for-IR survey (arXiv 2308.07107). The DOI filed under "Guard Rail" is FLAN,
+  an instruction-tuning paper, so it cites the prompting and fine-tuning motifs instead; the
+  guardrail motifs already cite the agent catalogue's *Multimodal guardrails*. Patterns in that
+  PDF with no motif yet — iterative, recursive and adaptive retrieval; goal creators;
+  prompt/response optimiser; one-shot and incremental model querying; plan generators; voting-
+  and debate-based cooperation; tool/agent registry — **got no handle**, because a handle no
+  motif derives from is declared-but-unused. Mint it with the motif that reads it.
 - **The Fowler handles cite the article, not a section.** The article has per-pattern anchors,
   and using them is a one-line change per handle once they are verified against the live page.
   Identity does not wait on that: it is the handle's IRI and label. Do not invent anchors.
@@ -170,7 +192,7 @@ Read before non-trivial changes.
 | `docs/reference/PAIR-AI_glossary_v1_3.md` | Terminology and modeling rules. **v1.3** supersedes v1.2 (deleted). Sections: **A** core terms, **B** internal terms, **C** rules **R1–R10**, **D** grounding references. A reference to `PAIR-AI_glossary_v1.2.md` is a broken link to fix; v1.2's Sections E/F are gone — do not cite them. **Stale on one point as of 2026-10-04:** lines 26, 122 and 135–137 still list `inform` as a flow relation and still say flow relations are not data flow. The implementation removed it; **this file wins** until the glossary is reissued. |
 | `docs/reference/PAIR-AI_method_and_construction.md` | How the knowledge base was built and how an assessment runs. **Stale on one point as of 2026-10-04:** lines 459, 546 and 695 still name `beam:inform`. `docs/reference/mitigation_and_gap_mechanics.md` likewise, at lines 191, 227 and 234. |
 | `docs/reference/catalogue.md` | Inventory of every motif, risk pattern, role, and data category. **Hand-written, so it goes stale silently** — re-check its counts whenever the library changes. |
-| `docs/reference/risk_control_linkage.md` | How risk patterns reach controls, including the MIT evidence layer. **Generated** — regenerate, never hand-edit. `test_generated_documents.py` re-runs the generator and diffs it against what is checked in, because nothing did: when `pair:derivedFrom` moved from naming a URL to naming a `pair:DesignPatternCitation`, the generator kept producing a document while every motif silently fell into *"unrecorded"*. **A generated artifact nothing re-generates is not reproducible, it is just checked in.** |
+| `docs/reference/risk_control_linkage.md` | How risk patterns reach controls, including the MIT evidence layer. **Generated** — regenerate, never hand-edit. Its motif section lists every catalogue a motif derives from (m:n) and reads DOI handles off their APA citation; until 2026-10-07 it kept the first Mercari/Fowler/OWASP hit, so the agent catalogue's six handles never appeared in it. `test_generated_documents.py` re-runs the generator and diffs it against what is checked in, because nothing did: when `pair:derivedFrom` moved from naming a URL to naming a `pair:DesignPatternCitation`, the generator kept producing a document while every motif silently fell into *"unrecorded"*. **A generated artifact nothing re-generates is not reproducible, it is just checked in.** |
 | `NOTICE.md` | Third-party attributions and the licence posture of each ingested source. |
 
 **Local-only (gitignored — absent from a fresh clone):**
@@ -644,11 +666,79 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   Under each risk pattern it lists the motifs it applies to, drawn from their declared
   `pair:hasPatternNode` / `pair:hasPatternEdge` by `lib/motif_preview.js` and insertable with
   the existing `add-motif` edit — so a reader can work backwards: pick the risk, add the
-  structure, run the assessment. The detail panel is laid out as the constituent equation (motif → conditions → mechanism →
-  taxonomy links → controls), because that is what it is teaching.
+  structure, run the assessment.
+- **A detail page keeps the constituent equation's order, with conditions read inside the
+  mechanism.** The structure sits in the main column; the aside reads down **Risk mechanism →
+  May lead to → Suggested controls**. Applicability conditions are not a section of their own in
+  the UI: they appear inside *Risk mechanism* as "raised when", because a reader takes the
+  mechanism and the condition that raises it as one thing. **The backend is unchanged** — every
+  risk pattern still carries its conditions, and `test_every_risk_pattern_carries_the_constituents_it_is_defined_by`
+  still holds the API to all five constituents.
+- **The mechanism leads, at every width.** It is the `lead` grid area: top of the aside when
+  wide, first on the page when narrow. As the last panel of the main column it sat below three
+  diagrams, the panel a reader had to scroll furthest to reach.
+  `test_a_risk_page_leads_with_its_mechanism` checks it is in view at 1400 and 1000 px.
+- **Every detail page is one shape**: a hero (eyebrow naming the level, title, source, one-line
+  lede, a strip of counts), then `lead` / main / aside panels with 16px headings. The way back
+  is a full `.btn` on the right of the hero, named for where it goes ("All risk patterns"); it
+  was a 12px "‹ all" at the far left. A panel's explanation is one line under its heading or
+  the heading's tooltip, never a paragraph: a sentence under every heading is what made these
+  pages a wall. **Candidate framing survives the cut** — "A match alone is not a finding",
+  "Possible harm, never an observed outcome", "Candidates, not proof the risk is removed".
+- **A diagram is kept inside its panel four ways, and the guard proves it can see a breach.**
+  `.library-detail` hides horizontal overflow, the SVG has `max-width: 100%`, the preview clips,
+  and the preview is a flex container its SVG shrinks inside. Any one is enough: removing three
+  left the page fitting, and only removing all four reproduced the breach — measured at
+  **306 px** at 1400 wide, which is the overflow that once scrolled the page sideways and cut
+  the first letter off every line.
 - **Two risk patterns name no motif and must keep saying so** rather than showing an empty heading:
   `ExcessiveAgency` and `SensitiveInformationDisclosure` are evaluated over any motif match
   whose conditions hold.
+- **The library is drawn, not written.** A motif is a shape, so its card carries `motifPreview`
+  of its own declaration rather than a paragraph restating it; a term belongs to one side of a
+  bipartite graph, so it and its shelf carry the canvas's own swatch for its class. Both were
+  paragraphs, and 97 of them is a wall nobody reads. The colours are the canvas's own `--node-*`
+  tokens and the class-to-kind mapping is `kindOf` in `motif_preview.js` — **do not add a third
+  copy**, `graph_view.py` already holds the server-side one. **The swatch draws what the canvas
+  draws**: what flows rounded, a step square-cornered, a model as a hexagon. An earlier shelf
+  marker drew a step as an oval and contradicted the canvas beside it.
+- **`kindOf` names the process classes; it never assumes one.** Its fallback was `"process"`, so
+  the one `beam:Resource` node in the library (External Dependency) was drawn as a step and its
+  `step beam:use resource` edge read as process to process — on the page that exists to teach
+  the bipartite rule. Resource maps to `resource`, anything unnamed to `other`, and the canvas
+  rounds a `resource` like data. `test_no_motif_is_drawn_with_a_step_feeding_a_step` reads all
+  31 declarations through the preview's own mapping: **every drawn edge crosses sides**, the
+  drawing-level twin of `test_every_pattern_edge_crosses_between_an_oval_and_a_box`.
+- **A term's page shows where it sits.** `motifPreview(template, { highlight })` marks the nodes
+  playing given roles, so each structure that reads the term is drawn with that element
+  outlined — dashed when the structure is reached through a term this one refines, with the
+  ancestor role marked instead. The panels are **Related motifs** and **Related risk patterns**.
+- **A term is related to a risk pattern, never said to raise it.** The link is "a motif that
+  names this term carries that risk pattern", which says nothing about which side the term is
+  on. `Guardrail Decision` reaches *Improper output handling* and *System prompt leakage* only
+  through `GuardrailsMotif`, and in both risk queries an output guardrail step is the
+  `FILTER NOT EXISTS` escape: the guardrail clears those findings. The panel was called "May
+  help raise", which said the opposite. Telling a precondition from an escape would mean
+  reading the risk queries' text, which nothing does yet.
+- **A term is dimmed only when no motif reaches it**, which is 11, never when no pattern node
+  names it, which is 25. The other 14 are read through the term they refine and are in full
+  use; dimming them would say the opposite. The count on a card says which: **solid is how
+  many motifs name it, outlined is how many it reaches by refinement**, so the rail's 0 beside
+  `Reranked Context` and the card's outlined 8 are two true facts rather than a contradiction.
+  It replaced a four-segment bar, which topped out at four and could not tell the two apart.
+- **The motif thumbnail is a silhouette: the landing hides `.mp-label`.** A nine-node motif
+  scaled into a card renders its labels at about four pixels, which is decoration. The shape
+  is what separates two motifs at that size, each node keeps its `<title>` for hover, and the
+  detail view carries the labelled drawing.
+- **The rail folds by group, opens folded, and Risks does not fold.** 31 motifs and 97 terms as
+  one column give a reader no way to put part of the library aside, so the first view is the
+  shelves, not 128 rows: the state is the set of groups the reader *opened*, starting empty.
+  Risks stays flat because 15 entries are a list rather than a filing problem. Two things the
+  fold has to respect: a search unfolds everything, or a match inside a folded group would read
+  as no match; and `select()` opens the group holding what it selected, or the landing would
+  point at a hidden row.
+- **There is no "Start from a risk" button.** The risk level is not an entry point in the
+  current build, so the front door offers the two layers that are.
 - **The front door steps aside on content, and only the front door.** `settleChoice()` emits
   `choice:settled`; the library closes on it *only* when it was opened as the opening screen.
   Adding a motif leaves opening mode first, so the library stays put — picking one risk usually
@@ -675,6 +765,91 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   `test_no_match_query_reads_the_motif_family` enforces it), and one system routinely matches
   several families at once. A motif shelved twice or not at all fails
   `test_library_consistency.py`.
+
+### The annotation vocabulary
+
+- **A term is shelved by the BEAM class it goes on, not by its top-level role.** The role
+  hierarchy cannot shelve 97 terms: it has 4 tops and they hold **50 / 32 / 12 / 3**, so half
+  the vocabulary sat under `Resource Role`. The shelf is `pair:expectedClass`, read off the
+  pattern nodes that name the term and inherited along `pair:subRoleOf` for the 25 terms no
+  pattern node names — **7 shelves, every term filed**: Data 39, Process 33, Statistical
+  Model 10, Transform 5, Resource 4, Infer 3, Train 3. It answers the question a reader
+  settles before any other, which the role tree never asked: *can this term go on this
+  element at all?* Where a term declares several classes the shelf is the **most general**
+  of them, because `GenerationStep` is `beam:Infer` on one pattern node and `beam:Process`
+  on another. **Sort the parents**: a role with several resolves through the first one and
+  rdflib hands them back in set order, so `ExternalModel` shelved differently from run to
+  run until `_role_parents` sorted them.
+- **`appliesTo` is derived from what the queries write, not from what the motif declares —
+  and it orders the picker rather than filtering it.** The two sides are typed differently:
+  a step is guarded `a/rdfs:subClassOf* beam:Process` in **all 62** places one appears, so a
+  node declared `beam:Infer` binds a `beam:Generate` element and **the role is the
+  discriminator**; a resource is typed with a bare `a beam:Data` (67×) or
+  `a beam:StatisticalModel` (19×), which walks nothing. Deriving the fit from
+  `pair:expectedClass` alone put **13 annotations in baseline-pinned graphs** on the wrong
+  side of their own element, `GenerationStep` among them.
+  **And it must not hide, because some queries are looser than their declaration.**
+  `information_retrieval.rq` puts **no class constraint on any of its three resource nodes**,
+  only the role — so `IR_QueryNode`, declared `expectedClass beam:Data`, binds the
+  `beam:Symbol` element `SPARQL Query Template` in `simple_graph_rag.ttl`. That is 1 of the
+  148 element bindings across the tracked graphs, and 5 annotations depend on it. So the
+  shelf that fits sorts first, the rest are marked *"not this element"* and stay reachable,
+  and the only hard filter is the coarse process/resource split with its existing escape.
+  `test_no_annotation_in_a_tracked_graph_is_reported_as_not_fitting` is the guard.
+- **A family is read off the motifs that name a term, and is never inherited.**
+  `HumanOversightMotif` declares a `ResourceRole` wildcard node, so inheriting through
+  ancestors tags **all 53** resource-side terms Agentic — true, and useless, because a filter
+  matching everything is not a filter. Direct naming gives Agentic 10 / GenAI 36 / ML 28 /
+  Supply chain 1. **A term with no family of its own is never hidden by a family filter**: it
+  is a refinement that inherits, and `serves` is the field that says so. Skipping top-level
+  ancestors instead was measured and rejected — it leaves `RewrittenQuery` reaching nothing.
+- **`motifs` and `serves` are two different facts and must stay apart.** `motifs` are the
+  motifs whose pattern nodes name the term itself; `serves` are those it reaches by refining
+  a term they name, which is what `playsRole/subRoleOf*` walks. Collapsing them would either
+  report a refinement as inert or report every term as agentic.
+- **Every term states its origin, by R6's three routes, and the chain is walked.** Measured:
+  **50 stated** (`dct:source`), **35 mapped** (SKOS), **12 inherited** through
+  `pair:subRoleOf`. An inherited origin names the term it came through, because "grounded by
+  the term it specializes" is not the same claim as having cited a source.
+  `test_every_term_says_where_it_comes_from` holds all three.
+  **The term page does not show it yet** (`SHOW_TERM_PROVENANCE = false` in `library.js`, since
+  2026-10-07): several role mappings point at a source that does not match the term's name, and
+  the KG is being reviewed by hand. The API keeps serving provenance and its test keeps holding;
+  only the panel is hidden. Turn the flag back on once the mappings are clean.
+- **The picker is a combobox, not a `<select>`.** A native select can neither search nor show
+  a definition, and **all 97 terms carry a `skos:definition` the UI served none of**. That is
+  what made `RetrievedContext`, `RetrievedResult` and `DocumentChunk` undecidable in a scroll
+  of bare labels. Definitions are served for the 7 data categories too.
+- **The popover is `position: fixed`, placed from the trigger.** `.node-detail` is
+  `overflow: auto` with a `max-height`, so an absolutely-positioned child is clipped to about
+  two rows that nothing can scroll. It is placed from `getBoundingClientRect()`, flipped up
+  when the space below is short, and repositioned on scroll and resize because the popup it
+  sits in scrolls under it.
+- **The canvas wheel handler must skip the overlays.** `.palette`, `.motif-palette`,
+  `.node-detail` and `.mp-pop` are children of `#canvas-wrap`, and its wheel handler called
+  `preventDefault()` on everything outside the business level — so a 31-entry tray taller
+  than the viewport could not be reached with a mouse at all, and the wheel zoomed instead.
+  `OVERLAYS` in `graph_view.js` is the list; add to it when a new scrolling overlay lands
+  inside the wrap.
+- **The motif tray is shelved by family, like the library shelf.** 31 entries in one
+  alphabetical column said nothing about which kind of AI system each is a shape of, so
+  `motif_template_list()` carries `pair:motifFamily` and the tray groups on it: Agentic 4,
+  GenAI 13, ML serving and training 13, Supply chain 1. It is the same filing decision as the
+  library's, so the same rule holds — **no match query may read it** (R2).
+- **6 terms are inert — nothing in the 62 registered queries reads them**, directly or by
+  subsumption. Three are abstract tops and are fine (`Control Step`, `Processing Step`,
+  `Resource Role`). Three are not: **`Document Chunk`, `Embedding Vector`,
+  `Pseudonymization Step`** look usable and do nothing when applied. Open item; the rule is
+  that declared-but-unused vocabulary gets removed, not documented.
+- **A small ODP/OQP drift, recorded so it is not rediscovered.** `Resource Role` is declared
+  on a pattern node but named in no `.rq`; `Pre-trained Model` and `State Changing Step` are
+  named in a `.rq` but on no pattern node.
+- **The gap report's element candidates are not annotation suggestions.** `motif_gaps()`
+  filters near-misses by BEAM class alone, so on the helpdesk graph it emits **428**
+  element-level hints and offers the same four processes for Embedding Step, Chunking Step and
+  Reranking Step. Filtering by the motif's own declared edges cuts 706 candidates to **122**,
+  and a ≥50% satisfaction threshold to **12 across 3 motifs** — measured, not implemented. Do
+  not describe the gap report as suggesting annotations until that filter exists.
 
 ### Controls and chrome
 
@@ -1067,7 +1242,7 @@ len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its sibl
 | Motifs | **31** — GenAI 13, ML serving and training 13, Agentic 4, Supply chain 1 |
 | Risk patterns | **15** (15 motifs carry one; 16 carry none) |
 | Pattern nodes / pattern edges | **169** / **143** — every edge crosses between an oval and a box |
-| Pattern roles | **97** |
+| Pattern roles | **97** — shelved on 7 BEAM classes: Data 39, Process 33, Statistical Model 10, Transform 5, Resource 4, Infer 3, Train 3. All 97 carry a `skos:definition`; origins are 50 stated / 35 mapped / 12 inherited. **72** are named by a pattern node and **14** more are reached only by refining one that is; of the 11 no motif reaches, **6 are read by no registered query at all** |
 | Data categories | **7** |
 | Facet concepts | **35** (task 20, data 11, autonomy 4) |
 | Risk mechanisms | **14** |
