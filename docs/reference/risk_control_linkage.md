@@ -197,23 +197,23 @@ so a motif derived from several catalogues is listed under each of them.
 | `GuardrailsMotif` | Multimodal guardrails | ImproperOutputHandling, SystemPromptLeakage |
 | `InputScreeningMotif` | Multimodal guardrails | *(risk-neutral - none)* |
 | `OutputScreeningMotif` | Multimodal guardrails | *(risk-neutral - none)* |
-| `EmbeddingsMotif` | Retrieval augmented generation (agent design pattern catalogue) | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
-| `InformationRetrievalMotif` | Retrieval augmented generation (agent design pattern catalogue) | *(risk-neutral - none)* |
-| `RerankerMotif` | Retrieval augmented generation (agent design pattern catalogue) | VectorAndEmbeddingWeakness |
-| `RetrievalAugmentedGenerationMotif` | Retrieval augmented generation (agent design pattern catalogue) | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
-| `VectorBasedInformationRetrievalMotif` | Retrieval augmented generation (agent design pattern catalogue) | VectorAndEmbeddingWeakness |
+| `EmbeddingsMotif` | Retrieval augmented generation | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
+| `InformationRetrievalMotif` | Retrieval augmented generation | *(risk-neutral - none)* |
+| `RerankerMotif` | Retrieval augmented generation | VectorAndEmbeddingWeakness |
+| `RetrievalAugmentedGenerationMotif` | Retrieval augmented generation | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
+| `VectorBasedInformationRetrievalMotif` | Retrieval augmented generation | VectorAndEmbeddingWeakness |
 | `AgentDelegationMotif` | Role-based cooperation | InsecureAgentCommunication |
 
 ### Gao et al. (2023) - Retrieval-augmented generation for large language models: A survey (6)
 
 | Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
-| `HybridRetrieverMotif` | Mix/hybrid retrieval (RAG survey) | *(risk-neutral - none)* |
-| `EmbeddingsMotif` | Naive RAG (RAG survey) | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
-| `InformationRetrievalMotif` | Naive RAG (RAG survey) | *(risk-neutral - none)* |
-| `RetrievalAugmentedGenerationMotif` | Naive RAG (RAG survey) | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
-| `VectorBasedInformationRetrievalMotif` | Naive RAG (RAG survey) | VectorAndEmbeddingWeakness |
-| `RerankerMotif` | Reranking (RAG survey) | VectorAndEmbeddingWeakness |
+| `HybridRetrieverMotif` | Mix/hybrid retrieval | *(risk-neutral - none)* |
+| `EmbeddingsMotif` | Naive RAG | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
+| `InformationRetrievalMotif` | Naive RAG | *(risk-neutral - none)* |
+| `RetrievalAugmentedGenerationMotif` | Naive RAG | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
+| `VectorBasedInformationRetrievalMotif` | Naive RAG | VectorAndEmbeddingWeakness |
+| `RerankerMotif` | Reranking | VectorAndEmbeddingWeakness |
 
 ### OWASP Agentic Top 10 (ASI) (4)
 
@@ -228,8 +228,8 @@ so a motif derived from several catalogues is listed under each of them.
 
 | Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
-| `FineTuningMotif` | Pretrain-finetune (FLAN paper) | DataAndModelPoisoning, SupplyChainCompromise |
-| `DirectPromptingMotif` | Prompting (FLAN paper) | DirectPromptingWithoutGrounding, ImproperOutputHandling, PromptInjection, UnboundedConsumption |
+| `FineTuningMotif` | Pretrain-finetune | DataAndModelPoisoning, SupplyChainCompromise |
+| `DirectPromptingMotif` | Prompting | DirectPromptingWithoutGrounding, ImproperOutputHandling, PromptInjection, UnboundedConsumption |
 
 ### Ma et al. (2023) - Query rewriting for retrieval-augmented large language models (1)
 
