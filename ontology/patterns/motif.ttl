@@ -116,38 +116,92 @@ pat:Cite_ModelInImage a pair:DesignPatternCitation ;
 # context/problem/forces/solution/consequences anatomy.
 
 pat:Cite_AgentRetrievalAugmentedGeneration a pair:DesignPatternCitation ;
-    skos:prefLabel "Retrieval augmented generation (agent design pattern catalogue)"@en ;
-    dct:isPartOf "The Journal of Systems & Software"@en ;
+    skos:prefLabel "Retrieval augmented generation"@en ;
     dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
     dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 
 pat:Cite_MultimodalGuardrails a pair:DesignPatternCitation ;
     skos:prefLabel "Multimodal guardrails"@en ;
-    dct:isPartOf "The Journal of Systems & Software"@en ;
     dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
     dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 
 pat:Cite_AgentEvaluator a pair:DesignPatternCitation ;
     skos:prefLabel "Agent evaluator"@en ;
-    dct:isPartOf "The Journal of Systems & Software"@en ;
     dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
     dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 
 pat:Cite_HumanReflection a pair:DesignPatternCitation ;
     skos:prefLabel "Human reflection"@en ;
-    dct:isPartOf "The Journal of Systems & Software"@en ;
     dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
     dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 
 pat:Cite_RoleBasedCooperation a pair:DesignPatternCitation ;
     skos:prefLabel "Role-based cooperation"@en ;
-    dct:isPartOf "The Journal of Systems & Software"@en ;
     dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
     dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 
 pat:Cite_AgentAdapter a pair:DesignPatternCitation ;
     skos:prefLabel "Agent adapter"@en ;
-    dct:isPartOf "The Journal of Systems & Software"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_PassiveGoalCreator a pair:DesignPatternCitation ;
+    skos:prefLabel "Passive goal creator"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_ProactiveGoalCreator a pair:DesignPatternCitation ;
+    skos:prefLabel "Proactive goal creator"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_PromptResponseOptimiser a pair:DesignPatternCitation ;
+    skos:prefLabel "Prompt/response optimiser"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_OneShotModelQuerying a pair:DesignPatternCitation ;
+    skos:prefLabel "One-shot model querying"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_IncrementalModelQuerying a pair:DesignPatternCitation ;
+    skos:prefLabel "Incremental model querying"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_SinglePathPlanGenerator a pair:DesignPatternCitation ;
+    skos:prefLabel "Single-path plan generator"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_MultiPathPlanGenerator a pair:DesignPatternCitation ;
+    skos:prefLabel "Multi-path plan generator"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_SelfReflection a pair:DesignPatternCitation ;
+    skos:prefLabel "Self-reflection"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_CrossReflection a pair:DesignPatternCitation ;
+    skos:prefLabel "Cross-reflection"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_VotingBasedCooperation a pair:DesignPatternCitation ;
+    skos:prefLabel "Voting-based cooperation"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_DebateBasedCooperation a pair:DesignPatternCitation ;
+    skos:prefLabel "Debate-based cooperation"@en ;
+    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:Cite_ToolAgentRegistry a pair:DesignPatternCitation ;
+    skos:prefLabel "Tool/agent registry"@en ;
     dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
     dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 
@@ -155,43 +209,85 @@ pat:Cite_AgentAdapter a pair:DesignPatternCitation ;
 # (arXiv, 2023). Each handle is a section of the survey that draws the structure.
 
 pat:Cite_NaiveRAG a pair:DesignPatternCitation ;
-    skos:prefLabel "Naive RAG (RAG survey)"@en ;
-    dct:isPartOf "arXiv"@en ;
+    skos:prefLabel "Naive RAG"@en ;
     dct:bibliographicCitation "Gao, Y., Xiong, Y., Gao, X., Jia, K., Pan, J., Bi, Y., Dai, Y., Sun, J., Wang, M., & Wang, H. (2023). Retrieval-augmented generation for large language models: A survey (arXiv:2312.10997). arXiv."@en ;
     dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
 
 pat:Cite_HybridRetrieval a pair:DesignPatternCitation ;
-    skos:prefLabel "Mix/hybrid retrieval (RAG survey)"@en ;
-    dct:isPartOf "arXiv"@en ;
+    skos:prefLabel "Mix/hybrid retrieval"@en ;
     dct:bibliographicCitation "Gao, Y., Xiong, Y., Gao, X., Jia, K., Pan, J., Bi, Y., Dai, Y., Sun, J., Wang, M., & Wang, H. (2023). Retrieval-augmented generation for large language models: A survey (arXiv:2312.10997). arXiv."@en ;
     dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
 
 pat:Cite_Reranking a pair:DesignPatternCitation ;
-    skos:prefLabel "Reranking (RAG survey)"@en ;
-    dct:isPartOf "arXiv"@en ;
+    skos:prefLabel "Reranking"@en ;
     dct:bibliographicCitation "Gao, Y., Xiong, Y., Gao, X., Jia, K., Pan, J., Bi, Y., Dai, Y., Sun, J., Wang, M., & Wang, H. (2023). Retrieval-augmented generation for large language models: A survey (arXiv:2312.10997). arXiv."@en ;
     dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
+
+# The three augmentation processes the survey's Figure 5 draws beside once-only retrieval.
+
+pat:Cite_IterativeRetrieval a pair:DesignPatternCitation ;
+    skos:prefLabel "Iterative retrieval"@en ;
+    dct:bibliographicCitation "Gao, Y., Xiong, Y., Gao, X., Jia, K., Pan, J., Bi, Y., Dai, Y., Sun, J., Wang, M., & Wang, H. (2023). Retrieval-augmented generation for large language models: A survey (arXiv:2312.10997). arXiv."@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
+
+pat:Cite_RecursiveRetrieval a pair:DesignPatternCitation ;
+    skos:prefLabel "Recursive retrieval"@en ;
+    dct:bibliographicCitation "Gao, Y., Xiong, Y., Gao, X., Jia, K., Pan, J., Bi, Y., Dai, Y., Sun, J., Wang, M., & Wang, H. (2023). Retrieval-augmented generation for large language models: A survey (arXiv:2312.10997). arXiv."@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
+
+pat:Cite_AdaptiveRetrieval a pair:DesignPatternCitation ;
+    skos:prefLabel "Adaptive retrieval"@en ;
+    dct:bibliographicCitation "Gao, Y., Xiong, Y., Gao, X., Jia, K., Pan, J., Bi, Y., Dai, Y., Sun, J., Wang, M., & Wang, H. (2023). Retrieval-augmented generation for large language models: A survey (arXiv:2312.10997). arXiv."@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
+
+# Breuer et al., Large Language Models for Information Retrieval (Datenbank-Spektrum, 2025).
+
+pat:Cite_LLMEnhancedIR a pair:DesignPatternCitation ;
+    skos:prefLabel "LLM-enhanced IR"@en ;
+    dct:bibliographicCitation "Breuer, T., Frihat, S., Fuhr, N., Lewandowski, D., Schaer, P., & Schenkel, R. (2025). Large language models for information retrieval: Challenges and chances. Datenbank-Spektrum, 25(2), 71–81."@en ;
+    dct:source <https://doi.org/10.1007/s13222-025-00503-x> .
+
+pat:Cite_RetrieverTrainingDataGeneration a pair:DesignPatternCitation ;
+    skos:prefLabel "Training data generation"@en ;
+    dct:bibliographicCitation "Breuer, T., Frihat, S., Fuhr, N., Lewandowski, D., Schaer, P., & Schenkel, R. (2025). Large language models for information retrieval: Challenges and chances. Datenbank-Spektrum, 25(2), 71–81."@en ;
+    dct:source <https://doi.org/10.1007/s13222-025-00503-x> .
+
+# Zhu et al., Large Language Models for Information Retrieval: A Survey (ACM TOIS,
+# 2026). The figure the reference PDF files under Breuer et al. is this survey's Figure 4.
+
+pat:Cite_GenerativeRetriever a pair:DesignPatternCitation ;
+    skos:prefLabel "Generative retriever"@en ;
+    dct:bibliographicCitation "Zhu, Y., Yuan, H., Wang, S., Liu, J., Liu, W., Deng, C., Chen, H., Liu, Z., Dou, Z., & Wen, J.-R. (2026). Large language models for information retrieval: A survey. ACM Transactions on Information Systems, 44(1), 1–54."@en ;
+    dct:source <https://doi.org/10.1145/3748304> .
+
+pat:Cite_TrainingDataAugmentation a pair:DesignPatternCitation ;
+    skos:prefLabel "Training data augmentation"@en ;
+    dct:bibliographicCitation "Zhu, Y., Yuan, H., Wang, S., Liu, J., Liu, W., Deng, C., Chen, H., Liu, Z., Dou, Z., & Wen, J.-R. (2026). Large language models for information retrieval: A survey. ACM Transactions on Information Systems, 44(1), 1–54."@en ;
+    dct:source <https://doi.org/10.1145/3748304> .
 
 # Ma et al., Query Rewriting for Retrieval-Augmented Large Language Models (arXiv, 2023).
 
 pat:Cite_RewriteRetrieveRead a pair:DesignPatternCitation ;
     skos:prefLabel "Rewrite-retrieve-read"@en ;
-    dct:isPartOf "arXiv"@en ;
     dct:bibliographicCitation "Ma, X., Gong, Y., He, P., Zhao, H., & Duan, N. (2023). Query rewriting for retrieval-augmented large language models (arXiv:2305.14283). arXiv."@en ;
     dct:source <https://doi.org/10.48550/arXiv.2305.14283> .
 
 # Wei et al., Finetuned Language Models Are Zero-Shot Learners (arXiv, 2021).
-# Cited for the two paradigms its Figure 2 draws beside instruction tuning.
+# Its Figure 2 draws three paradigms. Instruction tuning has the pretrain-finetune
+# shape with a different dataset, so both cite the one fine-tuning motif.
 
 pat:Cite_Prompting a pair:DesignPatternCitation ;
-    skos:prefLabel "Prompting (FLAN paper)"@en ;
-    dct:isPartOf "arXiv"@en ;
+    skos:prefLabel "Prompting"@en ;
     dct:bibliographicCitation "Wei, J., Bosma, M., Zhao, V. Y., Guu, K., Yu, A. W., Lester, B., Du, N., Dai, A. M., & Le, Q. V. (2021). Finetuned language models are zero-shot learners (arXiv:2109.01652). arXiv."@en ;
     dct:source <https://doi.org/10.48550/arXiv.2109.01652> .
 
 pat:Cite_PretrainFinetune a pair:DesignPatternCitation ;
-    skos:prefLabel "Pretrain-finetune (FLAN paper)"@en ;
-    dct:isPartOf "arXiv"@en ;
+    skos:prefLabel "Pretrain-finetune"@en ;
+    dct:bibliographicCitation "Wei, J., Bosma, M., Zhao, V. Y., Guu, K., Yu, A. W., Lester, B., Du, N., Dai, A. M., & Le, Q. V. (2021). Finetuned language models are zero-shot learners (arXiv:2109.01652). arXiv."@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2109.01652> .
+
+pat:Cite_InstructionTuning a pair:DesignPatternCitation ;
+    skos:prefLabel "Instruction tuning"@en ;
     dct:bibliographicCitation "Wei, J., Bosma, M., Zhao, V. Y., Guu, K., Yu, A. W., Lester, B., Du, N., Dai, A. M., & Le, Q. V. (2021). Finetuned language models are zero-shot learners (arXiv:2109.01652). arXiv."@en ;
     dct:source <https://doi.org/10.48550/arXiv.2109.01652> .
 
@@ -331,6 +427,75 @@ pat:VectorIR_RetrievalProducesResultEdge
     pair:sourcePatternNode pat:VectorIR_RetrievalStepNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:VectorIR_RetrievedResultNode .
+
+
+# Motif 2: LLM-based Information Retrieval
+pat:LLMBasedInformationRetrievalMotif
+    a pair:GraphMotif ;
+    rdfs:label "LLM-based Information Retrieval Motif"@en ;
+    dct:description """
+    Architectural motif in which a retrieval step uses a generative model to find
+    the items relevant to a query: a generative retriever that produces item
+    identifiers itself, or a language model that ranks what an index returned.
+    """@en ;
+    rdfs:comment "No knowledge source node: a generative retriever answers from what the model learned, with no index. When a source is also read, the Information Retrieval motif co-matches."@en ;
+    pair:derivedFrom pat:Cite_LLMEnhancedIR ,
+        pat:Cite_GenerativeRetriever ;
+    pair:hasPatternNode
+        pat:LLMIR_QueryNode ,
+        pat:LLMIR_LLMNode ,
+        pat:LLMIR_RetrievalStepNode ,
+        pat:LLMIR_RetrievedResultNode ;
+    pair:hasPatternEdge
+        pat:LLMIR_RetrievalUsesQueryEdge ,
+        pat:LLMIR_RetrievalUsesLLMEdge ,
+        pat:LLMIR_RetrievalProducesResultEdge ;
+    pair:implementedBy pat:LLMIR_MatchingOQP .
+
+pat:LLMIR_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "Query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:LLMIR_LLMNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieval language model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:GenerativeModel .
+
+pat:LLMIR_RetrievalStepNode
+    a pair:PatternNode ;
+    rdfs:label "LLM-based retrieval step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalStep .
+
+pat:LLMIR_RetrievedResultNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieved result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
+
+pat:LLMIR_RetrievalUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses query"@en ;
+    pair:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:LLMIR_QueryNode .
+
+pat:LLMIR_RetrievalUsesLLMEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses the language model"@en ;
+    pair:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:LLMIR_LLMNode .
+
+pat:LLMIR_RetrievalProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval produces retrieved result"@en ;
+    pair:sourcePatternNode pat:LLMIR_RetrievalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:LLMIR_RetrievedResultNode .
 
 # ML system design motifs derived from the serving design patterns
 
@@ -1635,6 +1800,123 @@ pat:DP_GenerationProducesAnswerEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:DP_AnswerNode .
 
+pat:PromptResponseOptimiserMotif
+    a pair:GraphMotif ;
+    rdfs:label "Prompt/Response Optimiser Motif"@en ;
+    dct:description """
+    GenAI motif in which an optimiser step rewrites the incoming prompt against a
+    prompt template before generation, then reworks the generated result into the
+    response it passes on.
+    """@en ;
+    pair:derivedFrom pat:Cite_PromptResponseOptimiser ;
+    pair:hasPatternNode
+        pat:PromptOpt_InputNode ,
+        pat:PromptOpt_TemplateNode ,
+        pat:PromptOpt_OptimiserStepNode ,
+        pat:PromptOpt_OptimisedPromptNode ,
+        pat:PromptOpt_GenerationStepNode ,
+        pat:PromptOpt_ResultNode ,
+        pat:PromptOpt_ResponseNode ;
+    pair:hasPatternEdge
+        pat:PromptOpt_OptimiserUsesInputEdge ,
+        pat:PromptOpt_OptimiserUsesTemplateEdge ,
+        pat:PromptOpt_OptimiserProducesPromptEdge ,
+        pat:PromptOpt_GenerationUsesPromptEdge ,
+        pat:PromptOpt_GenerationProducesResultEdge ,
+        pat:PromptOpt_OptimiserUsesResultEdge ,
+        pat:PromptOpt_OptimiserProducesResponseEdge ;
+    pair:implementedBy pat:PromptOpt_MatchingOQP .
+
+pat:PromptOpt_InputNode
+    a pair:PatternNode ;
+    rdfs:label "Incoming prompt node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:PromptOpt_TemplateNode
+    a pair:PatternNode ;
+    rdfs:label "Prompt template node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:PromptTemplate .
+
+pat:PromptOpt_OptimiserStepNode
+    a pair:PatternNode ;
+    rdfs:label "Prompt/response optimiser step node"@en ;
+    pair:expectedClass beam:Transform ;
+    pair:expectedRole pair:PromptOptimisationStep .
+
+pat:PromptOpt_OptimisedPromptNode
+    a pair:PatternNode ;
+    rdfs:label "Optimised prompt node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:PromptTemplate .
+
+pat:PromptOpt_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Generation step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pair:GenerationStep .
+
+pat:PromptOpt_ResultNode
+    a pair:PatternNode ;
+    rdfs:label "Generated result node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:LLMResponse .
+
+pat:PromptOpt_ResponseNode
+    a pair:PatternNode ;
+    rdfs:label "Optimised response node"@en ;
+    pair:expectedClass beam:Data .
+
+pat:PromptOpt_OptimiserUsesInputEdge
+    a pair:PatternEdge ;
+    rdfs:label "optimiser uses the incoming prompt"@en ;
+    pair:sourcePatternNode pat:PromptOpt_OptimiserStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PromptOpt_InputNode .
+
+pat:PromptOpt_OptimiserUsesTemplateEdge
+    a pair:PatternEdge ;
+    rdfs:label "optimiser uses the prompt template"@en ;
+    pair:sourcePatternNode pat:PromptOpt_OptimiserStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PromptOpt_TemplateNode .
+
+pat:PromptOpt_OptimiserProducesPromptEdge
+    a pair:PatternEdge ;
+    rdfs:label "optimiser produces the optimised prompt"@en ;
+    pair:sourcePatternNode pat:PromptOpt_OptimiserStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PromptOpt_OptimisedPromptNode .
+
+pat:PromptOpt_GenerationUsesPromptEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation uses the optimised prompt"@en ;
+    pair:sourcePatternNode pat:PromptOpt_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PromptOpt_OptimisedPromptNode .
+
+pat:PromptOpt_GenerationProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation produces the result"@en ;
+    pair:sourcePatternNode pat:PromptOpt_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PromptOpt_ResultNode .
+
+pat:PromptOpt_OptimiserUsesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "optimiser uses the generated result"@en ;
+    pair:sourcePatternNode pat:PromptOpt_OptimiserStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PromptOpt_ResultNode .
+
+pat:PromptOpt_OptimiserProducesResponseEdge
+    a pair:PatternEdge ;
+    rdfs:label "optimiser produces the optimised response"@en ;
+    pair:sourcePatternNode pat:PromptOpt_OptimiserStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PromptOpt_ResponseNode .
+
 pat:EvalsMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:Evals_MatchingOQP ;
@@ -1861,6 +2143,102 @@ pat:Embedding_IndexingUsesChunkEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:Embedding_DocumentChunkNode .
 
+pat:RetrievalDataAugmentationMotif
+    a pair:GraphMotif ;
+    rdfs:label "Retrieval Data Augmentation Motif"@en ;
+    dct:description """
+    GenAI motif in which a generative model writes training data for a retriever
+    from source documents (pseudo queries, relevance labels or whole examples) and
+    a training step learns a retrieval model from it.
+    """@en ;
+    pair:derivedFrom pat:Cite_TrainingDataAugmentation ,
+        pat:Cite_RetrieverTrainingDataGeneration ;
+    pair:hasPatternNode
+        pat:RetrAug_SourceDocumentNode ,
+        pat:RetrAug_LLMNode ,
+        pat:RetrAug_GenerationStepNode ,
+        pat:RetrAug_SyntheticDataNode ,
+        pat:RetrAug_TrainingStepNode ,
+        pat:RetrAug_RetrieverModelNode ;
+    pair:hasPatternEdge
+        pat:RetrAug_GenerationUsesSourceEdge ,
+        pat:RetrAug_GenerationUsesLLMEdge ,
+        pat:RetrAug_GenerationProducesDataEdge ,
+        pat:RetrAug_TrainingUsesDataEdge ,
+        pat:RetrAug_TrainingProducesModelEdge ;
+    pair:implementedBy pat:RetrAug_MatchingOQP .
+
+pat:RetrAug_SourceDocumentNode
+    a pair:PatternNode ;
+    rdfs:label "Source document node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:SourceDocument .
+
+pat:RetrAug_LLMNode
+    a pair:PatternNode ;
+    rdfs:label "Data-generating language model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:GenerativeModel .
+
+pat:RetrAug_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Training data generation step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pair:SyntheticDataGenerationStep .
+
+pat:RetrAug_SyntheticDataNode
+    a pair:PatternNode ;
+    rdfs:label "Generated training data node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:SyntheticTrainingData .
+
+pat:RetrAug_TrainingStepNode
+    a pair:PatternNode ;
+    rdfs:label "Retriever training step node"@en ;
+    pair:expectedClass beam:Train ;
+    pair:expectedRole pair:TrainingStep .
+
+pat:RetrAug_RetrieverModelNode
+    a pair:PatternNode ;
+    rdfs:label "Trained retriever node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:RetrieverModel .
+
+pat:RetrAug_GenerationUsesSourceEdge
+    a pair:PatternEdge ;
+    rdfs:label "data generation uses the source documents"@en ;
+    pair:sourcePatternNode pat:RetrAug_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RetrAug_SourceDocumentNode .
+
+pat:RetrAug_GenerationUsesLLMEdge
+    a pair:PatternEdge ;
+    rdfs:label "data generation uses the language model"@en ;
+    pair:sourcePatternNode pat:RetrAug_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RetrAug_LLMNode .
+
+pat:RetrAug_GenerationProducesDataEdge
+    a pair:PatternEdge ;
+    rdfs:label "data generation produces the training data"@en ;
+    pair:sourcePatternNode pat:RetrAug_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RetrAug_SyntheticDataNode .
+
+pat:RetrAug_TrainingUsesDataEdge
+    a pair:PatternEdge ;
+    rdfs:label "training uses the generated data"@en ;
+    pair:sourcePatternNode pat:RetrAug_TrainingStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RetrAug_SyntheticDataNode .
+
+pat:RetrAug_TrainingProducesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "training produces the retriever"@en ;
+    pair:sourcePatternNode pat:RetrAug_TrainingStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RetrAug_RetrieverModelNode .
+
 pat:RetrievalAugmentedGenerationMotif
     a pair:GraphMotif ;
     rdfs:label "Retrieval Augmented Generation (RAG) Motif"@en ;
@@ -2008,6 +2386,480 @@ pat:RAG_GenerationProducesResponseEdge
     pair:sourcePatternNode pat:RAG_GenerationStepNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:RAG_ResponseNode .
+
+# RAG variants from Gao et al.'s Figure 5. Retrieval feeds generation as in the
+# RAG motif; what tells them apart is what the retrieval step reads back. The
+# context may pass intermediate steps on its way to generation, as in RAG.
+
+pat:IterativeRAGMotif
+    a pair:GraphMotif ;
+    rdfs:label "Iterative RAG Motif"@en ;
+    dct:description """
+    GenAI motif in which retrieval and generation alternate: a judge step reads
+    each generated answer and returns a decision the retrieval step reads, so each
+    round retrieves more targeted context from the knowledge source.
+    """@en ;
+    rdfs:comment "The generation step may read the retrieved context through intermediate steps (reranking, aggregation), as in the RAG motif; the template draws the direct edge."@en ;
+    pair:derivedFrom pat:Cite_IterativeRetrieval ;
+    pair:hasPatternNode
+        pat:IterRAG_QueryNode ,
+        pat:IterRAG_KnowledgeSourceNode ,
+        pat:IterRAG_RetrievalStepNode ,
+        pat:IterRAG_RetrievedContextNode ,
+        pat:IterRAG_LLMNode ,
+        pat:IterRAG_GenerationStepNode ,
+        pat:IterRAG_AnswerNode ,
+        pat:IterRAG_JudgeStepNode ,
+        pat:IterRAG_DecisionNode ;
+    pair:hasPatternEdge
+        pat:IterRAG_RetrievalUsesQueryEdge ,
+        pat:IterRAG_RetrievalUsesKnowledgeSourceEdge ,
+        pat:IterRAG_RetrievalProducesContextEdge ,
+        pat:IterRAG_GenerationUsesContextEdge ,
+        pat:IterRAG_GenerationUsesLLMEdge ,
+        pat:IterRAG_GenerationProducesAnswerEdge ,
+        pat:IterRAG_JudgeUsesAnswerEdge ,
+        pat:IterRAG_JudgeProducesDecisionEdge ,
+        pat:IterRAG_RetrievalUsesDecisionEdge ;
+    pair:implementedBy pat:IterRAG_MatchingOQP .
+
+pat:IterRAG_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "Iterative RAG query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:IterRAG_KnowledgeSourceNode
+    a pair:PatternNode ;
+    rdfs:label "Iterative RAG knowledge source node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:KnowledgeSource .
+
+pat:IterRAG_RetrievalStepNode
+    a pair:PatternNode ;
+    rdfs:label "Iterative RAG retrieval step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalStep .
+
+pat:IterRAG_RetrievedContextNode
+    a pair:PatternNode ;
+    rdfs:label "Iterative RAG retrieved context node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
+
+pat:IterRAG_LLMNode
+    a pair:PatternNode ;
+    rdfs:label "Iterative RAG language model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:GenerativeModel .
+
+pat:IterRAG_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Iterative RAG generation step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pair:GenerationStep .
+
+pat:IterRAG_AnswerNode
+    a pair:PatternNode ;
+    rdfs:label "Iterative RAG generated answer node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:LLMResponse .
+
+pat:IterRAG_JudgeStepNode
+    a pair:PatternNode ;
+    rdfs:label "Iterative RAG judge step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalJudgeStep .
+
+pat:IterRAG_DecisionNode
+    a pair:PatternNode ;
+    rdfs:label "Iterative RAG retrieval decision node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievalDecision .
+
+pat:IterRAG_RetrievalUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses the query"@en ;
+    pair:sourcePatternNode pat:IterRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IterRAG_QueryNode .
+
+pat:IterRAG_RetrievalUsesKnowledgeSourceEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses the knowledge source"@en ;
+    pair:sourcePatternNode pat:IterRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IterRAG_KnowledgeSourceNode .
+
+pat:IterRAG_RetrievalProducesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval produces retrieved context"@en ;
+    pair:sourcePatternNode pat:IterRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:IterRAG_RetrievedContextNode .
+
+pat:IterRAG_GenerationUsesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation uses the retrieved context"@en ;
+    pair:sourcePatternNode pat:IterRAG_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IterRAG_RetrievedContextNode .
+
+pat:IterRAG_GenerationUsesLLMEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation uses the language model"@en ;
+    pair:sourcePatternNode pat:IterRAG_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IterRAG_LLMNode .
+
+pat:IterRAG_GenerationProducesAnswerEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation produces an answer"@en ;
+    pair:sourcePatternNode pat:IterRAG_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:IterRAG_AnswerNode .
+
+pat:IterRAG_JudgeUsesAnswerEdge
+    a pair:PatternEdge ;
+    rdfs:label "judge uses the answer"@en ;
+    pair:sourcePatternNode pat:IterRAG_JudgeStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IterRAG_AnswerNode .
+
+pat:IterRAG_JudgeProducesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "judge produces a retrieval decision"@en ;
+    pair:sourcePatternNode pat:IterRAG_JudgeStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:IterRAG_DecisionNode .
+
+pat:IterRAG_RetrievalUsesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses the judge's decision"@en ;
+    pair:sourcePatternNode pat:IterRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IterRAG_DecisionNode .
+
+pat:RecursiveRAGMotif
+    a pair:GraphMotif ;
+    rdfs:label "Recursive RAG Motif"@en ;
+    dct:description """
+    GenAI motif in which a judge step reads a generated answer and a query
+    transformation step turns its decision into a sub-query that the retrieval
+    step reads, so a complex question is retrieved for part by part.
+    """@en ;
+    rdfs:comment "The generation step may read the retrieved context through intermediate steps, as in the RAG motif; the template draws the direct edge."@en ;
+    pair:derivedFrom pat:Cite_RecursiveRetrieval ;
+    pair:hasPatternNode
+        pat:RecRAG_QueryNode ,
+        pat:RecRAG_KnowledgeSourceNode ,
+        pat:RecRAG_RetrievalStepNode ,
+        pat:RecRAG_RetrievedContextNode ,
+        pat:RecRAG_LLMNode ,
+        pat:RecRAG_GenerationStepNode ,
+        pat:RecRAG_AnswerNode ,
+        pat:RecRAG_JudgeStepNode ,
+        pat:RecRAG_DecisionNode ,
+        pat:RecRAG_TransformationStepNode ,
+        pat:RecRAG_SubQueryNode ;
+    pair:hasPatternEdge
+        pat:RecRAG_RetrievalUsesQueryEdge ,
+        pat:RecRAG_RetrievalUsesKnowledgeSourceEdge ,
+        pat:RecRAG_RetrievalProducesContextEdge ,
+        pat:RecRAG_GenerationUsesContextEdge ,
+        pat:RecRAG_GenerationUsesLLMEdge ,
+        pat:RecRAG_GenerationProducesAnswerEdge ,
+        pat:RecRAG_JudgeUsesAnswerEdge ,
+        pat:RecRAG_JudgeProducesDecisionEdge ,
+        pat:RecRAG_TransformationUsesDecisionEdge ,
+        pat:RecRAG_TransformationProducesSubQueryEdge ,
+        pat:RecRAG_RetrievalUsesSubQueryEdge ;
+    pair:implementedBy pat:RecRAG_MatchingOQP .
+
+pat:RecRAG_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "Recursive RAG query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:RecRAG_KnowledgeSourceNode
+    a pair:PatternNode ;
+    rdfs:label "Recursive RAG knowledge source node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:KnowledgeSource .
+
+pat:RecRAG_RetrievalStepNode
+    a pair:PatternNode ;
+    rdfs:label "Recursive RAG retrieval step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalStep .
+
+pat:RecRAG_RetrievedContextNode
+    a pair:PatternNode ;
+    rdfs:label "Recursive RAG retrieved context node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
+
+pat:RecRAG_LLMNode
+    a pair:PatternNode ;
+    rdfs:label "Recursive RAG language model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:GenerativeModel .
+
+pat:RecRAG_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Recursive RAG generation step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pair:GenerationStep .
+
+pat:RecRAG_AnswerNode
+    a pair:PatternNode ;
+    rdfs:label "Recursive RAG generated answer node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:LLMResponse .
+
+pat:RecRAG_JudgeStepNode
+    a pair:PatternNode ;
+    rdfs:label "Recursive RAG judge step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalJudgeStep .
+
+pat:RecRAG_DecisionNode
+    a pair:PatternNode ;
+    rdfs:label "Recursive RAG retrieval decision node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievalDecision .
+
+pat:RecRAG_TransformationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Query transformation or decomposition step node"@en ;
+    pair:expectedClass beam:Transform ;
+    pair:expectedRole pair:QueryReformulationStep .
+
+pat:RecRAG_SubQueryNode
+    a pair:PatternNode ;
+    rdfs:label "Sub-query node"@en ;
+    rdfs:comment "Checked as a role under pair:UserInput, like the rewritten query of the Query Rewriting motif, because it re-enters retrieval as a query. pair:SubQuery is the typical annotation."@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:RecRAG_RetrievalUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses the query"@en ;
+    pair:sourcePatternNode pat:RecRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RecRAG_QueryNode .
+
+pat:RecRAG_RetrievalUsesKnowledgeSourceEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses the knowledge source"@en ;
+    pair:sourcePatternNode pat:RecRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RecRAG_KnowledgeSourceNode .
+
+pat:RecRAG_RetrievalProducesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval produces retrieved context"@en ;
+    pair:sourcePatternNode pat:RecRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RecRAG_RetrievedContextNode .
+
+pat:RecRAG_GenerationUsesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation uses the retrieved context"@en ;
+    pair:sourcePatternNode pat:RecRAG_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RecRAG_RetrievedContextNode .
+
+pat:RecRAG_GenerationUsesLLMEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation uses the language model"@en ;
+    pair:sourcePatternNode pat:RecRAG_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RecRAG_LLMNode .
+
+pat:RecRAG_GenerationProducesAnswerEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation produces an answer"@en ;
+    pair:sourcePatternNode pat:RecRAG_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RecRAG_AnswerNode .
+
+pat:RecRAG_JudgeUsesAnswerEdge
+    a pair:PatternEdge ;
+    rdfs:label "judge uses the answer"@en ;
+    pair:sourcePatternNode pat:RecRAG_JudgeStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RecRAG_AnswerNode .
+
+pat:RecRAG_JudgeProducesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "judge produces a retrieval decision"@en ;
+    pair:sourcePatternNode pat:RecRAG_JudgeStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RecRAG_DecisionNode .
+
+pat:RecRAG_TransformationUsesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "query transformation uses the judge's decision"@en ;
+    pair:sourcePatternNode pat:RecRAG_TransformationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RecRAG_DecisionNode .
+
+pat:RecRAG_TransformationProducesSubQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "query transformation produces a sub-query"@en ;
+    pair:sourcePatternNode pat:RecRAG_TransformationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RecRAG_SubQueryNode .
+
+pat:RecRAG_RetrievalUsesSubQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses the sub-query"@en ;
+    pair:sourcePatternNode pat:RecRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RecRAG_SubQueryNode .
+
+pat:AdaptiveRAGMotif
+    a pair:GraphMotif ;
+    rdfs:label "Adaptive RAG Motif"@en ;
+    dct:description """
+    GenAI motif in which a judge step reads the query and decides whether
+    retrieval is needed, and the retrieval step runs on that decision, so the
+    system retrieves on demand before generating.
+    """@en ;
+    rdfs:comment "The generation step may read the retrieved context through intermediate steps, as in the RAG motif; the template draws the direct edge. The figure's later judge-and-transform loop is the Recursive RAG motif, which co-matches when it is drawn."@en ;
+    pair:derivedFrom pat:Cite_AdaptiveRetrieval ;
+    pair:hasPatternNode
+        pat:AdaRAG_QueryNode ,
+        pat:AdaRAG_JudgeStepNode ,
+        pat:AdaRAG_DecisionNode ,
+        pat:AdaRAG_KnowledgeSourceNode ,
+        pat:AdaRAG_RetrievalStepNode ,
+        pat:AdaRAG_RetrievedContextNode ,
+        pat:AdaRAG_LLMNode ,
+        pat:AdaRAG_GenerationStepNode ,
+        pat:AdaRAG_AnswerNode ;
+    pair:hasPatternEdge
+        pat:AdaRAG_JudgeUsesQueryEdge ,
+        pat:AdaRAG_JudgeProducesDecisionEdge ,
+        pat:AdaRAG_RetrievalUsesDecisionEdge ,
+        pat:AdaRAG_RetrievalUsesKnowledgeSourceEdge ,
+        pat:AdaRAG_RetrievalProducesContextEdge ,
+        pat:AdaRAG_GenerationUsesContextEdge ,
+        pat:AdaRAG_GenerationUsesLLMEdge ,
+        pat:AdaRAG_GenerationProducesAnswerEdge ;
+    pair:implementedBy pat:AdaRAG_MatchingOQP .
+
+pat:AdaRAG_QueryNode
+    a pair:PatternNode ;
+    rdfs:label "Adaptive RAG query node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:AdaRAG_JudgeStepNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieve-on-demand judge step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalJudgeStep .
+
+pat:AdaRAG_DecisionNode
+    a pair:PatternNode ;
+    rdfs:label "Adaptive RAG retrieval decision node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievalDecision .
+
+pat:AdaRAG_KnowledgeSourceNode
+    a pair:PatternNode ;
+    rdfs:label "Adaptive RAG knowledge source node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:KnowledgeSource .
+
+pat:AdaRAG_RetrievalStepNode
+    a pair:PatternNode ;
+    rdfs:label "Adaptive RAG retrieval step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:RetrievalStep .
+
+pat:AdaRAG_RetrievedContextNode
+    a pair:PatternNode ;
+    rdfs:label "Adaptive RAG retrieved context node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
+
+pat:AdaRAG_LLMNode
+    a pair:PatternNode ;
+    rdfs:label "Adaptive RAG language model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:GenerativeModel .
+
+pat:AdaRAG_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Adaptive RAG generation step node"@en ;
+    pair:expectedClass beam:Infer ;
+    pair:expectedRole pair:GenerationStep .
+
+pat:AdaRAG_AnswerNode
+    a pair:PatternNode ;
+    rdfs:label "Adaptive RAG generated answer node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:LLMResponse .
+
+pat:AdaRAG_JudgeUsesQueryEdge
+    a pair:PatternEdge ;
+    rdfs:label "judge uses the query"@en ;
+    pair:sourcePatternNode pat:AdaRAG_JudgeStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:AdaRAG_QueryNode .
+
+pat:AdaRAG_JudgeProducesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "judge produces a retrieval decision"@en ;
+    pair:sourcePatternNode pat:AdaRAG_JudgeStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:AdaRAG_DecisionNode .
+
+pat:AdaRAG_RetrievalUsesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses the judge's decision"@en ;
+    pair:sourcePatternNode pat:AdaRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:AdaRAG_DecisionNode .
+
+pat:AdaRAG_RetrievalUsesKnowledgeSourceEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval uses the knowledge source"@en ;
+    pair:sourcePatternNode pat:AdaRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:AdaRAG_KnowledgeSourceNode .
+
+pat:AdaRAG_RetrievalProducesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "retrieval produces retrieved context"@en ;
+    pair:sourcePatternNode pat:AdaRAG_RetrievalStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:AdaRAG_RetrievedContextNode .
+
+pat:AdaRAG_GenerationUsesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation uses the retrieved context"@en ;
+    pair:sourcePatternNode pat:AdaRAG_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:AdaRAG_RetrievedContextNode .
+
+pat:AdaRAG_GenerationUsesLLMEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation uses the language model"@en ;
+    pair:sourcePatternNode pat:AdaRAG_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:AdaRAG_LLMNode .
+
+pat:AdaRAG_GenerationProducesAnswerEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation produces an answer"@en ;
+    pair:sourcePatternNode pat:AdaRAG_GenerationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:AdaRAG_AnswerNode .
 
 pat:HybridRetrieverMotif
     a pair:GraphMotif ;
@@ -2245,7 +3097,8 @@ pat:RerankerMotif
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_Reranker ,
         pat:Cite_AgentRetrievalAugmentedGeneration ,
-        pat:Cite_Reranking ;
+        pat:Cite_Reranking ,
+        pat:Cite_LLMEnhancedIR ;
     pair:hasPatternNode
         pat:Reranker_CandidateSetNode ,
         pat:Reranker_ModelNode ,
@@ -2432,6 +3285,74 @@ pat:OutputScreening_ScreeningUsesResponseEdge
     pair:targetPatternNode pat:OutputScreening_ResponseNode .
 
 
+# The RAG guardrail of Liu et al.'s multimodal guardrails: Input Screening's
+# shape with retrieved content where the user input was. It is what the input
+# screening rewrite builds when the untrusted content it screens was retrieved.
+pat:RetrievalScreeningMotif
+    a pair:GraphMotif ;
+    rdfs:label "Retrieval Screening Motif"@en ;
+    dct:description """
+    Control motif in which an input guardrail step screens retrieved content,
+    and the generation step it protects reads the guardrail's decision.
+    """@en ;
+    pair:derivedFrom pat:Cite_MultimodalGuardrails ;
+    pair:hasPatternNode
+        pat:RetrievalScreening_RetrievedContextNode ,
+        pat:RetrievalScreening_ScreeningStepNode ,
+        pat:RetrievalScreening_DecisionNode ,
+        pat:RetrievalScreening_GenerationStepNode ;
+    pair:hasPatternEdge
+        pat:RetrievalScreening_ScreeningUsesContextEdge ,
+        pat:RetrievalScreening_ScreeningProducesDecisionEdge ,
+        pat:RetrievalScreening_GenerationUsesDecisionEdge ;
+    pair:implementedBy pat:RetrievalScreening_MatchingOQP .
+
+pat:RetrievalScreening_RetrievedContextNode
+    a pair:PatternNode ;
+    rdfs:label "Screened retrieved context node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:RetrievedContext .
+
+pat:RetrievalScreening_ScreeningStepNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieval guardrail step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:InputGuardrailStep .
+
+pat:RetrievalScreening_DecisionNode
+    a pair:PatternNode ;
+    rdfs:label "Retrieval screening decision node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:GuardrailDecision .
+
+pat:RetrievalScreening_GenerationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Protected generation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:GenerationStep .
+
+pat:RetrievalScreening_ScreeningUsesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "screening step uses the retrieved context"@en ;
+    pair:sourcePatternNode pat:RetrievalScreening_ScreeningStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RetrievalScreening_RetrievedContextNode .
+
+pat:RetrievalScreening_ScreeningProducesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "screening step produces a decision"@en ;
+    pair:sourcePatternNode pat:RetrievalScreening_ScreeningStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:RetrievalScreening_DecisionNode .
+
+pat:RetrievalScreening_GenerationUsesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "generation uses the screening decision"@en ;
+    pair:sourcePatternNode pat:RetrievalScreening_GenerationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:RetrievalScreening_DecisionNode .
+
+
 pat:GuardrailsMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:Guardrails_MatchingOQP ;
@@ -2565,7 +3486,8 @@ pat:FineTuningMotif
     dct:description "GenAI motif in which a pre-trained LLM is further trained with a task- or domain-specific dataset to produce a fine-tuned model."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_FineTuning ,
-        pat:Cite_PretrainFinetune ;
+        pat:Cite_PretrainFinetune ,
+        pat:Cite_InstructionTuning ;
     pair:hasPatternNode
         pat:FineTune_BaseModelNode ,
         pat:FineTune_DatasetNode ,
@@ -2693,7 +3615,9 @@ pat:ToolUsingAgentMotif
     dct:source <https://genai.owasp.org/> ,
         <https://doi.org/10.1016/j.jss.2024.112278> ;
     pair:derivedFrom asi:asi02-tool-misuse ,
-        pat:Cite_AgentAdapter ;
+        pat:Cite_AgentAdapter ,
+        pat:Cite_SinglePathPlanGenerator ,
+        pat:Cite_MultiPathPlanGenerator ;
     pair:hasPatternNode
         pat:ToolAgent_PlanningStepNode ,
         pat:ToolAgent_ActionStepNode ,
@@ -2824,7 +3748,9 @@ pat:AgentDelegationMotif
     dct:source <https://genai.owasp.org/> ,
         <https://doi.org/10.1016/j.jss.2024.112278> ;
     pair:derivedFrom asi:asi07-insecure-inter-agent-communication ,
-        pat:Cite_RoleBasedCooperation ;
+        pat:Cite_RoleBasedCooperation ,
+        pat:Cite_SinglePathPlanGenerator ,
+        pat:Cite_MultiPathPlanGenerator ;
     pair:hasPatternNode
         pat:AgentDelegation_DelegatingStepNode ,
         pat:AgentDelegation_MessageNode ,
@@ -2832,7 +3758,8 @@ pat:AgentDelegationMotif
     pair:hasPatternEdge
         pat:AgentDelegation_DelegatingProducesMessageEdge ,
         pat:AgentDelegation_ReceivingUsesMessageEdge ;
-    pair:hasRiskPattern pat:InsecureAgentCommunicationRiskPattern ;
+    pair:hasRiskPattern pat:InsecureAgentCommunicationRiskPattern ,
+        pat:GoalHijackRiskPattern ;
     pair:implementedBy pat:AgentDelegation_MatchingOQP .
 
 pat:AgentDelegation_DelegatingStepNode
@@ -2933,19 +3860,705 @@ pat:HumanOversight_ActionUsesApprovalEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:HumanOversight_ApprovalNode .
 
+# Control motif: the execution guardrail of Liu et al.'s multimodal guardrails,
+# and the shape the tool mediation rewrite builds.
+
+pat:ExecutionScreeningMotif
+    a pair:GraphMotif ;
+    rdfs:label "Execution Screening Motif"@en ;
+    dct:description """
+    Agentic control motif in which a policy enforcement step screens an action
+    before it is carried out, and the tool invocation step acts on the verdict it
+    produces.
+    """@en ;
+    pair:derivedFrom pat:Cite_MultimodalGuardrails ;
+    pair:hasPatternNode
+        pat:ExecScreening_PolicyStepNode ,
+        pat:ExecScreening_VerdictNode ,
+        pat:ExecScreening_ToolStepNode ,
+        pat:ExecScreening_ResultNode ;
+    pair:hasPatternEdge
+        pat:ExecScreening_PolicyProducesVerdictEdge ,
+        pat:ExecScreening_ToolUsesVerdictEdge ,
+        pat:ExecScreening_ToolProducesResultEdge ;
+    pair:implementedBy pat:ExecScreening_MatchingOQP .
+
+pat:ExecScreening_PolicyStepNode
+    a pair:PatternNode ;
+    rdfs:label "Execution guardrail step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:PolicyEnforcementStep .
+
+pat:ExecScreening_VerdictNode
+    a pair:PatternNode ;
+    rdfs:label "Policy verdict node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:GuardrailDecision .
+
+pat:ExecScreening_ToolStepNode
+    a pair:PatternNode ;
+    rdfs:label "Screened tool invocation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:ToolInvocationStep .
+
+pat:ExecScreening_ResultNode
+    a pair:PatternNode ;
+    rdfs:label "Tool result node"@en ;
+    pair:expectedClass beam:Data .
+
+pat:ExecScreening_PolicyProducesVerdictEdge
+    a pair:PatternEdge ;
+    rdfs:label "policy step produces a verdict"@en ;
+    pair:sourcePatternNode pat:ExecScreening_PolicyStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ExecScreening_VerdictNode .
+
+pat:ExecScreening_ToolUsesVerdictEdge
+    a pair:PatternEdge ;
+    rdfs:label "tool step uses the verdict"@en ;
+    pair:sourcePatternNode pat:ExecScreening_ToolStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ExecScreening_VerdictNode .
+
+pat:ExecScreening_ToolProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "tool step produces its result"@en ;
+    pair:sourcePatternNode pat:ExecScreening_ToolStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ExecScreening_ResultNode .
+
+# Agentic motifs from Liu et al.'s agent design pattern catalogue. Each agent
+# component is a step, what passes between components is data, and a model or a
+# store is a resource the step uses.
+
+pat:GoalCreationMotif
+    a pair:GraphMotif ;
+    rdfs:label "Goal Creation Motif"@en ;
+    dct:description """
+    Agentic motif in which a goal creation step reads the user's prompt and the
+    agent's memory and states the goal the agent works toward, before it is
+    planned.
+    """@en ;
+    rdfs:comment "Named for the step rather than for being passive: a proactive goal creator reads the prompt and memory as well and matches this too. Passive would claim that no detector is present, which a motif cannot say."@en ;
+    pair:derivedFrom pat:Cite_PassiveGoalCreator ,
+        pat:Cite_ProactiveGoalCreator ;
+    pair:hasPatternNode
+        pat:GoalCreation_PromptNode ,
+        pat:GoalCreation_MemoryNode ,
+        pat:GoalCreation_GoalCreatorNode ,
+        pat:GoalCreation_GoalNode ;
+    pair:hasPatternEdge
+        pat:GoalCreation_CreatorUsesPromptEdge ,
+        pat:GoalCreation_CreatorUsesMemoryEdge ,
+        pat:GoalCreation_CreatorProducesGoalEdge ;
+    pair:implementedBy pat:GoalCreation_MatchingOQP .
+
+pat:GoalCreation_PromptNode
+    a pair:PatternNode ;
+    rdfs:label "User prompt node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:GoalCreation_MemoryNode
+    a pair:PatternNode ;
+    rdfs:label "Agent memory node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:AgentMemory .
+
+pat:GoalCreation_GoalCreatorNode
+    a pair:PatternNode ;
+    rdfs:label "Goal creator step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:GoalCreationStep .
+
+pat:GoalCreation_GoalNode
+    a pair:PatternNode ;
+    rdfs:label "Agent goal node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:AgentGoal .
+
+pat:GoalCreation_CreatorUsesPromptEdge
+    a pair:PatternEdge ;
+    rdfs:label "goal creator uses the user prompt"@en ;
+    pair:sourcePatternNode pat:GoalCreation_GoalCreatorNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:GoalCreation_PromptNode .
+
+pat:GoalCreation_CreatorUsesMemoryEdge
+    a pair:PatternEdge ;
+    rdfs:label "goal creator uses the agent memory"@en ;
+    pair:sourcePatternNode pat:GoalCreation_GoalCreatorNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:GoalCreation_MemoryNode .
+
+pat:GoalCreation_CreatorProducesGoalEdge
+    a pair:PatternEdge ;
+    rdfs:label "goal creator produces the goal"@en ;
+    pair:sourcePatternNode pat:GoalCreation_GoalCreatorNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:GoalCreation_GoalNode .
+
+pat:ProactiveGoalCreationMotif
+    a pair:GraphMotif ;
+    rdfs:label "Proactive Goal Creation Motif"@en ;
+    dct:description """
+    Agentic motif in which a detector step captures context from the user's
+    surroundings and the goal creation step forms the agent's goal from it,
+    alongside the user's prompt and the agent's memory.
+    """@en ;
+    pair:derivedFrom pat:Cite_ProactiveGoalCreator ;
+    pair:hasPatternNode
+        pat:ProactiveGoal_PromptNode ,
+        pat:ProactiveGoal_MemoryNode ,
+        pat:ProactiveGoal_DetectorNode ,
+        pat:ProactiveGoal_EnvironmentContextNode ,
+        pat:ProactiveGoal_GoalCreatorNode ,
+        pat:ProactiveGoal_GoalNode ;
+    pair:hasPatternEdge
+        pat:ProactiveGoal_DetectorProducesContextEdge ,
+        pat:ProactiveGoal_CreatorUsesContextEdge ,
+        pat:ProactiveGoal_CreatorUsesPromptEdge ,
+        pat:ProactiveGoal_CreatorUsesMemoryEdge ,
+        pat:ProactiveGoal_CreatorProducesGoalEdge ;
+    pair:implementedBy pat:ProactiveGoal_MatchingOQP .
+
+pat:ProactiveGoal_PromptNode
+    a pair:PatternNode ;
+    rdfs:label "User prompt node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:ProactiveGoal_MemoryNode
+    a pair:PatternNode ;
+    rdfs:label "Agent memory node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:AgentMemory .
+
+pat:ProactiveGoal_DetectorNode
+    a pair:PatternNode ;
+    rdfs:label "Detector step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:ContextDetectionStep .
+
+pat:ProactiveGoal_EnvironmentContextNode
+    a pair:PatternNode ;
+    rdfs:label "Captured environment context node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:EnvironmentContext .
+
+pat:ProactiveGoal_GoalCreatorNode
+    a pair:PatternNode ;
+    rdfs:label "Proactive goal creator step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:GoalCreationStep .
+
+pat:ProactiveGoal_GoalNode
+    a pair:PatternNode ;
+    rdfs:label "Agent goal node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:AgentGoal .
+
+pat:ProactiveGoal_DetectorProducesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "detector produces the captured context"@en ;
+    pair:sourcePatternNode pat:ProactiveGoal_DetectorNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ProactiveGoal_EnvironmentContextNode .
+
+pat:ProactiveGoal_CreatorUsesContextEdge
+    a pair:PatternEdge ;
+    rdfs:label "goal creator uses the captured context"@en ;
+    pair:sourcePatternNode pat:ProactiveGoal_GoalCreatorNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ProactiveGoal_EnvironmentContextNode .
+
+pat:ProactiveGoal_CreatorUsesPromptEdge
+    a pair:PatternEdge ;
+    rdfs:label "goal creator uses the user prompt"@en ;
+    pair:sourcePatternNode pat:ProactiveGoal_GoalCreatorNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ProactiveGoal_PromptNode .
+
+pat:ProactiveGoal_CreatorUsesMemoryEdge
+    a pair:PatternEdge ;
+    rdfs:label "goal creator uses the agent memory"@en ;
+    pair:sourcePatternNode pat:ProactiveGoal_GoalCreatorNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ProactiveGoal_MemoryNode .
+
+pat:ProactiveGoal_CreatorProducesGoalEdge
+    a pair:PatternEdge ;
+    rdfs:label "goal creator produces the goal"@en ;
+    pair:sourcePatternNode pat:ProactiveGoal_GoalCreatorNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ProactiveGoal_GoalNode .
+
+pat:ModelQueryingMotif
+    a pair:GraphMotif ;
+    rdfs:label "Model Querying Motif"@en ;
+    dct:description """
+    Agentic motif in which a planning step puts the user's prompt to a foundation
+    model and produces the plan the agent works from.
+    """@en ;
+    rdfs:comment "How many times the planning step queries the model is runtime behaviour a graph cannot show, so this is the shape one-shot and incremental model querying share. One-shot is not a structural claim and is not in the name."@en ;
+    pair:derivedFrom pat:Cite_OneShotModelQuerying ,
+        pat:Cite_IncrementalModelQuerying ;
+    pair:hasPatternNode
+        pat:ModelQuery_PromptNode ,
+        pat:ModelQuery_ModelNode ,
+        pat:ModelQuery_PlanningStepNode ,
+        pat:ModelQuery_PlanNode ;
+    pair:hasPatternEdge
+        pat:ModelQuery_PlanningUsesPromptEdge ,
+        pat:ModelQuery_PlanningUsesModelEdge ,
+        pat:ModelQuery_PlanningProducesPlanEdge ;
+    pair:implementedBy pat:ModelQuery_MatchingOQP .
+
+pat:ModelQuery_PromptNode
+    a pair:PatternNode ;
+    rdfs:label "User prompt node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:ModelQuery_ModelNode
+    a pair:PatternNode ;
+    rdfs:label "Foundation model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:GenerativeModel .
+
+pat:ModelQuery_PlanningStepNode
+    a pair:PatternNode ;
+    rdfs:label "Plan generation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:PlanningStep .
+
+pat:ModelQuery_PlanNode
+    a pair:PatternNode ;
+    rdfs:label "Plan node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:AgentPlan .
+
+pat:ModelQuery_PlanningUsesPromptEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning uses the user prompt"@en ;
+    pair:sourcePatternNode pat:ModelQuery_PlanningStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ModelQuery_PromptNode .
+
+pat:ModelQuery_PlanningUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning queries the foundation model"@en ;
+    pair:sourcePatternNode pat:ModelQuery_PlanningStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:ModelQuery_ModelNode .
+
+pat:ModelQuery_PlanningProducesPlanEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning produces the plan"@en ;
+    pair:sourcePatternNode pat:ModelQuery_PlanningStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:ModelQuery_PlanNode .
+
+pat:IncrementalModelQueryingMotif
+    a pair:GraphMotif ;
+    rdfs:label "Incremental Model Querying Motif"@en ;
+    dct:description """
+    Agentic motif in which a planning step queries a foundation model and also
+    reads the user's feedback on its intermediate results, so the plan is built
+    step by step under the user's direction.
+    """@en ;
+    pair:derivedFrom pat:Cite_IncrementalModelQuerying ;
+    pair:hasPatternNode
+        pat:IncrQuery_PromptNode ,
+        pat:IncrQuery_ModelNode ,
+        pat:IncrQuery_PlanningStepNode ,
+        pat:IncrQuery_FeedbackNode ,
+        pat:IncrQuery_PlanNode ;
+    pair:hasPatternEdge
+        pat:IncrQuery_PlanningUsesPromptEdge ,
+        pat:IncrQuery_PlanningUsesModelEdge ,
+        pat:IncrQuery_PlanningUsesFeedbackEdge ,
+        pat:IncrQuery_PlanningProducesPlanEdge ;
+    pair:implementedBy pat:IncrQuery_MatchingOQP .
+
+pat:IncrQuery_PromptNode
+    a pair:PatternNode ;
+    rdfs:label "User prompt node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserInput .
+
+pat:IncrQuery_ModelNode
+    a pair:PatternNode ;
+    rdfs:label "Foundation model node"@en ;
+    pair:expectedClass beam:StatisticalModel ;
+    pair:expectedRole pair:GenerativeModel .
+
+pat:IncrQuery_PlanningStepNode
+    a pair:PatternNode ;
+    rdfs:label "Plan generation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:PlanningStep .
+
+pat:IncrQuery_FeedbackNode
+    a pair:PatternNode ;
+    rdfs:label "User feedback node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:UserFeedback .
+
+pat:IncrQuery_PlanNode
+    a pair:PatternNode ;
+    rdfs:label "Plan node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:AgentPlan .
+
+pat:IncrQuery_PlanningUsesPromptEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning uses the user prompt"@en ;
+    pair:sourcePatternNode pat:IncrQuery_PlanningStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IncrQuery_PromptNode .
+
+pat:IncrQuery_PlanningUsesModelEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning queries the foundation model"@en ;
+    pair:sourcePatternNode pat:IncrQuery_PlanningStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IncrQuery_ModelNode .
+
+pat:IncrQuery_PlanningUsesFeedbackEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning uses the user's feedback"@en ;
+    pair:sourcePatternNode pat:IncrQuery_PlanningStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:IncrQuery_FeedbackNode .
+
+pat:IncrQuery_PlanningProducesPlanEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning produces the plan"@en ;
+    pair:sourcePatternNode pat:IncrQuery_PlanningStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:IncrQuery_PlanNode .
+
+pat:PlanReflectionMotif
+    a pair:GraphMotif ;
+    rdfs:label "Plan Reflection Motif"@en ;
+    dct:description """
+    Agentic motif in which a reflection step reviews the plan a planning step
+    produced and returns feedback that the planning step reads to revise it. The
+    reviewer may be the agent itself, another agent or a person.
+    """@en ;
+    pair:derivedFrom pat:Cite_SelfReflection ,
+        pat:Cite_CrossReflection ,
+        pat:Cite_HumanReflection ;
+    pair:hasPatternNode
+        pat:PlanReflection_PlanningStepNode ,
+        pat:PlanReflection_PlanNode ,
+        pat:PlanReflection_ReflectionStepNode ,
+        pat:PlanReflection_FeedbackNode ;
+    pair:hasPatternEdge
+        pat:PlanReflection_PlanningProducesPlanEdge ,
+        pat:PlanReflection_ReflectionUsesPlanEdge ,
+        pat:PlanReflection_ReflectionProducesFeedbackEdge ,
+        pat:PlanReflection_PlanningUsesFeedbackEdge ;
+    pair:implementedBy pat:PlanReflection_MatchingOQP .
+
+pat:PlanReflection_PlanningStepNode
+    a pair:PatternNode ;
+    rdfs:label "Plan generation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:PlanningStep .
+
+pat:PlanReflection_PlanNode
+    a pair:PatternNode ;
+    rdfs:label "Plan under review node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:AgentPlan .
+
+pat:PlanReflection_ReflectionStepNode
+    a pair:PatternNode ;
+    rdfs:label "Plan reflection step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:PlanReflectionStep .
+
+pat:PlanReflection_FeedbackNode
+    a pair:PatternNode ;
+    rdfs:label "Reflection feedback node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:ReflectionFeedback .
+
+pat:PlanReflection_PlanningProducesPlanEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning produces the plan"@en ;
+    pair:sourcePatternNode pat:PlanReflection_PlanningStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PlanReflection_PlanNode .
+
+pat:PlanReflection_ReflectionUsesPlanEdge
+    a pair:PatternEdge ;
+    rdfs:label "reflection uses the plan"@en ;
+    pair:sourcePatternNode pat:PlanReflection_ReflectionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PlanReflection_PlanNode .
+
+pat:PlanReflection_ReflectionProducesFeedbackEdge
+    a pair:PatternEdge ;
+    rdfs:label "reflection produces feedback"@en ;
+    pair:sourcePatternNode pat:PlanReflection_ReflectionStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:PlanReflection_FeedbackNode .
+
+pat:PlanReflection_PlanningUsesFeedbackEdge
+    a pair:PatternEdge ;
+    rdfs:label "planning uses the feedback"@en ;
+    pair:sourcePatternNode pat:PlanReflection_PlanningStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:PlanReflection_FeedbackNode .
+
+pat:VotingBasedCooperationMotif
+    a pair:GraphMotif ;
+    rdfs:label "Voting-based Cooperation Motif"@en ;
+    dct:description """
+    Agentic motif in which two or more agents each submit a vote as a message,
+    and a vote aggregation step combines the votes into one decision.
+    """@en ;
+    pair:derivedFrom pat:Cite_VotingBasedCooperation ;
+    pair:hasPatternNode
+        pat:Voting_FirstVoterNode ,
+        pat:Voting_FirstVoteNode ,
+        pat:Voting_SecondVoterNode ,
+        pat:Voting_SecondVoteNode ,
+        pat:Voting_AggregationStepNode ,
+        pat:Voting_DecisionNode ;
+    pair:hasPatternEdge
+        pat:Voting_FirstVoterProducesVoteEdge ,
+        pat:Voting_SecondVoterProducesVoteEdge ,
+        pat:Voting_AggregationUsesFirstVoteEdge ,
+        pat:Voting_AggregationUsesSecondVoteEdge ,
+        pat:Voting_AggregationProducesDecisionEdge ;
+    pair:implementedBy pat:Voting_MatchingOQP .
+
+pat:Voting_FirstVoterNode
+    a pair:PatternNode ;
+    rdfs:label "Voting agent step node"@en ;
+    pair:expectedClass beam:Process .
+
+pat:Voting_FirstVoteNode
+    a pair:PatternNode ;
+    rdfs:label "Vote node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:AgentMessage .
+
+pat:Voting_SecondVoterNode
+    a pair:PatternNode ;
+    rdfs:label "Second voting agent step node"@en ;
+    pair:expectedClass beam:Process .
+
+pat:Voting_SecondVoteNode
+    a pair:PatternNode ;
+    rdfs:label "Second vote node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:AgentMessage .
+
+pat:Voting_AggregationStepNode
+    a pair:PatternNode ;
+    rdfs:label "Vote aggregation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:VoteAggregationStep .
+
+pat:Voting_DecisionNode
+    a pair:PatternNode ;
+    rdfs:label "Collective decision node"@en ;
+    pair:expectedClass beam:Data .
+
+pat:Voting_FirstVoterProducesVoteEdge
+    a pair:PatternEdge ;
+    rdfs:label "a voting agent produces its vote"@en ;
+    pair:sourcePatternNode pat:Voting_FirstVoterNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Voting_FirstVoteNode .
+
+pat:Voting_SecondVoterProducesVoteEdge
+    a pair:PatternEdge ;
+    rdfs:label "another voting agent produces its vote"@en ;
+    pair:sourcePatternNode pat:Voting_SecondVoterNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Voting_SecondVoteNode .
+
+pat:Voting_AggregationUsesFirstVoteEdge
+    a pair:PatternEdge ;
+    rdfs:label "aggregation uses the first vote"@en ;
+    pair:sourcePatternNode pat:Voting_AggregationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Voting_FirstVoteNode .
+
+pat:Voting_AggregationUsesSecondVoteEdge
+    a pair:PatternEdge ;
+    rdfs:label "aggregation uses the second vote"@en ;
+    pair:sourcePatternNode pat:Voting_AggregationStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Voting_SecondVoteNode .
+
+pat:Voting_AggregationProducesDecisionEdge
+    a pair:PatternEdge ;
+    rdfs:label "aggregation produces the decision"@en ;
+    pair:sourcePatternNode pat:Voting_AggregationStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Voting_DecisionNode .
+
+pat:DebateBasedCooperationMotif
+    a pair:GraphMotif ;
+    rdfs:label "Debate-based Cooperation Motif"@en ;
+    dct:description """
+    Agentic motif in which two agents exchange arguments in both directions,
+    each reading the other's argument and answering it, so a response is refined
+    over rounds of debate.
+    """@en ;
+    rdfs:comment "The argument role is the discriminator: a request answered by a reply is also a two-way exchange between agents, and is not a debate."@en ;
+    pair:derivedFrom pat:Cite_DebateBasedCooperation ;
+    pair:hasPatternNode
+        pat:Debate_FirstAgentNode ,
+        pat:Debate_FirstArgumentNode ,
+        pat:Debate_SecondAgentNode ,
+        pat:Debate_SecondArgumentNode ;
+    pair:hasPatternEdge
+        pat:Debate_FirstAgentProducesArgumentEdge ,
+        pat:Debate_SecondAgentUsesArgumentEdge ,
+        pat:Debate_SecondAgentProducesArgumentEdge ,
+        pat:Debate_FirstAgentUsesArgumentEdge ;
+    pair:implementedBy pat:Debate_MatchingOQP .
+
+pat:Debate_FirstAgentNode
+    a pair:PatternNode ;
+    rdfs:label "Debating agent step node"@en ;
+    pair:expectedClass beam:Process .
+
+pat:Debate_FirstArgumentNode
+    a pair:PatternNode ;
+    rdfs:label "Argument node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:DebateArgument .
+
+pat:Debate_SecondAgentNode
+    a pair:PatternNode ;
+    rdfs:label "Opposing agent step node"@en ;
+    pair:expectedClass beam:Process .
+
+pat:Debate_SecondArgumentNode
+    a pair:PatternNode ;
+    rdfs:label "Counter-argument node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:DebateArgument .
+
+pat:Debate_FirstAgentProducesArgumentEdge
+    a pair:PatternEdge ;
+    rdfs:label "an agent produces its argument"@en ;
+    pair:sourcePatternNode pat:Debate_FirstAgentNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Debate_FirstArgumentNode .
+
+pat:Debate_SecondAgentUsesArgumentEdge
+    a pair:PatternEdge ;
+    rdfs:label "the other agent reads the argument"@en ;
+    pair:sourcePatternNode pat:Debate_SecondAgentNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Debate_FirstArgumentNode .
+
+pat:Debate_SecondAgentProducesArgumentEdge
+    a pair:PatternEdge ;
+    rdfs:label "the other agent produces a counter-argument"@en ;
+    pair:sourcePatternNode pat:Debate_SecondAgentNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Debate_SecondArgumentNode .
+
+pat:Debate_FirstAgentUsesArgumentEdge
+    a pair:PatternEdge ;
+    rdfs:label "the first agent reads the counter-argument"@en ;
+    pair:sourcePatternNode pat:Debate_FirstAgentNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Debate_SecondArgumentNode .
+
+pat:ToolAgentRegistryMotif
+    a pair:GraphMotif ;
+    rdfs:label "Tool/Agent Registry Motif"@en ;
+    dct:description """
+    Agentic motif in which a coordinating planning step consults a registry of
+    tools and agents and assigns a task to the tool it selects, which carries the
+    task out.
+    """@en ;
+    rdfs:comment "Nests the Tool-Using Agent motif, with the assignment as its plan. An agent selected from the registry is the Agent Delegation motif's shape."@en ;
+    pair:derivedFrom pat:Cite_ToolAgentRegistry ;
+    pair:hasPatternNode
+        pat:Registry_RegistryNode ,
+        pat:Registry_CoordinatorNode ,
+        pat:Registry_AssignmentNode ,
+        pat:Registry_ToolStepNode ,
+        pat:Registry_ResultNode ;
+    pair:hasPatternEdge
+        pat:Registry_CoordinatorUsesRegistryEdge ,
+        pat:Registry_CoordinatorProducesAssignmentEdge ,
+        pat:Registry_ToolUsesAssignmentEdge ,
+        pat:Registry_ToolProducesResultEdge ;
+    pair:implementedBy pat:Registry_MatchingOQP .
+
+pat:Registry_RegistryNode
+    a pair:PatternNode ;
+    rdfs:label "Tool/agent registry node"@en ;
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:ToolRegistry .
+
+pat:Registry_CoordinatorNode
+    a pair:PatternNode ;
+    rdfs:label "Coordinating planning step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:PlanningStep .
+
+pat:Registry_AssignmentNode
+    a pair:PatternNode ;
+    rdfs:label "Task assignment node"@en ;
+    pair:expectedClass beam:Data .
+
+pat:Registry_ToolStepNode
+    a pair:PatternNode ;
+    rdfs:label "Selected tool invocation step node"@en ;
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:ToolInvocationStep .
+
+pat:Registry_ResultNode
+    a pair:PatternNode ;
+    rdfs:label "Tool result node"@en ;
+    pair:expectedClass beam:Data .
+
+pat:Registry_CoordinatorUsesRegistryEdge
+    a pair:PatternEdge ;
+    rdfs:label "coordinator consults the registry"@en ;
+    pair:sourcePatternNode pat:Registry_CoordinatorNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Registry_RegistryNode .
+
+pat:Registry_CoordinatorProducesAssignmentEdge
+    a pair:PatternEdge ;
+    rdfs:label "coordinator produces the task assignment"@en ;
+    pair:sourcePatternNode pat:Registry_CoordinatorNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Registry_AssignmentNode .
+
+pat:Registry_ToolUsesAssignmentEdge
+    a pair:PatternEdge ;
+    rdfs:label "the selected tool uses the assignment"@en ;
+    pair:sourcePatternNode pat:Registry_ToolStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Registry_AssignmentNode .
+
+pat:Registry_ToolProducesResultEdge
+    a pair:PatternEdge ;
+    rdfs:label "the selected tool produces its result"@en ;
+    pair:sourcePatternNode pat:Registry_ToolStepNode ;
+    pair:patternPredicate beam:produce ;
+    pair:targetPatternNode pat:Registry_ResultNode .
+
 
 #################################################################
-# Motif families
-#
-# Which family of AI system each motif is a shape of. Read off the motif's own
-# provenance and description, and kept in one block rather than scattered over
-# the declarations, because it is one shelving decision and belongs where it can
-# be reviewed as one.
-#
-# It is a statement about this library, not about a submitted architecture. No
-# match query reads it - R2 keeps matching to roles and flow relations - and a
-# real system routinely matches several families at once: a GenAI assistant
-# served by a trained model matches both.
+# Motif families and groups
 #################################################################
 
 pair:MotifFamilyScheme
@@ -2961,30 +4574,27 @@ pat:GenAIMotifFamily
     skos:inScheme pair:MotifFamilyScheme ;
     skos:prefLabel "GenAI"@en ;
     skos:definition """
-    Shapes of a generative AI application: prompting, retrieval that feeds a
-    prompt, screening around a generation step, fine-tuning, and evaluation.
+    Shapes of a generative AI application
     """@en ;
-    dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .
+    dct:source <https://doi.org/10.48550/arXiv.2312.10997> ,
+        <https://martinfowler.com/articles/gen-ai-patterns/> .
 
 pat:AgenticMotifFamily
     a skos:Concept ;
     skos:inScheme pair:MotifFamilyScheme ;
     skos:prefLabel "Agentic"@en ;
     skos:definition """
-    Shapes in which a planning step decides what happens next: tool use, memory
-    written then read back, delegation between agents, and human approval on
-    the path to an action.
+    Shapes of a foundation-model agent
     """@en ;
-    dct:source <https://genai.owasp.org/> .
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> ,
+        <https://genai.owasp.org/> .
 
 pat:MLSystemMotifFamily
     a skos:Concept ;
     skos:inScheme pair:MotifFamilyScheme ;
     skos:prefLabel "ML serving and training"@en ;
     skos:definition """
-    Shapes of a machine learning system in operation: how predictions are
-    served, how models are trained, and how the two are connected, logged, and
-    monitored.
+    Shapes of a machine learning system in operation
     """@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/> .
 
@@ -2993,46 +4603,250 @@ pat:SupplyChainMotifFamily
     skos:inScheme pair:MotifFamilyScheme ;
     skos:prefLabel "Supply chain"@en ;
     skos:definition """
-    Shapes in which something the system depends on comes from outside it. Not
-    specific to any one family of AI system, which is why it is its own.
+    Shapes in which something the system depends on comes from outside it
+    """@en ;
+    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .
+
+# A group sits under one family (skos:broader), so the library files a motif as
+# family, then group, and keeps the variants of one shape side by side.
+
+pair:MotifGroupScheme
+    a skos:ConceptScheme ;
+    skos:prefLabel "Motif group scheme"@en ;
+    skos:definition """
+    Groups of related motifs within one family: variants of one shape, or
+    shapes that are used together.
+    """@en .
+
+pat:PromptingMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:GenAIMotifFamily ;
+    skos:prefLabel "Prompting"@en ;
+    skos:definition """
+    A prompt put to a generative model, directly or after an optimiser has
+    reworked it against a template.
+    """@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2109.01652> ,
+        <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:InformationRetrievalMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:GenAIMotifFamily ;
+    skos:prefLabel "Information retrieval"@en ;
+    skos:definition """
+    Finding what to put in front of a model: retrieval over a knowledge source
+    by vectors, keywords or a language model, and the query rewriting,
+    reranking, indexing and training data around it.
+    """@en ;
+    dct:source <https://doi.org/10.1145/3748304> ,
+        <https://doi.org/10.48550/arXiv.2312.10997> .
+
+pat:RetrievalAugmentedGenerationMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:GenAIMotifFamily ;
+    skos:prefLabel "Retrieval augmented generation"@en ;
+    skos:definition """
+    Retrieved context grounding a generation step: once, or in the iterative,
+    recursive and adaptive loops a judge step drives.
+    """@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
+
+pat:GuardrailsMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:GenAIMotifFamily ;
+    skos:prefLabel "Guardrails"@en ;
+    skos:definition """
+    Control shapes that screen what reaches a generation step or what leaves
+    it: user input, retrieved content and generated responses.
+    """@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> ,
+        <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:TuningAndEvaluationMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:GenAIMotifFamily ;
+    skos:prefLabel "Tuning and evaluation"@en ;
+    skos:definition """
+    Shapes that change or check a model rather than serve it: fine-tuning a
+    pre-trained model, and scoring what a model produced.
+    """@en ;
+    dct:source <https://doi.org/10.48550/arXiv.2109.01652> ,
+        <https://martinfowler.com/articles/gen-ai-patterns/> .
+
+pat:GoalSettingMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:AgenticMotifFamily ;
+    skos:prefLabel "Goal setting"@en ;
+    skos:definition """
+    How an agent works out the goal it pursues: from the user's prompt and its
+    memory, or also from context it captures itself.
+    """@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:PlanningMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:AgenticMotifFamily ;
+    skos:prefLabel "Planning and reflection"@en ;
+    skos:definition """
+    How an agent gets its plan from a foundation model, and revises it on
+    feedback from the user, itself, another agent or a person.
+    """@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:AgentMemoryMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:AgenticMotifFamily ;
+    skos:prefLabel "Memory"@en ;
+    skos:definition """
+    What an agent keeps and reads back later: content written to a memory store
+    and recalled into a later turn.
+    """@en ;
+    dct:source <https://genai.owasp.org/> .
+
+pat:ToolUseMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:AgenticMotifFamily ;
+    skos:prefLabel "Tool use"@en ;
+    skos:definition """
+    An agent acting through tools: a planned action carried out by a tool,
+    which a registry may have been consulted to choose.
+    """@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:MultiAgentCooperationMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:AgenticMotifFamily ;
+    skos:prefLabel "Multi-agent cooperation"@en ;
+    skos:definition """
+    Agents passing work, votes or arguments to one another.
+    """@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+
+pat:AgentOversightMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:AgenticMotifFamily ;
+    skos:prefLabel "Oversight"@en ;
+    skos:definition """
+    Control shapes that stand between an agent's decision and its action: a
+    person approving it, or a policy step screening it.
+    """@en ;
+    dct:source <https://doi.org/10.1016/j.jss.2024.112278> ,
+        <https://genai.owasp.org/> .
+
+pat:ServingMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:MLSystemMotifFamily ;
+    skos:prefLabel "Serving"@en ;
+    skos:definition """
+    How predictions are served: inline, queued, in batches, after
+    preprocessing, or in stages.
+    """@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/> .
+
+pat:TrainingMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:MLSystemMotifFamily ;
+    skos:prefLabel "Training"@en ;
+    skos:definition """
+    How models are trained: as one scheduled job, or as a pipeline of jobs.
+    """@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/> .
+
+pat:LifecycleMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:MLSystemMotifFamily ;
+    skos:prefLabel "Lifecycle"@en ;
+    skos:definition """
+    How a trained model reaches serving: through a release step, or
+    automatically.
+    """@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/> .
+
+pat:OperationMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:MLSystemMotifFamily ;
+    skos:prefLabel "Operation"@en ;
+    skos:definition """
+    How a model in service is packaged, loaded, logged and monitored.
+    """@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/> .
+
+pat:ExternalDependencyMotifGroup
+    a skos:Concept ;
+    skos:inScheme pair:MotifGroupScheme ;
+    skos:broader pat:SupplyChainMotifFamily ;
+    skos:prefLabel "External dependencies"@en ;
+    skos:definition """
+    A step that uses a resource from outside the system.
     """@en ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .
 
 # GenAIMotifFamily
-pat:DirectPromptingMotif                  pair:motifFamily pat:GenAIMotifFamily .
-pat:EmbeddingsMotif                       pair:motifFamily pat:GenAIMotifFamily .
-pat:EvalsMotif                            pair:motifFamily pat:GenAIMotifFamily .
-pat:FineTuningMotif                       pair:motifFamily pat:GenAIMotifFamily .
-pat:GuardrailsMotif                       pair:motifFamily pat:GenAIMotifFamily .
-pat:HybridRetrieverMotif                  pair:motifFamily pat:GenAIMotifFamily .
-pat:InformationRetrievalMotif             pair:motifFamily pat:GenAIMotifFamily .
-pat:InputScreeningMotif                   pair:motifFamily pat:GenAIMotifFamily .
-pat:OutputScreeningMotif                  pair:motifFamily pat:GenAIMotifFamily .
-pat:QueryRewritingMotif                   pair:motifFamily pat:GenAIMotifFamily .
-pat:RerankerMotif                         pair:motifFamily pat:GenAIMotifFamily .
-pat:RetrievalAugmentedGenerationMotif     pair:motifFamily pat:GenAIMotifFamily .
-pat:VectorBasedInformationRetrievalMotif  pair:motifFamily pat:GenAIMotifFamily .
+pat:DirectPromptingMotif                  pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:PromptingMotifGroup .
+pat:PromptResponseOptimiserMotif          pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:PromptingMotifGroup .
+pat:InformationRetrievalMotif             pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
+pat:VectorBasedInformationRetrievalMotif  pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
+pat:LLMBasedInformationRetrievalMotif     pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
+pat:HybridRetrieverMotif                  pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
+pat:QueryRewritingMotif                   pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
+pat:RerankerMotif                         pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
+pat:EmbeddingsMotif                       pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
+pat:RetrievalDataAugmentationMotif        pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
+pat:RetrievalAugmentedGenerationMotif     pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:RetrievalAugmentedGenerationMotifGroup .
+pat:IterativeRAGMotif                     pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:RetrievalAugmentedGenerationMotifGroup .
+pat:RecursiveRAGMotif                     pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:RetrievalAugmentedGenerationMotifGroup .
+pat:AdaptiveRAGMotif                      pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:RetrievalAugmentedGenerationMotifGroup .
+pat:GuardrailsMotif                       pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:GuardrailsMotifGroup .
+pat:InputScreeningMotif                   pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:GuardrailsMotifGroup .
+pat:OutputScreeningMotif                  pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:GuardrailsMotifGroup .
+pat:RetrievalScreeningMotif               pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:GuardrailsMotifGroup .
+pat:FineTuningMotif                       pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:TuningAndEvaluationMotifGroup .
+pat:EvalsMotif                            pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:TuningAndEvaluationMotifGroup .
 
 # AgenticMotifFamily
-pat:AgentDelegationMotif  pair:motifFamily pat:AgenticMotifFamily .
-pat:AgentMemoryLoopMotif  pair:motifFamily pat:AgenticMotifFamily .
-pat:HumanOversightMotif   pair:motifFamily pat:AgenticMotifFamily .
-pat:ToolUsingAgentMotif   pair:motifFamily pat:AgenticMotifFamily .
+pat:GoalCreationMotif              pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:GoalSettingMotifGroup .
+pat:ProactiveGoalCreationMotif     pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:GoalSettingMotifGroup .
+pat:ModelQueryingMotif             pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:PlanningMotifGroup .
+pat:IncrementalModelQueryingMotif  pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:PlanningMotifGroup .
+pat:PlanReflectionMotif            pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:PlanningMotifGroup .
+pat:AgentMemoryLoopMotif           pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:AgentMemoryMotifGroup .
+pat:ToolUsingAgentMotif            pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:ToolUseMotifGroup .
+pat:ToolAgentRegistryMotif         pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:ToolUseMotifGroup .
+pat:AgentDelegationMotif           pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:MultiAgentCooperationMotifGroup .
+pat:VotingBasedCooperationMotif    pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:MultiAgentCooperationMotifGroup .
+pat:DebateBasedCooperationMotif    pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:MultiAgentCooperationMotifGroup .
+pat:HumanOversightMotif            pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:AgentOversightMotifGroup .
+pat:ExecutionScreeningMotif        pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:AgentOversightMotifGroup .
 
 # MLSystemMotifFamily
-pat:AsynchronousPredictionMotif  pair:motifFamily pat:MLSystemMotifFamily .
-pat:BatchPredictionMotif         pair:motifFamily pat:MLSystemMotifFamily .
-pat:BatchTrainingMotif           pair:motifFamily pat:MLSystemMotifFamily .
-pat:ModelInImageMotif            pair:motifFamily pat:MLSystemMotifFamily .
-pat:ModelLoadMotif               pair:motifFamily pat:MLSystemMotifFamily .
-pat:MultiStagePredictionMotif    pair:motifFamily pat:MLSystemMotifFamily .
-pat:PipelineTrainingMotif        pair:motifFamily pat:MLSystemMotifFamily .
-pat:PredictionLoggingMotif       pair:motifFamily pat:MLSystemMotifFamily .
-pat:PredictionMonitoringMotif    pair:motifFamily pat:MLSystemMotifFamily .
-pat:PreprocessPredictionMotif    pair:motifFamily pat:MLSystemMotifFamily .
-pat:SynchronousPredictionMotif   pair:motifFamily pat:MLSystemMotifFamily .
-pat:TrainThenServeMotif          pair:motifFamily pat:MLSystemMotifFamily .
-pat:TrainingToServingMotif       pair:motifFamily pat:MLSystemMotifFamily .
+pat:AsynchronousPredictionMotif  pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
+pat:BatchPredictionMotif         pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
+pat:MultiStagePredictionMotif    pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
+pat:PreprocessPredictionMotif    pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
+pat:SynchronousPredictionMotif   pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
+pat:BatchTrainingMotif           pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:TrainingMotifGroup .
+pat:PipelineTrainingMotif        pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:TrainingMotifGroup .
+pat:TrainThenServeMotif          pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:LifecycleMotifGroup .
+pat:TrainingToServingMotif       pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:LifecycleMotifGroup .
+pat:ModelInImageMotif            pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:OperationMotifGroup .
+pat:ModelLoadMotif               pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:OperationMotifGroup .
+pat:PredictionLoggingMotif       pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:OperationMotifGroup .
+pat:PredictionMonitoringMotif    pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:OperationMotifGroup .
 
 # SupplyChainMotifFamily
 pat:ExternalDependencyMotif  pair:motifFamily pat:SupplyChainMotifFamily .
