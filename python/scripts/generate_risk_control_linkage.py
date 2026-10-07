@@ -275,37 +275,53 @@ def main() -> int:
     add("")
     add("Motifs are risk-neutral: they describe a shape, not a problem. The grouping below")
     add("is the *published catalogue each was derived from* (`pair:derivedFrom`), because")
-    add("that is the only classification the data actually carries - PAIR-AI does not")
-    add("assign motifs to families of its own.")
+    add("that is the only classification the data actually carries. The relation is m:n,")
+    add("so a motif derived from several catalogues is listed under each of them.")
     add("")
 
-    def catalogue(motif):
+    def cited_work(citation):
+        """`Author et al. (Year) - Title`, read off an APA bibliographicCitation."""
+        cite = g.value(citation, DCTERMS.bibliographicCitation)
+        if cite is None:
+            return None
+        authors, rest = str(cite).split(" (", 1)
+        year, rest = rest.split(")", 1)
+        title = rest.lstrip(". ").split(". ")[0].split(" (arXiv:")[0]
+        return f"{authors.split(',')[0]} et al. ({year}) - {title}"
+
+    def catalogues(motif):
         # derivedFrom names an entity, not a document: for a design pattern that
         # entity is a pair:DesignPatternCitation whose own dct:source is the
         # catalogue. Reading the IRI alone would credit every one to PAIR-AI.
+        found = set()
         for obj in g.objects(motif, PAIR.derivedFrom):
-            for url in [str(obj)] + [str(s) for s in g.objects(obj, DCTERMS.source)]:
-                if "mercari" in url:
-                    section = url.split("ml-system-design-pattern/")[-1].split("/")[0]
-                    return "Mercari ML System Design Patterns", section.replace("-patterns", "")
-                if "martinfowler" in url:
-                    return "Fowler - Patterns of Generative AI", "GenAI"
-                if "owasp-asi" in url:
-                    return "OWASP Agentic Top 10 (ASI)", "agentic"
-                if "owasp" in url:
-                    return "OWASP LLM Top 10", "supply chain"
-        return "unrecorded", ""
+            pattern = str(g.value(obj, SKOS.prefLabel) or local(obj))
+            work = cited_work(obj)
+            urls = [str(obj)] + [str(s) for s in g.objects(obj, DCTERMS.source)]
+            if work:
+                found.add((work, pattern))
+            elif any("mercari" in u for u in urls):
+                url = next(u for u in urls if "mercari" in u)
+                section = url.split("ml-system-design-pattern/")[-1].split("/")[0]
+                found.add(("Mercari ML System Design Patterns", section.replace("-patterns", "")))
+            elif any("martinfowler" in u for u in urls):
+                found.add(("Fowler - Patterns of Generative AI", pattern))
+            elif any("owasp-asi" in u for u in urls):
+                found.add(("OWASP Agentic Top 10 (ASI)", "agentic"))
+            elif any("owasp" in u for u in urls):
+                found.add(("OWASP LLM Top 10", "supply chain"))
+        return sorted(found) or [("unrecorded", "")]
 
     grouped = defaultdict(lambda: defaultdict(list))
     for motif in motifs:
-        source, section = catalogue(motif)
-        grouped[source][section].append(motif)
+        for source, section in catalogues(motif):
+            grouped[source][section].append(motif)
 
     for source in sorted(grouped, key=lambda s: -sum(len(v) for v in grouped[s].values())):
         total = sum(len(v) for v in grouped[source].values())
         add(f"### {source} ({total})")
         add("")
-        add("| Motif | Catalogue section | Risk patterns it feeds |")
+        add("| Motif | Pattern or section cited | Risk patterns it feeds |")
         add("|---|---|---|")
         for section in sorted(grouped[source]):
             for motif in sorted(grouped[source][section], key=lambda m: local(m)):
@@ -321,7 +337,7 @@ def main() -> int:
 
     add("---")
     add("")
-    add("## 8. Risk patterns - all 13")
+    add(f"## 8. Risk patterns - all {len(risk_patterns)}")
     add("")
     add("| Risk pattern | Anchor | Motifs | Suggested controls |")
     add("|---|---|---|---|")
