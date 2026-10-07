@@ -2577,3 +2577,148 @@ def test_a_press_on_a_pool_body_still_pans(scene_restored) -> None:
     after = loop.run_until_complete(handle.js(
         "window.PairAI.state.lastProcess.participants.map((p) => p.id)"))
     assert after == before, "a pan across a pool restacked the diagram"
+
+
+def _wheel(loop, handle, x, y, delta=120):
+    """A real wheel, not a dispatched event: the handler reads ev.target, and a
+    synthetic one proves nothing about where the browser would route it."""
+    loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
+        "type": "mouseWheel", "x": x, "y": y, "deltaX": 0, "deltaY": delta,
+    }))
+    time.sleep(0.35)
+
+
+def test_a_wheel_over_a_tray_scrolls_it_rather_than_zooming_the_canvas(page) -> None:
+    """The palettes and the detail popup are children of the canvas wrap, and the
+    wrap's wheel handler called preventDefault on everything that was not the
+    business level. So the motif tray - 31 entries, taller than the viewport -
+    could not be reached with a mouse at all, and the wheel zoomed instead."""
+    loop, handle = page
+    _descend(loop, handle)
+    assert _on_architecture(loop, handle), "did not reach the architecture level"
+
+    tray = loop.run_until_complete(handle.js("""(() => {
+        const host = document.querySelector('#motif-palette');
+        if (!host) return null;
+        if (host.classList.contains('collapsed')) host.querySelector('.tray-head').click();
+        const r = host.getBoundingClientRect();
+        return {
+            x: Math.round(r.left + r.width / 2),
+            y: Math.round(r.top + r.height / 2),
+            scrollable: host.scrollHeight > host.clientHeight + 4,
+            top: host.scrollTop,
+        };
+    })()"""))
+    assert tray, "the architecture level offers no motif tray"
+    assert tray["scrollable"], (
+        "the tray is not taller than its box, so this cannot test scrolling"
+    )
+
+    before = loop.run_until_complete(handle.js(
+        "document.querySelector('#viewport').getAttribute('transform')"))
+
+    _wheel(loop, handle, tray["x"], tray["y"])
+
+    after = loop.run_until_complete(handle.js("""(() => ({
+        top: document.querySelector('#motif-palette').scrollTop,
+        transform: document.querySelector('#viewport').getAttribute('transform'),
+    }))()"""))
+
+    assert after["top"] > tray["top"], (
+        f"the wheel did not scroll the tray (scrollTop stayed {after['top']})"
+    )
+    assert after["transform"] == before, (
+        "the wheel zoomed the canvas instead of scrolling the tray it was over"
+    )
+
+
+def test_the_term_picker_is_not_clipped_by_the_popup_it_opens_in(page) -> None:
+    """The node popup is `overflow: auto` with a max height, so an absolutely
+    positioned popover was clipped to about two rows that nothing could scroll.
+    It is placed fixed from the trigger instead: fully on screen, taller than
+    the popup that hosts it, and its list scrolls."""
+    loop, handle = page
+    _descend(loop, handle)
+    assert _on_architecture(loop, handle), "did not reach the architecture level"
+
+    # open the popup for a data element, then its role picker
+    opened = loop.run_until_complete(handle.js("""(() => {
+        const node = document.querySelector('#viewport g.node.data');
+        if (!node) return 0;
+        node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        node.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+        return 1;
+    })()"""))
+    assert opened, "no element on the architecture canvas to open"
+    time.sleep(0.5)
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const add = document.querySelector('.node-detail .mp-add');
+        if (!add) return null;
+        const r = add.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert at, "the node popup offers no term picker"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(0.4)
+
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const pop = document.querySelector('.node-detail .mp-pop');
+        const host = document.querySelector('.node-detail');
+        if (!pop || pop.classList.contains('hidden')) return null;
+        const p = pop.getBoundingClientRect();
+        const h = host.getBoundingClientRect();
+        const list = pop.querySelector('.mp-list');
+        return {
+            height: Math.round(p.height),
+            hostHeight: Math.round(h.height),
+            onScreen: p.top >= 0 && p.bottom <= window.innerHeight + 1
+                      && p.left >= 0 && p.right <= window.innerWidth + 1,
+            options: pop.querySelectorAll('.mp-opt').length,
+            overflows: list.scrollHeight > list.clientHeight + 4,
+            fixed: getComputedStyle(pop).position === 'fixed',
+        };
+    })()"""))
+    assert seen, "the picker did not open in the node popup"
+
+    assert seen["fixed"], "the popover is still positioned inside the clipping popup"
+    assert seen["onScreen"], "the popover is placed partly off screen"
+    assert seen["options"] > 10, f"only {seen['options']} terms are reachable"
+    assert seen["overflows"], "the list does not overflow, so scrolling is untested"
+
+    scrolled = loop.run_until_complete(handle.js("""(() => {
+        const list = document.querySelector('.node-detail .mp-pop .mp-list');
+        list.scrollTop = 120;
+        return list.scrollTop;
+    })()"""))
+    assert scrolled > 0, "the option list cannot be scrolled"
+
+
+def test_the_motif_tray_is_shelved_by_the_kind_of_system_each_is_a_shape_of(page) -> None:
+    """31 motifs in one alphabetical column said nothing about what each one is
+    for. The tray shelves them the way the library does, by `pair:motifFamily`,
+    which is a filing decision about this library and is read by no match query.
+    """
+    loop, handle = page
+    _descend(loop, handle)
+    assert _on_architecture(loop, handle), "did not reach the architecture level"
+
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const host = document.querySelector('#motif-palette');
+        if (!host) return null;
+        if (host.classList.contains('collapsed')) host.querySelector('.tray-head').click();
+        const heads = [...host.querySelectorAll('.motif-family')];
+        return {
+            families: heads.map((h) => h.firstChild.textContent),
+            counts: heads.map((h) => Number(h.querySelector('.motif-family-count').textContent)),
+            items: host.querySelectorAll('.motif-item').length,
+        };
+    })()"""))
+    assert seen, "the architecture level offers no motif tray"
+
+    assert seen["items"] == 31, f"the tray lists {seen['items']} motifs"
+    assert seen["families"] == [
+        "Agentic", "GenAI", "ML serving and training", "Supply chain",
+    ], seen["families"]
+    assert seen["counts"] == [4, 13, 13, 1], seen["counts"]
+    assert sum(seen["counts"]) == seen["items"], "a motif is shelved twice or not at all"

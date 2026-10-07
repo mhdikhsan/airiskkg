@@ -14,7 +14,13 @@ from pathlib import Path
 import pytest
 
 from airiskkg.paths import REPO_ROOT
-from conftest import AGENT_NS, TARIFF_NS, example_path, process_path  # noqa: E402
+from conftest import (  # noqa: E402
+    AGENT_NS,
+    GRAPH_RAG_NS,
+    TARIFF_NS,
+    example_path,
+    process_path,
+)
 
 pytestmark = pytest.mark.browser
 
@@ -78,7 +84,7 @@ def served():
     return port
 
 
-def _dump_dom(browser: str, url: str, budget: int = 15000) -> str:
+def _dump_dom(browser: str, url: str, budget: int = 15000, size: str = "1400,900") -> str:
     """Virtual time fast-forwards timers, but not the work behind a fetch - an
     assessment takes a couple of real seconds, so a probe that runs one needs a
     budget that accounts for it."""
@@ -88,7 +94,7 @@ def _dump_dom(browser: str, url: str, budget: int = 15000) -> str:
             "--headless=new",
             "--disable-gpu",
             "--no-sandbox",
-            "--window-size=1400,900",
+            f"--window-size={size}",
             f"--virtual-time-budget={budget}",
             "--dump-dom",
             url,
@@ -923,3 +929,512 @@ def test_a_message_flow_from_a_black_box_pool_is_drawn(served) -> None:
     assert seen["pools"] == 2 and seen["folds"] == 1, (
         f"the black-box pool offers to open, and there is nothing inside it: {report}"
     )
+
+
+def test_the_term_picker_searches_and_shows_what_each_term_means(served) -> None:
+    """97 terms on four shelves put 50 under one heading, in a native <select>
+    that could neither search nor show a definition.
+
+    Four facts, measured on the one model element in the bundled example: the
+    picker opens, every option carries its definition, the shelf that goes on
+    this element sorts first, and typing narrows the offer. The shelf orders
+    rather than filters, because some match queries constrain no class at all.
+    """
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+
+    graph = example_path(GRAPH_RAG_NS).read_text(encoding="utf-8")
+    probe = STATIC / "_picker_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = """
+  <div id="probe-log"></div>
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  window.addEventListener("load", () => setTimeout(() => {
+    window.PairAI.Editor.setValue(THE_TTL);
+    setTimeout(() => {
+      document.querySelectorAll(".drawer-tab").forEach((t) => {
+        if (t.dataset.drawerTab === "annotate") t.click();
+      });
+      setTimeout(() => {
+        const rows = [...document.querySelectorAll(".annotate-row:not(.annotate-row-head)")];
+        log("rows=" + rows.length);
+        const row = rows.find((r) =>
+          (r.querySelector(".kind-badge") || {}).textContent === "model");
+        log("foundModelRow=" + (row ? 1 : 0));
+        if (!row) return;
+        row.querySelector(".mp-add").click();
+        setTimeout(() => {
+          const pop = row.querySelector(".mp-pop");
+          log("popOpen=" + (pop && !pop.classList.contains("hidden") ? 1 : 0));
+          log("offered=" + pop.querySelectorAll(".mp-opt").length);
+          log("withDef=" + pop.querySelectorAll(".mp-opt-def").length);
+          const shelves = [...pop.querySelectorAll(".mp-shelf")].map((s) => s.textContent);
+          log("shelves=" + shelves.length);
+          log("modelShelfFirst=" + (/Statistical Model/.test(shelves[0] || "") ? 1 : 0));
+          log("marksTheRest=" + shelves.filter((s) => /not this element/.test(s)).length);
+          // the element already plays Foundation LLM and Generative Model, and a
+          // selected term is not offered again
+          log("alreadyOn=" + row.querySelectorAll(".an-role .mp-chip").length);
+          const search = pop.querySelector(".mp-search");
+          search.value = "artifact";
+          search.dispatchEvent(new Event("input", { bubbles: true }));
+          setTimeout(() => {
+            const left = pop.querySelectorAll(".mp-opt");
+            log("narrowed=" + left.length);
+            if (!left.length) return;
+            left[0].click();
+            setTimeout(() => {
+              log("chips=" + row.querySelectorAll(".an-role .mp-chip").length);
+            }, 300);
+          }, 300);
+        }, 700);
+      }, 2500);
+    }, 2500);
+  }, 2000));
+  </script>
+""".replace("THE_TTL", json.dumps(graph))
+    probe.write_text(source.replace("</body>", driver + "</body>"), encoding="utf-8")
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_picker_probe.html", budget=26000)
+    finally:
+        probe.unlink(missing_ok=True)
+
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    report = found.group(1).strip() if found else ""
+    seen = {k: int(v) for k, v in re.findall(r"(\w+)=(\d+)", report)}
+    assert "offered" in seen, f"the probe never reported: {report!r}"
+
+    assert seen["foundModelRow"] == 1, f"no model row to annotate: {report}"
+    assert seen["popOpen"] == 1, "the picker did not open"
+    assert seen["offered"] > 0, "the picker offered nothing"
+    assert seen["withDef"] == seen["offered"], "an option is offered without its definition"
+    assert seen["shelves"] > 1, "the offer is not shelved at all"
+    assert seen["modelShelfFirst"] == 1, (
+        f"the terms that go on a model do not sort first: {report}"
+    )
+    assert seen["marksTheRest"] >= 1, (
+        "the shelves that do not apply are offered without saying so"
+    )
+    assert 0 < seen["narrowed"] < seen["offered"], f"typing did not narrow the offer: {report}"
+    assert seen["chips"] == seen["alreadyOn"] + 1, (
+        f"picking a term did not record it: {report}"
+    )
+
+
+def test_the_library_shelves_the_annotation_vocabulary_by_what_it_goes_on(served) -> None:
+    """The library counted 97 roles in its stats and offered no way to read one.
+    The Terms tab shelves them by the BEAM class they are annotated on, because
+    the role hierarchy's four top-level terms cannot: 50 sit under one."""
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+
+    probe = STATIC / "_terms_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = r"""
+  <div id="probe-log"></div>
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  window.addEventListener("load", () => setTimeout(() => {
+    document.querySelector("#btn-library").click();
+    setTimeout(() => {
+      const tab = [...document.querySelectorAll(".library-tab")]
+        .find((t) => t.dataset.libraryTab === "terms");
+      log("hasTab=" + (tab ? 1 : 0));
+      if (!tab) return;
+      log("counted=" + parseInt(tab.textContent.replace(/\D/g, ""), 10));
+      tab.click();
+      setTimeout(() => {
+        log("shelves=" + document.querySelectorAll("#library-detail h4").length);
+        log("tiles=" + document.querySelectorAll(
+          "#library-detail .lib-term:not(.lib-term-flat)").length);
+        log("defs=" + document.querySelectorAll(
+          "#library-detail .lib-term:not(.lib-term-flat) .lib-term-def").length);
+        log("railGroups=" + document.querySelectorAll("#library-list .lib-group").length);
+        log("categories=" + document.querySelectorAll("#library-detail .lib-term-flat").length);
+        log("saysDerived=" + (/derived by the assessment/
+          .test(document.querySelector("#library-detail").textContent) ? 1 : 0));
+        // open one and read what the detail says about it
+        document.querySelector("#library-detail .lib-term:not(.lib-term-flat)").click();
+        setTimeout(() => {
+          const text = document.querySelector("#library-detail").textContent;
+          log("saysWhereItGoes=" + (/goes on /.test(text) ? 1 : 0));
+          log("saysWhatNamesIt=" + (/Related motifs/.test(text) && /Related risk patterns/.test(text) && /names? it/.test(text) ? 1 : 0));
+          log("saysWhereFrom=" + (/Where it comes from/.test(text) ? 1 : 0));
+        }, 500);
+      }, 700);
+    }, 2500);
+  }, 2000));
+  </script>
+"""
+    probe.write_text(source.replace("</body>", driver + "</body>"), encoding="utf-8")
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_terms_probe.html", budget=22000)
+    finally:
+        probe.unlink(missing_ok=True)
+
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    report = found.group(1).strip() if found else ""
+    seen = {k: int(v) for k, v in re.findall(r"(\w+)=(\d+)", report)}
+    assert "tiles" in seen, f"the probe never reported: {report!r}"
+
+    assert seen["hasTab"] == 1, "the library has no Terms tab"
+    assert seen["counted"] == 97, f"the tab does not count the vocabulary off the graph: {report}"
+    assert seen["tiles"] == 97, "not every term is shelved"
+    assert seen["defs"] == 97, "a term is listed without its definition"
+    assert seen["shelves"] > 4, (
+        f"still shelved by the four top-level roles rather than by class: {report}"
+    )
+    assert seen["railGroups"] > 4, "the rail is not shelved either"
+    assert seen["categories"] == 7, "the data categories are not listed with the roles"
+    assert seen["saysDerived"] == 1, (
+        "nothing says a data category can arrive without anyone annotating it (R8)"
+    )
+    assert seen["saysWhereItGoes"] == 1, "the detail does not say what the term goes on"
+    assert seen["saysWhatNamesIt"] == 1, "the detail does not say what names it"
+    # Hidden while the role mappings are reviewed; the API still serves it.
+    assert seen["saysWhereFrom"] == 0, "the term's origin is shown while it is under review"
+
+
+def test_the_library_rail_folds_by_group(served) -> None:
+    """31 motifs and 97 terms as one long column give a reader no way to put a
+    part of the library aside. The shelved tabs fold; Risks does not, because 15
+    of them are a list rather than a filing problem."""
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+
+    probe = STATIC / "_fold_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = """
+  <div id="probe-log"></div>
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  const rows = () => document.querySelectorAll("#library-list .lib-row").length;
+  const tab = (name) => [...document.querySelectorAll(".library-tab")]
+    .find((t) => t.dataset.libraryTab === name);
+  window.addEventListener("load", () => setTimeout(() => {
+    document.querySelector("#btn-library").click();
+    setTimeout(() => {
+      log("startFromRisk=" + (document.querySelector("#library-start-risk") ? 1 : 0));
+      log("riskGroups=" + document.querySelectorAll("#library-list .lib-group").length);
+      tab("motifs").click();
+      setTimeout(() => {
+        const heads = document.querySelectorAll("#library-list .lib-group");
+        log("motifGroups=" + heads.length);
+        log("atFirst=" + rows());
+        log("shutAtFirst=" + document.querySelectorAll("#library-list .lib-group.shut").length);
+        heads[0].click();
+        setTimeout(() => {
+          log("afterOpen=" + rows());
+          log("shutMarked=" + document.querySelectorAll("#library-list .lib-group.shut").length);
+          document.querySelectorAll("#library-list .lib-group")[0].click();
+          setTimeout(() => { log("afterClose=" + rows()); }, 300);
+        }, 300);
+      }, 500);
+    }, 2500);
+  }, 2000));
+  </script>
+"""
+    probe.write_text(source.replace("</body>", driver + "</body>"), encoding="utf-8")
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_fold_probe.html", budget=22000)
+    finally:
+        probe.unlink(missing_ok=True)
+
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    report = found.group(1).strip() if found else ""
+    seen = {k: int(v) for k, v in re.findall(r"(\w+)=(\d+)", report)}
+    assert "motifGroups" in seen, f"the probe never reported: {report!r}"
+
+    assert seen["startFromRisk"] == 0, "the risk starter is still offered"
+    assert seen["riskGroups"] == 0, "Risks grew a fold it does not need"
+    assert seen["motifGroups"] == 4, f"the motif rail has {seen['motifGroups']} groups"
+    assert seen["atFirst"] == 0, f"the rail opened unfolded, showing {seen['atFirst']} rows"
+    assert seen["shutAtFirst"] == 4, "not every group starts folded"
+    assert seen["afterOpen"] == 4, f"opening Agentic showed {seen['afterOpen']} rows, not its 4"
+    assert seen["shutMarked"] == 3, "the opened group is still marked as folded"
+    assert seen["afterClose"] == 0, "folding it again did not hide its rows"
+
+
+def test_the_library_landing_is_drawn_rather_than_written(served) -> None:
+    """A motif is a shape and a term belongs to one side of a bipartite graph.
+    Both were paragraphs. The motif card draws the structure it matches, and a
+    term carries the class colour and the box-or-oval of the notation it
+    annotates - so neither has to be read to be told apart."""
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+
+    probe = STATIC / "_landing_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = """
+  <div id="probe-log"></div>
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  const tab = (name) => [...document.querySelectorAll(".library-tab")]
+    .find((t) => t.dataset.libraryTab === name);
+  window.addEventListener("load", () => setTimeout(() => {
+    document.querySelector("#btn-library").click();
+    setTimeout(() => {
+      tab("motifs").click();
+      setTimeout(() => {
+        const tiles = [...document.querySelectorAll("#library-detail .lib-tile")];
+        log("motifTiles=" + tiles.length);
+        log("drawn=" + tiles.filter((t) => t.querySelector("svg.motif-preview")).length);
+        log("withNodes=" + tiles.filter((t) =>
+          t.querySelectorAll("svg.motif-preview .shape").length > 1).length);
+        tab("terms").click();
+        setTimeout(() => {
+          const terms = [...document.querySelectorAll("#library-detail .lib-term:not(.lib-term-flat)")];
+          const kinds = new Set();
+          terms.forEach((t) => ["data", "process", "model", "symbol", "agent", "resource", "other"]
+            .forEach((k) => { if (t.classList.contains(k)) kinds.add(k); }));
+          log("terms=" + terms.length);
+          log("kinded=" + terms.filter((t) =>
+            ["data", "process", "model", "symbol", "agent", "resource", "other"]
+              .some((k) => t.classList.contains(k))).length);
+          log("distinctKinds=" + kinds.size);
+          log("processShelves=" + document.querySelectorAll(
+            "#library-detail .lib-shelf .lib-swatch.process").length);
+          log("resourceShelves=" + document.querySelectorAll(
+            "#library-detail .lib-shelf .lib-swatch.data, #library-detail .lib-shelf .lib-swatch.model, "
+            + "#library-detail .lib-shelf .lib-swatch.resource").length);
+          log("usage=" + document.querySelectorAll("#library-detail .lib-term-uses").length);
+          log("quiet=" + document.querySelectorAll("#library-detail .lib-term.quiet").length);
+        }, 600);
+      }, 600);
+    }, 2500);
+  }, 2000));
+  </script>
+"""
+    probe.write_text(source.replace("</body>", driver + "</body>"), encoding="utf-8")
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_landing_probe.html", budget=24000)
+    finally:
+        probe.unlink(missing_ok=True)
+
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    report = found.group(1).strip() if found else ""
+    seen = {k: int(v) for k, v in re.findall(r"(\w+)=(\d+)", report)}
+    assert "motifTiles" in seen, f"the probe never reported: {report!r}"
+
+    assert seen["motifTiles"] == 31
+    assert seen["drawn"] == 31, f"only {seen['drawn']} motif cards draw their shape"
+    assert seen["withNodes"] == 31, "a drawn motif has no elements in it"
+
+    assert seen["terms"] == 97
+    assert seen["kinded"] == 97, "a term is listed without the class it goes on"
+    assert seen["distinctKinds"] >= 3, (
+        f"every term reads as one kind ({seen['distinctKinds']}), so the colour says nothing"
+    )
+    assert seen["processShelves"] >= 1, "no shelf is marked as the process side"
+    assert seen["resourceShelves"] >= 3, "the resource shelves are not marked as such"
+    assert seen["usage"] == 97, "a term does not say how much of the library reads it"
+    # exactly the 11 no motif reaches. The 14 read only through the term they
+    # refine are in full use, and dimming them would say otherwise.
+    assert seen["quiet"] == 11, f"{seen['quiet']} terms are marked unread"
+
+
+def _probe(served: int, name: str, script: str, budget: int = 22000,
+           size: str = "1400,900") -> dict[str, int]:
+    """Load the page with `script` appended, and read back its `key=n|` log."""
+    browser = _browser()
+    if not browser:
+        pytest.skip("no Chromium-family browser to render with")
+    probe = STATIC / f"_{name}_probe.html"
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = '<div id="probe-log"></div>\n' + script
+    probe.write_text(source.replace("</body>", driver + "</body>"), encoding="utf-8")
+    try:
+        dom = _dump_dom(browser, f"http://127.0.0.1:{served}/static/_{name}_probe.html",
+                        budget=budget, size=size)
+    finally:
+        probe.unlink(missing_ok=True)
+    found = re.search(r'id="probe-log"[^>]*>(.*?)</div>', dom, re.S)
+    report = found.group(1).strip() if found else ""
+    seen = {k: int(v) for k, v in re.findall(r"(\w+)=(-?\d+)", report)}
+    seen["_report"] = report  # type: ignore[assignment]
+    return seen
+
+
+# Opens the library on a tab and, optionally, one entry in it.
+_OPEN = """
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  const openOn = (tabName, entry, then) => {
+    document.querySelector("#btn-library").click();
+    setTimeout(() => {
+      [...document.querySelectorAll(".library-tab")]
+        .find((t) => t.dataset.libraryTab === tabName).click();
+      setTimeout(() => {
+        if (entry) {
+          [...document.querySelectorAll("#library-detail .lib-tile, #library-detail .lib-term")]
+            .find((n) => n.textContent.trim().startsWith(entry)).click();
+        }
+        setTimeout(then, 600);
+      }, 500);
+    }, 1500);
+  };
+  </script>
+"""
+
+
+def test_no_motif_is_drawn_with_a_step_feeding_a_step(served) -> None:
+    """The drawing has the bipartite rule too. `kindOf` fell back to "process"
+    for any class it did not name, so the one `beam:Resource` node in the library
+    - External Dependency - was drawn as a step, and its `step beam:use resource`
+    edge read as process to process. This reads every declaration through the
+    preview's own mapping, as the library page does."""
+    seen = _probe(served, "bipartite", """
+  <script type="module">
+  import { kindOf } from "./lib/motif_preview.js";
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  fetch("/api/library").then((r) => r.json()).then((lib) => {
+    let edges = 0, sameSide = 0, untyped = 0;
+    lib.motifs.forEach((motif) => {
+      const kind = new Map(motif.nodes.map((n) => [n.key, kindOf(n.cls)]));
+      kind.forEach((k) => { if (k === "other") untyped += 1; });
+      motif.edges.forEach(([from, , to]) => {
+        edges += 1;
+        if ((kind.get(from) === "process") === (kind.get(to) === "process")) sameSide += 1;
+      });
+    });
+    log("motifs=" + lib.motifs.length);
+    log("edges=" + edges);
+    log("sameSide=" + sameSide);
+    log("untyped=" + untyped);
+  });
+  </script>
+""", budget=12000)
+    assert "edges" in seen, f"the probe never reported: {seen['_report']!r}"
+    assert seen["motifs"] == 31
+    assert seen["edges"] > 100, "the library's edges were not read"
+    assert seen["sameSide"] == 0, (
+        f"{seen['sameSide']} drawn edges join two steps or two resources"
+    )
+    assert seen["untyped"] == 0, "a declared class reaches the drawing with no kind"
+
+
+_RISK_PAGE = _OPEN + """
+  <script>
+  window.addEventListener("load", () => setTimeout(() => openOn("risks", "Prompt injection", () => {
+    const page = document.querySelector("#library-detail");
+    const text = page.textContent;
+    const heads = [...page.querySelectorAll(".lib-panel-head h3")];
+    const mech = heads.find((h) => h.textContent === "Risk mechanism");
+    log("mechanism=" + (mech ? 1 : 0));
+    log("raisedWhen=" + (/raised when/.test(text) ? 1 : 0));
+    log("conditionSection=" + (/Applicability conditions/i.test(text) ? 1 : 0));
+    if (mech) {
+      const r = mech.getBoundingClientRect();
+      log("mechInView=" + (r.top >= 0 && r.bottom <= window.innerHeight ? 1 : 0));
+    }
+    log("headingPx=" + Math.round(Math.min(...heads.map((h) => parseFloat(getComputedStyle(h).fontSize)))));
+    const back = page.querySelector(".lib-back");
+    const pr = page.getBoundingClientRect();
+    const br = back.getBoundingClientRect();
+    log("backOnRight=" + (br.left > pr.left + pr.width / 2 ? 1 : 0));
+    log("backHeight=" + Math.round(br.height));
+    log("backSays=" + (back.textContent.trim() === "All risk patterns" ? 1 : 0));
+    log("overflow=" + (page.scrollWidth - page.clientWidth));
+    back.click();
+    setTimeout(() => {
+      log("backToLanding=" + (document.querySelector("#library-detail .lib-landing-title") ? 1 : 0));
+    }, 300);
+  }), 2000));
+  </script>
+"""
+
+
+def test_a_risk_page_leads_with_its_mechanism(served) -> None:
+    """Conditions are read inside the risk mechanism rather than as a section of
+    their own, and the mechanism is in view without scrolling past every
+    diagram - at the side when the page is wide, first when it is narrow."""
+    for size in ("1400,900", "1000,900"):
+        seen = _probe(served, "riskpage", _RISK_PAGE, size=size)
+        assert "mechanism" in seen, f"the probe never reported at {size}: {seen['_report']!r}"
+        assert seen["mechanism"] == 1, f"no Risk mechanism panel at {size}"
+        assert seen["raisedWhen"] == 1, "the condition was dropped rather than merged in"
+        assert seen["conditionSection"] == 0, "conditions still have a section of their own"
+        assert seen["mechInView"] == 1, f"the mechanism is below the fold at {size}"
+        assert seen["headingPx"] >= 15, f"panel headings render at {seen['headingPx']}px"
+        assert seen["backOnRight"] == 1, "the way back is not on the right"
+        assert seen["backHeight"] >= 28, f"the way back is {seen['backHeight']}px tall"
+        assert seen["backSays"] == 1, "the way back does not say where it goes"
+        assert seen["overflow"] <= 1, (
+            f"the page is {seen['overflow']}px wider than its panel at {size}, "
+            "which is what scrolled it sideways and cut off the first letter of every line"
+        )
+        assert seen["backToLanding"] == 1, "the way back did not return to the catalogue"
+
+
+def test_a_motif_page_fits_its_panel_at_any_width(served) -> None:
+    """The External Dependency page ran off the right edge in a narrow window."""
+    script = _OPEN + """
+  <script>
+  window.addEventListener("load", () => setTimeout(() => openOn("motifs", "External Dependency", () => {
+    const page = document.querySelector("#library-detail");
+    log("overflow=" + (page.scrollWidth - page.clientWidth));
+    log("legend=" + page.querySelectorAll(".lib-legend-item").length);
+    log("resourceSwatch=" + page.querySelectorAll(".lib-legend .lib-swatch.resource").length);
+    log("processSwatch=" + page.querySelectorAll(".lib-legend .lib-swatch.process").length);
+    log("addInHero=" + [...page.querySelectorAll(".lib-hero .btn")]
+      .filter((b) => b.textContent === "Add to canvas").length);
+  }), 2000));
+  </script>
+"""
+    for size in ("1400,900", "1000,900"):
+        seen = _probe(served, "motifpage", script, size=size)
+        assert "overflow" in seen, f"the probe never reported at {size}: {seen['_report']!r}"
+        assert seen["overflow"] <= 1, f"the page is {seen['overflow']}px too wide at {size}"
+        assert seen["legend"] == 2, "the legend does not name the two kinds drawn"
+        assert seen["resourceSwatch"] == 1, "the dependency is not drawn as a resource"
+        assert seen["processSwatch"] == 1, "the using step is not drawn as a step"
+        assert seen["addInHero"] == 1, "the page's own action is not in its header"
+
+
+def test_a_term_page_marks_where_the_term_sits(served) -> None:
+    """Every structure that reads a term is drawn with the element the term would
+    annotate marked, and one reached through a refined term is told apart."""
+    seen = _probe(served, "termpage", _OPEN + """
+  <script>
+  window.addEventListener("load", () => setTimeout(() => openOn("terms", "Batch Dataset", () => {
+    const uses = [...document.querySelectorAll("#library-detail .lib-use")];
+    log("uses=" + uses.length);
+    log("marked=" + uses.filter((u) => u.querySelector(".mp-hl")).length);
+    log("inherited=" + uses.filter((u) => u.classList.contains("inherited")).length);
+  }), 2000));
+  </script>
+""")
+    assert "uses" in seen, f"the probe never reported: {seen['_report']!r}"
+    assert seen["uses"] == 2, f"Batch Dataset is read by {seen['uses']} structures here, not 2"
+    assert seen["marked"] == 2, "a structure is drawn without the term's place in it"
+    assert seen["inherited"] == 1, "the structure reached by refinement is not told apart"
+
+
+def test_each_landing_says_what_it_is_in_one_line(served) -> None:
+    """The risk note ran to four lines inside an 80ch cap on a wide screen."""
+    seen = _probe(served, "notes", _OPEN + """
+  <script>
+  const note = () => (document.querySelector("#library-detail .lib-note") || {}).textContent || "";
+  window.addEventListener("load", () => setTimeout(() => openOn("risks", null, () => {
+    log("risks=" + note().length);
+    [...document.querySelectorAll(".library-tab")].find((t) => t.dataset.libraryTab === "motifs").click();
+    setTimeout(() => {
+      log("motifs=" + note().length);
+      [...document.querySelectorAll(".library-tab")].find((t) => t.dataset.libraryTab === "terms").click();
+      setTimeout(() => {
+        log("terms=" + note().length);
+        log("capped=" + (getComputedStyle(document.querySelector("#library-detail .lib-note")).maxWidth !== "none" ? 1 : 0));
+      }, 400);
+    }, 400);
+  }), 2000));
+  </script>
+""")
+    assert "terms" in seen, f"the probe never reported: {seen['_report']!r}"
+    for tab in ("risks", "motifs", "terms"):
+        assert 0 < seen[tab] <= 130, f"the {tab} note is {seen[tab]} characters"
+    assert seen["capped"] == 0, "the note is still held to a narrow column"
