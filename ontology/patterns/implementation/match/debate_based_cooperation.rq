@@ -1,0 +1,46 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Debate-based cooperation motif match"@en ;
+        pair:matchesMotif pat:DebateBasedCooperationMotif ;
+        pair:hasNodeBinding ?firstAgentB , ?firstArgumentB , ?secondAgentB , ?secondArgumentB .
+
+    ?firstAgentB     a pair:NodeBinding ; pair:bindsPatternNode pat:Debate_FirstAgentNode ;     pair:matchedElement ?firstAgent .
+    ?firstArgumentB  a pair:NodeBinding ; pair:bindsPatternNode pat:Debate_FirstArgumentNode ;  pair:matchedElement ?firstArgument .
+    ?secondAgentB    a pair:NodeBinding ; pair:bindsPatternNode pat:Debate_SecondAgentNode ;    pair:matchedElement ?secondAgent .
+    ?secondArgumentB a pair:NodeBinding ; pair:bindsPatternNode pat:Debate_SecondArgumentNode ; pair:matchedElement ?secondArgument .
+}
+WHERE {
+    ?firstArgument a beam:Data ; pair:playsRole/pair:subRoleOf* pair:DebateArgument .
+    ?secondArgument a beam:Data ; pair:playsRole/pair:subRoleOf* pair:DebateArgument .
+
+    # Each reads what the other argued.
+    ?firstAgent a/rdfs:subClassOf* beam:Process ;
+                beam:produce ?firstArgument ;
+                beam:use ?secondArgument .
+    ?secondAgent a/rdfs:subClassOf* beam:Process ;
+                 beam:produce ?secondArgument ;
+                 beam:use ?firstArgument .
+
+    # The same exchange once, not once from each side.
+    FILTER(STR(?firstAgent) < STR(?secondAgent))
+    FILTER(?firstArgument != ?secondArgument)
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/debate-based-cooperation/",
+        ENCODE_FOR_URI(STR(?firstAgent)), "/",
+        ENCODE_FOR_URI(STR(?secondAgent)), "/",
+        ENCODE_FOR_URI(STR(?firstArgument)), "/",
+        ENCODE_FOR_URI(STR(?secondArgument))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/first-agent"))     AS ?firstAgentB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/first-argument"))  AS ?firstArgumentB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/second-agent"))    AS ?secondAgentB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/second-argument")) AS ?secondArgumentB)
+}

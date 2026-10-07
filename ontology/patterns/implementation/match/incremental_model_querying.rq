@@ -1,0 +1,47 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Incremental model querying motif match"@en ;
+        pair:matchesMotif pat:IncrementalModelQueryingMotif ;
+        pair:hasNodeBinding ?promptB , ?modelB , ?planningB , ?feedbackB , ?planB .
+
+    ?promptB   a pair:NodeBinding ; pair:bindsPatternNode pat:IncrQuery_PromptNode ;       pair:matchedElement ?prompt .
+    ?modelB    a pair:NodeBinding ; pair:bindsPatternNode pat:IncrQuery_ModelNode ;        pair:matchedElement ?model .
+    ?planningB a pair:NodeBinding ; pair:bindsPatternNode pat:IncrQuery_PlanningStepNode ; pair:matchedElement ?planningStep .
+    ?feedbackB a pair:NodeBinding ; pair:bindsPatternNode pat:IncrQuery_FeedbackNode ;     pair:matchedElement ?feedback .
+    ?planB     a pair:NodeBinding ; pair:bindsPatternNode pat:IncrQuery_PlanNode ;         pair:matchedElement ?plan .
+}
+WHERE {
+    ?planningStep a/rdfs:subClassOf* beam:Process ;
+                  pair:playsRole/pair:subRoleOf* pair:PlanningStep ;
+                  beam:use ?feedback ;
+                  beam:use ?prompt ;
+                  beam:use ?model ;
+                  beam:produce ?plan .
+
+    ?feedback a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserFeedback .
+    ?prompt a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
+    FILTER(?prompt != ?feedback)
+    ?model a beam:StatisticalModel ; pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+    ?plan a beam:Data ; pair:playsRole/pair:subRoleOf* pair:AgentPlan .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/incremental-model-querying/",
+        ENCODE_FOR_URI(STR(?planningStep)), "/",
+        ENCODE_FOR_URI(STR(?prompt)), "/",
+        ENCODE_FOR_URI(STR(?feedback)), "/",
+        ENCODE_FOR_URI(STR(?model)), "/",
+        ENCODE_FOR_URI(STR(?plan))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/prompt"))        AS ?promptB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/model"))         AS ?modelB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/planning-step")) AS ?planningB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/feedback"))      AS ?feedbackB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/plan"))          AS ?planB)
+}

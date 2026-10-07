@@ -27,14 +27,58 @@ WHERE {
     {
         ?match
             a pair:MotifMatch ;
-            pair:matchesMotif ?motif ;
-            pair:hasNodeBinding ?delegatingBinding , ?messageBinding , ?receivingBinding .
-        ?delegatingBinding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
-                           pair:matchedElement ?delegatingStep .
-        ?messageBinding    pair:bindsPatternNode pat:AgentDelegation_MessageNode ;
-                           pair:matchedElement ?message .
-        ?receivingBinding  pair:bindsPatternNode pat:AgentDelegation_ReceivingStepNode ;
-                           pair:matchedElement ?receivingStep .
+            pair:matchesMotif ?motif .
+        # A sending step, the message, and the step that acts on it: a delegation,
+        # each vote on its way to the tally, or each argument in a debate.
+        {
+            ?match pair:hasNodeBinding ?delegatingBinding , ?messageBinding , ?receivingBinding .
+            ?delegatingBinding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
+                               pair:matchedElement ?delegatingStep .
+            ?messageBinding    pair:bindsPatternNode pat:AgentDelegation_MessageNode ;
+                               pair:matchedElement ?message .
+            ?receivingBinding  pair:bindsPatternNode pat:AgentDelegation_ReceivingStepNode ;
+                               pair:matchedElement ?receivingStep .
+        }
+        UNION
+        {
+            ?match pair:hasNodeBinding ?delegatingBinding , ?messageBinding , ?receivingBinding .
+            ?delegatingBinding pair:bindsPatternNode pat:Voting_FirstVoterNode ;
+                               pair:matchedElement ?delegatingStep .
+            ?messageBinding    pair:bindsPatternNode pat:Voting_FirstVoteNode ;
+                               pair:matchedElement ?message .
+            ?receivingBinding  pair:bindsPatternNode pat:Voting_AggregationStepNode ;
+                               pair:matchedElement ?receivingStep .
+        }
+        UNION
+        {
+            ?match pair:hasNodeBinding ?delegatingBinding , ?messageBinding , ?receivingBinding .
+            ?delegatingBinding pair:bindsPatternNode pat:Voting_SecondVoterNode ;
+                               pair:matchedElement ?delegatingStep .
+            ?messageBinding    pair:bindsPatternNode pat:Voting_SecondVoteNode ;
+                               pair:matchedElement ?message .
+            ?receivingBinding  pair:bindsPatternNode pat:Voting_AggregationStepNode ;
+                               pair:matchedElement ?receivingStep .
+        }
+        UNION
+        {
+            ?match pair:hasNodeBinding ?delegatingBinding , ?messageBinding , ?receivingBinding .
+            ?delegatingBinding pair:bindsPatternNode pat:Debate_FirstAgentNode ;
+                               pair:matchedElement ?delegatingStep .
+            ?messageBinding    pair:bindsPatternNode pat:Debate_FirstArgumentNode ;
+                               pair:matchedElement ?message .
+            ?receivingBinding  pair:bindsPatternNode pat:Debate_SecondAgentNode ;
+                               pair:matchedElement ?receivingStep .
+        }
+        UNION
+        {
+            ?match pair:hasNodeBinding ?delegatingBinding , ?messageBinding , ?receivingBinding .
+            ?delegatingBinding pair:bindsPatternNode pat:Debate_SecondAgentNode ;
+                               pair:matchedElement ?delegatingStep .
+            ?messageBinding    pair:bindsPatternNode pat:Debate_SecondArgumentNode ;
+                               pair:matchedElement ?message .
+            ?receivingBinding  pair:bindsPatternNode pat:Debate_FirstAgentNode ;
+                               pair:matchedElement ?receivingStep .
+        }
 
         FILTER NOT EXISTS {
             ?mediatingStep pair:playsRole ?mediatingRole .

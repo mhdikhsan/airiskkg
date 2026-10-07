@@ -32,6 +32,7 @@ WHERE {
             pat:EmbeddingsMotif
             pat:FineTuningMotif
             pat:TrainingToServingMotif
+            pat:RetrievalDataAugmentationMotif
         }
 
         ?match pair:hasNodeBinding/pair:matchedElement ?untrustedSource .

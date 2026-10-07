@@ -28,6 +28,7 @@ WHERE {
             a pair:MotifMatch ;
             pair:matchesMotif ?motif ;
             pair:hasNodeBinding ?planningBinding .
+        # The step that decides what the agent does, as each agentic motif names it.
         {
             ?planningBinding pair:bindsPatternNode pat:ToolAgent_PlanningStepNode ;
                              pair:matchedElement ?planningStep .
@@ -35,6 +36,36 @@ WHERE {
         UNION
         {
             ?planningBinding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
+                             pair:matchedElement ?planningStep .
+        }
+        UNION
+        {
+            ?planningBinding pair:bindsPatternNode pat:GoalCreation_GoalCreatorNode ;
+                             pair:matchedElement ?planningStep .
+        }
+        UNION
+        {
+            ?planningBinding pair:bindsPatternNode pat:ProactiveGoal_GoalCreatorNode ;
+                             pair:matchedElement ?planningStep .
+        }
+        UNION
+        {
+            ?planningBinding pair:bindsPatternNode pat:ModelQuery_PlanningStepNode ;
+                             pair:matchedElement ?planningStep .
+        }
+        UNION
+        {
+            ?planningBinding pair:bindsPatternNode pat:IncrQuery_PlanningStepNode ;
+                             pair:matchedElement ?planningStep .
+        }
+        UNION
+        {
+            ?planningBinding pair:bindsPatternNode pat:PlanReflection_PlanningStepNode ;
+                             pair:matchedElement ?planningStep .
+        }
+        UNION
+        {
+            ?planningBinding pair:bindsPatternNode pat:Registry_CoordinatorNode ;
                              pair:matchedElement ?planningStep .
         }
 

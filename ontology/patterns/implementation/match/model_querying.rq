@@ -1,0 +1,41 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Model querying motif match"@en ;
+        pair:matchesMotif pat:ModelQueryingMotif ;
+        pair:hasNodeBinding ?promptB , ?modelB , ?planningB , ?planB .
+
+    ?promptB   a pair:NodeBinding ; pair:bindsPatternNode pat:ModelQuery_PromptNode ;       pair:matchedElement ?prompt .
+    ?modelB    a pair:NodeBinding ; pair:bindsPatternNode pat:ModelQuery_ModelNode ;        pair:matchedElement ?model .
+    ?planningB a pair:NodeBinding ; pair:bindsPatternNode pat:ModelQuery_PlanningStepNode ; pair:matchedElement ?planningStep .
+    ?planB     a pair:NodeBinding ; pair:bindsPatternNode pat:ModelQuery_PlanNode ;         pair:matchedElement ?plan .
+}
+WHERE {
+    ?planningStep a/rdfs:subClassOf* beam:Process ;
+                  pair:playsRole/pair:subRoleOf* pair:PlanningStep ;
+                  beam:use ?prompt ;
+                  beam:use ?model ;
+                  beam:produce ?plan .
+
+    ?prompt a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
+    ?model a beam:StatisticalModel ; pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+    ?plan a beam:Data ; pair:playsRole/pair:subRoleOf* pair:AgentPlan .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/model-querying/",
+        ENCODE_FOR_URI(STR(?planningStep)), "/",
+        ENCODE_FOR_URI(STR(?prompt)), "/",
+        ENCODE_FOR_URI(STR(?model)), "/",
+        ENCODE_FOR_URI(STR(?plan))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/prompt"))        AS ?promptB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/model"))         AS ?modelB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/planning-step")) AS ?planningB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/plan"))          AS ?planB)
+}

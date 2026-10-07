@@ -1,0 +1,51 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Retrieval data augmentation motif match"@en ;
+        pair:matchesMotif pat:RetrievalDataAugmentationMotif ;
+        pair:hasNodeBinding ?sourceB , ?llmB , ?genStepB , ?dataB , ?trainingB , ?retrieverB .
+
+    ?sourceB    a pair:NodeBinding ; pair:bindsPatternNode pat:RetrAug_SourceDocumentNode ; pair:matchedElement ?source .
+    ?llmB       a pair:NodeBinding ; pair:bindsPatternNode pat:RetrAug_LLMNode ;            pair:matchedElement ?llm .
+    ?genStepB   a pair:NodeBinding ; pair:bindsPatternNode pat:RetrAug_GenerationStepNode ; pair:matchedElement ?genStep .
+    ?dataB      a pair:NodeBinding ; pair:bindsPatternNode pat:RetrAug_SyntheticDataNode ;  pair:matchedElement ?syntheticData .
+    ?trainingB  a pair:NodeBinding ; pair:bindsPatternNode pat:RetrAug_TrainingStepNode ;   pair:matchedElement ?trainingStep .
+    ?retrieverB a pair:NodeBinding ; pair:bindsPatternNode pat:RetrAug_RetrieverModelNode ; pair:matchedElement ?retriever .
+}
+WHERE {
+    ?genStep a/rdfs:subClassOf* beam:Process ;
+             pair:playsRole/pair:subRoleOf* pair:SyntheticDataGenerationStep ;
+             beam:use ?source ;
+             beam:use ?llm ;
+             beam:produce ?syntheticData .
+
+    ?source a beam:Data ; pair:playsRole/pair:subRoleOf* pair:SourceDocument .
+    ?llm a beam:StatisticalModel ; pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+    ?syntheticData a beam:Data ; pair:playsRole/pair:subRoleOf* pair:SyntheticTrainingData .
+
+    ?trainingStep a/rdfs:subClassOf* beam:Process ;
+                  pair:playsRole/pair:subRoleOf* pair:TrainingStep ;
+                  beam:use ?syntheticData ;
+                  beam:produce ?retriever .
+    ?retriever a beam:StatisticalModel ; pair:playsRole/pair:subRoleOf* pair:RetrieverModel .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/retrieval-data-augmentation/",
+        ENCODE_FOR_URI(STR(?genStep)), "/",
+        ENCODE_FOR_URI(STR(?syntheticData)), "/",
+        ENCODE_FOR_URI(STR(?trainingStep)), "/",
+        ENCODE_FOR_URI(STR(?retriever))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/source-document"))  AS ?sourceB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/llm"))              AS ?llmB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/generation-step"))  AS ?genStepB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/synthetic-data"))   AS ?dataB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/training-step"))    AS ?trainingB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/retriever"))        AS ?retrieverB)
+}

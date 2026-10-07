@@ -1,0 +1,57 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Voting-based cooperation motif match"@en ;
+        pair:matchesMotif pat:VotingBasedCooperationMotif ;
+        pair:hasNodeBinding ?firstVoterB , ?firstVoteB , ?secondVoterB , ?secondVoteB ,
+            ?aggregationB , ?decisionB .
+
+    ?firstVoterB  a pair:NodeBinding ; pair:bindsPatternNode pat:Voting_FirstVoterNode ;      pair:matchedElement ?firstVoter .
+    ?firstVoteB   a pair:NodeBinding ; pair:bindsPatternNode pat:Voting_FirstVoteNode ;       pair:matchedElement ?firstVote .
+    ?secondVoterB a pair:NodeBinding ; pair:bindsPatternNode pat:Voting_SecondVoterNode ;     pair:matchedElement ?secondVoter .
+    ?secondVoteB  a pair:NodeBinding ; pair:bindsPatternNode pat:Voting_SecondVoteNode ;      pair:matchedElement ?secondVote .
+    ?aggregationB a pair:NodeBinding ; pair:bindsPatternNode pat:Voting_AggregationStepNode ; pair:matchedElement ?aggregation .
+    ?decisionB    a pair:NodeBinding ; pair:bindsPatternNode pat:Voting_DecisionNode ;        pair:matchedElement ?decision .
+}
+WHERE {
+    ?aggregation a/rdfs:subClassOf* beam:Process ;
+                 pair:playsRole/pair:subRoleOf* pair:VoteAggregationStep ;
+                 beam:use ?firstVote ;
+                 beam:use ?secondVote ;
+                 beam:produce ?decision .
+
+    ?firstVote a beam:Data ; pair:playsRole/pair:subRoleOf* pair:AgentMessage .
+    ?secondVote a beam:Data ; pair:playsRole/pair:subRoleOf* pair:AgentMessage .
+    # Each pair of votes once, not once in each order.
+    FILTER(STR(?firstVote) < STR(?secondVote))
+
+    ?firstVoter a/rdfs:subClassOf* beam:Process ; beam:produce ?firstVote .
+    ?secondVoter a/rdfs:subClassOf* beam:Process ; beam:produce ?secondVote .
+    FILTER(?firstVoter != ?secondVoter)
+    FILTER(?firstVoter != ?aggregation && ?secondVoter != ?aggregation)
+
+    ?decision a beam:Data .
+    FILTER(?decision != ?firstVote && ?decision != ?secondVote)
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/voting-based-cooperation/",
+        ENCODE_FOR_URI(STR(?aggregation)), "/",
+        ENCODE_FOR_URI(STR(?firstVoter)), "/",
+        ENCODE_FOR_URI(STR(?firstVote)), "/",
+        ENCODE_FOR_URI(STR(?secondVoter)), "/",
+        ENCODE_FOR_URI(STR(?secondVote)), "/",
+        ENCODE_FOR_URI(STR(?decision))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/first-voter"))  AS ?firstVoterB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/first-vote"))   AS ?firstVoteB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/second-voter")) AS ?secondVoterB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/second-vote"))  AS ?secondVoteB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/aggregation"))  AS ?aggregationB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/decision"))     AS ?decisionB)
+}
