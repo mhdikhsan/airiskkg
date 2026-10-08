@@ -8,7 +8,7 @@ WHERE {
     {
         ?tainted pair:playsRole ?taintedRole .
         ?taintedRole pair:subRoleOf* ?rootRole .
-        VALUES ?rootRole { pair:PublicUserInput pair:RetrievedContext }
+        VALUES ?rootRole { pair:PublicUserInput pair:RetrievedContext pair:EnvironmentContext }
     }
     UNION
     {
@@ -16,7 +16,7 @@ WHERE {
         {
             ?upstream pair:playsRole ?upstreamRole .
             ?upstreamRole pair:subRoleOf* ?rootRole .
-            VALUES ?rootRole { pair:PublicUserInput pair:RetrievedContext }
+            VALUES ?rootRole { pair:PublicUserInput pair:RetrievedContext pair:EnvironmentContext }
         }
         UNION
         {

@@ -1,5 +1,6 @@
 "use strict";
 
+import { kindOf } from "./motif_preview.js";
 
 function el(tag, attrs, children) {
   const node = document.createElement(tag);
@@ -22,6 +23,11 @@ const OTHER = "Other";
 // The BEAM class the term goes on; `group` is the old top-level role.
 function shelfOf(item) {
   return item.shelf || item.group || OTHER;
+}
+
+// The canvas's own shape for the shelf's class, so a shelf reads as the box it goes on.
+function shelfKind(item) {
+  return item.shelfId ? kindOf(item.shelfId.split(/[#/]/).pop()) : null;
 }
 
 // Orders the shelves, never filters them: some match queries constrain no class
@@ -150,13 +156,20 @@ export const MultiPicker = function (items, selectedIds, opts) {
 
     let index = 0;
     for (const [name, group, rank] of shelves(shown)) {
-      listEl.appendChild(el("div", { class: "mp-shelf" + (rank > 1 ? " off" : ""), }, [
-        el("span", {}, rank > 1 ? name + " (not this element)" : name),
+      const kind = shelfKind(group[0]);
+      // one box per shelf, so its sticky heading leaves with its last term
+      const section = el("div", { class: "mp-group" }, el("div", {
+        class: "mp-shelf" + (kind ? " " + kind : "") + (rank > 1 ? " off" : ""),
+      }, [
+        kind ? el("span", { class: "lib-swatch " + kind }) : null,
+        el("span", { class: "mp-shelf-name" }, name),
+        rank > 1 ? el("span", { class: "mp-shelf-note" }, "not this element") : null,
         el("span", { class: "mp-shelf-count" }, String(group.length)),
       ]));
+      listEl.appendChild(section);
       for (const it of group) {
         const at = index++;
-        listEl.appendChild(el("button", {
+        section.appendChild(el("button", {
           type: "button",
           class: "mp-opt" + (at === cursor ? " at" : ""),
           role: "option",

@@ -32,13 +32,8 @@ function initDivider() {
   const editorPane = $("#editor-pane");
   let dragging = false;
   divider.addEventListener("pointerdown", (ev) => {
-    /* The collapse button lives on the divider, and the drag takes pointer
-     * capture - which retargets the click that follows and would leave the
-     * button dead. Same trap as the canvas pan and the opening choice. */
     if (ev.target.closest("button")) return;
     dragging = true;
-    // Guarded like the canvas: WebKit throws on a pointer it no longer knows
-    // about, and an exception here leaves the divider dead for the session.
     try { divider.setPointerCapture(ev.pointerId); } catch (error) { /* already gone */ }
     document.body.classList.add("resizing");
   });
@@ -325,9 +320,7 @@ async function init() {
     setStatus("ok", "Starter graph loaded");
   });
 
-  /* The brand is the way back to the opening question. It has to clear first:
-   * refreshProcess settles the choice again the moment there is anything to
-   * draw, so the question cannot stand over a canvas with content on it. */
+  
   $("#btn-home").addEventListener("click", () => {
     const hasContent = Boolean(Editor.getValue().trim());
     if (hasContent && !window.confirm(
@@ -414,11 +407,6 @@ async function init() {
       button.disabled = false;
     }
   });
-
-  /* The workbench opens on the library rather than on an empty canvas: a
-   * reader who has not seen a motif cannot draw one, and the blank canvas said
-   * nothing about what would be found on it. Only when there is nothing loaded
-   * - a restored document is its own answer to the opening question. */
 
 
   $("#drawer-toggle").addEventListener("click", toggleDrawer);

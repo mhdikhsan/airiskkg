@@ -1,0 +1,41 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "LLM-based information retrieval motif match"@en ;
+        pair:matchesMotif pat:LLMBasedInformationRetrievalMotif ;
+        pair:hasNodeBinding ?queryB , ?llmB , ?retrievalB , ?resultB .
+
+    ?queryB     a pair:NodeBinding ; pair:bindsPatternNode pat:LLMIR_QueryNode ;           pair:matchedElement ?query .
+    ?llmB       a pair:NodeBinding ; pair:bindsPatternNode pat:LLMIR_LLMNode ;             pair:matchedElement ?llm .
+    ?retrievalB a pair:NodeBinding ; pair:bindsPatternNode pat:LLMIR_RetrievalStepNode ;   pair:matchedElement ?retrievalStep .
+    ?resultB    a pair:NodeBinding ; pair:bindsPatternNode pat:LLMIR_RetrievedResultNode ; pair:matchedElement ?result .
+}
+WHERE {
+    ?retrievalStep a/rdfs:subClassOf* beam:Process ;
+                   pair:playsRole/pair:subRoleOf* pair:RetrievalStep ;
+                   beam:use ?query ;
+                   beam:use ?llm ;
+                   beam:produce ?result .
+
+    ?query a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
+    ?llm a beam:StatisticalModel ; pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
+    ?result a beam:Data ; pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/llm-based-ir/",
+        ENCODE_FOR_URI(STR(?retrievalStep)), "/",
+        ENCODE_FOR_URI(STR(?query)), "/",
+        ENCODE_FOR_URI(STR(?llm)), "/",
+        ENCODE_FOR_URI(STR(?result))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/query"))          AS ?queryB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/llm"))            AS ?llmB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/retrieval-step")) AS ?retrievalB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/result"))         AS ?resultB)
+}

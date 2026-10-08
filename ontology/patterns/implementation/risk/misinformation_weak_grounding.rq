@@ -13,7 +13,7 @@ CONSTRUCT {
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
         pair:generatedFromMatch ?match ;
-        pair:generatedByMotif pat:RetrievalAugmentedGenerationMotif ;
+        pair:generatedByMotif ?motif ;
         pair:hasDerivedMechanism ?mechanism ;
         pair:hasEvidence ?query ,
             ?retrievedCtx ,
@@ -27,30 +27,63 @@ CONSTRUCT {
 }
 WHERE {
     {
-        ?match
-            a pair:MotifMatch ;
-            pair:matchesMotif pat:RetrievalAugmentedGenerationMotif ;
-            pair:hasNodeBinding ?queryBinding ,
-                ?retrievedCtxBinding ,
-                ?genStepBinding ,
-                ?llmBinding ,
-                ?responseBinding .
-
-        ?queryBinding
-            pair:bindsPatternNode pat:RAG_QueryNode ;
-            pair:matchedElement ?query .
-        ?retrievedCtxBinding
-            pair:bindsPatternNode pat:RAG_RetrievedContextNode ;
-            pair:matchedElement ?retrievedCtx .
-        ?genStepBinding
-            pair:bindsPatternNode pat:RAG_GenerationStepNode ;
-            pair:matchedElement ?genStep .
-        ?llmBinding
-            pair:bindsPatternNode pat:RAG_LLMNode ;
-            pair:matchedElement ?llm .
-        ?responseBinding
-            pair:bindsPatternNode pat:RAG_ResponseNode ;
-            pair:matchedElement ?response .
+        # RAG and its iterative, recursive and adaptive variants, each read
+        # through the pattern nodes its own match query binds.
+        {
+            ?match
+                a pair:MotifMatch ;
+                pair:matchesMotif pat:RetrievalAugmentedGenerationMotif ;
+                pair:hasNodeBinding ?queryBinding , ?retrievedCtxBinding ,
+                    ?genStepBinding , ?llmBinding , ?responseBinding .
+            ?queryBinding        pair:bindsPatternNode pat:RAG_QueryNode ;            pair:matchedElement ?query .
+            ?retrievedCtxBinding pair:bindsPatternNode pat:RAG_RetrievedContextNode ; pair:matchedElement ?retrievedCtx .
+            ?genStepBinding      pair:bindsPatternNode pat:RAG_GenerationStepNode ;   pair:matchedElement ?genStep .
+            ?llmBinding          pair:bindsPatternNode pat:RAG_LLMNode ;              pair:matchedElement ?llm .
+            ?responseBinding     pair:bindsPatternNode pat:RAG_ResponseNode ;         pair:matchedElement ?response .
+            BIND(pat:RetrievalAugmentedGenerationMotif AS ?motif)
+        }
+        UNION
+        {
+            ?match
+                a pair:MotifMatch ;
+                pair:matchesMotif pat:IterativeRAGMotif ;
+                pair:hasNodeBinding ?queryBinding , ?retrievedCtxBinding ,
+                    ?genStepBinding , ?llmBinding , ?responseBinding .
+            ?queryBinding        pair:bindsPatternNode pat:IterRAG_QueryNode ;            pair:matchedElement ?query .
+            ?retrievedCtxBinding pair:bindsPatternNode pat:IterRAG_RetrievedContextNode ; pair:matchedElement ?retrievedCtx .
+            ?genStepBinding      pair:bindsPatternNode pat:IterRAG_GenerationStepNode ;   pair:matchedElement ?genStep .
+            ?llmBinding          pair:bindsPatternNode pat:IterRAG_LLMNode ;              pair:matchedElement ?llm .
+            ?responseBinding     pair:bindsPatternNode pat:IterRAG_AnswerNode ;           pair:matchedElement ?response .
+            BIND(pat:IterativeRAGMotif AS ?motif)
+        }
+        UNION
+        {
+            ?match
+                a pair:MotifMatch ;
+                pair:matchesMotif pat:RecursiveRAGMotif ;
+                pair:hasNodeBinding ?queryBinding , ?retrievedCtxBinding ,
+                    ?genStepBinding , ?llmBinding , ?responseBinding .
+            ?queryBinding        pair:bindsPatternNode pat:RecRAG_QueryNode ;            pair:matchedElement ?query .
+            ?retrievedCtxBinding pair:bindsPatternNode pat:RecRAG_RetrievedContextNode ; pair:matchedElement ?retrievedCtx .
+            ?genStepBinding      pair:bindsPatternNode pat:RecRAG_GenerationStepNode ;   pair:matchedElement ?genStep .
+            ?llmBinding          pair:bindsPatternNode pat:RecRAG_LLMNode ;              pair:matchedElement ?llm .
+            ?responseBinding     pair:bindsPatternNode pat:RecRAG_AnswerNode ;           pair:matchedElement ?response .
+            BIND(pat:RecursiveRAGMotif AS ?motif)
+        }
+        UNION
+        {
+            ?match
+                a pair:MotifMatch ;
+                pair:matchesMotif pat:AdaptiveRAGMotif ;
+                pair:hasNodeBinding ?queryBinding , ?retrievedCtxBinding ,
+                    ?genStepBinding , ?llmBinding , ?responseBinding .
+            ?queryBinding        pair:bindsPatternNode pat:AdaRAG_QueryNode ;            pair:matchedElement ?query .
+            ?retrievedCtxBinding pair:bindsPatternNode pat:AdaRAG_RetrievedContextNode ; pair:matchedElement ?retrievedCtx .
+            ?genStepBinding      pair:bindsPatternNode pat:AdaRAG_GenerationStepNode ;   pair:matchedElement ?genStep .
+            ?llmBinding          pair:bindsPatternNode pat:AdaRAG_LLMNode ;              pair:matchedElement ?llm .
+            ?responseBinding     pair:bindsPatternNode pat:AdaRAG_AnswerNode ;           pair:matchedElement ?response .
+            BIND(pat:AdaptiveRAGMotif AS ?motif)
+        }
 
         FILTER NOT EXISTS {
             ?verificationStep beam:use ?response .

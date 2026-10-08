@@ -36,15 +36,22 @@ pat:Control_GroundingAndVerification
 
 pat:Control_Guardrails
     pair:controlNature pair:TechnicalControl ;
-    rdfs:comment "Realized by GuardrailsMotif, which is itself risk-bearing (improper-output-handling, system-prompt-leakage); adding it constrains I/O but is not risk-free. Re-assess the amended architecture."@en ;
+    rdfs:comment "Realized by the guardrail motifs, which carry no risk pattern of their own: a guardrail step is what the risk queries accept as the escape, never what raises them. The generation step a guardrail sits beside can still be bound by another motif's match and raise a finding there. Re-assess the amended architecture."@en ;
     pair:realizedByMotif pat:GuardrailsMotif ,
                          pat:InputScreeningMotif ,
-                         pat:OutputScreeningMotif .
+                         pat:OutputScreeningMotif ,
+                         pat:RetrievalScreeningMotif .
 
 
 pat:Control_InputValidationAndPromptIsolation
     pair:controlNature pair:TechnicalControl ;
-    pair:realizedByMotif pat:InputScreeningMotif .
+    pair:realizedByMotif pat:InputScreeningMotif ,
+                         pat:RetrievalScreeningMotif .
+
+pat:Control_ToolPermissionBoundaries
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:HumanOversightMotif ,
+                         pat:ExecutionScreeningMotif .
 
 pat:Control_OutputValidationAndSanitization
     pair:controlNature pair:TechnicalControl ;
@@ -100,6 +107,7 @@ pat:ToolMediation_MitigationOQP
     a pair:PatternImplementation ;
     rdfs:label "Mediate an agent tool action with policy enforcement"@en ;
     pair:implementsControl pat:Control_ToolPermissionBoundaries ;
+    pair:realizesMotif pat:ExecutionScreeningMotif ;
     pair:mitigatesRiskPattern pat:ToolMisuseRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/mitigation/tool_mediation.rq" ;
     pair:producesOutputType pair:MitigationApplication .
@@ -144,7 +152,6 @@ pat:RateLimiting_MitigationOQP
 
 pat:Control_DataMinimizationAndRedaction  pair:controlNature pair:TechnicalControl .
 pat:Control_RetrievalAccessControl        pair:controlNature pair:TechnicalControl .
-pat:Control_ToolPermissionBoundaries      pair:controlNature pair:TechnicalControl .
 pat:Control_SystemPromptSecrecy           pair:controlNature pair:TechnicalControl .
 pat:Control_RateLimitBudgetAndLoopControl pair:controlNature pair:TechnicalControl .
 

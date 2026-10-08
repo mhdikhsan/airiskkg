@@ -1,0 +1,41 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Goal creation motif match"@en ;
+        pair:matchesMotif pat:GoalCreationMotif ;
+        pair:hasNodeBinding ?promptB , ?memoryB , ?creatorB , ?goalB .
+
+    ?promptB  a pair:NodeBinding ; pair:bindsPatternNode pat:GoalCreation_PromptNode ;      pair:matchedElement ?prompt .
+    ?memoryB  a pair:NodeBinding ; pair:bindsPatternNode pat:GoalCreation_MemoryNode ;      pair:matchedElement ?memory .
+    ?creatorB a pair:NodeBinding ; pair:bindsPatternNode pat:GoalCreation_GoalCreatorNode ; pair:matchedElement ?goalCreator .
+    ?goalB    a pair:NodeBinding ; pair:bindsPatternNode pat:GoalCreation_GoalNode ;        pair:matchedElement ?goal .
+}
+WHERE {
+    ?goalCreator a/rdfs:subClassOf* beam:Process ;
+                 pair:playsRole/pair:subRoleOf* pair:GoalCreationStep ;
+                 beam:use ?prompt ;
+                 beam:use ?memory ;
+                 beam:produce ?goal .
+
+    ?prompt a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
+    ?memory a beam:Data ; pair:playsRole/pair:subRoleOf* pair:AgentMemory .
+    ?goal a beam:Data ; pair:playsRole/pair:subRoleOf* pair:AgentGoal .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/goal-creation/",
+        ENCODE_FOR_URI(STR(?goalCreator)), "/",
+        ENCODE_FOR_URI(STR(?prompt)), "/",
+        ENCODE_FOR_URI(STR(?memory)), "/",
+        ENCODE_FOR_URI(STR(?goal))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/prompt"))       AS ?promptB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/memory"))       AS ?memoryB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/goal-creator")) AS ?creatorB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/goal"))         AS ?goalB)
+}

@@ -64,8 +64,8 @@ Rules are stated first and justified in one clause. The incidents behind them ar
   only repeats `dct:source`, and *"which motifs came from this design pattern?"* stops being
   answerable. That is what 23 motif references to one Fowler article URL cost.
 - **A design pattern is identified by a `pair:DesignPatternCitation`, never modelled.** The 34
-  handles at the top of `motif.ttl` carry a label and a `dct:source` (a DOI handle adds its
-  venue as `dct:isPartOf` and an APA `dct:bibliographicCitation`), and nothing else.
+  handles at the top of `motif.ttl` carry a label and a `dct:source` (a DOI handle adds an APA
+  `dct:bibliographicCitation`, which the linkage generator reads), and nothing else.
   `test_a_design_pattern_citation_stays_a_citation` fails on any other predicate, because a
   `dct:description` there would start modelling the intent and consequences the method drops.
   The handles are what turn the m:n relation into a traversal: `Cite_Guardrails` is reached by
@@ -73,6 +73,11 @@ Rules are stated first and justified in one clause. The incidents behind them ar
 - **A handle is minted in `pat:` but stands for someone else's catalogue.** So `library.py`
   reads its origin off its own `dct:source`. Reading it off the IRI would credit Fowler's
   patterns to PAIR-AI.
+- **The library names a paper by its DOI, and nothing else.** A DOI handle's chip reads
+  `doi:10.48550/arXiv.2312.10997 · Naive RAG`: the label is the design pattern, the DOI is the
+  paper. The venue (`dct:isPartOf`) and the paper's name in the label ("(RAG survey)") were
+  removed 2026-10-07, because the chip then said the same thing twice; the full reference is in
+  `dct:bibliographicCitation` and `NOTICE.md`. `test_a_paper_is_cited_by_its_doi` holds it.
 - **Not every motif derives from a design pattern, and the graph says which.** The agentic
   motifs point `derivedFrom` at their OWASP ASI concepts, because their structural signature was
   inferred from a *risk* entry; three of them have since gained a handle in the agent design
@@ -820,6 +825,10 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   a definition, and **all 97 terms carry a `skos:definition` the UI served none of**. That is
   what made `RetrievedContext`, `RetrievedResult` and `DocumentChunk` undecidable in a scroll
   of bare labels. Definitions are served for the 7 data categories too.
+- **A shelf heading is a band, not a caption.** It carries the canvas swatch for its class,
+  an edge in the class's colour and a count, and it is sticky inside its own `.mp-group`, so
+  the class a term goes on stays in view while its terms scroll and leaves with the last one.
+  It was a 10px grey line that disappeared under the list it named.
 - **The popover is `position: fixed`, placed from the trigger.** `.node-detail` is
   `overflow: auto` with a `max-height`, so an absolutely-positioned child is clipped to about
   two rows that nothing can scroll. It is placed from `getBoundingClientRect()`, flipped up

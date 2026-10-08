@@ -61,22 +61,30 @@ def motif_templates() -> dict:
             nodes.extend(supplement["nodes"])
             edges.extend(supplement["edges"])
         label = graph.value(motif, RDFS.label)
-        family = next(iter(sorted(graph.objects(motif, PAIR.motifFamily), key=str)), None)
         templates[motif_id] = {
             "label": str(label) if label else display_label(motif_id),
-            "family": str(graph.value(family, SKOS.prefLabel) or short(family)) if family else None,
+            "family": _shelf_label(graph, motif, PAIR.motifFamily),
+            "group": _shelf_label(graph, motif, PAIR.motifGroup),
             "nodes": nodes,
             "edges": edges,
         }
     return templates
 
 
+def _shelf_label(graph, motif, predicate) -> str | None:
+    concept = next(iter(sorted(graph.objects(motif, predicate), key=str)), None)
+    if concept is None:
+        return None
+    return str(graph.value(concept, SKOS.prefLabel) or short(concept))
+
+
 def motif_template_list() -> list[dict[str, str]]:
-    """The palette's list. The family shelves it: 31 motifs in one alphabetical
-    column say nothing about which kind of AI system each one is a shape of."""
+    """The palette's list, shelved by family and then by group: a long
+    alphabetical column says nothing about which kind of AI system each motif
+    is a shape of, or which ones are variants of each other."""
     return sorted(
         (
-            {"id": key, "label": tpl["label"], "family": tpl["family"]}
+            {"id": key, "label": tpl["label"], "family": tpl["family"], "group": tpl["group"]}
             for key, tpl in motif_templates().items()
         ),
         key=lambda item: item["label"].lower(),

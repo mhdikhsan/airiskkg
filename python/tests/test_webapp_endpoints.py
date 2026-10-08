@@ -259,6 +259,78 @@ def test_every_taxonomy_entry_says_whether_it_is_a_harm_or_a_citation(client) ->
                 )
 
 
+def test_a_paper_is_cited_by_its_doi(client) -> None:
+    """A design pattern taken from a paper names the paper by its DOI, never by
+    a venue or by the host "doi.org"."""
+    data = client.get("/api/library").get_json()
+    refs = {ref["id"]: ref for motif in data["motifs"] for ref in motif["derivedFrom"]}
+    papers = [ref for ref in refs.values() if "doi.org/" in (ref["url"] or "")]
+    assert len(papers) == 32, f"expected 32 DOI-cited design patterns, got {len(papers)}"
+    for ref in papers:
+        assert ref.get("doi") and ref["sourceShort"] == ref["doi"], ref
+        assert ref["url"] == "https://doi.org/" + ref["doi"], ref
+    assert not any("doi" in ref for ref in refs.values() if ref not in papers)
+
+    naive = refs["http://w3id.org/airiskkg/patterns#Cite_NaiveRAG"]
+    assert (naive["doi"], naive["label"]) == ("10.48550/arXiv.2312.10997", "Naive RAG")
+
+
+def test_a_paper_is_listed_before_a_catalogue_page_or_a_taxonomy_entry(client) -> None:
+    """A DOI is the most checkable source, so it leads; the whitepaper, the blog
+    and the risk entry a shape was inferred from follow it, and stay listed."""
+    data = client.get("/api/library").get_json()
+
+    def rank(ref) -> int:
+        return 0 if ref.get("doi") else (1 if ref["url"] else 2)
+
+    for motif in data["motifs"]:
+        ranks = [rank(ref) for ref in motif["derivedFrom"]]
+        assert ranks == sorted(ranks), f"{motif['label']} lists a paper after a lesser source"
+
+    rag = next(m for m in data["motifs"] if m["id"] == "RetrievalAugmentedGenerationMotif")
+    assert rag["derivedFrom"][0].get("doi"), "RAG leads with its blog, not its papers"
+    assert any(ref["sourceShort"] == "martinfowler.com" for ref in rag["derivedFrom"]), (
+        "the blog source was dropped instead of ranked after the papers"
+    )
+
+
+def test_every_motif_is_served_with_its_family_and_group(client) -> None:
+    """The rail files a motif by family, then by group, so a motif served
+    without either would land on a shelf called nothing."""
+    motifs = client.get("/api/library").get_json()["motifs"]
+    assert all(m["family"] and m["group"] for m in motifs)
+    rag_variants = {m["id"] for m in motifs if m["group"]["label"] == "Retrieval augmented generation"}
+    assert rag_variants == {
+        "RetrievalAugmentedGenerationMotif", "IterativeRAGMotif",
+        "RecursiveRAGMotif", "AdaptiveRAGMotif",
+    }
+    retrieval = {m["id"] for m in motifs if m["group"]["label"] == "Information retrieval"}
+    assert {"InformationRetrievalMotif", "VectorBasedInformationRetrievalMotif",
+            "LLMBasedInformationRetrievalMotif"} <= retrieval
+
+
+def test_a_control_motif_is_served_as_a_control_never_as_a_risk(client) -> None:
+    """Guardrails were listed with improper output handling and system prompt
+    leakage under "risk patterns that apply", which read as if a guardrail raised
+    them. A control structure is presented by the controls it realizes and the
+    risk patterns those controls are suggested against."""
+    motifs = {m["id"]: m for m in client.get("/api/library").get_json()["motifs"]}
+    for motif_id in ("GuardrailsMotif", "InputScreeningMotif", "OutputScreeningMotif",
+                     "RetrievalScreeningMotif", "HumanOversightMotif", "ExecutionScreeningMotif"):
+        motif = motifs[motif_id]
+        assert motif["control"], f"{motif_id} is not served as a control"
+        assert not motif["riskPatterns"], f"{motif_id} still carries {motif['riskPatterns']}"
+        assert motif["controls"], f"{motif_id} realizes no control"
+
+    filtering = next(c for c in motifs["GuardrailsMotif"]["controls"]
+                     if c["id"].endswith("Control_Guardrails"))
+    assert {"ImproperOutputHandlingRiskPattern", "SystemPromptLeakageRiskPattern"} <= set(
+        filtering["suggestedBy"])
+    assert not motifs["RetrievalAugmentedGenerationMotif"]["control"], (
+        "a structure that realizes grounding is still a risk-bearing structure"
+    )
+
+
 def test_a_motif_in_the_library_can_be_drawn_and_added(client) -> None:
     """The library offers each motif for insertion, so what it shows has to be
     the same shape add-motif writes. Both read the declared pattern nodes and

@@ -1,0 +1,61 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Prompt/response optimiser motif match"@en ;
+        pair:matchesMotif pat:PromptResponseOptimiserMotif ;
+        pair:hasNodeBinding ?inputB , ?templateB , ?optimiserB , ?promptB ,
+            ?genStepB , ?resultB , ?responseB .
+
+    ?inputB     a pair:NodeBinding ; pair:bindsPatternNode pat:PromptOpt_InputNode ;           pair:matchedElement ?input .
+    ?templateB  a pair:NodeBinding ; pair:bindsPatternNode pat:PromptOpt_TemplateNode ;        pair:matchedElement ?template .
+    ?optimiserB a pair:NodeBinding ; pair:bindsPatternNode pat:PromptOpt_OptimiserStepNode ;   pair:matchedElement ?optimiser .
+    ?promptB    a pair:NodeBinding ; pair:bindsPatternNode pat:PromptOpt_OptimisedPromptNode ; pair:matchedElement ?optimisedPrompt .
+    ?genStepB   a pair:NodeBinding ; pair:bindsPatternNode pat:PromptOpt_GenerationStepNode ;  pair:matchedElement ?genStep .
+    ?resultB    a pair:NodeBinding ; pair:bindsPatternNode pat:PromptOpt_ResultNode ;          pair:matchedElement ?result .
+    ?responseB  a pair:NodeBinding ; pair:bindsPatternNode pat:PromptOpt_ResponseNode ;        pair:matchedElement ?response .
+}
+WHERE {
+    ?optimiser a/rdfs:subClassOf* beam:Process ;
+               pair:playsRole/pair:subRoleOf* pair:PromptOptimisationStep ;
+               beam:use ?input ;
+               beam:use ?template ;
+               beam:produce ?optimisedPrompt .
+
+    ?input a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
+    ?template a beam:Data ; pair:playsRole/pair:subRoleOf* pair:PromptTemplate .
+    ?optimisedPrompt a beam:Data ; pair:playsRole/pair:subRoleOf* pair:PromptTemplate .
+    FILTER(?template != ?optimisedPrompt)
+
+    ?genStep a/rdfs:subClassOf* beam:Process ;
+             pair:playsRole/pair:subRoleOf* pair:GenerationStep ;
+             beam:use ?optimisedPrompt ;
+             beam:produce ?result .
+    ?result a beam:Data ; pair:playsRole/pair:subRoleOf* pair:LLMResponse .
+
+    # The response side: the optimiser reads what came back and passes on its own.
+    ?optimiser beam:use ?result ;
+               beam:produce ?response .
+    ?response a beam:Data .
+    FILTER(?response != ?optimisedPrompt && ?response != ?result)
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/prompt-response-optimiser/",
+        ENCODE_FOR_URI(STR(?optimiser)), "/",
+        ENCODE_FOR_URI(STR(?genStep)), "/",
+        ENCODE_FOR_URI(STR(?template)), "/",
+        ENCODE_FOR_URI(STR(?response))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/input"))            AS ?inputB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/template"))         AS ?templateB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/optimiser"))        AS ?optimiserB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/optimised-prompt")) AS ?promptB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/generation-step"))  AS ?genStepB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/result"))           AS ?resultB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/response"))         AS ?responseB)
+}

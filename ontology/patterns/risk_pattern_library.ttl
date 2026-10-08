@@ -197,7 +197,7 @@ pat:UnboundedConsumption_UnboundedUseCondition
 pat:UnboundedConsumption_RepeatablePathCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "The consuming path can be driven repeatedly"@en ;
-    rdfs:comment "Either the flow loops - a step informs a step that informs it back, in query rewriting or RAG - or it is reachable from public input, so volume is not the system's own choice. Direct prompting has no loop, so without this the branch asked only whether an LLM call existed without a rate limiter, which is true of nearly every unmitigated GenAI system."@en ;
+    rdfs:comment "Either the flow loops - a step's output comes back to it through another step, in query rewriting, RAG and its iterative and recursive variants, plan reflection or debate - or it is reachable from public input, so volume is not the system's own choice. Direct prompting has no loop, so without this the branch asked only whether an LLM call existed without a rate limiter, which is true of nearly every unmitigated GenAI system."@en ;
     pair:operationalizesRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
 
 # risk patterns
@@ -207,6 +207,7 @@ pat:DirectPromptingMotif
         pat:PromptInjectionRiskPattern ,
         pat:DirectPromptingWithoutGroundingRiskPattern ,
         pat:ImproperOutputHandlingRiskPattern ,
+        pat:SystemPromptLeakageRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
 
 pat:RetrievalAugmentedGenerationMotif
@@ -215,8 +216,61 @@ pat:RetrievalAugmentedGenerationMotif
         pat:MisinformationFromWeakGroundingRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
 
+pat:IterativeRAGMotif
+    pair:hasRiskPattern
+        pat:PromptInjectionRiskPattern ,
+        pat:MisinformationFromWeakGroundingRiskPattern ,
+        pat:UnboundedConsumptionRiskPattern .
+
+pat:RecursiveRAGMotif
+    pair:hasRiskPattern
+        pat:PromptInjectionRiskPattern ,
+        pat:MisinformationFromWeakGroundingRiskPattern ,
+        pat:UnboundedConsumptionRiskPattern .
+
+pat:AdaptiveRAGMotif
+    pair:hasRiskPattern
+        pat:PromptInjectionRiskPattern ,
+        pat:MisinformationFromWeakGroundingRiskPattern .
+
 pat:VectorBasedInformationRetrievalMotif
     pair:hasRiskPattern pat:VectorAndEmbeddingWeaknessRiskPattern .
+
+pat:LLMBasedInformationRetrievalMotif
+    pair:hasRiskPattern pat:PromptInjectionRiskPattern .
+
+pat:RetrievalDataAugmentationMotif
+    pair:hasRiskPattern pat:DataAndModelPoisoningRiskPattern .
+
+pat:GoalCreationMotif
+    pair:hasRiskPattern pat:GoalHijackRiskPattern .
+
+pat:ProactiveGoalCreationMotif
+    pair:hasRiskPattern pat:GoalHijackRiskPattern .
+
+pat:ModelQueryingMotif
+    pair:hasRiskPattern pat:GoalHijackRiskPattern .
+
+pat:IncrementalModelQueryingMotif
+    pair:hasRiskPattern pat:GoalHijackRiskPattern .
+
+pat:PlanReflectionMotif
+    pair:hasRiskPattern
+        pat:GoalHijackRiskPattern ,
+        pat:UnboundedConsumptionRiskPattern .
+
+pat:ToolAgentRegistryMotif
+    pair:hasRiskPattern
+        pat:ToolMisuseRiskPattern ,
+        pat:GoalHijackRiskPattern .
+
+pat:VotingBasedCooperationMotif
+    pair:hasRiskPattern pat:InsecureAgentCommunicationRiskPattern .
+
+pat:DebateBasedCooperationMotif
+    pair:hasRiskPattern
+        pat:InsecureAgentCommunicationRiskPattern ,
+        pat:UnboundedConsumptionRiskPattern .
 
 pat:EmbeddingsMotif
     pair:hasRiskPattern
@@ -230,11 +284,6 @@ pat:QueryRewritingMotif
 
 pat:RerankerMotif
     pair:hasRiskPattern pat:VectorAndEmbeddingWeaknessRiskPattern .
-
-pat:GuardrailsMotif
-    pair:hasRiskPattern
-        pat:ImproperOutputHandlingRiskPattern ,
-        pat:SystemPromptLeakageRiskPattern .
 
 pat:FineTuningMotif
     pair:hasRiskPattern
@@ -267,6 +316,10 @@ pat:PromptInjectionRiskPattern
     """@en ;
     pair:hasMotif pat:DirectPromptingMotif ,
         pat:RetrievalAugmentedGenerationMotif ,
+        pat:IterativeRAGMotif ,
+        pat:RecursiveRAGMotif ,
+        pat:AdaptiveRAGMotif ,
+        pat:LLMBasedInformationRetrievalMotif ,
         pat:QueryRewritingMotif ;
     pair:hasMechanism owasp:mechanism-instruction-override ;
     pair:hasApplicabilityCondition pat:PromptInjection_UntrustedPromptContextCondition ;
@@ -311,7 +364,8 @@ pat:DataAndModelPoisoningRiskPattern
     rdfs:label "Data and model poisoning risk pattern"@en ;
     pair:hasMotif pat:EmbeddingsMotif ,
         pat:FineTuningMotif ,
-        pat:TrainingToServingMotif ;
+        pat:TrainingToServingMotif ,
+        pat:RetrievalDataAugmentationMotif ;
     pair:hasMechanism owasp:mechanism-data-or-model-poisoning ;
     pair:hasApplicabilityCondition pat:Poisoning_UntrustedTrainingOrIndexingDataCondition ;
     pair:mayIndicateRisk
@@ -336,8 +390,7 @@ pat:ImproperOutputHandlingRiskPattern
     component without a represented validation, sanitization, review, or
     guardrail step.
     """@en ;
-    pair:hasMotif pat:DirectPromptingMotif ,
-        pat:GuardrailsMotif ;
+    pair:hasMotif pat:DirectPromptingMotif ;
     pair:hasMechanism owasp:mechanism-unsafe-output-propagation ;
     pair:hasApplicabilityCondition pat:ImproperOutputHandling_UnvalidatedOutputCondition ;
     pair:mayIndicateRisk
@@ -372,7 +425,7 @@ pat:SystemPromptLeakageRiskPattern
     pair:derivedFrom owasp:llm07-system-prompt-leakage ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "System prompt leakage risk pattern"@en ;
-    pair:hasMotif pat:GuardrailsMotif ;
+    pair:hasMotif pat:DirectPromptingMotif ;
     pair:hasMechanism owasp:mechanism-system-prompt-exposure ;
     pair:hasApplicabilityCondition
         pat:SystemPromptLeakage_HiddenInstructionCondition ,
@@ -441,7 +494,10 @@ pat:MisinformationFromWeakGroundingRiskPattern
     pair:derivedFrom owasp:llm09-misinformation ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Misinformation from weak grounding risk pattern"@en ;
-    pair:hasMotif pat:RetrievalAugmentedGenerationMotif ;
+    pair:hasMotif pat:RetrievalAugmentedGenerationMotif ,
+        pat:IterativeRAGMotif ,
+        pat:RecursiveRAGMotif ,
+        pat:AdaptiveRAGMotif ;
     pair:hasMechanism owasp:mechanism-unsupported-generation ;
     pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;
     pair:mayIndicateRisk
@@ -468,7 +524,11 @@ pat:UnboundedConsumptionRiskPattern
     """@en ;
     pair:hasMotif pat:DirectPromptingMotif ,
         pat:RetrievalAugmentedGenerationMotif ,
-        pat:QueryRewritingMotif ;
+        pat:IterativeRAGMotif ,
+        pat:RecursiveRAGMotif ,
+        pat:QueryRewritingMotif ,
+        pat:PlanReflectionMotif ,
+        pat:DebateBasedCooperationMotif ;
     pair:hasMechanism owasp:mechanism-unbounded-resource-consumption ;
     pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ,
         pat:UnboundedConsumption_RepeatablePathCondition ;
@@ -610,7 +670,7 @@ pat:UnboundedConsumptionOQP
 pat:UntrustedContentPropagationOQP
     a pair:PatternImplementation ;
     rdfs:label "Untrusted content propagation OQP"@en ;
-    dct:description "Infers pair:containsDataCategory pair:UntrustedContent from public-input/retrieved-context roles and propagates it along beam:use/beam:produce edges, so risk patterns don't depend on every element being hand-tagged."@en ;
+    dct:description "Infers pair:containsDataCategory pair:UntrustedContent from public-input, retrieved-context and environment-context roles and propagates it along beam:use/beam:produce edges, so risk patterns don't depend on every element being hand-tagged."@en ;
     pair:implementationPath "ontology/patterns/implementation/propagation/untrusted_content.rq" ;
     pair:producesOutputType pair:DataCategoryPropagation .
 
@@ -792,6 +852,55 @@ pat:Evals_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/evals.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
+pat:LLMIR_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "LLM-based information retrieval motif matching OQP"@en ;
+    pair:implementsMotif pat:LLMBasedInformationRetrievalMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/llm_based_ir.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:RetrAug_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Retrieval data augmentation motif matching OQP"@en ;
+    pair:implementsMotif pat:RetrievalDataAugmentationMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/retrieval_data_augmentation.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:PromptOpt_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Prompt/response optimiser motif matching OQP"@en ;
+    pair:implementsMotif pat:PromptResponseOptimiserMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/prompt_response_optimiser.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:IterRAG_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Iterative RAG motif matching OQP"@en ;
+    pair:implementsMotif pat:IterativeRAGMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/iterative_rag.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:RecRAG_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Recursive RAG motif matching OQP"@en ;
+    pair:implementsMotif pat:RecursiveRAGMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/recursive_rag.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:AdaRAG_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Adaptive RAG motif matching OQP"@en ;
+    pair:implementsMotif pat:AdaptiveRAGMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/adaptive_rag.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:RetrievalScreening_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Retrieval Screening motif matching OQP"@en ;
+    pair:implementsMotif pat:RetrievalScreeningMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/retrieval_screening.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
 # Agentic risk patterns 
 
 pat:ToolMisuse_UnmediatedActionCondition
@@ -815,11 +924,13 @@ pat:ToolMisuseRiskPattern
     dct:source <https://genai.owasp.org/> ;
     rdfs:label "Tool misuse risk pattern"@en ;
     dct:description """
-    Applies to a Tool-Using Agent match where the planning step's decision reaches
-    a tool invocation or state change without any represented policy enforcement,
-    human approval, or rate/budget control in between. 
+    Applies to a Tool-Using Agent or Tool/Agent Registry match where the planning
+    step's decision reaches a tool invocation or state change without any
+    represented policy enforcement, human approval, or rate/budget control in
+    between.
     """@en ;
-    pair:hasMotif pat:ToolUsingAgentMotif ;
+    pair:hasMotif pat:ToolUsingAgentMotif ,
+        pat:ToolAgentRegistryMotif ;
     pair:hasMechanism asi:mechanism-unconstrained-tool-execution ;
     pair:hasApplicabilityCondition pat:ToolMisuse_UnmediatedActionCondition ;
     pair:mayIndicateRisk
@@ -905,10 +1016,17 @@ pat:GoalHijackRiskPattern
     dct:source <https://genai.owasp.org/> ;
     rdfs:label "Agent goal hijack risk pattern"@en ;
     dct:description """
-    Applies to a Tool-Using Agent match whose planning step consumes content of
-    untrusted provenance with nothing screening it on the way
+    Applies to an agentic match whose planning or goal creation step consumes
+    content of untrusted provenance with nothing screening it on the way.
     """@en ;
-    pair:hasMotif pat:ToolUsingAgentMotif ;
+    pair:hasMotif pat:ToolUsingAgentMotif ,
+        pat:AgentDelegationMotif ,
+        pat:GoalCreationMotif ,
+        pat:ProactiveGoalCreationMotif ,
+        pat:ModelQueryingMotif ,
+        pat:IncrementalModelQueryingMotif ,
+        pat:PlanReflectionMotif ,
+        pat:ToolAgentRegistryMotif ;
     pair:hasMechanism asi:mechanism-goal-redirection-through-consumed-content ;
     pair:hasApplicabilityCondition pat:GoalHijack_UntrustedPlanningInputCondition ;
     pair:mayIndicateRisk
@@ -927,13 +1045,16 @@ pat:InsecureAgentCommunicationRiskPattern
     dct:source <https://genai.owasp.org/> ;
     rdfs:label "Insecure inter-agent communication risk pattern"@en ;
     dct:description """
-    Applies to an Agent Delegation match where the message crossing between the
-    two agents passes no represented validation, guardrail, or policy step. The
-    receiving agent applies its own permissions to instructions whose origin the
-    architecture never establishes, so trust intended for the sending agent
-    extends to anything that can write to the channel.
+    Applies to an Agent Delegation, Voting-based or Debate-based Cooperation
+    match where a message crossing between agents passes no represented
+    validation, guardrail, or policy step. The receiving agent applies its own
+    permissions to instructions whose origin the architecture never establishes,
+    so trust intended for the sending agent extends to anything that can write
+    to the channel.
     """@en ;
-    pair:hasMotif pat:AgentDelegationMotif ;
+    pair:hasMotif pat:AgentDelegationMotif ,
+        pat:VotingBasedCooperationMotif ,
+        pat:DebateBasedCooperationMotif ;
     pair:hasMechanism asi:mechanism-unauthenticated-agent-handoff ;
     pair:hasApplicabilityCondition pat:InsecureAgentCommunication_UnvalidatedHandoffCondition ;
     pair:mayIndicateRisk
@@ -958,6 +1079,69 @@ pat:HumanOversight_MatchingOQP
     rdfs:label "Human Oversight Motif matching OQP"@en ;
     pair:implementsMotif pat:HumanOversightMotif ;
     pair:implementationPath "ontology/patterns/implementation/match/human_oversight.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:ExecScreening_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Execution Screening Motif matching OQP"@en ;
+    pair:implementsMotif pat:ExecutionScreeningMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/execution_screening.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:GoalCreation_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Goal Creation Motif matching OQP"@en ;
+    pair:implementsMotif pat:GoalCreationMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/goal_creation.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:ProactiveGoal_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Proactive Goal Creation Motif matching OQP"@en ;
+    pair:implementsMotif pat:ProactiveGoalCreationMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/proactive_goal_creation.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:ModelQuery_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Model Querying Motif matching OQP"@en ;
+    pair:implementsMotif pat:ModelQueryingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/model_querying.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:IncrQuery_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Incremental Model Querying Motif matching OQP"@en ;
+    pair:implementsMotif pat:IncrementalModelQueryingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/incremental_model_querying.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:PlanReflection_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Plan Reflection Motif matching OQP"@en ;
+    pair:implementsMotif pat:PlanReflectionMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/plan_reflection.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:Voting_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Voting-based Cooperation Motif matching OQP"@en ;
+    pair:implementsMotif pat:VotingBasedCooperationMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/voting_based_cooperation.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:Debate_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Debate-based Cooperation Motif matching OQP"@en ;
+    pair:implementsMotif pat:DebateBasedCooperationMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/debate_based_cooperation.rq" ;
+    pair:producesOutputType pair:MotifMatch .
+
+pat:Registry_MatchingOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Tool/Agent Registry Motif matching OQP"@en ;
+    pair:implementsMotif pat:ToolAgentRegistryMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/tool_agent_registry.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 pat:GoalHijackOQP

@@ -233,12 +233,13 @@ export function addMotif(item) {
   });
 }
 
-/* The library shelves motifs by the kind of AI system each is a shape of, and
- * 31 of them in one alphabetical column said nothing about that. */
-function byFamily(templates) {
+/* The library shelves motifs by the kind of AI system each is a shape of, then
+ * by the variants and companions within it; one alphabetical column said
+ * nothing about either. */
+function binBy(items, key, fallback) {
   const bins = new Map();
-  templates.forEach((item) => {
-    const name = item.family || "Unshelved";
+  items.forEach((item) => {
+    const name = item[key] || fallback;
     if (!bins.has(name)) bins.set(name, []);
     bins.get(name).push(item);
   });
@@ -252,18 +253,23 @@ export function initMotifPalette(templates) {
   const wrap = $("#canvas-wrap");
   const body = el("div", { class: "tray-body" });
 
-  byFamily(templates).forEach(([family, items]) => {
+  binBy(templates, "family", "Unshelved").forEach(([family, items]) => {
     body.appendChild(el("div", { class: "motif-family" }, [
       el("span", {}, family),
       el("span", { class: "motif-family-count" }, String(items.length)),
     ]));
-    items.forEach((item) => {
-      const chip = el("div", {
-        class: "motif-item",
-        title: `Add ${item.label} — click or drag onto the canvas`,
-      }, item.label);
-      chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, () => addMotif(item)));
-      body.appendChild(chip);
+    const groups = binBy(items, "group", "Other");
+    groups.forEach(([group, members]) => {
+      // A family filed as one group says nothing more under a second heading.
+      if (groups.length > 1) body.appendChild(el("div", { class: "motif-group" }, group));
+      members.forEach((item) => {
+        const chip = el("div", {
+          class: "motif-item",
+          title: `Add ${item.label} — click or drag onto the canvas`,
+        }, item.label);
+        chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, () => addMotif(item)));
+        body.appendChild(chip);
+      });
     });
   });
 

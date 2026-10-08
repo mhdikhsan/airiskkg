@@ -245,6 +245,16 @@ pair:motifFamily a owl:ObjectProperty ;
     rdfs:domain pair:GraphMotif ;
     rdfs:range skos:Concept .
 
+pair:motifGroup a owl:ObjectProperty ;
+    rdfs:label "motif group"@en ;
+    rdfs:comment """
+    Which group of related motifs this motif is filed with inside its family:
+    the variants of one shape, or shapes used together. A shelving decision like
+    pair:motifFamily, and never read during matching.
+    """@en ;
+    rdfs:domain pair:GraphMotif ;
+    rdfs:range skos:Concept .
+
 pair:implementedBy a owl:ObjectProperty ;
     rdfs:label "implemented by"@en ;
     rdfs:domain [
@@ -423,6 +433,11 @@ pair:PublicUserFacingOutput a pair:PatternRole ;
     pair:subRoleOf pair:UserFacingOutput ;
     skos:definition "User-facing output exposed to the public, such as a chatbot response or public-facing summary."@en.
 
+pair:UserFeedback a pair:PatternRole ;
+    skos:prefLabel "UserFeedback"@en ;
+    pair:subRoleOf pair:UserInput ;
+    skos:definition "A user's comments on an agent's intermediate results or plan, read back to steer what the agent does next."@en .
+
 ### Knowledge-source roles 
 
 pair:KnowledgeSource a pair:PatternRole ;
@@ -515,6 +530,11 @@ pair:ModelArtifact a pair:PatternRole ;
     pair:subRoleOf pair:Model ;
     skos:definition "A persisted model artifact produced or consumed by a workflow."@en ;
     skos:relatedMatch ai:TrainedModel .
+
+pair:RetrieverModel a pair:PatternRole ;
+    skos:prefLabel "Retriever Model"@en ;
+    pair:subRoleOf pair:Model ;
+    skos:definition "A model trained to find the items relevant to a query, such as a dense retriever that embeds queries and documents into one space."@en .
 
 ### Data/resource roles 
 
@@ -656,6 +676,46 @@ pair:ReleaseApproval a pair:PatternRole ;
     pair:subRoleOf pair:ResourceRole ;
     skos:definition "An approval artifact gating a release."@en .
 
+pair:RetrievalDecision a pair:PatternRole ;
+    skos:prefLabel "RetrievalDecision"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "What a retrieval judge decides: whether to retrieve, or retrieve again, and for what need. Read by the next retrieval or query transformation step."@en .
+
+pair:SubQuery a pair:PatternRole ;
+    skos:prefLabel "SubQuery"@en ;
+    pair:subRoleOf pair:RewrittenQuery ;
+    skos:definition "A smaller question split off a complex one by query decomposition and retrieved for on its own."@en .
+
+pair:SyntheticTrainingData a pair:PatternRole ;
+    skos:prefLabel "SyntheticTrainingData"@en ;
+    pair:subRoleOf pair:TrainingDataset ;
+    skos:definition "Training data that a generative model wrote, such as pseudo queries, relevance labels or whole examples, rather than data people or the system's own operation produced."@en .
+
+pair:AgentGoal a pair:PatternRole ;
+    skos:prefLabel "AgentGoal"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "The goal an agent sets out to achieve, as its goal creation step states it for planning."@en .
+
+pair:AgentPlan a pair:PatternRole ;
+    skos:prefLabel "AgentPlan"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "The plan a planning step produces: the steps an agent intends to take toward its goal, as one path or with alternatives."@en .
+
+pair:EnvironmentContext a pair:PatternRole ;
+    skos:prefLabel "EnvironmentContext"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "Context captured from the user's surroundings, such as a screen, a sensor reading or an open document, rather than supplied by the user. Treated as untrusted by the taint propagation query, since nothing in the graph vouches for what the environment contains."@en .
+
+pair:ReflectionFeedback a pair:PatternRole ;
+    skos:prefLabel "ReflectionFeedback"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "Feedback a reflection step returns on a plan and its reasoning, which the planning step reads to revise the plan."@en .
+
+pair:ToolRegistry a pair:PatternRole ;
+    skos:prefLabel "ToolRegistry"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "A catalogue of the tools, agents and models an agent can call on, described by capability and cost, which a coordinating step consults to choose who carries out a task."@en .
+
 ### External-dependency roles 
 
 pair:ExternalDependency a pair:PatternRole ;
@@ -719,6 +779,21 @@ pair:PromptConstructionStep a pair:PatternRole ;
     pair:subRoleOf pair:ProcessingStep ;
     skos:definition "A step that assembles a prompt from inputs and context (Boxology transform process)."@en ;
     skos:relatedMatch t4b:Transform  .
+
+pair:PromptOptimisationStep a pair:PatternRole ;
+    skos:prefLabel "PromptOptimisationStep"@en ;
+    pair:subRoleOf pair:PromptConstructionStep ;
+    skos:definition "A step that rewrites a prompt against a template so it suits the model and the task, and reworks what comes back into the response it passes on (prompt/response optimiser)."@en .
+
+pair:RetrievalJudgeStep a pair:PatternRole ;
+    skos:prefLabel "RetrievalJudgeStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step that judges a query or a draft answer and decides whether retrieval runs, or runs again, and for what: the judge of iterative, recursive and adaptive retrieval. A decision about retrieval, not a verification of the answer for the user."@en .
+
+pair:SyntheticDataGenerationStep a pair:PatternRole ;
+    skos:prefLabel "SyntheticDataGenerationStep"@en ;
+    pair:subRoleOf pair:GenerationStep ;
+    skos:definition "A generation step whose output is data for training or evaluating another model, such as pseudo queries, relevance labels or whole examples, rather than an answer for a user."@en .
 
 pair:ScoringStep a pair:PatternRole ;
     skos:prefLabel "ScoringStep"@en ;
@@ -854,6 +929,31 @@ pair:AgentMessage a pair:PatternRole ;
     skos:definition "Content passed from one agent to another to hand off a task, a result, or a request. A resource role rather than a step role, because what a validation step can inspect is the message, not the handoff."@en ;
     dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi07-insecure-inter-agent-communication> .
 
+pair:DebateArgument a pair:PatternRole ;
+    skos:prefLabel "DebateArgument"@en ;
+    pair:subRoleOf pair:AgentMessage ;
+    skos:definition "A position one agent puts to another in a debate, which the other reads and answers with its own over rounds (debate-based cooperation)."@en .
+
+pair:GoalCreationStep a pair:PatternRole ;
+    skos:prefLabel "GoalCreationStep"@en ;
+    pair:subRoleOf pair:PlanningStep ;
+    skos:definition "A step that works out the goal an agent pursues, from what the user asked and the context it holds, before the goal is planned: a passive or proactive goal creator."@en .
+
+pair:ContextDetectionStep a pair:PatternRole ;
+    skos:prefLabel "ContextDetectionStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step that captures context from the user's surroundings for the agent, such as what is on a screen or a sensor reading (the detector of a proactive goal creator)."@en .
+
+pair:PlanReflectionStep a pair:PatternRole ;
+    skos:prefLabel "PlanReflectionStep"@en ;
+    pair:subRoleOf pair:ProcessingStep ;
+    skos:definition "A step that reviews a plan and the reasoning behind it and returns feedback for revising it. The reviewer may be the agent itself (self-reflection), another agent (cross-reflection) or a person (human reflection)."@en .
+
+pair:VoteAggregationStep a pair:PatternRole ;
+    skos:prefLabel "VoteAggregationStep"@en ;
+    pair:subRoleOf pair:AggregationStep ;
+    skos:definition "A step that combines the votes several agents submit into one decision, by majority or another rule (voting-based cooperation)."@en .
+
 ### Prediction-step specializations
 
 pair:FastPredictionStep a pair:PatternRole ;
@@ -876,7 +976,12 @@ pair:GuardrailStep a pair:PatternRole ;
 pair:InputGuardrailStep a pair:PatternRole ;
     skos:prefLabel "InputGuardrailStep"@en ;
     pair:subRoleOf pair:GuardrailStep ;
-    skos:definition "A guardrail step screening user input before generation."@en  .
+    skos:definition "A guardrail step screening what goes into generation: the user's input, or content retrieved or captured for the prompt."@en  .
+
+pair:RetrievalGuardrailStep a pair:PatternRole ;
+    skos:prefLabel "RetrievalGuardrailStep"@en ;
+    pair:subRoleOf pair:InputGuardrailStep ;
+    skos:definition "An input guardrail placed on what retrieval returns, screening retrieved content before it reaches a prompt (RAG guardrails)."@en .
 
 pair:OutputGuardrailStep a pair:PatternRole ;
     skos:prefLabel "OutputGuardrailStep"@en ;
@@ -897,6 +1002,11 @@ pair:PolicyEnforcementStep a pair:PatternRole ;
     skos:prefLabel "PolicyEnforcementStep"@en ;
     pair:subRoleOf pair:ControlStep ;
     skos:definition "A step that evaluates a proposed action against a policy before it is carried out, and can narrow or refuse it."@en  .
+
+pair:ExecutionGuardrailStep a pair:PatternRole ;
+    skos:prefLabel "ExecutionGuardrailStep"@en ;
+    pair:subRoleOf pair:PolicyEnforcementStep ;
+    skos:definition "A policy enforcement step that screens the action an agent proposes before a tool carries it out (execution guardrails)."@en .
 
 pair:HumanApprovalStep a pair:PatternRole ;
     skos:prefLabel "HumanApprovalStep"@en ;
@@ -977,16 +1087,22 @@ pair:UntrustedContent a pair:DataCategory ;
     skos:definition "Content whose integrity the system cannot vouch for within the submitted graph."@en .
 
 # --- derived from the motif or risk pattern that traverses the role -------
-
+pair:AgentGoal dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:AgentMemory dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
+pair:AgentPlan dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:AggregationStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:Alert dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
 pair:BatchDataset dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> .   
+pair:ContextDetectionStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+pair:DebateArgument dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+pair:EnvironmentContext dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:EvaluationResult dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> .   
 pair:EvaluationScore dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
+pair:ExecutionGuardrailStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:ExpectedOutput dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:ExternalDependency dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .
 pair:FastPredictionStep dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> .   
+pair:GoalCreationStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:GuardrailDecision dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:HumanApprovalStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   
 pair:ImageBuildStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> .   
@@ -1004,6 +1120,7 @@ pair:MonitoringBaseline dct:source <https://mercari.github.io/ml-system-design-p
 pair:MonitoringStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
 pair:OutputGuardrailStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:OutputValidationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm05-improper-output-handling> .   
+pair:PlanReflectionStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:PlanningStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .  
 pair:PolicyEnforcementStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .  
 pair:PredictionLog dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> .  
@@ -1011,18 +1128,30 @@ pair:PredictionQueue dct:source <https://mercari.github.io/ml-system-design-patt
 pair:PredictionRequest dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> .  
 pair:PredictionResult dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> .   
 pair:PreprocessedData dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> .   
+pair:PromptOptimisationStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:PromptTemplate dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:RateLimitControlStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .  
+pair:ReflectionFeedback dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:ReleaseApproval dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> .  
 pair:RerankingStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .  
+pair:RetrievalDecision dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
+pair:RetrievalGuardrailStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+pair:RetrievalJudgeStep dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
 pair:RetrievedCandidateSet dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:RetrievedContext dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
+pair:RetrieverModel dct:source <https://doi.org/10.1145/3748304> .
 pair:SanitizedOutput dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:ScoringStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:ServingImage dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .   
 pair:SlowPredictionStep dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> .  
 pair:SourceDocument dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .  
 pair:StateChangingStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   
+pair:SubQuery dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
+pair:SyntheticDataGenerationStep dct:source <https://doi.org/10.1145/3748304> .
+pair:SyntheticTrainingData dct:source <https://doi.org/10.1145/3748304> .
 pair:SystemPrompt dct:source <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm07-system-prompt-leakage> .   
 pair:ToolInvocationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   
+pair:ToolRegistry dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:TrainingPipeline dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> .   
+pair:UserFeedback dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
+pair:VoteAggregationStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .

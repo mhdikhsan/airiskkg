@@ -1,0 +1,46 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Plan reflection motif match"@en ;
+        pair:matchesMotif pat:PlanReflectionMotif ;
+        pair:hasNodeBinding ?planningB , ?planB , ?reflectionB , ?feedbackB .
+
+    ?planningB   a pair:NodeBinding ; pair:bindsPatternNode pat:PlanReflection_PlanningStepNode ;   pair:matchedElement ?planningStep .
+    ?planB       a pair:NodeBinding ; pair:bindsPatternNode pat:PlanReflection_PlanNode ;           pair:matchedElement ?plan .
+    ?reflectionB a pair:NodeBinding ; pair:bindsPatternNode pat:PlanReflection_ReflectionStepNode ; pair:matchedElement ?reflectionStep .
+    ?feedbackB   a pair:NodeBinding ; pair:bindsPatternNode pat:PlanReflection_FeedbackNode ;       pair:matchedElement ?feedback .
+}
+WHERE {
+    ?reflectionStep a/rdfs:subClassOf* beam:Process ;
+                    pair:playsRole/pair:subRoleOf* pair:PlanReflectionStep ;
+                    beam:use ?plan ;
+                    beam:produce ?feedback .
+    ?plan a beam:Data ; pair:playsRole/pair:subRoleOf* pair:AgentPlan .
+    ?feedback a beam:Data ; pair:playsRole/pair:subRoleOf* pair:ReflectionFeedback .
+
+    # The loop: the step that planned reads the feedback on its own plan.
+    ?planningStep a/rdfs:subClassOf* beam:Process ;
+                  pair:playsRole/pair:subRoleOf* pair:PlanningStep ;
+                  beam:produce ?plan ;
+                  beam:use ?feedback .
+
+    FILTER(?planningStep != ?reflectionStep)
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/plan-reflection/",
+        ENCODE_FOR_URI(STR(?planningStep)), "/",
+        ENCODE_FOR_URI(STR(?reflectionStep)), "/",
+        ENCODE_FOR_URI(STR(?plan)), "/",
+        ENCODE_FOR_URI(STR(?feedback))
+    )) AS ?match)
+
+    BIND(IRI(CONCAT(STR(?match), "/binding/planning-step"))   AS ?planningB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/plan"))            AS ?planB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/reflection-step")) AS ?reflectionB)
+    BIND(IRI(CONCAT(STR(?match), "/binding/feedback"))        AS ?feedbackB)
+}
