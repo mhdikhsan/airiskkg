@@ -20,8 +20,7 @@ WHERE {
                   pair:playsRole/pair:subRoleOf* pair:PlanningStep ;
                   beam:produce ?plan .
 
-    # The action reaches outside the system: a tool call or a direct state
-    # change. Both are ProcessingStep specializations, so bind either.
+
     ?actionStep a/rdfs:subClassOf* beam:Process ;
                 beam:use ?plan ;
                 pair:playsRole ?actionRole ;
