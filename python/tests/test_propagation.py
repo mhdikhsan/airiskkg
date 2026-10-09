@@ -8,6 +8,7 @@ from airiskkg.assessment_runner import PAIR, run_assessment, run_assessment_from
 from airiskkg.paths import EXAMPLE_DIR
 from conftest import (  # noqa: E402
     AGENT_NS,
+    CREDIT_SCORING_NS,
     GRAPH_RAG_NS,
     ONYX_NS,
     TARIFF_NS,
@@ -299,6 +300,9 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
         # use, a memory loop and a delegation, with no control step anywhere -
         # so all three agentic motifs match and four ASI-derived patterns fire.
         example_path(AGENT_NS): (4, 8),
+        # The ML serving shape: retrained on its own decisions, deployed without
+        # evaluation, scored on public applications, with no control anywhere.
+        example_path(CREDIT_SCORING_NS): (3, 16),
     }
     # Every graph the repo ships is pinned.
     unpinned = set(EXAMPLE_DIR.glob("*.ttl")) - set(expected)

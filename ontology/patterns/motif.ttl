@@ -4849,5 +4849,5 @@ pat:PredictionLoggingMotif       pair:motifFamily pat:MLSystemMotifFamily ; pair
 pat:PredictionMonitoringMotif    pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:OperationMotifGroup .
 
 # SupplyChainMotifFamily
-pat:ExternalDependencyMotif  pair:motifFamily pat:SupplyChainMotifFamily .
+pat:ExternalDependencyMotif  pair:motifFamily pat:SupplyChainMotifFamily ; pair:motifGroup pat:ExternalDependencyMotifGroup .
 

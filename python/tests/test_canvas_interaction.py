@@ -847,7 +847,7 @@ def test_the_library_is_what_the_workbench_opens_on(empty_workbench) -> None:
     assert opened["open"], "the workbench did not open on the library"
     assert opened["lead"], "the opening frame that explains motif and risk pattern is missing"
     assert opened["risks"] > 10, (
-        f"the risk list has {opened['risks']} entries; the library holds 15 risk patterns"
+        f"the risk list has {opened['risks']} entries; the library holds 29 risk patterns"
     )
     assert opened["tiles"] > 10, "the opening panel does not show the catalogue"
 

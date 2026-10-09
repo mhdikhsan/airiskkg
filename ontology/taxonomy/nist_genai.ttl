@@ -13,7 +13,7 @@
     Framework: Generative AI Profile (NIST AI 600-1).
 
     Scope: only the categories reachable from the IBM AI Risk Atlas concepts this
-    project models are included (9 of the profile's 12), following the same
+    project models are included (10 of the profile's 12), following the same
     "subset what the assessment actually uses" convention as the other taxonomy
     files. This layer is ALIGNMENT, not detection: PAIR-AI does not anchor risk
     patterns on NIST entries, because no upstream OWASP <-> NIST mapping set
@@ -49,6 +49,13 @@ nist:confabulation a nexus:Risk ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-confabulation" .
+
+nist:dangerous-violent-or-hateful-content a nexus:Risk ;
+    skos:prefLabel "Dangerous, Violent, or Hateful Content" ;
+    skos:definition "The system produces or makes easier to obtain content that incites violence, promotes hatred, or helps someone cause serious harm." ;
+    skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
+    nexus:tag "nist-dangerous-violent-or-hateful-content" .
 
 nist:data-privacy a nexus:Risk ;
     skos:prefLabel "Data Privacy" ;

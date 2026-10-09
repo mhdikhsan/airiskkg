@@ -1,0 +1,1313 @@
+# GENERATED FILE - do not edit by hand.
+# Regenerate with: python python/scripts/generate_eticas_layer.py
+# Source: data/eticas.ttl, the Eticas AI Risk Taxonomy as published.
+
+@prefix eticas:    <https://taxonomy.eticas.ai/risk/> .
+@prefix eticasont: <https://taxonomy.eticas.ai/ontology/> .
+@prefix mit:       <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> .
+@prefix atlas:     <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#> .
+@prefix nist:      <http://w3id.org/airiskkg/taxonomy/nist-genai#> .
+@prefix dpvai:     <https://w3id.org/dpv/ai#> .
+@prefix aiact:     <https://w3id.org/dpv/legal/eu/aiact#> .
+@prefix nexus:     <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix skos:      <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:       <http://purl.org/dc/terms/> .
+@prefix owl:       <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:      <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/taxonomy/eticas#> a owl:Ontology ;
+    rdfs:label "Eticas AI Risk Taxonomy for AI Risk KG" ;
+    dct:title "Eticas AI Risk Taxonomy for AI Risk KG" ;
+    dct:description """
+    The Eticas AI Risk Taxonomy, reproduced with its concept IRIs, labels and
+    definitions unchanged. It is a cross-walk: Eticas maps its own entries to the
+    MIT AI Risk Repository, IBM AI Risk Atlas, NIST AI 600-1, DPV-AI, the EU AI Act
+    and others, which is what makes it useful here.
+
+    A published mapping is kept only where its target is a concept this knowledge
+    base declares, or a DPV term, which resolves. Eticas names most catalogues by
+    handles of its own, several of which bundle two or three entries into one; those
+    have no single referent here and are left out rather than split by guesswork.
+    Its broadMatch and narrowMatch rows read opposite to SKOS (data-poisoning
+    narrowMatch MIT 2.2 means poisoning is the narrower one), and not uniformly, so
+    they are neither reproduced nor inverted.
+    Kept: 122. Left out, by reason:
+      Eticas-minted handle for air-2024: 15
+      Eticas-minted handle for aiuc-1: 46
+      Eticas-minted handle for coe-cets-225: 8
+      Eticas-minted handle for csa-agentic-profile: 1
+      Eticas-minted handle for ieee-2894: 1
+      Eticas-minted handle for ieee-7001: 1
+      Eticas-minted handle for ieee-7002: 1
+      Eticas-minted handle for ieee-7003: 1
+      Eticas-minted handle for iso-42001: 41
+      Eticas-minted handle for nist-ai-rmf: 41
+      Eticas-minted handle for owasp-agentic: 1
+      Eticas-minted handle for tc260: 4
+      IBM handle names no Atlas entry declared here: 32
+      MIT id and label disagree: 1
+      NIST handle bundles several categories: 2
+      OECD is absorbed, not represented: 16
+      broadMatch or narrowMatch written opposite to SKOS: 30
+      exactMatch would make two catalogues' entries identical: 2
+
+    skos:narrower is omitted as the inverse of the skos:broader kept here.
+    Entries with children are typed nexus:RiskGroup and the rest nexus:Risk, so
+    the taxonomy reads the same way as the other catalogues in this directory.
+    """ ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights "Eticas AI Risk Taxonomy, published by Eticas under CC BY 4.0. Changes were made: the published mappings were filtered to targets this knowledge base declares, external handles were translated to this knowledge base's IRIs, and skos:narrower was dropped as redundant."@en ;
+    dct:bibliographicCitation "Eticas. (n.d.). Eticas AI risk taxonomy. https://taxonomy.eticas.ai/"@en ;
+    dct:source <https://taxonomy.eticas.ai/risk/scheme> .
+
+<https://taxonomy.eticas.ai/risk/scheme> a nexus:RiskTaxonomy, skos:ConceptScheme ;
+    skos:prefLabel "Eticas AI Risk Taxonomy"@en ;
+    dct:description "A unified AI risk taxonomy for use across Eticas audit methodologies, assessment frameworks, and reporting outputs."@en ;
+    dct:publisher "Eticas" .
+
+eticas:agentic-actions-tool-use a nexus:RiskGroup ;
+    skos:prefLabel "Autonomous Actions and Tool Use"@en ;
+    skos:definition "Risks from the agent taking real-world actions through external tools, APIs, and services, including being granted excessive permissions, executing unnecessary or out-of-scope actions, bypassing human oversight, or consuming disproportionate resources."@en ;
+    skos:broader eticas:agentic-ai ;
+    nexus:isPartOf eticas:agentic-ai ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> .
+
+eticas:agentic-ai a nexus:RiskGroup ;
+    skos:prefLabel "Agentic AI"@en ;
+    skos:altLabel "AI Agents"@en ;
+    skos:altLabel "Agentic risks"@en ;
+    skos:definition "Risks arising from AI systems that autonomously plan, reason, and act across multiple steps using tools, memory, and external services, beyond single-inference interactions. These risks are distinct from standard LLM risks because the agent takes real-world actions, operates across time, and interacts with external systems and other agents."@en ;
+    skos:note "Initial scope deliberately limited to primary enterprise risks of agentic deployment. Adversarial threats specific to agents (e.g., memory poisoning) are not yet included — they sit closer to security and will be revisited as the category matures. Loss of meaningful human control over agentic systems is currently covered under Autonomy & Agency / System autonomy and may be promoted or cross-referenced here in a future iteration. Some overlap with Autonomy & Agency / System autonomy is acknowledged and will be reconciled in a future minor version."@en ;
+    skos:topConceptOf <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "established" ;
+    eticasont:perspective "technical soundness" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:agentic-multi-agent-integrity a nexus:RiskGroup ;
+    skos:prefLabel "Multi-agent Integrity"@en ;
+    skos:definition "Risks from systems composed of multiple agents — including trust exploitation, cascading failures, goal misalignment between agents, and insufficient traceability across the pipeline."@en ;
+    skos:broader eticas:agentic-ai ;
+    nexus:isPartOf eticas:agentic-ai ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> .
+
+eticas:ai-interaction-disclosure a nexus:Risk ;
+    skos:prefLabel "Disclosure of AI interaction and synthetic content"@en ;
+    skos:definition "Failure to disclose that a person is interacting with an AI system, or that content was generated or manipulated by AI — depriving people of the information needed to calibrate trust, detect deception, or trace content provenance."@en ;
+    skos:broader eticas:transparency-communication ;
+    nexus:isPartOf eticas:transparency-communication ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:exactMatch aiact:article-50 .
+
+eticas:automation-bias a nexus:Risk ;
+    skos:prefLabel "Automation bias"@en ;
+    skos:definition "Over-reliance on automated outputs, accepting AI recommendations without sufficient scrutiny, leading to missed errors and reduced human judgment."@en ;
+    skos:broader eticas:autonomy-human-agency ;
+    nexus:isPartOf eticas:autonomy-human-agency ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch mit:subdomain-5-1 ;
+    skos:closeMatch nist:human-ai-configuration ;
+    skos:exactMatch dpvai:AutomationBias .
+
+eticas:autonomy-agency a nexus:RiskGroup ;
+    skos:prefLabel "Autonomy & Agency"@en ;
+    skos:altLabel "Autonomy & Human Agency"@en ;
+    skos:altLabel "Human-AI Interaction"@en ;
+    skos:definition "The risk that an AI system undermines human agency or operates with insufficient human control. This includes over-reliance on AI outputs, automation bias, deskilling, and — for agentic AI systems — failure modes arising from multi-step autonomous actions, tool use, or coordination with other AI agents."@en ;
+    skos:topConceptOf <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:perspective "rights & ethics" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch mit:domain-5 ;
+    skos:closeMatch nist:human-ai-configuration .
+
+eticas:autonomy-human-agency a nexus:RiskGroup ;
+    skos:prefLabel "Human agency"@en ;
+    skos:definition "Risks to human decision-making capacity arising from interaction with AI systems."@en ;
+    skos:broader eticas:autonomy-agency ;
+    nexus:isPartOf eticas:autonomy-agency ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch mit:subdomain-5-1 ;
+    skos:closeMatch mit:subdomain-5-2 ;
+    skos:closeMatch nist:human-ai-configuration ;
+    skos:closeMatch dpvai:AutomationBias .
+
+eticas:autonomy-system-autonomy a nexus:RiskGroup ;
+    skos:prefLabel "System autonomy"@en ;
+    skos:definition "Risks from AI systems operating with a degree of autonomy beyond single-inference interactions."@en ;
+    skos:broader eticas:autonomy-agency ;
+    nexus:isPartOf eticas:autonomy-agency ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch mit:subdomain-7-1 ;
+    skos:closeMatch mit:subdomain-7-6 .
+
+eticas:behavioural-manipulation a nexus:Risk ;
+    skos:prefLabel "Behavioural manipulation"@en ;
+    skos:definition "Subliminal influence, dark patterns, or exploitation of cognitive biases to steer user behaviour without informed consent."@en ;
+    skos:broader eticas:security-harmful-misuse ;
+    nexus:isPartOf eticas:security-harmful-misuse ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch aiact:article-5-1b ;
+    skos:exactMatch aiact:article-5-1a .
+
+eticas:bias-dynamic-systemic-bias a nexus:RiskGroup ;
+    skos:prefLabel "Dynamic & Systemic bias"@en ;
+    skos:definition "Risks related to how bias is amplified or perpetuated over time through interaction between AI systems and the social systems they operate in."@en ;
+    skos:broader eticas:bias-fairness ;
+    nexus:isPartOf eticas:bias-fairness ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch dpvai:AutomationBias ;
+    skos:closeMatch aiact:article-72 ;
+    skos:closeMatch aiact:article-9 ;
+    skos:relatedMatch mit:subdomain-6-5 .
+
+eticas:bias-fairness a nexus:RiskGroup ;
+    skos:prefLabel "Bias & Fairness"@en ;
+    skos:altLabel "Algorithmic fairness"@en ;
+    skos:altLabel "Bias & Discrimination"@en ;
+    skos:altLabel "Fairness"@en ;
+    skos:definition "The risk that an AI system produces outcomes that systematically advantage or disadvantage individuals or groups based on protected or sensitive attributes, leading to unequal treatment, reduced accuracy, or unjust impacts. This includes biases introduced through data, model design, or deployment context, and covers both measurable disparities and perceived unfairness in decision-making."@en ;
+    skos:topConceptOf <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:perspective "rights & ethics" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch mit:domain-1 ;
+    skos:closeMatch nist:harmful-bias-and-homogenization ;
+    skos:closeMatch dpvai:AIBias ;
+    skos:closeMatch aiact:article-10-5-annex-iii .
+
+eticas:bias-outcome-disparities a nexus:RiskGroup ;
+    skos:prefLabel "Outcome disparities"@en ;
+    skos:definition "Risks related to unequal treatment, allocation, or performance outcomes across demographic and protected groups. These are observable differences in what the system does to or for different groups."@en ;
+    skos:broader eticas:bias-fairness ;
+    nexus:isPartOf eticas:bias-fairness ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch aiact:annex-iii ;
+    skos:exactMatch mit:subdomain-1-3 .
+
+eticas:bias-representational-harm a nexus:RiskGroup ;
+    skos:prefLabel "Representational harm"@en ;
+    skos:definition "Risks related to how the system represents groups in its outputs — through stereotypes, toxic content, skewed representation, or homogenization. These are harms in the form of meaning and content rather than allocation of resources or opportunities."@en ;
+    skos:broader eticas:bias-fairness ;
+    nexus:isPartOf eticas:bias-fairness ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch mit:subdomain-1-1 .
+
+eticas:construct-validity a nexus:Risk ;
+    skos:prefLabel "Construct validity of evaluative outputs"@en ;
+    skos:definition "The risk that an evaluation does not truly measure the construct it purports to measure — that it fails to capture all and only the components the construct requires. Manifests as failure to register construct-relevant evidence present in the input (under-sensitivity), or as the score moving on signals relevant only to a different construct (contamination)."@en ;
+    skos:broader eticas:measurement-validity ;
+    nexus:isPartOf eticas:measurement-validity ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "Eticas (Wiselook engagement, 2026-06)" .
+
+eticas:csam-ncii-generation a nexus:Risk ;
+    skos:prefLabel "CSAM and NCII generation"@en ;
+    skos:definition "Generation by the AI system of child sexual abuse material (CSAM) or non-consensual intimate imagery (NCII). Previously covered only implicitly under synthetic media abuse; made explicit here as a distinct content-safety risk."@en ;
+    skos:broader eticas:security-harmful-misuse ;
+    nexus:isPartOf eticas:security-harmful-misuse ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:data-governance a nexus:Risk ;
+    skos:prefLabel "Data governance"@en ;
+    skos:definition "Inadequate labelling, tagging, approval, or appropriateness assessment of data, leading to downstream issues with fitness for purpose, bias, and compliance."@en ;
+    skos:broader eticas:governance-compliance ;
+    nexus:isPartOf eticas:governance-compliance ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    dct:source "HRA" ;
+    skos:closeMatch aiact:article-10 .
+
+eticas:data-poisoning a nexus:Risk ;
+    skos:prefLabel "Data poisoning"@en ;
+    skos:altLabel "Backdoor attacks"@en ;
+    skos:altLabel "Training data poisoning"@en ;
+    skos:definition "Adversarial manipulation of training or fine-tuning data to introduce backdoors, bias, or systematic errors into the model. Includes both broad-spectrum poisoning (degrading overall performance) and targeted poisoning (creating exploitable triggers or specific failure modes)."@en ;
+    skos:broader eticas:security-ai-attacks ;
+    nexus:isPartOf eticas:security-ai-attacks ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:exactMatch atlas:data-poisoning ;
+    skos:exactMatch dpvai:DataPoisoning ;
+    skos:exactMatch aiact:recital-76 .
+
+eticas:deployment-sustainability a nexus:Risk ;
+    skos:prefLabel "Deployment sustainability"@en ;
+    skos:definition "The organisation lacks the capacity for ongoing operation, maintenance, monitoring, and improvement of the AI system after initial deployment. Includes vendor lock-in risk, dependency on external expertise, and unclear cost-effectiveness or value proposition."@en ;
+    skos:broader eticas:organisational-readiness ;
+    nexus:isPartOf eticas:organisational-readiness ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch nist:value-chain-and-component-integration .
+
+eticas:deskilling a nexus:Risk ;
+    skos:prefLabel "Deskilling"@en ;
+    skos:definition "Erosion of human skills, expertise, or professional judgment through prolonged delegation of tasks to AI systems."@en ;
+    skos:broader eticas:autonomy-human-agency ;
+    nexus:isPartOf eticas:autonomy-human-agency ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch mit:subdomain-6-3 .
+
+eticas:disparate-impact-protected-groups a nexus:Risk ;
+    skos:prefLabel "Disparate impact on protected groups"@en ;
+    skos:altLabel "Accessibility barriers"@en ;
+    skos:altLabel "Allocation of opportunity"@en ;
+    skos:altLabel "Disparate impact"@en ;
+    skos:altLabel "Intersectional unfairness"@en ;
+    skos:altLabel "Quality of service disparity"@en ;
+    skos:definition "The system produces systematically different — typically worse — outcomes for individuals belonging to protected groups, including across multiple intersecting attributes (race, gender, age, disability, etc.). Encompasses unequal allocation of opportunity, quality of service disparities, intersectional unfairness, and accessibility barriers."@en ;
+    skos:broader eticas:bias-outcome-disparities ;
+    nexus:isPartOf eticas:bias-outcome-disparities ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch mit:subdomain-1-1 ;
+    skos:closeMatch mit:subdomain-1-3 ;
+    skos:closeMatch dpvai:Discrimination ;
+    skos:closeMatch aiact:article-10 ;
+    skos:closeMatch aiact:article-5-1c .
+
+eticas:emergent-behaviour a nexus:Risk ;
+    skos:prefLabel "Emergent behaviour"@en ;
+    skos:definition "Unexpected capabilities or behaviours arising from agent interactions, multi-model coordination, or complex system dynamics that were not anticipated during design."@en ;
+    skos:broader eticas:autonomy-system-autonomy ;
+    nexus:isPartOf eticas:autonomy-system-autonomy ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch mit:subdomain-7-1 ;
+    skos:closeMatch mit:subdomain-7-6 .
+
+eticas:environmental-impact a nexus:RiskGroup ;
+    skos:prefLabel "Environmental Impact"@en ;
+    skos:altLabel "Environmental sustainability"@en ;
+    skos:altLabel "Sustainability"@en ;
+    skos:definition "The risk that an AI system's development, deployment, or use causes negative environmental effects, such as excessive energy or water consumption, carbon emissions, or unsustainable use of hardware and resources. This includes hidden impacts across the system's lifecycle, from model training to long-term operation."@en ;
+    skos:topConceptOf <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:perspective "technical soundness" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:exactMatch mit:subdomain-6-6 ;
+    skos:relatedMatch aiact:article-95 .
+
+eticas:evasion-attacks a nexus:Risk ;
+    skos:prefLabel "Guardrail evasion"@en ;
+    skos:altLabel "Adversarial evasion"@en ;
+    skos:altLabel "Evasion attacks"@en ;
+    skos:altLabel "Guardrail robustness"@en ;
+    skos:definition "Inputs crafted so that a deployed system acts on a request its safeguards should have blocked. For LLM deployments, the robustness of the guardrail or filter layer to input transformations that keep the request readable to the model while defeating the guardrail; for classifier-based systems, adversarial perturbations that force misclassification at inference time. Poisoning of training or fine-tuning data is data-poisoning."@en ;
+    skos:broader eticas:security-ai-attacks ;
+    nexus:isPartOf eticas:security-ai-attacks ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:exactMatch dpvai:AdversarialAttack .
+
+eticas:excessive-agency a nexus:Risk ;
+    skos:prefLabel "Excessive agency"@en ;
+    skos:definition "A configuration risk rather than an action risk: the agent has been granted more permissions, capabilities, or access rights than necessary for its defined task, expanding the potential damage of any failure or attack."@en ;
+    skos:broader eticas:agentic-actions-tool-use ;
+    nexus:isPartOf eticas:agentic-actions-tool-use ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" .
+
+eticas:failure-remediation-gaps a nexus:Risk ;
+    skos:prefLabel "Failure and remediation gaps"@en ;
+    skos:altLabel "Failures and remediations"@en ;
+    skos:altLabel "Unclear remediation procedures"@en ;
+    skos:definition "Absence of remediation plans for predictable or unknown failure modes, leaving critical services unable to recover or degrade gracefully."@en ;
+    skos:broader eticas:governance-compliance ;
+    nexus:isPartOf eticas:governance-compliance ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" .
+
+eticas:feedback-loops a nexus:Risk ;
+    skos:prefLabel "Feedback loops reinforcing inequality"@en ;
+    skos:definition "System outputs that, when fed back into the system or its operational context, amplify existing biases over time."@en ;
+    skos:broader eticas:bias-dynamic-systemic-bias ;
+    nexus:isPartOf eticas:bias-dynamic-systemic-bias ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:fitness-for-purpose a nexus:Risk ;
+    skos:prefLabel "Fitness for purpose and task effectiveness"@en ;
+    skos:altLabel "Fitness for purpose"@en ;
+    skos:altLabel "Task success"@en ;
+    skos:definition "The system has not been validated against the problem it is intended to solve, or is deployed for a task or context beyond the one it was validated for. Covers the ex ante question (was this designed and validated for this problem?) and its enforcement in deployment; whether the system actually succeeds at the task in operation is task-performance (Reliability)."@en ;
+    skos:broader eticas:governance-compliance ;
+    nexus:isPartOf eticas:governance-compliance ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    dct:source "HRA" .
+
+eticas:function-calling-hallucination a nexus:Risk ;
+    skos:prefLabel "Function calling hallucination"@en ;
+    skos:definition "The agent generates incorrect or malformed function calls — for example, by specifying wrong parameters, calling non-existent tools, or misinterpreting tool schemas — causing downstream failures or unintended system interactions."@en ;
+    skos:broader eticas:agentic-actions-tool-use ;
+    nexus:isPartOf eticas:agentic-actions-tool-use ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:geographic-cultural-language-skew a nexus:Risk ;
+    skos:prefLabel "Geographic, cultural, or language skew"@en ;
+    skos:definition "Systematic performance differences across geographies, cultures, or languages, often resulting from training data that overrepresents certain regions or linguistic traditions."@en ;
+    skos:broader eticas:bias-representational-harm ;
+    nexus:isPartOf eticas:bias-representational-harm ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch dpvai:NonRepresentativeSamplingBias .
+
+eticas:governance a nexus:RiskGroup ;
+    skos:prefLabel "Governance"@en ;
+    skos:altLabel "Accountability"@en ;
+    skos:altLabel "Governance & Accountability"@en ;
+    skos:definition "The risk that an AI system lacks adequate structures, policies, or accountability mechanisms to oversee its design, deployment, and use. Weak governance can lead to unclear responsibilities, poor documentation, limited auditability, and failure to align with legal, ethical, or organizational standards."@en ;
+    skos:topConceptOf <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:perspective "governance & compliance" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch mit:subdomain-6-5 ;
+    skos:closeMatch dpvai:Governance ;
+    skos:closeMatch aiact:article-17 ;
+    skos:relatedMatch nist:value-chain-and-component-integration .
+
+eticas:governance-accountability a nexus:RiskGroup ;
+    skos:prefLabel "Accountability"@en ;
+    skos:definition "Risks from unclear allocation of responsibility, weak human oversight, and inadequate attribution mechanisms for AI system decisions and their adverse impacts."@en ;
+    skos:broader eticas:governance ;
+    nexus:isPartOf eticas:governance ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> .
+
+eticas:governance-compliance a nexus:RiskGroup ;
+    skos:prefLabel "Compliance & process"@en ;
+    skos:definition "Risks from gaps in organisational processes for ongoing oversight, compliance, and lifecycle management of AI systems — including regulatory compliance, change management, data governance, monitoring and evaluation, remediation of failures, and incident response."@en ;
+    skos:broader eticas:governance ;
+    nexus:isPartOf eticas:governance ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch dpvai:RiskManagement ;
+    skos:closeMatch aiact:article-17 .
+
+eticas:governance-documentation a nexus:RiskGroup ;
+    skos:prefLabel "Documentation & auditability"@en ;
+    skos:definition "Risks from incomplete, inaccessible, or absent documentation and audit trails."@en ;
+    skos:broader eticas:governance ;
+    nexus:isPartOf eticas:governance ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch aiact:article-11 .
+
+eticas:graceful-degradation a nexus:Risk ;
+    skos:prefLabel "Graceful degradation"@en ;
+    skos:definition "Absence of defined degradation pathways that allow the system to maintain partial function when components fail, connectivity is lost, or resources are constrained."@en ;
+    skos:broader eticas:reliability-resilience ;
+    nexus:isPartOf eticas:reliability-resilience ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:hallucination a nexus:Risk ;
+    skos:prefLabel "Hallucination and fabricated outputs"@en ;
+    skos:altLabel "Confabulation"@en ;
+    skos:altLabel "Hallucination prevention"@en ;
+    skos:definition "Generation of false, fabricated, or misleading information that appears credible, including invented facts, statistics, citations, or events."@en ;
+    skos:broader eticas:reliability-output-quality ;
+    nexus:isPartOf eticas:reliability-output-quality ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:closeMatch mit:subdomain-3-1 ;
+    skos:exactMatch atlas:hallucination .
+
+eticas:hardware-efficiency a nexus:Risk ;
+    skos:prefLabel "Hardware efficiency"@en ;
+    skos:definition "Poor hardware utilisation increasing costs, environmental footprint, and limiting the feasibility of equitable access to AI capabilities."@en ;
+    skos:broader eticas:environmental-impact ;
+    nexus:isPartOf eticas:environmental-impact ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" .
+
+eticas:harmful-content-toxicity a nexus:Risk ;
+    skos:prefLabel "Harmful content and toxicity"@en ;
+    skos:altLabel "Harmful content prevention"@en ;
+    skos:altLabel "Toxicity"@en ;
+    skos:definition "Offensive, hateful, or otherwise harmful outputs that damage user well-being and erode trust."@en ;
+    skos:broader eticas:bias-representational-harm ;
+    nexus:isPartOf eticas:bias-representational-harm ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:closeMatch mit:subdomain-1-2 .
+
+eticas:homogenization-output-across-groups a nexus:Risk ;
+    skos:prefLabel "Homogenization of output across groups"@en ;
+    skos:definition "The system produces outputs that flatten cultural, linguistic, or stylistic diversity, defaulting to dominant patterns and erasing distinctive characteristics of underrepresented groups. Particularly relevant for generative AI, where homogenization in text, image, or speech outputs can reinforce hegemonic norms."@en ;
+    skos:broader eticas:bias-representational-harm ;
+    nexus:isPartOf eticas:bias-representational-harm ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:exactMatch nist:harmful-bias-and-homogenization ;
+    skos:relatedMatch mit:subdomain-6-3 .
+
+eticas:human-oversight-control a nexus:Risk ;
+    skos:prefLabel "Human oversight and control"@en ;
+    skos:definition "Lack of defined intervention points, override capabilities, or human review mechanisms, allowing issues and threats to persist unchecked."@en ;
+    skos:broader eticas:governance-accountability ;
+    nexus:isPartOf eticas:governance-accountability ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:exactMatch aiact:article-14 ;
+    skos:relatedMatch mit:subdomain-5-2 .
+
+eticas:incident-response-gaps a nexus:Risk ;
+    skos:prefLabel "Incident response gaps"@en ;
+    skos:definition "Insufficient detection, logging, escalation, or response capabilities for security incidents and misuse events."@en ;
+    skos:broader eticas:governance-compliance ;
+    nexus:isPartOf eticas:governance-compliance ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch dpvai:IncidentManagement ;
+    skos:exactMatch aiact:article-73 .
+
+eticas:inference-energy-consumption a nexus:Risk ;
+    skos:prefLabel "Inference-time energy consumption"@en ;
+    skos:definition "High energy use during deployment and inference, increasing environmental impact and infrastructure costs."@en ;
+    skos:broader eticas:environmental-impact ;
+    nexus:isPartOf eticas:environmental-impact ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" .
+
+eticas:infrastructure-dependency a nexus:Risk ;
+    skos:prefLabel "Infrastructure dependency"@en ;
+    skos:definition "Unmapped or unmitigated dependencies on external infrastructure (power, connectivity, cloud services, third-party APIs) whose failure would disable the system."@en ;
+    skos:broader eticas:reliability-resilience ;
+    nexus:isPartOf eticas:reliability-resilience ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" .
+
+eticas:institutional-capacity a nexus:Risk ;
+    skos:prefLabel "Institutional absorptive capacity"@en ;
+    skos:definition "The broader institutional or societal context lacks foundational capabilities (digital infrastructure, data literacy, regulatory frameworks) needed before AI deployment is viable. Premature deployment may reallocate scarce resources, exacerbate inequality, or create technological dependency."@en ;
+    skos:broader eticas:organisational-readiness ;
+    nexus:isPartOf eticas:organisational-readiness ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:relatedMatch mit:subdomain-6-2 .
+
+eticas:jailbreaking a nexus:Risk ;
+    skos:prefLabel "Jailbreaking"@en ;
+    skos:altLabel "Jailbreakability"@en ;
+    skos:definition "Techniques used to bypass safety controls, content filters, or usage restrictions to trigger prohibited behaviours or outputs."@en ;
+    skos:broader eticas:security-ai-attacks ;
+    nexus:isPartOf eticas:security-ai-attacks ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" .
+
+eticas:lack-of-change-management a nexus:Risk ;
+    skos:prefLabel "Lack of change management"@en ;
+    skos:definition "Absence of controlled processes for system modifications, including uncontrolled changes to production systems."@en ;
+    skos:broader eticas:governance-compliance ;
+    nexus:isPartOf eticas:governance-compliance ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:limited-auditability a nexus:Risk ;
+    skos:prefLabel "Limited auditability"@en ;
+    skos:definition "Insufficient logging, versioning, or traceability for meaningful external review or internal audit."@en ;
+    skos:broader eticas:governance-documentation ;
+    nexus:isPartOf eticas:governance-documentation ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:loss-of-human-control a nexus:Risk ;
+    skos:prefLabel "Loss of meaningful human control"@en ;
+    skos:definition "AI systems operating at speeds or complexity levels that make meaningful human oversight impractical, including inability to understand, interrupt, or reverse autonomous decisions."@en ;
+    skos:broader eticas:autonomy-system-autonomy ;
+    nexus:isPartOf eticas:autonomy-system-autonomy ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch aiact:article-14 ;
+    skos:exactMatch mit:subdomain-5-2 .
+
+eticas:measurement-validity a nexus:RiskGroup ;
+    skos:prefLabel "Measurement validity"@en ;
+    skos:definition "For systems that produce evaluative judgements or scores, the risk that the output does not validly measure the criterion, construct, or outcome it purports to assess. Distinct from hallucination (factual fabrication) and output-inconsistency (same-input variability) — a single output may be stable, internally consistent, and factually accurate yet still fail to measure what it claims. Especially salient for assessment, scoring, grading, and ranking systems, where the output IS a measurement. Follows the standard validity framework — content, criterion, construct, external, consequential validity (Lissitz & Samuelsen, 2007); subcategories below operationalise specific validity types as audit-tractable risks."@en ;
+    skos:broader eticas:reliability ;
+    nexus:isPartOf eticas:reliability ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:maturity "emerging" ;
+    dct:source "Eticas (Wiselook engagement, 2026-06; restructured Usman Gohar, July 2026)" .
+
+eticas:monitoring-evaluation-gaps a nexus:Risk ;
+    skos:prefLabel "Monitoring and evaluation gaps"@en ;
+    skos:altLabel "Monitoring, feedback, evaluation"@en ;
+    skos:definition "Lack of ongoing monitoring that renders datasets obsolete and system outputs unreliable, including absence of feedback mechanisms and periodic evaluation."@en ;
+    skos:broader eticas:governance-compliance ;
+    nexus:isPartOf eticas:governance-compliance ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:closeMatch dpvai:MonitoringControl ;
+    skos:closeMatch aiact:article-72 .
+
+eticas:multi-step-actions a nexus:Risk ;
+    skos:prefLabel "Multi-step autonomous actions"@en ;
+    skos:definition "AI systems that plan and execute sequences of actions, where errors in early steps cascade unpredictably through later steps."@en ;
+    skos:broader eticas:autonomy-system-autonomy ;
+    nexus:isPartOf eticas:autonomy-system-autonomy ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:relatedMatch mit:subdomain-7-6 .
+
+eticas:org-preparedness a nexus:Risk ;
+    skos:prefLabel "Organisational preparedness"@en ;
+    skos:definition "The deploying organisation lacks the governance maturity, leadership engagement, change management capacity, staff competency, or cultural receptivity needed to absorb an AI system into its operations."@en ;
+    skos:broader eticas:organisational-readiness ;
+    nexus:isPartOf eticas:organisational-readiness ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch aiact:article-4 .
+
+eticas:organisational-readiness a nexus:RiskGroup ;
+    skos:prefLabel "Organisational Readiness"@en ;
+    skos:altLabel "Deployment Readiness"@en ;
+    skos:altLabel "Integration Readiness"@en ;
+    skos:altLabel "Sociotechnical Fit"@en ;
+    skos:definition "The risk that an AI system fails to deliver value not because of model performance issues but because it does not fit the organisational, technical, or human context into which it is deployed. This includes insufficient organisational capacity to absorb the technology, workflow incompatibility, interoperability failures with existing systems, and lack of sustainable maintenance capability."@en ;
+    skos:topConceptOf <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:perspective "operational viability" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch aiact:article-4 .
+
+eticas:out-of-distribution-robustness a nexus:Risk ;
+    skos:prefLabel "Out-of-distribution robustness"@en ;
+    skos:definition "Unpredictable behaviour or failure when the system is exposed to inputs outside the distribution of its training data."@en ;
+    skos:broader eticas:reliability-output-quality ;
+    nexus:isPartOf eticas:reliability-output-quality ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" .
+
+eticas:output-drift a nexus:Risk ;
+    skos:prefLabel "Output drift over time"@en ;
+    skos:definition "Degradation of output quality or accuracy as data distributions, user behaviour, or operating conditions change after deployment."@en ;
+    skos:broader eticas:reliability-output-quality ;
+    nexus:isPartOf eticas:reliability-output-quality ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:output-inconsistency a nexus:Risk ;
+    skos:prefLabel "Output inconsistency"@en ;
+    skos:definition "Inconsistent results across similar inputs and contexts, undermining reproducibility and user trust."@en ;
+    skos:broader eticas:reliability-output-quality ;
+    nexus:isPartOf eticas:reliability-output-quality ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:over-reliance a nexus:Risk ;
+    skos:prefLabel "Over-reliance on AI"@en ;
+    skos:definition "Systemic dependence on AI systems that leaves individuals or organisations unable to function when the system is unavailable or produces incorrect outputs."@en ;
+    skos:broader eticas:autonomy-human-agency ;
+    nexus:isPartOf eticas:autonomy-human-agency ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch nist:human-ai-configuration ;
+    skos:exactMatch mit:subdomain-5-1 .
+
+eticas:oversight-of-adverse-impacts a nexus:Risk ;
+    skos:prefLabel "Oversight of significant adverse impacts"@en ;
+    skos:definition "Missing processes for identifying, escalating, and responding to harmful outcomes, including psychological or physical harm and threats to human life."@en ;
+    skos:broader eticas:governance-accountability ;
+    nexus:isPartOf eticas:governance-accountability ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    dct:source "HRA" .
+
+eticas:performance-equity a nexus:Risk ;
+    skos:prefLabel "Differential performance across populations"@en ;
+    skos:altLabel "Group-wise error rate"@en ;
+    skos:altLabel "Performance equity across populations"@en ;
+    skos:definition "The AI system performs systematically worse for some demographic groups than others — through higher error rates, lower accuracy, or reduced reliability — leading to unequal quality of service even when access is the same."@en ;
+    skos:broader eticas:bias-outcome-disparities ;
+    nexus:isPartOf eticas:bias-outcome-disparities ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:closeMatch mit:subdomain-1-3 .
+
+eticas:poor-documentation a nexus:Risk ;
+    skos:prefLabel "Poor documentation"@en ;
+    skos:definition "Incomplete, outdated, or absent documentation of system purpose, architecture, data sources, known limitations, and operational procedures."@en ;
+    skos:broader eticas:governance-documentation ;
+    nexus:isPartOf eticas:governance-documentation ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch aiact:article-11 .
+
+eticas:privacy-collection-use a nexus:RiskGroup ;
+    skos:prefLabel "Data collection & use"@en ;
+    skos:definition "Risks from how personal data is collected, processed, and repurposed."@en ;
+    skos:broader eticas:privacy-confidentiality ;
+    nexus:isPartOf eticas:privacy-confidentiality ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch dpvai:PersonalDataCollection ;
+    skos:relatedMatch aiact:article-5 .
+
+eticas:privacy-confidentiality a nexus:RiskGroup ;
+    skos:prefLabel "Privacy & Confidentiality"@en ;
+    skos:altLabel "Data Privacy"@en ;
+    skos:altLabel "Privacy"@en ;
+    skos:definition "The risk that an AI system collects, processes, or infers personal information in ways that infringe on individuals' rights to control their data (privacy), or that sensitive information is exposed, accessed, or shared without authorization (confidentiality). This includes risks from data leakage, re-identification, unauthorized use, or insufficient safeguards."@en ;
+    skos:topConceptOf <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:perspective "rights & ethics" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch mit:subdomain-2-1 ;
+    skos:closeMatch nist:data-privacy ;
+    skos:closeMatch aiact:article-10-5-recital-47 .
+
+eticas:privacy-data-protection a nexus:RiskGroup ;
+    skos:prefLabel "Data protection"@en ;
+    skos:definition "Risks related to safeguards for stored and processed personal data."@en ;
+    skos:broader eticas:privacy-confidentiality ;
+    nexus:isPartOf eticas:privacy-confidentiality ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch nist:data-privacy .
+
+eticas:privacy-model-level a nexus:RiskGroup ;
+    skos:prefLabel "Model-level privacy"@en ;
+    skos:definition "Risks from AI models leaking or exposing private information through their outputs or structure."@en ;
+    skos:broader eticas:privacy-confidentiality ;
+    nexus:isPartOf eticas:privacy-confidentiality ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch mit:subdomain-2-1 ;
+    skos:closeMatch dpvai:MembershipInferenceAttack .
+
+eticas:prompt-injection a nexus:Risk ;
+    skos:prefLabel "Prompt injection"@en ;
+    skos:altLabel "Prompt injection protection"@en ;
+    skos:definition "Malicious inputs designed to subvert system intent by injecting instructions that override the system prompt, leading to harmful, deceptive, or unauthorized outputs."@en ;
+    skos:broader eticas:security-ai-attacks ;
+    nexus:isPartOf eticas:security-ai-attacks ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:exactMatch dpvai:PromptInjection .
+
+eticas:re-identification a nexus:Risk ;
+    skos:prefLabel "Re-identification of anonymised data"@en ;
+    skos:definition "The possibility that anonymised or pseudonymised data can be linked back to specific individuals through inference, combination with other datasets, or model outputs."@en ;
+    skos:broader eticas:privacy-data-protection ;
+    nexus:isPartOf eticas:privacy-data-protection ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch mit:subdomain-2-1 ;
+    skos:exactMatch dpvai:Reidentification .
+
+eticas:regulatory-non-compliance a nexus:Risk ;
+    skos:prefLabel "Regulatory non-compliance"@en ;
+    skos:definition "Failure to align with applicable legal, ethical, or organisational standards, including sector-specific regulations."@en ;
+    skos:broader eticas:governance-compliance ;
+    nexus:isPartOf eticas:governance-compliance ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch aiact:chapter-iii .
+
+eticas:reliability a nexus:RiskGroup ;
+    skos:prefLabel "Reliability"@en ;
+    skos:altLabel "Validity and Reliability"@en ;
+    skos:definition "Risks arising from an AI systems failure to perform dependably — whether through degraded output integrity and robustness (e.g., hallucinations, model drift), or through inability to maintain function under adverse or changing conditions (e.g., infrastructure failure, connectivity loss)."@en ;
+    skos:topConceptOf <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:perspective "technical soundness" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch mit:subdomain-7-3 ;
+    skos:closeMatch nist:confabulation ;
+    skos:closeMatch nist:information-integrity ;
+    skos:closeMatch aiact:article-15 .
+
+eticas:reliability-output-quality a nexus:RiskGroup ;
+    skos:prefLabel "Output Integrity and Robustness"@en ;
+    skos:definition "Risks including hallucinations, output inconsistency, model drift, and out-of-distribution failures that undermine the dependability and trustworthiness of system outputs."@en ;
+    skos:broader eticas:reliability ;
+    nexus:isPartOf eticas:reliability ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch nist:confabulation .
+
+eticas:reliability-resilience a nexus:RiskGroup ;
+    skos:prefLabel "Operational Resilience"@en ;
+    skos:definition "Risks related to the system's ability to absorb disruption, degrade gracefully, and recover. Particularly critical for AI deployed in conflict zones, humanitarian operations, or critical infrastructure."@en ;
+    skos:broader eticas:reliability ;
+    nexus:isPartOf eticas:reliability ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:maturity "emerging" .
+
+eticas:right-to-explanation-contestation a nexus:Risk ;
+    skos:prefLabel "Right to explanation and contestation"@en ;
+    skos:altLabel "Absence of appeal mechanisms"@en ;
+    skos:altLabel "Ineffective communication with affected parties"@en ;
+    skos:altLabel "Right to contest"@en ;
+    skos:altLabel "Right to explanation"@en ;
+    skos:definition "The risk that affected individuals are not informed about decisions taken with AI assistance, do not receive a meaningful explanation of those decisions, or have no effective channel to challenge or appeal them. Includes obligations under GDPR Article 22 (rights regarding automated individual decision-making) and EU AI Act Article 13 (transparency and provision of information to deployers and affected persons)."@en ;
+    skos:broader eticas:transparency-explainability-group ;
+    nexus:isPartOf eticas:transparency-explainability-group ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:exactMatch dpvai:RightToExplanation ;
+    skos:exactMatch aiact:article-86 .
+
+eticas:scope-creep-goal-misalignment a nexus:Risk ;
+    skos:prefLabel "Scope creep and goal misalignment"@en ;
+    skos:definition "The agent pursues its objective in ways that exceed intended boundaries, develop unintended sub-goals, or conflict with user intent — driven by ambiguous instructions, reward misspecification, or emergent planning behaviour across multiple steps."@en ;
+    skos:broader eticas:agentic-actions-tool-use ;
+    nexus:isPartOf eticas:agentic-actions-tool-use ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:security-ai-attacks a nexus:RiskGroup ;
+    skos:prefLabel "Adversarial Threats & Attacks"@en ;
+    skos:definition "The risks that arise from adversarial inputs, injected instructions, bypassed safety controls, or corrupted training data."@en ;
+    skos:broader eticas:security-misuse ;
+    nexus:isPartOf eticas:security-misuse ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch mit:subdomain-2-2 ;
+    skos:closeMatch dpvai:SecurityAttack ;
+    skos:closeMatch aiact:article-15-5 .
+
+eticas:security-harmful-misuse a nexus:RiskGroup ;
+    skos:prefLabel "Harmful & Malicious Misuse"@en ;
+    skos:definition "Risks from deliberate misuse of the AI system to generate harmful content, manipulate users, or operate beyond its intended purpose. These risks involve explicit malicious intent (human or otherwise) — distinguishing them from unintentional system failures (which belong under Reliability)."@en ;
+    skos:broader eticas:security-misuse ;
+    nexus:isPartOf eticas:security-misuse ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch mit:domain-4 ;
+    skos:closeMatch aiact:article-5-1a .
+
+eticas:security-misuse a nexus:RiskGroup ;
+    skos:prefLabel "Security & Misuse"@en ;
+    skos:altLabel "Safety"@en ;
+    skos:altLabel "Safety, Security & Misuse"@en ;
+    skos:altLabel "Security"@en ;
+    skos:definition "The risk that an AI system is exposed to AI-specific vulnerabilities, attacks, or misuse that compromise its integrity, availability, or confidentiality. This covers risks beyond traditional IT security, including adversarial inputs, prompt injection, model extraction, jailbreaking, and supply-chain risks specific to AI components. It is intended to complement, not replace, standard IT security assessments."@en ;
+    skos:topConceptOf <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:perspective "technical soundness" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch mit:domain-4 ;
+    skos:closeMatch mit:subdomain-2-2 ;
+    skos:closeMatch nist:information-security ;
+    skos:closeMatch aiact:article-15-5 .
+
+eticas:security-system a nexus:Risk ;
+    skos:prefLabel "Infrastructure & System security"@en ;
+    skos:definition "The risks that arise from unauthorised access, vulnerable third-party components, or over-disclosure of technical details that enable targeting. Unlike Governance risks, this includes whether the system and its environment can be technically compromised."@en ;
+    skos:broader eticas:security-misuse ;
+    nexus:isPartOf eticas:security-misuse ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch nist:information-security .
+
+eticas:sensitive-information-leakage a nexus:Risk ;
+    skos:prefLabel "Sensitive information leakage through model outputs"@en ;
+    skos:altLabel "PII leakage rate"@en ;
+    skos:altLabel "Privacy leakage"@en ;
+    skos:definition "Personal or confidential/proprietary information present in training data, inference-time context, or connected systems, surfacing in model outputs through memorisation, context disclosure, cross-tenant contamination, or system-prompt extraction. Covers personal data and organisational or commercial confidentiality alike."@en ;
+    skos:broader eticas:privacy-model-level ;
+    nexus:isPartOf eticas:privacy-model-level ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:closeMatch nist:data-privacy ;
+    skos:closeMatch dpvai:UnauthorisedDataDisclosure ;
+    skos:exactMatch mit:subdomain-2-1 .
+
+eticas:sentiment-fairness a nexus:Risk ;
+    skos:prefLabel "Sentiment and quality disparity across groups"@en ;
+    skos:altLabel "Sentiment fairness across groups"@en ;
+    skos:definition "The system produces outputs of systematically different tone, sentiment, or quality when describing or addressing different demographic groups — for example, more negative, more dismissive, or less detailed responses for certain populations."@en ;
+    skos:broader eticas:bias-representational-harm ;
+    nexus:isPartOf eticas:bias-representational-harm ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" .
+
+eticas:stakeholder-communication a nexus:Risk ;
+    skos:prefLabel "Inadequate disclosure of system capabilities and limitations"@en ;
+    skos:altLabel "Communication to relevant interested parties"@en ;
+    skos:altLabel "Communication to stakeholders"@en ;
+    skos:definition "The AI system's capabilities, limitations, intended use cases, and known failure modes are not communicated clearly to deployers, users, or affected parties, leading to misuse, over-reliance, or under-reliance on the system."@en ;
+    skos:broader eticas:transparency-communication ;
+    nexus:isPartOf eticas:transparency-communication ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:closeMatch aiact:article-13 .
+
+eticas:stereotyping-demeaning-content a nexus:Risk ;
+    skos:prefLabel "Stereotyping and demeaning content"@en ;
+    skos:altLabel "Minimization of stereotyping"@en ;
+    skos:definition "AI system outputs that reinforce, perpetuate, erase, or demean demographic groups through stereotypical representations or language."@en ;
+    skos:broader eticas:bias-representational-harm ;
+    nexus:isPartOf eticas:bias-representational-harm ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:closeMatch mit:subdomain-1-1 .
+
+eticas:supply-chain-vulnerabilities a nexus:Risk ;
+    skos:prefLabel "Supply-chain vulnerabilities"@en ;
+    skos:definition "Risks introduced through third-party components, pre-trained models, data sources, or other dependencies not fully under the deployer's control."@en ;
+    skos:broader eticas:governance-accountability ;
+    nexus:isPartOf eticas:governance-accountability ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "in-processing" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch nist:value-chain-and-component-integration ;
+    skos:closeMatch aiact:article-25 .
+
+eticas:synthetic-media-abuse a nexus:Risk ;
+    skos:prefLabel "Synthetic media abuse"@en ;
+    skos:definition "Generation of deepfakes, fake voices, or undisclosed AI-generated content used to deceive or harm."@en ;
+    skos:broader eticas:security-harmful-misuse ;
+    nexus:isPartOf eticas:security-harmful-misuse ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch mit:subdomain-4-1 ;
+    skos:closeMatch nist:information-integrity ;
+    skos:closeMatch aiact:article-50 .
+
+eticas:system-explainability a nexus:Risk ;
+    skos:prefLabel "AI system explainability"@en ;
+    skos:definition "Stakeholders misinterpret or misunderstand the intended purpose or use of an AI system based on its outputs, due to insufficient explanation of how outputs are produced."@en ;
+    skos:broader eticas:transparency-explainability-group ;
+    nexus:isPartOf eticas:transparency-explainability-group ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    dct:source "HRA" ;
+    skos:closeMatch dpvai:ExplainabilityRisk .
+
+eticas:task-performance a nexus:Risk ;
+    skos:prefLabel "Task performance"@en ;
+    skos:altLabel "Inadequate task performance"@en ;
+    skos:altLabel "Task effectiveness"@en ;
+    skos:definition "The system does not succeed at its intended task in operation, or succeeds unevenly across subpopulations and input types, falling short of what the use requires. Measured ex post against the task the system was deployed for. Whether the system was validated for that task in the first place is fitness-for-purpose (Governance); for systems whose output is an evaluative score, whether the score measures what it claims is measurement-validity."@en ;
+    skos:broader eticas:reliability-output-quality ;
+    nexus:isPartOf eticas:reliability-output-quality ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:technical-interoperability a nexus:Risk ;
+    skos:prefLabel "Technical interoperability"@en ;
+    skos:definition "The AI system cannot integrate with existing infrastructure, legacy systems, data pipelines, or standards (e.g., HL7 FHIR in healthcare) required for it to function in the deployment environment."@en ;
+    skos:broader eticas:organisational-readiness ;
+    nexus:isPartOf eticas:organisational-readiness ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" .
+
+eticas:tool-use-risks a nexus:Risk ;
+    skos:prefLabel "Tool use risks"@en ;
+    skos:definition "AI systems that interact with external tools, APIs, or services, creating unintended side effects or security exposures."@en ;
+    skos:broader eticas:autonomy-system-autonomy ;
+    nexus:isPartOf eticas:autonomy-system-autonomy ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:training-resource-consumption a nexus:Risk ;
+    skos:prefLabel "Training resource consumption"@en ;
+    skos:definition "Significant carbon emissions, energy use, and water consumption associated with model training, particularly for large-scale foundation models."@en ;
+    skos:broader eticas:environmental-impact ;
+    nexus:isPartOf eticas:environmental-impact ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "in-processing" ;
+    dct:source "HRA" .
+
+eticas:transparency-communication a nexus:RiskGroup ;
+    skos:prefLabel "Communication & disclosure"@en ;
+    skos:definition "Risks from inadequate communication about system capabilities, limitations, and AI involvement."@en ;
+    skos:broader eticas:transparency-explainability ;
+    nexus:isPartOf eticas:transparency-explainability ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch nist:information-integrity ;
+    skos:closeMatch aiact:article-13 .
+
+eticas:transparency-explainability a nexus:RiskGroup ;
+    skos:prefLabel "Transparency & Explainability"@en ;
+    skos:altLabel "Explainability & Transparency"@en ;
+    skos:altLabel "Transparency and Explainability"@en ;
+    skos:definition "The risk that stakeholders cannot understand how an AI system works, what it does, or why it produces specific outputs. Lack of transparency undermines informed consent, impedes oversight, and erodes trust."@en ;
+    skos:note "In the RAIA Guide, this category is assessed only at the Post-Processing stage."@en ;
+    skos:topConceptOf <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:perspective "governance & compliance" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch mit:subdomain-7-4 ;
+    skos:closeMatch aiact:article-13 ;
+    skos:exactMatch dpvai:TransparencyRisk ;
+    skos:relatedMatch nist:information-integrity .
+
+eticas:transparency-explainability-group a nexus:RiskGroup ;
+    skos:prefLabel "Explainability"@en ;
+    skos:definition "Risks from stakeholders being unable to understand why the system produces specific outputs."@en ;
+    skos:broader eticas:transparency-explainability ;
+    nexus:isPartOf eticas:transparency-explainability ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    skos:closeMatch mit:subdomain-7-4 ;
+    skos:closeMatch dpvai:ExplainabilityRisk .
+
+eticas:trust-calibration a nexus:Risk ;
+    skos:prefLabel "Trust calibration"@en ;
+    skos:definition "Inappropriate levels of trust in AI outputs — either excessive trust leading to uncritical acceptance, or insufficient trust leading to underuse of valuable AI capabilities."@en ;
+    skos:broader eticas:autonomy-human-agency ;
+    nexus:isPartOf eticas:autonomy-human-agency ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" ;
+    skos:closeMatch nist:human-ai-configuration ;
+    skos:relatedMatch mit:subdomain-5-1 .
+
+eticas:trust-exploitation-between-agents a nexus:Risk ;
+    skos:prefLabel "Trust exploitation between agents"@en ;
+    skos:definition "A compromised or malicious agent manipulates other agents in a pipeline by exploiting implicit trust in inter-agent communication, passing false instructions, forged outputs, or poisoned context to downstream agents."@en ;
+    skos:broader eticas:agentic-multi-agent-integrity ;
+    nexus:isPartOf eticas:agentic-multi-agent-integrity ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:unclear-responsibilities a nexus:Risk ;
+    skos:prefLabel "Unclear responsibilities and accountability gaps"@en ;
+    skos:definition "Missing or ambiguous assignment of roles and responsibilities for AI system design, deployment, monitoring, and incident response."@en ;
+    skos:broader eticas:governance-accountability ;
+    nexus:isPartOf eticas:governance-accountability ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" .
+
+eticas:unlawful-data-processing a nexus:Risk ;
+    skos:prefLabel "Unlawful collection or processing of personal data"@en ;
+    skos:definition "Collection, storage, or processing of personal data without adequate legal basis, consent, or compliance with applicable data protection regulations."@en ;
+    skos:broader eticas:privacy-collection-use ;
+    nexus:isPartOf eticas:privacy-collection-use ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "pre-processing" ;
+    skos:closeMatch dpvai:PersonalDataHandling ;
+    skos:closeMatch aiact:article-10 .
+
+eticas:unsafe-tool-calls a nexus:Risk ;
+    skos:prefLabel "Unsafe or unauthorised tool calls"@en ;
+    skos:definition "The agent invokes tools, APIs, or services beyond its intended scope — for example, calling the wrong tool, calling a tool with incorrect parameters, or accessing systems it was not designed to interact with."@en ;
+    skos:broader eticas:agentic-actions-tool-use ;
+    nexus:isPartOf eticas:agentic-actions-tool-use ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:untraceable-agent-actions a nexus:Risk ;
+    skos:prefLabel "Unexplainable and untraceable actions"@en ;
+    skos:definition "Agent actions across multi-step pipelines cannot be reconstructed, explained, or attributed, making it impossible to audit what the agent did, in what order, and why. Includes loss of data provenance — for example, the agent loses track of the origin and reliability of retrieved data, making factual claims unverifiable."@en ;
+    skos:broader eticas:agentic-multi-agent-integrity ;
+    nexus:isPartOf eticas:agentic-multi-agent-integrity ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "LLM" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" .
+
+eticas:weak-data-controls a nexus:Risk ;
+    skos:prefLabel "Weak data retention, erasure, and access controls"@en ;
+    skos:definition "Insufficient policies or technical measures for data retention limits, secure deletion, and access restrictions, increasing the risk of unauthorized access or indefinite data persistence."@en ;
+    skos:broader eticas:privacy-data-protection ;
+    nexus:isPartOf eticas:privacy-data-protection ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "established" ;
+    eticasont:lifecycleStage "post-processing" ;
+    eticasont:lifecycleStage "pre-processing" .
+
+eticas:workflow-compatibility a nexus:Risk ;
+    skos:prefLabel "Workflow compatibility"@en ;
+    skos:definition "The system's outputs, alerts, or interfaces do not fit existing human workflows, leading to alert fatigue, workarounds, or abandonment. Includes inadequate end-user involvement in design and testing, and poor context transferability from development to deployment environment."@en ;
+    skos:broader eticas:organisational-readiness ;
+    nexus:isPartOf eticas:organisational-readiness ;
+    skos:inScheme <https://taxonomy.eticas.ai/risk/scheme> ;
+    nexus:isDefinedByTaxonomy <https://taxonomy.eticas.ai/risk/scheme> ;
+    eticasont:scope "ALL" ;
+    eticasont:maturity "emerging" ;
+    eticasont:lifecycleStage "post-processing" .

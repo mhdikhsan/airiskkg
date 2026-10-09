@@ -175,6 +175,25 @@ ex:CallTool a beam:Process ; pair:playsRole pair:ToolInvocationStep ;
 ex:ToolOutput a beam:Data .
 """
 
+# What each risk pattern the registry motif carries needs on top of the bare shape:
+# a third-party catalogue, a tool that runs code, and a second coordinator whose
+# tool waits on an approver who sees only its assignment. It needs its own
+# coordinator because an approval reading a planner's output clears tool misuse
+# for every tool that planner drives.
+TOOL_AGENT_REGISTRY_CONDITIONS = """
+ex:Catalogue pair:playsRole pair:ThirdPartyPackage .
+ex:CallTool pair:playsRole pair:CodeExecutionStep .
+ex:Escalate a beam:Process ; pair:playsRole pair:PlanningStep ;
+    beam:use ex:Catalogue , ex:Ticket ; beam:produce ex:RefundAssignment .
+ex:RefundAssignment a beam:Data .
+ex:Approve a beam:Process ; pair:playsRole pair:HumanApprovalStep ;
+    beam:use ex:RefundAssignment ; beam:produce ex:Approval .
+ex:Approval a beam:Data .
+ex:Refund a beam:Process ; pair:playsRole pair:ToolInvocationStep ;
+    beam:use ex:RefundAssignment , ex:Approval ; beam:produce ex:Refunded .
+ex:Refunded a beam:Data .
+"""
+
 # (motif, graph, the risk patterns it carries)
 CASES = [
     ("IterativeRAGMotif", ITERATIVE_RAG, {
@@ -209,9 +228,12 @@ CASES = [
         "InsecureAgentCommunicationRiskPattern",
         "UnboundedConsumptionRiskPattern",
     }),
-    ("ToolAgentRegistryMotif", TOOL_AGENT_REGISTRY, {
+    ("ToolAgentRegistryMotif", TOOL_AGENT_REGISTRY + TOOL_AGENT_REGISTRY_CONDITIONS, {
         "ToolMisuseRiskPattern",
         "GoalHijackRiskPattern",
+        "AgenticSupplyChainRiskPattern",
+        "UnexpectedCodeExecutionRiskPattern",
+        "HumanAgentTrustExploitationRiskPattern",
     }),
 ]
 

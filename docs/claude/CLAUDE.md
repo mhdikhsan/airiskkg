@@ -181,10 +181,20 @@ motif a rule collapses the one distinction the whole method rests on.
 
 **Coverage:** GenAI, ML serving and training, supply chain, and agentic shapes. Agentic
 coverage is deliberately partial — only ASI entries with a design-time structural signature
-are modelled: **ASI01** goal hijack, **ASI02** tool misuse, **ASI06** memory and context
-poisoning, **ASI07** insecure inter-agent communication. Entries defined by runtime
-behaviour have no shape in a represented graph; adding them would fire on every agent and
-break candidate framing rather than support it.
+get a risk pattern: **ASI01** goal hijack, **ASI02** tool misuse, **ASI03** identity and
+privilege abuse, **ASI04** agentic supply chain, **ASI05** unexpected code execution,
+**ASI06** memory and context poisoning, **ASI07** insecure inter-agent communication,
+**ASI08** cascading failures, **ASI09** human-agent trust exploitation. **ASI10** rogue agents
+is catalogued and has none: it is defined by behaviour drifting after deployment, which has no
+shape in a represented graph, and a pattern for it would fire on every agent and break
+candidate framing rather than support it.
+
+**ML coverage rests on Zhang et al. (2022)**, not on OWASP or IBM, whose catalogues have no
+entry for distribution shift or an unvalidated model fit. Its data-level and model-level risks
+are `ontology/taxonomy/ml_risk.ttl`; six risk patterns bind the prediction and training steps
+of the ML motifs, which carried none before 2026-10-09. Three more derive from IBM Atlas
+entries that have a shape of their own: improper retraining (a loop from a model's output back
+into its training data), membership inference, and evaluation data contamination.
 
 ---
 
@@ -917,16 +927,19 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   escape is a triple no example, rewrite, or UI ever writes is unfalsifiable by design work.
   **Do not reintroduce an escape nothing can satisfy** — `beamr:associatedTo` was removed from
   all fifteen risk queries for exactly this reason, and the output was byte-identical.
-- **Three risk patterns are unclearable by design, and that is correct.**
+- **Four risk patterns are unclearable by design, and that is correct.**
   `DataAndModelPoisoning`, `SupplyChainCompromise` and `VectorAndEmbeddingWeakness`
-  (`data_model_poisoning.rq`, `supply_chain.rq`, `vector_embedding_weakness.rq` — the 3 of 15
-  risk queries carrying no `FILTER NOT EXISTS` at all) rest on provenance and vetting — non-technical controls with no runtime shape — so no structural
-  escape exists to write. The answer is **finding-level triage**, not a query escape:
+  (`data_model_poisoning.rq`, `supply_chain.rq`, `vector_embedding_weakness.rq`) rest on
+  provenance and vetting — non-technical controls with no runtime shape — and
+  `TrainingDataMembershipInference` rests on how the model is trained. No structural
+  escape exists to write. Those four and `evaluation_data_contamination.rq` are the 5 of 29
+  risk queries carrying no `FILTER NOT EXISTS`; contamination is still clearable, because its
+  condition *is* the shared data, and giving the evaluation its own removes it. The answer is **finding-level triage**, not a query escape:
   `pair:findingStatus` is the extension point, finding IRIs are deterministic so a judgement
   survives re-runs, and "accepted, handled by process" is a human act recorded against the
   finding rather than a fabricated structural fact. Never conflate the two.
-- **Carrying a `FILTER NOT EXISTS` is not the same as being clearable.** 12 of 15 risk queries
-  carry one or two; several test only the structural half while the annotation half stays
+- **Carrying a `FILTER NOT EXISTS` is not the same as being clearable.** 24 of 29 risk queries
+  carry at least one; several test only the structural half while the annotation half stays
   unclearable. **Audit a specific finding before telling anyone it is actionable.**
 - **Applying a control is a registered SPARQL rewrite, not code.** A `pair:MitigationApplication`
   restates the vulnerable shape its `pair:mitigatesRiskPattern` found and CONSTRUCTs the step
@@ -997,10 +1010,11 @@ and code (`python/`).
 | `ontology/patterns/implementation/` | Executable SPARQL CONSTRUCTs: `match/` (one per motif), `risk/` (one per risk pattern), `propagation/` (derived-fact rules, re-run to a fixed point by the runner), `mitigation/` (control rewrites). |
 | `ontology/facets/` | SKOS characterization facets: `task.ttl`, `context.ttl`, `autonomy.ttl`, `data_facets.ttl`, `implementation_type.ttl`, `facet_properties.ttl`. **Data Category is not here.** |
 | `ontology/alignments/` | External vocabulary adapters (Tool4Boxology, DPV; later AgentO). |
-| `ontology/taxonomy/` | IBM Atlas, OWASP LLM, OWASP Agentic (ASI), MIT, NIST AI 600-1, plus the tiered cross-taxonomy mappings. |
+| `ontology/taxonomy/` | IBM Atlas, OWASP LLM, OWASP Agentic (ASI), MIT, NIST AI 600-1, ML risks (Zhang et al., 2022), Eticas, plus the tiered cross-taxonomy mappings. |
 | `ontology/context/` | The business layer bridge. `bpmn_context.ttl` declares `pair:refinedBy`, `pair:businessFollows`, `pair:BusinessFlowDerivation`, and registers `business_flow.rq` and `business_data_bridge.rq` in `context/implementation/`. |
 | `ontology/visualization/` | Standalone SPARQL run by hand, referenced by no declaration. |
 | `data/mappings/` | **Source data, not knowledge.** `Final_Mapped_Taxonomy_Table_Output.csv` is the 93-row OWASP → IBM Atlas → MIT action cross-walk that `mit_mitigation_action.ttl` names as its `dct:source` and `generate_mit_action_layer.py` reads. Tracked, and deliberately outside the `.dockerignore` allow-list — the image does not need it, but a clone cannot regenerate the action layer without it. |
+| `data/eticas.ttl` | **Source data.** The Eticas AI Risk Taxonomy as published (CC BY 4.0). `generate_eticas_layer.py` writes `ontology/taxonomy/eticas_risk.ttl` from it, keeping a published mapping only where the target is a concept this KB declares or a DPV term. **Eticas writes `broadMatch` and `narrowMatch` the other way round from SKOS** ("data-poisoning narrowMatch MIT 2.2" means poisoning is the narrower), and not uniformly, so those rows are neither adopted nor inverted; nor is an `exactMatch` that would make two catalogues' entries identical. The generated header counts every dropped row by reason. |
 
 **`.rq` paths are data.** Each query is registered by a `pair:PatternImplementation` whose
 `pair:implementationPath` is a literal string, so **moving or renaming a query means updating
@@ -1052,7 +1066,9 @@ because an annotation can be attached to a data object and needs a plain `bpmn:a
 **A script earns `python/scripts/` by being depended on**: a test imports or invokes it
 (`validate_graphs.py`, `normalize_t4b.py`, `generate_mapping_provenance.py`), or it rewrites a tracked file
 (`generate_mit_action_layer.py` writes `ontology/taxonomy/mit_mitigation_action.ttl`,
-`generate_risk_control_linkage.py` writes `docs/reference/risk_control_linkage.md`).
+`generate_eticas_layer.py` writes `ontology/taxonomy/eticas_risk.ttl`,
+`generate_risk_control_linkage.py` writes `docs/reference/risk_control_linkage.md`; it refuses to
+run when a control is missing from its `CONTROL_ORDER`, which section 3 walks).
 `export_ontology.py`, `pattern_provenance_worklist.py` and `role_provenance_export.py` met none
 of those and now sit in `local/`. **A tracked file that says "regenerate with X" while X
 is gitignored cannot be regenerated from a clone** — the artifact stops being reproducible, which is the
@@ -1076,7 +1092,9 @@ the gitignored `docs/evaluation/` imports them and cannot be updated from a clon
   dropdown shows, so it stays small on purpose.
 - **`python/tests/fixtures/` — graphs a test needs that the deployment does not offer**:
   `onyx_rag_chatbot.ttl` (the only graph exercising query rewriting, reranking, embeddings and
-  supply chain), `wien_energie_bottina.ttl`, `wien_energie_tariff_change.ttl`, and
+  supply chain), `ml_credit_scoring.ttl` (the only graph that trains or serves a classical
+  model, and so the only one the ML risk patterns fire on), `wien_energie_bottina.ttl`,
+  `wien_energie_tariff_change.ttl`, and
   `context/energy_customer_service.ttl` + `context/energy_tariff_change.ttl`.
   Tracked, so a fresh clone passes; outside `ontology/example/`, so nothing offers them.
   **Retiring a graph from the offered set must not retire the coverage that rested on it** —
@@ -1244,22 +1262,23 @@ anyone noticed:
 len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its siblings
 ```
 
-### Library (counted off the loaded graph, 2026-10-04)
+### Library (counted off the loaded graph, 2026-10-09)
 
 | | |
 | --- | --- |
-| Motifs | **31** — GenAI 13, ML serving and training 13, Agentic 4, Supply chain 1 |
-| Risk patterns | **15** (15 motifs carry one; 16 carry none) |
-| Pattern nodes / pattern edges | **169** / **143** — every edge crosses between an oval and a box |
-| Pattern roles | **97** — shelved on 7 BEAM classes: Data 39, Process 33, Statistical Model 10, Transform 5, Resource 4, Infer 3, Train 3. All 97 carry a `skos:definition`; origins are 50 stated / 35 mapped / 12 inherited. **72** are named by a pattern node and **14** more are reached only by refining one that is; of the 11 no motif reaches, **6 are read by no registered query at all** |
+| Motifs | **47** — GenAI 20, ML serving and training 13, Agentic 13, Supply chain 1 |
+| Risk patterns | **29** (35 motifs carry one; 12 carry none) |
+| Pattern nodes / pattern edges | **261** / **224** — every edge crosses between an oval and a box |
+| Pattern roles | **123**. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
 | Data categories | **7** |
 | Facet concepts | **35** (task 20, data 11, autonomy 4) |
-| Risk mechanisms | **14** |
-| Applicability conditions | **16**, carried on 20 attachments |
-| Controls | **12** `pat:Control_*` |
-| Triples | **7 783** |
+| Risk mechanisms | **28** |
+| Applicability conditions | **30**, carried on 34 attachments |
+| Controls | **26** `pat:Control_*` |
+| Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 39, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
+| Triples | **11 855** |
 
-**63 registered implementations** over 62 `.rq` files: 31 match, 15 risk, 6 propagation, 9
+**93 registered implementations** over 92 `.rq` files: 47 match, 29 risk, 6 propagation, 9
 mitigation rewrites over 8 files (`response_verification.rq` is registered twice, under two
 controls for the same risk pattern), and 2 business-context derivations under
 `ontology/context/` — one of which registers as `DataCategoryPropagation`, so the runner sees 7
@@ -1278,6 +1297,7 @@ of those and 1 `BusinessFlowDerivation`.
 | Energy scene: BotTina + the business process | 5 | 11 |
 | Tariff scene: the tariff graph + its business process | 3 | 11 |
 | IT service desk scene: the agent + its business process | 4 | 9 |
+| Credit scoring (fixture): train, auto-deploy, score, decide, feed back | 3 | 16 |
 
 No bundled scene clears anything; `test_business_context.py` covers the clearing half by
 building an approval inline.

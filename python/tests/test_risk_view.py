@@ -748,7 +748,10 @@ def test_what_was_never_examined_is_counted_not_omitted(client) -> None:
     ttl = _with_agenda(_scene_ttl(), ["ToolMisuseRiskPattern"], client)
     agenda = _agenda_of(ttl)
     assert agenda["counts"]["not-examined"] == len(agenda["notExamined"])
-    assert len(agenda["checked"]) + len(agenda["notExamined"]) == 15
+    from airiskkg.assessment_runner import load_base_graph
+
+    library = set(load_base_graph().subjects(RDF.type, PAIR.RiskPattern))
+    assert len(agenda["checked"]) + len(agenda["notExamined"]) == len(library)
 
 
 def test_stating_a_harm_is_enough_to_have_an_agenda() -> None:

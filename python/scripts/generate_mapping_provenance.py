@@ -95,8 +95,8 @@ BLOCKS = [
             "keep prior curation. Defects carried from the source: action A0973 "
             "sits in sub-category 2.3 but is tagged Category 3 (does not affect "
             "the rollup, which keys on Sub_category); OWASP ids embed the year "
-            "inline (llm022025-) unlike the ontology; 19 of the 30 referenced "
-            "IBM risks are not declared in this project."
+            "inline (llm022025-) unlike the ontology. All 30 referenced IBM "
+            "risks are declared in this project since 2026-10-09."
         ),
     },
     {
@@ -146,6 +146,23 @@ CONTROL_BRIDGE = {
     "validated": False,
 }
 
+ETICAS_PUBLISHED = {
+    "set": "eticas-published",
+    "label": "Eticas AI Risk Taxonomy cross-walk, as published",
+    # Eticas states no matching method, so none is claimed for it.
+    "justification": "UnspecifiedMatching",
+    "confidence": None,
+    "tsv": None,
+    "source": "https://taxonomy.eticas.ai/risk/scheme",
+    "description": (
+        "Adopted from the Eticas AI Risk Taxonomy (data/eticas.ttl) by "
+        "generate_eticas_layer.py. Predicates and directions are reproduced as "
+        "published; only targets this knowledge base declares are kept."
+    ),
+    "date": None,
+    "curator": "upstream",
+}
+
 VOCABULARY_ALIGNMENT = {
     "set": "beam-external-vocabulary-alignment",
     "label": "BEAM/PAIR-AI vocabulary alignment to Boxology, DPV and AIRO",
@@ -163,6 +180,25 @@ ROW_CONFIDENCE = {
     ("asi06-memory-and-context-poisoning", "llm04-data-and-model-poisoning"): "0.85",
     ("asi06-memory-and-context-poisoning", "llm01-prompt-injection"): "0.75",
     ("asi06-memory-and-context-poisoning", "llm08-vector-and-embedding-weaknesses"): "0.75",
+    ("asi01-agent-goal-hijack", "llm01-prompt-injection"): "0.85",
+    ("asi01-agent-goal-hijack", "llm06-excessive-agency"): "0.80",
+    ("asi07-insecure-inter-agent-communication", "llm02-sensitive-information-disclosure"): "0.75",
+    ("asi07-insecure-inter-agent-communication", "llm06-excessive-agency"): "0.75",
+    ("asi03-identity-and-privilege-abuse", "llm01-prompt-injection"): "0.75",
+    ("asi03-identity-and-privilege-abuse", "llm02-sensitive-information-disclosure"): "0.75",
+    ("asi03-identity-and-privilege-abuse", "llm06-excessive-agency"): "0.85",
+    ("asi04-agentic-supply-chain", "llm03-supply-chain"): "0.90",
+    ("asi05-unexpected-code-execution", "llm01-prompt-injection"): "0.80",
+    ("asi05-unexpected-code-execution", "llm05-improper-output-handling"): "0.85",
+    ("asi08-cascading-failures", "llm01-prompt-injection"): "0.75",
+    ("asi08-cascading-failures", "llm04-data-and-model-poisoning"): "0.75",
+    ("asi08-cascading-failures", "llm06-excessive-agency"): "0.80",
+    ("asi09-human-agent-trust-exploitation", "llm01-prompt-injection"): "0.75",
+    ("asi09-human-agent-trust-exploitation", "llm05-improper-output-handling"): "0.75",
+    ("asi09-human-agent-trust-exploitation", "llm06-excessive-agency"): "0.80",
+    ("asi09-human-agent-trust-exploitation", "llm09-misinformation"): "0.85",
+    ("asi10-rogue-agents", "llm02-sensitive-information-disclosure"): "0.75",
+    ("asi10-rogue-agents", "llm09-misinformation"): "0.75",
 }
 
 HAS_RELATED_CONTROL = URIRef("http://w3id.org/airiskkg/taxonomy/nexus#hasRelatedControl")
@@ -294,13 +330,14 @@ def main(argv: list[str] | None = None) -> int:
         for path in sorted(directory.glob("*.ttl")):
             if path == SOURCE:
                 continue
+            file_block = ETICAS_PUBLISHED if path.name == "eticas_risk.ttl" else block
             graph = Graph()
             graph.parse(path)
             for predicate in MAPPING_PREDICATES:
                 for subject, _, obj in graph.triples((None, predicate, None)):
                     if (subject, predicate, obj) not in already:
                         already.add((subject, predicate, obj))
-                        records.append((subject, predicate, obj, block, None))
+                        records.append((subject, predicate, obj, file_block, None))
 
     records.sort(key=lambda r: (r[3]["set"], str(r[0]), str(r[1]), str(r[2])))
 
@@ -324,7 +361,7 @@ def main(argv: list[str] | None = None) -> int:
     ]
 
     seen_sets = []
-    for block in [*BLOCKS, CURATED_FALLBACK, ELSEWHERE, CONTROL_BRIDGE, VOCABULARY_ALIGNMENT]:
+    for block in [*BLOCKS, CURATED_FALLBACK, ELSEWHERE, ETICAS_PUBLISHED, CONTROL_BRIDGE, VOCABULARY_ALIGNMENT]:
         if block["set"] in seen_sets:
             continue
         seen_sets.append(block["set"])
@@ -332,9 +369,13 @@ def main(argv: list[str] | None = None) -> int:
         lines.append(f'    rdfs:label "{block["label"]}"@en ;')
         if block["tsv"]:
             lines.append(f"    dct:source <{NEXUS_TSV}{block['tsv']}> ;")
+        if block.get("source"):
+            lines.append(f"    dct:source <{block['source']}> ;")
         if block.get("source_note"):
             lines.append(f'    dct:source "{block["source_note"]}"@en ;')
-        if block.get("validated") is False:
+        if block.get("description"):
+            lines.append(f'    dct:description "{block["description"]}"@en ;')
+        elif block.get("validated") is False:
             lines.append(
                 '    dct:description "NOT validated. These links were produced '
                 "without human adjudication of each row; treat as a baseline "

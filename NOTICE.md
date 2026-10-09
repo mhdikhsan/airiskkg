@@ -25,7 +25,7 @@ Files derived from it:
 
 | File | What is derived |
 | --- | --- |
-| `ontology/taxonomy/ibm_risk_atlas.ttl` | IBM AI Risk Atlas groups and risk entries (subset) |
+| `ontology/taxonomy/ibm_risk_atlas.ttl` | IBM AI Risk Atlas groups and risk entries (subset; every IBM risk the `data/mappings/` cross-walk names). The mechanisms and conditions on three entries are PAIR-AI's own |
 | `ontology/taxonomy/mit_ai_risk_repo.ttl` | MIT AI Risk Repository domain taxonomy (subset) |
 | `ontology/taxonomy/mit_air_risk_control.ttl` | MIT draft AI risk mitigation taxonomy + controls |
 | `ontology/taxonomy/nexus_taxonomy_core.ttl` | Nexus taxonomy structure, adapted |
@@ -61,6 +61,49 @@ this repository is CC BY 4.0. **Anyone extending the OWASP taxonomy files must
 reference OWASP rather than reproduce its prose** — copying their descriptions,
 mitigation lists, or attack scenarios would pull ShareAlike onto the file and
 conflict with the repository licence.
+
+## OWASP Top 10 for Agentic Applications 2026 — CC BY-SA 4.0
+
+OWASP GenAI Security Project. (2025). *OWASP Top 10 for Agentic Applications
+2026* (Version 2026). <https://genai.owasp.org/>
+
+**Referenced, not adapted**, on the same terms as the LLM Top 10 above.
+`ontology/taxonomy/owasp_asi.ttl` reuses the ten entry identifiers, numbering and
+links. Its definitions, mechanisms and conditions are written for PAIR-AI, and
+ASI10 is catalogued without a risk pattern. The ASI ↔ LLM mappings come from IBM
+AI Atlas Nexus above.
+
+## Eticas AI Risk Taxonomy — CC BY 4.0
+
+Eticas. (n.d.). *Eticas AI risk taxonomy*. <https://taxonomy.eticas.ai/>
+
+Licensed CC BY 4.0, the same licence as this repository.
+
+| File | What is derived |
+| --- | --- |
+| `data/eticas.ttl` | The taxonomy as published, kept as source data |
+| `ontology/taxonomy/eticas_risk.ttl` | Generated from it by `python/scripts/generate_eticas_layer.py` |
+
+**Changes were made.** Concept IRIs, labels and definitions are unchanged. Eticas's
+published mappings are kept only where the target is a concept this knowledge base
+declares, or a DPV term. Its own handles for other catalogues are translated to
+this knowledge base's IRIs where they name exactly one concept, and dropped
+otherwise. `skos:broadMatch` and `skos:narrowMatch` rows are dropped because they
+read opposite to SKOS. The generated file's header counts every dropped row by
+reason.
+
+## Zhang et al. (2022) — risks in AI/ML systems
+
+> Zhang, X., Chan, F. T. S., Yan, C., & Bose, I. (2022). Towards risk-aware
+> artificial intelligence and machine learning systems: An overview. *Decision
+> Support Systems, 159*, Article 113800.
+> <https://doi.org/10.1016/j.dss.2022.113800>
+
+© Elsevier. **Referenced, not adapted.** `ontology/taxonomy/ml_risk.ttl` reuses
+the paper's risk category names and their arrangement (its Figure 1). Every
+definition, mechanism and condition in that file is written for PAIR-AI, as are
+the roles that cite the paper (`FairnessEvaluationStep`, `InputDomainCheckStep`,
+`UncertaintyEstimate`).
 
 ## NIST AI 600-1 — U.S. government work, no copyright
 

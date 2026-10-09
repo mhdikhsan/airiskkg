@@ -37,6 +37,8 @@ TAXONOMY_SOURCES = {
     "http://w3id.org/airiskkg/taxonomy/mit-ai-risk#": ("MIT AI Risk Repository", "MIT"),
     "http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#": ("MIT AI Risk Control", "MIT"),
     "http://w3id.org/airiskkg/taxonomy/nist-genai#": ("NIST AI 600-1", "NIST"),
+    "http://w3id.org/airiskkg/taxonomy/ml-risk#": ("Risks in AI/ML systems (Zhang et al., 2022)", "ML risk"),
+    "https://taxonomy.eticas.ai/risk/": ("Eticas AI Risk Taxonomy", "Eticas"),
     "http://w3id.org/airiskkg/patterns#": ("PAIR-AI Pattern Library", "PAIR-AI"),
 }
 

@@ -1,0 +1,87 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate cascading failure across agents"@en ;
+        dct:description "One agent's decision is handed on twice before another agent acts on it, with no represented checkpoint between the first hand-off and the action."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:CascadingFailuresRiskPattern ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?delegatingStep ,
+            ?receivingStep ,
+            ?relayStep ,
+            ?actingStep ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif .
+        # The first hand-off, as the delegation motif names it.
+        {
+            ?match pair:hasNodeBinding ?aBinding , ?bBinding .
+            ?aBinding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
+                      pair:matchedElement ?delegatingStep .
+            ?bBinding pair:bindsPatternNode pat:AgentDelegation_ReceivingStepNode ;
+                      pair:matchedElement ?receivingStep .
+        }
+
+        # The receiving agent hands work on again, and that chain ends in an action.
+        ?receivingStep (beam:produce/^beam:use)* ?forwardingStep .
+        ?forwardingStep beam:produce ?relayed .
+        ?relayed a beam:Data ;
+                 pair:playsRole/pair:subRoleOf* pair:AgentMessage .
+        ?relayStep beam:use ?relayed ;
+                   pair:playsRole/pair:subRoleOf* pair:AgentHandoffStep .
+        FILTER(?relayStep != ?receivingStep && ?relayStep != ?delegatingStep)
+        ?relayStep (beam:produce/^beam:use)* ?actingStep .
+        ?actingStep pair:playsRole ?actingRole .
+        { ?actingRole pair:subRoleOf* pair:StateChangingStep }
+        UNION
+        { ?actingRole pair:subRoleOf* pair:ToolInvocationStep }
+
+        FILTER NOT EXISTS {
+            ?checkpoint pair:playsRole ?checkpointRole ;
+                        beam:produce/^beam:use ?checked .
+            { ?checkpointRole pair:subRoleOf* pair:HumanApprovalStep }
+            UNION
+            { ?checkpointRole pair:subRoleOf* pair:PolicyEnforcementStep }
+            UNION
+            { ?checkpointRole pair:subRoleOf* pair:RateLimitControlStep }
+            UNION
+            { ?checkpointRole pair:subRoleOf* pair:OutputValidationStep }
+            UNION
+            { ?checkpointRole pair:subRoleOf* pair:GuardrailStep }
+            ?receivingStep (beam:produce/^beam:use)* ?checked .
+            ?checked (beam:produce/^beam:use)* ?actingStep .
+        }
+    }
+
+    pat:CascadingFailuresRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/", ENCODE_FOR_URI(STR(?actingStep)),
+        "/cascading-failures"
+    )) AS ?riskFinding)
+}
