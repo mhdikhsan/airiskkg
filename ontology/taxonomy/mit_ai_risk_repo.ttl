@@ -22,6 +22,7 @@
 
 mit:MIT_AI_Risk_Repository_Domain_Taxonomy a nexus:RiskTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "MIT AI Risk Repository: Domain Taxonomy of AI Risks" ;
+    rdfs:seeAlso <https://airisk.mit.edu/> ;
     dct:description "A domain taxonomy of AI risks organized into high-level AI risk domains and subdomains." .
 
 mit:domain-1 a nexus:RiskGroup ;

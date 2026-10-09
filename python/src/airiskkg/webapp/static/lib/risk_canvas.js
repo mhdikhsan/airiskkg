@@ -666,12 +666,6 @@ export function createRiskCanvas() {
       group.appendChild(make("text", { x: 8, y: cursor, class: "rc-flow-label" }, line));
       cursor += 14;
     });
-    const carried = entry.node.categories || [];
-    if (carried.length) {
-      group.appendChild(make("text", {
-        x: entry.w - 8, y: entry.h - 6, class: "rc-carries", "text-anchor": "end",
-      }, carried.join(" \u00b7 ")));
-    }
     layer.appendChild(group);
   }
 

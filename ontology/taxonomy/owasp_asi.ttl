@@ -49,6 +49,7 @@
 
 asi:OWASP_Agentic_Top_10_2026 a nexus:RiskTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "OWASP Top 10 for Agentic Applications" ;
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> ;
     dct:description "A taxonomy of security threats specific to applications where an AI agent plans, decides, and acts across multiple steps and systems." ;
     owl:versionInfo "2026" .
 
@@ -58,7 +59,7 @@ asi:asi01-agent-goal-hijack a nexus:Risk ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi01-agent-goal-hijack" ;
-    rdfs:seeAlso <https://genai.owasp.org/> .
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
 asi:asi02-tool-misuse a nexus:Risk ;
     skos:prefLabel "ASI02:2026 Tool Misuse and Exploitation" ;
@@ -66,7 +67,7 @@ asi:asi02-tool-misuse a nexus:Risk ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi02-tool-misuse-and-exploitation" ;
-    rdfs:seeAlso <https://genai.owasp.org/> .
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
 asi:asi06-memory-and-context-poisoning a nexus:Risk ;
     skos:prefLabel "ASI06:2026 Memory & Context Poisoning" ;
@@ -74,7 +75,7 @@ asi:asi06-memory-and-context-poisoning a nexus:Risk ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi06-memory-and-context-poisoning" ;
-    rdfs:seeAlso <https://genai.owasp.org/> .
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
 asi:asi07-insecure-inter-agent-communication a nexus:Risk ;
     skos:prefLabel "ASI07:2026 Insecure Inter-Agent Communication" ;
@@ -82,7 +83,7 @@ asi:asi07-insecure-inter-agent-communication a nexus:Risk ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi07-insecure-inter-agent-communication" ;
-    rdfs:seeAlso <https://genai.owasp.org/> .
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
 asi:asi02-tool-misuse
     nexus:hasRiskMechanism asi:mechanism-unconstrained-tool-execution ;
@@ -156,7 +157,7 @@ asi:asi03-identity-and-privilege-abuse a nexus:Risk ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi03-identity-and-privilege-abuse" ;
-    rdfs:seeAlso <https://genai.owasp.org/> .
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
 asi:asi04-agentic-supply-chain a nexus:Risk ;
     skos:prefLabel "ASI04:2026 Agentic Supply Chain Vulnerabilities" ;
@@ -164,7 +165,7 @@ asi:asi04-agentic-supply-chain a nexus:Risk ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi04-agentic-supply-chain-vulnerabilities" ;
-    rdfs:seeAlso <https://genai.owasp.org/> .
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
 asi:asi05-unexpected-code-execution a nexus:Risk ;
     skos:prefLabel "ASI05:2026 Unexpected Code Execution (RCE)" ;
@@ -172,7 +173,7 @@ asi:asi05-unexpected-code-execution a nexus:Risk ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi05-unexpected-code-execution" ;
-    rdfs:seeAlso <https://genai.owasp.org/> .
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
 asi:asi08-cascading-failures a nexus:Risk ;
     skos:prefLabel "ASI08:2026 Cascading Failures" ;
@@ -180,7 +181,7 @@ asi:asi08-cascading-failures a nexus:Risk ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi08-cascading-failures" ;
-    rdfs:seeAlso <https://genai.owasp.org/> .
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
 asi:asi09-human-agent-trust-exploitation a nexus:Risk ;
     skos:prefLabel "ASI09:2026 Human-Agent Trust Exploitation" ;
@@ -188,7 +189,7 @@ asi:asi09-human-agent-trust-exploitation a nexus:Risk ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi09-human-agent-trust-exploitation" ;
-    rdfs:seeAlso <https://genai.owasp.org/> .
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
 asi:asi10-rogue-agents a nexus:Risk ;
     skos:prefLabel "ASI10:2026 Rogue Agents" ;
@@ -197,7 +198,7 @@ asi:asi10-rogue-agents a nexus:Risk ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi10-rogue-agents" ;
-    rdfs:seeAlso <https://genai.owasp.org/> .
+    rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
 asi:asi03-identity-and-privilege-abuse
     nexus:hasRiskMechanism asi:mechanism-authority-inherited-across-handoff ;

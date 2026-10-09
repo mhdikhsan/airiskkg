@@ -40,6 +40,7 @@
 
 nist:NIST_AI_600_1_GenAI_Profile a nexus:RiskTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "NIST AI RMF Generative AI Profile" ;
+    rdfs:seeAlso <https://doi.org/10.6028/NIST.AI.600-1> ;
     dct:description "Risk categories the NIST AI Risk Management Framework identifies as unique to, or amplified by, generative AI." ;
     owl:versionInfo "AI 600-1 (2024)" .
 

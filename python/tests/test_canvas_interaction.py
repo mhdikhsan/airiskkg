@@ -1783,9 +1783,12 @@ def _open_risk_level(loop, handle):
     time.sleep(2)
     # A selection survives a re-render on purpose - triage keeps the box you are
     # judging in view - so a helper that promises a known state has to clear it,
-    # or the rail is still showing whatever the last test picked.
+    # or the rail is still showing whatever the last test picked. Assessing opens
+    # the findings drawer, which leaves the canvas too short for a card to be pressed.
     loop.run_until_complete(handle.js(
         'window.PairAI.RiskCanvas.clearSelection(); '
+        'if (!document.querySelector("#drawer").classList.contains("collapsed")) '
+        'document.querySelector("#drawer-toggle").click(); '
         'document.querySelector("#level-risk").click(); 1'))
     time.sleep(1.5)
     drawn = loop.run_until_complete(handle.js('document.querySelectorAll(".rc-card").length'))

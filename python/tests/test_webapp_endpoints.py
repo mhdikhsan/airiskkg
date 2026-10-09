@@ -205,6 +205,26 @@ def test_every_risk_pattern_carries_the_constituents_it_is_defined_by(client) ->
     )
 
 
+def test_every_source_on_a_risk_page_can_be_opened(client) -> None:
+    """A source chip names a catalogue the reader should be able to check, so it
+    links to the entry's own page or, where the catalogue publishes none, to the
+    catalogue's: an IBM entry to its Atlas page, an ML risk to Zhang et al."""
+    patterns = client.get("/api/library").get_json()["riskPatterns"]
+    unlinked = sorted({
+        f"{pattern['id']}: {ref['id']}"
+        for pattern in patterns
+        for ref in pattern["derivedFrom"] + pattern["taxonomy"] + pattern["riskDomains"]
+        if not ref.get("url")
+    })
+    assert not unlinked, "chips that open nothing:\n" + "\n".join(unlinked)
+
+    shift = next(p for p in patterns if p["id"] == "DatasetShiftRiskPattern")
+    assert shift["derivedFrom"][0]["url"] == "https://doi.org/10.1016/j.dss.2022.113800"
+    injection = next(p for p in patterns if p["id"] == "PromptInjectionRiskPattern")
+    ibm = [ref["url"] for ref in injection["taxonomy"] if ref["sourceShort"] == "IBM"]
+    assert ibm and all("ai-risk-atlas/" in url for url in ibm), ibm
+
+
 def test_what_a_pattern_may_lead_to_is_traversed_never_asserted(client) -> None:
     """The consequence side of the library."""
     from airiskkg.assessment_runner import PAIR, load_base_graph

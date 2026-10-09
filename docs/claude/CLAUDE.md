@@ -565,6 +565,9 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **A frame is measured round where its boxes stand.** It was measured before dragged positions
   applied, so a part moved past the edge left the architecture it belongs to;
   `test_a_part_dragged_past_its_frame_takes_the_frame_with_it` drives the drag with real input.
+- **An element box on the risk canvas says what it is, not what it carries.** The data categories
+  an element holds are in its detail ("carries"); printed on the box as well, they overflowed it
+  and repeated the panel (removed 2026-10-09).
 - **Severity is never computed, and that is the method rather than a gap.** In risk storming
   the priority is a judgement recorded by named participants, and the review step exists to
   surface disagreement. So the tool stays scoreless and `pair:statedPriority` carries human
@@ -725,9 +728,10 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   depends on what the elements are about — public input, personal data, a hosted model, a
   credential — or on what surrounds the motif, such as a training step upstream of a served
   model. `workbench/risk_context.py` states that context per link, in words and as the
-  annotations and elements that make the conditions hold; a risk page shows it under each motif,
-  and "Add to canvas" there inserts the motif with it, so picking a risk, adding a motif and
-  running the assessment raises it. `test_motif_risk_links.py` builds every link exactly as
+  annotations and elements that make the conditions hold, and "Add to canvas" on a risk page
+  inserts the motif with it, so picking a risk, adding a motif and running the assessment
+  raises it. The page does not print the context under each motif (removed 2026-10-09, asked
+  for); `/api/library` still serves it as `motifContext`. `test_motif_risk_links.py` builds every link exactly as
   `add-motif` does: carried links fire bare, the rest fire with their context, and **no context
   is named for a link the motif already carries**. Until 2026-10-09, 88 of 124 links raised
   nothing when their motif was inserted, and four supply chain links could not fire at all,
@@ -735,6 +739,16 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   removed rather than kept: Model in Image and Training to Serving train their own artifact, so
   nothing in them enters from outside. **Context never gates detection** — it lives in the
   workbench, no query reads it, and a submitted graph is assessed exactly as before.
+- **Every source chip opens something.** A chip names a catalogue the reader should be able to
+  check. `_ref` uses an entry's IRI when it is a web page (Eticas); otherwise, for a catalogue
+  entry (`nexus:Risk` / `RiskGroup`), the entry's own `rdfs:seeAlso` or `dct:source`, then its
+  scheme's. Every link is the upstream Nexus data's or one the repository already cited: IBM
+  entries carry their per-entry page, ASI entries the Agentic Top 10 page that upstream gives
+  each of them, and MIT, NIST and the Zhang scheme link the catalogue, since none publishes a
+  page per entry. **A link is never minted from a URL pattern**: `data-usage-restrictions` has
+  no upstream URL and falls back to the Atlas page. `test_every_source_on_a_risk_page_can_be_opened`
+  holds all 200 chips. In `derivedFrom`, an entry in this project's own namespace still ranks
+  after a paper or a design catalogue, link or not.
 - **Two risk patterns name no motif and must keep saying so** rather than showing an empty heading:
   `ExcessiveAgency` and `SensitiveInformationDisclosure` are evaluated over any motif match
   whose conditions hold.
@@ -1311,7 +1325,7 @@ len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its sibl
 | Applicability conditions | **34**, carried on 38 attachments |
 | Controls | **30** `pat:Control_*` |
 | Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 40, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
-| Triples | **12 091** |
+| Triples | **12 112** |
 | Motif–risk links | **123** — 39 carried by the motif alone, 84 with a named context (32 annotate the motif's own elements, 52 add the surrounding elements the risk needs) |
 
 **97 registered implementations** over 96 `.rq` files: 47 match, 33 risk, 6 propagation, 9

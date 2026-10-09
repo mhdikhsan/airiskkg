@@ -510,20 +510,6 @@ function legend(template) {
     el("span", { class: "lib-legend-item" }, [swatch(kind), KIND_NAME[kind] || kind])));
 }
 
-/* On a risk page, whether the motif raises the risk by itself or only once its
-   elements carry the context named here, which inserting it then adds. */
-function carriesLine(motif, risk) {
-  if (!risk) return null;
-  const needs = (risk.motifContext || {})[motif.id] || [];
-  if (!needs.length) {
-    return el("p", { class: "lib-carries carried" }, "Raises this risk pattern by itself.");
-  }
-  return el("div", { class: "lib-carries" }, [
-    el("span", { class: "lib-meta-lead" }, "raises it when"),
-    el("ul", { class: "lib-when-list" }, needs.map((need) => el("li", {}, need))),
-  ]);
-}
-
 function motifCard(motif, risk) {
   return el("div", { class: "lib-card" }, [
     el("div", { class: "lib-card-head" }, [
@@ -533,7 +519,6 @@ function motifCard(motif, risk) {
         motif.nodes.length + " elements · " + motif.edges.length + " relations"),
     ]),
     el("div", { class: "lib-preview" }, motifPreview(motif)),
-    carriesLine(motif, risk),
     el("div", { class: "lib-card-foot" }, [
       motif.roles.length
         ? el("div", { class: "lib-roles" }, [
@@ -635,10 +620,19 @@ function harmPanel(entry) {
 
   const body = [...byDomain.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([domain, refs]) => el("div", { class: "lib-domain" }, [
-      el("span", { class: "chip domain" }, domain),
-      el("div", { class: "lib-chips" }, refs.map((ref) => refChip(ref, "tax"))),
-    ]));
+    .map(([domain, refs]) => {
+      const known = (entry.riskDomains || []).find((row) => row.label === domain) || {};
+      const chip = known.url
+        ? el("a", {
+          class: "chip domain", href: known.url, target: "_blank",
+          rel: "noopener noreferrer", title: known.definition || domain,
+        }, domain)
+        : el("span", { class: "chip domain" }, domain);
+      return el("div", { class: "lib-domain" }, [
+        chip,
+        el("div", { class: "lib-chips" }, refs.map((ref) => refChip(ref, "tax"))),
+      ]);
+    });
 
   if (!byDomain.size) {
     body.push(el("span", {

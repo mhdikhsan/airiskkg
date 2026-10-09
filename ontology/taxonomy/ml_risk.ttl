@@ -30,6 +30,7 @@
 
 mlr:Zhang2022_AIMLRiskCategorisation a nexus:RiskTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "Risks in AI/ML systems (Zhang et al., 2022)" ;
+    rdfs:seeAlso <https://doi.org/10.1016/j.dss.2022.113800> ;
     dct:description "Risks inherent in supervised AI/ML systems, split by whether they originate in the data or in the model." ;
     dct:source <https://doi.org/10.1016/j.dss.2022.113800> .
 

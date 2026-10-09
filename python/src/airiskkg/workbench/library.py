@@ -68,10 +68,32 @@ def _doi(resource: URIRef) -> str | None:
     return rest if rest and host in ("https://", "http://", "https://dx.", "http://dx.") else None
 
 
+_NEXUS = URIRef("http://w3id.org/airiskkg/taxonomy/nexus#")
+
+
+def _is_entry(graph: Graph, resource: URIRef) -> bool:
+    """A catalogue's own risk or group, as opposed to a document or a design pattern."""
+    return any((resource, RDF.type, URIRef(str(_NEXUS) + kind)) in graph
+               for kind in ("Risk", "RiskGroup"))
+
+
+def _page(graph: Graph, entry: URIRef) -> str | None:
+    """Where a reader can read a catalogue entry: its own page, else its catalogue's."""
+    for subject in (entry, graph.value(entry, SKOS.inScheme)):
+        if subject is None:
+            continue
+        for predicate in (RDFS.seeAlso, DCTERMS.source):
+            for page in sorted(graph.objects(subject, predicate), key=str):
+                if link := _external(page):
+                    return link
+    return None
+
+
 def _ref(graph: Graph, resource: URIRef) -> dict:
     full, brief = source_pair(resource)
     stated = graph.value(resource, SKOS.prefLabel) or graph.value(resource, RDFS.label)
-    url = _external(resource)
+    entry = _is_entry(graph, resource)
+    url = _external(resource) or (_page(graph, resource) if entry else None)
     name = str(stated) if stated else (
         str(resource).split("//", 1)[-1].split("/", 1)[0] if url else label(graph, resource)
     )
@@ -94,6 +116,8 @@ def _ref(graph: Graph, resource: URIRef) -> dict:
     }
     if doi:
         ref["doi"] = doi
+    if entry:
+        ref["entry"] = True
     return ref
 
 
@@ -120,6 +144,8 @@ def _evidence_rank(ref: dict) -> int:
     catalogue or article, then a taxonomy entry the shape was inferred from."""
     if ref.get("doi"):
         return 0
+    if ref.get("entry") and ref["id"].startswith(_OWN_NAMESPACES):
+        return 2
     return 1 if ref.get("url") else 2
 
 
@@ -213,6 +239,7 @@ def _risk_pattern_entry(graph: Graph, pattern: URIRef, domains: set[URIRef]) -> 
                 "id": short(domain),
                 "label": label(graph, domain),
                 "definition": _definition(graph, domain),
+                "url": _page(graph, domain),
             })
     taxonomy.sort(key=lambda ref: (ref["sourceShort"], ref["label"].lower()))
     return {
