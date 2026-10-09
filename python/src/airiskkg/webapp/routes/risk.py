@@ -77,7 +77,8 @@ _RISK_CONCEPTS = (BEAMR.Risk, BEAMR.RiskSource, BEAMR.Consequence, BEAMR.Impact)
 
 
 _RELATIONS = (BEAMR.hasRisk, BEAMR.originatedFrom, BEAMR.isRiskSourceFor,
-              BEAMR.hasConsequence, BEAMR.hasImpact, BEAMR.modifiesRiskConcept)
+              BEAMR.hasConsequence, BEAMR.hasImpact, BEAMR.modifiesRiskConcept,
+              PAIR.findingHasConsequence, PAIR.controlModifiesFinding)
 
 
 def _library_index() -> tuple[dict, dict]:
@@ -152,6 +153,26 @@ def _attachment(data: Graph, kind: str, node: URIRef, target: URIRef) -> tuple:
     if BEAMR.Consequence not in types or BEAMR.Impact in types:
         raise ValueError("An impact is the impact of a consequence, so attach it to one.")
     return (target, BEAMR.hasImpact, node)
+
+
+def _finding_attachment(kind: str, node: URIRef, finding: URIRef) -> tuple:
+    """The triple tying a hand-written concept to a candidate the run raised.
+
+    Written against the finding's IRI, which is deterministic, so it survives a
+    re-run the way a triage decision does. Its own relation rather than AIRO's,
+    because beamr:hasConsequence would make the finding a stated risk.
+    """
+    if kind == "consequence":
+        return (finding, PAIR.findingHasConsequence, node)
+    if kind == "control":
+        return (node, PAIR.controlModifiesFinding, finding)
+    raise ValueError(
+        "A candidate the run raised takes a consequence or a control; "
+        "an impact attaches to a consequence.")
+
+
+def _findings(payload: dict, key: str) -> list[URIRef]:
+    return [URIRef(str(f).strip()) for f in payload.get(key) or [] if str(f).strip()]
 
 
 def _scope_node(data: Graph) -> URIRef:
@@ -305,6 +326,12 @@ def scope_edit() -> object:
             except ValueError as error:
                 return jsonify({"error": str(error)}), 400
             data.add(triple)
+        # A concern is several findings at one place, so it takes all of them.
+        for finding in _findings(payload, "attachToFindings"):
+            try:
+                data.add(_finding_attachment(kind, node, finding))
+            except ValueError as error:
+                return jsonify({"error": str(error)}), 400
         new_id = str(node)
 
     elif op in {"link-concept", "unlink-concept"}:
@@ -315,8 +342,23 @@ def scope_edit() -> object:
         node, other = URIRef(source), URIRef(target)
         kind = _kind_of(data, node)
         if kind is None:
+            # A line drawn from a candidate starts at the concern, not the concept.
+            node, other = other, node
+            kind = _kind_of(data, node)
+        if kind is None:
             return jsonify({"error": "Only a hand-written risk concept can be joined up."}), 400
-        if op == "unlink-concept":
+        findings = _findings(payload, "findings")
+        if findings:
+            for finding in findings:
+                if op == "unlink-concept":
+                    data.remove((finding, PAIR.findingHasConsequence, node))
+                    data.remove((node, PAIR.controlModifiesFinding, finding))
+                else:
+                    try:
+                        data.add(_finding_attachment(kind, node, finding))
+                    except ValueError as error:
+                        return jsonify({"error": str(error)}), 400
+        elif op == "unlink-concept":
             for predicate in _RELATIONS:
                 data.remove((node, predicate, other))
                 data.remove((other, predicate, node))

@@ -102,6 +102,20 @@ pair:decidedStatus a owl:DatatypeProperty ;
     rdfs:domain pair:TriageDecision ;
     rdfs:range xsd:string .
 
+### What a person adds to a candidate the run raised
+
+pair:findingHasConsequence a owl:ObjectProperty ;
+    rdfs:label "finding has consequence"@en ;
+    rdfs:comment "A person's claim that a candidate risk finding may lead to this consequence. Not beamr:hasConsequence, whose domain would make the finding a stated beamr:Risk. Read by no query."@en ;
+    rdfs:domain pair:RiskFinding ;
+    rdfs:range beamr:Consequence .
+
+pair:controlModifiesFinding a owl:ObjectProperty ;
+    rdfs:label "control modifies finding"@en ;
+    rdfs:comment "A person's claim that this control answers a candidate risk finding. Not beamr:modifiesRiskConcept, whose range would make the finding a risk concept. Read by no query."@en ;
+    rdfs:domain beamr:RiskControl ;
+    rdfs:range pair:RiskFinding .
+
 pair:checksRiskPattern a owl:ObjectProperty ;
     rdfs:label "checks risk pattern"@en ;
     rdfs:comment "A risk this assessment set out to answer. Chooses what is reported on, never what the pipeline is allowed to detect."@en ;

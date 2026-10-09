@@ -57,7 +57,7 @@ def _link(source: str, target: str, kind: str, *, label_text: str | None = None,
     return entry
 
 
-def _stated_layer(graph: Graph, nodes: dict, links: list) -> None:
+def _stated_layer(graph: Graph, nodes: dict, links: list, concern_of: dict[str, str]) -> None:
     """What somebody drew: risk storming's notes, in the notation they belong to."""
     hand = (
         (BEAMR.Impact, "impact"),
@@ -95,6 +95,27 @@ def _stated_layer(graph: Graph, nodes: dict, links: list) -> None:
             if str(subject) in nodes and str(obj) in nodes:
                 links.append(_link(str(subject), str(obj), "chain",
                                    label_text=name, editable=True))
+
+    # What a person added to a candidate: drawn on its concern. With no run to
+    # say which concern holds the finding, the finding is named for the page to
+    # place; a finding the run no longer raises is not drawn.
+    on_findings = (
+        (PAIR.findingHasConsequence, "hasConsequence", "source"),
+        (PAIR.controlModifiesFinding, "modifiesRiskConcept", "target"),
+    )
+    for predicate, name, end in on_findings:
+        for subject, _p, obj in graph.triples((None, predicate, None)):
+            finding = str(subject if end == "source" else obj)
+            other = str(obj if end == "source" else subject)
+            concern = concern_of.get(finding)
+            if concern is None and concern_of:
+                continue
+            ends = (concern or finding, other) if end == "source" else (other, concern or finding)
+            link = _link(*ends, "chain", label_text=name, editable=True)
+            if concern is None:
+                link["findingEnd"] = end
+            if link not in links:
+                links.append(link)
 
 
 def _scope_layer(scope: dict, nodes: dict, links: list) -> None:
@@ -293,6 +314,17 @@ def _place_by_hand(graph: Graph, nodes: dict, links: list) -> None:
             nodes[key]["systems"] = standing
 
 
+def _drawable(link: dict, drawn: set[str]) -> bool:
+    """A link to something the diagram does not draw would be a dangling arrow,
+    except a finding's end, which the page resolves to the concern holding it."""
+    end = link.get("findingEnd")
+    if end == "source":
+        return link["target"] in drawn
+    if end == "target":
+        return link["source"] in drawn
+    return link["source"] in drawn and (link["kind"] == "attaches" or link["target"] in drawn)
+
+
 def risk_diagram(graph: Graph, scope: dict, groups: list[dict]) -> dict:
     """The risk layer that sits above the architecture flow on the canvas.
     """
@@ -301,7 +333,8 @@ def risk_diagram(graph: Graph, scope: dict, groups: list[dict]) -> dict:
 
     _finding_layer(graph, groups, nodes, links)
     _scope_layer(scope, nodes, links)
-    _stated_layer(graph, nodes, links)
+    concern_of = {finding: group["key"] for group in groups for finding in group.get("findingIds", [])}
+    _stated_layer(graph, nodes, links, concern_of)
     _business_layer(graph, nodes, links)
 
     _system_layer(graph, nodes, links)
@@ -316,10 +349,6 @@ def risk_diagram(graph: Graph, scope: dict, groups: list[dict]) -> dict:
     drawn = set(nodes)
     return {
         "nodes": sorted(nodes.values(), key=lambda row: (BANDS.index(row["band"]), row["title"])),
-        # A link to something the diagram does not draw would be a dangling arrow.
-        "links": [
-            link for link in links
-            if link["source"] in drawn and (link["kind"] == "attaches" or link["target"] in drawn)
-        ],
+        "links": [link for link in links if _drawable(link, drawn)],
         "bands": list(BANDS),
     }

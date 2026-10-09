@@ -104,10 +104,19 @@ const HAND_DROP = {
   },
 };
 
+// A candidate the run raised takes these too, so what a partner adds in an
+// experiment is recorded against the finding rather than a copy of it.
+const ON_CANDIDATES = new Set(["consequence", "control"]);
+
+function concernOf(id, view) {
+  return ((view || {}).groups || []).find((group) => group.key === id) || null;
+}
+
 function markDroppable(kind, view) {
   const rule = HAND_DROP[kind];
   const bands = new Set((((view || {}).diagram || {}).nodes || [])
-    .filter((node) => rule.bands.includes(node.band) && node.origin === "stated")
+    .filter((node) => rule.bands.includes(node.band)
+      && (node.origin === "stated" || (ON_CANDIDATES.has(kind) && concernOf(node.id, view))))
     .map((node) => node.id));
   const marked = [];
   $$("#risk-canvas [data-node]").forEach((card) => {
@@ -157,12 +166,13 @@ function startPaletteDrag(kind, event, view) {
         ? `Drop a ${noun} on ${HAND_DROP[kind].where}.`
         : HAND_DROP[kind].element
           ? `Nothing to drop it on yet: a ${noun} needs ${HAND_DROP[kind].where}.`
-          : `A ${noun} attaches to a risk written by hand. `
-            + "What the library raised is answered by triage instead.");
+          : `Nothing to drop it on yet: a ${noun} needs ${HAND_DROP[kind].where}.`);
       return;
     }
     unfoldDetail();
-    edit("state-concept", { kind, label: HAND_LABEL[kind], attachTo: [found.id] },
+    const concern = concernOf(found.id, view);
+    const target = concern ? { attachToFindings: concern.findingIds } : { attachTo: [found.id] };
+    edit("state-concept", { kind, label: HAND_LABEL[kind], ...target },
       `wrote a ${HAND_LABEL[kind].toLowerCase()} by hand`,
       { onMade: (id) => { RiskCanvas.select(id); } });
   };
@@ -227,7 +237,7 @@ function renderPalette(show, view) {
   });
 }
 
-function concernDetail(group) {
+function concernDetail(group, view) {
   const evidenceIds = group.evidence.map((e) => e.id);
   const domains = group.riskDomains.map((d) => d.label).join(", ");
   GraphView.setHighlight(evidenceIds);
@@ -288,6 +298,20 @@ function concernDetail(group) {
         class: "dim",
         title: "No structural rewrite clears this one, so it goes to triage.",
       }, group.otherControls.map((c) => c.label).join(", "))));
+  }
+
+  // What a person added to this candidate, so it reads beside what the run said.
+  const added = ((view || {}).diagram || { links: [] }).links
+    .filter((link) => link.editable && (
+      (link.source === group.key && link.label === "hasConsequence")
+      || (link.target === group.key && link.label === "modifiesRiskConcept")))
+    .map((link) => (link.source === group.key ? link.target : link.source));
+  if (added.length) {
+    body.push(detailRow("added by hand", added.map((id) => {
+      const row = el("button", { type: "button", class: "chip clickable" }, nameOf(id, view));
+      row.addEventListener("click", () => { RiskCanvas.select(id); renderRail(); });
+      return row;
+    })));
   }
 
   if (group.motifs.length) {
@@ -518,7 +542,7 @@ function renderRail() {
 function drawable() {
   const view = currentView();
   const stated = (register && register.diagram) || null;
-  if (view) return stated ? { ...view, diagram: mergeStated(view.diagram, stated) } : view;
+  if (view) return stated ? { ...view, diagram: mergeStated(view.diagram, stated, view.groups) } : view;
   const diagram = stated;
   if (!diagram) return null;
   return {
@@ -530,12 +554,28 @@ function drawable() {
   };
 }
 
-function mergeStated(run, stated) {
+function mergeStated(run, stated, groups) {
   const nodes = run.nodes.filter((node) => node.origin !== "stated");
   const links = run.links.filter((link) => !link.editable);
   const known = new Set(nodes.map((node) => node.id));
   stated.nodes.forEach((node) => { if (!known.has(node.id)) nodes.push(node); });
-  return { ...run, nodes, links: [...links, ...stated.links] };
+  // The live register names a finding; the run says which concern holds it.
+  const concernOfFinding = new Map();
+  (groups || []).forEach((group) =>
+    (group.findingIds || []).forEach((id) => concernOfFinding.set(id, group.key)));
+  const seen = new Set();
+  const placed = [];
+  stated.links.forEach((link) => {
+    let { source, target } = link;
+    if (link.findingEnd === "source") source = concernOfFinding.get(source);
+    if (link.findingEnd === "target") target = concernOfFinding.get(target);
+    if (!source || !target) return;
+    const key = `${source}|${target}|${link.label}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    placed.push({ ...link, source, target });
+  });
+  return { ...run, nodes, links: [...links, ...placed] };
 }
 
 function currentView() {
@@ -730,8 +770,10 @@ function connectionDetail(line, view) {
   }, "remove this connection");
   remove.addEventListener("click", () => {
     RiskCanvas.clearSelection();
-    edit("unlink-concept", { from: line.from, to: line.to },
-      "removed a connection");
+    const concern = concernOf(line.from, view) || concernOf(line.to, view);
+    edit("unlink-concept", {
+      from: line.from, to: line.to, ...(concern ? { findings: concern.findingIds } : {}),
+    }, "removed a connection");
   });
   box.appendChild(remove);
   return box;
@@ -800,8 +842,14 @@ function connectForm(node, view) {
     options.map((row) => el("option", { value: row.id }, row.label)));
   const join = el("button", { type: "button", class: "btn small" }, "Connect");
   join.addEventListener("click", () => {
-    edit("link-concept", { from: node.id, to: picker.value },
-      "connected it");
+    const concern = concernOf(picker.value, view);
+    if (concern && !ON_CANDIDATES.has(node.band)) {
+      setStatus("error", "A candidate the run raised takes a consequence or a control.");
+      return;
+    }
+    edit("link-concept", {
+      from: node.id, to: picker.value, ...(concern ? { findings: concern.findingIds } : {}),
+    }, "connected it");
   });
   return el("details", { class: "scope-add" }, [
     el("summary", {}, `+ connect to ${rule.where}`),

@@ -552,6 +552,19 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   `test_the_notation_is_drawn_rather_than_listed`, which reads the notation off the canvas, and
   it conflated the type with which instance this is. Built in the presentation layer from
   evidence labels, never stored in the graph.
+- **A candidate takes a consequence and a control, recorded against its findings.** Asked for
+  2026-10-09, because the partners' experiments annotate what the tool raised as well as what
+  they drew. The relations are `pair:findingHasConsequence` and `pair:controlModifiesFinding`,
+  **never AIRO's**: `beamr:hasConsequence` has domain `beamr:Risk` and `modifiesRiskConcept` range
+  `beamr:RiskConcept`, so writing either on a finding would make it a stated risk, the merge the
+  rule above forbids. Like triage, each is written for every finding in the concern against its
+  deterministic IRI, so it survives a re-run, and one the run no longer raises is not drawn. An
+  impact still chains off the consequence. The live register has no run to say which concern
+  holds a finding, so its line names the finding and `findingEnd` says which end; `mergeStated`
+  in `risk.js` resolves it. No query reads either relation.
+- **A frame is measured round where its boxes stand.** It was measured before dragged positions
+  applied, so a part moved past the edge left the architecture it belongs to;
+  `test_a_part_dragged_past_its_frame_takes_the_frame_with_it` drives the drag with real input.
 - **Severity is never computed, and that is the method rather than a gap.** In risk storming
   the priority is a judgement recorded by named participants, and the review step exists to
   surface disagreement. So the tool stays scoreless and `pair:statedPriority` carries human
@@ -1298,7 +1311,7 @@ len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its sibl
 | Applicability conditions | **34**, carried on 38 attachments |
 | Controls | **30** `pat:Control_*` |
 | Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 40, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
-| Triples | **12 081** |
+| Triples | **12 091** |
 | Motif–risk links | **123** — 39 carried by the motif alone, 84 with a named context (32 annotate the motif's own elements, 52 add the surrounding elements the risk needs) |
 
 **97 registered implementations** over 96 `.rq` files: 47 match, 33 risk, 6 propagation, 9
