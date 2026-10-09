@@ -1775,9 +1775,14 @@ def _open_risk_level(loop, handle):
         return 1;
     })()""".replace("AGENT", _example(AGENT_NS)).replace("DESK", "it_service_desk")))
     time.sleep(4)
-    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    # The previous test's run would satisfy a wait for any run, so wait for this one.
+    loop.run_until_complete(handle.js(
+        'window.__runBefore = window.PairAI.state.lastAssessment; '
+        'document.querySelector("#btn-assess").click(); 1'))
     _settle(loop, handle,
-            "(window.PairAI.state.lastAssessment && "
+            "(!document.querySelector('#btn-assess').disabled && "
+            "window.PairAI.state.lastAssessment && "
+            "window.PairAI.state.lastAssessment !== window.__runBefore && "
             "window.PairAI.state.lastAssessment.riskView) ? 1 : 0", 0, tries=120)
     loop.run_until_complete(handle.js('document.querySelector("#level-risk").click()'))
     time.sleep(2)
