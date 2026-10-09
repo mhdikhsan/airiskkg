@@ -14,6 +14,23 @@ from pathlib import Path
 import pytest
 
 from airiskkg.paths import REPO_ROOT
+
+
+def _library() -> dict:
+    """What the page should show, counted off the loaded graph rather than pinned."""
+    from collections import Counter
+
+    from airiskkg.workbench.library import library_catalogue
+
+    catalogue = library_catalogue()
+    roles = catalogue["vocabulary"]["roles"]
+    families = Counter(m["family"]["label"] for m in catalogue["motifs"] if m["family"])
+    return {
+        "motifs": len(catalogue["motifs"]),
+        "roles": len(roles),
+        "quiet": sum(1 for r in roles if not r.get("motifs") and not r.get("serves")),
+        "families": dict(sorted(families.items())),
+    }
 from conftest import (  # noqa: E402
     AGENT_NS,
     GRAPH_RAG_NS,
@@ -1081,9 +1098,10 @@ def test_the_library_shelves_the_annotation_vocabulary_by_what_it_goes_on(served
     assert "tiles" in seen, f"the probe never reported: {report!r}"
 
     assert seen["hasTab"] == 1, "the library has no Terms tab"
-    assert seen["counted"] == 97, f"the tab does not count the vocabulary off the graph: {report}"
-    assert seen["tiles"] == 97, "not every term is shelved"
-    assert seen["defs"] == 97, "a term is listed without its definition"
+    roles = _library()["roles"]
+    assert seen["counted"] == roles, f"the tab does not count the vocabulary off the graph: {report}"
+    assert seen["tiles"] == roles, "not every term is shelved"
+    assert seen["defs"] == roles, "a term is listed without its definition"
     assert seen["shelves"] > 4, (
         f"still shelved by the four top-level roles rather than by class: {report}"
     )
@@ -1099,9 +1117,10 @@ def test_the_library_shelves_the_annotation_vocabulary_by_what_it_goes_on(served
 
 
 def test_the_library_rail_folds_by_group(served) -> None:
-    """31 motifs and 97 terms as one long column give a reader no way to put a
-    part of the library aside. The shelved tabs fold; Risks does not, because 15
-    of them are a list rather than a filing problem."""
+    """Motifs, terms and risk patterns as one long column give a reader no way
+    to put a part of the library aside, so every tab folds by its shelf. Risks
+    shelve by family once there were 33 of them, as motifs do, without groups
+    inside, and open unfolded because they are the front door."""
     browser = _browser()
     if not browser:
         pytest.skip("no Chromium-family browser to render with")
@@ -1150,11 +1169,12 @@ def test_the_library_rail_folds_by_group(served) -> None:
     assert "motifGroups" in seen, f"the probe never reported: {report!r}"
 
     assert seen["startFromRisk"] == 0, "the risk starter is still offered"
-    assert seen["riskGroups"] == 0, "Risks grew a fold it does not need"
+    assert seen["riskGroups"] == 4, f"the risk rail has {seen['riskGroups']} family groups"
     assert seen["motifGroups"] == 4, f"the motif rail has {seen['motifGroups']} groups"
     assert seen["atFirst"] == 0, f"the rail opened unfolded, showing {seen['atFirst']} rows"
     assert seen["shutAtFirst"] == 4, "not every group starts folded"
-    assert seen["afterOpen"] == 4, f"opening Agentic showed {seen['afterOpen']} rows, not its 4"
+    agentic = _library()["families"]["Agentic"]
+    assert seen["afterOpen"] == agentic, f"opening Agentic showed {seen['afterOpen']} rows, not its {agentic}"
     assert seen["shutMarked"] == 3, "the opened group is still marked as folded"
     assert seen["afterClose"] == 0, "folding it again did not hide its rows"
 
@@ -1221,21 +1241,22 @@ def test_the_library_landing_is_drawn_rather_than_written(served) -> None:
     seen = {k: int(v) for k, v in re.findall(r"(\w+)=(\d+)", report)}
     assert "motifTiles" in seen, f"the probe never reported: {report!r}"
 
-    assert seen["motifTiles"] == 31
-    assert seen["drawn"] == 31, f"only {seen['drawn']} motif cards draw their shape"
-    assert seen["withNodes"] == 31, "a drawn motif has no elements in it"
+    library = _library()
+    assert seen["motifTiles"] == library["motifs"]
+    assert seen["drawn"] == library["motifs"], f"only {seen['drawn']} motif cards draw their shape"
+    assert seen["withNodes"] == library["motifs"], "a drawn motif has no elements in it"
 
-    assert seen["terms"] == 97
-    assert seen["kinded"] == 97, "a term is listed without the class it goes on"
+    assert seen["terms"] == library["roles"]
+    assert seen["kinded"] == library["roles"], "a term is listed without the class it goes on"
     assert seen["distinctKinds"] >= 3, (
         f"every term reads as one kind ({seen['distinctKinds']}), so the colour says nothing"
     )
     assert seen["processShelves"] >= 1, "no shelf is marked as the process side"
     assert seen["resourceShelves"] >= 3, "the resource shelves are not marked as such"
-    assert seen["usage"] == 97, "a term does not say how much of the library reads it"
-    # exactly the 11 no motif reaches. The 14 read only through the term they
+    assert seen["usage"] == library["roles"], "a term does not say how much of the library reads it"
+    # exactly the terms no motif reaches. Those read only through the term they
     # refine are in full use, and dimming them would say otherwise.
-    assert seen["quiet"] == 11, f"{seen['quiet']} terms are marked unread"
+    assert seen["quiet"] == library["quiet"], f"{seen['quiet']} terms are marked unread"
 
 
 def _probe(served: int, name: str, script: str, budget: int = 22000,
@@ -1310,7 +1331,7 @@ def test_no_motif_is_drawn_with_a_step_feeding_a_step(served) -> None:
   </script>
 """, budget=12000)
     assert "edges" in seen, f"the probe never reported: {seen['_report']!r}"
-    assert seen["motifs"] == 31
+    assert seen["motifs"] == _library()["motifs"]
     assert seen["edges"] > 100, "the library's edges were not read"
     assert seen["sameSide"] == 0, (
         f"{seen['sameSide']} drawn edges join two steps or two resources"

@@ -255,6 +255,17 @@ pair:motifGroup a owl:ObjectProperty ;
     rdfs:domain pair:GraphMotif ;
     rdfs:range skos:Concept .
 
+pair:riskPatternFamily a owl:ObjectProperty ;
+    rdfs:label "risk pattern family"@en ;
+    rdfs:comment """
+    Which family of AI system a risk pattern is shelved under, from the same
+    scheme as pair:motifFamily: where most of the motifs it applies to belong.
+    A shelving decision, never read by a query, and never a claim that the risk
+    is confined to that kind of system.
+    """@en ;
+    rdfs:domain pair:RiskPattern ;
+    rdfs:range skos:Concept .
+
 pair:implementedBy a owl:ObjectProperty ;
     rdfs:label "implemented by"@en ;
     rdfs:domain [
@@ -735,8 +746,20 @@ pair:ThirdPartyPackage a pair:PatternRole ;
 
 pair:ExternalProviderCredential a pair:PatternRole ;
     skos:prefLabel "ExternalProviderCredential"@en ;
-    pair:subRoleOf pair:ExternalDependency ;
+    pair:subRoleOf pair:ExternalDependency , pair:AccessCredential ;
     skos:definition "A credential (API key, token) granting access to an external provider on behalf of the system."@en  .
+
+pair:AccessCredential a pair:PatternRole ;
+    skos:prefLabel "AccessCredential"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "Authentication material that lets a step act on a system: an API key, an OAuth token, a service account, or a delegated user session. Whoever uses it acts with the access it grants."@en ;
+    dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi03-identity-and-privilege-abuse> .
+
+pair:UncertaintyEstimate a pair:PatternRole ;
+    skos:prefLabel "UncertaintyEstimate"@en ;
+    pair:subRoleOf pair:ResourceRole ;
+    skos:definition "A measure of how far a single prediction can be trusted, produced alongside it: a confidence score, a prediction interval, or a predictive distribution."@en ;
+    dct:source <https://doi.org/10.1016/j.dss.2022.113800> .
 
 pair:SystemPrompt a pair:PatternRole ;
     skos:prefLabel "SystemPrompt"@en ;
@@ -805,6 +828,12 @@ pair:EvaluationStep a pair:PatternRole ;
     pair:subRoleOf pair:ProcessingStep ;
     skos:definition "A step that evaluates model behavior."@en ;
     skos:relatedMatch ai:Benchmarking  .
+
+pair:FairnessEvaluationStep a pair:PatternRole ;
+    skos:prefLabel "FairnessEvaluationStep"@en ;
+    pair:subRoleOf pair:EvaluationStep ;
+    skos:definition "An evaluation step that compares a model's errors and outcomes across the groups of people it affects, rather than over the population as a whole."@en ;
+    dct:source <https://doi.org/10.1016/j.dss.2022.113800> .
 
 pair:PredictionStep a pair:PatternRole ;
     skos:prefLabel "PredictionStep"@en ;
@@ -934,6 +963,12 @@ pair:DebateArgument a pair:PatternRole ;
     pair:subRoleOf pair:AgentMessage ;
     skos:definition "A position one agent puts to another in a debate, which the other reads and answers with its own over rounds (debate-based cooperation)."@en .
 
+pair:CodeExecutionStep a pair:PatternRole ;
+    skos:prefLabel "CodeExecutionStep"@en ;
+    pair:subRoleOf pair:ToolInvocationStep ;
+    skos:definition "A tool step that runs what it receives as code: an interpreter, a shell, an eval, a template engine, or a deserializer."@en ;
+    dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi05-unexpected-code-execution> .
+
 pair:GoalCreationStep a pair:PatternRole ;
     skos:prefLabel "GoalCreationStep"@en ;
     pair:subRoleOf pair:PlanningStep ;
@@ -992,6 +1027,18 @@ pair:OutputValidationStep a pair:PatternRole ;
     skos:prefLabel "OutputValidationStep"@en ;
     pair:subRoleOf pair:ControlStep ;
     skos:definition "A step that validates, encodes, or sanitizes model output before it is used by users, tools, or downstream systems."@en  .
+
+pair:InputDomainCheckStep a pair:PatternRole ;
+    skos:prefLabel "InputDomainCheckStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that checks whether an input lies within the domain a model was built for, and rejects, routes, or flags what does not (out-of-distribution detection)."@en ;
+    dct:source <https://doi.org/10.1016/j.dss.2022.113800> .
+
+pair:DataValidationStep a pair:PatternRole ;
+    skos:prefLabel "DataValidationStep"@en ;
+    pair:subRoleOf pair:ControlStep ;
+    skos:definition "A step that vets data before it is used to train or evaluate a model: where it came from, whether its labels hold, and whether it belongs in that set."@en ;
+    dct:source <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#improper-retraining> .
 
 pair:RateLimitControlStep a pair:PatternRole ;
     skos:prefLabel "RateLimitControlStep"@en ;

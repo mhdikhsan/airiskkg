@@ -1,0 +1,76 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate identity and privilege abuse"@en ;
+        dct:description "A credential authorises steps on both sides of an agent hand-off, or is written into agent memory, so authority granted for one task reaches work it was not scoped for."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:IdentityPrivilegeAbuseRiskPattern ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?credential ,
+            ?holdingStep ,
+            ?inheritingStep ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif .
+        {
+            # The same credential on both sides of a hand-off, with no per-action authorisation where it is reused.
+            ?match pair:hasNodeBinding ?delegatingBinding , ?receivingBinding .
+            ?delegatingBinding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
+                               pair:matchedElement ?holdingStep .
+            ?receivingBinding  pair:bindsPatternNode pat:AgentDelegation_ReceivingStepNode ;
+                               pair:matchedElement ?receivingStep .
+            ?holdingStep beam:use ?credential .
+            ?receivingStep (beam:produce/^beam:use)* ?inheritingStep .
+            ?inheritingStep beam:use ?credential .
+            FILTER(?inheritingStep != ?holdingStep)
+            FILTER NOT EXISTS {
+                ?authoriser pair:playsRole/pair:subRoleOf* pair:PolicyEnforcementStep ;
+                            beam:produce/^beam:use ?inheritingStep .
+            }
+        }
+        UNION
+        {
+            # A credential committed to memory, where later work can recall it.
+            ?match pair:hasNodeBinding ?writeBinding , ?storeBinding .
+            ?writeBinding pair:bindsPatternNode pat:AgentMemory_WriteStepNode ;
+                          pair:matchedElement ?holdingStep .
+            ?storeBinding pair:bindsPatternNode pat:AgentMemory_StoreNode ;
+                          pair:matchedElement ?inheritingStep .
+            ?holdingStep beam:use ?credential .
+        }
+        ?credential pair:playsRole/pair:subRoleOf* pair:AccessCredential .
+    }
+
+    pat:IdentityPrivilegeAbuseRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/", ENCODE_FOR_URI(STR(?credential)),
+        "/", ENCODE_FOR_URI(STR(?inheritingStep)),
+        "/identity-privilege-abuse"
+    )) AS ?riskFinding)
+}

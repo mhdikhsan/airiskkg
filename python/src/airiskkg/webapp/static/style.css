@@ -696,6 +696,33 @@ label.btn { display: inline-flex; align-items: center; }
 .ref-list li { margin: 2px 0; }
 .evidence-note { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
+/* One card per risk pattern; each place it holds is a row of its own. */
+.finding-places { margin-left: auto; }
+.finding-place-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.finding-place {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: #1b1f29;
+  min-width: 0;
+}
+.finding-place:hover { border-color: #3d4452; }
+.finding-place.selected { border-color: var(--error); }
+.finding-place-head { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.finding-place-n {
+  flex: none;
+  font-size: 11px;
+  color: var(--text-dim);
+  border: 1px solid #39415a;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  line-height: 16px;
+  text-align: center;
+}
+.finding-place-evidence { font-size: 12px; color: #c9d2e3; overflow-wrap: anywhere; }
+.finding-place-motifs { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+
 /* Control mitigation tiers */
 .ctrl-group { margin: 6px 0; }
 .ctrl-group-head {
@@ -2982,11 +3009,6 @@ body.editor-hidden .pane-head { display: none; }
 .rc-frame.s3 .rc-frame-box { fill: rgba(160, 106, 160, 0.04); stroke: #b394b3; }
 .rc-frame.s3 .rc-frame-label { fill: #8a6b8a; }
 .rc-frame.sel .rc-frame-box { stroke-width: 2.2; stroke-dasharray: none; }
-
-/* What an element carries, on the element: the categories a risk pattern's
-   conditions are read against, so the reason a risk lands here is visible
-   where it lands rather than only in the panel. */
-.rc-carries { font: 9px system-ui, sans-serif; fill: #8a6100; }
 
 /* What each arrow means, on the arrow. The halo is what keeps it legible where
    a line runs underneath it. */

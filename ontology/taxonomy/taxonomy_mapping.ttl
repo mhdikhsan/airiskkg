@@ -2,6 +2,8 @@
 @prefix mit:     <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> .
 @prefix owasp:   <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
 @prefix asi:     <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
+@prefix mlr:     <http://w3id.org/airiskkg/taxonomy/ml-risk#> .
+@prefix eticas:  <https://taxonomy.eticas.ai/risk/> .
 @prefix nist:    <http://w3id.org/airiskkg/taxonomy/nist-genai#> .
 @prefix mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> .
 @prefix nexus:   <http://w3id.org/airiskkg/taxonomy/nexus#> .
@@ -75,6 +77,68 @@ atlas:hallucination
 atlas:incomplete-advice
     skos:broadMatch owasp:llm09-misinformation .
 
+# Added 2026-10-09 with the remaining IBM risks named by the CSV cross-walk.
+atlas:reidentification
+    skos:relatedMatch owasp:llm02-sensitive-information-disclosure .
+
+atlas:revealing-confidential-information
+    skos:broadMatch owasp:llm02-sensitive-information-disclosure .
+
+atlas:confidential-information-in-data
+    skos:relatedMatch owasp:llm02-sensitive-information-disclosure .
+
+atlas:ip-information-in-prompt
+    skos:relatedMatch owasp:llm02-sensitive-information-disclosure .
+
+atlas:attribute-inference-attack
+    skos:relatedMatch owasp:llm02-sensitive-information-disclosure .
+
+atlas:membership-inference-attack
+    skos:relatedMatch owasp:llm02-sensitive-information-disclosure .
+
+atlas:jailbreaking
+    skos:broadMatch owasp:llm01-prompt-injection .
+
+atlas:prompt-priming
+    skos:broadMatch owasp:llm01-prompt-injection .
+
+atlas:data-acquisition
+    skos:broadMatch owasp:llm03-supply-chain .
+
+atlas:data-contamination
+    skos:broadMatch owasp:llm03-supply-chain .
+
+atlas:data-provenance
+    skos:broadMatch owasp:llm03-supply-chain .
+
+atlas:data-usage-rights
+    skos:broadMatch owasp:llm03-supply-chain .
+
+atlas:lack-of-data-transparency
+    skos:broadMatch owasp:llm03-supply-chain .
+
+atlas:model-usage-rights
+    skos:broadMatch owasp:llm03-supply-chain .
+
+atlas:untraceable-attribution
+    skos:broadMatch owasp:llm03-supply-chain .
+
+atlas:improper-retraining
+    skos:relatedMatch owasp:llm03-supply-chain .
+
+atlas:inaccessible-training-data
+    skos:relatedMatch owasp:llm03-supply-chain .
+
+atlas:over-or-under-reliance
+    skos:relatedMatch owasp:llm05-improper-output-handling ,
+        owasp:llm06-excessive-agency .
+
+atlas:spreading-disinformation
+    skos:broadMatch owasp:llm09-misinformation .
+
+atlas:harmful-code-generation
+    skos:relatedMatch owasp:llm09-misinformation .
+
 ## Atlas <-> MIT AI Risk Repository domain taxonomy
 ## (source: mit-ai-risk-repository_ibm-risk-atlas.tsv; upstream uses
 ## skos:relatedMatch uniformly, one subdomain per risk)
@@ -95,6 +159,26 @@ atlas:data-usage-restrictions        skos:relatedMatch mit:subdomain-7-3 .
 atlas:hallucination                  skos:relatedMatch mit:subdomain-3-1 .
 atlas:decision-bias                  skos:relatedMatch mit:subdomain-1-1 .
 atlas:impact-on-the-environment      skos:relatedMatch mit:subdomain-6-6 .
+atlas:confidential-information-in-data skos:relatedMatch mit:subdomain-2-1 .
+atlas:ip-information-in-prompt         skos:relatedMatch mit:subdomain-2-1 .
+atlas:revealing-confidential-information skos:relatedMatch mit:subdomain-2-1 .
+atlas:attribute-inference-attack       skos:relatedMatch mit:subdomain-2-2 .
+atlas:membership-inference-attack      skos:relatedMatch mit:subdomain-2-2 .
+atlas:jailbreaking                     skos:relatedMatch mit:subdomain-2-2 .
+atlas:prompt-priming                   skos:relatedMatch mit:subdomain-2-2 .
+atlas:harmful-code-generation          skos:relatedMatch mit:subdomain-2-2 .
+atlas:data-acquisition                 skos:relatedMatch mit:subdomain-7-3 .
+atlas:data-contamination               skos:relatedMatch mit:subdomain-7-3 .
+atlas:improper-retraining              skos:relatedMatch mit:subdomain-7-3 .
+atlas:unrepresentative-data            skos:relatedMatch mit:subdomain-7-3 .
+atlas:inaccessible-training-data       skos:relatedMatch mit:subdomain-7-4 .
+atlas:untraceable-attribution          skos:relatedMatch mit:subdomain-7-4 .
+atlas:data-provenance                  skos:relatedMatch mit:subdomain-6-5 .
+atlas:lack-of-data-transparency        skos:relatedMatch mit:subdomain-6-5 .
+atlas:over-or-under-reliance           skos:relatedMatch mit:subdomain-5-1 .
+atlas:spreading-disinformation         skos:relatedMatch mit:subdomain-4-1 .
+atlas:data-bias                        skos:relatedMatch mit:subdomain-1-1 .
+atlas:extraction-attack                skos:relatedMatch mit:subdomain-2-2 .
 
 
 ## OWASP Agentic Top 10 (ASI) <-> OWASP LLM Top 10
@@ -102,7 +186,11 @@ atlas:impact-on-the-environment      skos:relatedMatch mit:subdomain-6-6 .
 ## semapv:ManualMappingCuration). Predicates and directions are reproduced
 ## exactly as curated upstream, NOT re-derived. Upstream confidences:
 ## asi02->llm06 0.90; asi06->llm04 0.85; asi06->llm01 0.75; asi06->llm08 0.75;
-## asi01->llm01 0.85; asi01->llm06 0.80; asi07->llm02 0.75; asi07->llm06 0.75.
+## asi01->llm01 0.85; asi01->llm06 0.80; asi07->llm02 0.75; asi07->llm06 0.75;
+## asi03->llm01 0.75; asi03->llm02 0.75; asi03->llm06 0.85; asi04->llm03 0.90;
+## asi05->llm01 0.80; asi05->llm05 0.85; asi08->llm01 0.75; asi08->llm04 0.75;
+## asi08->llm06 0.80; asi09->llm01 0.75; asi09->llm05 0.75; asi09->llm06 0.80;
+## asi09->llm09 0.85; asi10->llm02 0.75; asi10->llm09 0.75.
 asi:asi01-agent-goal-hijack
     skos:broadMatch owasp:llm01-prompt-injection ;
     skos:relatedMatch owasp:llm06-excessive-agency .
@@ -118,6 +206,33 @@ asi:asi06-memory-and-context-poisoning
     skos:broadMatch owasp:llm04-data-and-model-poisoning ;
     skos:relatedMatch owasp:llm01-prompt-injection ,
         owasp:llm08-vector-and-embedding-weaknesses .
+
+asi:asi03-identity-and-privilege-abuse
+    skos:relatedMatch owasp:llm01-prompt-injection ,
+        owasp:llm02-sensitive-information-disclosure ;
+    skos:narrowMatch owasp:llm06-excessive-agency .
+
+asi:asi04-agentic-supply-chain
+    skos:narrowMatch owasp:llm03-supply-chain .
+
+asi:asi05-unexpected-code-execution
+    skos:relatedMatch owasp:llm01-prompt-injection ;
+    skos:narrowMatch owasp:llm05-improper-output-handling .
+
+asi:asi08-cascading-failures
+    skos:relatedMatch owasp:llm01-prompt-injection ,
+        owasp:llm04-data-and-model-poisoning ,
+        owasp:llm06-excessive-agency .
+
+asi:asi09-human-agent-trust-exploitation
+    skos:relatedMatch owasp:llm01-prompt-injection ,
+        owasp:llm05-improper-output-handling ,
+        owasp:llm06-excessive-agency ;
+    skos:broadMatch owasp:llm09-misinformation .
+
+asi:asi10-rogue-agents
+    skos:relatedMatch owasp:llm02-sensitive-information-disclosure ,
+        owasp:llm09-misinformation .
 
 ## IBM Atlas <-> NIST AI RMF Generative AI Profile (NIST AI 600-1)
 ## (source: ibm2nistgenai.tsv, mapping_date 2025-01-29, every row
@@ -179,6 +294,80 @@ atlas:poor-model-accuracy
         nist:information-integrity ,
         nist:human-ai-configuration .
 
+atlas:confidential-information-in-data
+    skos:broadMatch nist:intellectual-property .
+
+atlas:revealing-confidential-information
+    skos:broadMatch nist:intellectual-property .
+
+atlas:ip-information-in-prompt
+    skos:broadMatch nist:data-privacy .
+
+atlas:membership-inference-attack
+    skos:broadMatch nist:data-privacy .
+
+atlas:attribute-inference-attack
+    skos:broadMatch nist:information-security ,
+        nist:data-privacy .
+
+atlas:prompt-priming
+    skos:broadMatch nist:information-security .
+
+atlas:jailbreaking
+    skos:broadMatch nist:information-integrity .
+
+atlas:spreading-disinformation
+    skos:broadMatch nist:information-integrity .
+
+atlas:untraceable-attribution
+    skos:broadMatch nist:information-integrity .
+
+atlas:harmful-code-generation
+    skos:broadMatch nist:dangerous-violent-or-hateful-content ,
+        nist:information-security .
+
+atlas:data-contamination
+    skos:broadMatch nist:value-chain-and-component-integration ,
+        nist:information-security .
+
+atlas:data-acquisition
+    skos:broadMatch nist:value-chain-and-component-integration .
+
+atlas:data-provenance
+    skos:broadMatch nist:value-chain-and-component-integration .
+
+atlas:lack-of-data-transparency
+    skos:broadMatch nist:value-chain-and-component-integration .
+
+atlas:improper-retraining
+    skos:broadMatch nist:value-chain-and-component-integration .
+
+atlas:inaccessible-training-data
+    skos:broadMatch nist:value-chain-and-component-integration .
+
+atlas:data-usage-rights
+    skos:broadMatch nist:value-chain-and-component-integration ,
+        nist:data-privacy ,
+        nist:intellectual-property .
+
+atlas:model-usage-rights
+    skos:broadMatch nist:data-privacy ,
+        nist:value-chain-and-component-integration ,
+        nist:intellectual-property .
+
+atlas:over-or-under-reliance
+    skos:broadMatch nist:human-ai-configuration .
+
+atlas:data-bias
+    skos:broadMatch nist:harmful-bias-and-homogenization .
+
+atlas:unrepresentative-data
+    skos:broadMatch nist:harmful-bias-and-homogenization ;
+    skos:relatedMatch nist:value-chain-and-component-integration .
+
+atlas:extraction-attack
+    skos:broadMatch nist:information-security .
+
 #################################################################
 # Section 2 — Project-curated mappings (PAIR-AI expert curation)
 # No upstream SSSOM row exists for these; rationale stated per block.
@@ -220,7 +409,8 @@ owasp:llm02-sensitive-information-disclosure
 
 # supply-chain compromise is a security-vulnerability class (2.2);
 # corroborated for 7-3 via atlas:data-curation (llm03 + subdomain-7-3);
-# unverifiable provenance impairs auditability (7.4).
+# unverifiable provenance impairs auditability (7.4), corroborated via
+# atlas:inaccessible-training-data and atlas:untraceable-attribution.
 owasp:llm03-supply-chain
     skos:broadMatch mit:subdomain-2-2 ;
     skos:relatedMatch mit:subdomain-7-3 ;
@@ -291,6 +481,169 @@ asi:asi02-tool-misuse
 asi:asi06-memory-and-context-poisoning
     skos:relatedMatch mit:subdomain-2-2 ,
         mit:subdomain-3-1 .
+
+
+## OWASP Agentic Top 10 (ASI) <-> MIT, for the entries added 2026-10-09.
+## Same footing as asi02 and asi06 above: no upstream set exists, so each is
+## curation with its reason stated.
+
+# Abusing an identity or privilege is an attack on the system's access model
+# (2-2); upstream relates ASI03 to LLM06, which this file relates to 2-2.
+asi:asi03-identity-and-privilege-abuse
+    skos:relatedMatch mit:subdomain-2-2 .
+
+# A tampered component in the agent's runtime chain is a supply-chain attack
+# (2-2), as LLM03, which upstream relates ASI04 to, already is here.
+asi:asi04-agentic-supply-chain
+    skos:relatedMatch mit:subdomain-2-2 .
+
+# Executing attacker-shaped code is a direct security compromise (2-2);
+# corroborated by atlas:harmful-code-generation, which upstream maps to 2-2.
+asi:asi05-unexpected-code-execution
+    skos:relatedMatch mit:subdomain-2-2 .
+
+# MIT 7.6 is the subdomain for harms arising from interacting AI systems,
+# which is what a cascade between agents is.
+asi:asi08-cascading-failures
+    skos:relatedMatch mit:subdomain-7-6 .
+
+# Trust exploitation works through over-reliance (5-1); corroborated by
+# atlas:over-or-under-reliance, which upstream maps to 5-1 and relates to the
+# LLM05 and LLM06 entries ASI09 is related to upstream.
+asi:asi09-human-agent-trust-exploitation
+    skos:relatedMatch mit:subdomain-5-1 ,
+        atlas:over-or-under-reliance .
+
+## Risks in AI/ML systems (Zhang et al., 2022) <-> IBM Atlas and MIT.
+## No upstream set covers this categorisation; each link is curation.
+
+# Shifted inputs degrade accuracy (IBM names "changes to the model's expected
+# inputs" as a cause of poor accuracy); unrepresentative training data is the
+# training-side face of covariate shift. Both are capability failures (7-3).
+mlr:dataset-shift
+    skos:relatedMatch atlas:poor-model-accuracy ,
+        atlas:unrepresentative-data ,
+        mit:subdomain-7-3 .
+
+# Answers for inputs outside the trained domain are a capability failure.
+mlr:out-of-domain-data
+    skos:relatedMatch atlas:poor-model-accuracy ,
+        mit:subdomain-7-3 .
+
+# IBM's evasion attack is the same perturbation-at-inference attack.
+mlr:adversarial-attack
+    skos:closeMatch atlas:evasion-attack ;
+    skos:relatedMatch mit:subdomain-2-2 .
+
+# Model bias shows as decisions that disadvantage groups (decision bias,
+# 1-1) and as unequal error rates across them (1-3); data bias is its
+# main source.
+mlr:model-bias
+    skos:relatedMatch atlas:decision-bias ,
+        atlas:data-bias ,
+        mit:subdomain-1-1 ,
+        mit:subdomain-1-3 .
+
+# A misspecified model is one cause of poor accuracy, a capability failure.
+mlr:model-misspecification
+    skos:relatedMatch atlas:poor-model-accuracy ,
+        mit:subdomain-7-3 .
+
+# Unreported uncertainty is what lets a person over-rely on a prediction
+# (5-1), and an unreliable prediction is a capability limit (7-3).
+mlr:model-uncertainty
+    skos:relatedMatch atlas:over-or-under-reliance ,
+        mit:subdomain-5-1 ,
+        mit:subdomain-7-3 .
+
+## Eticas AI Risk Taxonomy <-> the anchors risk patterns derive from.
+## Eticas publishes no links to OWASP (one bundled ASI handle aside), to
+## Zhang et al., or to the Atlas entries these anchors are, so the bridge is
+## curation; Eticas's own published links are in eticas_risk.ttl.
+
+# Same phenomenon, definitions agree.
+owasp:llm01-prompt-injection
+    skos:closeMatch eticas:prompt-injection .
+
+owasp:llm03-supply-chain
+    skos:closeMatch eticas:supply-chain-vulnerabilities .
+
+owasp:llm04-data-and-model-poisoning
+    skos:closeMatch eticas:data-poisoning .
+
+owasp:llm06-excessive-agency
+    skos:closeMatch eticas:excessive-agency .
+
+# Eticas covers leakage of both personal and confidential content, as LLM02.
+owasp:llm02-sensitive-information-disclosure
+    skos:closeMatch eticas:sensitive-information-leakage .
+
+# Hallucination is one of the ways LLM09 misinformation arises.
+owasp:llm09-misinformation
+    skos:relatedMatch eticas:hallucination .
+
+asi:asi02-tool-misuse
+    skos:closeMatch eticas:unsafe-tool-calls .
+
+asi:asi07-insecure-inter-agent-communication
+    skos:closeMatch eticas:trust-exploitation-between-agents .
+
+# Eticas describes early errors cascading through later steps of an agent's
+# sequence; ASI08 is the same propagation across agents.
+asi:asi08-cascading-failures
+    skos:relatedMatch eticas:multi-step-actions .
+
+asi:asi09-human-agent-trust-exploitation
+    skos:relatedMatch eticas:automation-bias .
+
+# Eticas lists drift, inconsistency and goal misalignment rather than rogue
+# agents; emergent behaviour is the nearest, and the entry is catalogued only.
+asi:asi10-rogue-agents
+    skos:relatedMatch eticas:emergent-behaviour .
+
+mlr:dataset-shift
+    skos:relatedMatch eticas:output-drift .
+
+mlr:out-of-domain-data
+    skos:closeMatch eticas:out-of-distribution-robustness .
+
+# Eticas's guardrail evasion includes adversarial perturbation of classifiers.
+mlr:adversarial-attack
+    skos:relatedMatch eticas:evasion-attacks .
+
+mlr:model-bias
+    skos:relatedMatch eticas:performance-equity ,
+        eticas:disparate-impact-protected-groups .
+
+# Eticas's fitness for purpose asks whether the system was validated for its
+# task before deployment, which is what an unvalidated model fit fails.
+mlr:model-misspecification
+    skos:relatedMatch eticas:fitness-for-purpose .
+
+mlr:model-uncertainty
+    skos:relatedMatch eticas:automation-bias .
+
+# Eticas's feedback loops are outputs fed back to amplify bias; improper
+# retraining is the training-data route by which that happens.
+atlas:improper-retraining
+    skos:relatedMatch eticas:feedback-loops .
+
+# Eticas's model-level privacy entry covers training data surfacing through
+# the model, of which membership inference is the query-based form.
+atlas:membership-inference-attack
+    skos:relatedMatch eticas:sensitive-information-leakage .
+
+# Actions nobody can reconstruct are a transparency and auditability failure
+# (7-4). OWASP ASI08 names repudiation and untraceability as what lets a fault
+# spread across agents unnoticed.
+eticas:untraceable-agent-actions
+    skos:relatedMatch mit:subdomain-7-4 ,
+        asi:asi08-cascading-failures .
+
+# Data kept beyond its need, or open to more people than need it, is data that
+# can be obtained or leaked (2-1).
+eticas:weak-data-controls
+    skos:relatedMatch mit:subdomain-2-1 .
 
 
 # Section 3 - Risk-to-control grounding

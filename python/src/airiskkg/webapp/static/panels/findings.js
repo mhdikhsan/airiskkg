@@ -105,21 +105,93 @@ ${t.definition || t.id}`,
   return row;
 }
 
-function findingCard(finding) {
-  const evidenceIds = finding.evidence.map((e) => e.id);
+/* One risk pattern raised at several places is one card, not one per place.
+   Findings with the same evidence are one place reached by several motifs. */
+function placesOf(findings) {
+  const places = new Map();
+  findings.forEach((finding) => {
+    const key = finding.evidence.map((e) => e.id).sort().join("|");
+    if (!places.has(key)) places.set(key, { findings: [], evidence: finding.evidence });
+    places.get(key).findings.push(finding);
+  });
+  return [...places.values()];
+}
+
+function byRiskPattern(findings) {
+  const groups = new Map();
+  findings.forEach((finding) => {
+    const key = (finding.riskPattern && finding.riskPattern.id) || finding.label;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(finding);
+  });
+  return [...groups.values()];
+}
+
+function unique(items, key) {
+  const seen = new Map();
+  items.forEach((item) => { if (item && !seen.has(key(item))) seen.set(key(item), item); });
+  return [...seen.values()];
+}
+
+function select(card, ids) {
+  $$(".finding-card.selected, .finding-place.selected").forEach((c) => c.classList.remove("selected"));
+  selectedFinding = card;
+  card.classList.add("selected");
+  GraphView.setHighlight(ids);
+  revealInSource(ids);
+}
+
+function placeRow(place, index, count) {
+  const finding = place.findings[0];
+  const ids = place.evidence.map((e) => e.id);
+  const motifs = unique(place.findings.map((f) => f.motif), (m) => m.id);
+  const row = el("div", { class: "finding-place", tabindex: "0", title: "Show this place on the canvas" }, [
+    el("div", { class: "finding-place-head" }, [
+      count > 1 ? el("span", { class: "finding-place-n" }, String(index + 1)) : null,
+      el("span", { class: "finding-place-evidence" }, place.evidence.map((e) => e.label).join(" · ")),
+    ]),
+    motifs.length
+      ? el("div", { class: "finding-place-motifs" },
+        [el("span", { class: "ctrl-motifs-lead" }, "matched by "),
+          ...motifs.map((m) => el("span", { class: "chip" }, m.label))])
+      : null,
+    el("details", {}, [
+      el("summary", {}, `Suggested controls (${finding.suggestedControls.length}) for this place`),
+      ...controlSections(finding.suggestedControls, finding),
+    ]),
+  ]);
+  row.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (selectedFinding === row) {
+      selectedFinding = null;
+      row.classList.remove("selected");
+      GraphView.setHighlight([]);
+      return;
+    }
+    select(row, ids);
+  });
+  return row;
+}
+
+function findingCard(findings) {
+  const first = findings[0];
+  const places = placesOf(findings);
+  const allIds = unique(findings.flatMap((f) => f.evidence), (e) => e.id).map((e) => e.id);
+  const merged = {
+    ...first,
+    taxonomyEntries: unique(findings.flatMap((f) => f.taxonomyEntries || []), (t) => t.id),
+  };
+  const families = unique(findings.flatMap((f) => f.groundedControlFamilies || []), (f) => f.id || f.label);
   const card = el("div", { class: "finding-card", tabindex: "0" }, [
     el("div", { class: "finding-head" }, [
-      el("strong", {}, finding.label),
-      finding.motif ? el("span", { class: "chip" }, finding.motif.label) : null,
+      el("strong", {}, first.label),
+      el("span", { class: "chip finding-places", title: "Places in this architecture where the risk pattern holds" },
+        places.length === 1 ? "1 place" : `${places.length} places`),
     ]),
-    finding.description ? el("p", { class: "finding-desc" }, finding.description) : null,
-    taxonomyChips(finding),
-    el("details", {}, [
-      el("summary", {}, `Suggested controls (${finding.suggestedControls.length}) · evidence (${finding.evidence.length})`),
-      ...controlSections(finding.suggestedControls, finding),
-      groundedFamiliesSection(finding.groundedControlFamilies),
-      el("div", { class: "evidence-note" }, "Evidence: " + finding.evidence.map((e) => e.label).join(", ")),
-    ]),
+    first.description ? el("p", { class: "finding-desc" }, first.description) : null,
+    taxonomyChips(merged),
+    el("div", { class: "finding-place-list" }, places.map((place, i) => placeRow(place, i, places.length))),
+    groundedFamiliesSection(families),
   ]);
   card.addEventListener("click", () => {
     if (selectedFinding === card) {
@@ -128,11 +200,7 @@ function findingCard(finding) {
       GraphView.setHighlight([]);
       return;
     }
-    $$(".finding-card.selected").forEach((c) => c.classList.remove("selected"));
-    selectedFinding = card;
-    card.classList.add("selected");
-    GraphView.setHighlight(evidenceIds);
-    revealInSource(evidenceIds);
+    select(card, allIds);
   });
   return card;
 }
@@ -174,6 +242,7 @@ export function renderFindings(data) {
       narrowed
         ? `${shown.length} of ${data.summary.riskFindingCount} candidate findings`
         : `${data.summary.riskFindingCount} candidate findings`),
+    el("span", { class: "stat" }, `${byRiskPattern(shown).length} risk patterns`),
     el("span", { class: "stat" }, `${data.summary.motifMatchCount} motif matches`),
   ];
   if (delta && (delta.cleared || delta.raised)) {
@@ -239,7 +308,8 @@ export function renderFindings(data) {
         ? "Nothing was found in this architecture. Other systems in this graph may still carry risks."
         : "No candidate risk findings were produced for this architecture."));
   }
-  shown.forEach((f) => list.appendChild(findingCard(f)));
+  const groups = byRiskPattern(shown);
+  groups.forEach((group) => list.appendChild(findingCard(group)));
   $("#findings-count").textContent = shown.length ? String(shown.length) : "";
   emit("assessment:rendered");
 }

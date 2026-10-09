@@ -8,7 +8,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate unmediated agent tool use"@en ;
+        rdfs:label "Candidate tool misuse"@en ;
         dct:description "A planning step's decision reaches a tool invocation or state change with no represented policy enforcement, human approval, or rate/budget control in between."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:ToolMisuseRiskPattern ;

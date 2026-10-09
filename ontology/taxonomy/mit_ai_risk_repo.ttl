@@ -22,6 +22,7 @@
 
 mit:MIT_AI_Risk_Repository_Domain_Taxonomy a nexus:RiskTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "MIT AI Risk Repository: Domain Taxonomy of AI Risks" ;
+    rdfs:seeAlso <https://airisk.mit.edu/> ;
     dct:description "A domain taxonomy of AI risks organized into high-level AI risk domains and subdomains." .
 
 mit:domain-1 a nexus:RiskGroup ;
@@ -114,6 +115,14 @@ mit:subdomain-3-1 a nexus:Risk ;
     nexus:isDefinedByTaxonomy mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
     nexus:isPartOf mit:domain-3 .
 
+mit:subdomain-4-1 a nexus:Risk ;
+    skos:prefLabel "Disinformation, surveillance, and influence at scale" ;
+    skos:definition "AI may be used to produce misleading content, monitor people, or shape opinion across large populations." ;
+    skos:broader mit:domain-4 ;
+    skos:inScheme mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isDefinedByTaxonomy mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isPartOf mit:domain-4 .
+
 mit:subdomain-4-3 a nexus:Risk ;
     skos:prefLabel "Fraud, scams, and targeted manipulation" ;
     skos:definition "AI systems may be used to manipulate, deceive, impersonate, or exploit people." ;
@@ -138,6 +147,30 @@ mit:subdomain-5-2 a nexus:Risk ;
     nexus:isDefinedByTaxonomy mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
     nexus:isPartOf mit:domain-5 .
 
+mit:subdomain-6-2 a nexus:Risk ;
+    skos:prefLabel "Increased inequality and decline in employment quality" ;
+    skos:definition "AI may widen economic inequality or degrade the quality and security of work." ;
+    skos:broader mit:domain-6 ;
+    skos:inScheme mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isDefinedByTaxonomy mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isPartOf mit:domain-6 .
+
+mit:subdomain-6-3 a nexus:Risk ;
+    skos:prefLabel "Economic and cultural devaluation of human effort" ;
+    skos:definition "AI may reduce the economic or cultural value placed on human skill and creative work." ;
+    skos:broader mit:domain-6 ;
+    skos:inScheme mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isDefinedByTaxonomy mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isPartOf mit:domain-6 .
+
+mit:subdomain-6-5 a nexus:Risk ;
+    skos:prefLabel "Governance failure" ;
+    skos:definition "Rules, oversight, or institutions may fail to keep pace with how AI systems are built and used." ;
+    skos:broader mit:domain-6 ;
+    skos:inScheme mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isDefinedByTaxonomy mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isPartOf mit:domain-6 .
+
 mit:subdomain-6-6 a nexus:Risk ;
     skos:prefLabel "Environmental harm" ;
     skos:definition "AI development or operation may contribute to environmental harm through resource use or emissions." ;
@@ -145,6 +178,14 @@ mit:subdomain-6-6 a nexus:Risk ;
     skos:inScheme mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
     nexus:isDefinedByTaxonomy mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
     nexus:isPartOf mit:domain-6 .
+
+mit:subdomain-7-1 a nexus:Risk ;
+    skos:prefLabel "AI pursuing its own goals in conflict with human goals or values" ;
+    skos:definition "AI systems may act on objectives that diverge from those of the people who deploy or are affected by them." ;
+    skos:broader mit:domain-7 ;
+    skos:inScheme mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isDefinedByTaxonomy mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isPartOf mit:domain-7 .
 
 mit:subdomain-7-3 a nexus:Risk ;
     skos:prefLabel "Lack of capability or robustness" ;
@@ -157,6 +198,14 @@ mit:subdomain-7-3 a nexus:Risk ;
 mit:subdomain-7-4 a nexus:Risk ;
     skos:prefLabel "Lack of transparency or interpretability" ;
     skos:definition "AI systems may be difficult to understand, explain, audit, or correct." ;
+    skos:broader mit:domain-7 ;
+    skos:inScheme mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isDefinedByTaxonomy mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
+    nexus:isPartOf mit:domain-7 .
+
+mit:subdomain-7-6 a nexus:Risk ;
+    skos:prefLabel "Multi-agent risks" ;
+    skos:definition "Interactions among several AI systems may produce failures or harms that no single system would cause alone." ;
     skos:broader mit:domain-7 ;
     skos:inScheme mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;
     nexus:isDefinedByTaxonomy mit:MIT_AI_Risk_Repository_Domain_Taxonomy ;

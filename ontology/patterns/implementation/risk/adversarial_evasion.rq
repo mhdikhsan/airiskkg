@@ -1,0 +1,98 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate adversarial evasion"@en ;
+        dct:description "Content an outsider can shape reaches a prediction step with no represented input screening, so a deliberately perturbed input can steer what the model returns."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:AdversarialEvasionRiskPattern ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?untrustedInput ,
+            ?predictionStep ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif .
+        ?match pair:hasNodeBinding ?binding .
+        # The step that serves the model, as each prediction motif names it.
+        {
+            ?binding pair:bindsPatternNode pat:SyncPred_PredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:AsyncPred_PredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:BatchPred_JobNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:PrepPred_PredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:MultiStage_FastPredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:MultiStage_SlowPredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:TrainServe_PredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:TrainToServe_PredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+
+        ?predictionStep beam:use ?untrustedInput .
+        ?untrustedInput a beam:Data ;
+                        pair:containsDataCategory/pair:subDataCategoryOf* pair:UntrustedContent .
+
+        # A screen that produces the input is already a barrier to the taint; this covers a screen whose verdict the step reads.
+        FILTER NOT EXISTS {
+            ?screen pair:playsRole/pair:subRoleOf* pair:GuardrailStep ;
+                    beam:produce/^beam:use ?predictionStep .
+        }
+    }
+
+    pat:AdversarialEvasionRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/", ENCODE_FOR_URI(STR(?predictionStep)),
+        "/adversarial-evasion"
+    )) AS ?riskFinding)
+}

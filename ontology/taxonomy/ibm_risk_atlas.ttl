@@ -1,4 +1,5 @@
 @prefix atlas: <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#> .
+@prefix pair:  <http://w3id.org/airiskkg/pair-ai#> .
 @prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
@@ -23,6 +24,7 @@
 
 atlas:IBM_AI_Risk_Atlas a nexus:RiskTaxonomy, skos:ConceptScheme ;
     skos:prefLabel "IBM AI Risk Atlas" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=ai-risk-atlas> ;
     dct:description "A taxonomy of risks associated with AI systems, including traditional AI, generative AI, synthetic data, and agentic AI risks." .
 
 atlas:accuracy a nexus:RiskGroup ;
@@ -97,6 +99,30 @@ atlas:value-alignment a nexus:RiskGroup ;
     skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
     nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
 
+atlas:explainability a nexus:RiskGroup ;
+    skos:prefLabel "Explainability" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:legal-compliance a nexus:RiskGroup ;
+    skos:prefLabel "Legal compliance" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:misuse a nexus:RiskGroup ;
+    skos:prefLabel "Misuse" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
+atlas:transparency a nexus:RiskGroup ;
+    skos:prefLabel "Transparency" ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
+
 atlas:confidential-data-in-prompt a nexus:Risk ;
     skos:prefLabel "Confidential data in prompt" ;
     skos:definition "Confidential information may be included in prompts and exposed through model interaction or output." ;
@@ -106,7 +132,8 @@ atlas:confidential-data-in-prompt a nexus:Risk ;
     nexus:isPartOf atlas:intellectual-property ;
     nexus:tag "confidential-data-in-prompt" ;
     nexus:riskType "inference" ;
-    nexus:descriptor "specific to generative AI" .
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/confidential-data-in-prompt.html> .
 
 atlas:personal-information-in-prompt a nexus:Risk ;
     skos:prefLabel "Personal information in prompt" ;
@@ -117,7 +144,8 @@ atlas:personal-information-in-prompt a nexus:Risk ;
     nexus:isPartOf atlas:privacy ;
     nexus:tag "personal-information-in-prompt" ;
     nexus:riskType "inference" ;
-    nexus:descriptor "specific to generative AI" .
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/personal-information-in-prompt.html> .
 
 atlas:exposing-personal-information a nexus:Risk ;
     skos:prefLabel "Exposing personal information" ;
@@ -128,7 +156,8 @@ atlas:exposing-personal-information a nexus:Risk ;
     nexus:isPartOf atlas:privacy ;
     nexus:tag "exposing-personal-information" ;
     nexus:riskType "output" ;
-    nexus:descriptor "amplified by generative AI" .
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/exposing-personal-information.html> .
 
 atlas:personal-information-in-data a nexus:Risk ;
     skos:prefLabel "Personal information in data" ;
@@ -139,7 +168,8 @@ atlas:personal-information-in-data a nexus:Risk ;
     nexus:isPartOf atlas:privacy ;
     nexus:tag "personal-information-in-data" ;
     nexus:riskType "training-data" ;
-    nexus:descriptor "traditional risk of AI" .
+    nexus:descriptor "traditional risk of AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/personal-information-in-data.html> .
 
 atlas:reidentification a nexus:Risk ;
     skos:prefLabel "Reidentification" ;
@@ -151,7 +181,8 @@ atlas:reidentification a nexus:Risk ;
     nexus:tag "reidentification" ;
     nexus:riskType "training-data" ;
     nexus:descriptor "traditional risk of AI" ;
-    nexus:descriptor "amplified by synthetic data" .
+    nexus:descriptor "amplified by synthetic data" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/reidentification.html> .
 
 atlas:prompt-injection a nexus:Risk ;
     skos:prefLabel "Prompt injection attack" ;
@@ -162,7 +193,8 @@ atlas:prompt-injection a nexus:Risk ;
     nexus:isPartOf atlas:robustness-prompt-attacks ;
     nexus:tag "prompt-injection" ;
     nexus:riskType "inference" ;
-    nexus:descriptor "specific to generative AI" .
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/prompt-injection.html> .
 
 atlas:prompt-leaking a nexus:Risk ;
     skos:prefLabel "Prompt leaking" ;
@@ -173,7 +205,8 @@ atlas:prompt-leaking a nexus:Risk ;
     nexus:isPartOf atlas:robustness-prompt-attacks ;
     nexus:tag "prompt-leaking" ;
     nexus:riskType "inference" ;
-    nexus:descriptor "specific to generative AI" .
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/prompt-leaking.html> .
 
 atlas:evasion-attack a nexus:Risk ;
     skos:prefLabel "Evasion attack" ;
@@ -184,7 +217,8 @@ atlas:evasion-attack a nexus:Risk ;
     nexus:isPartOf atlas:robustness-model-behavior-manipulation ;
     nexus:tag "evasion-attack" ;
     nexus:riskType "inference" ;
-    nexus:descriptor "traditional risk of AI" .
+    nexus:descriptor "traditional risk of AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/evasion-attack.html> .
 
 atlas:hallucination a nexus:Risk ;
     skos:prefLabel "Hallucination" ;
@@ -195,7 +229,8 @@ atlas:hallucination a nexus:Risk ;
     nexus:isPartOf atlas:robustness ;
     nexus:tag "hallucination" ;
     nexus:riskType "output" ;
-    nexus:descriptor "specific to generative AI" .
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/hallucination.html> .
 
 atlas:incomplete-advice a nexus:Risk ;
     skos:prefLabel "Incomplete advice" ;
@@ -206,7 +241,8 @@ atlas:incomplete-advice a nexus:Risk ;
     nexus:isPartOf atlas:value-alignment ;
     nexus:tag "incomplete-advice" ;
     nexus:riskType "output" ;
-    nexus:descriptor "specific to generative AI" .
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/incomplete-advice.html> .
 
 atlas:decision-bias a nexus:Risk ;
     skos:prefLabel "Decision bias" ;
@@ -217,7 +253,8 @@ atlas:decision-bias a nexus:Risk ;
     nexus:isPartOf atlas:fairness ;
     nexus:tag "decision-bias" ;
     nexus:riskType "output" ;
-    nexus:descriptor "traditional risk of AI" .
+    nexus:descriptor "traditional risk of AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/decision-bias.html> .
 
 atlas:data-curation a nexus:Risk ;
     skos:prefLabel "Improper data curation" ;
@@ -228,7 +265,8 @@ atlas:data-curation a nexus:Risk ;
     nexus:isPartOf atlas:value-alignment ;
     nexus:tag "data-curation" ;
     nexus:riskType "training-data" ;
-    nexus:descriptor "traditional risk of AI" .
+    nexus:descriptor "traditional risk of AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/data-curation.html> .
 
 atlas:data-poisoning a nexus:Risk ;
     skos:prefLabel "Data poisoning" ;
@@ -260,7 +298,8 @@ atlas:legal-accountability a nexus:Risk ;
     nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
     nexus:isPartOf atlas:governance ;
     nexus:tag "legal-accountability" ;
-    nexus:riskType "non-technical" .
+    nexus:riskType "non-technical" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/legal-accountability.html> .
 
 atlas:poor-model-accuracy a nexus:Risk ;
     skos:prefLabel "Poor model accuracy" ;
@@ -271,7 +310,8 @@ atlas:poor-model-accuracy a nexus:Risk ;
     nexus:isPartOf atlas:accuracy ;
     nexus:tag "poor-model-accuracy" ;
     nexus:riskType "inference" ;
-    nexus:descriptor "traditional risk of AI" .
+    nexus:descriptor "traditional risk of AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/poor-model-accuracy.html> .
 
 atlas:redundant-actions-agentic a nexus:Risk ;
     skos:prefLabel "Redundant actions" ;
@@ -282,7 +322,8 @@ atlas:redundant-actions-agentic a nexus:Risk ;
     nexus:isPartOf atlas:computational-inefficiency ;
     nexus:tag "redundant-actions-agentic" ;
     nexus:riskType "agentic" ;
-    nexus:descriptor "specific to agentic AI" .
+    nexus:descriptor "specific to agentic AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/redundant-actions-agentic.html> .
 
 atlas:impact-on-the-environment a nexus:Risk ;
     skos:prefLabel "Impact on the environment" ;
@@ -292,4 +333,355 @@ atlas:impact-on-the-environment a nexus:Risk ;
     nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
     nexus:isPartOf atlas:societal-impact ;
     nexus:tag "impact-on-the-environment" ;
-    nexus:riskType "non-technical" .
+    nexus:riskType "non-technical" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/impact-on-the-environment.html> .
+
+# Added 2026-10-09: the IBM risks the OWASP -> IBM -> MIT cross-walk in
+# data/mappings/ names that were not yet declared, plus the two the ML risk
+# patterns cite. Definitions are short PAIR-AI summaries.
+
+atlas:attribute-inference-attack a nexus:Risk ;
+    skos:prefLabel "Attribute inference attack" ;
+    skos:definition "Repeated queries to a trained model may let an attacker infer sensitive attributes of people whose records were used to train it." ;
+    skos:broader atlas:privacy ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:privacy ;
+    nexus:tag "attribute-inference-attack" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/attribute-inference-attack.html> .
+
+atlas:confidential-information-in-data a nexus:Risk ;
+    skos:prefLabel "Confidential information in data" ;
+    skos:definition "Confidential information in training or tuning data may be retained by the model and disclosed later." ;
+    skos:broader atlas:intellectual-property ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:intellectual-property ;
+    nexus:tag "confidential-information-in-data" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/confidential-information-in-data.html> .
+
+atlas:data-acquisition a nexus:Risk ;
+    skos:prefLabel "Data acquisition restrictions" ;
+    skos:definition "Laws or regulations may limit whether certain kinds of data can be collected for an AI use case." ;
+    skos:broader atlas:data-laws ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:data-laws ;
+    nexus:tag "data-acquisition" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/data-acquisition.html> .
+
+atlas:data-contamination a nexus:Risk ;
+    skos:prefLabel "Data contamination" ;
+    skos:definition "Data that does not fit the model's purpose, or that was set aside for testing and evaluation, may end up being used for training." ;
+    skos:broader atlas:accuracy ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:accuracy ;
+    nexus:tag "data-contamination" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/data-contamination.html> .
+
+atlas:data-provenance a nexus:Risk ;
+    skos:prefLabel "Uncertain data provenance" ;
+    skos:definition "The origin, ownership, and transformations of data may not be traceable, so its fitness and usage terms cannot be verified." ;
+    skos:broader atlas:transparency ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:transparency ;
+    nexus:tag "data-provenance" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "amplified by generative AI" ;
+    nexus:descriptor "amplified by synthetic data" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/data-provenance.html> .
+
+atlas:data-usage-rights a nexus:Risk ;
+    skos:prefLabel "Data usage rights restrictions" ;
+    skos:definition "Licences, terms of service, or other intellectual-property terms may restrict using certain data to build models." ;
+    skos:broader atlas:intellectual-property ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:intellectual-property ;
+    nexus:tag "data-usage-rights" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/data-usage-rights.html> .
+
+atlas:harmful-code-generation a nexus:Risk ;
+    skos:prefLabel "Harmful code generation" ;
+    skos:definition "A model may generate code that causes harm or affects other systems in unintended ways." ;
+    skos:broader atlas:value-alignment ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:value-alignment ;
+    nexus:tag "harmful-code-generation" ;
+    nexus:riskType "output" ;
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/harmful-code-generation.html> .
+
+atlas:improper-retraining a nexus:Risk ;
+    skos:prefLabel "Improper retraining" ;
+    skos:definition "Undesirable model output or user content reused for retraining may degrade or distort later model behaviour." ;
+    skos:broader atlas:value-alignment ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:value-alignment ;
+    nexus:tag "improper-retraining" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/improper-retraining.html> .
+
+atlas:inaccessible-training-data a nexus:Risk ;
+    skos:prefLabel "Inaccessible training data" ;
+    skos:definition "When training data cannot be inspected, the explanations a model can give about its output are limited and more likely to be wrong." ;
+    skos:broader atlas:explainability ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:explainability ;
+    nexus:tag "inaccessible-training-data" ;
+    nexus:riskType "output" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/inaccessible-training-data.html> .
+
+atlas:ip-information-in-prompt a nexus:Risk ;
+    skos:prefLabel "IP information in prompt" ;
+    skos:definition "Copyrighted or otherwise protected material may be included in prompts sent to a model." ;
+    skos:broader atlas:intellectual-property ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:intellectual-property ;
+    nexus:tag "ip-information-in-prompt" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/ip-information-in-prompt.html> .
+
+atlas:jailbreaking a nexus:Risk ;
+    skos:prefLabel "Jailbreaking" ;
+    skos:definition "An attacker may try to get around the guardrails placed on a model so that it performs restricted actions." ;
+    skos:broader atlas:robustness-model-behavior-manipulation ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:robustness-model-behavior-manipulation ;
+    nexus:tag "jailbreaking" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/jailbreaking.html> .
+
+atlas:lack-of-data-transparency a nexus:Risk ;
+    skos:prefLabel "Lack of data transparency" ;
+    skos:definition "Training or tuning datasets may be documented too thinly for their content and preparation to be understood." ;
+    skos:broader atlas:governance ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:governance ;
+    nexus:tag "lack-of-data-transparency" ;
+    nexus:riskType "non-technical" ;
+    nexus:descriptor "amplified by generative AI" ;
+    nexus:descriptor "amplified by synthetic data" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/lack-of-data-transparency.html> .
+
+atlas:membership-inference-attack a nexus:Risk ;
+    skos:prefLabel "Membership inference attack" ;
+    skos:definition "Repeated queries to a trained model may let an attacker determine whether a given record was part of its training data." ;
+    skos:broader atlas:privacy ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:privacy ;
+    nexus:tag "membership-inference-attack" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/membership-inference-attack.html> .
+
+atlas:model-usage-rights a nexus:Risk ;
+    skos:prefLabel "Model usage rights restrictions" ;
+    skos:definition "Licences or terms of service may restrict how certain models can be used." ;
+    skos:broader atlas:legal-compliance ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:legal-compliance ;
+    nexus:tag "model-usage-rights" ;
+    nexus:riskType "non-technical" ;
+    nexus:descriptor "traditional risk of AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/model-usage-rights.html> .
+
+atlas:over-or-under-reliance a nexus:Risk ;
+    skos:prefLabel "Over- or under-reliance" ;
+    skos:definition "People may trust a model's output more than it warrants, or less, and act on it accordingly." ;
+    skos:broader atlas:value-alignment ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:value-alignment ;
+    nexus:tag "over-or-under-reliance" ;
+    nexus:riskType "output" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/over-or-under-reliance.html> .
+
+atlas:prompt-priming a nexus:Risk ;
+    skos:prefLabel "Prompt priming" ;
+    skos:definition "Content placed in a prompt may steer a model toward revealing a particular kind of information, including data it was trained on." ;
+    skos:broader atlas:robustness-prompt-attacks ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:robustness-prompt-attacks ;
+    nexus:tag "prompt-priming" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/prompt-priming.html> .
+
+atlas:revealing-confidential-information a nexus:Risk ;
+    skos:prefLabel "Revealing confidential information" ;
+    skos:definition "Confidential information used in training, tuning, or prompts may be reproduced in generated output." ;
+    skos:broader atlas:intellectual-property ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:intellectual-property ;
+    nexus:tag "revealing-confidential-information" ;
+    nexus:riskType "output" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/revealing-confidential-information.html> .
+
+atlas:spreading-disinformation a nexus:Risk ;
+    skos:prefLabel "Spreading disinformation" ;
+    skos:definition "Generative models may be used deliberately to produce false or misleading content aimed at an audience." ;
+    skos:broader atlas:misuse ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:misuse ;
+    nexus:tag "spreading-disinformation" ;
+    nexus:riskType "output" ;
+    nexus:descriptor "specific to generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/spreading-disinformation.html> .
+
+atlas:untraceable-attribution a nexus:Risk ;
+    skos:prefLabel "Untraceable attribution" ;
+    skos:definition "The training content behind a particular output may not be accessible, so the output cannot be attributed to its sources." ;
+    skos:broader atlas:explainability ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:explainability ;
+    nexus:tag "untraceable-attribution" ;
+    nexus:riskType "output" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/untraceable-attribution.html> .
+
+atlas:data-bias a nexus:Risk ;
+    skos:prefLabel "Data bias" ;
+    skos:definition "Historical or societal bias present in training or tuning data may be learned by the model and carried into its output." ;
+    skos:broader atlas:fairness ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:fairness ;
+    nexus:tag "data-bias" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "amplified by generative AI" ;
+    nexus:descriptor "amplified by synthetic data" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/data-bias.html> .
+
+atlas:unrepresentative-data a nexus:Risk ;
+    skos:prefLabel "Unrepresentative data" ;
+    skos:definition "Training or tuning data may not represent the population or phenomenon the model is meant to serve, so its behaviour does not carry over." ;
+    skos:broader atlas:accuracy ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:accuracy ;
+    nexus:tag "unrepresentative-data" ;
+    nexus:riskType "training-data" ;
+    nexus:descriptor "traditional risk of AI" ;
+    nexus:descriptor "amplified by synthetic data" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/unrepresentative-data.html> .
+
+atlas:extraction-attack a nexus:Risk ;
+    skos:prefLabel "Extraction attack" ;
+    skos:definition "Systematic queries to a model let an attacker build a surrogate that behaves like it, copying the model without access to its weights." ;
+    skos:broader atlas:robustness-model-behavior-manipulation ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:robustness-model-behavior-manipulation ;
+    nexus:tag "extraction-attack" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/extraction-attack.html> .
+
+# PAIR-AI mechanisms and conditions for the Atlas entries a risk pattern derives
+# from directly. Written for this knowledge base; not IBM text.
+
+atlas:improper-retraining
+    nexus:hasRiskMechanism atlas:mechanism-unvetted-feedback-into-training ;
+    nexus:hasRiskCondition atlas:condition-model-output-feeds-own-training-data .
+
+atlas:membership-inference-attack
+    nexus:hasRiskMechanism atlas:mechanism-training-membership-exposed-by-queries ;
+    nexus:hasRiskCondition atlas:condition-public-queries-reach-model-trained-on-personal-data .
+
+atlas:data-contamination
+    nexus:hasRiskMechanism atlas:mechanism-evaluation-on-training-data ;
+    nexus:hasRiskCondition atlas:condition-evaluation-reads-training-data .
+
+atlas:mechanism-unvetted-feedback-into-training
+    a pair:RiskMechanism ;
+    rdfs:label "Unvetted feedback into training"@en ;
+    dct:description "Data produced downstream of a model, its own outputs or what users did with them, flows back into the data it is trained on. Each retraining then learns partly from the model's earlier behaviour, so its errors and biases are reinforced rather than corrected unless something checks that data before it is reused."@en ;
+    nexus:mechanismForRisk atlas:improper-retraining .
+
+atlas:mechanism-training-membership-exposed-by-queries
+    a pair:RiskMechanism ;
+    rdfs:label "Training membership exposed through open queries"@en ;
+    dct:description "A model behaves measurably differently on records it was trained on than on records it has not seen. When anyone can query a model trained on records about people, comparing its answers lets them infer whose records were in the training set, and through that, facts about those people; no output has to contain the data for it to leak."@en ;
+    nexus:mechanismForRisk atlas:membership-inference-attack .
+
+atlas:mechanism-evaluation-on-training-data
+    a pair:RiskMechanism ;
+    rdfs:label "Evaluation over data the model learned from"@en ;
+    dct:description "An evaluation that reads the data a model was trained on, or a superset of it, scores the model partly on examples it has already seen. The result overstates how the model will perform on new data, and the release decision it supports rests on that overstatement."@en ;
+    nexus:mechanismForRisk atlas:data-contamination .
+
+atlas:condition-model-output-feeds-own-training-data
+    a nexus:RiskCondition ;
+    skos:prefLabel "Data downstream of the model a training step produces is read by that training step again, with no data validation on the way"@en ;
+    nexus:conditionForRisk atlas:improper-retraining .
+
+atlas:condition-public-queries-reach-model-trained-on-personal-data
+    a nexus:RiskCondition ;
+    skos:prefLabel "A model trained on personal data answers queries that originate from a public population"@en ;
+    nexus:conditionForRisk atlas:membership-inference-attack .
+
+atlas:condition-evaluation-reads-training-data
+    a nexus:RiskCondition ;
+    skos:prefLabel "An evaluation step reads data that the evaluated model's training input was taken from"@en ;
+    nexus:conditionForRisk atlas:data-contamination .
+
+atlas:personal-information-in-prompt
+    nexus:hasRiskMechanism atlas:mechanism-protected-content-leaves-for-a-provider ;
+    nexus:hasRiskCondition atlas:condition-protected-content-reaches-external-model .
+
+atlas:extraction-attack
+    nexus:hasRiskMechanism atlas:mechanism-model-copied-through-open-queries ;
+    nexus:hasRiskCondition atlas:condition-public-queries-reach-in-house-model-unthrottled .
+
+atlas:mechanism-protected-content-leaves-for-a-provider
+    a pair:RiskMechanism ;
+    rdfs:label "Protected content leaves for a model provider"@en ;
+    dct:description "A step sends its inputs to a model run by a third party. Whatever personal or confidential content is among them leaves the organisation at that point, under the provider's retention and processing terms rather than the deployer's, and the architecture shows nothing removing it first."@en ;
+    nexus:mechanismForRisk atlas:personal-information-in-prompt .
+
+atlas:mechanism-model-copied-through-open-queries
+    a pair:RiskMechanism ;
+    rdfs:label "A model copied through open queries"@en ;
+    dct:description "A model the organisation trained answers whoever asks, as often as they ask. Enough input and output pairs are a training set for a surrogate that behaves like the original, so the investment, and any weakness the copy can then be probed for offline, is exposed without the weights ever leaving."@en ;
+    nexus:mechanismForRisk atlas:extraction-attack .
+
+atlas:condition-protected-content-reaches-external-model
+    a nexus:RiskCondition ;
+    skos:prefLabel "A step using a third-party model reads content carrying a personal or confidential classification"@en ;
+    nexus:conditionForRisk atlas:personal-information-in-prompt .
+
+atlas:condition-public-queries-reach-in-house-model-unthrottled
+    a nexus:RiskCondition ;
+    skos:prefLabel "A model trained in the system answers public queries with no rate limit represented"@en ;
+    nexus:conditionForRisk atlas:extraction-attack .

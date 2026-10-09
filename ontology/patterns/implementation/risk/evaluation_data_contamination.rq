@@ -1,0 +1,86 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate evaluation data contamination"@en ;
+        dct:description "An evaluation step reads data that the evaluated model's training input was taken from, so the model is scored partly on examples it learned from."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:EvaluationDataContaminationRiskPattern ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?evaluationStep ,
+            ?evaluationData ,
+            ?trainingStep ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif .
+        # The training step and the evaluation of what it produced, as each motif names them.
+        {
+            ?match pair:hasNodeBinding ?aBinding , ?bBinding .
+            ?aBinding pair:bindsPatternNode pat:BatchTrain_TrainingStepNode ;
+                      pair:matchedElement ?trainingStep .
+            ?bBinding pair:bindsPatternNode pat:BatchTrain_EvaluationStepNode ;
+                      pair:matchedElement ?evaluationStep .
+        }
+        UNION
+        {
+            ?match pair:hasNodeBinding ?aBinding , ?bBinding .
+            ?aBinding pair:bindsPatternNode pat:PipeTrain_TrainingJobNode ;
+                      pair:matchedElement ?trainingStep .
+            ?bBinding pair:bindsPatternNode pat:PipeTrain_EvaluationJobNode ;
+                      pair:matchedElement ?evaluationStep .
+        }
+        UNION
+        {
+            ?match pair:hasNodeBinding ?aBinding , ?bBinding .
+            ?aBinding pair:bindsPatternNode pat:TrainServe_TrainingStepNode ;
+                      pair:matchedElement ?trainingStep .
+            ?bBinding pair:bindsPatternNode pat:TrainServe_EvaluationStepNode ;
+                      pair:matchedElement ?evaluationStep .
+        }
+        UNION
+        {
+            ?match pair:hasNodeBinding ?aBinding , ?bBinding .
+            ?aBinding pair:bindsPatternNode pat:FineTune_TrainingStepNode ;
+                      pair:matchedElement ?trainingStep .
+            ?bBinding pair:bindsPatternNode pat:FineTune_EvaluationStepNode ;
+                      pair:matchedElement ?evaluationStep .
+        }
+
+        ?trainingStep beam:use ?trainingInput .
+        ?trainingInput a beam:Data .
+        ?evaluationStep beam:use ?evaluationData .
+        ?evaluationData a beam:Data ;
+                        (^beam:use/beam:produce)* ?trainingInput .
+    }
+
+    pat:EvaluationDataContaminationRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/", ENCODE_FOR_URI(STR(?evaluationData)),
+        "/evaluation-data-contamination"
+    )) AS ?riskFinding)
+}

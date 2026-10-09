@@ -1,0 +1,83 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate agentic supply chain"@en ;
+        dct:description "A component supplied from outside the system is read by the step that decides an agent's action, with no represented verification before it is trusted."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:AgenticSupplyChainRiskPattern ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?component ,
+            ?planningStep ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif .
+        ?match pair:hasNodeBinding ?binding .
+        # The step that decides what the agent does, as each agentic motif names it.
+        {
+            ?binding pair:bindsPatternNode pat:ToolAgent_PlanningStepNode ;
+                     pair:matchedElement ?planningStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:Registry_CoordinatorNode ;
+                     pair:matchedElement ?planningStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
+                     pair:matchedElement ?planningStep .
+        }
+
+        ?planningStep beam:use ?component .
+        ?component pair:playsRole/pair:subRoleOf* pair:ExternalDependency .
+        # A model is LLM03's concern and a credential is ASI03's; this is about what is composed in at runtime.
+        FILTER NOT EXISTS { ?component a beam:StatisticalModel }
+        FILTER NOT EXISTS { ?component pair:playsRole/pair:subRoleOf* pair:AccessCredential }
+
+        FILTER NOT EXISTS {
+            ?verifier pair:playsRole ?verifierRole .
+            { ?verifierRole pair:subRoleOf* pair:PolicyEnforcementStep }
+            UNION
+            { ?verifierRole pair:subRoleOf* pair:GuardrailStep }
+            {
+                ?verifier beam:produce ?component .
+            }
+            UNION
+            {
+                ?verifier beam:produce/^beam:use ?planningStep .
+            }
+        }
+    }
+
+    pat:AgenticSupplyChainRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/", ENCODE_FOR_URI(STR(?component)),
+        "/agentic-supply-chain"
+    )) AS ?riskFinding)
+}

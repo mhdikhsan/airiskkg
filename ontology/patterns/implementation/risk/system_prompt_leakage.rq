@@ -8,7 +8,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate system prompt leakage exposure"@en ;
+        rdfs:label "Candidate system prompt leakage"@en ;
         dct:description "A system prompt or hidden instruction is used in an LLM generation path that produces user-facing output."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:SystemPromptLeakageRiskPattern ;

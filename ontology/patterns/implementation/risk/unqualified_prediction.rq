@@ -1,0 +1,137 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate unqualified prediction"@en ;
+        dct:description "A prediction is used by a step that acts on it, or reaches a user, with neither an uncertainty estimate nor a represented human review alongside it."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:UnqualifiedPredictionRiskPattern ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?predictionStep ,
+            ?prediction ,
+            ?consequence ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif .
+        ?match pair:hasNodeBinding ?binding .
+        # The step that serves the model, as each prediction motif names it.
+        {
+            ?binding pair:bindsPatternNode pat:SyncPred_PredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:AsyncPred_PredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:BatchPred_JobNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:PrepPred_PredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:MultiStage_FastPredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:MultiStage_SlowPredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:TrainServe_PredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+        UNION
+        {
+            ?binding pair:bindsPatternNode pat:TrainToServe_PredictionStepNode ;
+                     pair:matchedElement ?predictionStep .
+        }
+
+        ?predictionStep beam:produce ?prediction .
+        ?prediction a beam:Data ;
+                    (^beam:use/beam:produce)* ?carried .
+        FILTER NOT EXISTS { ?prediction pair:playsRole/pair:subRoleOf* pair:UncertaintyEstimate }
+        {
+            ?consequence beam:use ?carried ;
+                         a/rdfs:subClassOf* beam:Process .
+            FILTER NOT EXISTS {
+                ?consequence pair:playsRole ?observingRole .
+                { ?observingRole pair:subRoleOf* pair:LoggingStep }
+                UNION
+                { ?observingRole pair:subRoleOf* pair:MonitoringStep }
+                UNION
+                { ?observingRole pair:subRoleOf* pair:EvaluationStep }
+                UNION
+                { ?observingRole pair:subRoleOf* pair:ScoringStep }
+                UNION
+                { ?observingRole pair:subRoleOf* pair:ControlStep }
+            }
+        }
+        UNION
+        {
+            ?carried pair:playsRole/pair:subRoleOf* pair:UserFacingOutput .
+            BIND(?carried AS ?consequence)
+        }
+
+        # The uncertainty travels with the prediction to where it is used, or a person reviews it there.
+        FILTER NOT EXISTS {
+            {
+                ?predictionStep beam:produce ?estimate .
+                ?estimate pair:playsRole/pair:subRoleOf* pair:UncertaintyEstimate .
+                BIND(?estimate AS ?alongside)
+            }
+            UNION
+            {
+                ?reviewer pair:playsRole/pair:subRoleOf* pair:HumanApprovalStep ;
+                          beam:produce ?alongside .
+            }
+            {
+                ?alongside (^beam:use/beam:produce)* ?consequence .
+            }
+            UNION
+            {
+                ?alongside (^beam:use/beam:produce)* ?reaching .
+                ?consequence beam:use ?reaching .
+            }
+        }
+    }
+
+    pat:UnqualifiedPredictionRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/", ENCODE_FOR_URI(STR(?predictionStep)),
+        "/unqualified-prediction"
+    )) AS ?riskFinding)
+}

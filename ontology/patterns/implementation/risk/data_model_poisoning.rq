@@ -8,7 +8,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate data or model poisoning exposure"@en ;
+        rdfs:label "Candidate data and model poisoning"@en ;
         dct:description "Untrusted content is used in an embedding, indexing, fine-tuning, or training path that can affect model or retrieval behavior."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:DataAndModelPoisoningRiskPattern ;

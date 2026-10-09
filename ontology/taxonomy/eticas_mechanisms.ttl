@@ -1,0 +1,48 @@
+@prefix etm:    <http://w3id.org/airiskkg/taxonomy/eticas-mechanisms#> .
+@prefix eticas: <https://taxonomy.eticas.ai/risk/> .
+@prefix nexus:  <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix pair:   <http://w3id.org/airiskkg/pair-ai#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/taxonomy/eticas-mechanisms#> a owl:Ontology ;
+    rdfs:label "PAIR-AI mechanisms for Eticas entries" ;
+    dct:description """
+    Mechanisms and conditions for the Eticas AI Risk Taxonomy entries a risk
+    pattern derives from. Written for PAIR-AI and minted in this namespace,
+    because eticas_risk.ttl is generated and the Eticas namespace is not ours.
+    """ ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    owl:imports <http://w3id.org/airiskkg/taxonomy/eticas#> .
+
+eticas:untraceable-agent-actions
+    nexus:hasRiskMechanism etm:mechanism-agent-acts-without-a-record ;
+    nexus:hasRiskCondition etm:condition-agent-action-not-logged .
+
+eticas:weak-data-controls
+    nexus:hasRiskMechanism etm:mechanism-personal-data-kept-where-it-was-not-needed ;
+    nexus:hasRiskCondition etm:condition-personal-data-written-to-log-or-memory .
+
+etm:mechanism-agent-acts-without-a-record
+    a pair:RiskMechanism ;
+    rdfs:label "An agent acts without leaving a record"@en ;
+    dct:description "An agent's tool call or state change leaves no record the architecture shows: no step logs what was decided, what was called, or what came back. When something goes wrong, nobody can reconstruct which action caused it, in what order, or on whose instruction, so the fault can neither be attributed nor traced to the other places it reached."@en ;
+    nexus:mechanismForRisk eticas:untraceable-agent-actions .
+
+etm:mechanism-personal-data-kept-where-it-was-not-needed
+    a pair:RiskMechanism ;
+    rdfs:label "Personal data kept where it was not needed"@en ;
+    dct:description "A step that records requests or retains context for later turns stores personal data along with it. The log or the memory then outlives the interaction it served, is read by people and processes the original purpose never involved, and is exposed by every later breach of that store."@en ;
+    nexus:mechanismForRisk eticas:weak-data-controls .
+
+etm:condition-agent-action-not-logged
+    a nexus:RiskCondition ;
+    skos:prefLabel "An agent's tool call or state change is read by no logging step, nor is its plan or result"@en ;
+    nexus:conditionForRisk eticas:untraceable-agent-actions .
+
+etm:condition-personal-data-written-to-log-or-memory
+    a nexus:RiskCondition ;
+    skos:prefLabel "A logging or memory-write step reads content carrying a personal-data classification"@en ;
+    nexus:conditionForRisk eticas:weak-data-controls .

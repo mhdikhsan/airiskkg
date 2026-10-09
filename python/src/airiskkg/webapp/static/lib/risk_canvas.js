@@ -408,11 +408,17 @@ export function createRiskCanvas() {
       }
     }
 
-  
+    // Moved boxes first, so the frame is measured round where they now stand.
+    for (const [id, at] of manualPositions) {
+      const current = positions.get(id);
+      if (current) positions.set(id, { ...current, x: at.x, y: at.y });
+    }
+
     const frames = [];
     columns.forEach((column) => {
       if (column.key === SHARED_GROUP || !byId.has(column.key)) return;
-      const held = [...BAND_ORDER.flatMap((band) => column.bands.get(band)), ...column.parts];
+      const held = [...BAND_ORDER.flatMap((band) => column.bands.get(band)), ...column.parts]
+        .map((row) => positions.get(row.id) || row);
       if (!held.length) return;
       const left = Math.min(...held.map((row) => row.x));
       const right = Math.max(...held.map((row) => row.x + row.w));
@@ -429,11 +435,6 @@ export function createRiskCanvas() {
       });
     });
 
-  
-    for (const [id, at] of manualPositions) {
-      const current = positions.get(id);
-      if (current) positions.set(id, { ...current, x: at.x, y: at.y });
-    }
     return { positions, byId, flowIds: new Set(flow.keys()), frames };
   }
 
@@ -665,12 +666,6 @@ export function createRiskCanvas() {
       group.appendChild(make("text", { x: 8, y: cursor, class: "rc-flow-label" }, line));
       cursor += 14;
     });
-    const carried = entry.node.categories || [];
-    if (carried.length) {
-      group.appendChild(make("text", {
-        x: entry.w - 8, y: entry.h - 6, class: "rc-carries", "text-anchor": "end",
-      }, carried.join(" \u00b7 ")));
-    }
     layer.appendChild(group);
   }
 

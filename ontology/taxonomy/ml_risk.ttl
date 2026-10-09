@@ -1,0 +1,240 @@
+@prefix mlr:   <http://w3id.org/airiskkg/taxonomy/ml-risk#> .
+@prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
+@prefix pair:  <http://w3id.org/airiskkg/pair-ai#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/taxonomy/ml-risk#> a owl:Ontology ;
+    rdfs:label "Risks in AI/ML Systems for AI Risk KG" ;
+    dct:title "Risks in AI/ML Systems for AI Risk KG" ;
+    dct:description """
+    The risk categorisation of Zhang et al. (2022, Figure 1): data-level risks
+    (data bias, dataset shift, out-of-domain data, adversarial attack) and
+    model-level risks (model bias, model misspecification, model uncertainty), with
+    the sub-types the paper names for dataset shift and adversarial attack.
+
+    It is the anchor the ML-serving and ML-training risk patterns derive from. The
+    OWASP and IBM catalogues the rest of the library rests on are written for
+    generative and agentic systems and have no entry for distribution shift or
+    unvalidated model form. Mappings to IBM AI Risk Atlas, MIT and Eticas are
+    project curation and live in taxonomy_mapping.ttl Section 2.
+    """ ;
+    # The paper is (c) Elsevier. Only its category names and their arrangement are
+    # reused; every definition, mechanism and condition here is written for PAIR-AI.
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Category names and their arrangement are referenced from Zhang et al. (2022); definitions, mechanisms and conditions are original and are not reproduced from the paper."@en ;
+    dct:bibliographicCitation "Zhang, X., Chan, F. T. S., Yan, C., & Bose, I. (2022). Towards risk-aware artificial intelligence and machine learning systems: An overview. Decision Support Systems, 159, Article 113800. https://doi.org/10.1016/j.dss.2022.113800"@en ;
+    dct:source <https://doi.org/10.1016/j.dss.2022.113800> .
+
+mlr:Zhang2022_AIMLRiskCategorisation a nexus:RiskTaxonomy, skos:ConceptScheme ;
+    skos:prefLabel "Risks in AI/ML systems (Zhang et al., 2022)" ;
+    rdfs:seeAlso <https://doi.org/10.1016/j.dss.2022.113800> ;
+    dct:description "Risks inherent in supervised AI/ML systems, split by whether they originate in the data or in the model." ;
+    dct:source <https://doi.org/10.1016/j.dss.2022.113800> .
+
+mlr:data-level-risk a nexus:RiskGroup ;
+    skos:prefLabel "Data-level risk" ;
+    skos:definition "Risks that originate in the data a model is trained on or is given in operation." ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    skos:topConceptOf mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:model-level-risk a nexus:RiskGroup ;
+    skos:prefLabel "Model-level risk" ;
+    skos:definition "Risks that originate in how a model is built, specified, or used to predict." ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    skos:topConceptOf mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:data-bias a nexus:Risk ;
+    skos:prefLabel "Data bias" ;
+    skos:definition "Some groups or variables are over-represented, under-represented or missing in the data, so the model learns a skewed picture of what it is meant to capture." ;
+    skos:broader mlr:data-level-risk ;
+    nexus:isPartOf mlr:data-level-risk ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:dataset-shift a nexus:Risk ;
+    skos:prefLabel "Dataset shift" ;
+    skos:definition "The data a model meets in operation follows a different distribution from the data it was trained on, so relationships learned in training hold less well." ;
+    skos:broader mlr:data-level-risk ;
+    nexus:isPartOf mlr:data-level-risk ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:covariate-shift a nexus:Risk ;
+    skos:prefLabel "Covariate shift" ;
+    skos:definition "The distribution of the inputs changes between training and operation while the relationship between inputs and outcome stays the same." ;
+    skos:broader mlr:dataset-shift ;
+    nexus:isPartOf mlr:dataset-shift ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:prior-probability-shift a nexus:Risk ;
+    skos:prefLabel "Prior probability shift" ;
+    skos:definition "The balance of outcomes changes between training and operation, so a class that was rare in training becomes common, or the reverse." ;
+    skos:broader mlr:dataset-shift ;
+    nexus:isPartOf mlr:dataset-shift ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:concept-shift a nexus:Risk ;
+    skos:prefLabel "Concept shift" ;
+    skos:altLabel "Concept drift" ;
+    skos:definition "The relationship between inputs and outcome itself changes over time, so the same input should now lead to a different answer." ;
+    skos:broader mlr:dataset-shift ;
+    nexus:isPartOf mlr:dataset-shift ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:out-of-domain-data a nexus:Risk ;
+    skos:prefLabel "Out-of-domain data" ;
+    skos:definition "An input falls outside the domain the model was trained on, and the model still returns an answer for it, often with high confidence." ;
+    skos:broader mlr:data-level-risk ;
+    nexus:isPartOf mlr:data-level-risk ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:adversarial-attack a nexus:Risk ;
+    skos:prefLabel "Adversarial attack" ;
+    skos:definition "An input is deliberately altered, often imperceptibly, so that the model returns a wrong output." ;
+    skos:broader mlr:data-level-risk ;
+    nexus:isPartOf mlr:data-level-risk ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:targeted-adversarial-attack a nexus:Risk ;
+    skos:prefLabel "Targeted adversarial attack" ;
+    skos:definition "The altered input is crafted so the model returns one specific wrong output chosen by the attacker." ;
+    skos:broader mlr:adversarial-attack ;
+    nexus:isPartOf mlr:adversarial-attack ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:untargeted-adversarial-attack a nexus:Risk ;
+    skos:prefLabel "Untargeted adversarial attack" ;
+    skos:definition "The altered input is crafted so the model returns any output other than the correct one." ;
+    skos:broader mlr:adversarial-attack ;
+    nexus:isPartOf mlr:adversarial-attack ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:model-bias a nexus:Risk ;
+    skos:prefLabel "Model bias" ;
+    skos:altLabel "Algorithmic bias" ;
+    skos:definition "The trained model treats groups differently, through bias inherited from its data or introduced by modelling choices such as the algorithm, its configuration, or how it was evaluated." ;
+    skos:broader mlr:model-level-risk ;
+    nexus:isPartOf mlr:model-level-risk ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:model-misspecification a nexus:Risk ;
+    skos:prefLabel "Model misspecification" ;
+    skos:definition "The model's assumed form or chosen variables do not fit the process that generated the data, so it underfits, overfits, or leaves out what matters." ;
+    skos:broader mlr:model-level-risk ;
+    nexus:isPartOf mlr:model-level-risk ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+mlr:model-uncertainty a nexus:Risk ;
+    skos:prefLabel "Model uncertainty" ;
+    skos:altLabel "Model prediction uncertainty" ;
+    skos:definition "Noise in the data and uncertainty in the model's parameters and structure make individual predictions unreliable to a degree the prediction does not show by itself." ;
+    skos:broader mlr:model-level-risk ;
+    nexus:isPartOf mlr:model-level-risk ;
+    skos:inScheme mlr:Zhang2022_AIMLRiskCategorisation ;
+    nexus:isDefinedByTaxonomy mlr:Zhang2022_AIMLRiskCategorisation .
+
+# Mechanisms and conditions for the entries a risk pattern derives from
+
+mlr:dataset-shift
+    nexus:hasRiskMechanism mlr:mechanism-unobserved-distribution-shift ;
+    nexus:hasRiskCondition mlr:condition-served-model-without-shift-monitoring .
+
+mlr:out-of-domain-data
+    nexus:hasRiskMechanism mlr:mechanism-unchecked-input-domain ;
+    nexus:hasRiskCondition mlr:condition-input-reaches-model-without-domain-check .
+
+mlr:adversarial-attack
+    nexus:hasRiskMechanism mlr:mechanism-unscreened-adversarial-input ;
+    nexus:hasRiskCondition mlr:condition-untrusted-input-reaches-model .
+
+mlr:model-bias
+    nexus:hasRiskMechanism mlr:mechanism-unexamined-learned-bias ;
+    nexus:hasRiskCondition mlr:condition-personal-training-data-without-fairness-evaluation .
+
+mlr:model-misspecification
+    nexus:hasRiskMechanism mlr:mechanism-unvalidated-model-fit ;
+    nexus:hasRiskCondition mlr:condition-trained-model-served-without-evaluation .
+
+mlr:model-uncertainty
+    nexus:hasRiskMechanism mlr:mechanism-unreported-prediction-uncertainty ;
+    nexus:hasRiskCondition mlr:condition-prediction-acted-on-without-uncertainty .
+
+mlr:mechanism-unobserved-distribution-shift
+    a pair:RiskMechanism ;
+    rdfs:label "Distribution shift nothing observes"@en ;
+    dct:description "A model encodes relationships it found in its training data. In operation the inputs, the balance of outcomes, or the relationship between them can drift away from that data, and accuracy falls without the model signalling it. When no step compares what is served against a baseline, the design contains no point at which the drift would be noticed."@en ;
+    nexus:mechanismForRisk mlr:dataset-shift .
+
+mlr:mechanism-unchecked-input-domain
+    a pair:RiskMechanism ;
+    rdfs:label "Inputs outside the model's domain answered as if inside it"@en ;
+    dct:description "A model trained on a closed set of examples returns an answer for any input it is given, including inputs unlike anything it learned from, and its confidence does not fall to match. Without a step that checks whether an input belongs to the domain the model covers, such inputs are answered like any other and the answer is passed on."@en ;
+    nexus:mechanismForRisk mlr:out-of-domain-data .
+
+mlr:mechanism-unscreened-adversarial-input
+    a pair:RiskMechanism ;
+    rdfs:label "Adversarial input reaching a model unscreened"@en ;
+    dct:description "Small, deliberate changes to an input can move a learned model to a wrong output while the input still looks unchanged to a person. When content an outsider can shape reaches the model with no step that screens it, whoever controls that content can choose what the model returns."@en ;
+    nexus:mechanismForRisk mlr:adversarial-attack .
+
+mlr:mechanism-unexamined-learned-bias
+    a pair:RiskMechanism ;
+    rdfs:label "Bias learned from data about people, unexamined before use"@en ;
+    dct:description "A model fitted to records about people reproduces the imbalances in those records and can add its own through modelling choices. Accuracy measured over everyone can stay high while some groups receive worse outcomes, so unless the model is evaluated group by group before it is used, the disparity first shows up in its decisions."@en ;
+    nexus:mechanismForRisk mlr:model-bias .
+
+mlr:mechanism-unvalidated-model-fit
+    a pair:RiskMechanism ;
+    rdfs:label "Model released without validating its fit"@en ;
+    dct:description "Whether a model's form and variables fit the problem only shows when it is tested on data it did not learn from. A model that goes from training to serving with no evaluation in between can underfit, overfit, or leave out what matters, and the first evidence of it is wrong predictions in operation."@en ;
+    nexus:mechanismForRisk mlr:model-misspecification .
+
+mlr:mechanism-unreported-prediction-uncertainty
+    a pair:RiskMechanism ;
+    rdfs:label "Prediction acted on without its uncertainty"@en ;
+    dct:description "A prediction is a point estimate, and how far it can be trusted varies from one case to the next. When the prediction alone is passed to a step that acts on it or to a person, with no measure of its uncertainty and no review, a low-confidence case is acted on exactly like a high-confidence one."@en ;
+    nexus:mechanismForRisk mlr:model-uncertainty .
+
+mlr:condition-served-model-without-shift-monitoring
+    a nexus:RiskCondition ;
+    skos:prefLabel "A deployed model serves incoming requests and no monitoring step compares what it serves against a baseline"@en ;
+    nexus:conditionForRisk mlr:dataset-shift .
+
+mlr:condition-input-reaches-model-without-domain-check
+    a nexus:RiskCondition ;
+    skos:prefLabel "An input reaches a prediction step with no step that checks it belongs to the model's domain"@en ;
+    nexus:conditionForRisk mlr:out-of-domain-data .
+
+mlr:condition-untrusted-input-reaches-model
+    a nexus:RiskCondition ;
+    skos:prefLabel "Content an outsider can shape reaches a prediction step with no input screening"@en ;
+    nexus:conditionForRisk mlr:adversarial-attack .
+
+mlr:condition-personal-training-data-without-fairness-evaluation
+    a nexus:RiskCondition ;
+    skos:prefLabel "A model is trained on data about people and no fairness evaluation of the trained model is represented"@en ;
+    nexus:conditionForRisk mlr:model-bias .
+
+mlr:condition-trained-model-served-without-evaluation
+    a nexus:RiskCondition ;
+    skos:prefLabel "A trained model reaches a prediction step with no evaluation step between training and serving"@en ;
+    nexus:conditionForRisk mlr:model-misspecification .
+
+mlr:condition-prediction-acted-on-without-uncertainty
+    a nexus:RiskCondition ;
+    skos:prefLabel "A prediction reaches an action or a user with neither an uncertainty estimate nor human review"@en ;
+    nexus:conditionForRisk mlr:model-uncertainty .

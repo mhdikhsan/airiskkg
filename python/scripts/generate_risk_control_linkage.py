@@ -30,6 +30,24 @@ CONTROL_ORDER = [
     "RateLimitBudgetAndLoopControl",
     "LoggingMonitoringAndEvals",
     "Guardrails",
+    "DistributionShiftMonitoring",
+    "InputDomainValidation",
+    "AdversarialRobustness",
+    "PreReleaseModelEvaluation",
+    "FairnessEvaluation",
+    "UncertaintyReportingAndReview",
+    "RetrainingDataValidation",
+    "HeldOutEvaluationData",
+    "TrainingDataPrivacy",
+    "ScopedAgentCredentials",
+    "AgentComponentVerification",
+    "SandboxedCodeExecution",
+    "CascadeContainment",
+    "IndependentEvidenceForApproval",
+    "AgentActionAuditLog",
+    "ExternalProviderDataAgreement",
+    "RetentionLimits",
+    "ModelAccessHardening",
 ]
 
 
@@ -60,6 +78,9 @@ def main() -> int:
         if local(o) == "RiskControl" and "patterns#" in str(s)
     ]
     by_name = {local(c).replace("Control_", ""): c for c in controls}
+    if unlisted := sorted(set(by_name) - set(CONTROL_ORDER)):
+        # Section 3 walks CONTROL_ORDER, so an unlisted control would vanish from it.
+        raise SystemExit(f"controls missing from CONTROL_ORDER: {', '.join(unlisted)}")
 
     groups = sorted(tax.subjects(RDF.type, NEXUS.RiskControlGroup), key=str)
     mit_controls = [

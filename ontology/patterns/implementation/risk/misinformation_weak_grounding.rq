@@ -9,7 +9,7 @@ CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
         rdfs:label "Candidate misinformation from weak grounding"@en ;
-        dct:description "A retrieval-augmented generation step produces a response from retrieved context, but no verification, evaluation, or scoring step over the response is represented in the architecture graph."@en ;
+        dct:description "A language model produces a response, or the results a retrieval returns, and no verification, evaluation, or scoring step over what it produced is represented in the architecture graph."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:MisinformationFromWeakGroundingRiskPattern ;
         pair:generatedFromMatch ?match ;
@@ -83,6 +83,20 @@ WHERE {
             ?llmBinding          pair:bindsPatternNode pat:AdaRAG_LLMNode ;              pair:matchedElement ?llm .
             ?responseBinding     pair:bindsPatternNode pat:AdaRAG_AnswerNode ;           pair:matchedElement ?response .
             BIND(pat:AdaptiveRAGMotif AS ?motif)
+        }
+        UNION
+        {
+            # LLM-based retrieval: the model produces the results it returns, so
+            # what it hands on is generated rather than looked up.
+            ?match
+                a pair:MotifMatch ;
+                pair:matchesMotif pat:LLMBasedInformationRetrievalMotif ;
+                pair:hasNodeBinding ?queryBinding , ?genStepBinding , ?llmBinding , ?responseBinding .
+            ?queryBinding    pair:bindsPatternNode pat:LLMIR_QueryNode ;           pair:matchedElement ?query .
+            ?genStepBinding  pair:bindsPatternNode pat:LLMIR_RetrievalStepNode ;   pair:matchedElement ?genStep .
+            ?llmBinding      pair:bindsPatternNode pat:LLMIR_LLMNode ;             pair:matchedElement ?llm .
+            ?responseBinding pair:bindsPatternNode pat:LLMIR_RetrievedResultNode ; pair:matchedElement ?response .
+            BIND(pat:LLMBasedInformationRetrievalMotif AS ?motif)
         }
 
         FILTER NOT EXISTS {

@@ -181,10 +181,20 @@ motif a rule collapses the one distinction the whole method rests on.
 
 **Coverage:** GenAI, ML serving and training, supply chain, and agentic shapes. Agentic
 coverage is deliberately partial — only ASI entries with a design-time structural signature
-are modelled: **ASI01** goal hijack, **ASI02** tool misuse, **ASI06** memory and context
-poisoning, **ASI07** insecure inter-agent communication. Entries defined by runtime
-behaviour have no shape in a represented graph; adding them would fire on every agent and
-break candidate framing rather than support it.
+get a risk pattern: **ASI01** goal hijack, **ASI02** tool misuse, **ASI03** identity and
+privilege abuse, **ASI04** agentic supply chain, **ASI05** unexpected code execution,
+**ASI06** memory and context poisoning, **ASI07** insecure inter-agent communication,
+**ASI08** cascading failures, **ASI09** human-agent trust exploitation. **ASI10** rogue agents
+is catalogued and has none: it is defined by behaviour drifting after deployment, which has no
+shape in a represented graph, and a pattern for it would fire on every agent and break
+candidate framing rather than support it.
+
+**ML coverage rests on Zhang et al. (2022)**, not on OWASP or IBM, whose catalogues have no
+entry for distribution shift or an unvalidated model fit. Its data-level and model-level risks
+are `ontology/taxonomy/ml_risk.ttl`; six risk patterns bind the prediction and training steps
+of the ML motifs, which carried none before 2026-10-09. Three more derive from IBM Atlas
+entries that have a shape of their own: improper retraining (a loop from a model's output back
+into its training data), membership inference, and evaluation data contamination.
 
 ---
 
@@ -542,6 +552,22 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   `test_the_notation_is_drawn_rather_than_listed`, which reads the notation off the canvas, and
   it conflated the type with which instance this is. Built in the presentation layer from
   evidence labels, never stored in the graph.
+- **A candidate takes a consequence and a control, recorded against its findings.** Asked for
+  2026-10-09, because the partners' experiments annotate what the tool raised as well as what
+  they drew. The relations are `pair:findingHasConsequence` and `pair:controlModifiesFinding`,
+  **never AIRO's**: `beamr:hasConsequence` has domain `beamr:Risk` and `modifiesRiskConcept` range
+  `beamr:RiskConcept`, so writing either on a finding would make it a stated risk, the merge the
+  rule above forbids. Like triage, each is written for every finding in the concern against its
+  deterministic IRI, so it survives a re-run, and one the run no longer raises is not drawn. An
+  impact still chains off the consequence. The live register has no run to say which concern
+  holds a finding, so its line names the finding and `findingEnd` says which end; `mergeStated`
+  in `risk.js` resolves it. No query reads either relation.
+- **A frame is measured round where its boxes stand.** It was measured before dragged positions
+  applied, so a part moved past the edge left the architecture it belongs to;
+  `test_a_part_dragged_past_its_frame_takes_the_frame_with_it` drives the drag with real input.
+- **An element box on the risk canvas says what it is, not what it carries.** The data categories
+  an element holds are in its detail ("carries"); printed on the box as well, they overflowed it
+  and repeated the panel (removed 2026-10-09).
 - **Severity is never computed, and that is the method rather than a gap.** In risk storming
   the priority is a judgement recorded by named participants, and the review step exists to
   surface disagreement. So the tool stays scoreless and `pair:statedPriority` carries human
@@ -696,6 +722,33 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   left the page fitting, and only removing all four reproduced the breach — measured at
   **306 px** at 1400 wide, which is the overflow that once scrolled the page sideways and cut
   the first letter off every line.
+- **Every motif–risk link is carried or names its context, and both are proven.** A motif
+  carries a risk pattern when inserting it alone raises the pattern through its own match
+  (misinformation via LLM-based IR: the model makes up what it returns). Otherwise the risk
+  depends on what the elements are about — public input, personal data, a hosted model, a
+  credential — or on what surrounds the motif, such as a training step upstream of a served
+  model. `workbench/risk_context.py` states that context per link, in words and as the
+  annotations and elements that make the conditions hold, and "Add to canvas" on a risk page
+  inserts the motif with it, so picking a risk, adding a motif and running the assessment
+  raises it. The page does not print the context under each motif (removed 2026-10-09, asked
+  for); `/api/library` still serves it as `motifContext`. `test_motif_risk_links.py` builds every link exactly as
+  `add-motif` does: carried links fire bare, the rest fire with their context, and **no context
+  is named for a link the motif already carries**. Until 2026-10-09, 88 of 124 links raised
+  nothing when their motif was inserted, and four supply chain links could not fire at all,
+  because the query read only External Dependency matches. A link that fires under no context is
+  removed rather than kept: Model in Image and Training to Serving train their own artifact, so
+  nothing in them enters from outside. **Context never gates detection** — it lives in the
+  workbench, no query reads it, and a submitted graph is assessed exactly as before.
+- **Every source chip opens something.** A chip names a catalogue the reader should be able to
+  check. `_ref` uses an entry's IRI when it is a web page (Eticas); otherwise, for a catalogue
+  entry (`nexus:Risk` / `RiskGroup`), the entry's own `rdfs:seeAlso` or `dct:source`, then its
+  scheme's. Every link is the upstream Nexus data's or one the repository already cited: IBM
+  entries carry their per-entry page, ASI entries the Agentic Top 10 page that upstream gives
+  each of them, and MIT, NIST and the Zhang scheme link the catalogue, since none publishes a
+  page per entry. **A link is never minted from a URL pattern**: `data-usage-restrictions` has
+  no upstream URL and falls back to the Atlas page. `test_every_source_on_a_risk_page_can_be_opened`
+  holds all 200 chips. In `derivedFrom`, an entry in this project's own namespace still ranks
+  after a paper or a design catalogue, link or not.
 - **Two risk patterns name no motif and must keep saying so** rather than showing an empty heading:
   `ExcessiveAgency` and `SensitiveInformationDisclosure` are evaluated over any motif match
   whose conditions hold.
@@ -735,11 +788,12 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   scaled into a card renders its labels at about four pixels, which is decoration. The shape
   is what separates two motifs at that size, each node keeps its `<title>` for hover, and the
   detail view carries the labelled drawing.
-- **The rail folds by group, opens folded, and Risks does not fold.** 31 motifs and 97 terms as
-  one column give a reader no way to put part of the library aside, so the first view is the
-  shelves, not 128 rows: the state is the set of groups the reader *opened*, starting empty.
-  Risks stays flat because 15 entries are a list rather than a filing problem. Two things the
-  fold has to respect: a search unfolds everything, or a match inside a folded group would read
+- **The rail folds by group on every tab; Motifs and Terms open folded, Risks open.** Motifs
+  and terms as one column give a reader no way to put part of the library aside, so their first
+  view is the shelves: the state is the set of groups the reader *opened*, starting empty. Risks
+  was flat while it held 15 entries and is shelved by family since it holds 33 (asked for
+  2026-10-09), but it is the front door, so its families start open and fold on a click. Two
+  things the fold has to respect: a search unfolds everything, or a match inside a folded group would read
   as no match; and `select()` opens the group holding what it selected, or the landing would
   point at a hidden row.
 - **There is no "Start from a risk" button.** The risk level is not an entry point in the
@@ -751,8 +805,13 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **A risk pattern with no `dct:description` borrows the definition of the entry it was derived
   from, attributed.** The taxonomy entry names the risk; the risk pattern says when the library
   raises it. The two must not be presented as one sentence.
-- **Risk patterns are listed, not filed.** A risk pattern is a weakness in a design; the risk is
-  the harm it may end in, and a shelf must not blur the two. The list is flat; the consequence
+- **Risk patterns are shelved by the kind of system, never by harm.** A risk pattern is a
+  weakness in a design; the risk is the harm it may end in, and a shelf must not blur the two.
+  So the shelf is `pair:riskPatternFamily`, from the motif family scheme — GenAI 10, Agentic 11,
+  ML serving and training 11, Supply chain 1 — the family most of its motifs belong to,
+  with no groups inside it. It is a filing decision like `motifFamily`: no query reads it, and
+  `test_every_risk_pattern_is_shelved_where_its_motifs_are` holds it to a family one of its
+  motifs is in. The two motif-free patterns are filed by judgement. The consequence
   travels with the entry as **may lead to** chips, and the detail groups entries by the domain
   each rolls up to (`mayIndicateRisk` → `skos:broader` into
   `mit:MIT_AI_Risk_Repository_Domain_Taxonomy`) so a reader sees which link produced which
@@ -917,16 +976,19 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   escape is a triple no example, rewrite, or UI ever writes is unfalsifiable by design work.
   **Do not reintroduce an escape nothing can satisfy** — `beamr:associatedTo` was removed from
   all fifteen risk queries for exactly this reason, and the output was byte-identical.
-- **Three risk patterns are unclearable by design, and that is correct.**
+- **Four risk patterns are unclearable by design, and that is correct.**
   `DataAndModelPoisoning`, `SupplyChainCompromise` and `VectorAndEmbeddingWeakness`
-  (`data_model_poisoning.rq`, `supply_chain.rq`, `vector_embedding_weakness.rq` — the 3 of 15
-  risk queries carrying no `FILTER NOT EXISTS` at all) rest on provenance and vetting — non-technical controls with no runtime shape — so no structural
-  escape exists to write. The answer is **finding-level triage**, not a query escape:
+  (`data_model_poisoning.rq`, `supply_chain.rq`, `vector_embedding_weakness.rq`) rest on
+  provenance and vetting — non-technical controls with no runtime shape — and
+  `TrainingDataMembershipInference` rests on how the model is trained. No structural
+  escape exists to write. Those four and `evaluation_data_contamination.rq` are the 5 of 29
+  risk queries carrying no `FILTER NOT EXISTS`; contamination is still clearable, because its
+  condition *is* the shared data, and giving the evaluation its own removes it. The answer is **finding-level triage**, not a query escape:
   `pair:findingStatus` is the extension point, finding IRIs are deterministic so a judgement
   survives re-runs, and "accepted, handled by process" is a human act recorded against the
   finding rather than a fabricated structural fact. Never conflate the two.
-- **Carrying a `FILTER NOT EXISTS` is not the same as being clearable.** 12 of 15 risk queries
-  carry one or two; several test only the structural half while the annotation half stays
+- **Carrying a `FILTER NOT EXISTS` is not the same as being clearable.** 24 of 29 risk queries
+  carry at least one; several test only the structural half while the annotation half stays
   unclearable. **Audit a specific finding before telling anyone it is actionable.**
 - **Applying a control is a registered SPARQL rewrite, not code.** A `pair:MitigationApplication`
   restates the vulnerable shape its `pair:mitigatesRiskPattern` found and CONSTRUCTs the step
@@ -997,10 +1059,11 @@ and code (`python/`).
 | `ontology/patterns/implementation/` | Executable SPARQL CONSTRUCTs: `match/` (one per motif), `risk/` (one per risk pattern), `propagation/` (derived-fact rules, re-run to a fixed point by the runner), `mitigation/` (control rewrites). |
 | `ontology/facets/` | SKOS characterization facets: `task.ttl`, `context.ttl`, `autonomy.ttl`, `data_facets.ttl`, `implementation_type.ttl`, `facet_properties.ttl`. **Data Category is not here.** |
 | `ontology/alignments/` | External vocabulary adapters (Tool4Boxology, DPV; later AgentO). |
-| `ontology/taxonomy/` | IBM Atlas, OWASP LLM, OWASP Agentic (ASI), MIT, NIST AI 600-1, plus the tiered cross-taxonomy mappings. |
+| `ontology/taxonomy/` | IBM Atlas, OWASP LLM, OWASP Agentic (ASI), MIT, NIST AI 600-1, ML risks (Zhang et al., 2022), Eticas, plus the tiered cross-taxonomy mappings. |
 | `ontology/context/` | The business layer bridge. `bpmn_context.ttl` declares `pair:refinedBy`, `pair:businessFollows`, `pair:BusinessFlowDerivation`, and registers `business_flow.rq` and `business_data_bridge.rq` in `context/implementation/`. |
 | `ontology/visualization/` | Standalone SPARQL run by hand, referenced by no declaration. |
 | `data/mappings/` | **Source data, not knowledge.** `Final_Mapped_Taxonomy_Table_Output.csv` is the 93-row OWASP → IBM Atlas → MIT action cross-walk that `mit_mitigation_action.ttl` names as its `dct:source` and `generate_mit_action_layer.py` reads. Tracked, and deliberately outside the `.dockerignore` allow-list — the image does not need it, but a clone cannot regenerate the action layer without it. |
+| `data/eticas.ttl` | **Source data.** The Eticas AI Risk Taxonomy as published (CC BY 4.0). `generate_eticas_layer.py` writes `ontology/taxonomy/eticas_risk.ttl` from it, keeping a published mapping only where the target is a concept this KB declares or a DPV term. **Eticas writes `broadMatch` and `narrowMatch` the other way round from SKOS** ("data-poisoning narrowMatch MIT 2.2" means poisoning is the narrower), and not uniformly, so those rows are neither adopted nor inverted; nor is an `exactMatch` that would make two catalogues' entries identical. The generated header counts every dropped row by reason. |
 
 **`.rq` paths are data.** Each query is registered by a `pair:PatternImplementation` whose
 `pair:implementationPath` is a literal string, so **moving or renaming a query means updating
@@ -1052,7 +1115,9 @@ because an annotation can be attached to a data object and needs a plain `bpmn:a
 **A script earns `python/scripts/` by being depended on**: a test imports or invokes it
 (`validate_graphs.py`, `normalize_t4b.py`, `generate_mapping_provenance.py`), or it rewrites a tracked file
 (`generate_mit_action_layer.py` writes `ontology/taxonomy/mit_mitigation_action.ttl`,
-`generate_risk_control_linkage.py` writes `docs/reference/risk_control_linkage.md`).
+`generate_eticas_layer.py` writes `ontology/taxonomy/eticas_risk.ttl`,
+`generate_risk_control_linkage.py` writes `docs/reference/risk_control_linkage.md`; it refuses to
+run when a control is missing from its `CONTROL_ORDER`, which section 3 walks).
 `export_ontology.py`, `pattern_provenance_worklist.py` and `role_provenance_export.py` met none
 of those and now sit in `local/`. **A tracked file that says "regenerate with X" while X
 is gitignored cannot be regenerated from a clone** — the artifact stops being reproducible, which is the
@@ -1076,7 +1141,9 @@ the gitignored `docs/evaluation/` imports them and cannot be updated from a clon
   dropdown shows, so it stays small on purpose.
 - **`python/tests/fixtures/` — graphs a test needs that the deployment does not offer**:
   `onyx_rag_chatbot.ttl` (the only graph exercising query rewriting, reranking, embeddings and
-  supply chain), `wien_energie_bottina.ttl`, `wien_energie_tariff_change.ttl`, and
+  supply chain), `ml_credit_scoring.ttl` (the only graph that trains or serves a classical
+  model, and so the only one the ML risk patterns fire on), `wien_energie_bottina.ttl`,
+  `wien_energie_tariff_change.ttl`, and
   `context/energy_customer_service.ttl` + `context/energy_tariff_change.ttl`.
   Tracked, so a fresh clone passes; outside `ontology/example/`, so nothing offers them.
   **Retiring a graph from the offered set must not retire the coverage that rested on it** —
@@ -1244,22 +1311,24 @@ anyone noticed:
 len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its siblings
 ```
 
-### Library (counted off the loaded graph, 2026-10-04)
+### Library (counted off the loaded graph, 2026-10-09)
 
 | | |
 | --- | --- |
-| Motifs | **31** — GenAI 13, ML serving and training 13, Agentic 4, Supply chain 1 |
-| Risk patterns | **15** (15 motifs carry one; 16 carry none) |
-| Pattern nodes / pattern edges | **169** / **143** — every edge crosses between an oval and a box |
-| Pattern roles | **97** — shelved on 7 BEAM classes: Data 39, Process 33, Statistical Model 10, Transform 5, Resource 4, Infer 3, Train 3. All 97 carry a `skos:definition`; origins are 50 stated / 35 mapped / 12 inherited. **72** are named by a pattern node and **14** more are reached only by refining one that is; of the 11 no motif reaches, **6 are read by no registered query at all** |
+| Motifs | **47** — GenAI 20, ML serving and training 13, Agentic 13, Supply chain 1 |
+| Risk patterns | **33** — GenAI 10, Agentic 11, ML serving and training 11, Supply chain 1 (35 motifs carry one; 12 carry none) |
+| Pattern nodes / pattern edges | **261** / **224** — every edge crosses between an oval and a box |
+| Pattern roles | **123**. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
 | Data categories | **7** |
 | Facet concepts | **35** (task 20, data 11, autonomy 4) |
-| Risk mechanisms | **14** |
-| Applicability conditions | **16**, carried on 20 attachments |
-| Controls | **12** `pat:Control_*` |
-| Triples | **7 783** |
+| Risk mechanisms | **32** |
+| Applicability conditions | **34**, carried on 38 attachments |
+| Controls | **30** `pat:Control_*` |
+| Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 40, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
+| Triples | **12 112** |
+| Motif–risk links | **123** — 39 carried by the motif alone, 84 with a named context (32 annotate the motif's own elements, 52 add the surrounding elements the risk needs) |
 
-**63 registered implementations** over 62 `.rq` files: 31 match, 15 risk, 6 propagation, 9
+**97 registered implementations** over 96 `.rq` files: 47 match, 33 risk, 6 propagation, 9
 mitigation rewrites over 8 files (`response_verification.rq` is registered twice, under two
 controls for the same risk pattern), and 2 business-context derivations under
 `ontology/context/` — one of which registers as `DataCategoryPropagation`, so the runner sees 7
@@ -1269,15 +1338,21 @@ of those and 1 `BusinessFlowDerivation`.
 
 | Graph | Matches | Findings |
 | --- | --- | --- |
-| RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 22 |
+| RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 24 |
 | Minimal graph RAG | 3 | 7 |
 | Wien Energie chatbot (BotTina) | 5 | 9 |
 | Wien Energie tariff change (4 systems) | 3 | 9 |
-| IT support agent (agentic) | 4 | 8 |
+| IT support agent (agentic) | 4 | 10 |
 | Prompt injection, four shapes side by side (fixture) | 6 | 13 |
 | Energy scene: BotTina + the business process | 5 | 11 |
 | Tariff scene: the tariff graph + its business process | 3 | 11 |
-| IT service desk scene: the agent + its business process | 4 | 9 |
+| IT service desk scene: the agent + its business process | 4 | 12 |
+| Credit scoring (fixture): train, auto-deploy, score, decide, feed back | 3 | 17 |
+
+Moved 2026-10-09: Onyx +2 protected data to an external model (one concern, raised from the
+direct-prompting and RAG matches), the IT support agent +2 untraceable agent actions, its
+service desk scene those two plus personal data retained in agent memory, and credit scoring
++2 model extraction and −1 supply chain on the model it trains itself.
 
 No bundled scene clears anything; `test_business_context.py` covers the clearing half by
 building an approval inline.

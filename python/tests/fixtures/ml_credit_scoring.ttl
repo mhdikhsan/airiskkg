@@ -1,0 +1,83 @@
+@prefix beam:  <http://w3id.org/beam/core#> .
+@prefix pair:  <http://w3id.org/airiskkg/pair-ai#> .
+@prefix facet: <http://w3id.org/airiskkg/facets#> .
+@prefix pd:    <https://w3id.org/dpv/pd#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix cs:    <http://w3id.org/airiskkg/example/credit-scoring#> .
+
+# A classical ML serving system with no control anywhere: the graph the ML risk
+# patterns are pinned on, since no other tracked graph trains or serves a model.
+
+cs:ScoringService a beam:Element, beam:System ;
+    rdfs:label "Credit scoring service" ;
+    beam:context "A lender scores consumer loan applications submitted online and decides them automatically." ;
+    beam:description "A nightly pipeline retrains the scoring model on the applicant history and deploys it without review. Each application is scored, decided, and recorded back into the history the next model is trained on." ;
+    beam:hasProcess cs:FeatureEngineering, cs:NightlyTraining, cs:AutoDeploy,
+                    cs:ScoreApplication, cs:DecideLoan, cs:RecordOutcome ;
+    beam:hasResource cs:ApplicantHistory, cs:TrainingFeatures, cs:ScorerArtifact,
+                     cs:DeployedScorer, cs:LoanApplication, cs:CreditScore, cs:LoanDecision .
+
+cs:ApplicantHistory a beam:Data ;
+    rdfs:label "Applicant history" ;
+    pair:playsRole pair:TrainingDataset ;
+    facet:hasPersonalDataCategory pd:Financial .
+
+cs:FeatureEngineering a beam:Transform, beam:Process ;
+    rdfs:label "Build training features" ;
+    pair:playsRole pair:PreprocessingStep ;
+    beam:use cs:ApplicantHistory ;
+    beam:produce cs:TrainingFeatures .
+
+cs:TrainingFeatures a beam:Data ;
+    rdfs:label "Training features" ;
+    pair:playsRole pair:PreprocessedData .
+
+cs:NightlyTraining a beam:Train, beam:Process ;
+    rdfs:label "Nightly retraining" ;
+    pair:playsRole pair:TrainingPipeline ;
+    beam:use cs:TrainingFeatures ;
+    beam:produce cs:ScorerArtifact .
+
+cs:ScorerArtifact a beam:StatisticalModel ;
+    rdfs:label "Scoring model artifact" ;
+    pair:playsRole pair:ModelArtifact .
+
+cs:AutoDeploy a beam:Process ;
+    rdfs:label "Deploy the new model" ;
+    pair:playsRole pair:DeploymentStep ;
+    beam:use cs:ScorerArtifact ;
+    beam:produce cs:DeployedScorer .
+
+cs:DeployedScorer a beam:StatisticalModel ;
+    rdfs:label "Deployed scorer" ;
+    pair:playsRole pair:LoadedModel .
+
+cs:LoanApplication a beam:Data ;
+    rdfs:label "Loan application" ;
+    pair:playsRole pair:PublicUserInput , pair:PredictionRequest .
+
+cs:ScoreApplication a beam:Infer, beam:Process ;
+    rdfs:label "Score the application" ;
+    pair:playsRole pair:PredictionStep ;
+    beam:use cs:DeployedScorer, cs:LoanApplication ;
+    beam:produce cs:CreditScore .
+
+cs:CreditScore a beam:Data ;
+    rdfs:label "Credit score" ;
+    pair:playsRole pair:PredictionResult .
+
+cs:DecideLoan a beam:Process ;
+    rdfs:label "Approve or decline" ;
+    pair:playsRole pair:StateChangingStep ;
+    beam:use cs:CreditScore ;
+    beam:produce cs:LoanDecision .
+
+cs:LoanDecision a beam:Data ;
+    rdfs:label "Loan decision" ;
+    pair:playsRole pair:PublicUserFacingOutput .
+
+cs:RecordOutcome a beam:Process ;
+    rdfs:label "Record the decided application" ;
+    pair:playsRole pair:LoggingStep ;
+    beam:use cs:LoanApplication, cs:LoanDecision ;
+    beam:produce cs:ApplicantHistory .

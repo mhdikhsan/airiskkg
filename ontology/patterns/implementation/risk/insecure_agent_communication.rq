@@ -8,7 +8,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate unvalidated inter-agent handoff"@en ;
+        rdfs:label "Candidate insecure inter-agent communication"@en ;
         dct:description "A message passes from one agent to another and is acted on with no represented validation, guardrail, or policy step in between."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:InsecureAgentCommunicationRiskPattern ;

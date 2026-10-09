@@ -8,7 +8,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate external model or dependency supply chain exposure"@en ;
+        rdfs:label "Candidate supply chain compromise"@en ;
         dct:description "The architecture uses an external model, provider credential, package, artifact, or dependency in an LLM application path."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:SupplyChainCompromiseRiskPattern ;
@@ -28,15 +28,39 @@ WHERE {
             a pair:MotifMatch ;
             pair:matchesMotif ?motif ;
             pair:hasNodeBinding ?resourceBinding , ?stepBinding .
-        VALUES ?motif { pat:ExternalDependencyMotif }
 
-        ?resourceBinding
-            pair:bindsPatternNode pat:ExtDep_ExternalResourceNode ;
-            pair:matchedElement ?externalResource .
-        ?stepBinding
-            pair:bindsPatternNode pat:ExtDep_UsingStepNode ;
-            pair:matchedElement ?usingStep .
+        # The resource each motif takes in from outside, and the step using it.
+        {
+            ?resourceBinding pair:bindsPatternNode pat:ExtDep_ExternalResourceNode ;
+                             pair:matchedElement ?externalResource .
+            ?stepBinding pair:bindsPatternNode pat:ExtDep_UsingStepNode ;
+                         pair:matchedElement ?usingStep .
+        }
+        UNION
+        {
+            ?resourceBinding pair:bindsPatternNode pat:FineTune_BaseModelNode ;
+                             pair:matchedElement ?externalResource .
+            ?stepBinding pair:bindsPatternNode pat:FineTune_TrainingStepNode ;
+                         pair:matchedElement ?usingStep .
+        }
+        UNION
+        {
+            ?resourceBinding pair:bindsPatternNode pat:ModelLoad_ModelArtifactNode ;
+                             pair:matchedElement ?externalResource .
+            ?stepBinding pair:bindsPatternNode pat:ModelLoad_LoadStepNode ;
+                         pair:matchedElement ?usingStep .
+        }
 
+        # External by declaration, or an artifact that enters the graph rather than being built in it.
+        {
+            ?externalResource pair:playsRole/pair:subRoleOf* pair:ExternalDependency .
+        }
+        UNION
+        {
+            ?externalResource pair:playsRole ?artifactRole .
+            FILTER NOT EXISTS { ?externalResource pair:playsRole/pair:subRoleOf* pair:ExternalDependency }
+            FILTER NOT EXISTS { ?producer beam:produce ?externalResource }
+        }
     }
 
     pat:SupplyChainCompromiseRiskPattern

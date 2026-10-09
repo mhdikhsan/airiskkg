@@ -847,7 +847,7 @@ def test_the_library_is_what_the_workbench_opens_on(empty_workbench) -> None:
     assert opened["open"], "the workbench did not open on the library"
     assert opened["lead"], "the opening frame that explains motif and risk pattern is missing"
     assert opened["risks"] > 10, (
-        f"the risk list has {opened['risks']} entries; the library holds 15 risk patterns"
+        f"the risk list has {opened['risks']} entries; the library holds 29 risk patterns"
     )
     assert opened["tiles"] > 10, "the opening panel does not show the catalogue"
 
@@ -1775,17 +1775,25 @@ def _open_risk_level(loop, handle):
         return 1;
     })()""".replace("AGENT", _example(AGENT_NS)).replace("DESK", "it_service_desk")))
     time.sleep(4)
-    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    # The previous test's run would satisfy a wait for any run, so wait for this one.
+    loop.run_until_complete(handle.js(
+        'window.__runBefore = window.PairAI.state.lastAssessment; '
+        'document.querySelector("#btn-assess").click(); 1'))
     _settle(loop, handle,
-            "(window.PairAI.state.lastAssessment && "
+            "(!document.querySelector('#btn-assess').disabled && "
+            "window.PairAI.state.lastAssessment && "
+            "window.PairAI.state.lastAssessment !== window.__runBefore && "
             "window.PairAI.state.lastAssessment.riskView) ? 1 : 0", 0, tries=120)
     loop.run_until_complete(handle.js('document.querySelector("#level-risk").click()'))
     time.sleep(2)
     # A selection survives a re-render on purpose - triage keeps the box you are
     # judging in view - so a helper that promises a known state has to clear it,
-    # or the rail is still showing whatever the last test picked.
+    # or the rail is still showing whatever the last test picked. Assessing opens
+    # the findings drawer, which leaves the canvas too short for a card to be pressed.
     loop.run_until_complete(handle.js(
         'window.PairAI.RiskCanvas.clearSelection(); '
+        'if (!document.querySelector("#drawer").classList.contains("collapsed")) '
+        'document.querySelector("#drawer-toggle").click(); '
         'document.querySelector("#level-risk").click(); 1'))
     time.sleep(1.5)
     drawn = loop.run_until_complete(handle.js('document.querySelectorAll(".rc-card").length'))
@@ -2030,16 +2038,11 @@ def test_a_risk_is_drawn_on_by_dragging_it_onto_what_it_is_about(page) -> None:
     assert state["findings"] == before
 
 
-def test_a_control_is_offered_only_on_what_somebody_wrote(page) -> None:
-    """A control written by hand attaches to a risk somebody wrote, and to
-    nothing the library raised.
-
-    A concern from a run is a group of findings keyed by (risk pattern,
-    evidence). There is no such subject in the graph to hang a control off - and
-    hanging one off it would be the conflation the method forbids anyway: a
-    control clears a finding by being built, not by being asserted, so a finding
-    is answered by triage. Before this, every concern on screen lit up as a drop
-    target and the drop then failed on the server.
+def test_a_control_is_offered_on_what_somebody_wrote_and_on_each_candidate(page) -> None:
+    """A control written by hand attaches to a risk somebody wrote, and to a
+    candidate the run raised - recorded against its findings with
+    pair:controlModifiesFinding, which clears nothing. What the run derived
+    besides its risks, its sources and its suggested controls, is not a target.
     """
     loop, handle = page
     _open_risk_level(loop, handle)
@@ -2075,12 +2078,13 @@ def test_a_control_is_offered_only_on_what_somebody_wrote(page) -> None:
             card.querySelector('rect.rc-box').getAttribute('stroke-dasharray') === 'none';
         const cards = [...document.querySelectorAll('#risk-canvas .rc-card')];
         const marked = cards.filter((c) => c.classList.contains('rc-droppable'));
+        const isRisk = (c) => c.querySelector('.rc-chip').textContent === 'Risk';
         return {
             marked: marked.length,
-            allStated: marked.every(stated),
-            derivedConcerns: cards.filter((c) =>
-                c.querySelector('.rc-chip').textContent === 'Risk' && !stated(c)).length,
-            derivedMarked: marked.filter((c) => !stated(c)).length,
+            statedMarked: marked.filter(stated).length,
+            derivedConcerns: cards.filter((c) => isRisk(c) && !stated(c)).length,
+            concernsMarked: marked.filter((c) => isRisk(c) && !stated(c)).length,
+            otherDerivedMarked: marked.filter((c) => !isRisk(c) && !stated(c)).length,
             ghost: (document.querySelector('.risk-ghost') || {}).textContent || null,
         };
     })()"""))
@@ -2096,11 +2100,13 @@ def test_a_control_is_offered_only_on_what_somebody_wrote(page) -> None:
     assert offered["derivedConcerns"] > 0, (
         "this scene raises concerns, which is what makes the distinction testable"
     )
-    assert offered["marked"] > 0, "the scene states risks, so a control has somewhere to go"
-    assert offered["derivedMarked"] == 0, (
-        f"{offered['derivedMarked']} concerns from the run were offered as drop targets"
+    assert offered["statedMarked"] > 0, "the scene states risks, and a control goes on them"
+    assert offered["concernsMarked"] == offered["derivedConcerns"], (
+        f"{offered['concernsMarked']} of {offered['derivedConcerns']} candidates were offered"
     )
-    assert offered["allStated"], "a control was offered on something nobody wrote"
+    assert offered["otherDerivedMarked"] == 0, (
+        "a derived source or suggested control was offered as a drop target"
+    )
 
     left = loop.run_until_complete(handle.js(
         "document.querySelectorAll('.risk-ghost, #risk-canvas .rc-droppable').length"))
@@ -2716,9 +2722,111 @@ def test_the_motif_tray_is_shelved_by_the_kind_of_system_each_is_a_shape_of(page
     })()"""))
     assert seen, "the architecture level offers no motif tray"
 
-    assert seen["items"] == 31, f"the tray lists {seen['items']} motifs"
-    assert seen["families"] == [
-        "Agentic", "GenAI", "ML serving and training", "Supply chain",
-    ], seen["families"]
-    assert seen["counts"] == [4, 13, 13, 1], seen["counts"]
+    from test_canvas_renders import _library
+
+    library = _library()
+    assert seen["items"] == library["motifs"], f"the tray lists {seen['items']} motifs"
+    assert seen["families"] == list(library["families"]), seen["families"]
+    assert seen["counts"] == list(library["families"].values()), seen["counts"]
     assert sum(seen["counts"]) == seen["items"], "a motif is shelved twice or not at all"
+
+
+def test_a_part_dragged_past_its_frame_takes_the_frame_with_it(page) -> None:
+    """The dashed frame says which architecture a part belongs to, so moving a
+    part must stretch the frame round it rather than leave it outside. It was
+    measured before the moved positions were applied."""
+    loop, handle = page
+    _open_risk_level(loop, handle)
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#risk-canvas .rc-unfold")'
+        '.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })); 1'))
+    time.sleep(1.2)
+    start = loop.run_until_complete(handle.js("""(() => {
+        const view = document.querySelector('#risk-canvas').getBoundingClientRect();
+        const frames = [...document.querySelectorAll('#risk-canvas .rc-frame-box')]
+            .map((f) => f.getBoundingClientRect());
+        for (const part of document.querySelectorAll('#risk-canvas .rc-flow')) {
+            const r = part.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            if (x < view.left || x > view.right || y < view.top || y > view.bottom) continue;
+            const hit = document.elementFromPoint(x, y);
+            if (!hit || hit.closest('.rc-flow') !== part) continue;
+            const frame = frames.find((f) => r.left >= f.left && r.right <= f.right);
+            if (frame) return { id: part.getAttribute('data-node'), x, y,
+                                width: Math.round(frame.width), right: Math.round(frame.right),
+                                partWidth: Math.round(r.width) };
+        }
+        return null;
+    })()"""))
+    assert start, "no part of an unfolded system could be pressed"
+
+    # Far enough that the part's left edge ends beyond where the frame stood.
+    target_x = start["right"] + start["partWidth"]
+    loop.run_until_complete(handle.drag(start["x"], start["y"], target_x, start["y"]))
+    after = loop.run_until_complete(handle.js(f"""(() => {{
+        const part = [...document.querySelectorAll('#risk-canvas .rc-flow')]
+            .find((p) => p.getAttribute('data-node') === {json.dumps(start["id"])});
+        const r = part.getBoundingClientRect();
+        const frames = [...document.querySelectorAll('#risk-canvas .rc-frame-box')]
+            .map((f) => f.getBoundingClientRect());
+        const holding = frames.find((f) => r.left >= f.left - 1 && r.right <= f.right + 1
+            && r.top >= f.top - 1 && r.bottom <= f.bottom + 1);
+        return {{ moved: Math.round(r.left + r.width / 2), framed: !!holding,
+                  width: holding ? Math.round(holding.width) : 0 }};
+    }})()"""))
+    loop.run_until_complete(handle.js("window.PairAI.RiskCanvas.forgetLayout(); 1"))
+
+    assert after["moved"] > start["right"], f"the part did not move past the frame: {after}"
+    assert after["framed"], "the part was dragged out of the frame of its own architecture"
+    assert after["width"] > start["width"], "the frame did not grow to hold it"
+
+
+def test_a_consequence_dropped_on_a_candidate_is_recorded_against_its_findings(page) -> None:
+    """What partners add to a candidate in an experiment has to be kept, so the
+    run's own risk boxes take a consequence the way a hand-drawn risk does."""
+    loop, handle = page
+    _open_risk_level(loop, handle)
+    aim = loop.run_until_complete(handle.js("""(() => {
+        const view = window.PairAI.state.lastAssessment.riskView;
+        const keys = new Set(view.groups.map((g) => g.key));
+        const pane = document.querySelector('#risk-canvas').getBoundingClientRect();
+        for (const card of document.querySelectorAll('#risk-canvas .rc-card')) {
+            if (!keys.has(card.getAttribute('data-node'))) continue;
+            const r = card.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            if (x < pane.left || x > pane.right || y < pane.top || y > pane.bottom) continue;
+            const hit = document.elementFromPoint(x, y);
+            if (hit && hit.closest('.rc-card') === card) {
+                const item = document.querySelector('#risk-palette .pp-item[data-kind="consequence"]')
+                    .getBoundingClientRect();
+                return { key: card.getAttribute('data-node'), x, y,
+                         fromX: Math.round(item.left + 12), fromY: Math.round(item.top + 10) };
+            }
+        }
+        return null;
+    })()"""))
+    assert aim, "no candidate risk box could be dropped on"
+
+    loop.run_until_complete(handle.drag(aim["fromX"], aim["fromY"], aim["x"], aim["y"]))
+    time.sleep(2.5)
+    seen = loop.run_until_complete(handle.js(f"""(() => {{
+        const ttl = window.PairAI.Editor.getValue();
+        const lines = [...document.querySelectorAll('#risk-canvas .rc-edge-label')]
+            .filter((t) => t.textContent === 'hasConsequence').length;
+        return {{ recorded: /findingHasConsequence/.test(ttl),
+                  asStatedRisk: /beamr:hasConsequence/.test(ttl), lines }};
+    }})()"""))
+
+    assert seen["recorded"], "the consequence was not recorded against the candidate's findings"
+    assert not seen["asStatedRisk"], "a finding was written as though it were a stated risk"
+    assert seen["lines"] >= 1, "the consequence is not drawn on the candidate"
+
+    # And the candidate's own panel says what was added to it.
+    loop.run_until_complete(handle.js(
+        "window.PairAI.RiskCanvas.select(" + json.dumps(aim["key"]) + "); 1"))
+    loop.run_until_complete(handle.js(
+        "document.querySelector('#level-risk').click(); 1"))
+    time.sleep(1.2)
+    panel = loop.run_until_complete(handle.js(
+        "(document.querySelector('#risk-side') || {}).textContent || ''"))
+    assert "added by hand" in panel, f"the candidate's panel does not show it: {panel[:200]!r}"

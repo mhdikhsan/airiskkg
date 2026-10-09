@@ -748,7 +748,10 @@ def test_what_was_never_examined_is_counted_not_omitted(client) -> None:
     ttl = _with_agenda(_scene_ttl(), ["ToolMisuseRiskPattern"], client)
     agenda = _agenda_of(ttl)
     assert agenda["counts"]["not-examined"] == len(agenda["notExamined"])
-    assert len(agenda["checked"]) + len(agenda["notExamined"]) == 15
+    from airiskkg.assessment_runner import load_base_graph
+
+    library = set(load_base_graph().subjects(RDF.type, PAIR.RiskPattern))
+    assert len(agenda["checked"]) + len(agenda["notExamined"]) == len(library)
 
 
 def test_stating_a_harm_is_enough_to_have_an_agenda() -> None:
@@ -763,7 +766,7 @@ def test_stating_a_harm_is_enough_to_have_an_agenda() -> None:
 
 def test_concerns_that_share_a_name_say_where_they_are(repeating_view) -> None:
     """Prompt injection is raised once per untrusted-content/generation pair, so
-    three boxes reading "Candidate prompt injection exposure" are three true and
+    three boxes reading "Candidate prompt injection" are three true and
     different answers - and nothing on them said which was which.
 
     A concern is the (risk pattern, evidence set) group, so the evidence is what

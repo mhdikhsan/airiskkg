@@ -442,3 +442,94 @@ def test_a_risk_written_from_the_library_still_detects_nothing(client, scene) ->
     ttl, _ = _state(client, scene, "risk", "", attach=[CHAT], fromLibrary=pattern["id"])
     after = summarize_result(run_assessment_from_text(ttl))
     assert {f["id"] for f in plain["findings"]} == {f["id"] for f in after["findings"]}
+
+
+# A candidate the run raised takes what a person adds to it, as a hand-drawn
+# risk does, recorded against the finding rather than a copy of it.
+
+@pytest.fixture(scope="module")
+def raised(scene) -> dict:
+    result = run_assessment_from_text(scene)
+    view = risk_view(summarize_result(result), result.combined_graph)
+    return max(view["groups"], key=lambda group: group["corroboration"])
+
+
+def _view_of(ttl: str) -> dict:
+    result = run_assessment_from_text(ttl)
+    return risk_view(summarize_result(result), result.combined_graph)
+
+
+def test_a_candidate_takes_a_consequence_an_impact_and_a_control(client, scene, raised) -> None:
+    findings = raised["findingIds"]
+    ttl, consequence = _state(client, scene, "consequence", "A customer is billed wrongly",
+                              attachToFindings=findings)
+    ttl, impact = _state(client, ttl, "impact", "Complaints to the regulator", attach=[consequence])
+    ttl, control = _state(client, ttl, "control", "Four-eyes check on tariff changes",
+                          attachToFindings=findings)
+
+    graph = Graph().parse(data=ttl, format="turtle")
+    for finding in map(URIRef, findings):
+        assert (finding, PAIR.findingHasConsequence, URIRef(consequence)) in graph
+        assert (URIRef(control), PAIR.controlModifiesFinding, finding) in graph
+        # AIRO's own relations would make the finding a stated risk.
+        assert (finding, BEAMR.hasConsequence, None) not in graph
+        assert (URIRef(control), BEAMR.modifiesRiskConcept, finding) not in graph
+    assert (URIRef(consequence), BEAMR.hasImpact, URIRef(impact)) in graph
+
+    lines = {(l["source"], l["target"], l["label"]) for l in _view_of(ttl)["diagram"]["links"]}
+    assert (raised["key"], consequence, "hasConsequence") in lines
+    assert (control, raised["key"], "modifiesRiskConcept") in lines
+    assert (consequence, impact, "hasImpact") in lines
+
+
+def test_adding_to_a_candidate_changes_no_finding(client, scene, raised) -> None:
+    ttl, _ = _state(client, scene, "consequence", "Something follows",
+                    attachToFindings=raised["findingIds"])
+    ttl, _ = _state(client, ttl, "control", "Something answers it",
+                    attachToFindings=raised["findingIds"])
+    before = summarize_result(run_assessment_from_text(scene))
+    after = summarize_result(run_assessment_from_text(ttl))
+    assert [(f["id"], f["status"]) for f in before["findings"]] == \
+        [(f["id"], f["status"]) for f in after["findings"]]
+
+
+def test_the_live_register_names_the_finding_for_the_page_to_place(client, scene, raised) -> None:
+    """With no run, the register cannot say which concern holds a finding, so
+    the line carries the finding and says which end it is."""
+    ttl, consequence = _state(client, scene, "consequence", "Something follows",
+                              attachToFindings=raised["findingIds"])
+    diagram = client.post("/api/scope", json={"ttl": ttl}).get_json()["diagram"]
+    ends = {(l["source"], l["target"], l.get("findingEnd")) for l in diagram["links"]}
+    for finding in raised["findingIds"]:
+        assert (finding, consequence, "source") in ends
+
+
+def test_a_line_to_a_candidate_is_drawn_and_taken_back(client, scene, raised) -> None:
+    ttl, consequence = _state(client, scene, "consequence", "Something follows")
+    linked = client.post("/api/scope-edit", json={
+        "ttl": ttl, "op": "link-concept", "from": consequence, "to": raised["key"],
+        "findings": raised["findingIds"],
+    }).get_json()
+    assert "error" not in linked, linked
+    graph = Graph().parse(data=linked["ttl"], format="turtle")
+    assert len(list(graph.subjects(PAIR.findingHasConsequence, URIRef(consequence)))) \
+        == len(raised["findingIds"])
+
+    # The canvas hands the line back the way it is drawn: from the concern.
+    unlinked = client.post("/api/scope-edit", json={
+        "ttl": linked["ttl"], "op": "unlink-concept", "from": raised["key"], "to": consequence,
+        "findings": raised["findingIds"],
+    }).get_json()
+    assert "error" not in unlinked, unlinked
+    graph = Graph().parse(data=unlinked["ttl"], format="turtle")
+    assert (None, PAIR.findingHasConsequence, None) not in graph
+    assert (URIRef(consequence), RDF.type, BEAMR.Consequence) in graph
+
+
+def test_a_candidate_takes_no_impact_or_source_directly(client, scene, raised) -> None:
+    for kind in ("impact", "source"):
+        body = client.post("/api/scope-edit", json={
+            "ttl": scene, "op": "state-concept", "kind": kind, "label": "x",
+            "attachToFindings": raised["findingIds"],
+        })
+        assert body.status_code == 400, kind

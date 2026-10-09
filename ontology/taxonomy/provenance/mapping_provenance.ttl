@@ -12,6 +12,8 @@
 @prefix mit:     <http://w3id.org/airiskkg/taxonomy/mit-ai-risk#> .
 @prefix owasp:   <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
 @prefix asi:     <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
+@prefix mlr:     <http://w3id.org/airiskkg/taxonomy/ml-risk#> .
+@prefix eticas:  <https://taxonomy.eticas.ai/risk/> .
 @prefix nist:    <http://w3id.org/airiskkg/taxonomy/nist-genai#> .
 @prefix mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> .
 @prefix nexus:   <http://w3id.org/airiskkg/taxonomy/nexus#> .
@@ -56,7 +58,7 @@ pairm:pair-ai-curation a sssom:MappingSet ;
 
 pairm:pair-ai-risk-to-control-embedding a sssom:MappingSet ;
     rdfs:label "OWASP risk to MIT control family, embedding-derived"@en ;
-    dct:source "PAIR-AI risk-to-mitigation CSV, data/mappings/Final_Mapped_Taxonomy_Table_Output.csv (OWASP -> IBM Atlas -> MIT-action embedding mapping; 93 rows, 7 OWASP risks, 30 IBM risks, 52 MIT actions), applied 2026-07-17. Method per its own reference doc: embedding-matched, cosine top-3, UNVALIDATED - reproducible but not adjudicated. Rollup: each risk's mapped actions collected to their MIT sub-categories, mapped 1:1 to mitctrl:*, with three approximations (2.2 Model Alignment -> model-safety-engineering; 4.4 Governance Disclosure -> risk-disclosure; 4.5 Third-Party System Access -> access-management). Covers LLM01-06 and LLM09 only; LLM07/08/10 keep prior curation. Defects carried from the source: action A0973 sits in sub-category 2.3 but is tagged Category 3 (does not affect the rollup, which keys on Sub_category); OWASP ids embed the year inline (llm022025-) unlike the ontology; 19 of the 30 referenced IBM risks are not declared in this project."@en ;
+    dct:source "PAIR-AI risk-to-mitigation CSV, data/mappings/Final_Mapped_Taxonomy_Table_Output.csv (OWASP -> IBM Atlas -> MIT-action embedding mapping; 93 rows, 7 OWASP risks, 30 IBM risks, 52 MIT actions), applied 2026-07-17. Method per its own reference doc: embedding-matched, cosine top-3, UNVALIDATED - reproducible but not adjudicated. Rollup: each risk's mapped actions collected to their MIT sub-categories, mapped 1:1 to mitctrl:*, with three approximations (2.2 Model Alignment -> model-safety-engineering; 4.4 Governance Disclosure -> risk-disclosure; 4.5 Third-Party System Access -> access-management). Covers LLM01-06 and LLM09 only; LLM07/08/10 keep prior curation. Defects carried from the source: action A0973 sits in sub-category 2.3 but is tagged Category 3 (does not affect the rollup, which keys on Sub_category); OWASP ids embed the year inline (llm022025-) unlike the ontology. All 30 referenced IBM risks are declared in this project since 2026-10-09."@en ;
     dct:description "NOT validated. These links were produced without human adjudication of each row; treat as a baseline pending review, not as curated correspondences."@en ;
     sssom:mapping_tool "pair-ai" .
 
@@ -74,6 +76,12 @@ pairm:pair-ai-vocabulary-alignment a sssom:MappingSet ;
     rdfs:label "Alignments declared inline in a vocabulary file"@en ;
     dct:description "Curated by this project because no upstream SSSOM row exists. Each mapping carries a stated rationale in the source file; no measured confidence is claimed."@en ;
     sssom:mapping_tool "pair-ai" .
+
+pairm:eticas-published a sssom:MappingSet ;
+    rdfs:label "Eticas AI Risk Taxonomy cross-walk, as published"@en ;
+    dct:source <https://taxonomy.eticas.ai/risk/scheme> ;
+    dct:description "Adopted from the Eticas AI Risk Taxonomy (data/eticas.ttl) by generate_eticas_layer.py. Predicates and directions are reproduced as published; only targets this knowledge base declares are kept."@en ;
+    sssom:mapping_tool "upstream" .
 
 pairm:pair-ai-control-bridge a sssom:MappingSet ;
     rdfs:label "PAIR-AI control catalogue to MIT mitigation family (indicative)"@en ;
@@ -422,22 +430,878 @@ pairm:mapping-048 a sssom:Mapping ;
     prov:wasDerivedFrom pairm:beam-external-vocabulary-alignment .
 
 pairm:mapping-049 a sssom:Mapping ;
+    sssom:subject_id eticas:ai-interaction-disclosure ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-50> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-050 a sssom:Mapping ;
+    sssom:subject_id eticas:automation-bias ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-5-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-051 a sssom:Mapping ;
+    sssom:subject_id eticas:automation-bias ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:human-ai-configuration ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-052 a sssom:Mapping ;
+    sssom:subject_id eticas:automation-bias ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#AutomationBias> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-053 a sssom:Mapping ;
+    sssom:subject_id eticas:autonomy-agency ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:domain-5 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-054 a sssom:Mapping ;
+    sssom:subject_id eticas:autonomy-agency ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:human-ai-configuration ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-055 a sssom:Mapping ;
+    sssom:subject_id eticas:autonomy-human-agency ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-5-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-056 a sssom:Mapping ;
+    sssom:subject_id eticas:autonomy-human-agency ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-5-2 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-057 a sssom:Mapping ;
+    sssom:subject_id eticas:autonomy-human-agency ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:human-ai-configuration ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-058 a sssom:Mapping ;
+    sssom:subject_id eticas:autonomy-human-agency ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#AutomationBias> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-059 a sssom:Mapping ;
+    sssom:subject_id eticas:autonomy-system-autonomy ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-7-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-060 a sssom:Mapping ;
+    sssom:subject_id eticas:autonomy-system-autonomy ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-7-6 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-061 a sssom:Mapping ;
+    sssom:subject_id eticas:behavioural-manipulation ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-5-1b> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-062 a sssom:Mapping ;
+    sssom:subject_id eticas:behavioural-manipulation ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-5-1a> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-063 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-dynamic-systemic-bias ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#AutomationBias> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-064 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-dynamic-systemic-bias ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-72> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-065 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-dynamic-systemic-bias ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-9> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-066 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-dynamic-systemic-bias ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-6-5 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-067 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-fairness ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:domain-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-068 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-fairness ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:harmful-bias-and-homogenization ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-069 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-fairness ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#AIBias> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-070 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-fairness ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-10-5-annex-iii> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-071 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-outcome-disparities ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#annex-iii> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-072 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-outcome-disparities ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id mit:subdomain-1-3 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-073 a sssom:Mapping ;
+    sssom:subject_id eticas:bias-representational-harm ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-1-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-074 a sssom:Mapping ;
+    sssom:subject_id eticas:data-governance ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-10> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-075 a sssom:Mapping ;
+    sssom:subject_id eticas:data-poisoning ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id atlas:data-poisoning ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-076 a sssom:Mapping ;
+    sssom:subject_id eticas:data-poisoning ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#DataPoisoning> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-077 a sssom:Mapping ;
+    sssom:subject_id eticas:data-poisoning ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#recital-76> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-078 a sssom:Mapping ;
+    sssom:subject_id eticas:deployment-sustainability ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-079 a sssom:Mapping ;
+    sssom:subject_id eticas:deskilling ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-6-3 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-080 a sssom:Mapping ;
+    sssom:subject_id eticas:disparate-impact-protected-groups ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-1-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-081 a sssom:Mapping ;
+    sssom:subject_id eticas:disparate-impact-protected-groups ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-1-3 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-082 a sssom:Mapping ;
+    sssom:subject_id eticas:disparate-impact-protected-groups ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#Discrimination> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-083 a sssom:Mapping ;
+    sssom:subject_id eticas:disparate-impact-protected-groups ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-10> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-084 a sssom:Mapping ;
+    sssom:subject_id eticas:disparate-impact-protected-groups ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-5-1c> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-085 a sssom:Mapping ;
+    sssom:subject_id eticas:emergent-behaviour ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-7-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-086 a sssom:Mapping ;
+    sssom:subject_id eticas:emergent-behaviour ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-7-6 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-087 a sssom:Mapping ;
+    sssom:subject_id eticas:environmental-impact ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id mit:subdomain-6-6 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-088 a sssom:Mapping ;
+    sssom:subject_id eticas:environmental-impact ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-95> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-089 a sssom:Mapping ;
+    sssom:subject_id eticas:evasion-attacks ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#AdversarialAttack> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-090 a sssom:Mapping ;
+    sssom:subject_id eticas:geographic-cultural-language-skew ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#NonRepresentativeSamplingBias> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-091 a sssom:Mapping ;
+    sssom:subject_id eticas:governance ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-6-5 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-092 a sssom:Mapping ;
+    sssom:subject_id eticas:governance ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#Governance> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-093 a sssom:Mapping ;
+    sssom:subject_id eticas:governance ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-17> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-094 a sssom:Mapping ;
+    sssom:subject_id eticas:governance ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-095 a sssom:Mapping ;
+    sssom:subject_id eticas:governance-compliance ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#RiskManagement> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-096 a sssom:Mapping ;
+    sssom:subject_id eticas:governance-compliance ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-17> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-097 a sssom:Mapping ;
+    sssom:subject_id eticas:governance-documentation ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-11> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-098 a sssom:Mapping ;
+    sssom:subject_id eticas:hallucination ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-3-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-099 a sssom:Mapping ;
+    sssom:subject_id eticas:hallucination ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id atlas:hallucination ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-100 a sssom:Mapping ;
+    sssom:subject_id eticas:harmful-content-toxicity ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-1-2 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-101 a sssom:Mapping ;
+    sssom:subject_id eticas:homogenization-output-across-groups ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id nist:harmful-bias-and-homogenization ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-102 a sssom:Mapping ;
+    sssom:subject_id eticas:homogenization-output-across-groups ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-6-3 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-103 a sssom:Mapping ;
+    sssom:subject_id eticas:human-oversight-control ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-14> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-104 a sssom:Mapping ;
+    sssom:subject_id eticas:human-oversight-control ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-5-2 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-105 a sssom:Mapping ;
+    sssom:subject_id eticas:incident-response-gaps ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#IncidentManagement> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-106 a sssom:Mapping ;
+    sssom:subject_id eticas:incident-response-gaps ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-73> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-107 a sssom:Mapping ;
+    sssom:subject_id eticas:institutional-capacity ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-6-2 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-108 a sssom:Mapping ;
+    sssom:subject_id eticas:loss-of-human-control ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-14> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-109 a sssom:Mapping ;
+    sssom:subject_id eticas:loss-of-human-control ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id mit:subdomain-5-2 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-110 a sssom:Mapping ;
+    sssom:subject_id eticas:monitoring-evaluation-gaps ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#MonitoringControl> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-111 a sssom:Mapping ;
+    sssom:subject_id eticas:monitoring-evaluation-gaps ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-72> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-112 a sssom:Mapping ;
+    sssom:subject_id eticas:multi-step-actions ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-6 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-113 a sssom:Mapping ;
+    sssom:subject_id eticas:org-preparedness ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-4> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-114 a sssom:Mapping ;
+    sssom:subject_id eticas:organisational-readiness ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-4> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-115 a sssom:Mapping ;
+    sssom:subject_id eticas:over-reliance ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:human-ai-configuration ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-116 a sssom:Mapping ;
+    sssom:subject_id eticas:over-reliance ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id mit:subdomain-5-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-117 a sssom:Mapping ;
+    sssom:subject_id eticas:performance-equity ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-1-3 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-118 a sssom:Mapping ;
+    sssom:subject_id eticas:poor-documentation ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-11> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-119 a sssom:Mapping ;
+    sssom:subject_id eticas:privacy-collection-use ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#PersonalDataCollection> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-120 a sssom:Mapping ;
+    sssom:subject_id eticas:privacy-collection-use ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-5> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-121 a sssom:Mapping ;
+    sssom:subject_id eticas:privacy-confidentiality ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-2-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-122 a sssom:Mapping ;
+    sssom:subject_id eticas:privacy-confidentiality ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:data-privacy ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-123 a sssom:Mapping ;
+    sssom:subject_id eticas:privacy-confidentiality ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-10-5-recital-47> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-124 a sssom:Mapping ;
+    sssom:subject_id eticas:privacy-data-protection ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:data-privacy ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-125 a sssom:Mapping ;
+    sssom:subject_id eticas:privacy-model-level ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-2-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-126 a sssom:Mapping ;
+    sssom:subject_id eticas:privacy-model-level ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#MembershipInferenceAttack> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-127 a sssom:Mapping ;
+    sssom:subject_id eticas:prompt-injection ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#PromptInjection> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-128 a sssom:Mapping ;
+    sssom:subject_id eticas:re-identification ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-2-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-129 a sssom:Mapping ;
+    sssom:subject_id eticas:re-identification ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#Reidentification> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-130 a sssom:Mapping ;
+    sssom:subject_id eticas:regulatory-non-compliance ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#chapter-iii> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-131 a sssom:Mapping ;
+    sssom:subject_id eticas:reliability ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-7-3 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-132 a sssom:Mapping ;
+    sssom:subject_id eticas:reliability ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:confabulation ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-133 a sssom:Mapping ;
+    sssom:subject_id eticas:reliability ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:information-integrity ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-134 a sssom:Mapping ;
+    sssom:subject_id eticas:reliability ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-15> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-135 a sssom:Mapping ;
+    sssom:subject_id eticas:reliability-output-quality ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:confabulation ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-136 a sssom:Mapping ;
+    sssom:subject_id eticas:right-to-explanation-contestation ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#RightToExplanation> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-137 a sssom:Mapping ;
+    sssom:subject_id eticas:right-to-explanation-contestation ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-86> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-138 a sssom:Mapping ;
+    sssom:subject_id eticas:security-ai-attacks ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-139 a sssom:Mapping ;
+    sssom:subject_id eticas:security-ai-attacks ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#SecurityAttack> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-140 a sssom:Mapping ;
+    sssom:subject_id eticas:security-ai-attacks ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-15-5> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-141 a sssom:Mapping ;
+    sssom:subject_id eticas:security-harmful-misuse ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:domain-4 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-142 a sssom:Mapping ;
+    sssom:subject_id eticas:security-harmful-misuse ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-5-1a> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-143 a sssom:Mapping ;
+    sssom:subject_id eticas:security-misuse ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:domain-4 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-144 a sssom:Mapping ;
+    sssom:subject_id eticas:security-misuse ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-145 a sssom:Mapping ;
+    sssom:subject_id eticas:security-misuse ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:information-security ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-146 a sssom:Mapping ;
+    sssom:subject_id eticas:security-misuse ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-15-5> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-147 a sssom:Mapping ;
+    sssom:subject_id eticas:security-system ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:information-security ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-148 a sssom:Mapping ;
+    sssom:subject_id eticas:sensitive-information-leakage ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:data-privacy ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-149 a sssom:Mapping ;
+    sssom:subject_id eticas:sensitive-information-leakage ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#UnauthorisedDataDisclosure> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-150 a sssom:Mapping ;
+    sssom:subject_id eticas:sensitive-information-leakage ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id mit:subdomain-2-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-151 a sssom:Mapping ;
+    sssom:subject_id eticas:stakeholder-communication ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-13> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-152 a sssom:Mapping ;
+    sssom:subject_id eticas:stereotyping-demeaning-content ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-1-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-153 a sssom:Mapping ;
+    sssom:subject_id eticas:supply-chain-vulnerabilities ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-154 a sssom:Mapping ;
+    sssom:subject_id eticas:supply-chain-vulnerabilities ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-25> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-155 a sssom:Mapping ;
+    sssom:subject_id eticas:synthetic-media-abuse ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-4-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-156 a sssom:Mapping ;
+    sssom:subject_id eticas:synthetic-media-abuse ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:information-integrity ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-157 a sssom:Mapping ;
+    sssom:subject_id eticas:synthetic-media-abuse ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-50> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-158 a sssom:Mapping ;
+    sssom:subject_id eticas:system-explainability ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#ExplainabilityRisk> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-159 a sssom:Mapping ;
+    sssom:subject_id eticas:transparency-communication ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:information-integrity ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-160 a sssom:Mapping ;
+    sssom:subject_id eticas:transparency-communication ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-13> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-161 a sssom:Mapping ;
+    sssom:subject_id eticas:transparency-explainability ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-7-4 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-162 a sssom:Mapping ;
+    sssom:subject_id eticas:transparency-explainability ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-13> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-163 a sssom:Mapping ;
+    sssom:subject_id eticas:transparency-explainability ;
+    sssom:predicate_id skos:exactMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#TransparencyRisk> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-164 a sssom:Mapping ;
+    sssom:subject_id eticas:transparency-explainability ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id nist:information-integrity ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-165 a sssom:Mapping ;
+    sssom:subject_id eticas:transparency-explainability-group ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id mit:subdomain-7-4 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-166 a sssom:Mapping ;
+    sssom:subject_id eticas:transparency-explainability-group ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#ExplainabilityRisk> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-167 a sssom:Mapping ;
+    sssom:subject_id eticas:trust-calibration ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id nist:human-ai-configuration ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-168 a sssom:Mapping ;
+    sssom:subject_id eticas:trust-calibration ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-5-1 ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-169 a sssom:Mapping ;
+    sssom:subject_id eticas:unlawful-data-processing ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/ai#PersonalDataHandling> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-170 a sssom:Mapping ;
+    sssom:subject_id eticas:unlawful-data-processing ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id <https://w3id.org/dpv/legal/eu/aiact#article-10> ;
+    sssom:mapping_justification semapv:UnspecifiedMatching ;
+    prov:wasDerivedFrom pairm:eticas-published .
+
+pairm:mapping-171 a sssom:Mapping ;
     sssom:subject_id asi:asi01-agent-goal-hijack ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id owasp:llm01-prompt-injection ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.85 ;
     sssom:mapping_date "2026-04-28"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-asi2owasp .
 
-pairm:mapping-050 a sssom:Mapping ;
+pairm:mapping-172 a sssom:Mapping ;
     sssom:subject_id asi:asi01-agent-goal-hijack ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm06-excessive-agency ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.80 ;
     sssom:mapping_date "2026-04-28"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-asi2owasp .
 
-pairm:mapping-051 a sssom:Mapping ;
+pairm:mapping-173 a sssom:Mapping ;
     sssom:subject_id asi:asi02-tool-misuse ;
     sssom:predicate_id skos:narrowMatch ;
     sssom:object_id owasp:llm06-excessive-agency ;
@@ -446,7 +1310,61 @@ pairm:mapping-051 a sssom:Mapping ;
     sssom:mapping_date "2026-04-28"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-asi2owasp .
 
-pairm:mapping-052 a sssom:Mapping ;
+pairm:mapping-174 a sssom:Mapping ;
+    sssom:subject_id asi:asi03-identity-and-privilege-abuse ;
+    sssom:predicate_id skos:narrowMatch ;
+    sssom:object_id owasp:llm06-excessive-agency ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.85 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-175 a sssom:Mapping ;
+    sssom:subject_id asi:asi03-identity-and-privilege-abuse ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm01-prompt-injection ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.75 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-176 a sssom:Mapping ;
+    sssom:subject_id asi:asi03-identity-and-privilege-abuse ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm02-sensitive-information-disclosure ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.75 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-177 a sssom:Mapping ;
+    sssom:subject_id asi:asi04-agentic-supply-chain ;
+    sssom:predicate_id skos:narrowMatch ;
+    sssom:object_id owasp:llm03-supply-chain ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.90 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-178 a sssom:Mapping ;
+    sssom:subject_id asi:asi05-unexpected-code-execution ;
+    sssom:predicate_id skos:narrowMatch ;
+    sssom:object_id owasp:llm05-improper-output-handling ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.85 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-179 a sssom:Mapping ;
+    sssom:subject_id asi:asi05-unexpected-code-execution ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm01-prompt-injection ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.80 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-180 a sssom:Mapping ;
     sssom:subject_id asi:asi06-memory-and-context-poisoning ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id owasp:llm04-data-and-model-poisoning ;
@@ -455,7 +1373,7 @@ pairm:mapping-052 a sssom:Mapping ;
     sssom:mapping_date "2026-04-28"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-asi2owasp .
 
-pairm:mapping-053 a sssom:Mapping ;
+pairm:mapping-181 a sssom:Mapping ;
     sssom:subject_id asi:asi06-memory-and-context-poisoning ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm01-prompt-injection ;
@@ -464,7 +1382,7 @@ pairm:mapping-053 a sssom:Mapping ;
     sssom:mapping_date "2026-04-28"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-asi2owasp .
 
-pairm:mapping-054 a sssom:Mapping ;
+pairm:mapping-182 a sssom:Mapping ;
     sssom:subject_id asi:asi06-memory-and-context-poisoning ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm08-vector-and-embedding-weaknesses ;
@@ -473,23 +1391,114 @@ pairm:mapping-054 a sssom:Mapping ;
     sssom:mapping_date "2026-04-28"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-asi2owasp .
 
-pairm:mapping-055 a sssom:Mapping ;
+pairm:mapping-183 a sssom:Mapping ;
     sssom:subject_id asi:asi07-insecure-inter-agent-communication ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm02-sensitive-information-disclosure ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.75 ;
     sssom:mapping_date "2026-04-28"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-asi2owasp .
 
-pairm:mapping-056 a sssom:Mapping ;
+pairm:mapping-184 a sssom:Mapping ;
     sssom:subject_id asi:asi07-insecure-inter-agent-communication ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm06-excessive-agency ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.75 ;
     sssom:mapping_date "2026-04-28"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-asi2owasp .
 
-pairm:mapping-057 a sssom:Mapping ;
+pairm:mapping-185 a sssom:Mapping ;
+    sssom:subject_id asi:asi08-cascading-failures ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm01-prompt-injection ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.75 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-186 a sssom:Mapping ;
+    sssom:subject_id asi:asi08-cascading-failures ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm04-data-and-model-poisoning ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.75 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-187 a sssom:Mapping ;
+    sssom:subject_id asi:asi08-cascading-failures ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm06-excessive-agency ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.80 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-188 a sssom:Mapping ;
+    sssom:subject_id asi:asi09-human-agent-trust-exploitation ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm09-misinformation ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.85 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-189 a sssom:Mapping ;
+    sssom:subject_id asi:asi09-human-agent-trust-exploitation ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm01-prompt-injection ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.75 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-190 a sssom:Mapping ;
+    sssom:subject_id asi:asi09-human-agent-trust-exploitation ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm05-improper-output-handling ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.75 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-191 a sssom:Mapping ;
+    sssom:subject_id asi:asi09-human-agent-trust-exploitation ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm06-excessive-agency ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.80 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-192 a sssom:Mapping ;
+    sssom:subject_id asi:asi10-rogue-agents ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm02-sensitive-information-disclosure ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.75 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-193 a sssom:Mapping ;
+    sssom:subject_id asi:asi10-rogue-agents ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm09-misinformation ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.75 ;
+    sssom:mapping_date "2026-04-28"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-asi2owasp .
+
+pairm:mapping-194 a sssom:Mapping ;
+    sssom:subject_id atlas:attribute-inference-attack ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-195 a sssom:Mapping ;
     sssom:subject_id atlas:confidential-data-in-prompt ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-1 ;
@@ -497,7 +1506,39 @@ pairm:mapping-057 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-058 a sssom:Mapping ;
+pairm:mapping-196 a sssom:Mapping ;
+    sssom:subject_id atlas:confidential-information-in-data ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-1 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-197 a sssom:Mapping ;
+    sssom:subject_id atlas:data-acquisition ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-3 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-198 a sssom:Mapping ;
+    sssom:subject_id atlas:data-bias ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-1-1 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-199 a sssom:Mapping ;
+    sssom:subject_id atlas:data-contamination ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-3 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-200 a sssom:Mapping ;
     sssom:subject_id atlas:data-curation ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
@@ -505,7 +1546,7 @@ pairm:mapping-058 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-059 a sssom:Mapping ;
+pairm:mapping-201 a sssom:Mapping ;
     sssom:subject_id atlas:data-poisoning ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -513,7 +1554,15 @@ pairm:mapping-059 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-060 a sssom:Mapping ;
+pairm:mapping-202 a sssom:Mapping ;
+    sssom:subject_id atlas:data-provenance ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-6-5 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-203 a sssom:Mapping ;
     sssom:subject_id atlas:data-usage-restrictions ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
@@ -521,7 +1570,7 @@ pairm:mapping-060 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-061 a sssom:Mapping ;
+pairm:mapping-204 a sssom:Mapping ;
     sssom:subject_id atlas:decision-bias ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-1-1 ;
@@ -529,7 +1578,7 @@ pairm:mapping-061 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-062 a sssom:Mapping ;
+pairm:mapping-205 a sssom:Mapping ;
     sssom:subject_id atlas:evasion-attack ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -537,7 +1586,7 @@ pairm:mapping-062 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-063 a sssom:Mapping ;
+pairm:mapping-206 a sssom:Mapping ;
     sssom:subject_id atlas:exposing-personal-information ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-1 ;
@@ -545,7 +1594,15 @@ pairm:mapping-063 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-064 a sssom:Mapping ;
+pairm:mapping-207 a sssom:Mapping ;
+    sssom:subject_id atlas:extraction-attack ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-208 a sssom:Mapping ;
     sssom:subject_id atlas:hallucination ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-3-1 ;
@@ -553,7 +1610,15 @@ pairm:mapping-064 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-065 a sssom:Mapping ;
+pairm:mapping-209 a sssom:Mapping ;
+    sssom:subject_id atlas:harmful-code-generation ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-210 a sssom:Mapping ;
     sssom:subject_id atlas:impact-on-the-environment ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-6-6 ;
@@ -561,7 +1626,23 @@ pairm:mapping-065 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-066 a sssom:Mapping ;
+pairm:mapping-211 a sssom:Mapping ;
+    sssom:subject_id atlas:improper-retraining ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-3 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-212 a sssom:Mapping ;
+    sssom:subject_id atlas:inaccessible-training-data ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-4 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-213 a sssom:Mapping ;
     sssom:subject_id atlas:incomplete-advice ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
@@ -569,7 +1650,47 @@ pairm:mapping-066 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-067 a sssom:Mapping ;
+pairm:mapping-214 a sssom:Mapping ;
+    sssom:subject_id atlas:ip-information-in-prompt ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-1 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-215 a sssom:Mapping ;
+    sssom:subject_id atlas:jailbreaking ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-216 a sssom:Mapping ;
+    sssom:subject_id atlas:lack-of-data-transparency ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-6-5 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-217 a sssom:Mapping ;
+    sssom:subject_id atlas:membership-inference-attack ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-218 a sssom:Mapping ;
+    sssom:subject_id atlas:over-or-under-reliance ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-5-1 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-219 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-data ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-1 ;
@@ -577,7 +1698,7 @@ pairm:mapping-067 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-068 a sssom:Mapping ;
+pairm:mapping-220 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-prompt ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-1 ;
@@ -585,7 +1706,7 @@ pairm:mapping-068 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-069 a sssom:Mapping ;
+pairm:mapping-221 a sssom:Mapping ;
     sssom:subject_id atlas:poor-model-accuracy ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
@@ -593,7 +1714,7 @@ pairm:mapping-069 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-070 a sssom:Mapping ;
+pairm:mapping-222 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-injection ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -601,7 +1722,7 @@ pairm:mapping-070 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-071 a sssom:Mapping ;
+pairm:mapping-223 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-leaking ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -609,7 +1730,15 @@ pairm:mapping-071 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-072 a sssom:Mapping ;
+pairm:mapping-224 a sssom:Mapping ;
+    sssom:subject_id atlas:prompt-priming ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-225 a sssom:Mapping ;
     sssom:subject_id atlas:reidentification ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-1 ;
@@ -617,7 +1746,57 @@ pairm:mapping-072 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2mit .
 
-pairm:mapping-073 a sssom:Mapping ;
+pairm:mapping-226 a sssom:Mapping ;
+    sssom:subject_id atlas:revealing-confidential-information ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-1 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-227 a sssom:Mapping ;
+    sssom:subject_id atlas:spreading-disinformation ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-4-1 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-228 a sssom:Mapping ;
+    sssom:subject_id atlas:unrepresentative-data ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-3 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-229 a sssom:Mapping ;
+    sssom:subject_id atlas:untraceable-attribution ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-4 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2mit .
+
+pairm:mapping-230 a sssom:Mapping ;
+    sssom:subject_id atlas:attribute-inference-attack ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:data-privacy ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-231 a sssom:Mapping ;
+    sssom:subject_id atlas:attribute-inference-attack ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:information-security ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-232 a sssom:Mapping ;
     sssom:subject_id atlas:confidential-data-in-prompt ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:intellectual-property ;
@@ -626,7 +1805,52 @@ pairm:mapping-073 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-074 a sssom:Mapping ;
+pairm:mapping-233 a sssom:Mapping ;
+    sssom:subject_id atlas:confidential-information-in-data ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:intellectual-property ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-234 a sssom:Mapping ;
+    sssom:subject_id atlas:data-acquisition ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-235 a sssom:Mapping ;
+    sssom:subject_id atlas:data-bias ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:harmful-bias-and-homogenization ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-236 a sssom:Mapping ;
+    sssom:subject_id atlas:data-contamination ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:information-security ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-237 a sssom:Mapping ;
+    sssom:subject_id atlas:data-contamination ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-238 a sssom:Mapping ;
     sssom:subject_id atlas:data-curation ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:value-chain-and-component-integration ;
@@ -635,7 +1859,7 @@ pairm:mapping-074 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-075 a sssom:Mapping ;
+pairm:mapping-239 a sssom:Mapping ;
     sssom:subject_id atlas:data-poisoning ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:information-security ;
@@ -644,7 +1868,43 @@ pairm:mapping-075 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-076 a sssom:Mapping ;
+pairm:mapping-240 a sssom:Mapping ;
+    sssom:subject_id atlas:data-provenance ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-241 a sssom:Mapping ;
+    sssom:subject_id atlas:data-usage-rights ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:data-privacy ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-242 a sssom:Mapping ;
+    sssom:subject_id atlas:data-usage-rights ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:intellectual-property ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-243 a sssom:Mapping ;
+    sssom:subject_id atlas:data-usage-rights ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-244 a sssom:Mapping ;
     sssom:subject_id atlas:decision-bias ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:harmful-bias-and-homogenization ;
@@ -653,7 +1913,7 @@ pairm:mapping-076 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-077 a sssom:Mapping ;
+pairm:mapping-245 a sssom:Mapping ;
     sssom:subject_id atlas:evasion-attack ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:information-security ;
@@ -662,7 +1922,7 @@ pairm:mapping-077 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-078 a sssom:Mapping ;
+pairm:mapping-246 a sssom:Mapping ;
     sssom:subject_id atlas:exposing-personal-information ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:data-privacy ;
@@ -671,7 +1931,16 @@ pairm:mapping-078 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-079 a sssom:Mapping ;
+pairm:mapping-247 a sssom:Mapping ;
+    sssom:subject_id atlas:extraction-attack ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:information-security ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-248 a sssom:Mapping ;
     sssom:subject_id atlas:hallucination ;
     sssom:predicate_id skos:exactMatch ;
     sssom:object_id nist:confabulation ;
@@ -680,7 +1949,25 @@ pairm:mapping-079 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-080 a sssom:Mapping ;
+pairm:mapping-249 a sssom:Mapping ;
+    sssom:subject_id atlas:harmful-code-generation ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:dangerous-violent-or-hateful-content ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-250 a sssom:Mapping ;
+    sssom:subject_id atlas:harmful-code-generation ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:information-security ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-251 a sssom:Mapping ;
     sssom:subject_id atlas:impact-on-the-environment ;
     sssom:predicate_id skos:exactMatch ;
     sssom:object_id nist:environmental-impacts ;
@@ -689,7 +1976,25 @@ pairm:mapping-080 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-081 a sssom:Mapping ;
+pairm:mapping-252 a sssom:Mapping ;
+    sssom:subject_id atlas:improper-retraining ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-253 a sssom:Mapping ;
+    sssom:subject_id atlas:inaccessible-training-data ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-254 a sssom:Mapping ;
     sssom:subject_id atlas:incomplete-advice ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:information-integrity ;
@@ -698,7 +2003,7 @@ pairm:mapping-081 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-082 a sssom:Mapping ;
+pairm:mapping-255 a sssom:Mapping ;
     sssom:subject_id atlas:incomplete-advice ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:value-chain-and-component-integration ;
@@ -707,7 +2012,34 @@ pairm:mapping-082 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-083 a sssom:Mapping ;
+pairm:mapping-256 a sssom:Mapping ;
+    sssom:subject_id atlas:ip-information-in-prompt ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:data-privacy ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-257 a sssom:Mapping ;
+    sssom:subject_id atlas:jailbreaking ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:information-integrity ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-258 a sssom:Mapping ;
+    sssom:subject_id atlas:lack-of-data-transparency ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-259 a sssom:Mapping ;
     sssom:subject_id atlas:legal-accountability ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:data-privacy ;
@@ -716,7 +2048,7 @@ pairm:mapping-083 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-084 a sssom:Mapping ;
+pairm:mapping-260 a sssom:Mapping ;
     sssom:subject_id atlas:legal-accountability ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:intellectual-property ;
@@ -725,7 +2057,7 @@ pairm:mapping-084 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-085 a sssom:Mapping ;
+pairm:mapping-261 a sssom:Mapping ;
     sssom:subject_id atlas:legal-accountability ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:value-chain-and-component-integration ;
@@ -734,7 +2066,52 @@ pairm:mapping-085 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-086 a sssom:Mapping ;
+pairm:mapping-262 a sssom:Mapping ;
+    sssom:subject_id atlas:membership-inference-attack ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:data-privacy ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-263 a sssom:Mapping ;
+    sssom:subject_id atlas:model-usage-rights ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:data-privacy ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-264 a sssom:Mapping ;
+    sssom:subject_id atlas:model-usage-rights ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:intellectual-property ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-265 a sssom:Mapping ;
+    sssom:subject_id atlas:model-usage-rights ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-266 a sssom:Mapping ;
+    sssom:subject_id atlas:over-or-under-reliance ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:human-ai-configuration ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-267 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-data ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:data-privacy ;
@@ -743,7 +2120,7 @@ pairm:mapping-086 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-087 a sssom:Mapping ;
+pairm:mapping-268 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-prompt ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:data-privacy ;
@@ -752,7 +2129,7 @@ pairm:mapping-087 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-088 a sssom:Mapping ;
+pairm:mapping-269 a sssom:Mapping ;
     sssom:subject_id atlas:poor-model-accuracy ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:human-ai-configuration ;
@@ -761,7 +2138,7 @@ pairm:mapping-088 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-089 a sssom:Mapping ;
+pairm:mapping-270 a sssom:Mapping ;
     sssom:subject_id atlas:poor-model-accuracy ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:information-integrity ;
@@ -770,7 +2147,7 @@ pairm:mapping-089 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-090 a sssom:Mapping ;
+pairm:mapping-271 a sssom:Mapping ;
     sssom:subject_id atlas:poor-model-accuracy ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:value-chain-and-component-integration ;
@@ -779,7 +2156,7 @@ pairm:mapping-090 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-091 a sssom:Mapping ;
+pairm:mapping-272 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-injection ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:information-security ;
@@ -788,7 +2165,7 @@ pairm:mapping-091 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-092 a sssom:Mapping ;
+pairm:mapping-273 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-leaking ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:information-security ;
@@ -797,7 +2174,16 @@ pairm:mapping-092 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-093 a sssom:Mapping ;
+pairm:mapping-274 a sssom:Mapping ;
+    sssom:subject_id atlas:prompt-priming ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:information-security ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-275 a sssom:Mapping ;
     sssom:subject_id atlas:reidentification ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id nist:data-privacy ;
@@ -806,7 +2192,60 @@ pairm:mapping-093 a sssom:Mapping ;
     sssom:mapping_date "2025-01-29"^^xsd:date ;
     prov:wasDerivedFrom pairm:nexus-ibm2nist .
 
-pairm:mapping-094 a sssom:Mapping ;
+pairm:mapping-276 a sssom:Mapping ;
+    sssom:subject_id atlas:revealing-confidential-information ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:intellectual-property ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-277 a sssom:Mapping ;
+    sssom:subject_id atlas:spreading-disinformation ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:information-integrity ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-278 a sssom:Mapping ;
+    sssom:subject_id atlas:unrepresentative-data ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:harmful-bias-and-homogenization ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-279 a sssom:Mapping ;
+    sssom:subject_id atlas:unrepresentative-data ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id nist:value-chain-and-component-integration ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-280 a sssom:Mapping ;
+    sssom:subject_id atlas:untraceable-attribution ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id nist:information-integrity ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    sssom:mapping_date "2025-01-29"^^xsd:date ;
+    prov:wasDerivedFrom pairm:nexus-ibm2nist .
+
+pairm:mapping-281 a sssom:Mapping ;
+    sssom:subject_id atlas:attribute-inference-attack ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm02-sensitive-information-disclosure ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-282 a sssom:Mapping ;
     sssom:subject_id atlas:confidential-data-in-prompt ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm02-sensitive-information-disclosure ;
@@ -814,7 +2253,31 @@ pairm:mapping-094 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2owasp .
 
-pairm:mapping-095 a sssom:Mapping ;
+pairm:mapping-283 a sssom:Mapping ;
+    sssom:subject_id atlas:confidential-information-in-data ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm02-sensitive-information-disclosure ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-284 a sssom:Mapping ;
+    sssom:subject_id atlas:data-acquisition ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm03-supply-chain ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-285 a sssom:Mapping ;
+    sssom:subject_id atlas:data-contamination ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm03-supply-chain ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-286 a sssom:Mapping ;
     sssom:subject_id atlas:data-curation ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id owasp:llm03-supply-chain ;
@@ -822,7 +2285,7 @@ pairm:mapping-095 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2owasp .
 
-pairm:mapping-096 a sssom:Mapping ;
+pairm:mapping-287 a sssom:Mapping ;
     sssom:subject_id atlas:data-poisoning ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id owasp:llm04-data-and-model-poisoning ;
@@ -830,7 +2293,23 @@ pairm:mapping-096 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2owasp .
 
-pairm:mapping-097 a sssom:Mapping ;
+pairm:mapping-288 a sssom:Mapping ;
+    sssom:subject_id atlas:data-provenance ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm03-supply-chain ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-289 a sssom:Mapping ;
+    sssom:subject_id atlas:data-usage-rights ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm03-supply-chain ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-290 a sssom:Mapping ;
     sssom:subject_id atlas:exposing-personal-information ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id owasp:llm02-sensitive-information-disclosure ;
@@ -838,7 +2317,7 @@ pairm:mapping-097 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2owasp .
 
-pairm:mapping-098 a sssom:Mapping ;
+pairm:mapping-291 a sssom:Mapping ;
     sssom:subject_id atlas:hallucination ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm09-misinformation ;
@@ -846,7 +2325,31 @@ pairm:mapping-098 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2owasp .
 
-pairm:mapping-099 a sssom:Mapping ;
+pairm:mapping-292 a sssom:Mapping ;
+    sssom:subject_id atlas:harmful-code-generation ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm09-misinformation ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-293 a sssom:Mapping ;
+    sssom:subject_id atlas:improper-retraining ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm03-supply-chain ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-294 a sssom:Mapping ;
+    sssom:subject_id atlas:inaccessible-training-data ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm03-supply-chain ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-295 a sssom:Mapping ;
     sssom:subject_id atlas:incomplete-advice ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id owasp:llm09-misinformation ;
@@ -854,7 +2357,63 @@ pairm:mapping-099 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2owasp .
 
-pairm:mapping-100 a sssom:Mapping ;
+pairm:mapping-296 a sssom:Mapping ;
+    sssom:subject_id atlas:ip-information-in-prompt ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm02-sensitive-information-disclosure ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-297 a sssom:Mapping ;
+    sssom:subject_id atlas:jailbreaking ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm01-prompt-injection ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-298 a sssom:Mapping ;
+    sssom:subject_id atlas:lack-of-data-transparency ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm03-supply-chain ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-299 a sssom:Mapping ;
+    sssom:subject_id atlas:membership-inference-attack ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm02-sensitive-information-disclosure ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-300 a sssom:Mapping ;
+    sssom:subject_id atlas:model-usage-rights ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm03-supply-chain ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-301 a sssom:Mapping ;
+    sssom:subject_id atlas:over-or-under-reliance ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm05-improper-output-handling ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-302 a sssom:Mapping ;
+    sssom:subject_id atlas:over-or-under-reliance ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm06-excessive-agency ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-303 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-data ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm02-sensitive-information-disclosure ;
@@ -862,7 +2421,7 @@ pairm:mapping-100 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2owasp .
 
-pairm:mapping-101 a sssom:Mapping ;
+pairm:mapping-304 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-prompt ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm02-sensitive-information-disclosure ;
@@ -870,7 +2429,7 @@ pairm:mapping-101 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2owasp .
 
-pairm:mapping-102 a sssom:Mapping ;
+pairm:mapping-305 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-injection ;
     sssom:predicate_id skos:exactMatch ;
     sssom:object_id owasp:llm01-prompt-injection ;
@@ -878,7 +2437,7 @@ pairm:mapping-102 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2owasp .
 
-pairm:mapping-103 a sssom:Mapping ;
+pairm:mapping-306 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-leaking ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id owasp:llm02-sensitive-information-disclosure ;
@@ -886,322 +2445,914 @@ pairm:mapping-103 a sssom:Mapping ;
     sssom:confidence 0.95 ;
     prov:wasDerivedFrom pairm:nexus-ibm2owasp .
 
-pairm:mapping-104 a sssom:Mapping ;
+pairm:mapping-307 a sssom:Mapping ;
+    sssom:subject_id atlas:prompt-priming ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm01-prompt-injection ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-308 a sssom:Mapping ;
+    sssom:subject_id atlas:reidentification ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id owasp:llm02-sensitive-information-disclosure ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-309 a sssom:Mapping ;
+    sssom:subject_id atlas:revealing-confidential-information ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm02-sensitive-information-disclosure ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-310 a sssom:Mapping ;
+    sssom:subject_id atlas:spreading-disinformation ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm09-misinformation ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-311 a sssom:Mapping ;
+    sssom:subject_id atlas:untraceable-attribution ;
+    sssom:predicate_id skos:broadMatch ;
+    sssom:object_id owasp:llm03-supply-chain ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    sssom:confidence 0.95 ;
+    prov:wasDerivedFrom pairm:nexus-ibm2owasp .
+
+pairm:mapping-312 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_AdversarialRobustness> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:input-output-filtering ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-313 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_AdversarialRobustness> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:model-safety-engineering ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-314 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_AdversarialRobustness> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:red-teaming ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-315 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_AgentActionAuditLog> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:post-deployment-behavior-monitoring ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-316 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_AgentActionAuditLog> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:transparency-accountability-controls ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-317 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_AgentComponentVerification> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:model-infrastructure-security ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-318 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_AgentComponentVerification> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:system-architecture-documentation ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-319 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_CascadeContainment> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:human-oversight-protocol ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-320 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_CascadeContainment> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:incident-response-plan ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-321 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_CascadeContainment> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:post-deployment-behavior-monitoring ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-322 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_DataMinimizationAndRedaction> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:data-minimization ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-105 a sssom:Mapping ;
+pairm:mapping-323 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_DataMinimizationAndRedaction> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:privacy-control-for-user-data ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-106 a sssom:Mapping ;
+pairm:mapping-324 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_DataMinimizationAndRedaction> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:redaction ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-107 a sssom:Mapping ;
+pairm:mapping-325 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_DistributionShiftMonitoring> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:post-deployment-behavior-monitoring ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-326 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_DistributionShiftMonitoring> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:post-deployment-monitoring ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-327 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_DistributionShiftMonitoring> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:testing-auditing ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-328 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ExternalProviderDataAgreement> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:data-governance ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-329 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ExternalProviderDataAgreement> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:privacy-control-for-user-data ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-330 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_FairnessEvaluation> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:data-governance ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-331 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_FairnessEvaluation> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:societal-impact-assessment ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-332 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_FairnessEvaluation> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:testing-auditing ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-333 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_GroundingAndVerification> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:human-oversight-protocol ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-108 a sssom:Mapping ;
+pairm:mapping-334 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_GroundingAndVerification> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:retrieval-quality-evaluation ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-109 a sssom:Mapping ;
+pairm:mapping-335 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_GroundingAndVerification> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-110 a sssom:Mapping ;
+pairm:mapping-336 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_Guardrails> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:content-safety-controls ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-111 a sssom:Mapping ;
+pairm:mapping-337 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_Guardrails> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-112 a sssom:Mapping ;
+pairm:mapping-338 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_Guardrails> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:model-safety-engineering ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-113 a sssom:Mapping ;
+pairm:mapping-339 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_HeldOutEvaluationData> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:data-governance ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-340 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_HeldOutEvaluationData> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:testing-auditing ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-341 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_IndependentEvidenceForApproval> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:human-oversight-protocol ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-342 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_IndependentEvidenceForApproval> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:transparency-accountability-controls ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-343 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_InputDomainValidation> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:input-output-filtering ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-344 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_InputDomainValidation> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:testing-auditing ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-345 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_InputValidationAndPromptIsolation> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-114 a sssom:Mapping ;
+pairm:mapping-346 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_InputValidationAndPromptIsolation> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:prompt-context-limiting ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-115 a sssom:Mapping ;
+pairm:mapping-347 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_LoggingMonitoringAndEvals> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:post-deployment-behavior-monitoring ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-116 a sssom:Mapping ;
+pairm:mapping-348 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_LoggingMonitoringAndEvals> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-117 a sssom:Mapping ;
+pairm:mapping-349 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_LoggingMonitoringAndEvals> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-118 a sssom:Mapping ;
+pairm:mapping-350 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ModelAccessHardening> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:access-management ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-351 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ModelAccessHardening> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:post-deployment-behavior-monitoring ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-352 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ModelAndDependencyProvenance> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:model-infrastructure-security ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-119 a sssom:Mapping ;
+pairm:mapping-353 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ModelAndDependencyProvenance> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:risk-register ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-120 a sssom:Mapping ;
+pairm:mapping-354 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ModelAndDependencyProvenance> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:system-architecture-documentation ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-121 a sssom:Mapping ;
+pairm:mapping-355 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_OutputValidationAndSanitization> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:content-safety-controls ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-122 a sssom:Mapping ;
+pairm:mapping-356 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_OutputValidationAndSanitization> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-123 a sssom:Mapping ;
+pairm:mapping-357 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_PreReleaseModelEvaluation> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:pre-deployment-risk-assessment ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-358 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_PreReleaseModelEvaluation> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:staged-deployment ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-359 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_PreReleaseModelEvaluation> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:testing-auditing ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-360 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_RateLimitBudgetAndLoopControl> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:access-management ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-124 a sssom:Mapping ;
+pairm:mapping-361 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_RateLimitBudgetAndLoopControl> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:post-deployment-behavior-monitoring ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-125 a sssom:Mapping ;
+pairm:mapping-362 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_RateLimitBudgetAndLoopControl> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:prompt-context-limiting ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-126 a sssom:Mapping ;
+pairm:mapping-363 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_RetentionLimits> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:data-governance ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-364 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_RetentionLimits> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:data-minimization ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-365 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_RetrainingDataValidation> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:data-curation-process ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-366 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_RetrainingDataValidation> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:data-governance ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-367 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_RetrievalAccessControl> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:access-management ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-127 a sssom:Mapping ;
+pairm:mapping-368 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_RetrievalAccessControl> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:retrieval-quality-evaluation ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-128 a sssom:Mapping ;
+pairm:mapping-369 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_RetrievalAccessControl> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:retrieval-source-filtering ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-129 a sssom:Mapping ;
+pairm:mapping-370 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_SandboxedCodeExecution> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:model-infrastructure-security ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-371 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_SandboxedCodeExecution> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:technical-security-controls ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-372 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ScopedAgentCredentials> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:access-management ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-373 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_SystemPromptSecrecy> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:prompt-context-limiting ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-130 a sssom:Mapping ;
+pairm:mapping-374 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_SystemPromptSecrecy> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-131 a sssom:Mapping ;
+pairm:mapping-375 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_SystemPromptSecrecy> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:system-architecture-documentation ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-132 a sssom:Mapping ;
+pairm:mapping-376 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ToolPermissionBoundaries> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:access-management ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-133 a sssom:Mapping ;
+pairm:mapping-377 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ToolPermissionBoundaries> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:human-oversight-protocol ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-134 a sssom:Mapping ;
+pairm:mapping-378 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_ToolPermissionBoundaries> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:post-deployment-behavior-monitoring ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-135 a sssom:Mapping ;
+pairm:mapping-379 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_TrainingDataPrivacy> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:data-minimization ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-380 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_TrainingDataPrivacy> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:privacy-control-for-user-data ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-381 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_TrustedTrainingAndIndexingData> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:data-curation-process ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-136 a sssom:Mapping ;
+pairm:mapping-382 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_TrustedTrainingAndIndexingData> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-137 a sssom:Mapping ;
+pairm:mapping-383 a sssom:Mapping ;
     sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_TrustedTrainingAndIndexingData> ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-control-bridge .
 
-pairm:mapping-138 a sssom:Mapping ;
+pairm:mapping-384 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_UncertaintyReportingAndReview> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:human-oversight-protocol ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-385 a sssom:Mapping ;
+    sssom:subject_id <http://w3id.org/airiskkg/patterns#Control_UncertaintyReportingAndReview> ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mitctrl:safety-decision-frameworks ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-control-bridge .
+
+pairm:mapping-386 a sssom:Mapping ;
     sssom:subject_id atlas:confidential-data-in-prompt ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm07-system-prompt-leakage ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-139 a sssom:Mapping ;
+pairm:mapping-387 a sssom:Mapping ;
+    sssom:subject_id atlas:improper-retraining ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:feedback-loops ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-388 a sssom:Mapping ;
+    sssom:subject_id atlas:membership-inference-attack ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:sensitive-information-leakage ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-389 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-injection ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm08-vector-and-embedding-weaknesses ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-140 a sssom:Mapping ;
+pairm:mapping-390 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-leaking ;
     sssom:predicate_id skos:closeMatch ;
     sssom:object_id owasp:llm07-system-prompt-leakage ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-141 a sssom:Mapping ;
+pairm:mapping-391 a sssom:Mapping ;
     sssom:subject_id atlas:redundant-actions-agentic ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id owasp:llm06-excessive-agency ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-142 a sssom:Mapping ;
+pairm:mapping-392 a sssom:Mapping ;
+    sssom:subject_id mlr:adversarial-attack ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id atlas:evasion-attack ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-393 a sssom:Mapping ;
+    sssom:subject_id mlr:adversarial-attack ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-394 a sssom:Mapping ;
+    sssom:subject_id mlr:adversarial-attack ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:evasion-attacks ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-395 a sssom:Mapping ;
+    sssom:subject_id mlr:dataset-shift ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id atlas:poor-model-accuracy ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-396 a sssom:Mapping ;
+    sssom:subject_id mlr:dataset-shift ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id atlas:unrepresentative-data ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-397 a sssom:Mapping ;
+    sssom:subject_id mlr:dataset-shift ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-3 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-398 a sssom:Mapping ;
+    sssom:subject_id mlr:dataset-shift ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:output-drift ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-399 a sssom:Mapping ;
+    sssom:subject_id mlr:model-bias ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id atlas:data-bias ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-400 a sssom:Mapping ;
+    sssom:subject_id mlr:model-bias ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id atlas:decision-bias ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-401 a sssom:Mapping ;
+    sssom:subject_id mlr:model-bias ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-1-1 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-402 a sssom:Mapping ;
+    sssom:subject_id mlr:model-bias ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-1-3 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-403 a sssom:Mapping ;
+    sssom:subject_id mlr:model-bias ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:disparate-impact-protected-groups ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-404 a sssom:Mapping ;
+    sssom:subject_id mlr:model-bias ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:performance-equity ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-405 a sssom:Mapping ;
+    sssom:subject_id mlr:model-misspecification ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id atlas:poor-model-accuracy ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-406 a sssom:Mapping ;
+    sssom:subject_id mlr:model-misspecification ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-3 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-407 a sssom:Mapping ;
+    sssom:subject_id mlr:model-misspecification ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:fitness-for-purpose ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-408 a sssom:Mapping ;
+    sssom:subject_id mlr:model-uncertainty ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id atlas:over-or-under-reliance ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-409 a sssom:Mapping ;
+    sssom:subject_id mlr:model-uncertainty ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-5-1 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-410 a sssom:Mapping ;
+    sssom:subject_id mlr:model-uncertainty ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-3 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-411 a sssom:Mapping ;
+    sssom:subject_id mlr:model-uncertainty ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:automation-bias ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-412 a sssom:Mapping ;
+    sssom:subject_id mlr:out-of-domain-data ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id eticas:out-of-distribution-robustness ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-413 a sssom:Mapping ;
+    sssom:subject_id mlr:out-of-domain-data ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id atlas:poor-model-accuracy ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-414 a sssom:Mapping ;
+    sssom:subject_id mlr:out-of-domain-data ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-3 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-415 a sssom:Mapping ;
+    sssom:subject_id asi:asi02-tool-misuse ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id eticas:unsafe-tool-calls ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-416 a sssom:Mapping ;
     sssom:subject_id asi:asi02-tool-misuse ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-143 a sssom:Mapping ;
+pairm:mapping-417 a sssom:Mapping ;
     sssom:subject_id asi:asi02-tool-misuse ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-5-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-144 a sssom:Mapping ;
+pairm:mapping-418 a sssom:Mapping ;
+    sssom:subject_id asi:asi03-identity-and-privilege-abuse ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-419 a sssom:Mapping ;
+    sssom:subject_id asi:asi04-agentic-supply-chain ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-420 a sssom:Mapping ;
+    sssom:subject_id asi:asi05-unexpected-code-execution ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-2 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-421 a sssom:Mapping ;
     sssom:subject_id asi:asi06-memory-and-context-poisoning ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-145 a sssom:Mapping ;
+pairm:mapping-422 a sssom:Mapping ;
     sssom:subject_id asi:asi06-memory-and-context-poisoning ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-3-1 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-146 a sssom:Mapping ;
+pairm:mapping-423 a sssom:Mapping ;
+    sssom:subject_id asi:asi07-insecure-inter-agent-communication ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id eticas:trust-exploitation-between-agents ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-424 a sssom:Mapping ;
+    sssom:subject_id asi:asi08-cascading-failures ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-6 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-425 a sssom:Mapping ;
+    sssom:subject_id asi:asi08-cascading-failures ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:multi-step-actions ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-426 a sssom:Mapping ;
+    sssom:subject_id asi:asi09-human-agent-trust-exploitation ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id atlas:over-or-under-reliance ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-427 a sssom:Mapping ;
+    sssom:subject_id asi:asi09-human-agent-trust-exploitation ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-5-1 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-428 a sssom:Mapping ;
+    sssom:subject_id asi:asi09-human-agent-trust-exploitation ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:automation-bias ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-429 a sssom:Mapping ;
+    sssom:subject_id asi:asi10-rogue-agents ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:emergent-behaviour ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-430 a sssom:Mapping ;
     sssom:subject_id owasp:llm01-prompt-injection ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-2 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     pairm:chainCorroborated true ;
+    pairm:corroboratedVia atlas:jailbreaking ;
     pairm:corroboratedVia atlas:prompt-injection ;
+    pairm:corroboratedVia atlas:prompt-priming ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-147 a sssom:Mapping ;
+pairm:mapping-431 a sssom:Mapping ;
+    sssom:subject_id owasp:llm01-prompt-injection ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id eticas:prompt-injection ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-432 a sssom:Mapping ;
     sssom:subject_id owasp:llm02-sensitive-information-disclosure ;
     sssom:predicate_id skos:closeMatch ;
     sssom:object_id mit:subdomain-2-1 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     pairm:chainCorroborated true ;
     pairm:corroboratedVia atlas:confidential-data-in-prompt ;
+    pairm:corroboratedVia atlas:confidential-information-in-data ;
     pairm:corroboratedVia atlas:exposing-personal-information ;
+    pairm:corroboratedVia atlas:ip-information-in-prompt ;
     pairm:corroboratedVia atlas:personal-information-in-data ;
     pairm:corroboratedVia atlas:personal-information-in-prompt ;
+    pairm:corroboratedVia atlas:reidentification ;
+    pairm:corroboratedVia atlas:revealing-confidential-information ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-148 a sssom:Mapping ;
+pairm:mapping-433 a sssom:Mapping ;
+    sssom:subject_id owasp:llm02-sensitive-information-disclosure ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id eticas:sensitive-information-leakage ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-434 a sssom:Mapping ;
     sssom:subject_id owasp:llm03-supply-chain ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -1209,24 +3360,36 @@ pairm:mapping-148 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-149 a sssom:Mapping ;
+pairm:mapping-435 a sssom:Mapping ;
+    sssom:subject_id owasp:llm03-supply-chain ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id eticas:supply-chain-vulnerabilities ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-436 a sssom:Mapping ;
     sssom:subject_id owasp:llm03-supply-chain ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     pairm:chainCorroborated true ;
+    pairm:corroboratedVia atlas:data-acquisition ;
+    pairm:corroboratedVia atlas:data-contamination ;
     pairm:corroboratedVia atlas:data-curation ;
+    pairm:corroboratedVia atlas:improper-retraining ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-150 a sssom:Mapping ;
+pairm:mapping-437 a sssom:Mapping ;
     sssom:subject_id owasp:llm03-supply-chain ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-4 ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
-    pairm:chainCorroborated false ;
+    pairm:chainCorroborated true ;
+    pairm:corroboratedVia atlas:inaccessible-training-data ;
+    pairm:corroboratedVia atlas:untraceable-attribution ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-151 a sssom:Mapping ;
+pairm:mapping-438 a sssom:Mapping ;
     sssom:subject_id owasp:llm04-data-and-model-poisoning ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -1235,7 +3398,14 @@ pairm:mapping-151 a sssom:Mapping ;
     pairm:corroboratedVia atlas:data-poisoning ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-152 a sssom:Mapping ;
+pairm:mapping-439 a sssom:Mapping ;
+    sssom:subject_id owasp:llm04-data-and-model-poisoning ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id eticas:data-poisoning ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-440 a sssom:Mapping ;
     sssom:subject_id owasp:llm04-data-and-model-poisoning ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-1-3 ;
@@ -1243,7 +3413,7 @@ pairm:mapping-152 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-153 a sssom:Mapping ;
+pairm:mapping-441 a sssom:Mapping ;
     sssom:subject_id owasp:llm04-data-and-model-poisoning ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
@@ -1251,7 +3421,7 @@ pairm:mapping-153 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-154 a sssom:Mapping ;
+pairm:mapping-442 a sssom:Mapping ;
     sssom:subject_id owasp:llm05-improper-output-handling ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-1-2 ;
@@ -1259,7 +3429,7 @@ pairm:mapping-154 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-155 a sssom:Mapping ;
+pairm:mapping-443 a sssom:Mapping ;
     sssom:subject_id owasp:llm05-improper-output-handling ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -1267,7 +3437,14 @@ pairm:mapping-155 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-156 a sssom:Mapping ;
+pairm:mapping-444 a sssom:Mapping ;
+    sssom:subject_id owasp:llm06-excessive-agency ;
+    sssom:predicate_id skos:closeMatch ;
+    sssom:object_id eticas:excessive-agency ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-445 a sssom:Mapping ;
     sssom:subject_id owasp:llm06-excessive-agency ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -1275,7 +3452,7 @@ pairm:mapping-156 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-157 a sssom:Mapping ;
+pairm:mapping-446 a sssom:Mapping ;
     sssom:subject_id owasp:llm06-excessive-agency ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-5-2 ;
@@ -1283,7 +3460,7 @@ pairm:mapping-157 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-158 a sssom:Mapping ;
+pairm:mapping-447 a sssom:Mapping ;
     sssom:subject_id owasp:llm07-system-prompt-leakage ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-1 ;
@@ -1291,7 +3468,7 @@ pairm:mapping-158 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-159 a sssom:Mapping ;
+pairm:mapping-448 a sssom:Mapping ;
     sssom:subject_id owasp:llm07-system-prompt-leakage ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -1299,7 +3476,7 @@ pairm:mapping-159 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-160 a sssom:Mapping ;
+pairm:mapping-449 a sssom:Mapping ;
     sssom:subject_id owasp:llm08-vector-and-embedding-weaknesses ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -1307,7 +3484,7 @@ pairm:mapping-160 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-161 a sssom:Mapping ;
+pairm:mapping-450 a sssom:Mapping ;
     sssom:subject_id owasp:llm08-vector-and-embedding-weaknesses ;
     sssom:predicate_id skos:broadMatch ;
     sssom:object_id mit:subdomain-7-3 ;
@@ -1315,7 +3492,7 @@ pairm:mapping-161 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-162 a sssom:Mapping ;
+pairm:mapping-451 a sssom:Mapping ;
     sssom:subject_id owasp:llm09-misinformation ;
     sssom:predicate_id skos:closeMatch ;
     sssom:object_id mit:subdomain-3-1 ;
@@ -1324,7 +3501,7 @@ pairm:mapping-162 a sssom:Mapping ;
     pairm:corroboratedVia atlas:hallucination ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-163 a sssom:Mapping ;
+pairm:mapping-452 a sssom:Mapping ;
     sssom:subject_id owasp:llm09-misinformation ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-5-1 ;
@@ -1332,7 +3509,7 @@ pairm:mapping-163 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-164 a sssom:Mapping ;
+pairm:mapping-453 a sssom:Mapping ;
     sssom:subject_id owasp:llm09-misinformation ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
@@ -1341,14 +3518,21 @@ pairm:mapping-164 a sssom:Mapping ;
     pairm:corroboratedVia atlas:incomplete-advice ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-165 a sssom:Mapping ;
+pairm:mapping-454 a sssom:Mapping ;
+    sssom:subject_id owasp:llm09-misinformation ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id eticas:hallucination ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-455 a sssom:Mapping ;
     sssom:subject_id owasp:llm10-unbounded-consumption ;
     sssom:predicate_id skos:narrowMatch ;
     sssom:object_id atlas:redundant-actions-agentic ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-166 a sssom:Mapping ;
+pairm:mapping-456 a sssom:Mapping ;
     sssom:subject_id owasp:llm10-unbounded-consumption ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-2-2 ;
@@ -1356,7 +3540,7 @@ pairm:mapping-166 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-167 a sssom:Mapping ;
+pairm:mapping-457 a sssom:Mapping ;
     sssom:subject_id owasp:llm10-unbounded-consumption ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-6-6 ;
@@ -1364,7 +3548,7 @@ pairm:mapping-167 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-168 a sssom:Mapping ;
+pairm:mapping-458 a sssom:Mapping ;
     sssom:subject_id owasp:llm10-unbounded-consumption ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id mit:subdomain-7-3 ;
@@ -1372,98 +3556,119 @@ pairm:mapping-168 a sssom:Mapping ;
     pairm:chainCorroborated false ;
     prov:wasDerivedFrom pairm:pair-ai-curation .
 
-pairm:mapping-169 a sssom:Mapping ;
+pairm:mapping-459 a sssom:Mapping ;
+    sssom:subject_id eticas:untraceable-agent-actions ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-7-4 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-460 a sssom:Mapping ;
+    sssom:subject_id eticas:untraceable-agent-actions ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id asi:asi08-cascading-failures ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-461 a sssom:Mapping ;
+    sssom:subject_id eticas:weak-data-controls ;
+    sssom:predicate_id skos:relatedMatch ;
+    sssom:object_id mit:subdomain-2-1 ;
+    sssom:mapping_justification semapv:ManualMappingCuration ;
+    prov:wasDerivedFrom pairm:pair-ai-curation .
+
+pairm:mapping-462 a sssom:Mapping ;
     sssom:subject_id owasp:llm07-system-prompt-leakage ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-170 a sssom:Mapping ;
+pairm:mapping-463 a sssom:Mapping ;
     sssom:subject_id owasp:llm07-system-prompt-leakage ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:privacy-control-for-user-data ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-171 a sssom:Mapping ;
+pairm:mapping-464 a sssom:Mapping ;
     sssom:subject_id owasp:llm07-system-prompt-leakage ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:prompt-context-limiting ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-172 a sssom:Mapping ;
+pairm:mapping-465 a sssom:Mapping ;
     sssom:subject_id owasp:llm07-system-prompt-leakage ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-173 a sssom:Mapping ;
+pairm:mapping-466 a sssom:Mapping ;
     sssom:subject_id owasp:llm07-system-prompt-leakage ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-architecture-documentation ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-174 a sssom:Mapping ;
+pairm:mapping-467 a sssom:Mapping ;
     sssom:subject_id owasp:llm08-vector-and-embedding-weaknesses ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-175 a sssom:Mapping ;
+pairm:mapping-468 a sssom:Mapping ;
     sssom:subject_id owasp:llm08-vector-and-embedding-weaknesses ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:retrieval-quality-evaluation ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-176 a sssom:Mapping ;
+pairm:mapping-469 a sssom:Mapping ;
     sssom:subject_id owasp:llm08-vector-and-embedding-weaknesses ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:retrieval-source-filtering ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-177 a sssom:Mapping ;
+pairm:mapping-470 a sssom:Mapping ;
     sssom:subject_id owasp:llm08-vector-and-embedding-weaknesses ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:threat-modelling ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-178 a sssom:Mapping ;
+pairm:mapping-471 a sssom:Mapping ;
     sssom:subject_id owasp:llm10-unbounded-consumption ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:access-management ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-179 a sssom:Mapping ;
+pairm:mapping-472 a sssom:Mapping ;
     sssom:subject_id owasp:llm10-unbounded-consumption ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:incident-response-plan ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-180 a sssom:Mapping ;
+pairm:mapping-473 a sssom:Mapping ;
     sssom:subject_id owasp:llm10-unbounded-consumption ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:post-deployment-behavior-monitoring ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-181 a sssom:Mapping ;
+pairm:mapping-474 a sssom:Mapping ;
     sssom:subject_id owasp:llm10-unbounded-consumption ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:prompt-context-limiting ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-curated .
 
-pairm:mapping-182 a sssom:Mapping ;
+pairm:mapping-475 a sssom:Mapping ;
     sssom:subject_id owasp:llm01-prompt-injection ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
@@ -1471,7 +3676,7 @@ pairm:mapping-182 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-183 a sssom:Mapping ;
+pairm:mapping-476 a sssom:Mapping ;
     sssom:subject_id owasp:llm01-prompt-injection ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:incident-reporting ;
@@ -1479,7 +3684,7 @@ pairm:mapping-183 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-184 a sssom:Mapping ;
+pairm:mapping-477 a sssom:Mapping ;
     sssom:subject_id owasp:llm01-prompt-injection ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:model-safety-engineering ;
@@ -1487,7 +3692,7 @@ pairm:mapping-184 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-185 a sssom:Mapping ;
+pairm:mapping-478 a sssom:Mapping ;
     sssom:subject_id owasp:llm01-prompt-injection ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
@@ -1495,7 +3700,7 @@ pairm:mapping-185 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-186 a sssom:Mapping ;
+pairm:mapping-479 a sssom:Mapping ;
     sssom:subject_id owasp:llm01-prompt-injection ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
@@ -1503,7 +3708,7 @@ pairm:mapping-186 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-187 a sssom:Mapping ;
+pairm:mapping-480 a sssom:Mapping ;
     sssom:subject_id owasp:llm02-sensitive-information-disclosure ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:access-management ;
@@ -1511,7 +3716,7 @@ pairm:mapping-187 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-188 a sssom:Mapping ;
+pairm:mapping-481 a sssom:Mapping ;
     sssom:subject_id owasp:llm02-sensitive-information-disclosure ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:content-safety-controls ;
@@ -1519,7 +3724,7 @@ pairm:mapping-188 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-189 a sssom:Mapping ;
+pairm:mapping-482 a sssom:Mapping ;
     sssom:subject_id owasp:llm02-sensitive-information-disclosure ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
@@ -1527,7 +3732,7 @@ pairm:mapping-189 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-190 a sssom:Mapping ;
+pairm:mapping-483 a sssom:Mapping ;
     sssom:subject_id owasp:llm02-sensitive-information-disclosure ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:model-safety-engineering ;
@@ -1535,7 +3740,7 @@ pairm:mapping-190 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-191 a sssom:Mapping ;
+pairm:mapping-484 a sssom:Mapping ;
     sssom:subject_id owasp:llm02-sensitive-information-disclosure ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
@@ -1543,7 +3748,7 @@ pairm:mapping-191 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-192 a sssom:Mapping ;
+pairm:mapping-485 a sssom:Mapping ;
     sssom:subject_id owasp:llm02-sensitive-information-disclosure ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-management ;
@@ -1551,7 +3756,7 @@ pairm:mapping-192 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-193 a sssom:Mapping ;
+pairm:mapping-486 a sssom:Mapping ;
     sssom:subject_id owasp:llm02-sensitive-information-disclosure ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:societal-impact-assessment ;
@@ -1559,7 +3764,7 @@ pairm:mapping-193 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-194 a sssom:Mapping ;
+pairm:mapping-487 a sssom:Mapping ;
     sssom:subject_id owasp:llm02-sensitive-information-disclosure ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
@@ -1567,7 +3772,7 @@ pairm:mapping-194 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-195 a sssom:Mapping ;
+pairm:mapping-488 a sssom:Mapping ;
     sssom:subject_id owasp:llm03-supply-chain ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:access-management ;
@@ -1575,7 +3780,7 @@ pairm:mapping-195 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-196 a sssom:Mapping ;
+pairm:mapping-489 a sssom:Mapping ;
     sssom:subject_id owasp:llm03-supply-chain ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
@@ -1583,7 +3788,7 @@ pairm:mapping-196 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-197 a sssom:Mapping ;
+pairm:mapping-490 a sssom:Mapping ;
     sssom:subject_id owasp:llm03-supply-chain ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
@@ -1591,7 +3796,7 @@ pairm:mapping-197 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-198 a sssom:Mapping ;
+pairm:mapping-491 a sssom:Mapping ;
     sssom:subject_id owasp:llm03-supply-chain ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;
@@ -1599,7 +3804,7 @@ pairm:mapping-198 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-199 a sssom:Mapping ;
+pairm:mapping-492 a sssom:Mapping ;
     sssom:subject_id owasp:llm03-supply-chain ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
@@ -1607,7 +3812,7 @@ pairm:mapping-199 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-200 a sssom:Mapping ;
+pairm:mapping-493 a sssom:Mapping ;
     sssom:subject_id owasp:llm04-data-and-model-poisoning ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
@@ -1615,7 +3820,7 @@ pairm:mapping-200 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-201 a sssom:Mapping ;
+pairm:mapping-494 a sssom:Mapping ;
     sssom:subject_id owasp:llm04-data-and-model-poisoning ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:incident-response-recovery ;
@@ -1623,7 +3828,7 @@ pairm:mapping-201 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-202 a sssom:Mapping ;
+pairm:mapping-495 a sssom:Mapping ;
     sssom:subject_id owasp:llm05-improper-output-handling ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:safety-decision-frameworks ;
@@ -1631,7 +3836,7 @@ pairm:mapping-202 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-203 a sssom:Mapping ;
+pairm:mapping-496 a sssom:Mapping ;
     sssom:subject_id owasp:llm05-improper-output-handling ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;
@@ -1639,7 +3844,7 @@ pairm:mapping-203 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-204 a sssom:Mapping ;
+pairm:mapping-497 a sssom:Mapping ;
     sssom:subject_id owasp:llm05-improper-output-handling ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:user-rights-recourse ;
@@ -1647,7 +3852,7 @@ pairm:mapping-204 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-205 a sssom:Mapping ;
+pairm:mapping-498 a sssom:Mapping ;
     sssom:subject_id owasp:llm06-excessive-agency ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:safety-decision-frameworks ;
@@ -1655,7 +3860,7 @@ pairm:mapping-205 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-206 a sssom:Mapping ;
+pairm:mapping-499 a sssom:Mapping ;
     sssom:subject_id owasp:llm06-excessive-agency ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;
@@ -1663,7 +3868,7 @@ pairm:mapping-206 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-207 a sssom:Mapping ;
+pairm:mapping-500 a sssom:Mapping ;
     sssom:subject_id owasp:llm06-excessive-agency ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:user-rights-recourse ;
@@ -1671,7 +3876,7 @@ pairm:mapping-207 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-208 a sssom:Mapping ;
+pairm:mapping-501 a sssom:Mapping ;
     sssom:subject_id owasp:llm09-misinformation ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:content-safety-controls ;
@@ -1679,7 +3884,7 @@ pairm:mapping-208 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-209 a sssom:Mapping ;
+pairm:mapping-502 a sssom:Mapping ;
     sssom:subject_id owasp:llm09-misinformation ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
@@ -1687,7 +3892,7 @@ pairm:mapping-209 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-210 a sssom:Mapping ;
+pairm:mapping-503 a sssom:Mapping ;
     sssom:subject_id owasp:llm09-misinformation ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:model-safety-engineering ;
@@ -1695,7 +3900,7 @@ pairm:mapping-210 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-211 a sssom:Mapping ;
+pairm:mapping-504 a sssom:Mapping ;
     sssom:subject_id owasp:llm09-misinformation ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:post-deployment-monitoring ;
@@ -1703,7 +3908,7 @@ pairm:mapping-211 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-212 a sssom:Mapping ;
+pairm:mapping-505 a sssom:Mapping ;
     sssom:subject_id owasp:llm09-misinformation ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
@@ -1711,7 +3916,7 @@ pairm:mapping-212 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-213 a sssom:Mapping ;
+pairm:mapping-506 a sssom:Mapping ;
     sssom:subject_id owasp:llm09-misinformation ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
@@ -1719,728 +3924,728 @@ pairm:mapping-213 a sssom:Mapping ;
     sssom:mapping_date "2026-07-17"^^xsd:date ;
     prov:wasDerivedFrom pairm:pair-ai-risk-to-control-embedding .
 
-pairm:mapping-214 a sssom:Mapping ;
+pairm:mapping-507 a sssom:Mapping ;
     sssom:subject_id mitctrl:redaction ;
     sssom:predicate_id skos:relatedMatch ;
     sssom:object_id <https://w3id.org/dpv#DataRedaction> ;
     sssom:mapping_justification semapv:ManualMappingCuration ;
     prov:wasDerivedFrom pairm:pair-ai-vocabulary-alignment .
 
-pairm:mapping-215 a sssom:Mapping ;
+pairm:mapping-508 a sssom:Mapping ;
     sssom:subject_id atlas:confidential-data-in-prompt ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-216 a sssom:Mapping ;
+pairm:mapping-509 a sssom:Mapping ;
     sssom:subject_id atlas:confidential-data-in-prompt ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:prompt-context-limiting ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-217 a sssom:Mapping ;
+pairm:mapping-510 a sssom:Mapping ;
     sssom:subject_id atlas:confidential-data-in-prompt ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-architecture-documentation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-218 a sssom:Mapping ;
+pairm:mapping-511 a sssom:Mapping ;
     sssom:subject_id atlas:data-curation ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-curation-process ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-219 a sssom:Mapping ;
+pairm:mapping-512 a sssom:Mapping ;
     sssom:subject_id atlas:data-curation ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-220 a sssom:Mapping ;
+pairm:mapping-513 a sssom:Mapping ;
     sssom:subject_id atlas:data-curation ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-221 a sssom:Mapping ;
+pairm:mapping-514 a sssom:Mapping ;
     sssom:subject_id atlas:data-poisoning ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-curation-process ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-222 a sssom:Mapping ;
+pairm:mapping-515 a sssom:Mapping ;
     sssom:subject_id atlas:data-poisoning ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-223 a sssom:Mapping ;
+pairm:mapping-516 a sssom:Mapping ;
     sssom:subject_id atlas:data-poisoning ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:model-infrastructure-security ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-224 a sssom:Mapping ;
+pairm:mapping-517 a sssom:Mapping ;
     sssom:subject_id atlas:data-poisoning ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-225 a sssom:Mapping ;
+pairm:mapping-518 a sssom:Mapping ;
     sssom:subject_id atlas:data-usage-restrictions ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-226 a sssom:Mapping ;
+pairm:mapping-519 a sssom:Mapping ;
     sssom:subject_id atlas:data-usage-restrictions ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-227 a sssom:Mapping ;
+pairm:mapping-520 a sssom:Mapping ;
     sssom:subject_id atlas:data-usage-restrictions ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-228 a sssom:Mapping ;
+pairm:mapping-521 a sssom:Mapping ;
     sssom:subject_id atlas:decision-bias ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-curation-process ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-229 a sssom:Mapping ;
+pairm:mapping-522 a sssom:Mapping ;
     sssom:subject_id atlas:decision-bias ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-230 a sssom:Mapping ;
+pairm:mapping-523 a sssom:Mapping ;
     sssom:subject_id atlas:decision-bias ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:societal-impact-assessment ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-231 a sssom:Mapping ;
+pairm:mapping-524 a sssom:Mapping ;
     sssom:subject_id atlas:decision-bias ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-232 a sssom:Mapping ;
+pairm:mapping-525 a sssom:Mapping ;
     sssom:subject_id atlas:evasion-attack ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:model-safety-engineering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-233 a sssom:Mapping ;
+pairm:mapping-526 a sssom:Mapping ;
     sssom:subject_id atlas:evasion-attack ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-234 a sssom:Mapping ;
+pairm:mapping-527 a sssom:Mapping ;
     sssom:subject_id atlas:evasion-attack ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:threat-modelling ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-235 a sssom:Mapping ;
+pairm:mapping-528 a sssom:Mapping ;
     sssom:subject_id atlas:exposing-personal-information ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:access-management ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-236 a sssom:Mapping ;
+pairm:mapping-529 a sssom:Mapping ;
     sssom:subject_id atlas:exposing-personal-information ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-237 a sssom:Mapping ;
+pairm:mapping-530 a sssom:Mapping ;
     sssom:subject_id atlas:exposing-personal-information ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-minimization ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-238 a sssom:Mapping ;
+pairm:mapping-531 a sssom:Mapping ;
     sssom:subject_id atlas:exposing-personal-information ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-239 a sssom:Mapping ;
+pairm:mapping-532 a sssom:Mapping ;
     sssom:subject_id atlas:exposing-personal-information ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:privacy-control-for-user-data ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-240 a sssom:Mapping ;
+pairm:mapping-533 a sssom:Mapping ;
     sssom:subject_id atlas:exposing-personal-information ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:redaction ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-241 a sssom:Mapping ;
+pairm:mapping-534 a sssom:Mapping ;
     sssom:subject_id atlas:exposing-personal-information ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:retrieval-source-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-242 a sssom:Mapping ;
+pairm:mapping-535 a sssom:Mapping ;
     sssom:subject_id atlas:hallucination ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-243 a sssom:Mapping ;
+pairm:mapping-536 a sssom:Mapping ;
     sssom:subject_id atlas:hallucination ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-244 a sssom:Mapping ;
+pairm:mapping-537 a sssom:Mapping ;
     sssom:subject_id atlas:hallucination ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:retrieval-quality-evaluation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-245 a sssom:Mapping ;
+pairm:mapping-538 a sssom:Mapping ;
     sssom:subject_id atlas:hallucination ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-architecture-documentation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-246 a sssom:Mapping ;
+pairm:mapping-539 a sssom:Mapping ;
     sssom:subject_id atlas:impact-on-the-environment ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-247 a sssom:Mapping ;
+pairm:mapping-540 a sssom:Mapping ;
     sssom:subject_id atlas:impact-on-the-environment ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:societal-impact-assessment ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-248 a sssom:Mapping ;
+pairm:mapping-541 a sssom:Mapping ;
     sssom:subject_id atlas:incomplete-advice ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:human-oversight-protocol ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-249 a sssom:Mapping ;
+pairm:mapping-542 a sssom:Mapping ;
     sssom:subject_id atlas:incomplete-advice ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:retrieval-quality-evaluation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-250 a sssom:Mapping ;
+pairm:mapping-543 a sssom:Mapping ;
     sssom:subject_id atlas:incomplete-advice ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-251 a sssom:Mapping ;
+pairm:mapping-544 a sssom:Mapping ;
     sssom:subject_id atlas:legal-accountability ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-252 a sssom:Mapping ;
+pairm:mapping-545 a sssom:Mapping ;
     sssom:subject_id atlas:legal-accountability ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-management ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-253 a sssom:Mapping ;
+pairm:mapping-546 a sssom:Mapping ;
     sssom:subject_id atlas:legal-accountability ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-register ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-254 a sssom:Mapping ;
+pairm:mapping-547 a sssom:Mapping ;
     sssom:subject_id atlas:legal-accountability ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-255 a sssom:Mapping ;
+pairm:mapping-548 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-data ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-curation-process ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-256 a sssom:Mapping ;
+pairm:mapping-549 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-data ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-257 a sssom:Mapping ;
+pairm:mapping-550 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-data ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:privacy-control-for-user-data ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-258 a sssom:Mapping ;
+pairm:mapping-551 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-prompt ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-259 a sssom:Mapping ;
+pairm:mapping-552 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-prompt ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:privacy-control-for-user-data ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-260 a sssom:Mapping ;
+pairm:mapping-553 a sssom:Mapping ;
     sssom:subject_id atlas:personal-information-in-prompt ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:prompt-context-limiting ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-261 a sssom:Mapping ;
+pairm:mapping-554 a sssom:Mapping ;
     sssom:subject_id atlas:poor-model-accuracy ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-262 a sssom:Mapping ;
+pairm:mapping-555 a sssom:Mapping ;
     sssom:subject_id atlas:poor-model-accuracy ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:retrieval-quality-evaluation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-263 a sssom:Mapping ;
+pairm:mapping-556 a sssom:Mapping ;
     sssom:subject_id atlas:poor-model-accuracy ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-264 a sssom:Mapping ;
+pairm:mapping-557 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-injection ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-265 a sssom:Mapping ;
+pairm:mapping-558 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-injection ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:model-safety-engineering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-266 a sssom:Mapping ;
+pairm:mapping-559 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-injection ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-267 a sssom:Mapping ;
+pairm:mapping-560 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-injection ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:retrieval-source-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-268 a sssom:Mapping ;
+pairm:mapping-561 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-injection ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:threat-modelling ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-269 a sssom:Mapping ;
+pairm:mapping-562 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-leaking ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-270 a sssom:Mapping ;
+pairm:mapping-563 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-leaking ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-271 a sssom:Mapping ;
+pairm:mapping-564 a sssom:Mapping ;
     sssom:subject_id atlas:prompt-leaking ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-architecture-documentation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-272 a sssom:Mapping ;
+pairm:mapping-565 a sssom:Mapping ;
     sssom:subject_id atlas:reidentification ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-273 a sssom:Mapping ;
+pairm:mapping-566 a sssom:Mapping ;
     sssom:subject_id atlas:reidentification ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:privacy-control-for-user-data ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-274 a sssom:Mapping ;
+pairm:mapping-567 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-1-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:content-safety-controls ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-275 a sssom:Mapping ;
+pairm:mapping-568 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-1-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-276 a sssom:Mapping ;
+pairm:mapping-569 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-1-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-277 a sssom:Mapping ;
+pairm:mapping-570 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-1-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-curation-process ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-278 a sssom:Mapping ;
+pairm:mapping-571 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-1-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-279 a sssom:Mapping ;
+pairm:mapping-572 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-1-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-280 a sssom:Mapping ;
+pairm:mapping-573 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:access-management ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-281 a sssom:Mapping ;
+pairm:mapping-574 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-282 a sssom:Mapping ;
+pairm:mapping-575 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-minimization ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-283 a sssom:Mapping ;
+pairm:mapping-576 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-284 a sssom:Mapping ;
+pairm:mapping-577 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:privacy-control-for-user-data ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-285 a sssom:Mapping ;
+pairm:mapping-578 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:redaction ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-286 a sssom:Mapping ;
+pairm:mapping-579 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:retrieval-source-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-287 a sssom:Mapping ;
+pairm:mapping-580 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:access-management ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-288 a sssom:Mapping ;
+pairm:mapping-581 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:incident-response-plan ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-289 a sssom:Mapping ;
+pairm:mapping-582 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-290 a sssom:Mapping ;
+pairm:mapping-583 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:model-infrastructure-security ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-291 a sssom:Mapping ;
+pairm:mapping-584 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-292 a sssom:Mapping ;
+pairm:mapping-585 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-2-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:threat-modelling ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-293 a sssom:Mapping ;
+pairm:mapping-586 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-3-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:human-oversight-protocol ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-294 a sssom:Mapping ;
+pairm:mapping-587 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-3-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:input-output-filtering ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-295 a sssom:Mapping ;
+pairm:mapping-588 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-3-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-296 a sssom:Mapping ;
+pairm:mapping-589 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-3-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:retrieval-quality-evaluation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-297 a sssom:Mapping ;
+pairm:mapping-590 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-4-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:content-safety-controls ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-298 a sssom:Mapping ;
+pairm:mapping-591 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-4-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:incident-response-plan ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-299 a sssom:Mapping ;
+pairm:mapping-592 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-4-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-300 a sssom:Mapping ;
+pairm:mapping-593 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-4-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:threat-modelling ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-301 a sssom:Mapping ;
+pairm:mapping-594 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-5-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:human-oversight-protocol ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-302 a sssom:Mapping ;
+pairm:mapping-595 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-5-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-303 a sssom:Mapping ;
+pairm:mapping-596 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-5-1 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-304 a sssom:Mapping ;
+pairm:mapping-597 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-5-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:access-management ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-305 a sssom:Mapping ;
+pairm:mapping-598 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-5-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:human-oversight-protocol ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-306 a sssom:Mapping ;
+pairm:mapping-599 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-5-2 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-register ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-307 a sssom:Mapping ;
+pairm:mapping-600 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-6-6 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:post-deployment-behavior-monitoring ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-308 a sssom:Mapping ;
+pairm:mapping-601 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-6-6 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:prompt-context-limiting ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-309 a sssom:Mapping ;
+pairm:mapping-602 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-6-6 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-310 a sssom:Mapping ;
+pairm:mapping-603 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-6-6 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:societal-impact-assessment ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-311 a sssom:Mapping ;
+pairm:mapping-604 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-7-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:data-governance ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-312 a sssom:Mapping ;
+pairm:mapping-605 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-7-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:red-teaming ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-313 a sssom:Mapping ;
+pairm:mapping-606 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-7-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:retrieval-quality-evaluation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-314 a sssom:Mapping ;
+pairm:mapping-607 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-7-3 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:testing-auditing ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-315 a sssom:Mapping ;
+pairm:mapping-608 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-7-4 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:risk-disclosure ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-316 a sssom:Mapping ;
+pairm:mapping-609 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-7-4 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-architecture-documentation ;
     sssom:mapping_justification semapv:UnspecifiedMatching ;
     prov:wasDerivedFrom pairm:unrecorded-risk-to-control .
 
-pairm:mapping-317 a sssom:Mapping ;
+pairm:mapping-610 a sssom:Mapping ;
     sssom:subject_id mit:subdomain-7-4 ;
     sssom:predicate_id nexus:hasRelatedControl ;
     sssom:object_id mitctrl:system-documentation ;

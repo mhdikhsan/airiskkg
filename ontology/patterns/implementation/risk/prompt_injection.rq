@@ -8,7 +8,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate prompt injection exposure"@en ;
+        rdfs:label "Candidate prompt injection"@en ;
         dct:description "Untrusted user or retrieved content can enter LLM prompt or generation context."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:PromptInjectionRiskPattern ;

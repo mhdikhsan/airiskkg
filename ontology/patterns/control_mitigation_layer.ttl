@@ -63,6 +63,29 @@ pat:Control_LoggingMonitoringAndEvals
                          pat:PredictionMonitoringMotif ,
                          pat:EvalsMotif .
 
+pat:Control_DistributionShiftMonitoring
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:PredictionLoggingMotif ,
+                         pat:PredictionMonitoringMotif .
+
+pat:Control_PreReleaseModelEvaluation
+    pair:controlNature pair:TechnicalControl ;
+    rdfs:comment "Train-Then-Serve puts an evaluation and a release approval between training and serving, which is what an unevaluated-model finding asks for. It is itself risk-bearing: a served model still raises the data-level risk patterns."@en ;
+    pair:realizedByMotif pat:TrainThenServeMotif .
+
+pat:Control_UncertaintyReportingAndReview
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:HumanOversightMotif .
+
+pat:Control_SandboxedCodeExecution
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:ExecutionScreeningMotif .
+
+pat:Control_CascadeContainment
+    pair:controlNature pair:TechnicalControl ;
+    pair:realizedByMotif pat:HumanOversightMotif ,
+                         pat:ExecutionScreeningMotif .
+
 
 # Executable rewrites: how a control is applied to a graph.
 
@@ -154,6 +177,16 @@ pat:Control_DataMinimizationAndRedaction  pair:controlNature pair:TechnicalContr
 pat:Control_RetrievalAccessControl        pair:controlNature pair:TechnicalControl .
 pat:Control_SystemPromptSecrecy           pair:controlNature pair:TechnicalControl .
 pat:Control_RateLimitBudgetAndLoopControl pair:controlNature pair:TechnicalControl .
+pat:Control_InputDomainValidation         pair:controlNature pair:TechnicalControl .
+pat:Control_AdversarialRobustness         pair:controlNature pair:TechnicalControl .
+pat:Control_FairnessEvaluation            pair:controlNature pair:TechnicalControl .
+pat:Control_RetrainingDataValidation      pair:controlNature pair:TechnicalControl .
+pat:Control_HeldOutEvaluationData         pair:controlNature pair:TechnicalControl .
+pat:Control_ScopedAgentCredentials        pair:controlNature pair:TechnicalControl .
+pat:Control_AgentComponentVerification    pair:controlNature pair:TechnicalControl .
+pat:Control_IndependentEvidenceForApproval pair:controlNature pair:TechnicalControl .
+pat:Control_AgentActionAuditLog          pair:controlNature pair:TechnicalControl .
+pat:Control_ModelAccessHardening         pair:controlNature pair:TechnicalControl .
 
 
 
@@ -162,6 +195,11 @@ pat:Control_RateLimitBudgetAndLoopControl pair:controlNature pair:TechnicalContr
 
 pat:Control_ModelAndDependencyProvenance   pair:controlNature pair:NonTechnicalControl .
 pat:Control_TrustedTrainingAndIndexingData pair:controlNature pair:NonTechnicalControl .
+# Acts on how a model is trained, which an architecture graph does not show.
+pat:Control_TrainingDataPrivacy            pair:controlNature pair:NonTechnicalControl .
+# Agreements and schedules: nothing in an architecture graph shows either.
+pat:Control_ExternalProviderDataAgreement  pair:controlNature pair:NonTechnicalControl .
+pat:Control_RetentionLimits                pair:controlNature pair:NonTechnicalControl .
 
 # --- technical: acts on data, prompt, retrieval, or runtime -----------------
 

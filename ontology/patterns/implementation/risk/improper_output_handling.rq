@@ -10,7 +10,7 @@ PREFIX bp:    <https://sBPMN.github.io/2.0/properties#>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate improper LLM output handling"@en ;
+        rdfs:label "Candidate improper output handling"@en ;
         dct:description "A user-facing LLM output is produced without a represented output validation, sanitization, or guardrail step."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:ImproperOutputHandlingRiskPattern ;
