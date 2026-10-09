@@ -255,6 +255,17 @@ pair:motifGroup a owl:ObjectProperty ;
     rdfs:domain pair:GraphMotif ;
     rdfs:range skos:Concept .
 
+pair:riskPatternFamily a owl:ObjectProperty ;
+    rdfs:label "risk pattern family"@en ;
+    rdfs:comment """
+    Which family of AI system a risk pattern is shelved under, from the same
+    scheme as pair:motifFamily: where most of the motifs it applies to belong.
+    A shelving decision, never read by a query, and never a claim that the risk
+    is confined to that kind of system.
+    """@en ;
+    rdfs:domain pair:RiskPattern ;
+    rdfs:range skos:Concept .
+
 pair:implementedBy a owl:ObjectProperty ;
     rdfs:label "implemented by"@en ;
     rdfs:domain [

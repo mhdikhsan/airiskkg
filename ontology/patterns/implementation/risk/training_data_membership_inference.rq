@@ -7,7 +7,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate training-data membership inference"@en ;
+        rdfs:label "Candidate training data membership inference"@en ;
         dct:description "A model trained on personal data answers queries that originate from a public population, so comparing its answers can reveal whose records it was trained on."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:TrainingDataMembershipInferenceRiskPattern ;

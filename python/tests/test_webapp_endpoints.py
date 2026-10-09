@@ -848,7 +848,7 @@ def test_apply_is_offered_only_where_a_rewrite_targets_that_risk(client) -> None
     # Every finding that offers it must have a rewrite targeting its own risk
     # pattern; the check below proves each offer inserts something.
     assert output_validation <= {
-        "Candidate improper LLM output handling",
+        "Candidate improper output handling",
         "Candidate sensitive information disclosure",
     }, "offered on a finding no rewrite targets: " + ", ".join(sorted(output_validation))
 

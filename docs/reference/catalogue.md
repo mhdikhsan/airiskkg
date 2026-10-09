@@ -1,7 +1,7 @@
 # PAIR-AI Catalogue — Motifs, Risk Patterns & Annotation Roles
 
 The inventory of what PAIR-AI can recognise and flag. Counted off the loaded
-ontology on 2026-10-09: **47 motifs**, **29 risk patterns**, **123 annotation
+ontology on 2026-10-09: **47 motifs**, **33 risk patterns**, **123 annotation
 roles**, and **7 data categories**. Terminology follows
 [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md). This file is maintained by
 hand — if the library changes and this page does not, this page is wrong.
@@ -147,14 +147,14 @@ matches several families at once.
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
 | **TrainThenServeMotif** | Training and serving separated by evaluation, approval, and a release step. Also what realizes pre-release evaluation. | Dataset shift, out-of-domain input, adversarial evasion, unqualified prediction, membership inference, model bias, improper retraining, evaluation contamination |
-| **TrainingToServingMotif** | A training pipeline automatically produces an artifact built/deployed into serving. | LLM04, LLM03, dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference, model bias, improper retraining |
+| **TrainingToServingMotif** | A training pipeline automatically produces an artifact built/deployed into serving. | LLM04, dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference, model bias, improper retraining |
 
 ### Operational
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
 | **ModelLoadMotif** | Server image and model artifact managed separately; model loaded before prediction. | LLM03 |
-| **ModelInImageMotif** | A trained artifact packaged into a serving image, deployed as the model the prediction step serves from. | LLM03 |
+| **ModelInImageMotif** | A trained artifact packaged into a serving image, deployed as the model the prediction step serves from. | — (it trains its own artifact, so nothing enters from outside) |
 | **PredictionLoggingMotif** | Prediction inputs/results/latency collected into logs. | — |
 | **PredictionMonitoringMotif** | Logs/result trends monitored against expected behavior; may raise alerts. | — |
 
@@ -166,7 +166,7 @@ matches several families at once.
 
 ---
 
-## 2. Risk patterns (29)
+## 2. Risk patterns (33)
 
 Each risk pattern interprets a motif match:
 **Motif + Applicability Conditions + Mechanism + Taxonomy Links + Controls**.
@@ -174,17 +174,25 @@ Each risk pattern interprets a motif match:
 binds the pattern to via `pair:hasMotif`; **Suggested controls** are the
 mitigations attached to the finding.
 
+A declared motif either **carries** the risk pattern, raising it when inserted
+alone, or raises it once its elements carry a stated context: public input,
+personal data, a hosted model, or the training step behind a served model. Of the
+123 links, 39 are carried and 84 name their context in
+`python/src/airiskkg/workbench/risk_context.py`; the risk page in the workbench
+shows which, and inserting a motif from there adds the context.
+`test_motif_risk_links.py` proves every link either way.
+
 | Taxonomy | Risk pattern | Fires when | Declared motif | Suggested controls |
 | --- | --- | --- | --- | --- |
 | **LLM01** | Prompt injection | Untrusted content (from retrieval/tools, tainted by public input) reaches generation → user output, with no input/output control. | Direct Prompting, RAG, Query Rewriting | Guardrails; input validation & prompt isolation; logging/monitoring/evals |
 | **LLM02** | Sensitive data retrieval exposure | The store **and** the retrieved result carry `SensitiveInformation` → generation → user output, no disclosure control. | Vector-IR | Data minimization & redaction; guardrails; output validation & sanitization; retrieval access control |
-| **LLM03** | Supply chain compromise | An external model / data / dependency / artifact is used, with no control on it. | External Dependency, Fine Tuning, Model Load, Model-in-Image, Training-to-Serving | Model & dependency provenance; logging/monitoring/evals |
+| **LLM03** | Supply chain compromise | A resource marked external, or an artifact nothing in the graph produces, is used. A model the system trains itself is not raised. | External Dependency, Fine Tuning, Model Load | Model & dependency provenance; logging/monitoring/evals |
 | **LLM04** | Data & model poisoning | A bound source tagged `UntrustedContent` enters embeddings / fine-tuning / training-to-serving. | Embeddings, Fine Tuning, Training-to-Serving | Trusted training & indexing data; model & dependency provenance; logging/monitoring/evals |
 | **LLM05** | Improper output handling | Generation → user output with no `OutputValidationStep` / `OutputGuardrailStep`. | Direct Prompting, Guardrails | Output validation & sanitization; guardrails |
 | **LLM06** | Excessive agency | What the generation step produces reaches a `ToolInvocationStep` / `StateChangingStep` along a chain of resources, with no control on it. | *none — deliberately role-anchored, applies to any match binding the generation step* | Tool permission boundaries; rate/budget/loop control; logging/monitoring/evals |
 | **LLM07** | System prompt leakage | A `SystemPrompt` feeds generation → user output, no control. | Guardrails | System prompt secrecy; output validation & sanitization; guardrails |
 | **LLM08** | Vector & embedding weakness | A vector retrieval or embedding index supplies generation context. | RAG, Embeddings, Reranker | Trusted training & indexing data; retrieval access control; grounding & verification |
-| **LLM09** | Misinformation (weak grounding) | A RAG generation reaches a response with no `EvaluationStep` / `ScoringStep`. | RAG | Grounding & verification; logging/monitoring/evals |
+| **LLM09** | Misinformation (weak grounding) | A RAG generation, or an LLM-based retrieval, produces content with no `EvaluationStep` / `ScoringStep` reading it. | RAG, Iterative / Recursive / Adaptive RAG, LLM-based IR | Grounding & verification; logging/monitoring/evals |
 | **LLM09** | Direct prompting without grounding | A Direct-Prompting generation with no `KnowledgeSource` / `RetrievedContext` grounding. | Direct Prompting | Grounding & verification; logging/monitoring/evals |
 | **LLM10** | Unbounded consumption | An LLM/retrieval loop or generation with no `RateLimitControlStep`. | Direct Prompting, RAG, Query Rewriting | Rate/budget/loop control; logging/monitoring/evals |
 | **ASI02** | Tool misuse | A planning step's decision reaches a tool invocation or state change with no represented policy enforcement, human approval, or rate/budget control in between. The agent acts within its permissions; what is missing is anything that can narrow, pause, or refuse a particular action. | Tool-Using Agent | Tool permission boundaries; rate/budget/loop control; logging/monitoring/evals |
@@ -224,6 +232,15 @@ risk pattern of their own.
 | **Improper retraining** | Improper retraining | Data downstream of a model is read back by the step that trains it, with no `DataValidationStep`, `OutputValidationStep` or `HumanApprovalStep` on the loop. | Batch Training, Pipeline Training, Train-Then-Serve, Training-to-Serving, Fine Tuning | Retraining data validation; trusted training & indexing data |
 | **Membership inference attack** | Training data membership inference | A model trained on `SensitiveInformation` serves requests derived from `PublicUserInput`. **No structural escape**: what reduces it is how the model is trained, so a finding is settled by triage. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Training data privacy; rate/budget/loop control |
 | **Data contamination** | Evaluation data contamination | An evaluation step reads the training data, or a set the training data was drawn from. | Batch Training, Pipeline Training, Train-Then-Serve, Fine Tuning | Held-out evaluation data; pre-release model evaluation |
+
+### Structures no other pattern covered (added 2026-10-09)
+
+| Anchor | Risk pattern | Fires when | Declared motif | Suggested controls |
+| --- | --- | --- | --- | --- |
+| **Eticas: untraceable agent actions** | Untraceable agent actions | No `LoggingStep` reads what an agent's tool or state-changing step acts on or produces. | Tool-Using Agent, Tool/Agent Registry | Agent action audit log; logging/monitoring/evals |
+| **IBM: personal information in prompt** | Protected data to external model | A generation or prediction step uses a model playing `ExternalModel` and reads content carrying `SensitiveInformation` or `ConfidentialInformation`, other than the provider's own credential. A redaction step upstream clears it. | Direct Prompting, RAG, Synchronous Prediction | Data minimization & redaction; external provider data agreement |
+| **Eticas: weak data controls** | Personal data retained | A prediction log or an agent memory carries `SensitiveInformation`. A writer that also redacts clears it. | Prediction Logging, Agent Memory Loop | Data minimization & redaction; retention limits |
+| **IBM: extraction attack** | Model extraction | A model trained in the represented system serves requests derived from `PublicUserInput`, with no `RateLimitControlStep` feeding the step or upstream of the request. | Prediction motifs, Train-Then-Serve, Training-to-Serving | Model access hardening; rate/budget/loop control |
 
 The other IBM risks the `data/mappings/` cross-walk names are cited by the risk
 pattern whose anchor upstream maps them to — jailbreaking and prompt priming by

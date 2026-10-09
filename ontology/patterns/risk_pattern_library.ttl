@@ -10,6 +10,7 @@
 @prefix asi:   <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
 @prefix mlr:   <http://w3id.org/airiskkg/taxonomy/ml-risk#> .
 @prefix eticas: <https://taxonomy.eticas.ai/risk/> .
+@prefix etm:   <http://w3id.org/airiskkg/taxonomy/eticas-mechanisms#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
@@ -300,13 +301,8 @@ pat:ModelLoadMotif
 pat:ExternalDependencyMotif
     pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
 
-pat:ModelInImageMotif
-    pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
-
 pat:TrainingToServingMotif
-    pair:hasRiskPattern
-        pat:SupplyChainCompromiseRiskPattern ,
-        pat:DataAndModelPoisoningRiskPattern .
+    pair:hasRiskPattern pat:DataAndModelPoisoningRiskPattern .
 
 pat:PromptInjectionRiskPattern
     a pair:RiskPattern ;
@@ -348,9 +344,7 @@ pat:SupplyChainCompromiseRiskPattern
     rdfs:label "Supply chain compromise risk pattern"@en ;
     pair:hasMotif pat:ExternalDependencyMotif ,
         pat:FineTuningMotif ,
-        pat:ModelLoadMotif ,
-        pat:ModelInImageMotif ,
-        pat:TrainingToServingMotif ;
+        pat:ModelLoadMotif ;
     pair:hasMechanism owasp:mechanism-supply-chain-compromise ;
     pair:hasApplicabilityCondition pat:SupplyChain_ExternalDependencyCondition ;
     pair:mayIndicateRisk
@@ -518,7 +512,8 @@ pat:MisinformationFromWeakGroundingRiskPattern
     pair:hasMotif pat:RetrievalAugmentedGenerationMotif ,
         pat:IterativeRAGMotif ,
         pat:RecursiveRAGMotif ,
-        pat:AdaptiveRAGMotif ;
+        pat:AdaptiveRAGMotif ,
+        pat:LLMBasedInformationRetrievalMotif ;
     pair:hasMechanism owasp:mechanism-unsupported-generation ;
     pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;
     pair:mayIndicateRisk
@@ -1998,3 +1993,237 @@ pat:HumanAgentTrustExploitationOQP
     pair:implementsRiskPattern pat:HumanAgentTrustExploitationRiskPattern ;
     pair:implementationPath "ontology/patterns/implementation/risk/human_agent_trust_exploitation.rq" ;
     pair:producesOutputType pair:RiskFinding .
+
+
+# Four risk patterns whose structure no other pattern covers: an agent acting
+# with no record, protected content sent to a third-party model, personal data
+# kept in a log or memory, and a trained model open to extraction. Added
+# 2026-10-09.
+
+pat:Control_AgentActionAuditLog
+    a beamr:RiskControl ;
+    skos:prefLabel "Agent action audit log"@en ;
+    dct:description "Record every tool call and state change an agent makes, with the plan or instruction that led to it and what came back, somewhere the agent cannot rewrite."@en ;
+    skos:relatedMatch mitctrl:post-deployment-behavior-monitoring ,
+                      mitctrl:transparency-accountability-controls .
+
+pat:Control_ExternalProviderDataAgreement
+    a beamr:RiskControl ;
+    skos:prefLabel "External provider data agreement"@en ;
+    dct:description "Settle with a model provider, before anything is sent, what it may retain, for how long, where it is processed and whether it may train on it, and send only what that agreement covers."@en ;
+    skos:relatedMatch mitctrl:privacy-control-for-user-data ,
+                      mitctrl:data-governance .
+
+pat:Control_RetentionLimits
+    a beamr:RiskControl ;
+    skos:prefLabel "Retention limits"@en ;
+    dct:description "Set how long logs and agent memory keep personal data, who may read them, and how it is erased, and enforce that schedule on every store that holds it."@en ;
+    skos:relatedMatch mitctrl:data-minimization ,
+                      mitctrl:data-governance .
+
+pat:Control_ModelAccessHardening
+    a beamr:RiskControl ;
+    skos:prefLabel "Model access hardening"@en ;
+    dct:description "Authenticate who may query a model, cap and watch query volume per caller, and return no more of the output, such as full scores or probabilities, than the use needs."@en ;
+    skos:relatedMatch mitctrl:access-management ,
+                      mitctrl:post-deployment-behavior-monitoring .
+
+pat:UntraceableAgentActions_NoRecordCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "No logging step reads what an agent's action step uses or produces"@en ;
+    pair:operationalizesRiskCondition etm:condition-agent-action-not-logged .
+
+pat:ProtectedDataToExternalModel_ProtectedInputCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "A step using a third-party model reads personal or confidential content"@en ;
+    pair:operationalizesRiskCondition atlas:condition-protected-content-reaches-external-model .
+
+pat:PersonalDataRetained_StoredPersonalDataCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "A log record or agent memory carries personal data"@en ;
+    pair:operationalizesRiskCondition etm:condition-personal-data-written-to-log-or-memory .
+
+pat:ModelExtraction_OpenQueriesCondition
+    a pair:ApplicabilityCondition ;
+    rdfs:label "A model trained in the system answers public queries with no rate limit"@en ;
+    pair:operationalizesRiskCondition atlas:condition-public-queries-reach-in-house-model-unthrottled .
+
+pat:UntraceableAgentActionsRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom eticas:untraceable-agent-actions ;
+    dct:source <https://taxonomy.eticas.ai/> ;
+    rdfs:label "Untraceable agent actions risk pattern"@en ;
+    dct:description """
+    Applies to a Tool-Using Agent or Tool/Agent Registry match where no
+    represented logging step reads the plan or assignment the action step acts
+    on, or the result it produces.
+    """@en ;
+    pair:hasMotif pat:ToolUsingAgentMotif ,
+        pat:ToolAgentRegistryMotif ;
+    pair:hasMechanism etm:mechanism-agent-acts-without-a-record ;
+    pair:hasApplicabilityCondition pat:UntraceableAgentActions_NoRecordCondition ;
+    pair:mayIndicateRisk
+        eticas:untraceable-agent-actions ,
+        asi:asi08-cascading-failures ,
+        mit:subdomain-7-4 ;
+    pair:suggestedControl
+        pat:Control_AgentActionAuditLog ,
+        pat:Control_LoggingMonitoringAndEvals ;
+    pair:implementedBy pat:UntraceableAgentActionsOQP .
+
+pat:ProtectedDataToExternalModelRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom atlas:personal-information-in-prompt ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/risk_atlas_data.yaml> ;
+    rdfs:label "Protected data to external model risk pattern"@en ;
+    dct:description """
+    Applies where the generation or prediction step of a match uses a model
+    marked as external and reads content carrying a sensitive or confidential
+    category. A redaction step upstream clears it, because the category does not
+    travel through one.
+    """@en ;
+    pair:hasMotif pat:DirectPromptingMotif ,
+        pat:RetrievalAugmentedGenerationMotif ,
+        pat:SynchronousPredictionMotif ;
+    pair:hasMechanism atlas:mechanism-protected-content-leaves-for-a-provider ;
+    pair:hasApplicabilityCondition pat:ProtectedDataToExternalModel_ProtectedInputCondition ;
+    pair:mayIndicateRisk
+        atlas:personal-information-in-prompt ,
+        owasp:llm02-sensitive-information-disclosure ,
+        mit:subdomain-2-1 ;
+    pair:suggestedControl
+        pat:Control_DataMinimizationAndRedaction ,
+        pat:Control_ExternalProviderDataAgreement ;
+    pair:implementedBy pat:ProtectedDataToExternalModelOQP .
+
+pat:PersonalDataRetainedRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom eticas:weak-data-controls ;
+    dct:source <https://taxonomy.eticas.ai/> ;
+    rdfs:label "Personal data retained risk pattern"@en ;
+    dct:description """
+    Applies where the log record of a Prediction Logging match, or the memory of
+    an Agent Memory Loop match, carries a sensitive category. A writing step that
+    also redacts clears it, as does a redaction step before it.
+    """@en ;
+    pair:hasMotif pat:PredictionLoggingMotif ,
+        pat:AgentMemoryLoopMotif ;
+    pair:hasMechanism etm:mechanism-personal-data-kept-where-it-was-not-needed ;
+    pair:hasApplicabilityCondition pat:PersonalDataRetained_StoredPersonalDataCondition ;
+    pair:mayIndicateRisk
+        eticas:weak-data-controls ,
+        mit:subdomain-2-1 ;
+    pair:suggestedControl
+        pat:Control_DataMinimizationAndRedaction ,
+        pat:Control_RetentionLimits ;
+    pair:implementedBy pat:PersonalDataRetainedOQP .
+
+pat:ModelExtractionRiskPattern
+    a pair:RiskPattern ;
+    pair:derivedFrom atlas:extraction-attack ;
+    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/risk_atlas_data.yaml> ;
+    rdfs:label "Model extraction risk pattern"@en ;
+    dct:description """
+    Applies where a model trained in the represented system serves requests that
+    originate from public user input, and no represented rate limit step feeds
+    the prediction step or sits upstream of the request.
+    """@en ;
+    pair:hasMotif pat:SynchronousPredictionMotif ,
+        pat:AsynchronousPredictionMotif ,
+        pat:PreprocessPredictionMotif ,
+        pat:MultiStagePredictionMotif ,
+        pat:TrainThenServeMotif ,
+        pat:TrainingToServingMotif ;
+    pair:hasMechanism atlas:mechanism-model-copied-through-open-queries ;
+    pair:hasApplicabilityCondition pat:ModelExtraction_OpenQueriesCondition ;
+    pair:mayIndicateRisk
+        atlas:extraction-attack ,
+        mit:subdomain-2-2 ;
+    pair:suggestedControl
+        pat:Control_ModelAccessHardening ,
+        pat:Control_RateLimitBudgetAndLoopControl ;
+    pair:implementedBy pat:ModelExtractionOQP .
+
+pat:ToolUsingAgentMotif pair:hasRiskPattern pat:UntraceableAgentActionsRiskPattern .
+pat:ToolAgentRegistryMotif pair:hasRiskPattern pat:UntraceableAgentActionsRiskPattern .
+pat:DirectPromptingMotif pair:hasRiskPattern pat:ProtectedDataToExternalModelRiskPattern .
+pat:RetrievalAugmentedGenerationMotif pair:hasRiskPattern pat:ProtectedDataToExternalModelRiskPattern .
+pat:SynchronousPredictionMotif pair:hasRiskPattern pat:ProtectedDataToExternalModelRiskPattern ,
+    pat:ModelExtractionRiskPattern .
+pat:PredictionLoggingMotif pair:hasRiskPattern pat:PersonalDataRetainedRiskPattern .
+pat:AgentMemoryLoopMotif pair:hasRiskPattern pat:PersonalDataRetainedRiskPattern .
+pat:AsynchronousPredictionMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
+pat:PreprocessPredictionMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
+pat:MultiStagePredictionMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
+pat:TrainThenServeMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
+pat:TrainingToServingMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
+
+pat:UntraceableAgentActionsOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Untraceable agent actions risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:UntraceableAgentActionsRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk/untraceable_agent_actions.rq" ;
+    pair:producesOutputType pair:RiskFinding .
+
+pat:ProtectedDataToExternalModelOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Protected data to external model risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:ProtectedDataToExternalModelRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk/protected_data_to_external_model.rq" ;
+    pair:producesOutputType pair:RiskFinding .
+
+pat:PersonalDataRetainedOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Personal data retained risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:PersonalDataRetainedRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk/personal_data_retained.rq" ;
+    pair:producesOutputType pair:RiskFinding .
+
+pat:ModelExtractionOQP
+    a pair:PatternImplementation ;
+    rdfs:label "Model extraction risk pattern OQP"@en ;
+    pair:implementsRiskPattern pat:ModelExtractionRiskPattern ;
+    pair:implementationPath "ontology/patterns/implementation/risk/model_extraction.rq" ;
+    pair:producesOutputType pair:RiskFinding .
+
+# Shelving: the family of AI system each risk pattern is filed under in the
+# library. Read by no query.
+
+pat:PromptInjectionRiskPattern pair:riskPatternFamily pat:GenAIMotifFamily .
+pat:SensitiveInformationDisclosureRiskPattern pair:riskPatternFamily pat:GenAIMotifFamily .
+pat:ImproperOutputHandlingRiskPattern pair:riskPatternFamily pat:GenAIMotifFamily .
+pat:SystemPromptLeakageRiskPattern pair:riskPatternFamily pat:GenAIMotifFamily .
+pat:VectorAndEmbeddingWeaknessRiskPattern pair:riskPatternFamily pat:GenAIMotifFamily .
+pat:DirectPromptingWithoutGroundingRiskPattern pair:riskPatternFamily pat:GenAIMotifFamily .
+pat:MisinformationFromWeakGroundingRiskPattern pair:riskPatternFamily pat:GenAIMotifFamily .
+pat:UnboundedConsumptionRiskPattern pair:riskPatternFamily pat:GenAIMotifFamily .
+pat:DataAndModelPoisoningRiskPattern pair:riskPatternFamily pat:GenAIMotifFamily .
+pat:ProtectedDataToExternalModelRiskPattern pair:riskPatternFamily pat:GenAIMotifFamily .
+
+pat:ExcessiveAgencyRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+pat:GoalHijackRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+pat:ToolMisuseRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+pat:MemoryPoisoningRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+pat:InsecureAgentCommunicationRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+pat:IdentityPrivilegeAbuseRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+pat:AgenticSupplyChainRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+pat:UnexpectedCodeExecutionRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+pat:CascadingFailuresRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+pat:HumanAgentTrustExploitationRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+pat:UntraceableAgentActionsRiskPattern pair:riskPatternFamily pat:AgenticMotifFamily .
+
+pat:DatasetShiftRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+pat:OutOfDomainInputRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+pat:AdversarialEvasionRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+pat:ModelBiasRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+pat:UnevaluatedModelRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+pat:UnqualifiedPredictionRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+pat:ImproperRetrainingRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+pat:TrainingDataMembershipInferenceRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+pat:EvaluationDataContaminationRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+pat:PersonalDataRetainedRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+pat:ModelExtractionRiskPattern pair:riskPatternFamily pat:MLSystemMotifFamily .
+
+pat:SupplyChainCompromiseRiskPattern pair:riskPatternFamily pat:SupplyChainMotifFamily .
+
+pat:LLMBasedInformationRetrievalMotif pair:hasRiskPattern pat:MisinformationFromWeakGroundingRiskPattern .

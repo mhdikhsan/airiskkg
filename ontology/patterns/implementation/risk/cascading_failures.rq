@@ -7,7 +7,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate cascading failure across agents"@en ;
+        rdfs:label "Candidate cascading failures"@en ;
         dct:description "One agent's decision is handed on twice before another agent acts on it, with no represented checkpoint between the first hand-off and the action."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:CascadingFailuresRiskPattern ;

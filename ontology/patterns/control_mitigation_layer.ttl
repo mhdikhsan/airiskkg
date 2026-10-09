@@ -185,6 +185,8 @@ pat:Control_HeldOutEvaluationData         pair:controlNature pair:TechnicalContr
 pat:Control_ScopedAgentCredentials        pair:controlNature pair:TechnicalControl .
 pat:Control_AgentComponentVerification    pair:controlNature pair:TechnicalControl .
 pat:Control_IndependentEvidenceForApproval pair:controlNature pair:TechnicalControl .
+pat:Control_AgentActionAuditLog          pair:controlNature pair:TechnicalControl .
+pat:Control_ModelAccessHardening         pair:controlNature pair:TechnicalControl .
 
 
 
@@ -195,6 +197,9 @@ pat:Control_ModelAndDependencyProvenance   pair:controlNature pair:NonTechnicalC
 pat:Control_TrustedTrainingAndIndexingData pair:controlNature pair:NonTechnicalControl .
 # Acts on how a model is trained, which an architecture graph does not show.
 pat:Control_TrainingDataPrivacy            pair:controlNature pair:NonTechnicalControl .
+# Agreements and schedules: nothing in an architecture graph shows either.
+pat:Control_ExternalProviderDataAgreement  pair:controlNature pair:NonTechnicalControl .
+pat:Control_RetentionLimits                pair:controlNature pair:NonTechnicalControl .
 
 # --- technical: acts on data, prompt, retrieval, or runtime -----------------
 

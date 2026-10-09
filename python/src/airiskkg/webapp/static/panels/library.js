@@ -14,7 +14,7 @@ let selected = { risks: null, motifs: null, terms: null };
 let addedCount = 0;
 
 
-const opened = { motifs: new Set(), terms: new Set() };
+const opened = { risks: new Set(), motifs: new Set(), terms: new Set() };
 
 // Open as the front door, rather than opened deliberately from the toolbar.
 let openingMode = false;
@@ -73,9 +73,8 @@ function entriesOf(kind) {
 
 // ---- the rail ----
 
-/* Risk patterns are listed, not filed. */
-
-/* Motifs group by the family of AI system */
+/* Risk patterns and motifs both shelve by the family of AI system; a risk
+   pattern files where most of the motifs it applies to belong. */
 function groupsOfMotifs(entries) {
   const groups = new Map();
 
@@ -276,14 +275,6 @@ function renderRail() {
     return;
   }
 
-  if (tab === "risks") {
-    entries.forEach((entry) => {
-      list.appendChild(railRow(entry, tab));
-    });
-
-    return;
-  }
-
   const groups = tab === "terms" ? groupsOfTerms(entries) : groupsOfMotifs(entries);
   const open = opened[tab];
 
@@ -311,6 +302,11 @@ function renderRail() {
     if (!isOpen) return;
     if (tab === "terms") {
       items.forEach((entry) => list.appendChild(termRow(entry)));
+      return;
+    }
+    // Risk patterns have no groups inside a family.
+    if (tab === "risks") {
+      items.forEach((entry) => list.appendChild(railRow(entry, tab)));
       return;
     }
     const within = groupsWithin(items);
@@ -514,7 +510,21 @@ function legend(template) {
     el("span", { class: "lib-legend-item" }, [swatch(kind), KIND_NAME[kind] || kind])));
 }
 
-function motifCard(motif) {
+/* On a risk page, whether the motif raises the risk by itself or only once its
+   elements carry the context named here, which inserting it then adds. */
+function carriesLine(motif, risk) {
+  if (!risk) return null;
+  const needs = (risk.motifContext || {})[motif.id] || [];
+  if (!needs.length) {
+    return el("p", { class: "lib-carries carried" }, "Raises this risk pattern by itself.");
+  }
+  return el("div", { class: "lib-carries" }, [
+    el("span", { class: "lib-meta-lead" }, "raises it when"),
+    el("ul", { class: "lib-when-list" }, needs.map((need) => el("li", {}, need))),
+  ]);
+}
+
+function motifCard(motif, risk) {
   return el("div", { class: "lib-card" }, [
     el("div", { class: "lib-card-head" }, [
       el("strong", {}, shortName(motif.label, MOTIF_SUFFIX)),
@@ -523,6 +533,7 @@ function motifCard(motif) {
         motif.nodes.length + " elements · " + motif.edges.length + " relations"),
     ]),
     el("div", { class: "lib-preview" }, motifPreview(motif)),
+    carriesLine(motif, risk),
     el("div", { class: "lib-card-foot" }, [
       motif.roles.length
         ? el("div", { class: "lib-roles" }, [
@@ -540,8 +551,10 @@ function motifCard(motif) {
         el("button", {
           type: "button",
           class: "btn small primary",
-          title: "Add this motif's elements to the graph, already annotated with the roles it matches on",
-          onclick: () => insertMotif(motif),
+          title: risk && ((risk.motifContext || {})[motif.id] || []).length
+            ? "Add this motif's elements to the graph, with the context that raises this risk pattern"
+            : "Add this motif's elements to the graph, already annotated with the roles it matches on",
+          onclick: () => insertMotif(motif, risk),
         }, "Add to canvas"),
       ]),
     ]),
@@ -570,7 +583,7 @@ function riskDetail(entry) {
           count: motifs.length,
           hint: motifs.length ? " " : null,
           body: motifs.length
-            ? motifs.map(motifCard)
+            ? motifs.map((motif) => motifCard(motif, entry))
             : emptyLine("Names no motif of its own: evaluated over any motif match whose conditions hold."),
         }),
       ],
@@ -1221,16 +1234,12 @@ function landing() {
   }
 
   if (tab === "risks") {
-    parts.push(
-      el(
-        "div",
-        { class: "lib-grid" },
-
-        entries.map(
-          (entry) => landingTile(entry, tab)
-        )
-      )
-    );
+    groupsOfMotifs(entries).forEach(([familyName, members]) => {
+      const family = members[0] ? members[0].family : null;
+      parts.push(motifShelfHead(familyName, members.length, family && family.definition));
+      parts.push(el("div", { class: "lib-grid" },
+        members.map((entry) => landingTile(entry, tab))));
+    });
 
     return parts;
   }
@@ -1337,8 +1346,7 @@ function showTab(next) {
    not point at a row inside a folded section. */
 function groupOf(kind, entry) {
   if (kind === "terms") return entry.shelf || "Unshelved";
-  if (kind === "motifs") return entry.family ? entry.family.label : "Unshelved";
-  return null;
+  return entry.family ? entry.family.label : "Unshelved";
 }
 
 function select(kind, id) {
@@ -1357,11 +1365,12 @@ function select(kind, id) {
 
 // ---- adding a motif ----
 
-async function insertMotif(motif) {
+async function insertMotif(motif, risk) {
   const ok =
     await addMotif({
       id: motif.id,
       label: motif.label,
+      riskPattern: risk && ((risk.motifContext || {})[motif.id] || []).length ? risk.id : null,
     });
 
   if (!ok) {
@@ -1479,6 +1488,8 @@ async function load() {
         entry
       )
   );
+  // Risks open unfolded: 33 entries are the front door, and still fold by family.
+  catalogue.riskPatterns.forEach((entry) => opened.risks.add(groupOf("risks", entry)));
 
   catalogue.motifs.forEach(
     (entry) =>

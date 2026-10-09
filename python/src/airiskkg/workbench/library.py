@@ -5,6 +5,7 @@ from functools import lru_cache
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, URIRef
 
 from airiskkg.assessment_runner import PAIR, load_base_graph
+from airiskkg.workbench.risk_context import link_context
 from airiskkg.workbench.templates import motif_templates
 from airiskkg.workbench.terms import (
     display_label,
@@ -219,6 +220,7 @@ def _risk_pattern_entry(graph: Graph, pattern: URIRef, domains: set[URIRef]) -> 
         "iri": str(pattern),
         "label": label(graph, pattern),
         "description": _definition(graph, pattern),
+        "family": _shelf(graph, pattern, PAIR.riskPatternFamily),
         "derivedFrom": derived,
         "riskDomains": sorted(reached.values(), key=lambda d: d["label"].lower()),
         "mechanism": _ref(graph, mechanism) if mechanism is not None else None,
@@ -232,6 +234,11 @@ def _risk_pattern_entry(graph: Graph, pattern: URIRef, domains: set[URIRef]) -> 
             key=lambda ref: ref["label"].lower(),
         ),
         "motifs": sorted(short(motif) for motif in graph.objects(pattern, PAIR.hasMotif)),
+        # Empty where the motif raises the risk pattern by itself.
+        "motifContext": {
+            short(motif): (link_context(short(pattern), short(motif)) or {}).get("says", [])
+            for motif in graph.objects(pattern, PAIR.hasMotif)
+        },
     }
 
 

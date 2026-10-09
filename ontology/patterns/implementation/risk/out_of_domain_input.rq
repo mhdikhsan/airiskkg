@@ -73,6 +73,8 @@ WHERE {
                pair:playsRole ?inputRole .
         { ?inputRole pair:subRoleOf* pair:PredictionRequest }
         UNION
+        { ?inputRole pair:subRoleOf* pair:PredictionQueue }
+        UNION
         { ?inputRole pair:subRoleOf* pair:BatchDataset }
         UNION
         { ?inputRole pair:subRoleOf* pair:PreprocessedData }

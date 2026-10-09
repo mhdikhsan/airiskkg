@@ -7,8 +7,8 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate prediction acted on without its uncertainty"@en ;
-        dct:description "A prediction reaches a step that acts on it, or a user, with neither an uncertainty estimate nor a represented human review alongside it."@en ;
+        rdfs:label "Candidate unqualified prediction"@en ;
+        dct:description "A prediction is used by a step that acts on it, or reaches a user, with neither an uncertainty estimate nor a represented human review alongside it."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:UnqualifiedPredictionRiskPattern ;
         pair:generatedFromMatch ?match ;
@@ -75,10 +75,19 @@ WHERE {
         FILTER NOT EXISTS { ?prediction pair:playsRole/pair:subRoleOf* pair:UncertaintyEstimate }
         {
             ?consequence beam:use ?carried ;
-                         pair:playsRole ?actingRole .
-            { ?actingRole pair:subRoleOf* pair:StateChangingStep }
-            UNION
-            { ?actingRole pair:subRoleOf* pair:ToolInvocationStep }
+                         a/rdfs:subClassOf* beam:Process .
+            FILTER NOT EXISTS {
+                ?consequence pair:playsRole ?observingRole .
+                { ?observingRole pair:subRoleOf* pair:LoggingStep }
+                UNION
+                { ?observingRole pair:subRoleOf* pair:MonitoringStep }
+                UNION
+                { ?observingRole pair:subRoleOf* pair:EvaluationStep }
+                UNION
+                { ?observingRole pair:subRoleOf* pair:ScoringStep }
+                UNION
+                { ?observingRole pair:subRoleOf* pair:ControlStep }
+            }
         }
         UNION
         {

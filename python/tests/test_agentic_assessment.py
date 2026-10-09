@@ -96,8 +96,8 @@ def test_agentic_example_matches_both_agentic_motifs() -> None:
 
 def test_agentic_example_produces_both_agentic_findings() -> None:
     findings = _findings(_summary(_example_ttl()))
-    assert "Candidate unmediated agent tool use" in findings
-    assert "Candidate agent memory poisoning" in findings
+    assert "Candidate tool misuse" in findings
+    assert "Candidate memory and context poisoning" in findings
 
 
 def test_mediating_control_suppresses_the_tool_misuse_finding() -> None:
@@ -105,14 +105,14 @@ def test_mediating_control_suppresses_the_tool_misuse_finding() -> None:
     the applicability condition looks for, so the finding must stop firing while
     the memory finding is left alone."""
     findings = _findings(_summary(_example_ttl() + POLICY_GATE))
-    assert "Candidate unmediated agent tool use" not in findings
-    assert "Candidate agent memory poisoning" in findings, "unrelated finding must survive"
+    assert "Candidate tool misuse" not in findings
+    assert "Candidate memory and context poisoning" in findings, "unrelated finding must survive"
 
 
 def test_write_validation_suppresses_the_memory_poisoning_finding() -> None:
     findings = _findings(_summary(_example_ttl() + MEMORY_SCREENING))
-    assert "Candidate agent memory poisoning" not in findings
-    assert "Candidate unmediated agent tool use" in findings, "unrelated finding must survive"
+    assert "Candidate memory and context poisoning" not in findings
+    assert "Candidate tool misuse" in findings, "unrelated finding must survive"
 
 
 def test_memory_loop_needs_the_same_store_written_and_read() -> None:

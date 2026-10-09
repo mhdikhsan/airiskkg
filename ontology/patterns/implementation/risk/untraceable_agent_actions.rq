@@ -1,0 +1,83 @@
+PREFIX pat:   <http://w3id.org/airiskkg/patterns#>
+PREFIX pair:  <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam:  <http://w3id.org/beam/core#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:   <http://purl.org/dc/terms/>
+
+CONSTRUCT {
+    ?riskFinding
+        a pair:RiskFinding ;
+        rdfs:label "Candidate untraceable agent actions"@en ;
+        dct:description "An agent's action step is represented with no logging step reading what it acted on or what it produced, so the submitted graph shows no record from which the action could be reconstructed."@en ;
+        pair:findingStatus "candidate" ;
+        pair:generatedByRiskPattern pat:UntraceableAgentActionsRiskPattern ;
+        pair:generatedFromMatch ?match ;
+        pair:generatedByMotif ?motif ;
+        pair:hasDerivedMechanism ?mechanism ;
+        pair:hasEvidence ?planningStep ,
+            ?instruction ,
+            ?actionStep ,
+            ?actionResult ;
+        pair:hasCandidateRiskTaxonomyEntry ?riskTaxonomyEntry ;
+        pair:hasSuggestedControl ?suggestedControl ;
+        pair:hasSatisfiedCondition ?satisfiedCondition ,
+            ?sourceRiskCondition .
+}
+WHERE {
+    {
+        ?match
+            a pair:MotifMatch ;
+            pair:matchesMotif ?motif .
+        {
+            ?match pair:hasNodeBinding ?planningBinding , ?instructionBinding ,
+                                       ?actionBinding , ?resultBinding .
+            ?planningBinding pair:bindsPatternNode pat:ToolAgent_PlanningStepNode ;
+                             pair:matchedElement ?planningStep .
+            ?instructionBinding pair:bindsPatternNode pat:ToolAgent_PlanNode ;
+                                pair:matchedElement ?instruction .
+            ?actionBinding pair:bindsPatternNode pat:ToolAgent_ActionStepNode ;
+                           pair:matchedElement ?actionStep .
+            ?resultBinding pair:bindsPatternNode pat:ToolAgent_ActionResultNode ;
+                           pair:matchedElement ?actionResult .
+        }
+        UNION
+        {
+            ?match pair:hasNodeBinding ?planningBinding , ?instructionBinding ,
+                                       ?actionBinding , ?resultBinding .
+            ?planningBinding pair:bindsPatternNode pat:Registry_CoordinatorNode ;
+                             pair:matchedElement ?planningStep .
+            ?instructionBinding pair:bindsPatternNode pat:Registry_AssignmentNode ;
+                                pair:matchedElement ?instruction .
+            ?actionBinding pair:bindsPatternNode pat:Registry_ToolStepNode ;
+                           pair:matchedElement ?actionStep .
+            ?resultBinding pair:bindsPatternNode pat:Registry_ResultNode ;
+                           pair:matchedElement ?actionResult .
+        }
+
+        # Anything the action step reads or writes counts as a record of it.
+        FILTER NOT EXISTS {
+            ?logger pair:playsRole/pair:subRoleOf* pair:LoggingStep ;
+                    beam:use ?recorded .
+            { ?actionStep beam:use ?recorded }
+            UNION
+            { ?actionStep beam:produce ?recorded }
+        }
+    }
+
+    pat:UntraceableAgentActionsRiskPattern
+        pair:hasMechanism ?mechanism ;
+        pair:hasApplicabilityCondition ?satisfiedCondition ;
+        pair:mayIndicateRisk ?riskTaxonomyEntry ;
+        pair:suggestedControl ?suggestedControl .
+
+    OPTIONAL {
+        ?satisfiedCondition pair:operationalizesRiskCondition ?sourceRiskCondition .
+    }
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/risk-finding/",
+        ENCODE_FOR_URI(STR(?match)),
+        "/", ENCODE_FOR_URI(STR(?actionStep)),
+        "/untraceable-agent-actions"
+    )) AS ?riskFinding)
+}

@@ -210,7 +210,10 @@ CASES = [
         "PromptInjectionRiskPattern",
         "MisinformationFromWeakGroundingRiskPattern",
     }),
-    ("LLMBasedInformationRetrievalMotif", LLM_BASED_IR, {"PromptInjectionRiskPattern"}),
+    ("LLMBasedInformationRetrievalMotif", LLM_BASED_IR, {
+        "PromptInjectionRiskPattern",
+        "MisinformationFromWeakGroundingRiskPattern",
+    }),
     ("RetrievalDataAugmentationMotif", RETRIEVAL_DATA_AUGMENTATION, {
         "DataAndModelPoisoningRiskPattern",
     }),
@@ -234,6 +237,7 @@ CASES = [
         "AgenticSupplyChainRiskPattern",
         "UnexpectedCodeExecutionRiskPattern",
         "HumanAgentTrustExploitationRiskPattern",
+        "UntraceableAgentActionsRiskPattern",
     }),
 ]
 

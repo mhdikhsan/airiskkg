@@ -286,9 +286,17 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
       motif at all. All three vector-and-embedding-weakness findings go with it,
       correctly - a knowledge graph has no embeddings to be weak - and prompt
       injection drops from 5 to 3 because it is a per-match finding and the
-      vector match is gone. Fewer findings, none of them lost truthfully."""
+      vector match is gone. Fewer findings, none of them lost truthfully.
+
+    Moved 2026-10-09 by four new risk patterns and a narrower supply chain query:
+    onyx 22 -> 24 (its generator is an external model reading sensitive
+    workspace content, raised once from the direct-prompting match and once from
+    RAG, which group into one concern); the IT support agent 8 -> 10 (two tool
+    steps with no log reading them); credit scoring 16 -> 17 (model extraction
+    from the serving and train-to-serve matches, +2, and supply chain no longer
+    raised on the model it trains itself, -1)."""
     expected = {
-        example_path(ONYX_NS): (14, 22),
+        example_path(ONYX_NS): (14, 24),
         example_path(GRAPH_RAG_NS): (3, 7),
         # The Wien Energie chatbot, and the graph the bundled process refines.
         example_path(WIEN_ENERGIE_NS): (5, 9),
@@ -299,10 +307,10 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
         # The agentic shape, and the only bundled graph that reaches it: tool
         # use, a memory loop and a delegation, with no control step anywhere -
         # so all three agentic motifs match and four ASI-derived patterns fire.
-        example_path(AGENT_NS): (4, 8),
+        example_path(AGENT_NS): (4, 10),
         # The ML serving shape: retrained on its own decisions, deployed without
         # evaluation, scored on public applications, with no control anywhere.
-        example_path(CREDIT_SCORING_NS): (3, 16),
+        example_path(CREDIT_SCORING_NS): (3, 17),
     }
     # Every graph the repo ships is pinned.
     unpinned = set(EXAMPLE_DIR.glob("*.ttl")) - set(expected)

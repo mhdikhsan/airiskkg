@@ -7,7 +7,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate agentic supply chain compromise"@en ;
+        rdfs:label "Candidate agentic supply chain"@en ;
         dct:description "A component supplied from outside the system is read by the step that decides an agent's action, with no represented verification before it is trusted."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:AgenticSupplyChainRiskPattern ;

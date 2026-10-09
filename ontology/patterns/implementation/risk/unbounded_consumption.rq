@@ -8,7 +8,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate unbounded LLM or retrieval consumption"@en ;
+        rdfs:label "Candidate unbounded consumption"@en ;
         dct:description "A query rewriting, retrieval, tool, or generation loop is represented without an explicit budget, rate, or loop control."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:UnboundedConsumptionRiskPattern ;

@@ -178,6 +178,7 @@ atlas:lack-of-data-transparency        skos:relatedMatch mit:subdomain-6-5 .
 atlas:over-or-under-reliance           skos:relatedMatch mit:subdomain-5-1 .
 atlas:spreading-disinformation         skos:relatedMatch mit:subdomain-4-1 .
 atlas:data-bias                        skos:relatedMatch mit:subdomain-1-1 .
+atlas:extraction-attack                skos:relatedMatch mit:subdomain-2-2 .
 
 
 ## OWASP Agentic Top 10 (ASI) <-> OWASP LLM Top 10
@@ -363,6 +364,9 @@ atlas:data-bias
 atlas:unrepresentative-data
     skos:broadMatch nist:harmful-bias-and-homogenization ;
     skos:relatedMatch nist:value-chain-and-component-integration .
+
+atlas:extraction-attack
+    skos:broadMatch nist:information-security .
 
 #################################################################
 # Section 2 — Project-curated mappings (PAIR-AI expert curation)
@@ -628,6 +632,18 @@ atlas:improper-retraining
 # the model, of which membership inference is the query-based form.
 atlas:membership-inference-attack
     skos:relatedMatch eticas:sensitive-information-leakage .
+
+# Actions nobody can reconstruct are a transparency and auditability failure
+# (7-4). OWASP ASI08 names repudiation and untraceability as what lets a fault
+# spread across agents unnoticed.
+eticas:untraceable-agent-actions
+    skos:relatedMatch mit:subdomain-7-4 ,
+        asi:asi08-cascading-failures .
+
+# Data kept beyond its need, or open to more people than need it, is data that
+# can be obtained or leaked (2-1).
+eticas:weak-data-controls
+    skos:relatedMatch mit:subdomain-2-1 .
 
 
 # Section 3 - Risk-to-control grounding

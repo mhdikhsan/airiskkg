@@ -696,6 +696,33 @@ label.btn { display: inline-flex; align-items: center; }
 .ref-list li { margin: 2px 0; }
 .evidence-note { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
+/* One card per risk pattern; each place it holds is a row of its own. */
+.finding-places { margin-left: auto; }
+.finding-place-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.finding-place {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: #1b1f29;
+  min-width: 0;
+}
+.finding-place:hover { border-color: #3d4452; }
+.finding-place.selected { border-color: var(--error); }
+.finding-place-head { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.finding-place-n {
+  flex: none;
+  font-size: 11px;
+  color: var(--text-dim);
+  border: 1px solid #39415a;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  line-height: 16px;
+  text-align: center;
+}
+.finding-place-evidence { font-size: 12px; color: #c9d2e3; overflow-wrap: anywhere; }
+.finding-place-motifs { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+
 /* Control mitigation tiers */
 .ctrl-group { margin: 6px 0; }
 .ctrl-group-head {
@@ -2299,6 +2326,9 @@ body.editor-hidden .pane-head { display: none; }
 .lib-mech-when { padding-top: 12px; border-top: 1px dashed var(--border); }
 .lib-when-list { margin: 6px 0 0; padding-left: 18px; font-size: 13.5px; line-height: 1.6; color: var(--text); }
 .lib-when-list li + li { margin-top: 4px; }
+.lib-carries { margin: 8px 0 0; font-size: 13px; color: var(--text-dim); min-width: 0; }
+.lib-carries .lib-when-list { font-size: 13px; }
+.lib-carries.carried { color: var(--good); }
 
 .lib-harm { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 .lib-domain { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }

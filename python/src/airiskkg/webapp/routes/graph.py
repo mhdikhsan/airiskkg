@@ -19,8 +19,9 @@ from airiskkg.workbench.process_view import (
     process_view,
     system_context_options,
 )
+from airiskkg.workbench.risk_context import template_in_context
 from airiskkg.workbench.templates import motif_templates
-from airiskkg.workbench.terms import PROCESS_CLASS_NAMES
+from airiskkg.workbench.terms import PROCESS_CLASS_NAMES, short
 
 graph_routes = Blueprint("graph", __name__)
 
@@ -291,6 +292,8 @@ def graph_edit() -> object:
         template = motif_templates().get(motif_id)
         if template is None:
             return jsonify({"error": f"Unknown motif template: {motif_id}"}), 400
+        if payload.get("riskPattern"):
+            template = template_in_context(motif_id, short(payload["riskPattern"]))
         system = next(iter(data.subjects(RDF.type, BEAM.System)), None)
         if system is None:
             system = local["system"]

@@ -412,3 +412,102 @@ def test_the_bundled_agent_raises_none_of_the_new_agentic_patterns() -> None:
         "HumanAgentTrustExploitationRiskPattern",
     }
     assert not new & set(after)
+
+
+# The four patterns added for structures no other pattern covered.
+
+def test_a_trained_model_open_to_public_queries_raises_model_extraction(credit, credit_baseline) -> None:
+    assert "ModelExtractionRiskPattern" in credit_baseline
+    throttled = credit + """
+cs:Throttle a beam:Process ; pair:playsRole pair:RateLimitControlStep ;
+    beam:use cs:LoanApplication ; beam:produce cs:Quota .
+cs:Quota a beam:Data ; rdfs:label "Query quota" .
+cs:ScoreApplication beam:use cs:Quota .
+"""
+    assert "ModelExtractionRiskPattern" not in _patterns(throttled)
+
+
+def test_model_extraction_needs_the_queries_to_be_public(credit) -> None:
+    internal = _replace(credit, "pair:playsRole pair:PublicUserInput , pair:PredictionRequest .",
+                        "pair:playsRole pair:PredictionRequest .")
+    assert "ModelExtractionRiskPattern" not in _patterns(internal)
+
+
+def test_an_agent_action_nothing_records_raises_untraceable_actions() -> None:
+    after = _patterns(REGISTRY)
+    assert "UntraceableAgentActionsRiskPattern" in after
+    logged = REGISTRY + """
+ex:Audit a beam:Process ; rdfs:label "Audit log" ; pair:playsRole pair:LoggingStep ;
+    beam:use ex:Assignment, ex:Result ; beam:produce ex:Trail .
+ex:Trail a beam:Data ; rdfs:label "Audit trail" .
+"""
+    assert "UntraceableAgentActionsRiskPattern" not in _patterns(logged)
+
+
+def test_the_bundled_agent_keeps_no_record_of_its_actions() -> None:
+    after = _patterns(example_path(AGENT_NS).read_text(encoding="utf-8"))
+    assert after["UntraceableAgentActionsRiskPattern"] == 2
+
+
+PROVIDER = """
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ex:   <http://example.org/provider#> .
+
+ex:Sys a beam:System ; rdfs:label "Claims assistant" .
+ex:Claim a beam:Data ; rdfs:label "Claim with medical notes" ;
+    pair:playsRole pair:UserInput ; pair:containsDataCategory pair:SensitiveInformation .
+ex:HostedLLM a beam:StatisticalModel ; rdfs:label "Hosted LLM" ;
+    pair:playsRole pair:GenerativeModel, %s .
+ex:ApiKey a beam:Data ; rdfs:label "Provider key" ; pair:playsRole pair:ExternalProviderCredential ;
+    pair:containsDataCategory pair:ConfidentialInformation .
+ex:Answer a beam:Process ; rdfs:label "Draft a reply" ; pair:playsRole pair:GenerationStep ;
+    beam:use %s, ex:HostedLLM, ex:ApiKey ; beam:produce ex:Reply .
+ex:Reply a beam:Data ; rdfs:label "Reply" ; pair:playsRole pair:UserFacingOutput .
+"""
+
+
+def test_personal_data_sent_to_a_hosted_model_raises_protected_data_to_external_model() -> None:
+    assert "ProtectedDataToExternalModelRiskPattern" in _patterns(PROVIDER % ("pair:ExternalModel", "ex:Claim"))
+    in_house = PROVIDER % ("pair:FoundationLLM", "ex:Claim")
+    assert "ProtectedDataToExternalModelRiskPattern" not in _patterns(in_house)
+
+
+def test_redacting_before_the_provider_clears_it_and_the_key_alone_never_raises_it() -> None:
+    redacted = PROVIDER % ("pair:ExternalModel", "ex:Masked") + """
+ex:Mask a beam:Process ; rdfs:label "Mask identifiers" ; pair:playsRole pair:RedactionStep ;
+    beam:use ex:Claim ; beam:produce ex:Masked .
+ex:Masked a beam:Data ; rdfs:label "Masked claim" ; pair:playsRole pair:UserInput .
+"""
+    assert "ProtectedDataToExternalModelRiskPattern" not in _patterns(redacted)
+
+
+MEMORY = AGENT + """
+ex:Ticket pair:containsDataCategory pair:SensitiveInformation .
+ex:Remember a beam:Process ; rdfs:label "Remember the ticket" ; pair:playsRole %s ;
+    beam:use ex:Ticket ; beam:produce ex:Memory .
+ex:Memory a beam:Data ; rdfs:label "Agent memory" ; pair:playsRole pair:AgentMemory .
+ex:Recall a beam:Process ; pair:playsRole pair:MemoryReadStep ; beam:use ex:Memory ; beam:produce ex:Recalled .
+ex:Recalled a beam:Data ; rdfs:label "Recalled" ; pair:playsRole pair:RetrievedContext .
+"""
+
+
+def test_personal_data_kept_in_agent_memory_raises_personal_data_retained() -> None:
+    assert "PersonalDataRetainedRiskPattern" in _patterns(MEMORY % "pair:MemoryWriteStep")
+    redacting = MEMORY % "pair:MemoryWriteStep, pair:RedactionStep"
+    assert "PersonalDataRetainedRiskPattern" not in _patterns(redacting)
+
+
+def test_a_prediction_log_of_personal_requests_raises_personal_data_retained(credit) -> None:
+    logged = credit + """
+cs:LoanApplication pair:containsDataCategory pair:SensitiveInformation .
+cs:LogPredictions a beam:Process ; rdfs:label "Log predictions" ;
+    pair:playsRole pair:LoggingStep ;
+    beam:use cs:LoanApplication, cs:CreditScore ;
+    beam:produce cs:PredictionLog .
+cs:PredictionLog a beam:Data ; rdfs:label "Prediction log" ; pair:playsRole pair:PredictionLog .
+"""
+    assert "PersonalDataRetainedRiskPattern" in _patterns(logged)
+    masked = logged.replace("pair:playsRole pair:LoggingStep ;", "pair:playsRole pair:LoggingStep, pair:RedactionStep ;")
+    assert "PersonalDataRetainedRiskPattern" not in _patterns(masked)

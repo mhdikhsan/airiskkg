@@ -579,8 +579,20 @@ atlas:unrepresentative-data a nexus:Risk ;
     nexus:descriptor "amplified by synthetic data" ;
     rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/unrepresentative-data.html> .
 
-# PAIR-AI mechanisms and conditions for the three Atlas entries a risk pattern
-# derives from directly. Written for this knowledge base; not IBM text.
+atlas:extraction-attack a nexus:Risk ;
+    skos:prefLabel "Extraction attack" ;
+    skos:definition "Systematic queries to a model let an attacker build a surrogate that behaves like it, copying the model without access to its weights." ;
+    skos:broader atlas:robustness-model-behavior-manipulation ;
+    skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
+    nexus:isPartOf atlas:robustness-model-behavior-manipulation ;
+    nexus:tag "extraction-attack" ;
+    nexus:riskType "inference" ;
+    nexus:descriptor "amplified by generative AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/extraction-attack.html> .
+
+# PAIR-AI mechanisms and conditions for the Atlas entries a risk pattern derives
+# from directly. Written for this knowledge base; not IBM text.
 
 atlas:improper-retraining
     nexus:hasRiskMechanism atlas:mechanism-unvetted-feedback-into-training ;
@@ -626,3 +638,33 @@ atlas:condition-evaluation-reads-training-data
     a nexus:RiskCondition ;
     skos:prefLabel "An evaluation step reads data that the evaluated model's training input was taken from"@en ;
     nexus:conditionForRisk atlas:data-contamination .
+
+atlas:personal-information-in-prompt
+    nexus:hasRiskMechanism atlas:mechanism-protected-content-leaves-for-a-provider ;
+    nexus:hasRiskCondition atlas:condition-protected-content-reaches-external-model .
+
+atlas:extraction-attack
+    nexus:hasRiskMechanism atlas:mechanism-model-copied-through-open-queries ;
+    nexus:hasRiskCondition atlas:condition-public-queries-reach-in-house-model-unthrottled .
+
+atlas:mechanism-protected-content-leaves-for-a-provider
+    a pair:RiskMechanism ;
+    rdfs:label "Protected content leaves for a model provider"@en ;
+    dct:description "A step sends its inputs to a model run by a third party. Whatever personal or confidential content is among them leaves the organisation at that point, under the provider's retention and processing terms rather than the deployer's, and the architecture shows nothing removing it first."@en ;
+    nexus:mechanismForRisk atlas:personal-information-in-prompt .
+
+atlas:mechanism-model-copied-through-open-queries
+    a pair:RiskMechanism ;
+    rdfs:label "A model copied through open queries"@en ;
+    dct:description "A model the organisation trained answers whoever asks, as often as they ask. Enough input and output pairs are a training set for a surrogate that behaves like the original, so the investment, and any weakness the copy can then be probed for offline, is exposed without the weights ever leaving."@en ;
+    nexus:mechanismForRisk atlas:extraction-attack .
+
+atlas:condition-protected-content-reaches-external-model
+    a nexus:RiskCondition ;
+    skos:prefLabel "A step using a third-party model reads content carrying a personal or confidential classification"@en ;
+    nexus:conditionForRisk atlas:personal-information-in-prompt .
+
+atlas:condition-public-queries-reach-in-house-model-unthrottled
+    a nexus:RiskCondition ;
+    skos:prefLabel "A model trained in the system answers public queries with no rate limit represented"@en ;
+    nexus:conditionForRisk atlas:extraction-attack .

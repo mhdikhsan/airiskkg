@@ -2716,9 +2716,10 @@ def test_the_motif_tray_is_shelved_by_the_kind_of_system_each_is_a_shape_of(page
     })()"""))
     assert seen, "the architecture level offers no motif tray"
 
-    assert seen["items"] == 31, f"the tray lists {seen['items']} motifs"
-    assert seen["families"] == [
-        "Agentic", "GenAI", "ML serving and training", "Supply chain",
-    ], seen["families"]
-    assert seen["counts"] == [4, 13, 13, 1], seen["counts"]
+    from test_canvas_renders import _library
+
+    library = _library()
+    assert seen["items"] == library["motifs"], f"the tray lists {seen['items']} motifs"
+    assert seen["families"] == list(library["families"]), seen["families"]
+    assert seen["counts"] == list(library["families"].values()), seen["counts"]
     assert sum(seen["counts"]) == seen["items"], "a motif is shelved twice or not at all"

@@ -766,7 +766,7 @@ def test_stating_a_harm_is_enough_to_have_an_agenda() -> None:
 
 def test_concerns_that_share_a_name_say_where_they_are(repeating_view) -> None:
     """Prompt injection is raised once per untrusted-content/generation pair, so
-    three boxes reading "Candidate prompt injection exposure" are three true and
+    three boxes reading "Candidate prompt injection" are three true and
     different answers - and nothing on them said which was which.
 
     A concern is the (risk pattern, evidence set) group, so the evidence is what

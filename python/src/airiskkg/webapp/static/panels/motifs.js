@@ -221,6 +221,7 @@ export function addMotif(item) {
       const { ttl } = await postJson("/api/graph-edit", {
         ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
         op: "add-motif", motif: item.id,
+        ...(item.riskPattern ? { riskPattern: item.riskPattern } : {}),
       });
       noteChange(`added motif: ${item.label}`);
       Editor.setValue(ttl);

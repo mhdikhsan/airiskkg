@@ -642,6 +642,8 @@ def test_the_detail_opens_folded_and_the_reader_chooses_what_to_read(served) -> 
           log("whyShownAfterClick=" + (why ? shown(why) : "none"));
         }, 300);
       }, 900);
+        }, 2600);
+      });
     """))
 
     fields = _fields(report)

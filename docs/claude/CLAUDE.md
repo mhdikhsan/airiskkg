@@ -706,6 +706,22 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   left the page fitting, and only removing all four reproduced the breach — measured at
   **306 px** at 1400 wide, which is the overflow that once scrolled the page sideways and cut
   the first letter off every line.
+- **Every motif–risk link is carried or names its context, and both are proven.** A motif
+  carries a risk pattern when inserting it alone raises the pattern through its own match
+  (misinformation via LLM-based IR: the model makes up what it returns). Otherwise the risk
+  depends on what the elements are about — public input, personal data, a hosted model, a
+  credential — or on what surrounds the motif, such as a training step upstream of a served
+  model. `workbench/risk_context.py` states that context per link, in words and as the
+  annotations and elements that make the conditions hold; a risk page shows it under each motif,
+  and "Add to canvas" there inserts the motif with it, so picking a risk, adding a motif and
+  running the assessment raises it. `test_motif_risk_links.py` builds every link exactly as
+  `add-motif` does: carried links fire bare, the rest fire with their context, and **no context
+  is named for a link the motif already carries**. Until 2026-10-09, 88 of 124 links raised
+  nothing when their motif was inserted, and four supply chain links could not fire at all,
+  because the query read only External Dependency matches. A link that fires under no context is
+  removed rather than kept: Model in Image and Training to Serving train their own artifact, so
+  nothing in them enters from outside. **Context never gates detection** — it lives in the
+  workbench, no query reads it, and a submitted graph is assessed exactly as before.
 - **Two risk patterns name no motif and must keep saying so** rather than showing an empty heading:
   `ExcessiveAgency` and `SensitiveInformationDisclosure` are evaluated over any motif match
   whose conditions hold.
@@ -745,11 +761,12 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   scaled into a card renders its labels at about four pixels, which is decoration. The shape
   is what separates two motifs at that size, each node keeps its `<title>` for hover, and the
   detail view carries the labelled drawing.
-- **The rail folds by group, opens folded, and Risks does not fold.** 31 motifs and 97 terms as
-  one column give a reader no way to put part of the library aside, so the first view is the
-  shelves, not 128 rows: the state is the set of groups the reader *opened*, starting empty.
-  Risks stays flat because 15 entries are a list rather than a filing problem. Two things the
-  fold has to respect: a search unfolds everything, or a match inside a folded group would read
+- **The rail folds by group on every tab; Motifs and Terms open folded, Risks open.** Motifs
+  and terms as one column give a reader no way to put part of the library aside, so their first
+  view is the shelves: the state is the set of groups the reader *opened*, starting empty. Risks
+  was flat while it held 15 entries and is shelved by family since it holds 33 (asked for
+  2026-10-09), but it is the front door, so its families start open and fold on a click. Two
+  things the fold has to respect: a search unfolds everything, or a match inside a folded group would read
   as no match; and `select()` opens the group holding what it selected, or the landing would
   point at a hidden row.
 - **There is no "Start from a risk" button.** The risk level is not an entry point in the
@@ -761,8 +778,13 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **A risk pattern with no `dct:description` borrows the definition of the entry it was derived
   from, attributed.** The taxonomy entry names the risk; the risk pattern says when the library
   raises it. The two must not be presented as one sentence.
-- **Risk patterns are listed, not filed.** A risk pattern is a weakness in a design; the risk is
-  the harm it may end in, and a shelf must not blur the two. The list is flat; the consequence
+- **Risk patterns are shelved by the kind of system, never by harm.** A risk pattern is a
+  weakness in a design; the risk is the harm it may end in, and a shelf must not blur the two.
+  So the shelf is `pair:riskPatternFamily`, from the motif family scheme — GenAI 10, Agentic 11,
+  ML serving and training 11, Supply chain 1 — the family most of its motifs belong to,
+  with no groups inside it. It is a filing decision like `motifFamily`: no query reads it, and
+  `test_every_risk_pattern_is_shelved_where_its_motifs_are` holds it to a family one of its
+  motifs is in. The two motif-free patterns are filed by judgement. The consequence
   travels with the entry as **may lead to** chips, and the detail groups entries by the domain
   each rolls up to (`mayIndicateRisk` → `skos:broader` into
   `mit:MIT_AI_Risk_Repository_Domain_Taxonomy`) so a reader sees which link produced which
@@ -1267,18 +1289,19 @@ len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its sibl
 | | |
 | --- | --- |
 | Motifs | **47** — GenAI 20, ML serving and training 13, Agentic 13, Supply chain 1 |
-| Risk patterns | **29** (35 motifs carry one; 12 carry none) |
+| Risk patterns | **33** — GenAI 10, Agentic 11, ML serving and training 11, Supply chain 1 (35 motifs carry one; 12 carry none) |
 | Pattern nodes / pattern edges | **261** / **224** — every edge crosses between an oval and a box |
 | Pattern roles | **123**. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
 | Data categories | **7** |
 | Facet concepts | **35** (task 20, data 11, autonomy 4) |
-| Risk mechanisms | **28** |
-| Applicability conditions | **30**, carried on 34 attachments |
-| Controls | **26** `pat:Control_*` |
-| Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 39, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
-| Triples | **11 855** |
+| Risk mechanisms | **32** |
+| Applicability conditions | **34**, carried on 38 attachments |
+| Controls | **30** `pat:Control_*` |
+| Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 40, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
+| Triples | **12 081** |
+| Motif–risk links | **123** — 39 carried by the motif alone, 84 with a named context (32 annotate the motif's own elements, 52 add the surrounding elements the risk needs) |
 
-**93 registered implementations** over 92 `.rq` files: 47 match, 29 risk, 6 propagation, 9
+**97 registered implementations** over 96 `.rq` files: 47 match, 33 risk, 6 propagation, 9
 mitigation rewrites over 8 files (`response_verification.rq` is registered twice, under two
 controls for the same risk pattern), and 2 business-context derivations under
 `ontology/context/` — one of which registers as `DataCategoryPropagation`, so the runner sees 7
@@ -1288,16 +1311,21 @@ of those and 1 `BusinessFlowDerivation`.
 
 | Graph | Matches | Findings |
 | --- | --- | --- |
-| RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 22 |
+| RAG chatbot, Onyx / Danswer (broadest: 8 distinct motifs) | 14 | 24 |
 | Minimal graph RAG | 3 | 7 |
 | Wien Energie chatbot (BotTina) | 5 | 9 |
 | Wien Energie tariff change (4 systems) | 3 | 9 |
-| IT support agent (agentic) | 4 | 8 |
+| IT support agent (agentic) | 4 | 10 |
 | Prompt injection, four shapes side by side (fixture) | 6 | 13 |
 | Energy scene: BotTina + the business process | 5 | 11 |
 | Tariff scene: the tariff graph + its business process | 3 | 11 |
-| IT service desk scene: the agent + its business process | 4 | 9 |
-| Credit scoring (fixture): train, auto-deploy, score, decide, feed back | 3 | 16 |
+| IT service desk scene: the agent + its business process | 4 | 12 |
+| Credit scoring (fixture): train, auto-deploy, score, decide, feed back | 3 | 17 |
+
+Moved 2026-10-09: Onyx +2 protected data to an external model (one concern, raised from the
+direct-prompting and RAG matches), the IT support agent +2 untraceable agent actions, its
+service desk scene those two plus personal data retained in agent memory, and credit scoring
++2 model extraction and −1 supply chain on the model it trains itself.
 
 No bundled scene clears anything; `test_business_context.py` covers the clearing half by
 building an approval inline.

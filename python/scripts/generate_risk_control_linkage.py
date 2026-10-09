@@ -44,6 +44,10 @@ CONTROL_ORDER = [
     "SandboxedCodeExecution",
     "CascadeContainment",
     "IndependentEvidenceForApproval",
+    "AgentActionAuditLog",
+    "ExternalProviderDataAgreement",
+    "RetentionLimits",
+    "ModelAccessHardening",
 ]
 
 

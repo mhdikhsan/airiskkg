@@ -33,7 +33,7 @@ PAT = Namespace("http://w3id.org/airiskkg/patterns#")
 EX = Namespace(PROMPT_INJECTION_NS)
 
 MEMBERSHIP = (BEAM.hasProcess, BEAM.hasResource, BEAM.hasAgent, BEAM.contain)
-INJECTION = "Candidate prompt injection exposure"
+INJECTION = "Candidate prompt injection"
 UNGROUNDED = "Candidate Direct Prompting without grounding"
 DISCLOSURE = "Candidate sensitive information disclosure"
 
@@ -241,6 +241,10 @@ def test_the_declared_motifs_are_the_ones_the_paper_names(scene) -> None:
         "DirectPromptingMotif",
         "QueryRewritingMotif",
         "RetrievalAugmentedGenerationMotif",
+        "IterativeRAGMotif",
+        "RecursiveRAGMotif",
+        "AdaptiveRAGMotif",
+        "LLMBasedInformationRetrievalMotif",
     }
 
 

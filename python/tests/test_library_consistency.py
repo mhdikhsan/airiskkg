@@ -359,6 +359,26 @@ def test_every_motif_is_shelved_under_exactly_one_family(libraries) -> None:
     assert not offenders, "\n".join(offenders)
 
 
+def test_every_risk_pattern_is_shelved_where_its_motifs_are(libraries) -> None:
+    """The risk tab files by family as the motif tab does, so every risk pattern
+    needs exactly one, and it must be the family of a motif it applies to. A
+    pattern that names no motif is filed by judgement."""
+    families = set(libraries.subjects(SKOS_NS.inScheme, PAIR.MotifFamilyScheme))
+    offenders = []
+    for pattern in set(libraries.subjects(RDF.type, PAIR.RiskPattern)):
+        shelved = list(libraries.objects(pattern, PAIR.riskPatternFamily))
+        if len(shelved) != 1 or shelved[0] not in families:
+            offenders.append(f"{pattern} has families {shelved}")
+            continue
+        motif_families = {
+            libraries.value(motif, PAIR.motifFamily)
+            for motif in libraries.objects(pattern, PAIR.hasMotif)
+        }
+        if motif_families and shelved[0] not in motif_families:
+            offenders.append(f"{pattern} is shelved under {shelved[0]}, which none of its motifs is")
+    assert not offenders, "\n".join(sorted(offenders))
+
+
 def test_a_motif_family_says_what_it_covers_and_where_it_came_from(libraries) -> None:
     """A group heading with no definition asks the reader to guess what
     "Agentic" means here, and the panel prints the definition under it."""
@@ -403,7 +423,10 @@ def test_no_match_query_reads_the_motif_family(libraries) -> None:
     offenders = [
         path.relative_to(REPO_ROOT).as_posix()
         for path in sorted((REPO_ROOT / "ontology").rglob("*.rq"))
-        if any(term in path.read_text(encoding="utf-8") for term in ("motifFamily", "motifGroup"))
+        if any(
+            term in path.read_text(encoding="utf-8")
+            for term in ("motifFamily", "motifGroup", "riskPatternFamily")
+        )
     ]
     assert not offenders, "motif shelving read during matching: " + ", ".join(offenders)
 
@@ -621,16 +644,18 @@ def test_every_motif_and_risk_pattern_states_its_source(libraries) -> None:
     )
 
 
-def test_derived_from_points_at_an_entity_never_at_a_document(libraries) -> None:
+def test_derived_from_points_at_an_entity_never_at_a_document(libraries, aligned) -> None:
     """Pointed at a URL it repeats dct:source, and "which motifs came from this
     design pattern?" stops being answerable - what 23 references to one Fowler
-    article URL cost."""
+    article URL cost. Eticas mints its own concept IRIs, so a typed concept from
+    another namespace is an entity too."""
     offenders = [
         f"{subject} derivedFrom {origin}"
         for rdf_type in (PAIR.GraphMotif, PAIR.RiskPattern)
         for subject in sorted(libraries.subjects(RDF.type, rdf_type), key=str)
         for origin in libraries.objects(subject, PAIR.derivedFrom)
         if not str(origin).startswith(("http://w3id.org/airiskkg", "http://w3id.org/beam"))
+        and (origin, RDF.type, NEXUS.Risk) not in aligned
     ]
     assert not offenders, (
         "pair:derivedFrom must name an entity (a taxonomy concept or a "
@@ -773,3 +798,18 @@ def test_specific_roles_are_subroles_of_the_role_their_motif_queries(libraries) 
             f"{role} must be a sub-role of {parent}, otherwise tagging an element "
             f"with {role} alone cannot satisfy the motif that queries {parent}"
         )
+
+
+def test_a_finding_is_titled_by_the_risk_pattern_that_raised_it(libraries) -> None:
+    """The library and the findings panel must name a risk the same way. They had
+    drifted: the library said "Insecure inter-agent communication" and the finding
+    said "unvalidated inter-agent handoff", which reads as two different risks."""
+    offenders = []
+    for implementation in libraries.subjects(PAIR.implementsRiskPattern, None):
+        pattern = libraries.value(implementation, PAIR.implementsRiskPattern)
+        path = REPO_ROOT / str(libraries.value(implementation, PAIR.implementationPath))
+        title = re.search(r'rdfs:label\s+"([^"]+)"', path.read_text(encoding="utf-8")).group(1)
+        name = str(libraries.value(pattern, RDFS.label)).removesuffix(" risk pattern")
+        if title.lower() != f"candidate {name}".lower():
+            offenders.append(f"{path.name}: {title!r} for {name!r}")
+    assert not offenders, "\n".join(sorted(offenders))

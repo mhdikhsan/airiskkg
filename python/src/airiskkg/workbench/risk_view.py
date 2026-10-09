@@ -147,7 +147,7 @@ def _name_the_place(groups: list[dict]) -> None:
     """Tell concerns that share a name apart by where they are.
 
     Prompt injection is raised once per untrusted-content/generation pair, so
-    three boxes reading "Candidate prompt injection exposure" are three true and
+    three boxes reading "Candidate prompt injection" are three true and
     different answers - and nothing on them said which was which. A concern is
     the (risk pattern, evidence set) group, so the evidence is what differs.
     The element fewest siblings cite says it in the fewest words; a set that is

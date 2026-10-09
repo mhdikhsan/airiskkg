@@ -8,7 +8,7 @@ PREFIX dct:   <http://purl.org/dc/terms/>
 CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
-        rdfs:label "Candidate agent memory poisoning"@en ;
+        rdfs:label "Candidate memory and context poisoning"@en ;
         dct:description "Content is committed to an agent memory store without a represented validation step, and the recalled context later reaches a generation step - so an unchecked write keeps shaping later turns."@en ;
         pair:findingStatus "candidate" ;
         pair:generatedByRiskPattern pat:MemoryPoisoningRiskPattern ;
