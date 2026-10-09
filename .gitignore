@@ -28,3 +28,6 @@ data/processed/**
 !data/processed/.gitkeep
 !data/processed/outputs/
 !data/processed/outputs/.gitkeep
+
+# Written and removed by test_canvas_interaction while it runs
+python/src/airiskkg/webapp/static/_cdp_probe.html
