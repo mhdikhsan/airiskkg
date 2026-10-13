@@ -408,42 +408,25 @@ def test_a_new_system_can_take_in_the_elements_that_belong_to_nowhere(client) ->
 
 # --- and it must still be sBPMN ----------------------------------------------
 
-def test_every_edit_writes_only_terms_sbpmn_declares(client, process_ttl) -> None:
-    """The bundled examples are checked for this in test_business_context.py."""
+def sbpmn_violations(written: Graph) -> list[str]:
+    """Every class, property and domain in `written` that sBPMN does not declare.
+
+    Declared is not enough: bp:cancelActivity is real and means nothing on a
+    start event, and bp:default is refused on a parallel gateway."""
     onto = Graph()
     for path in sorted(SBPMN_DIR.glob("*.ttl")):
         onto.parse(path, format="turtle")
-
-    ttl = process_ttl
-    for op, payload in [
-        ("add-lane", {"pool": CHATBOT_POOL, "label": "Escalation"}),
-        ("add-event", {"pool": CHATBOT_POOL, "kind": "endEvent", "definition": "terminate"}),
-        ("add-event", {"kind": "boundaryEvent", "definition": "timer", "attachedTo": SEND_ANSWER}),
-        ("add-gateway", {"pool": CHATBOT_POOL, "kind": "eventBasedGateway"}),
-        ("add-annotation", {"pool": CHATBOT_POOL, "text": "A note", "attachedTo": SEND_ANSWER}),
-        ("add-data", {"activity": DOCUMENT_RETRIEVAL, "direction": "in",
-                      "label": "Archive", "shape": "store", "classification": "PersonalData"}),
-        ("set-loop", {"activity": EC + "DocumentRetrieval", "loop": "multiSequential"}),
-    ]:
-        ttl = edit(client, ttl, op, **payload)
-
-    written = Graph().parse(data=ttl, format="turtle")
-    undeclared = sorted({
-        str(o) for _s, _p, o in written.triples((None, RDF.type, None))
-        if str(o).startswith(CLASSES) and (o, RDF.type, URIRef(
-            "http://www.w3.org/2002/07/owl#Class")) not in onto
-    })
-    assert not undeclared, f"classes sBPMN does not define: {undeclared}"
-
-    unknown = sorted({
-        str(p) for _s, p, _o in written
+    owl_class = URIRef("http://www.w3.org/2002/07/owl#Class")
+    found = [
+        f"class sBPMN does not define: {o}"
+        for o in sorted({o for _s, _p, o in written.triples((None, RDF.type, None))})
+        if str(o).startswith(CLASSES) and (o, RDF.type, owl_class) not in onto
+    ]
+    found += [
+        f"property sBPMN does not declare: {p}"
+        for p in sorted({p for _s, p, _o in written})
         if str(p).startswith(PROPS) and (URIRef(str(p)), RDF.type, None) not in onto
-    })
-    assert not unknown, f"properties sBPMN does not declare: {unknown}"
-
-    # Declared is not enough: bp:cancelActivity is real and means nothing on a
-    # start event, and bp:default is refused on a parallel gateway.
-    from rdflib import RDFS
+    ]
 
     def ancestors(cls):
         seen, frontier = {cls}, [cls]
@@ -454,17 +437,38 @@ def test_every_edit_writes_only_terms_sbpmn_declares(client, process_ttl) -> Non
                     frontier.append(parent)
         return seen
 
-    violations = []
-    for predicate in {p for _s, p, _o in written if str(p).startswith(PROPS)}:
+    for predicate in sorted({p for _s, p, _o in written if str(p).startswith(PROPS)}):
         domains = list(onto.objects(predicate, RDFS.domain))
         if not domains:
             continue
         for subject, _p, _o in written.triples((None, predicate, None)):
             types = set(written.objects(subject, RDF.type))
             if types and not any(any(d in ancestors(t) for d in domains) for t in types):
-                violations.append(f"{predicate} on {subject}")
-    assert not violations, "written outside the domain sBPMN declares: " + "; ".join(
-        sorted(violations))
+                found.append(f"{predicate} outside its domain, on {subject}")
+    return found
+
+
+def test_every_edit_writes_only_terms_sbpmn_declares(client, process_ttl) -> None:
+    """The bundled examples are checked for this in test_business_context.py."""
+    ttl = process_ttl
+    for op, payload in [
+        ("add-lane", {"pool": CHATBOT_POOL, "label": "Escalation"}),
+        ("add-event", {"pool": CHATBOT_POOL, "kind": "endEvent", "definition": "terminate"}),
+        ("add-event", {"kind": "boundaryEvent", "definition": "timer", "attachedTo": SEND_ANSWER}),
+        ("add-gateway", {"pool": CHATBOT_POOL, "kind": "eventBasedGateway"}),
+        ("add-annotation", {"pool": CHATBOT_POOL, "text": "A note", "attachedTo": SEND_ANSWER}),
+        ("add-data", {"activity": DOCUMENT_RETRIEVAL, "direction": "in",
+                      "label": "Archive", "shape": "store", "classification": "PersonalData"}),
+        ("set-loop", {"activity": EC + "DocumentRetrieval", "loop": "multiSequential"}),
+        ("add-event", {"pool": CHATBOT_POOL, "kind": "startEvent", "definition": "parallelMultiple",
+                       "definitions": ["message", "timer"], "interrupting": False}),
+        ("add-event", {"pool": CHATBOT_POOL, "kind": "endEvent", "definition": "multiple",
+                       "definitions": ["message", "signal"]}),
+        ("add-activity", {"pool": CHATBOT_POOL, "kind": "eventSubProcess"}),
+    ]:
+        ttl = edit(client, ttl, op, **payload)
+
+    assert not sbpmn_violations(Graph().parse(data=ttl, format="turtle"))
 
 
 def test_a_pool_can_be_dropped_lower_in_the_stack(client, process_ttl) -> None:

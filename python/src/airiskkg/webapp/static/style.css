@@ -1347,6 +1347,31 @@ label.btn { display: inline-flex; align-items: center; }
 /* Conditional and default sequence flow carry their mark at the tail. */
 .pc-flow-tick { fill: none; stroke: #7c8698; stroke-width: 1.6; }
 .pc-flow-diamond { fill: #ffffff; stroke: #7c8698; stroke-width: 1.3; }
+
+/* A message is an envelope: open when the initiator sends it, shaded when it
+   is the reply. */
+.pc-env-box { fill: #ffffff; stroke: #b07a2e; stroke-width: 1.2; }
+.pc-env-fold { fill: none; stroke: #b07a2e; stroke-width: 1.2; }
+.pc-env.shaded .pc-env-box { fill: #e9dcc7; }
+.pc-env-link { fill: none; stroke: #b07a2e; stroke-width: 1; stroke-dasharray: 2 3; }
+
+/* Choreography: an exchange between participants, one band each, framed
+   rather than pooled. */
+.pc-chor-box { fill: #f8f9fc; stroke: #9aa4b8; stroke-width: 1.4; }
+.pc-chor-box.call { stroke-width: 3.4; }
+.pc-chor-band { fill: #ffffff; stroke: #9aa4b8; stroke-width: 1.2; }
+.pc-chor-band.shaded { fill: #e4e8ef; }
+.pc-chor-band-label { fill: #48505f; font-size: 10.5px; font-weight: 600; }
+.pc-chor-frame-box { fill: none; stroke: #c9cfdb; stroke-width: 1; stroke-dasharray: 6 4; }
+.pc-chor-frame-label { fill: #7c8698; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+
+/* Conversation: a hexagon, joined to each pool by a double line. */
+.pc-conv-box { fill: #ffffff; stroke: #5b6478; stroke-width: 1.4; }
+.pc-conv-box.call { stroke-width: 3.4; }
+.pc-conv-line { fill: none; stroke: #5b6478; stroke-width: 5; }
+.pc-conv-gap { fill: none; stroke: #ffffff; stroke-width: 2.2; }
+
+#process-detail .nd-triggers { flex-wrap: wrap; gap: 4px 12px; padding-left: 90px; font-size: 11.5px; }
 .pc-data-io { fill: none; stroke: #b3a06b; stroke-width: 1.2; }
 .pc-data-io.filled { fill: none; stroke: #8a7434; stroke-width: 2; }
 .pc-data-state { fill: #8a7434; font-size: 9px; font-style: italic; }

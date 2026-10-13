@@ -538,15 +538,44 @@ def _retype(data: Graph, node: URIRef, kind: str) -> None:
     data.add((node, RDF.type, BPMN[kind]))
 
 
-def _set_event_definition(data: Graph, event: URIRef, definition: str) -> None:
+SUB_PROCESS_KINDS = frozenset({"subProcess", "adHocSubProcess", "transaction"})
+MULTIPLE_TRIGGERS = ("multiple", "parallelMultiple")
+CATCH_EVENT_KINDS = frozenset({"startEvent", "intermediateCatchEvent", "boundaryEvent"})
+
+
+def _triggers_asked(kind: str, definition: str, definitions: object) -> list[str] | str:
+    """The triggers an edit asks for, or why it cannot have them.
+
+    BPMN has no Multiple trigger class: Multiple is two or more definitions on
+    one event, and Parallel Multiple adds bp:parallelMultiple, which sBPMN
+    declares on a catch event only."""
+    if definition not in MULTIPLE_TRIGGERS:
+        if definition and definition not in EVENT_DEFINITIONS:
+            return f"Unknown event trigger: {definition}"
+        return [definition] if definition else []
+    chosen = sorted({d for d in (definitions or []) if d in EVENT_DEFINITIONS})
+    if len(chosen) < 2:
+        return "A multiple event needs at least two triggers."
+    if definition == "parallelMultiple" and kind not in CATCH_EVENT_KINDS:
+        return "Only a catching event can wait for all of its triggers."
+    return chosen
+
+
+def _set_event_definition(data: Graph, event: URIRef, definition: str | list[str],
+                          parallel: bool = False) -> None:
     for old in list(data.objects(event, BP.eventDefinition)):
         data.remove((event, BP.eventDefinition, old))
         for triple in list(data.triples((old, None, None))):
             data.remove(triple)
-    if definition in EVENT_DEFINITIONS:
-        node = _fresh(data, "evdef")
-        data.add((node, RDF.type, BPMN[EVENT_DEFINITIONS[definition]]))
-        data.add((event, BP.eventDefinition, node))
+    data.remove((event, BP.parallelMultiple, None))
+    wanted = [definition] if isinstance(definition, str) else definition
+    for name in wanted:
+        if name in EVENT_DEFINITIONS:
+            node = _fresh(data, "evdef")
+            data.add((node, RDF.type, BPMN[EVENT_DEFINITIONS[name]]))
+            data.add((event, BP.eventDefinition, node))
+    if parallel and len(wanted) > 1:
+        data.add((event, BP.parallelMultiple, Literal(True)))
 
 
 @graph_routes.post("/api/process-edit")
@@ -575,6 +604,10 @@ def process_edit() -> object:
 
     elif op == "add-activity":
         kind = payload.get("kind")
+        # An event sub-process is a bpmn:subProcess started by an event, not a class.
+        triggered = kind == "eventSubProcess"
+        if triggered:
+            kind = "subProcess"
         if kind not in ACTIVITY_KINDS:
             return jsonify({"error": f"Unknown activity kind: {kind}"}), 400
         pool = payload.get("pool")
@@ -585,7 +618,10 @@ def process_edit() -> object:
             return jsonify({"error": "That participant has no process."}), 400
         activity = _fresh(data, "act")
         data.add((activity, RDF.type, BPMN[kind]))
-        data.add((activity, BP.name, Literal((payload.get("label") or ACTIVITY_KINDS[kind]).strip())))
+        default_name = "Event sub-process" if triggered else ACTIVITY_KINDS[kind]
+        data.add((activity, BP.name, Literal((payload.get("label") or default_name).strip())))
+        if triggered:
+            data.add((activity, BP.triggeredByEvent, Literal(True)))
         _place(data, process, activity, payload.get("lane"))
         new_id = str(activity)
 
@@ -594,8 +630,9 @@ def process_edit() -> object:
         if kind not in EVENT_KINDS:
             return jsonify({"error": f"Unknown event kind: {kind}"}), 400
         definition = payload.get("definition") or ""
-        if definition and definition not in EVENT_DEFINITIONS:
-            return jsonify({"error": f"Unknown event trigger: {definition}"}), 400
+        triggers = _triggers_asked(kind, definition, payload.get("definitions"))
+        if isinstance(triggers, str):
+            return jsonify({"error": triggers}), 400
         # A boundary event is placed by the activity it watches, not by a pool:
         # it has no position of its own and cannot exist without a host. Every
         # other event is placed by the pool, and sBPMN declares attachedToRef on
@@ -616,7 +653,9 @@ def process_edit() -> object:
         data.add((event, RDF.type, BPMN[kind]))
         if payload.get("label"):
             data.add((event, BP.name, Literal(payload["label"].strip())))
-        _set_event_definition(data, event, definition)
+        _set_event_definition(data, event, triggers, definition == "parallelMultiple")
+        if kind == "startEvent" and payload.get("interrupting") is False:
+            data.add((event, BP.isInterrupting, Literal(False)))
         if host:
             data.add((event, BP.attachedToRef, URIRef(host)))
             data.add((event, BP.cancelActivity, Literal(bool(payload.get("interrupting", True)))))
@@ -677,18 +716,33 @@ def process_edit() -> object:
         if not element or kind not in FLOW_NODE_KINDS:
             return jsonify({"error": f"set-node-type needs an element and a known kind: {kind}"}), 400
         node = URIRef(element)
+        definition = payload.get("definition") or ""
+        triggers = _triggers_asked(kind, definition, payload.get("definitions")) \
+            if kind in EVENT_KINDS else []
+        if isinstance(triggers, str):
+            return jsonify({"error": triggers}), 400
         _retype(data, node, kind)
         data.remove((node, BP.name, None))
         if payload.get("label"):
             data.add((node, BP.name, Literal(payload["label"].strip())))
+        if kind not in SUB_PROCESS_KINDS:
+            # declared on bpmn:subProcess only; a retyped event sub-process loses it
+            data.remove((node, BP.triggeredByEvent, None))
         if kind in EVENT_KINDS:
-            _set_event_definition(data, node, payload.get("definition") or "")
+            _set_event_definition(data, node, triggers, definition == "parallelMultiple")
             data.remove((node, BP.cancelActivity, None))
             if kind == "boundaryEvent":
                 data.add((node, BP.cancelActivity,
                           Literal(bool(payload.get("interrupting", True)))))
             else:
                 data.remove((node, BP.attachedToRef, None))
+            # Declared on a start event, and kept when the edit does not say.
+            if kind != "startEvent":
+                data.remove((node, BP.isInterrupting, None))
+            elif "interrupting" in payload:
+                data.remove((node, BP.isInterrupting, None))
+                if payload["interrupting"] is False:
+                    data.add((node, BP.isInterrupting, Literal(False)))
         new_id = element
 
     elif op == "set-loop":

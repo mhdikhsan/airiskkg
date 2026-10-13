@@ -19,6 +19,10 @@ const DATA_BAND = 92;
 const NOTE_W = 150;
 const RISK_ROW_H = 17;
 const CHILD_H = 30;
+const BAND_H = 20;       // a participant band on a choreography activity
+const ENV_PAD = 28;      // room above and below a choreography task for its messages
+const CONV_R = 20;       // a conversation hexagon
+const CONV_ROW = 110;    // the strip conversations sit in, between the pools
 
 let svg = null;
 let root = null;
@@ -119,6 +123,7 @@ function buildIndex(model) {
   (model.activities || []).forEach((a) => table.set(a.id, { ...a, shape: "activity" }));
   (model.events || []).forEach((e) => table.set(e.id, { ...e, shape: "event" }));
   (model.gateways || []).forEach((g) => table.set(g.id, { ...g, shape: "gateway" }));
+  (model.choreographyActivities || []).forEach((c) => table.set(c.id, { ...c, shape: "choreography" }));
   return table;
 }
 
@@ -134,7 +139,7 @@ function headHeight(activity) {
 
 function footprintOf(item) {
   const { w } = sizeOf(item);
-  if (item.shape === "activity" || !item.label) return w;
+  if (item.shape === "activity" || item.shape === "choreography" || !item.label) return w;
   const longest = Math.max(...wrap(item.label, 18, 2).map((line) => line.length));
   return Math.max(w, longest * 5.6);
 }
@@ -142,6 +147,10 @@ function footprintOf(item) {
 function sizeOf(item) {
   if (item.shape === "event") return { w: EVENT_R * 2, h: EVENT_R * 2 };
   if (item.shape === "gateway") return { w: GATE_R * 2, h: GATE_R * 2 };
+  if (item.shape === "choreography") {
+    const messages = item.bands.some((band) => band.message) ? ENV_PAD * 2 : 0;
+    return { w: BOX_W, h: BOX_H + Math.max(2, item.bands.length) * BAND_H + messages };
+  }
   let h = headHeight(item);
   if (expanded.has(item.id) && item.children.length) {
     h += item.children.length * CHILD_H + 10;
@@ -229,7 +238,25 @@ function layout() {
   const flows = data.sequenceFlows || [];
   let poolY = POOL_PAD;
 
-  data.participants.forEach((participant) => {
+  /* A choreography is laid out like a process, inside a frame instead of a
+   * pool; a participant it names only on its bands gets no pool of its own. */
+  const frames = [
+    ...(data.participants || []).filter((participant) => !participant.bandOnly),
+    ...(data.choreographies || []).map((chor) => ({
+      id: chor.id, label: chor.label, process: chor.id, multiple: false, choreography: true,
+    })),
+  ];
+  const conversations = data.conversations || [];
+  let conversationY = null;
+  const reserveConversations = () => {
+    if (!conversations.length || conversationY !== null) return;
+    conversationY = poolY;
+    poolY += CONV_ROW;
+  };
+
+  frames.forEach((participant, seat) => {
+    // Between the first pool and the rest, so its links reach both ways.
+    if (seat === 1) reserveConversations();
     const members = [...index.values()].filter(
       (item) => !item.parent && !item.attachedTo && item.process
         && item.process === participant.process
@@ -408,10 +435,25 @@ function layout() {
     poolY += poolH + POOL_GAP;
   });
 
-  const widest = Math.max(0, ...pools.map((pool) => pool.w));
+  reserveConversations();
+  const widest = Math.max(POOL_LABEL_W + BOX_W, ...pools.map((pool) => pool.w));
   pools.forEach((pool) => {
     pool.w = widest;
     pool.lanes.forEach((lane) => { lane.w = widest - POOL_LABEL_W; });
+  });
+
+  // Spread along the strip, centred, each at its own place on the row.
+  const step = CONV_R * 2 + 90;
+  const startX = Math.max(POOL_LABEL_W + 20,
+    POOL_LABEL_W + (widest - POOL_LABEL_W - step * (conversations.length - 1)) / 2 - CONV_R);
+  conversations.forEach((item, seat) => {
+    const hand = manualPositions.get(item.id);
+    const x = hand ? hand.x : startX + seat * step;
+    const y = hand ? hand.y : conversationY + CONV_ROW / 2 - CONV_R - 8;
+    placed.set(item.id, {
+      x, y, w: CONV_R * 2, h: CONV_R * 2, item: { ...item, shape: "conversation" },
+      band: 0, head: CONV_R * 2,
+    });
   });
 
   return { pools, placed, notes, height: poolY };
@@ -445,14 +487,22 @@ function definitionGlyph(parent, kind, throwing) {
     node("circle", { cx: 0, cy: 0, r: 7, class: "pc-ev-mark filled" }, g);
   } else if (kind === "link") {
     node("path", { d: "M -7 -2.5 h 7 v -3 l 7 5.5 l -7 5.5 v -3 h -7 z", class: "pc-ev-mark" }, g);
+  } else if (kind === "multiple") {
+    node("path", { d: "M 0 -7.5 L 7.1 -2.3 L 4.4 6.1 H -4.4 L -7.1 -2.3 Z", class: "pc-ev-mark" }, g);
+  } else if (kind === "parallelMultiple") {
+    node("path", {
+      d: "M -2 -7 H 2 V -2 H 7 V 2 H 2 V 7 H -2 V 2 H -7 V -2 H -2 Z", class: "pc-ev-mark",
+    }, g);
   }
   return g;
 }
 
 /* A start event is a thin ring, an intermediate one a double ring, an end
- * event a thick one, and a non-interrupting boundary event dashes both. */
+ * event a thick one. A non-interrupting boundary event dashes both rings, and
+ * a non-interrupting start event (of an event sub-process) dashes its one. */
 function eventShape(parent, cx, cy, item, radius = EVENT_R) {
-  const dashed = item.kind === "boundaryEvent" && !item.interrupting;
+  const dashed = (item.kind === "boundaryEvent" || item.kind === "startEvent")
+    && item.interrupting === false;
   const cls = (extra) => `pc-ev-ring ${extra}${dashed ? " open" : ""}`;
   if (item.kind === "endEvent") {
     node("circle", { cx, cy, r: radius, class: cls("end") }, parent);
@@ -480,9 +530,13 @@ function drawEvent(parent, slot) {
     });
   }
   const hint = node("title", {}, group);
+  const triggers = (item.definitions || []).length > 1
+    ? ` (${item.definitions.map(humanKind).join(item.definition === "parallelMultiple"
+      ? " and " : " or ")})` : "";
   hint.textContent = `${item.label || humanKind(item.kind)}\n${humanKind(item.kind)}`
-    + (item.definition ? ` — ${humanKind(item.definition)}` : "")
-    + (item.definitionLabel ? `: ${item.definitionLabel}` : "");
+    + (item.definition ? ` — ${humanKind(item.definition)}${triggers}` : "")
+    + (item.definitionLabel ? `: ${item.definitionLabel}` : "")
+    + (item.kind === "startEvent" && item.interrupting === false ? "\nNon-interrupting" : "");
   return group;
 }
 
@@ -756,7 +810,14 @@ function onPoolEdge(pool, other) {
 }
 
 /** A message crosses a boundary: leave the source downward, enter the target. */
-function messageArrow(parent, from, to, label, id) {
+function envelope(parent, cx, cy, shaded) {
+  const g = node("g", { class: `pc-env${shaded ? " shaded" : ""}` }, parent);
+  node("rect", { x: cx - 9, y: cy - 6, width: 18, height: 12, rx: 1, class: "pc-env-box" }, g);
+  node("path", { d: `M ${cx - 9} ${cy - 6} L ${cx} ${cy + 1} L ${cx + 9} ${cy - 6}`, class: "pc-env-fold" }, g);
+  return g;
+}
+
+function messageArrow(parent, from, to, label, id, message) {
   const downward = to.y > from.y;
   const a = port(from, downward ? "bottom" : "top");
   const b = port(to, downward ? "top" : "bottom");
@@ -770,8 +831,15 @@ function messageArrow(parent, from, to, label, id) {
     "marker-end": "url(#pc-arrow-msg)",
   }, group);
   node("circle", { cx: a.x, cy: a.y, r: 3.5, class: "pc-msg-start" }, group);
-  if (label) centred(group, (a.x + b.x) / 2, midY - 5, truncate(label, 26), "pc-flow-label");
+  // A message the flow names is drawn as BPMN draws it: an envelope on the line.
+  const midX = (a.x + b.x) / 2;
   wireConnector(group, orthPath(points), id, picked, points);
+  if (message) {
+    envelope(group, midX, midY, false);
+    text(group, midX + 13, midY + 4, truncate(label, 24), "pc-flow-label");
+  } else if (label) {
+    centred(group, midX, midY - 5, truncate(label, 26), "pc-flow-label");
+  }
 }
 
 
@@ -950,8 +1018,14 @@ function drawActivity(parent, slot) {
       node("rect", {
         x: slot.x + 12, y: cy, width: slot.w - 24, height: CHILD_H - 6, rx: 4, class: "pc-child",
       }, group);
-      const glyph = child.shape === "gateway" ? "◇ " : (child.shape === "event" ? "○ " : "");
-      text(group, slot.x + 22, cy + 18, glyph + truncate(child.label, 26), "pc-child-label");
+      // An event inside is drawn as itself, so its trigger and ring still read.
+      if (child.shape === "event") {
+        eventShape(group, slot.x + 29, cy + 12, child, 9);
+        text(group, slot.x + 44, cy + 16, truncate(child.label, 24), "pc-child-label");
+      } else {
+        const glyph = child.shape === "gateway" ? "◇ " : "";
+        text(group, slot.x + 22, cy + 18, glyph + truncate(child.label, 26), "pc-child-label");
+      }
     });
   }
 
@@ -1064,10 +1138,173 @@ function drawBoundary(parent, slot) {
   return group;
 }
 
+/* The marker row BPMN shares between activities and choreography activities. */
+function loopMarker(parent, loop, x, y) {
+  const g = node("g", { class: "pc-mk", transform: `translate(${x} ${y})` }, parent);
+  if (loop === "standard") node("path", { d: "M 12 4 a 5 5 0 1 0 1 5 M 12 1 v 3.5 h -3.5" }, g);
+  if (loop === "multiParallel") node("path", { d: "M 3 2 v 11 M 7 2 v 11 M 11 2 v 11" }, g);
+  if (loop === "multiSequential") node("path", { d: "M 2 4 h 11 M 2 7.5 h 11 M 2 11 h 11" }, g);
+  return g;
+}
+
+/* A band is the strip of the box a participant takes, rounded with the box
+ * where it is the top or the bottom edge. */
+function bandPath(x, y, w, upper, rounded) {
+  const r = rounded ? 10 : 0;
+  if (upper) {
+    return `M ${x} ${y + BAND_H} V ${y + r} Q ${x} ${y} ${x + r} ${y} H ${x + w - r} `
+      + `Q ${x + w} ${y} ${x + w} ${y + r} V ${y + BAND_H} Z`;
+  }
+  return `M ${x} ${y} H ${x + w} V ${y + BAND_H - r} Q ${x + w} ${y + BAND_H} ${x + w - r} `
+    + `${y + BAND_H} H ${x + r} Q ${x} ${y + BAND_H} ${x} ${y + BAND_H - r} Z`;
+}
+
+/* A choreography activity: the exchange in the middle, the initiating
+ * participant's band on top and the others below, each band's message in an
+ * envelope beyond it - open when the initiator sends it, shaded when it is the
+ * reply. Which band goes on top is BPMNDI, which sBPMN does not carry. */
+function drawChoreography(parent, slot) {
+  const { item } = slot;
+  const group = node("g", { class: `pc-chor ${item.kind}` }, parent);
+  const pad = item.bands.some((band) => band.message) ? ENV_PAD : 0;
+  const x = slot.x;
+  const w = slot.w;
+  const y = slot.y + pad;
+  const h = slot.h - pad * 2;
+  node("rect", {
+    x, y, width: w, height: h, rx: 10,
+    class: `pc-chor-box${item.kind === "callChoreography" ? " call" : ""}`,
+  }, group);
+
+  const lower = item.bands.slice(1);
+  const rows = [
+    { band: item.bands[0] || null, y, upper: true, rounded: true },
+    ...(lower.length ? lower : [null]).map((band, seat, all) => ({
+      band,
+      y: y + h - (all.length - seat) * BAND_H,
+      upper: false,
+      rounded: seat === all.length - 1,
+    })),
+  ];
+  rows.forEach((row) => {
+    const shaded = !row.band || !row.band.initiating;
+    node("path", {
+      d: bandPath(x, row.y, w, row.upper, row.rounded),
+      class: `pc-chor-band${shaded ? " shaded" : ""}`,
+    }, group);
+    if (!row.band) return;
+    centred(group, x + w / 2, row.y + 14, truncate(row.band.label, 30), "pc-chor-band-label");
+    if (row.band.multiple) {
+      const cx = x + w - 16;
+      node("path", {
+        d: `M ${cx - 4} ${row.y + 5} v 10 M ${cx} ${row.y + 5} v 10 M ${cx + 4} ${row.y + 5} v 10`,
+        class: "pc-multi",
+      }, group);
+    }
+  });
+
+  const middleTop = y + BAND_H;
+  const middleBottom = y + h - Math.max(1, lower.length) * BAND_H;
+  const lines = wrap(item.label, 30, 2);
+  const firstLine = (middleTop + middleBottom) / 2 - ((lines.length - 1) * LINE_H) / 2 + 2;
+  lines.forEach((line, seat) => {
+    centred(group, x + w / 2, firstLine + seat * LINE_H, line, "pc-label");
+  });
+
+  const marks = [];
+  if (item.kind === "subChoreography") marks.push("sub");
+  if (item.loop) marks.push(item.loop);
+  marks.forEach((mark, seat) => {
+    const mx = x + w / 2 - (marks.length * 20 - 6) / 2 + seat * 20;
+    const my = middleBottom - 17;
+    if (mark === "sub") {
+      const g = node("g", { class: "pc-mk", transform: `translate(${mx} ${my})` }, group);
+      node("rect", { x: 0, y: 0, width: 14, height: 14, class: "pc-mk-box" }, g);
+      node("path", { d: "M 7 3 V 11 M 3 7 H 11" }, g);
+    } else {
+      loopMarker(group, mark, mx, my);
+    }
+  });
+
+  // Only the outer two bands have room beyond them for an envelope.
+  const outer = [
+    { band: rows[0].band, edge: y, envY: slot.y + 9, label: slot.y + 13 },
+    { band: rows[rows.length - 1].band, edge: y + h, envY: slot.y + slot.h - 9, label: slot.y + slot.h - 5 },
+  ];
+  outer.forEach(({ band, edge, envY, label }) => {
+    if (!band || !band.message) return;
+    const cx = x + w / 2;
+    node("path", { d: `M ${cx} ${edge} L ${cx} ${envY + (envY < edge ? 6 : -6)}`, class: "pc-env-link" }, group);
+    envelope(group, cx, envY, !band.initiating);
+    text(group, cx + 14, label, truncate(band.message, 24), "pc-flow-label");
+  });
+
+  node("title", {}, group).textContent = `${item.label}\n${humanKind(item.kind)}\n`
+    + item.bands.map((band) => `${band.label}${band.initiating ? " (initiates)" : ""}`
+      + (band.message ? ` sends ${band.message}` : "")).join("\n");
+  return group;
+}
+
+/* A conversation is a hexagon - thick for a call, with + for a sub-conversation. */
+function drawConversation(parent, slot) {
+  const { item } = slot;
+  const cx = slot.x + slot.w / 2;
+  const cy = slot.y + slot.h / 2;
+  const group = node("g", { class: `pc-conv ${item.kind}` }, parent);
+  const corners = [0, 1, 2, 3, 4, 5].map((seat) => {
+    const angle = (Math.PI / 3) * seat;
+    return `${cx + CONV_R * Math.cos(angle)} ${cy + CONV_R * Math.sin(angle)}`;
+  });
+  node("path", {
+    d: `M ${corners.join(" L ")} Z`,
+    class: `pc-conv-box${item.kind === "callConversation" ? " call" : ""}`,
+  }, group);
+  if (item.kind === "subConversation") {
+    const g = node("g", { class: "pc-mk", transform: `translate(${cx - 5} ${cy + 4})` }, group);
+    node("rect", { x: 0, y: 0, width: 10, height: 10, class: "pc-mk-box" }, g);
+    node("path", { d: "M 5 2 V 8 M 2 5 H 8" }, g);
+  }
+  // Beside the hexagon: its links leave from the top and the bottom.
+  const lines = wrap(item.label, 14, 2);
+  lines.forEach((line, row) => {
+    text(group, cx + CONV_R + 5, cy + 4 + (row - (lines.length - 1) / 2) * 11, line, "pc-ev-label");
+  });
+  node("title", {}, group).textContent = `${item.label}\n${humanKind(item.kind)}`;
+  return group;
+}
+
+/* A conversation link is a double line from the hexagon to the pool's edge. */
+function conversationLink(parent, slot, pool, id) {
+  const cx = slot.x + slot.w / 2;
+  const cy = slot.y + slot.h / 2;
+  const above = pool.y + pool.h <= cy;
+  const ey = above ? pool.y + pool.h : pool.y;
+  const ex = Math.min(Math.max(cx, pool.x + POOL_LABEL_W + 12), pool.x + pool.w - 12);
+  const sy = cy + (above ? -1 : 1) * CONV_R * 0.87;
+  const midY = (sy + ey) / 2;
+  const d = orthPath([{ x: cx, y: sy }, { x: cx, y: midY }, { x: ex, y: midY }, { x: ex, y: ey }]);
+  const group = node("g", { class: "pc-conv-link" }, parent);
+  if (id) group.setAttribute("data-flow", id);
+  node("path", { d, class: "pc-conv-line" }, group);
+  node("path", { d, class: "pc-conv-gap" }, group);
+  return group;
+}
+
 function drawFlowNode(parent, slot) {
   if (slot.item.shape === "event") return drawEvent(parent, slot);
   if (slot.item.shape === "gateway") return drawGateway(parent, slot);
+  if (slot.item.shape === "choreography") return drawChoreography(parent, slot);
   return drawActivity(parent, slot);
+}
+
+/* What the editor cannot yet change is still selectable, which reveals the
+ * line that declares it. */
+function wireSelectOnly(group, item) {
+  group.setAttribute("cursor", "pointer");
+  group.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (onSelect) onSelect(item.id);
+  });
 }
 
 /* An event or a gateway is clicked like an activity, but there is no
@@ -1149,7 +1386,8 @@ function showBandDrop(bands, id, index) {
 function currentPlacement(id) {
   const slot = lastPlaced.get(id);
   return slot && slot.item
-    && ["activity", "event", "gateway", "data"].includes(slot.item.shape)
+    && ["activity", "event", "gateway", "data", "choreography", "conversation"]
+      .includes(slot.item.shape)
     ? slot : null;
 }
 
@@ -1253,6 +1491,12 @@ const EVENT_DEFINITIONS = [
   ["link", "Link"],
 ];
 
+// Multiple is not a trigger of its own: it is two or more on one event.
+const MULTIPLE_DEFINITIONS = [
+  ["multiple", "Multiple (any one of them)"],
+  ["parallelMultiple", "Multiple (all of them)"],
+];
+
 const GATEWAY_KINDS = [
   ["exclusiveGateway", "Exclusive (XOR)"],
   ["parallelGateway", "Parallel (AND)"],
@@ -1270,6 +1514,14 @@ function showNodeDetail(item, ev) {
   if (!panel) return;
   const isEvent = item.shape === "event";
   const kinds = isEvent ? EVENT_KINDS : GATEWAY_KINDS;
+  const multiple = MULTIPLE_DEFINITIONS.some(([value]) => value === item.definition);
+  const chosen = new Set(item.definitions || []);
+  const host = item.parent ? index.get(item.parent) : null;
+  // Interrupting is read on a boundary event, and on the start of an event sub-process.
+  const interruptLabel = !isEvent ? null
+    : item.kind === "boundaryEvent" ? "Interrupts the activity"
+      : (item.kind === "startEvent" && host && host.markers && host.markers.eventSubProcess)
+        ? "Interrupts the process it starts in" : null;
   panel.innerHTML = `
     <div class="nd-head">${escapeHtml(isEvent ? "event" : "gateway")}</div>
     <label class="nd-row"><span>Name</span>
@@ -1277,25 +1529,42 @@ function showNodeDetail(item, ev) {
     <label class="nd-row"><span>Type</span>
       <select id="pd-kind">${options(kinds, item.kind)}</select></label>
     ${isEvent ? `<label class="nd-row"><span>Trigger</span>
-      <select id="pd-def">${options(EVENT_DEFINITIONS, item.definition || "")}</select></label>` : ""}
-    ${isEvent && item.kind === "boundaryEvent" ? `<label class="nd-row nd-check">
-      <span>Interrupts the activity</span>
-      <input type="checkbox" id="pd-interrupt"${item.interrupting ? " checked" : ""} /></label>` : ""}
+      <select id="pd-def">${options([...EVENT_DEFINITIONS, ...MULTIPLE_DEFINITIONS],
+        item.definition || "")}</select></label>
+      <div class="nd-row nd-triggers${multiple ? "" : " hidden"}" id="pd-defs">
+        ${EVENT_DEFINITIONS.filter(([value]) => value).map(([value, name]) => `<label class="nd-check">
+          <input type="checkbox" value="${value}"${chosen.has(value) ? " checked" : ""} />
+          <span>${escapeHtml(name)}</span></label>`).join("")}
+      </div>` : ""}
+    ${interruptLabel ? `<label class="nd-row nd-check">
+      <span>${interruptLabel}</span>
+      <input type="checkbox" id="pd-interrupt"${item.interrupting !== false ? " checked" : ""} /></label>` : ""}
     <div class="nd-actions">
       <button type="button" class="btn small primary" id="pd-apply">Apply</button>
       <button type="button" class="btn small" id="pd-delete">Delete</button>
     </div>`;
   placePanel(panel, ev, 220);
 
+  const select = panel.querySelector("#pd-def");
+  if (select) {
+    select.addEventListener("change", () => {
+      const several = MULTIPLE_DEFINITIONS.some(([value]) => value === select.value);
+      panel.querySelector("#pd-defs").classList.toggle("hidden", !several);
+    });
+  }
+
   panel.querySelector("#pd-apply").addEventListener("click", async () => {
     const label = panel.querySelector("#pd-name").value.trim();
     const kind = panel.querySelector("#pd-kind").value;
-    const definition = isEvent ? panel.querySelector("#pd-def").value : "";
+    const definition = isEvent ? select.value : "";
+    const definitions = isEvent
+      ? [...panel.querySelectorAll("#pd-defs input:checked")].map((box) => box.value) : [];
     const interrupting = panel.querySelector("#pd-interrupt");
     closeDetail();
     await onEdit("set-node-type", {
-      element: item.id, kind, definition, label,
-      interrupting: interrupting ? interrupting.checked : true,
+      element: item.id, kind, definition, definitions, label,
+      // Left out when the panel did not ask, so the server keeps what is there.
+      interrupting: interrupting ? interrupting.checked : undefined,
     });
   });
   panel.querySelector("#pd-delete").addEventListener("click", async () => {
@@ -1712,78 +1981,93 @@ function draw() {
   lastPools = pools;
 
   drawGroups(root, placed);
+  // Under the pools, so a link to a pool further away passes behind the pools
+  // between rather than reading as theirs.
+  const conversationLinks = node("g", { class: "pc-conv-links" }, root);
 
   pools.forEach((pool) => {
     const group = node("g", { class: "pc-pool", "data-band": pool.participant.id }, root);
-    node("rect", {
-      x: pool.x, y: pool.y, width: pool.w, height: pool.h, rx: 6, class: "pc-pool-box",
-    }, group);
-    node("rect", {
-      x: pool.x, y: pool.y, width: POOL_LABEL_W, height: pool.h, rx: 6, class: "pc-pool-strip",
-    }, group);
-    if (pool.participant.id === selectedPool) group.classList.add("selected");
-    group.addEventListener("click", (ev) => {
-      if (ev.target.closest("[data-node], .pc-pool-edit, .pc-pool-fold, .pc-lane-strip, .pc-lane-label")) return;
-      selectedPool = pool.participant.id;
-      selectedLane = null;
-      if (onSelect) onSelect(pool.participant.id);
-      draw();
-      renderPalette();
-    });
-
-    if (!pool.blackBox) {
-      const fold = node("g", { class: "pc-pool-fold pc-marker", cursor: "pointer" }, group);
+    // A choreography has no pool: it is framed and named, and holds no lanes.
+    const framed = Boolean(pool.participant.choreography);
+    if (framed) {
+      group.setAttribute("class", "pc-chor-frame");
       node("rect", {
-        x: pool.x + pool.w - 48, y: pool.y + 6, width: 18, height: 18, rx: 3,
-        class: "pc-marker-box",
-      }, fold);
-      centred(fold, pool.x + pool.w - 39, pool.y + 19, pool.collapsed ? "+" : "−", "pc-marker-sign");
-      node("title", {}, fold).textContent = pool.collapsed
-        ? "Open this participant"
-        : "Collapse this participant to a band";
-      fold.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        if (collapsedPools.has(pool.participant.id)) collapsedPools.delete(pool.participant.id);
-        else collapsedPools.add(pool.participant.id);
-        draw();
-      });
-    }
-
-    if (onEdit) {
-      const edit = node("g", { class: "pc-pool-edit", cursor: "pointer" }, group);
-      node("rect", {
-        x: pool.x + pool.w - 26, y: pool.y + 6, width: 18, height: 18, rx: 3,
-        class: "pc-marker-box",
-      }, edit);
-      // The far corner: the near one carries the rotated pool name.
-      centred(edit, pool.x + pool.w - 17, pool.y + 19, "⋯", "pc-marker-sign");
-      node("title", {}, edit).textContent = "Rename this participant, add a lane, or delete it";
-      edit.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        showPoolDetail(pool.participant, ev);
-      });
-    }
-    // Three bars at the foot of the pool: BPMN's way of saying there are many
-    // of this participant, not one.
-    if (pool.participant.multiple) {
-      const cx = pool.x + pool.w / 2;
-      node("path", {
-        d: `M ${cx - 5} ${pool.y + pool.h - 13} v 10 M ${cx} ${pool.y + pool.h - 13} v 10 `
-          + `M ${cx + 5} ${pool.y + pool.h - 13} v 10`,
-        class: "pc-multi",
+        x: pool.x, y: pool.y, width: pool.w, height: pool.h, rx: 6, class: "pc-chor-frame-box",
       }, group);
-      node("title", {}, group).textContent = `${pool.participant.label} (many)`;
-    }
-    
-    if (pool.collapsed) {
-      text(group, pool.x + POOL_LABEL_W + 12, pool.y + pool.h / 2 + 4,
-        truncate(pool.participant.label, 44), "pc-pool-label");
+      const name = centred(group, 0, 0, truncate(pool.participant.label, 24), "pc-chor-frame-label");
+      name.setAttribute(
+        "transform", `translate(${pool.x + POOL_LABEL_W / 2}, ${pool.y + pool.h / 2}) rotate(-90)`);
     } else {
-      const label = centred(group, 0, 0, truncate(pool.participant.label, 24), "pc-pool-label");
-      label.setAttribute(
-        "transform",
-        `translate(${pool.x + POOL_LABEL_W / 2}, ${pool.y + pool.h / 2}) rotate(-90)`
-      );
+      node("rect", {
+        x: pool.x, y: pool.y, width: pool.w, height: pool.h, rx: 6, class: "pc-pool-box",
+      }, group);
+      node("rect", {
+        x: pool.x, y: pool.y, width: POOL_LABEL_W, height: pool.h, rx: 6, class: "pc-pool-strip",
+      }, group);
+      if (pool.participant.id === selectedPool) group.classList.add("selected");
+      group.addEventListener("click", (ev) => {
+        if (ev.target.closest("[data-node], .pc-pool-edit, .pc-pool-fold, .pc-lane-strip, .pc-lane-label")) return;
+        selectedPool = pool.participant.id;
+        selectedLane = null;
+        if (onSelect) onSelect(pool.participant.id);
+        draw();
+        renderPalette();
+      });
+
+      if (!pool.blackBox) {
+        const fold = node("g", { class: "pc-pool-fold pc-marker", cursor: "pointer" }, group);
+        node("rect", {
+          x: pool.x + pool.w - 48, y: pool.y + 6, width: 18, height: 18, rx: 3,
+          class: "pc-marker-box",
+        }, fold);
+        centred(fold, pool.x + pool.w - 39, pool.y + 19, pool.collapsed ? "+" : "−", "pc-marker-sign");
+        node("title", {}, fold).textContent = pool.collapsed
+          ? "Open this participant"
+          : "Collapse this participant to a band";
+        fold.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          if (collapsedPools.has(pool.participant.id)) collapsedPools.delete(pool.participant.id);
+          else collapsedPools.add(pool.participant.id);
+          draw();
+        });
+      }
+
+      if (onEdit) {
+        const edit = node("g", { class: "pc-pool-edit", cursor: "pointer" }, group);
+        node("rect", {
+          x: pool.x + pool.w - 26, y: pool.y + 6, width: 18, height: 18, rx: 3,
+          class: "pc-marker-box",
+        }, edit);
+        // The far corner: the near one carries the rotated pool name.
+        centred(edit, pool.x + pool.w - 17, pool.y + 19, "⋯", "pc-marker-sign");
+        node("title", {}, edit).textContent = "Rename this participant, add a lane, or delete it";
+        edit.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          showPoolDetail(pool.participant, ev);
+        });
+      }
+      // Three bars at the foot of the pool: BPMN's way of saying there are many
+      // of this participant, not one.
+      if (pool.participant.multiple) {
+        const cx = pool.x + pool.w / 2;
+        node("path", {
+          d: `M ${cx - 5} ${pool.y + pool.h - 13} v 10 M ${cx} ${pool.y + pool.h - 13} v 10 `
+            + `M ${cx + 5} ${pool.y + pool.h - 13} v 10`,
+          class: "pc-multi",
+        }, group);
+        node("title", {}, group).textContent = `${pool.participant.label} (many)`;
+      }
+      
+      if (pool.collapsed) {
+        text(group, pool.x + POOL_LABEL_W + 12, pool.y + pool.h / 2 + 4,
+          truncate(pool.participant.label, 44), "pc-pool-label");
+      } else {
+        const label = centred(group, 0, 0, truncate(pool.participant.label, 24), "pc-pool-label");
+        label.setAttribute(
+          "transform",
+          `translate(${pool.x + POOL_LABEL_W / 2}, ${pool.y + pool.h / 2}) rotate(-90)`
+        );
+      }
     }
 
     if (pool.collapsed) return;
@@ -1867,7 +2151,8 @@ function draw() {
       if (item.shape === "activity") drawData(group, slot);
       const drawn = drawFlowNode(group, slot);
       drawn.setAttribute("data-node", item.id);
-      if (item.shape !== "activity") wireSimpleNode(drawn, slot);
+      if (item.shape === "event" || item.shape === "gateway") wireSimpleNode(drawn, slot);
+      if (item.shape === "choreography") wireSelectOnly(drawn, item);
       (item.boundary || []).forEach((id) => {
         const attached = placed.get(id);
         if (attached) drawBoundary(group, attached).setAttribute("data-node", id);
@@ -1934,12 +2219,27 @@ function draw() {
 
   // message flow: what crosses a boundary between actors
   const poolOf = new Map(pools.map((pool) => [pool.participant.id, pool]));
+
+  (data.conversations || []).forEach((item) => {
+    const slot = placed.get(item.id);
+    if (!slot) return;
+    (data.conversationLinks || []).forEach((link) => {
+      const other = link.source === item.id ? link.target : (link.target === item.id ? link.source : null);
+      const pool = other && poolOf.get(other);
+      if (pool) conversationLink(conversationLinks, slot, pool, link.id);
+    });
+    const drawn = drawConversation(root, slot);
+    drawn.setAttribute("data-node", item.id);
+    wireSelectOnly(drawn, item);
+  });
   (data.messageFlows || []).forEach((flow) => {
     const from = placed.get(flow.source);
     const to = placed.get(flow.target);
     const a = from || onPoolEdge(poolOf.get(flow.source), to);
     const b = to || onPoolEdge(poolOf.get(flow.target), from);
-    if (a && b) messageArrow(root, a, b, flow.message || flow.label, flow.id);
+    if (a && b) {
+      messageArrow(root, a, b, flow.message || flow.label, flow.id, Boolean(flow.message));
+    }
   });
 
   drawPickedBadge(topLayer || root);
@@ -2180,6 +2480,8 @@ const PALETTE = [
   { group: "Activities", kind: "receiveTask", label: "Receive", hint: "Waits for a message" },
   { group: "Activities", kind: "subProcess", label: "Sub-process",
     hint: "Has a flow of its own, and may name an architecture" },
+  { group: "Activities", kind: "eventSubProcess", label: "Event sub-process",
+    hint: "Started by an event rather than by the flow" },
   { group: "Activities", kind: "callActivity", label: "Call",
     hint: "Calls a process defined elsewhere" },
   { group: "Activities", kind: "transaction", label: "Transaction",
@@ -2238,7 +2540,8 @@ function paletteIcon(item) {
   } else {
     node("rect", {
       x: 2, y: 4, width: 26, height: 16, rx: 3,
-      class: `pc-box${item.kind === "callActivity" ? " call" : ""}`,
+      class: `pc-box${item.kind === "callActivity" ? " call" : ""}`
+        + `${item.kind === "eventSubProcess" ? " event-sub" : ""}`,
     }, icon);
     if (item.kind === "transaction") {
       node("rect", { x: 4, y: 6, width: 22, height: 12, rx: 2, class: "pc-box inner" }, icon);

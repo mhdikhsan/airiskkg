@@ -324,8 +324,9 @@ def _markers(graph: Graph, activity: URIRef, kind: str) -> dict:
     }
 
 
-def _event_definition(graph: Graph, event: URIRef) -> tuple[str | None, str | None]:
-    """Which trigger the circle carries, and what it names."""
+def _event_triggers(graph: Graph, event: URIRef) -> list[tuple[str, str | None]]:
+    """Every trigger the event carries, each with what it names."""
+    found = []
     for definition in (
         *graph.objects(event, _prop("eventDefinition")),
         *graph.objects(event, _prop("eventDefinitionRef")),
@@ -339,15 +340,33 @@ def _event_definition(graph: Graph, event: URIRef) -> tuple[str | None, str | No
                     or graph.value(definition, _prop("signalRef"))
                     or graph.value(definition, _prop("escalationRef"))
                 )
-                return (
+                found.append((
                     candidate[: -len("EventDefinition")],
                     _label_of(graph, referenced) if referenced is not None else None,
-                )
+                ))
+                break
     # A send/receive-style event may name its message without a definition node.
     message = graph.value(event, _prop("messageRef"))
-    if message is not None:
-        return "message", _label_of(graph, message)
-    return None, None
+    if not found and message is not None:
+        found.append(("message", _label_of(graph, message)))
+    return sorted(found, key=lambda row: (row[0], row[1] or ""))
+
+
+def _event_definition(graph: Graph, event: URIRef) -> tuple[str | None, str | None, list[str]]:
+    """Which trigger the circle carries, what it names, and every trigger behind it.
+
+    BPMN has no "multiple" trigger class: an event is Multiple when it carries
+    more than one definition, and Parallel Multiple when bp:parallelMultiple
+    says all of them must occur."""
+    triggers = _event_triggers(graph, event)
+    kinds = [kind for kind, _named in triggers]
+    if len(triggers) > 1:
+        named = ", ".join(name for _kind, name in triggers if name) or None
+        parallel = _flag(graph, event, "parallelMultiple")
+        return ("parallelMultiple" if parallel else "multiple"), named, kinds
+    if triggers:
+        return triggers[0][0], triggers[0][1], kinds
+    return None, None, []
 
 
 def _flow_nodes(graph: Graph, classes: tuple[str, ...]) -> list[URIRef]:
@@ -358,11 +377,108 @@ def _flow_nodes(graph: Graph, classes: tuple[str, ...]) -> list[URIRef]:
 
 
 def _direct_process(graph: Graph, node: URIRef) -> str | None:
-    """The process that lists this node directly."""
-    for holder in graph.subjects(_prop("contains"), node):
-        if (holder, RDF.type, _cls("process")) in graph:
-            return str(holder)
+    """The process, or the choreography, that lists this node directly.
+
+    A choreography holds its nodes as a process does, so the canvas lays both
+    out the same way; sBPMN declares bp:flowElement on both."""
+    for predicate in (_prop("contains"), _prop("flowElement")):
+        for holder in graph.subjects(predicate, node):
+            if (holder, RDF.type, _cls("process")) in graph \
+                    or (holder, RDF.type, _cls("choreography")) in graph:
+                return str(holder)
     return None
+
+
+_CHOREOGRAPHY_CLASSES = ("callChoreography", "subChoreography", "choreographyTask")
+_CONVERSATION_CLASSES = ("callConversation", "subConversation", "conversation")
+_CHOREOGRAPHY_LOOPS = {
+    "Standard": "standard",
+    "MultiInstanceParallel": "multiParallel",
+    "MultiInstanceSequential": "multiSequential",
+}
+
+
+def _choreographies(graph: Graph) -> list[dict]:
+    rows = [
+        {"id": str(c), "label": _label_of(graph, c)}
+        for c in graph.subjects(RDF.type, _cls("choreography"))
+    ]
+    return sorted(rows, key=lambda row: (row["label"], row["id"]))
+
+
+def _choreography_activities(graph: Graph) -> list[URIRef]:
+    return _flow_nodes(graph, _CHOREOGRAPHY_CLASSES)
+
+
+def _choreography_row(graph: Graph, activity: URIRef) -> dict:
+    """A choreography activity with its participant bands.
+
+    Which band is drawn on top is BPMNDI, which sBPMN does not model, so the
+    initiating participant goes on top and the rest below it, by name."""
+    kind = _first_kind(_types(graph, activity), _CHOREOGRAPHY_CLASSES, "choreographyTask")
+    initiating = graph.value(activity, _prop("initiatingParticipantRef"))
+    sent: dict[URIRef, str] = {}
+    for flow in graph.objects(activity, _prop("messageFlowRef")):
+        source = graph.value(flow, _prop("sourceRef"))
+        message = graph.value(flow, _prop("messageRef"))
+        if source is not None and message is not None:
+            sent[source] = _label_of(graph, message)
+    bands = []
+    for participant in graph.objects(activity, _prop("participantRef")):
+        bands.append({
+            "id": str(participant),
+            "label": _label_of(graph, participant),
+            "initiating": participant == initiating,
+            "multiple": graph.value(participant, _prop("participantMultiplicity")) is not None,
+            "message": sent.get(participant),
+        })
+    bands.sort(key=lambda band: (not band["initiating"], band["label"], band["id"]))
+    loop = graph.value(activity, _prop("loopType"))
+    return {
+        "id": str(activity),
+        "label": _label_of(graph, activity),
+        "kind": kind,
+        "bands": bands,
+        "loop": _CHOREOGRAPHY_LOOPS.get(str(loop)) if loop is not None else None,
+        "process": _direct_process(graph, activity),
+        "laneId": None,
+        "lane": None,
+        "parent": None,
+        "children": [],
+    }
+
+
+def _conversations(graph: Graph) -> tuple[list[dict], list[dict]]:
+    """Conversation nodes, and the links joining each to its participants.
+
+    A link drawn is a bp:conversationLink; a participant named by
+    bp:participantRef with no link of its own is still joined, because the
+    reference is the claim and the link only its picture."""
+    nodes = []
+    linked: set[tuple[str, str]] = set()
+    links = []
+    for link in graph.subjects(RDF.type, _cls("conversationLink")):
+        source = graph.value(link, _prop("sourceRef"))
+        target = graph.value(link, _prop("targetRef"))
+        if source is None or target is None:
+            continue
+        links.append({"id": str(link), "source": str(source), "target": str(target)})
+        linked.update({(str(source), str(target)), (str(target), str(source))})
+    for conversation in _flow_nodes(graph, _CONVERSATION_CLASSES):
+        kind = _first_kind(_types(graph, conversation), _CONVERSATION_CLASSES, "conversation")
+        participants = sorted(str(p) for p in graph.objects(conversation, _prop("participantRef")))
+        nodes.append({
+            "id": str(conversation),
+            "label": _label_of(graph, conversation),
+            "kind": kind,
+            "participants": participants,
+        })
+        for participant in participants:
+            if (str(conversation), participant) not in linked:
+                links.append({"id": None, "source": participant, "target": str(conversation)})
+    nodes.sort(key=lambda row: (row["label"], row["id"]))
+    links.sort(key=lambda row: (row["source"], row["target"]))
+    return nodes, links
 
 
 def _ordered(graph: Graph, nodes: list[URIRef]) -> list[URIRef]:
@@ -404,6 +520,30 @@ def _band_key(graph: Graph, band: URIRef, label: str) -> tuple:
         return (1, 0, label)
 
 
+def _band_only(graph: Graph, participant: URIRef, process: URIRef | None) -> bool:
+    """A participant a choreography names on its bands and nothing else does.
+
+    A choreography diagram draws no pools, so such a participant is drawn only
+    as a band; one a message flow or a conversation reaches keeps its pool."""
+    if process is not None:
+        return False
+    holders = set(graph.subjects(_prop("participantRef"), participant))
+
+    def held_by(classes: tuple[str, ...]) -> bool:
+        return any((h, RDF.type, _cls(kind)) in graph for h in holders for kind in classes)
+
+    if not held_by(_CHOREOGRAPHY_CLASSES):
+        return False
+    # A choreography task's own message flows run between its bands, not pools.
+    banded = set(graph.objects(None, _prop("messageFlowRef")))
+    reached = any(
+        connector not in banded
+        for end in (_prop("sourceRef"), _prop("targetRef"))
+        for connector in graph.subjects(end, participant)
+    )
+    return not (reached or held_by(_CONVERSATION_CLASSES))
+
+
 def _participants(graph: Graph) -> list[dict]:
     rows = []
     for participant in graph.subjects(RDF.type, _cls("participant")):
@@ -415,6 +555,7 @@ def _participants(graph: Graph) -> list[dict]:
                 "label": _label_of(graph, participant),
                 "process": str(process) if process is not None else None,
                 "multiple": multiplicity is not None,
+                "bandOnly": _band_only(graph, participant, process),
                 "order": _band_key(graph, participant, _label_of(graph, participant)),
             }
         )
@@ -454,8 +595,12 @@ def _sequence_flows(graph: Graph) -> list[dict]:
 
 
 def _message_flows(graph: Graph) -> list[dict]:
+    """Message flow between pools; a choreography task's own flows are its bands."""
+    banded = set(graph.objects(None, _prop("messageFlowRef")))
     flows = []
     for flow in graph.subjects(RDF.type, _cls("messageFlow")):
+        if flow in banded:
+            continue
         source = graph.value(flow, _prop("sourceRef"))
         target = graph.value(flow, _prop("targetRef"))
         if source is None or target is None:
@@ -565,7 +710,8 @@ def _stamp_lines(view: dict, ttl_text: str | None) -> dict:
     lines = source_lines(ttl_text)
     for key in (
         "participants", "processes", "activities", "lanes", "messageFlows",
-        "sequenceFlows", "events", "gateways", "artifacts",
+        "sequenceFlows", "events", "gateways", "artifacts", "choreographies",
+        "choreographyActivities", "conversations",
     ):
         for row in view.get(key, []):
             line = lines.get(row.get("id"))
@@ -642,7 +788,7 @@ def process_view(graph: Graph, ttl_text: str | None = None) -> dict:
     for event in events:
         types = _types(graph, event)
         kind = _first_kind(types, _EVENT_CLASSES, "event")
-        definition, referenced = _event_definition(graph, event)
+        definition, referenced, triggers = _event_definition(graph, event)
         host = graph.value(event, _prop("attachedToRef"))
         name = graph.value(event, _prop("name")) or graph.value(event, RDFS.label)
         event_rows.append(
@@ -652,6 +798,7 @@ def process_view(graph: Graph, ttl_text: str | None = None) -> dict:
                 "kind": kind,
                 "throwing": kind in _THROWING,
                 "definition": definition,
+                "definitions": triggers,
                 "definitionLabel": referenced,
                 # A boundary event that interrupts is a solid double ring; a
                 # non-interrupting one is dashed, and BPMN reads them oppositely.
@@ -687,6 +834,11 @@ def process_view(graph: Graph, ttl_text: str | None = None) -> dict:
         )
 
     artifacts, associations = _artifacts(graph)
+    choreography_rows = [
+        _choreography_row(graph, activity)
+        for activity in _ordered(graph, _choreography_activities(graph))
+    ]
+    conversations, conversation_links = _conversations(graph)
 
     processes = []
     for process in graph.subjects(RDF.type, _cls("process")):
@@ -726,6 +878,10 @@ def process_view(graph: Graph, ttl_text: str | None = None) -> dict:
         "dataNodes": _data_nodes(graph),
         "artifacts": artifacts,
         "associations": associations,
+        "choreographies": _choreographies(graph),
+        "choreographyActivities": choreography_rows,
+        "conversations": conversations,
+        "conversationLinks": conversation_links,
         "unrefinedSystems": unrefined,
         # The situational context of each architecture a step refines, beside
         # the options the editor may write. Stated from here because the analyst

@@ -1459,3 +1459,67 @@ def test_each_landing_says_what_it_is_in_one_line(served) -> None:
     for tab in ("risks", "motifs", "terms"):
         assert 0 < seen[tab] <= 130, f"the {tab} note is {seen[tab]} characters"
     assert seen["capped"] == 0, "the note is still held to a narrow column"
+
+
+def test_the_rest_of_bpmn_is_drawn_as_bpmn_draws_it(served) -> None:
+    """Multiple triggers, a start that does not interrupt, a message on a flow,
+    conversations and a choreography: each is a shape of its own, and before
+    this none of them was drawn at all, or was drawn as something else."""
+    from bpmn_notation import NOTATION_TTL
+
+    seen = _probe(served, "notation", """
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  window.addEventListener("error", () => log("threw=1"));
+  window.addEventListener("load", () => setTimeout(() => {
+    window.PairAI.Editor.setValue(GRAPH_TTL);
+    setTimeout(() => {
+      document.querySelector("#level-business").click();
+      setTimeout(() => {
+        const canvas = document.querySelector("#process-canvas");
+        const all = (sel) => canvas.querySelectorAll(sel).length;
+        const glyph = (start) => [...canvas.querySelectorAll(".pc-ev-glyph path")]
+          .filter((p) => p.getAttribute("d").startsWith(start));
+        log("pentagons=" + glyph("M 0 -7.5 L 7.1").length);
+        log("filled=" + glyph("M 0 -7.5 L 7.1").filter((p) => p.closest(".throwing")).length);
+        log("pluses=" + glyph("M -2 -7 H 2").length);
+        log("envelopes=" + all(".pc-env"));
+        log("replies=" + all(".pc-env.shaded"));
+        log("hexagons=" + all(".pc-conv-box"));
+        log("calls=" + all(".pc-conv-box.call"));
+        log("convLinks=" + all(".pc-conv-link"));
+        log("chor=" + all(".pc-chor"));
+        log("bands=" + all(".pc-chor-band"));
+        log("shaded=" + all(".pc-chor-band.shaded"));
+        log("callChor=" + all(".pc-chor-box.call"));
+        log("frames=" + all(".pc-chor-frame"));
+        log("pools=" + all(".pc-pool"));
+        log("messages=" + all(".pc-msg"));
+        const watch = [...canvas.querySelectorAll(".pc-activity")]
+          .find((g) => g.textContent.includes("Watch for"));
+        watch.querySelector(".pc-mk-sub").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        setTimeout(() => {
+          log("openStart=" + all(".pc-ev-ring.start.open"));
+          log("done=1");
+        }, 600);
+      }, 1500);
+    }, 2500);
+  }, 2000));
+  </script>
+""".replace("GRAPH_TTL", json.dumps(NOTATION_TTL)))
+    assert seen.get("done") == 1, f"the probe never finished: {seen['_report']!r}"
+    assert "threw" not in seen, f"the page threw while drawing: {seen['_report']!r}"
+    assert (seen["pentagons"], seen["filled"]) == (2, 1), (
+        "a multiple event is a pentagon, filled when it throws"
+    )
+    assert seen["pluses"] == 1, "a parallel multiple event is an open plus"
+    assert (seen["envelopes"], seen["replies"]) == (3, 1), (
+        "one message on a flow and two on the quote's bands, the reply shaded"
+    )
+    assert (seen["hexagons"], seen["calls"], seen["convLinks"]) == (3, 1, 5)
+    assert (seen["chor"], seen["bands"], seen["shaded"], seen["callChor"]) == (3, 6, 3, 1)
+    assert (seen["frames"], seen["pools"]) == (1, 3), (
+        "a choreography is framed, and its band-only participants get no pool"
+    )
+    assert seen["messages"] == 1, "a choreography task's own message flow was drawn between pools"
+    assert seen["openStart"] == 1, "the start of the event sub-process is not drawn non-interrupting"

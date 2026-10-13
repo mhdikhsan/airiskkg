@@ -636,6 +636,20 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   text annotations. **The vocabulary ceiling is `external/sbpmn/sbpmn_2.0.ttl`** —
   `test_bpmn_authoring.py` fails on a class or property it does not declare. A diagram that
   cannot say "this branches" asserts an order of work the model never claimed.
+- **The rest of BPMN 2.0 is drawn too (2026-10-13)**: Multiple and Parallel Multiple events,
+  a dashed non-interrupting start in an event sub-process, the message envelope on a message
+  flow, conversation diagrams (conversation, sub-conversation, call conversation, double-line
+  links) and choreography diagrams (task, sub-choreography, call choreography, participant
+  bands with their messages). `test_bpmn_notation.py` reads it off the view and
+  `test_the_rest_of_bpmn_is_drawn_as_bpmn_draws_it` off the canvas. Three readings to keep:
+  **Multiple is not a class** — it is two or more `bp:eventDefinition`s on one event, and
+  Parallel Multiple adds `bp:parallelMultiple`, declared on a catch event only, so the editor
+  refuses it on a throw. **A choreography's band order is BPMNDI**, which sBPMN does not
+  model, so the initiator is drawn on top by convention, as pool order once was before
+  `pair:bandOrder`. **A participant named only on choreography bands gets no pool**, and a
+  choreography task's own `messageFlowRef` flows are its bands, not message flow between
+  pools. Conversations and choreographies are drawn from the Turtle; the palette does not
+  author them yet.
 - **Sequence flow is routed from the model, never from adjacency.** `process_view` emits
   `sequenceFlows`; the canvas layers nodes by longest path and routes orthogonally. **Never
   draw a connector from layout order.** Whether a connection is a sequence flow or a message
