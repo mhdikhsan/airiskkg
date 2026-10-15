@@ -862,10 +862,12 @@ function initPanZoom() {
     const rect = wrap.getBoundingClientRect();
     zoom(ev.deltaY > 0 ? 1.12 : 1 / 1.12, ev.clientX - rect.left, ev.clientY - rect.top);
   }, { passive: false });
+}
 
-  document.getElementById("btn-zoom-in").addEventListener("click", () => zoom(1 / 1.25, wrap.clientWidth / 2, wrap.clientHeight / 2));
-  document.getElementById("btn-zoom-out").addEventListener("click", () => zoom(1.25, wrap.clientWidth / 2, wrap.clientHeight / 2));
-  document.getElementById("btn-fit").addEventListener("click", fit);
+/* Zoom about the centre; above 1 zooms in. The buttons are wired in app.js,
+   because they act on whichever canvas is on screen. */
+function zoomBy(factor) {
+  zoom(1 / factor, wrap.clientWidth / 2, wrap.clientHeight / 2);
 }
 
 // evidence highlighting 
@@ -879,6 +881,8 @@ function setHighlight(ids) {
 function onKeyDown(ev) {
   if (ev.key !== "Delete" && ev.key !== "Backspace") return;
   if (!selectedId || !annotationCfg.onDelete) return;
+  // A node picked before the level changed is not on screen to be deleted.
+  if (svg.classList.contains("hidden")) return;
   const target = ev.target;
   if (target && target.matches && target.matches("input, textarea, select")) return;
   ev.preventDefault();
@@ -1123,6 +1127,6 @@ function exportSvg(filename = "architecture.svg") {
 }
 
 export const GraphView = {
-  init, render, clear, setHighlight, fit, focus, layoutPositions, setAnnotation, placeNodeAt,
+  init, render, clear, setHighlight, fit, focus, zoomBy, layoutPositions, setAnnotation, placeNodeAt,
   exportSvg, toSvgDocument, editSystem, getSelectedSystem, selectSystem,
 };

@@ -3052,3 +3052,87 @@ def test_the_input_contract_is_checked_without_asking(scene_restored) -> None:
     assert rows > 0, "nothing was checked until Validate was pressed"
     assert seen["count"] == str(rows), "the tab does not say how many there are"
     assert "Customer question" in seen["text"]
+
+
+def _press(loop, handle, key, code, vk, modifiers=0):
+    for kind in ("rawKeyDown", "keyUp"):
+        loop.run_until_complete(handle.send("Input.dispatchKeyEvent", {
+            "type": kind, "key": key, "code": code, "windowsVirtualKeyCode": vk,
+            "modifiers": modifiers}))
+    time.sleep(0.4)
+
+
+def _centre(loop, handle, selector):
+    return loop.run_until_complete(handle.js(f"""(() => {{
+        const b = document.querySelector({json.dumps(selector)});
+        if (!b) return null;
+        const r = b.getBoundingClientRect();
+        return {{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }};
+    }})()"""))
+
+
+def test_the_zoom_buttons_zoom_the_business_process(scene_restored) -> None:
+    """The +, - and fit buttons zoomed the architecture canvas hidden behind the
+    process, so on the business level they seemed to do nothing."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    scale = ("Number((document.querySelector('#process-canvas g').getAttribute('transform')"
+             r" || '').match(/scale\(([^)]+)\)/)[1])")
+    start = loop.run_until_complete(handle.js(scale))
+    at = _centre(loop, handle, "#btn-zoom-in")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    zoomed = loop.run_until_complete(handle.js(scale))
+    at = _centre(loop, handle, "#btn-fit")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    fitted = loop.run_until_complete(handle.js(scale))
+
+    assert zoomed > start * 1.1, f"zoom-in left the process at {zoomed} (was {start})"
+    assert abs(fitted - start) < 0.01, f"fit did not bring the process back: {fitted} vs {start}"
+
+
+def test_delete_and_undo_work_on_the_business_process(scene_restored) -> None:
+    """DEL removed only a picked flow, never the step that was clicked, and
+    Ctrl+Z did nothing at all: writing the editor clears the browser's undo."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    target = loop.run_until_complete(handle.js("""(() => {
+        for (const n of document.querySelectorAll('#process-canvas [data-node]')) {
+            if (!n.querySelector('.pc-box') || n.classList.contains('refined')) continue;
+            const r = n.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            const hit = document.elementFromPoint(x, y);
+            if (hit && hit.closest('[data-node]') === n) return { id: n.getAttribute('data-node'), x, y };
+        }
+        return null;
+    })()"""))
+    assert target, "no plain activity could be clicked"
+    present = f"!!document.querySelector('#process-canvas [data-node=\"{target['id']}\"]')"
+
+    loop.run_until_complete(handle.click(target["x"], target["y"]))
+    _press(loop, handle, "Delete", "Delete", 46)
+    gone = _settle(loop, handle, present, True, tries=30)
+    _press(loop, handle, "z", "KeyZ", 90, modifiers=2)
+    back = _settle(loop, handle, present, False, tries=30)
+    _press(loop, handle, "z", "KeyZ", 90, modifiers=2 | 8)
+    again = _settle(loop, handle, present, True, tries=30)
+
+    assert gone is False, "Delete did not remove the activity whose editor was open"
+    assert back is True, "Ctrl+Z did not bring the activity back"
+    assert again is False, "Ctrl+Shift+Z did not remove it again"
+
+
+def test_back_stays_in_the_workbench(scene_restored) -> None:
+    """The browser's Back left the tool, and the diagram with it."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(1)
+    _back_to_business(loop, handle)
+    loop.run_until_complete(handle.js("history.back(); 1"))
+    time.sleep(1.5)
+    first = loop.run_until_complete(handle.js("({ level: window.PairAI.state.level, url: location.pathname })"))
+    loop.run_until_complete(handle.js("window.PairAI.state.levelTrail = []; history.back(); 1"))
+    time.sleep(1.5)
+    second = loop.run_until_complete(handle.js("({ level: window.PairAI.state.level, url: location.pathname })"))
+
+    assert first["level"] == "architecture", f"Back did not return to the level before: {first}"
+    assert second["url"].endswith("_cdp_probe.html"), f"Back left the workbench: {second}"

@@ -1526,6 +1526,11 @@ export function closeLibrary() {
     .classList.add("hidden");
 }
 
+/* The library shown as the opening screen, which Back leaves rather than closes. */
+export function isFrontDoor() {
+  return openingMode && isLibraryOpen();
+}
+
 export function isLibraryOpen() {
   return !$("#library")
     .classList.contains("hidden");

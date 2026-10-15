@@ -8,6 +8,35 @@ let markedLines = [];
 
 const DEBOUNCE_MS = 500;
 
+/* Every settled document, so a canvas edit can be undone: writing the
+   textarea's value clears the browser's own undo, and canvas edits all write it. */
+const UNDO_LIMIT = 50;
+let undoStack = [];
+let redoStack = [];
+let settled = "";
+
+function remember(text) {
+  if (text === settled) return;
+  undoStack.push(settled);
+  if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+  redoStack = [];
+  settled = text;
+}
+
+function step(from, to) {
+  if (!from.length) return false;
+  to.push(settled);
+  settled = from.pop();
+  textarea.value = settled;
+  errorLine = null;
+  refresh();
+  if (changeHandler) changeHandler(settled);
+  return true;
+}
+
+const undo = () => step(undoStack, redoStack);
+const redo = () => step(redoStack, undoStack);
+
 function escapeHtml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -70,6 +99,7 @@ function syncScroll() {
 function scheduleChange() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
+    remember(textarea.value);
     if (changeHandler) changeHandler(textarea.value);
   }, DEBOUNCE_MS);
 }
@@ -95,10 +125,12 @@ function init(options) {
   textarea.addEventListener("input", () => { errorLine = null; markedLines = []; refresh(); scheduleChange(); });
   textarea.addEventListener("scroll", syncScroll);
   textarea.addEventListener("keydown", handleKeydown);
+  settled = textarea.value;
   refresh();
 }
 
 function setValue(text, { silent = false } = {}) {
+  remember(text);
   textarea.value = text;
   errorLine = null;
   refresh();
@@ -130,4 +162,4 @@ function revealLines(lines) {
   if (markedLines.length) scrollLineIntoView(markedLines[0]);
 }
 
-export const Editor = { init, getValue, setValue, markErrorLine, revealLines };
+export const Editor = { init, getValue, setValue, markErrorLine, revealLines, undo, redo };

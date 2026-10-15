@@ -64,7 +64,8 @@ function architectureHasContent() {
   return Boolean(state.lastGraph && state.lastGraph.nodes && state.lastGraph.nodes.length);
 }
 
-export function setLevel(next, activity) {
+export function setLevel(next, activity, { back = false } = {}) {
+  if (!back && next !== state.level) state.levelTrail = [...state.levelTrail, state.level].slice(-20);
   state.level = next;
   state.openedFrom = next === "architecture" ? activity || state.openedFrom : null;
   $("#canvas").classList.toggle("hidden", next !== "architecture");

@@ -14,11 +14,11 @@ import {
 import { clearDerivedCategories, renderDerivedCategories } from "./panels/dataflow.js";
 import { clearFindings, reReadFindings, renderFindings } from "./panels/findings.js";
 import { renderHistory } from "./panels/history.js";
-import { closeLibrary, initLibrary, isLibraryOpen, openLibrary } from "./panels/library.js";
+import { closeLibrary, initLibrary, isFrontDoor, isLibraryOpen, openLibrary } from "./panels/library.js";
 import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
 import { applyConnect, applyDisconnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
 import { openOverview } from "./panels/overview.js";
-import { clearRisk, initRisk } from "./panels/risk.js";
+import { clearRisk, initRisk, refreshRegister, renderRisk } from "./panels/risk.js";
 import { RiskCanvas } from "./lib/risk_canvas.js";
 import { STARTER_BPMN, STARTER_TTL, initPalette } from "./panels/palette.js";
 import { noteChange } from "./panels/run.js";
@@ -207,6 +207,52 @@ async function init() {
     if (widening) emit("scope:changed");
   });
   setLevel(state.level);
+
+  /* The zoom buttons act on the canvas on screen; the risk level has its own. */
+  const onProcess = () => state.level === "business";
+  $("#btn-zoom-in").addEventListener("click", () =>
+    (onProcess() ? ProcessCanvas.zoomBy(1.25) : GraphView.zoomBy(1.25)));
+  $("#btn-zoom-out").addEventListener("click", () =>
+    (onProcess() ? ProcessCanvas.zoomBy(0.8) : GraphView.zoomBy(0.8)));
+  $("#btn-fit").addEventListener("click", () => (onProcess() ? ProcessCanvas.fit() : GraphView.fit()));
+
+  /* Undo and redo the document, except inside a field, which has its own. */
+  document.addEventListener("keydown", (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey) || ev.altKey) return;
+    const key = ev.key.toLowerCase();
+    const again = (key === "z" && ev.shiftKey) || (key === "y" && !ev.shiftKey);
+    if (key !== "z" && !again) return;
+    const on = document.activeElement;
+    if (on && on.closest && on.closest("input, textarea, select, [contenteditable]")) return;
+    ev.preventDefault();
+    const done = again ? Editor.redo() : Editor.undo();
+    if (done) noteChange(again ? "redo" : "undo");
+    setStatus("ok", done ? (again ? "Redone" : "Undone") : `Nothing to ${again ? "redo" : "undo"}`);
+  });
+
+  /* The browser's Back walks back through the workbench rather than out of it:
+     the overview, then the library, then the level before this one. */
+  const stepBack = () => {
+    if (!$("#overview").classList.contains("hidden")) { $("#overview").classList.add("hidden"); return true; }
+    if (isLibraryOpen() && !isFrontDoor()) { closeLibrary(); return true; }
+    const previous = state.levelTrail.pop();
+    if (!previous) return false;
+    const widening = state.scopedSystem !== null;
+    state.scopedSystem = null;
+    setLevel(previous, null, { back: true });
+    if (previous === "risk") refreshRegister().then(renderRisk);
+    if (widening) emit("scope:changed");
+    return true;
+  };
+  history.replaceState({ pairai: "root" }, "");
+  history.pushState({ pairai: "here" }, "");
+  window.addEventListener("popstate", () => {
+    if (stepBack()) { history.pushState({ pairai: "here" }, ""); return; }
+    // Nothing would be lost, so Back may leave as it always did.
+    if (!Editor.getValue().trim()) { history.back(); return; }
+    history.pushState({ pairai: "here" }, "");
+    setStatus("ok", "Back stays in PAIR-AI while a diagram is open", "close the tab to leave");
+  });
 
   $("#btn-history-clear").addEventListener("click", () => {
     if (!VersionHistory.list().length) return;

@@ -2341,20 +2341,43 @@ function fit() {
   return true;
 }
 
+/* Zoom about the centre; above 1 zooms in. Clamped like the wheel. */
+function zoomBy(factor) {
+  if (!svg) return;
+  const rect = svg.getBoundingClientRect();
+  const next = Math.min(3, Math.max(0.15, view.k * factor));
+  const ratio = next / view.k;
+  view.x = rect.width / 2 - (rect.width / 2 - view.x) * ratio;
+  view.y = rect.height / 2 - (rect.height / 2 - view.y) * ratio;
+  view.k = next;
+  applyView();
+}
+
 function initPanZoom() {
- 
+
   const DRAG_THRESHOLD = 4;
   let pan = null;
 
   window.addEventListener("keydown", async (ev) => {
     if (ev.key !== "Delete" && ev.key !== "Backspace") return;
-    if (!pickedFlow) return;
+    if (svg.classList.contains("hidden")) return;
     const on = document.activeElement;
     if (on && on.closest && on.closest("input, textarea, select, [contenteditable]")) return;
-    ev.preventDefault();
-    const id = pickedFlow;
-    pickedFlow = null;
-    if (onEdit) await onEdit("disconnect", { flow: id });
+    if (pickedFlow) {
+      ev.preventDefault();
+      const id = pickedFlow;
+      pickedFlow = null;
+      if (onEdit) await onEdit("disconnect", { flow: id });
+      return;
+    }
+    // The element whose editor is open is the one that was clicked, and its
+    // own Delete button already knows how to remove that kind of thing.
+    const remove = document.querySelector(
+      "#process-detail:not(.hidden) .nd-actions button[id^='pd-'][id$='delete']");
+    if (remove) {
+      ev.preventDefault();
+      remove.click();
+    }
   });
   svg.addEventListener("pointerdown", (ev) => {
     // Clear here: a flag left armed eats the next real click.
@@ -2752,7 +2775,7 @@ function forgetLayout() {
 }
 
 export const ProcessCanvas = {
-  init, render, fit, hasProcess, setSystems, setSystemContext, setDataClasses,
+  init, render, fit, zoomBy, hasProcess, setSystems, setSystemContext, setDataClasses,
   setFindings, forgetLayout,
   svgRoot: () => svg,
 };
