@@ -1506,6 +1506,29 @@ const GATEWAY_KINDS = [
   ["complexGateway", "Complex"],
 ];
 
+/* Mirrors NO_INCOMING / NO_OUTGOING in routes/graph.py, which refuses the same. */
+const SEQUENCE_FLOW_RULES = [
+  { kind: "startEvent", end: "target",
+    why: "A start event begins the process, so no sequence flow may lead into it."
+      + " Remove the incoming flow first." },
+  { kind: "boundaryEvent", end: "target",
+    why: "A boundary event sits on an activity's edge, so no sequence flow may lead into it."
+      + " Remove the incoming flow first." },
+  { kind: "endEvent", end: "source",
+    why: "An end event finishes the process, so no sequence flow may leave it."
+      + " Remove the outgoing flow first." },
+];
+
+/* The event types this event cannot take while its sequence flows are drawn. */
+function blockedKinds(id) {
+  const flows = (data && data.sequenceFlows) || [];
+  const blocked = new Map();
+  for (const rule of SEQUENCE_FLOW_RULES) {
+    if (flows.some((flow) => flow[rule.end] === id)) blocked.set(rule.kind, rule.why);
+  }
+  return blocked;
+}
+
 /* Events and gateways get their own editor: they carry a type and, for an
  * event, a trigger - and changing either is what turns a placeholder circle
  * into the thing the process actually waits for. */
@@ -1522,12 +1545,22 @@ function showNodeDetail(item, ev) {
     : item.kind === "boundaryEvent" ? "Interrupts the activity"
       : (item.kind === "startEvent" && host && host.markers && host.markers.eventSubProcess)
         ? "Interrupts the process it starts in" : null;
+  const blocked = isEvent ? blockedKinds(item.id) : new Map();
+  const kindOptions = kinds.map(([value, label]) => {
+    const why = value === item.kind ? null : blocked.get(value);
+    return `<option value="${escapeHtml(value)}"${value === item.kind ? " selected" : ""}`
+      + `${why ? ` disabled title="${escapeHtml(why)}"` : ""}>`
+      + `${escapeHtml(label)}${why ? " (not while connected)" : ""}</option>`;
+  }).join("");
+  const blockedNote = [...new Set([...blocked].filter(([value]) => value !== item.kind)
+    .map(([, why]) => why))].join(" ");
   panel.innerHTML = `
     <div class="nd-head">${escapeHtml(isEvent ? "event" : "gateway")}</div>
     <label class="nd-row"><span>Name</span>
       <input type="text" id="pd-name" value="${escapeHtml(item.label)}" /></label>
     <label class="nd-row"><span>Type</span>
-      <select id="pd-kind">${options(kinds, item.kind)}</select></label>
+      <select id="pd-kind"${blockedNote ? ` title="${escapeHtml(blockedNote)}"` : ""}>${kindOptions}</select></label>
+    ${blockedNote ? `<p class="nd-note" id="pd-kind-why">${escapeHtml(blockedNote)}</p>` : ""}
     ${isEvent ? `<label class="nd-row"><span>Trigger</span>
       <select id="pd-def">${options([...EVENT_DEFINITIONS, ...MULTIPLE_DEFINITIONS],
         item.definition || "")}</select></label>

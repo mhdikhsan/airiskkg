@@ -152,6 +152,71 @@ def test_retyping_a_node_keeps_everything_else_it_carries(client, process_ttl) -
     assert len(still) == len(joined), "the retype dropped the flows the node was on"
 
 
+def _start_to_task(client) -> tuple[str, dict]:
+    pool = client.post("/api/process-edit", json={"ttl": "", "op": "add-pool", "label": "Desk"})
+    ttl, ids = pool.get_json()["ttl"], {"pool": pool.get_json()["newId"]}
+    for key, op, extra in (("start", "add-event", {"kind": "startEvent"}),
+                           ("end", "add-event", {"kind": "endEvent"}),
+                           ("task", "add-activity", {"kind": "task", "label": "Answer"})):
+        made = client.post("/api/process-edit", json={"ttl": ttl, "op": op, "pool": ids["pool"],
+                                                      **extra}).get_json()
+        ttl, ids[key] = made["ttl"], made["newId"]
+    ttl = edit(client, ttl, "connect", source=ids["start"], target=ids["task"])
+    ttl = edit(client, ttl, "connect", source=ids["task"], target=ids["end"])
+    return ttl, ids
+
+
+@pytest.mark.parametrize("node, kind, says", [
+    ("start", "endEvent", "no sequence flow may leave it"),
+    ("end", "startEvent", "no sequence flow may lead into it"),
+    ("end", "boundaryEvent", "no sequence flow may lead into it"),
+])
+def test_an_event_cannot_be_retyped_against_its_flows(client, node, kind, says) -> None:
+    """A start event with a flow going out was retyped to an end event, and the
+    model said the process ends where it begins."""
+    ttl, ids = _start_to_task(client)
+    response = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "set-node-type", "element": ids[node], "kind": kind})
+    assert response.status_code == 400
+    assert says in response.get_json()["error"]
+    assert "Remove the" in response.get_json()["error"], "the refusal does not say how to fix it"
+
+
+def test_an_event_can_still_be_retyped_where_its_flows_allow(client) -> None:
+    ttl, ids = _start_to_task(client)
+    after = view(client, edit(client, ttl, "set-node-type", element=ids["start"],
+                              kind="intermediateCatchEvent"))
+    assert any(e["id"] == ids["start"] and e["kind"] == "intermediateCatchEvent"
+               for e in after["events"])
+
+
+def test_a_sequence_flow_cannot_enter_a_start_or_leave_an_end(client) -> None:
+    ttl, ids = _start_to_task(client)
+    for source, target in ((ids["task"], ids["start"]), (ids["end"], ids["task"])):
+        response = client.post("/api/process-edit", json={
+            "ttl": ttl, "op": "connect", "source": source, "target": target})
+        assert response.status_code == 400, f"{source} -> {target} was drawn"
+
+
+def test_two_black_box_pools_are_joined_by_a_message_flow(client) -> None:
+    """Neither has a process, so "the same process" held for None == None and
+    the line between two pools was written as a sequence flow."""
+    ttl = ""
+    pools = []
+    for label in ("Customer", "Bank"):
+        made = client.post("/api/process-edit", json={"ttl": ttl, "op": "add-pool",
+                                                      "label": label}).get_json()
+        ttl, pool = made["ttl"], URIRef(made["newId"])
+        graph = Graph().parse(data=ttl, format="turtle")
+        graph.remove((pool, URIRef(PROPS + "processRef"), None))
+        ttl = graph.serialize(format="turtle")
+        pools.append(str(pool))
+    joined = Graph().parse(data=edit(client, ttl, "connect", source=pools[0], target=pools[1]),
+                           format="turtle")
+    assert set(joined.subjects(RDF.type, URIRef(CLASSES + "messageFlow")))
+    assert not set(joined.subjects(RDF.type, URIRef(CLASSES + "sequenceFlow")))
+
+
 def test_a_repetition_marker_survives_the_round_trip(client, process_ttl) -> None:
     after = view(client, edit(client, process_ttl, "set-loop",
                               activity=EC + "DocumentRetrieval", loop="multiParallel"))

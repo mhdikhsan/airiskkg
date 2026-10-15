@@ -451,6 +451,39 @@ LOOP_KINDS = {
 
 FLOW_NODE_KINDS = {*ACTIVITY_KINDS, *EVENT_KINDS, *GATEWAY_KINDS}
 
+# Events a sequence flow may not enter, and the one it may not leave. The canvas
+# disables the same choices in process_canvas.js (SEQUENCE_FLOW_RULES).
+NO_INCOMING = {
+    "startEvent": "A start event begins the process, so no sequence flow may lead into it.",
+    "boundaryEvent": "A boundary event sits on an activity's edge, so no sequence flow may lead into it.",
+}
+NO_OUTGOING = {
+    "endEvent": "An end event finishes the process, so no sequence flow may leave it.",
+}
+
+
+def _sequence_flows(data: Graph, node: URIRef, end: URIRef) -> list[URIRef]:
+    """The sequence flows whose `end` (bp:sourceRef or bp:targetRef) is this node."""
+    return [flow for flow in data.subjects(end, node)
+            if (flow, RDF.type, BPMN.sequenceFlow) in data]
+
+
+def _retype_error(data: Graph, node: URIRef, kind: str) -> str | None:
+    """Why retyping this node to `kind` would break a sequence flow already drawn."""
+    if kind in NO_INCOMING and _sequence_flows(data, node, BP.targetRef):
+        return NO_INCOMING[kind] + " Remove the incoming flow first, then change the type."
+    if kind in NO_OUTGOING and _sequence_flows(data, node, BP.sourceRef):
+        return NO_OUTGOING[kind] + " Remove the outgoing flow first, then change the type."
+    return None
+
+
+def _kind_of(data: Graph, node: URIRef) -> str | None:
+    for kind in data.objects(node, RDF.type):
+        name = str(kind).removeprefix(str(BPMN))
+        if name in EVENT_KINDS:
+            return name
+    return None
+
 
 DPV = Namespace("https://w3id.org/dpv#")
 
@@ -755,6 +788,9 @@ def process_edit() -> object:
             if kind in EVENT_KINDS else []
         if isinstance(triggers, str):
             return jsonify({"error": triggers}), 400
+        broken = _retype_error(data, node, kind)
+        if broken:
+            return jsonify({"error": broken}), 400
         _retype(data, node, kind)
         data.remove((node, BP.name, None))
         if payload.get("label"):
@@ -850,7 +886,15 @@ def process_edit() -> object:
                 return jsonify({"error": "That step already uses this data."}), 400
             return _serialized(data, newId=made)
 
-        same_process = _process_of(data, source_ref) == _process_of(data, target_ref)
+        # Two black-box pools have no process at all, and are still two pools.
+        home = _process_of(data, source_ref)
+        same_process = home is not None and home == _process_of(data, target_ref)
+        if same_process:
+            into, out_of = _kind_of(data, target_ref), _kind_of(data, source_ref)
+            if into in NO_INCOMING:
+                return jsonify({"error": NO_INCOMING[into]}), 400
+            if out_of in NO_OUTGOING:
+                return jsonify({"error": NO_OUTGOING[out_of]}), 400
         flow = _fresh(data, "sflow" if same_process else "mflow")
         data.add((flow, RDF.type, BPMN.sequenceFlow if same_process else BPMN.messageFlow))
         data.add((flow, BP.sourceRef, source_ref))

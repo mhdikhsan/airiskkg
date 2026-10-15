@@ -2986,3 +2986,44 @@ def test_a_risk_added_after_a_drag_does_not_land_on_the_dragged_box(page) -> Non
     assert seen["cards"] == 6
     assert abs(seen["movedY"] - below) <= 2, f"the drag did not move the box: {seen}"
     assert seen["hits"] == [], f"a box was laid out on top of another: {seen['hits']}"
+
+
+def test_an_event_offers_no_type_its_flows_would_break(scene_restored) -> None:
+    """A start event with a flow going out could be switched to an end event,
+    and the model said the process ends where it begins."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js("""(async () => {
+        const post = async (body) => (await (await fetch("/api/process-edit", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body) })).json());
+        let r = await post({ ttl: "", op: "add-pool", label: "Desk" });
+        const pool = r.newId;
+        r = await post({ ttl: r.ttl, op: "add-event", kind: "startEvent", pool });
+        const start = r.newId;
+        r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool, label: "Answer" });
+        r = await post({ ttl: r.ttl, op: "connect", source: start, target: r.newId });
+        window.PairAI.Editor.setValue(r.ttl);
+        return { start };
+    })()"""))
+    _back_to_business(loop, handle)
+    at = _settle(loop, handle, f"""(() => {{
+        const g = document.querySelector('#process-canvas [data-node="{ids["start"]}"]');
+        if (!g) return null;
+        const r = g.getBoundingClientRect();
+        return {{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }};
+    }})()""", None, tries=40)
+    assert at, "the start event was not drawn"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const select = document.querySelector("#process-detail #pd-kind");
+        if (!select) return null;
+        const end = [...select.options].find((o) => o.value === "endEvent");
+        const why = document.querySelector("#process-detail #pd-kind-why");
+        return { disabled: end.disabled, title: end.title, note: why ? why.textContent : "",
+                 others: [...select.options].filter((o) => o.disabled).length };
+    })()"""))
+    assert seen, "clicking the start event opened no editor"
+    assert seen["disabled"], "an end event is still offered while a flow leaves the start event"
+    assert "no sequence flow may leave it" in seen["title"], "the disabled type says nothing"
+    assert "Remove the outgoing flow" in seen["note"], "the panel does not say how to fix it"
+    assert seen["others"] == 1, "a type the flows allow was disabled too"
