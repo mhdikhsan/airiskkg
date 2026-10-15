@@ -1576,6 +1576,59 @@ def test_a_system_is_named_and_described_from_the_architecture_canvas(scene_rest
 
 
 
+def test_a_flow_between_two_systems_does_not_lay_one_frame_over_the_other(scene_restored) -> None:
+    """A log one system writes feeds the other, which feeds back. Laid out as
+    one chain, the second system's parts sat at both ends and its frame
+    covered the first."""
+    loop, handle = scene_restored
+    looped = chr(10).join([
+        '@prefix beam: <http://w3id.org/beam/core#> .',
+        '@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .',
+        '@prefix ex:   <http://example.org/looped#> .',
+        'ex:Expansion a beam:System ; rdfs:label "Expansion" ;',
+        '    beam:hasProcess ex:Extract ; beam:hasResource ex:Taxonomy .',
+        'ex:Extract a beam:Transform ; rdfs:label "Extract" ;',
+        '    beam:use ex:Log ; beam:produce ex:Taxonomy .',
+        'ex:Taxonomy a beam:Data ; rdfs:label "Taxonomy" .',
+        'ex:Recommender a beam:System ; rdfs:label "Recommender" ;',
+        '    beam:hasProcess ex:Record , ex:Recommend ;',
+        '    beam:hasResource ex:Query , ex:Log , ex:Result .',
+        'ex:Query a beam:Data ; rdfs:label "Query" .',
+        'ex:Record a beam:Transform ; rdfs:label "Record" ;',
+        '    beam:use ex:Query ; beam:produce ex:Log .',
+        'ex:Log a beam:Data ; rdfs:label "Log" .',
+        'ex:Recommend a beam:Infer ; rdfs:label "Recommend" ;',
+        '    beam:use ex:Query , ex:Taxonomy ; beam:produce ex:Result .',
+        'ex:Result a beam:Data ; rdfs:label "Result" .',
+    ])
+    loop.run_until_complete(handle.send("Runtime.evaluate", {
+        "expression": "window.PairAI.Editor.setValue(" + json.dumps(looped) + ")",
+        "returnByValue": True,
+    }))
+    _settle(
+        loop, handle,
+        "((window.PairAI.state.lastGraph || {}).systems || []).length === 2", False, tries=60,
+    )
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle,
+            "document.querySelectorAll('#canvas .system-bound').length", 0, tries=40)
+
+    frames = loop.run_until_complete(handle.js("""(() =>
+        [...document.querySelectorAll('#canvas .system-bound')].map((g) => {
+            const r = g.querySelector('.system-bound-box');
+            return {
+                label: g.querySelector('.system-bound-label').textContent,
+                x: Number(r.getAttribute('x')), y: Number(r.getAttribute('y')),
+                w: Number(r.getAttribute('width')), h: Number(r.getAttribute('height')),
+            };
+        }))()"""))
+    assert len(frames) == 2, f"two systems drew {len(frames)} frames: {frames}"
+    a, b = frames
+    apart = (a["x"] + a["w"] <= b["x"] or b["x"] + b["w"] <= a["x"]
+             or a["y"] + a["h"] <= b["y"] or b["y"] + b["h"] <= a["y"])
+    assert apart, f"one system's frame is drawn over the other's: {frames}"
+
+
 def test_a_selected_system_is_where_a_new_element_lands(scene_restored) -> None:
     """The architecture's pool."""
     loop, handle = scene_restored

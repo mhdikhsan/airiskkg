@@ -61,8 +61,21 @@ function compareIds(a, b) {
 }
 
 
-function connectedComponents(nodes, flowEdges) {
+function ownersOf(systems) {
+  const owner = new Map();
+  for (const system of systems || []) {
+    for (const member of system.members || []) {
+      if (!owner.has(member)) owner.set(member, system.id);
+    }
+  }
+  return owner;
+}
+
+// A flow between two systems never joins their components: laid out as one
+// chain, each frame would be stretched across the other.
+function connectedComponents(nodes, flowEdges, owner = new Map()) {
   const parent = new Map(nodes.map((n) => [n.id, n.id]));
+  const rootOwner = new Map(nodes.map((n) => [n.id, owner.get(n.id) || null]));
   const find = (id) => {
     while (parent.get(id) !== id) {
       parent.set(id, parent.get(parent.get(id)));
@@ -73,7 +86,12 @@ function connectedComponents(nodes, flowEdges) {
   const union = (a, b) => {
     const ra = find(a);
     const rb = find(b);
-    if (ra !== rb) parent.set(ra, rb);
+    if (ra === rb) return;
+    const oa = rootOwner.get(ra);
+    const ob = rootOwner.get(rb);
+    if (oa && ob && oa !== ob) return;
+    parent.set(ra, rb);
+    rootOwner.set(rb, ob || oa);
   };
   for (const e of flowEdges) union(e.source, e.target);
 
@@ -83,26 +101,35 @@ function connectedComponents(nodes, flowEdges) {
     if (!groups.has(root)) groups.set(root, []);
     groups.get(root).push(n);
   }
-  const components = Array.from(groups.values()).map((groupNodes) => {
+  const components = Array.from(groups.entries()).map(([root, groupNodes]) => {
     const memberIds = new Set(groupNodes.map((n) => n.id));
     return {
       nodes: groupNodes,
-      edges: flowEdges.filter((e) => memberIds.has(e.source)),
+      edges: flowEdges.filter((e) => memberIds.has(e.source) && memberIds.has(e.target)),
+      owner: rootOwner.get(root),
       // Oldest element in the component decides where the band sits.
       key: groupNodes.map((n) => n.id).sort(compareIds)[0],
     };
   });
-  components.sort((a, b) => compareIds(a.key, b.key));
+  // A system's components stay together, so its frame encloses only its own.
+  const firstOf = new Map();
+  for (const c of components) {
+    if (c.owner && (!firstOf.has(c.owner) || compareIds(c.key, firstOf.get(c.owner)) < 0)) {
+      firstOf.set(c.owner, c.key);
+    }
+  }
+  const rank = (c) => (c.owner ? firstOf.get(c.owner) : c.key);
+  components.sort((a, b) => compareIds(rank(a), rank(b)) || compareIds(a.key, b.key));
   return components;
 }
 
-function layout(nodes, edges) {
+function layout(nodes, edges, systems = current.systems) {
   const ids = new Set(nodes.map((n) => n.id));
   const flowEdges = edges.filter((e) => ids.has(e.source) && ids.has(e.target));
 
   positions = new Map();
   let offsetY = 0;
-  for (const component of connectedComponents(nodes, flowEdges)) {
+  for (const component of connectedComponents(nodes, flowEdges, ownersOf(systems))) {
     const local = layoutComponent(component.nodes, component.edges);
     let minY = Infinity;
     let maxY = -Infinity;
@@ -958,8 +985,8 @@ function init() {
   document.addEventListener("keydown", onKeyDown);
 }
 
-function layoutPositions(nodes, edges) {
-  layout(nodes, edges);
+function layoutPositions(nodes, edges, systems) {
+  layout(nodes, edges, systems);
   return new Map(positions);
 }
 
