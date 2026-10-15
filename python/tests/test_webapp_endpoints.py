@@ -158,14 +158,18 @@ def test_the_leaf_class_warning_names_the_element_and_how_to_fix_it(client) -> N
     no idea what to do about it."""
     rows = _leaf_rows(client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json())
 
-    question, llm = rows["Customer question"], rows["LLM"]
-    assert question["message"].startswith('"Customer question"')
-    assert "leaf class" not in question["message"] and "beam:" not in question["message"]
-    assert question["fix"]["mode"] == "add", "Data must stay, because the queries read it"
-    assert "Text" in {choice["label"] for choice in question["fix"]["choices"]}
-    assert llm["fix"]["mode"] == "replace"
+    llm = rows["LLM"]
+    assert llm["message"].startswith('"LLM"')
+    assert "leaf class" not in llm["message"] and "beam:" not in llm["message"]
     assert {choice["label"] for choice in llm["fix"]["choices"]} == {
         "Statistical Model", "Semantic Model"}
+
+
+def test_plain_data_is_not_asked_what_kind_of_data_it_is(client) -> None:
+    """Asking for the kind of data read as something to fix, and changed
+    nothing: the match queries read beam:Data itself, and a label names it."""
+    rows = _leaf_rows(client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json())
+    assert "Customer question" not in rows
 
 
 def test_every_warning_names_its_element_by_label(client) -> None:
@@ -176,43 +180,26 @@ def test_every_warning_names_its_element_by_label(client) -> None:
 
 
 def test_the_one_click_fix_clears_the_warning(client) -> None:
-    rows = _leaf_rows(client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json())
-    ttl = LEAF_TTL
-    for label, choice in (("Customer question", "Text"), ("LLM", "Statistical Model")):
-        row = rows[label]
-        picked = next(c for c in row["fix"]["choices"] if c["label"] == choice)
-        key = "addClassUri" if row["fix"]["mode"] == "add" else "classUri"
-        ttl = client.post("/api/graph-edit", json={
-            "ttl": ttl, "op": "edit-element", "element": row["focusNode"],
-            key: picked["classUri"]}).get_json()["ttl"]
-    assert _leaf_rows(client.post("/api/validate", json={"ttl": ttl}).get_json()) == {}
-    assert "beam:Data" in ttl, "adding the kind of data dropped beam:Data"
-
-
-def test_taking_the_suggested_fix_does_not_change_what_matches(client) -> None:
-    """Retyping a motif's Data node to Text, as the old warning advised, lost a
-    motif match and its finding, because the queries read `a beam:Data`."""
-    from rdflib import Namespace
-
-    from airiskkg.assessment_runner import run_assessment_from_text
-
-    pair = Namespace("http://w3id.org/airiskkg/pair-ai#")
+    llm = _leaf_rows(client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json())["LLM"]
+    picked = next(c for c in llm["fix"]["choices"] if c["label"] == "Statistical Model")
     ttl = client.post("/api/graph-edit", json={
-        "ttl": "", "op": "add-motif", "motif": "RetrievalAugmentedGenerationMotif"}).get_json()["ttl"]
+        "ttl": LEAF_TTL, "op": "edit-element", "element": llm["focusNode"],
+        "classUri": picked["classUri"]}).get_json()["ttl"]
+    assert _leaf_rows(client.post("/api/validate", json={"ttl": ttl}).get_json()) == {}
 
-    def matched(text: str) -> set:
-        graph = run_assessment_from_text(text).combined_graph
-        return set(graph.objects(None, pair.matchesMotif))
 
-    before = matched(ttl)
-    for row in _leaf_rows(client.post("/api/validate", json={"ttl": ttl}).get_json()).values():
-        key = "addClassUri" if row["fix"]["mode"] == "add" else "classUri"
+def test_no_motif_from_the_library_is_flagged_for_its_types(client) -> None:
+    """Every motif types its nodes as the queries read them, so inserting one
+    must not raise a warning about its types."""
+    motifs = [m["id"] for m in client.get("/api/vocabulary").get_json()["motifTemplates"]]
+    flagged = {}
+    for motif in motifs:
         ttl = client.post("/api/graph-edit", json={
-            "ttl": ttl, "op": "edit-element", "element": row["focusNode"],
-            key: row["fix"]["choices"][0]["classUri"]}).get_json()["ttl"]
-    assert not _leaf_rows(client.post("/api/validate", json={"ttl": ttl}).get_json()), (
-        "the fixes were not applied, so this compared the motif with itself")
-    assert before and matched(ttl) == before
+            "ttl": "", "op": "add-motif", "motif": motif}).get_json()["ttl"]
+        rows = _leaf_rows(client.post("/api/validate", json={"ttl": ttl}).get_json())
+        if rows:
+            flagged[motif] = sorted(rows)
+    assert motifs and not flagged, f"motifs warned about their own types: {flagged}"
 
 
 def test_assess_endpoint_still_works(client) -> None:

@@ -283,9 +283,6 @@ def graph_edit() -> object:
                 if str(existing_type).startswith(str(BEAM)):
                     data.remove((element, RDF.type, existing_type))
             data.add((element, RDF.type, URIRef(payload["classUri"])))
-        if payload.get("addClassUri"):
-            # A kind of data said beside beam:Data, which is what the queries read.
-            data.add((element, RDF.type, URIRef(payload["addClassUri"])))
         if "roles" in payload:
             data.remove((element, PAIR.playsRole, None))
             for role in payload.get("roles") or []:

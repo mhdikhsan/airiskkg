@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from rdflib import RDF, RDFS, Graph, URIRef
+from rdflib import RDFS, Graph, URIRef
 
 from airiskkg.paths import CORE_DIR, SHACL_DIR
 
@@ -52,34 +52,15 @@ def _kinds_under(ontology: Graph, top: URIRef) -> list[dict]:
 
 
 def _leaf_type_advice(data: Graph, ontology: Graph, node: URIRef) -> tuple[str, dict]:
-    """The leaf-class warning in plain words, with the choices that fix it.
+    """The bare-Model warning in plain words, with the choices that fix it.
 
-    Match queries read `a beam:Data` and `a beam:StatisticalModel` and walk no
-    subclasses, so Data and Symbol keep their type when a kind is added, and a
-    bare Model or Resource is replaced by what it is."""
-    name = _name(data, node)
-    types = set(data.objects(node, RDF.type))
-    if _beam("Model") in types:
-        return (
-            f'"{name}" is marked only as a general Model, so motifs that involve a model '
-            "will not match it: they look for a Statistical Model (a machine-learning or "
-            "AI model, such as an LLM) or a Semantic Model (such as an ontology or rule set). "
-            "Choose which one it is.",
-            {"mode": "replace", "choices": _kinds_under(ontology, _beam("Model"))},
-        )
-    for top, noun in (("Data", "data"), ("Symbol", "symbol")):
-        if _beam(top) in types:
-            return (
-                f'"{name}" is marked only as general {top}. You can add what kind of {noun} '
-                f"it is. This is optional and does not change what motifs match, and {top} "
-                "stays, because that is what motifs look for.",
-                {"mode": "add", "choices": _kinds_under(ontology, _beam(top))},
-            )
+    Match queries read `a beam:StatisticalModel`, so a bare Model matches none."""
     return (
-        f'"{name}" is marked only as a general Resource, so no motif will match it. '
-        "Choose whether it is Data, a Symbol (such as rules or a knowledge graph) or a Model.",
-        {"mode": "replace", "choices": [
-            {"classUri": _BEAM + term, "label": term} for term in ("Data", "Symbol", "Model")]},
+        f'"{_name(data, node)}" is marked only as a general Model, so motifs that involve a '
+        "model will not match it: they look for a Statistical Model (a machine-learning or "
+        "AI model, such as an LLM) or a Semantic Model (such as an ontology or rule set). "
+        "Choose which one it is.",
+        {"choices": _kinds_under(ontology, _beam("Model"))},
     )
 
 

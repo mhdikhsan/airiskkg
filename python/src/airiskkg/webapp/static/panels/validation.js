@@ -8,20 +8,17 @@ import { applyEdit } from "./mutations.js";
 
 /* One click per choice: the kind it is, applied to that element. */
 function fixRow(item) {
-  const { mode, choices } = item.fix;
+  const { choices } = item.fix;
   return el("div", { class: "validation-fix" }, [
-    el("span", { class: "hint" }, mode === "add" ? "Add the kind:" : "Make it:"),
+    el("span", { class: "hint" }, "Make it:"),
     ...choices.map((choice) => {
       const button = el("button", {
         type: "button", class: "chip clickable",
-        title: mode === "add"
-          ? `Mark "${item.focusLabel}" as ${choice.label} as well`
-          : `Mark "${item.focusLabel}" as ${choice.label}`,
+        title: `Mark "${item.focusLabel}" as ${choice.label}`,
       }, choice.label);
       button.addEventListener("click", async (ev) => {
         ev.stopPropagation();
-        await applyEdit(item.focusNode,
-          mode === "add" ? { addClassUri: choice.classUri } : { classUri: choice.classUri });
+        await applyEdit(item.focusNode, { classUri: choice.classUri });
         validateNow().catch((error) => setStatus("error", "Could not validate: " + error.message));
       });
       return button;
