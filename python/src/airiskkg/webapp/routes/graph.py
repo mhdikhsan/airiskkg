@@ -41,6 +41,21 @@ DRAWN_AS = {
 }
 
 
+def _system_for_new_elements(data: Graph) -> tuple[URIRef, bool]:
+    """The architecture new elements land in, made when the graph has none.
+
+    An element in no system cannot be named by a business activity, and a blank
+    canvas offered no way to draw the container first."""
+    system = next(iter(sorted(data.subjects(RDF.type, BEAM.System), key=str)), None)
+    if system is not None:
+        return system, False
+    system = _fresh(data, "system")
+    data.add((system, RDF.type, BEAM.Element))
+    data.add((system, RDF.type, BEAM.System))
+    data.add((system, RDFS.label, Literal("My system")))
+    return system, True
+
+
 def _serialized(data: Graph, **extra: object) -> object:
     data.bind("beam", BEAM)
     data.bind("pair", PAIR)
@@ -135,15 +150,16 @@ def graph_edit() -> object:
     payload = request.get_json(silent=True) or {}
     ttl = (payload.get("ttl") or "").strip()
     op = payload.get("op")
-    if not ttl:
-        return jsonify({"error": "Provide a graph to edit."}), 400
+    # Deleting the last element serializes to a bare newline, and an empty
+    # editor is where every drawing starts, so blank is a graph with nothing in it.
     try:
-        data = _parsed(ttl)
-    except Exception as error: 
+        data = _parsed(ttl) if ttl else Graph()
+    except Exception as error:
         return jsonify({"error": f"Could not parse the graph: {error}"}), 400
 
     local = LOCAL
     new_id = None
+    made_system = None
     if op == "add-element":
         class_uri = payload.get("classUri")
         if not class_uri:
@@ -162,10 +178,10 @@ def graph_edit() -> object:
         if system is not None and (system, RDF.type, BEAM.System) not in data:
             return jsonify({"error": "That AI system is not in this graph."}), 400
         if system is None:
-            system = next(iter(data.subjects(RDF.type, BEAM.System)), None)
-        if system is not None:
-            predicate = BEAM.hasProcess if payload.get("category") == "process" else BEAM.hasResource
-            data.add((system, predicate, element))
+            system, made = _system_for_new_elements(data)
+            made_system = str(system) if made else None
+        predicate = BEAM.hasProcess if payload.get("category") == "process" else BEAM.hasResource
+        data.add((system, predicate, element))
         new_id = str(element)
 
     elif op == "add-system":
@@ -294,11 +310,8 @@ def graph_edit() -> object:
             return jsonify({"error": f"Unknown motif template: {motif_id}"}), 400
         if payload.get("riskPattern"):
             template = template_in_context(motif_id, short(payload["riskPattern"]))
-        system = next(iter(data.subjects(RDF.type, BEAM.System)), None)
-        if system is None:
-            system = local["system"]
-            data.add((system, RDF.type, BEAM.System))
-            data.add((system, RDFS.label, Literal("My system")))
+        system, made = _system_for_new_elements(data)
+        made_system = str(system) if made else None
         existing = {str(s) for s in data.subjects() if str(s).startswith(str(local))}
         counter = [1]
 
@@ -334,21 +347,32 @@ def graph_edit() -> object:
         for src, edge, dst in template["edges"]:
             data.add((key_to_uri[src], BEAM[edge], key_to_uri[dst]))
 
-        return _serialized(data, newIds=new_ids, groupLabel=template["label"])
+        return _serialized(data, newIds=new_ids, groupLabel=template["label"],
+                           newSystem=made_system)
     elif op == "delete-element":
         element_id = payload.get("element")
         if not element_id:
             return jsonify({"error": "delete-element needs an element."}), 400
         element = URIRef(element_id)
-        # remove the element and every edge touching it (as subject or object)
-        for s, p, o in list(data.triples((element, None, None))):
-            data.remove((s, p, o))
-        for s, p, o in list(data.triples((None, None, element))):
-            data.remove((s, p, o))
+        doomed = {element}
+        # A system is a container: deleting it takes what it holds, except what
+        # another system holds as well.
+        if (element, RDF.type, BEAM.System) in data:
+            kept: set[URIRef] = set()
+            for other in data.subjects(RDF.type, BEAM.System):
+                if other != element and element not in _members_of(data, other):
+                    kept |= _members_of(data, other)
+            doomed |= _members_of(data, element) - kept
+        # remove each and every edge touching it (as subject or object)
+        for gone in doomed:
+            for s, p, o in list(data.triples((gone, None, None))):
+                data.remove((s, p, o))
+            for s, p, o in list(data.triples((None, None, gone))):
+                data.remove((s, p, o))
     else:
         return jsonify({"error": f"Unknown edit op: {op}"}), 400
 
-    return _serialized(data, newId=new_id)
+    return _serialized(data, newId=new_id, newSystem=made_system)
 
 
 # --- authoring the business layer --------------------------------------------

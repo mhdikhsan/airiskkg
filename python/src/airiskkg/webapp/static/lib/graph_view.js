@@ -726,6 +726,11 @@ function showSystemDetail(system, ev) {
     });
   });
   detailBox.querySelector("#sd-delete").addEventListener("click", () => {
+    // A system is a container, and deleting it takes what it holds with it.
+    const held = (system.members || []).length;
+    if (held && !window.confirm(
+      `Delete "${system.label}" and the ${held} element(s) in it?`
+      + " Elements another system also holds are kept.")) return;
     detailBox.classList.add("hidden");
     if (annotationCfg.onDelete) annotationCfg.onDelete(system.id);
   });

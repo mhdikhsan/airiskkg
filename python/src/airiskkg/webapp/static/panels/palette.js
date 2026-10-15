@@ -204,10 +204,15 @@ export function createSystem(unclaimedCount, systemCount) {
   });
 }
 
+/* Said once, when the server made the container the element landed in. */
+export function madeSystemNote(newSystem) {
+  return newSystem ? ' in "My system" (made for it; click its name above to rename it)' : "";
+}
+
 function addPaletteElement(item, clientX, clientY) {
   return runMutation(async () => {
     try {
-      const { ttl, newId } = await postJson("/api/graph-edit", {
+      const { ttl, newId, newSystem } = await postJson("/api/graph-edit", {
         ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
         op: "add-element", classUri: BEAM_NS + item.cls, category: item.cat, label: item.label,
         /* The architecture that is selected, then the one on screen. */
@@ -216,7 +221,8 @@ function addPaletteElement(item, clientX, clientY) {
       if (newId && clientX != null) GraphView.placeNodeAt(newId, clientX, clientY);
       noteChange(`added ${item.label}`);
       Editor.setValue(ttl);
-      setStatus("ok", `Added ${item.label} — click it to edit, drag its ▸ port to connect`);
+      setStatus("ok", `Added ${item.label}${madeSystemNote(newSystem)} — click it to edit, `
+        + "drag its ▸ port to connect");
     } catch (error) {
       setStatus("error", "Could not add element: " + error.message.split("\n")[0]);
     }

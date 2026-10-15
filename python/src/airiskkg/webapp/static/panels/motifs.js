@@ -7,7 +7,7 @@ import { setStatus } from "../core/status.js";
 import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
 import { runMutation } from "./mutations.js";
-import { buildTray, startTrayDrag } from "./palette.js";
+import { buildTray, madeSystemNote, startTrayDrag } from "./palette.js";
 import { noteChange } from "./run.js";
 
 // ---- matches and gaps ----
@@ -218,14 +218,15 @@ export function renderMotifs(matches, gaps, options = {}) {
 export function addMotif(item) {
   return runMutation(async () => {
     try {
-      const { ttl } = await postJson("/api/graph-edit", {
+      const { ttl, newSystem } = await postJson("/api/graph-edit", {
         ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
         op: "add-motif", motif: item.id,
         ...(item.riskPattern ? { riskPattern: item.riskPattern } : {}),
       });
       noteChange(`added motif: ${item.label}`);
       Editor.setValue(ttl);
-      setStatus("ok", `Added "${item.label}" — already annotated; Run assessment for findings`);
+      setStatus("ok", `Added "${item.label}"${madeSystemNote(newSystem)}`
+        + " — already annotated; Run assessment for findings");
       return true;
     } catch (error) {
       setStatus("error", "Could not add motif: " + error.message.split("\n")[0]);

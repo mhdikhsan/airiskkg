@@ -1721,7 +1721,8 @@ label.btn { display: inline-flex; align-items: center; }
 .canvas-wrap.unstarted .palette,
 .canvas-wrap.unstarted .motif-palette,
 .canvas-wrap.unstarted .process-palette,
-.canvas-wrap.unstarted .canvas-controls { display: none !important; }
+.canvas-wrap.unstarted .canvas-controls,
+.canvas-wrap.unstarted .system-badge { display: none !important; }
 
 /* The opening question, once answered, is not a caption for an empty canvas. */
 .canvas-wrap.started .canvas-empty { display: none !important; }

@@ -56,6 +56,7 @@ export function startDrawing(level) {
     setStatus("ok", "Risk", "state what must not happen, then see what to look for");
     return;
   }
+  refreshSystemBar();
   setStatus("ok", "AI architecture", "drag a symbol onto the canvas, or load an example");
 }
 
@@ -311,13 +312,14 @@ function renderProcessList(list, data) {
 }
 
 export function refreshSystemBar() {
-  if (state.lastGraph) renderSystemBar(state.lastGraph);
+  renderSystemBar(state.lastGraph || { systems: [], nodes: [], unclaimed: [] });
 }
 
 function renderSystemBar(data) {
   const badge = $("#system-badge");
   const unclaimed = (data.unclaimed || []).length;
-  if (data.systems.length || data.nodes.length) {
+  // Shown on an empty canvas too: "+ system" is how a container is drawn first.
+  {
 
     const shown = data.scopedTo
       ? data.systems.filter((s) => s.id === data.scopedTo)
@@ -359,8 +361,6 @@ function renderSystemBar(data) {
     add.addEventListener("click", () => createSystem(unclaimed, data.systems.length));
     badge.appendChild(add);
     badge.classList.remove("hidden");
-  } else {
-    badge.classList.add("hidden");
   }
 }
 
@@ -393,7 +393,9 @@ export async function refreshPreview(ttl) {
   if (!ttl.trim()) {
     GraphView.clear();
     resetProcess();
-    $("#system-badge").classList.add("hidden");
+    // A cleared editor has no architecture, so nothing may redraw the last one.
+    state.lastGraph = null;
+    refreshSystemBar();
     setStatus("ok", "Ready");
     return;
   }

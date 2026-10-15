@@ -1523,3 +1523,40 @@ def test_the_rest_of_bpmn_is_drawn_as_bpmn_draws_it(served) -> None:
     )
     assert seen["messages"] == 1, "a choreography task's own message flow was drawn between pools"
     assert seen["openStart"] == 1, "the start of the event sub-process is not drawn non-interrupting"
+
+
+def test_a_blank_architecture_canvas_can_be_drawn_on(served) -> None:
+    """A blank canvas hid the system bar, so there was no way to draw the
+    container first, and a symbol added there belonged to no system."""
+    seen = _probe(served, "blank", """
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  const shown = (sel) => {
+    const node = document.querySelector(sel);
+    return node && node.checkVisibility() ? 1 : 0;
+  };
+  window.addEventListener("load", () => setTimeout(() => {
+    log("frontDoor=" + shown("#system-badge .system-badge-add"));
+    document.querySelector("#library-start-architecture").click();
+    setTimeout(() => {
+      log("started=" + shown("#system-badge .system-badge-add"));
+      const chip = [...document.querySelectorAll("#palette .palette-item")]
+        .find((c) => c.textContent === "Data");
+      chip.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+      setTimeout(() => {
+        log("nodes=" + document.querySelectorAll("#canvas g.node").length);
+        log("frames=" + document.querySelectorAll("#canvas .system-bound").length);
+        log("orphans=" + document.querySelectorAll("#system-badge .system-badge-orphans").length);
+        log("done=1");
+      }, 1500);
+    }, 1500);
+  }, 2500));
+  </script>
+""")
+    assert seen.get("done") == 1, f"the probe never finished: {seen['_report']!r}"
+    assert seen["frontDoor"] == 0, "the system bar shows over the front door's choice"
+    assert seen["started"] == 1, "a blank architecture canvas offers no way to make a system"
+    assert (seen["nodes"], seen["frames"], seen["orphans"]) == (1, 1, 0), (
+        f"the first symbol did not land in a system: {seen['_report']!r}"
+    )

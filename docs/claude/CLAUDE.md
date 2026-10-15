@@ -656,6 +656,17 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   flow is read from the containment, never asked.
 - **Editing is a server-side rewrite.** `/api/process-edit` and `/api/graph-edit` keep the
   Turtle in the editor as the single source of truth.
+- **A blank document is a graph with nothing in it, never an error (2026-10-14).**
+  `/api/graph-edit` refused empty Turtle, and deleting the last element serializes to a bare
+  newline, which the client's `getValue() || prefix` fallback does not catch — so every add
+  after that failed with "Provide a graph to edit" until a reload. Reported by a partner
+  tester as a show stopper. `test_architecture_editing.py` holds it.
+- **An element always lands in a system.** With none in the graph, `add-element` makes
+  "My system" exactly as `add-motif` always did (`_system_for_new_elements`), because an
+  element in no system cannot be named by a business activity. The system bar, with its
+  "+ system", shows on an empty architecture canvas too; it was hidden until something was
+  drawn, which left no way to draw the container first. **Deleting a system takes what it
+  holds**, except what another system also holds, after the editor confirms the count.
 - **One gesture picks the connector, so `connect` has to check the ends.** A data box dragged
   onto another data box used to write a data association *from data to data*, which says
   nothing about who reads either one; dragged onto an event or gateway it wrote
