@@ -627,8 +627,12 @@ function elementDetail(id, view) {
 function frameDetail(node, view) {
   const mine = node.isSystem ? [node.id] : (node.refines || []);
   const groups = new Map((view.groups || []).map((group) => [group.key, group]));
+  const carried = new Set(((view.diagram || {}).links || [])
+    .filter((link) => link.target === node.id && link.label === "hasRisk")
+    .map((link) => link.source));
   const here = ((view.diagram || {}).nodes || []).filter(
-    (entry) => entry.band === "risk" && mine.some((s) => (entry.systems || []).includes(s)));
+    (entry) => entry.band === "risk"
+      && (carried.has(entry.id) || mine.some((s) => (entry.systems || []).includes(s))));
 
   const box = el("div", { class: "rail-detail" }, [
     el("h3", {}, node.isSystem ? "System" : "Activity"),

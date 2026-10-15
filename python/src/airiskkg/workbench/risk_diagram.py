@@ -9,6 +9,7 @@ from airiskkg.workbench.terms import label, short
 
 BEAMR = Namespace("http://w3id.org/beam/risk#")
 _BP = Namespace("https://sBPMN.github.io/2.0/properties#")
+_BPMN = Namespace("https://sBPMN.github.io/2.0/classes#")
 
 BANDS = ("business", "impact", "consequence", "context", "risk", "source", "control", "system")
 
@@ -162,6 +163,27 @@ def _business_layer(graph: Graph, nodes: dict, links: list) -> None:
         if str(system) not in entry["refines"]:
             entry["refines"].append(str(system))
         links.append(_link(key, str(system), "chain", label_text="refinedBy"))
+
+    # A risk on a human or downstream step has no system to stand in, so the
+    # activity carrying it is drawn whether or not anything refines it.
+    carriers = set(graph.subjects(BEAMR.hasRisk, None)) | set(graph.objects(None, BEAMR.originatedFrom))
+    for activity in carriers:
+        key = str(activity)
+        if key in nodes or not _is_activity(graph, activity):
+            continue
+        name = graph.value(activity, _BP.name)
+        nodes[key] = _node(
+            key, "business", str(name) if name else label(graph, activity),
+            origin="stated", extra={"refines": [], "isActivity": True},
+        )
+
+
+_BPMN_DATA = {_BPMN.dataObject, _BPMN.dataObjectReference, _BPMN.dataStore, _BPMN.dataStoreReference}
+
+
+def _is_activity(graph: Graph, node: URIRef) -> bool:
+    kinds = set(graph.objects(node, RDF.type))
+    return not kinds & _BPMN_DATA and any(str(kind).startswith(str(_BPMN)) for kind in kinds)
 
 
 def _system_layer(graph: Graph, nodes: dict, links: list) -> None:

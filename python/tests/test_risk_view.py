@@ -818,3 +818,45 @@ def test_a_concern_drawn_once_carries_its_place_beside_the_chip(repeating_view) 
         assert where[node["id"]] not in node["title"], (
             "the place is in the title as well, which wraps the box onto another line"
         )
+
+
+def test_a_risk_on_an_activity_nothing_refines_is_drawn_on_it() -> None:
+    """A reviewer rubber-stamping, or a clinician trusting a published taxonomy,
+    is a risk in the process with no system behind that step. Drawing only the
+    refined activities left such a risk attached to a card that was never there."""
+    from airiskkg.workbench.risk_diagram import risk_diagram
+    from airiskkg.workbench.scope import read_scope
+
+    graph = Graph().parse(data="""
+        @prefix beam:  <http://w3id.org/beam/core#> .
+        @prefix beamr: <http://w3id.org/beam/risk#> .
+        @prefix pair:  <http://w3id.org/airiskkg/pair-ai#> .
+        @prefix bpmn:  <https://sBPMN.github.io/2.0/classes#> .
+        @prefix bp:    <https://sBPMN.github.io/2.0/properties#> .
+        @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+        @prefix ex:    <http://example.org/> .
+
+        ex:System a beam:System ; rdfs:label "System" ; beam:hasResource ex:Out .
+        ex:Out a beam:Data ; rdfs:label "Proposal" .
+        ex:Propose a bpmn:subProcess ; bp:name "Propose" ; pair:refinedBy ex:System .
+        ex:Review a bpmn:userTask ; bp:name "Review the proposal" .
+        ex:Store a bpmn:dataStore ; bp:name "Records" .
+
+        ex:RubberStamp a beamr:Risk ; rdfs:label "Rubber-stamping" .
+        ex:Review beamr:hasRisk ex:RubberStamp .
+        ex:Store beamr:hasRisk ex:RubberStamp .
+    """, format="turtle")
+
+    diagram = risk_diagram(graph, read_scope(graph), [])
+    nodes = {node["id"]: node for node in diagram["nodes"]}
+    review = nodes.get("http://example.org/Review")
+
+    assert review and review["band"] == "business" and review.get("isActivity")
+    assert review["refines"] == [], "an unrefined activity was given a system"
+    assert "http://example.org/Store" not in nodes, "a data store was drawn as an activity"
+    assert any(
+        link["source"] == "http://example.org/RubberStamp"
+        and link["target"] == "http://example.org/Review"
+        and link["label"] == "hasRisk"
+        for link in diagram["links"]
+    )
