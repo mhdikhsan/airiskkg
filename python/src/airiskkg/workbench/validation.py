@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from rdflib import Graph, URIRef
+from rdflib import RDF, RDFS, Graph, URIRef
 
 from airiskkg.paths import CORE_DIR, SHACL_DIR
 
 _SH = "http://www.w3.org/ns/shacl#"
+_BEAM = "http://w3id.org/beam/core#"
+_BP_NAME = URIRef("https://sBPMN.github.io/2.0/properties#name")
+_LEAF_SHAPE = "http://w3id.org/airiskkg/shacl/architecture-input-contract#ResourceLeafTypeShape"
+_PLAYS_ROLE = URIRef("http://w3id.org/airiskkg/pair-ai#playsRole")
 
 
 def _sh(term: str) -> URIRef:
@@ -32,6 +36,53 @@ def shapes_and_ontology() -> tuple[Graph, Graph]:
     return shapes, ontology
 
 
+def _beam(term: str) -> URIRef:
+    return URIRef(_BEAM + term)
+
+
+def _name(data: Graph, node: URIRef) -> str:
+    named = data.value(node, RDFS.label) or data.value(node, _BP_NAME)
+    return str(named) if named else str(node).rsplit("#", 1)[-1].rsplit("/", 1)[-1]
+
+
+def _kinds_under(ontology: Graph, top: URIRef) -> list[dict]:
+    rows = [{"classUri": str(sub), "label": str(ontology.value(sub, RDFS.label) or sub)}
+            for sub in ontology.subjects(RDFS.subClassOf, top)]
+    return sorted(rows, key=lambda row: row["label"])
+
+
+def _leaf_type_advice(data: Graph, ontology: Graph, node: URIRef) -> tuple[str, dict]:
+    """The leaf-class warning in plain words, with the choices that fix it.
+
+    Match queries read `a beam:Data` and `a beam:StatisticalModel` and walk no
+    subclasses, so Data and Symbol keep their type when a kind is added, and a
+    bare Model or Resource is replaced by what it is."""
+    name = _name(data, node)
+    types = set(data.objects(node, RDF.type))
+    if _beam("Model") in types:
+        return (
+            f'"{name}" is marked only as a general Model, so motifs that involve a model '
+            "will not match it: they look for a Statistical Model (a machine-learning or "
+            "AI model, such as an LLM) or a Semantic Model (such as an ontology or rule set). "
+            "Choose which one it is.",
+            {"mode": "replace", "choices": _kinds_under(ontology, _beam("Model"))},
+        )
+    for top, noun in (("Data", "data"), ("Symbol", "symbol")):
+        if _beam(top) in types:
+            return (
+                f'"{name}" is marked only as general {top}. You can add what kind of {noun} '
+                f"it is. This is optional and does not change what motifs match, and {top} "
+                "stays, because that is what motifs look for.",
+                {"mode": "add", "choices": _kinds_under(ontology, _beam(top))},
+            )
+    return (
+        f'"{name}" is marked only as a general Resource, so no motif will match it. '
+        "Choose whether it is Data, a Symbol (such as rules or a knowledge graph) or a Model.",
+        {"mode": "replace", "choices": [
+            {"classUri": _BEAM + term, "label": term} for term in ("Data", "Symbol", "Model")]},
+    )
+
+
 def shacl_report(ttl: str) -> dict:
     """Validate Turtle against the architecture input contract (Rule R4)."""
     from pyshacl import validate as shacl_validate
@@ -53,15 +104,21 @@ def shacl_report(ttl: str) -> dict:
             message = results_graph.value(result, _sh("resultMessage"))
             focus = results_graph.value(result, _sh("focusNode"))
             shape = results_graph.value(result, _sh("sourceShape"))
-            items.append(
-                {
-                    "message": str(message) if message else "Constraint violated.",
-                    "focusNode": str(focus) if focus else None,
-                    # Says which of the two questions this answers, so a caller
-                    # can act on one without acting on the other.
-                    "guidance": str(shape) in guidance if shape is not None else False,
-                }
-            )
+            item = {
+                "message": str(message) if message else "Constraint violated.",
+                "focusNode": str(focus) if focus else None,
+                "focusLabel": _name(data, focus) if isinstance(focus, URIRef) else None,
+                # Says which of the two questions this answers, so a caller
+                # can act on one without acting on the other.
+                "guidance": str(shape) in guidance if shape is not None else False,
+            }
+            if str(shape) == _LEAF_SHAPE and isinstance(focus, URIRef):
+                item["message"], item["fix"] = _leaf_type_advice(data, ontology, focus)
+            elif results_graph.value(result, _sh("resultPath")) == _PLAYS_ROLE and focus is not None:
+                item["message"] = (
+                    f'"{item["focusLabel"]}" has no role yet, so no motif can match it. '
+                    "Click it on the canvas and choose one under Roles.")
+            items.append(item)
         return sorted(items, key=lambda item: (item["focusNode"] or "", item["message"]))
 
     violations = collect(_sh("Violation"))

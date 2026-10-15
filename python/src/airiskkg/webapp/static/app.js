@@ -22,7 +22,7 @@ import { clearRisk, initRisk } from "./panels/risk.js";
 import { RiskCanvas } from "./lib/risk_canvas.js";
 import { STARTER_BPMN, STARTER_TTL, initPalette } from "./panels/palette.js";
 import { noteChange } from "./panels/run.js";
-import { clearValidation, renderValidation } from "./panels/validation.js";
+import { clearValidation, validateNow } from "./panels/validation.js";
 import { ProcessCanvas } from "./lib/process_canvas.js";
 import { state } from "./state.js";
 
@@ -343,15 +343,13 @@ async function init() {
   });
 
   $("#btn-validate").addEventListener("click", async () => {
-    const ttl = Editor.getValue().trim();
-    if (!ttl) { setStatus("error", "Nothing to validate - the editor is empty."); return; }
+    if (!Editor.getValue().trim()) { setStatus("error", "Nothing to validate - the editor is empty."); return; }
     const button = $("#btn-validate");
     button.disabled = true;
     setStatus("busy", "Validating against the input contract…");
     try {
-      const report = await postJson("/api/validate", { ttl });
-      renderValidation(report);
-      openDrawer("validation");
+      const report = await validateNow({ open: true });
+      if (!report) return;
       setStatus(report.conforms ? "ok" : "error",
         report.conforms ? "Input contract satisfied" : `${report.violations.length} contract violation(s)`);
     } catch (error) {

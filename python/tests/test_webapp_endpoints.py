@@ -138,6 +138,83 @@ def test_validate_endpoint_returns_annotation_guidance_hints(client) -> None:
     assert any("retrieval step" in hint["message"] for hint in report["hints"])
 
 
+LEAF_TTL = """
+@prefix ex: <http://example.org/leaf#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+ex:sys a beam:System ; beam:hasResource ex:q, ex:llm ; beam:hasProcess ex:gen .
+ex:q a beam:Data ; rdfs:label "Customer question" .
+ex:llm a beam:Model ; rdfs:label "LLM" .
+ex:gen a beam:Generate ; rdfs:label "Answer generation" ; beam:use ex:q, ex:llm .
+"""
+
+
+def _leaf_rows(report: dict) -> dict:
+    return {row["focusLabel"]: row for row in report["warnings"] if row.get("fix")}
+
+
+def test_the_leaf_class_warning_names_the_element_and_how_to_fix_it(client) -> None:
+    """Students read "should be typed to a leaf class (beam:Data ...)" and had
+    no idea what to do about it."""
+    rows = _leaf_rows(client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json())
+
+    question, llm = rows["Customer question"], rows["LLM"]
+    assert question["message"].startswith('"Customer question"')
+    assert "leaf class" not in question["message"] and "beam:" not in question["message"]
+    assert question["fix"]["mode"] == "add", "Data must stay, because the queries read it"
+    assert "Text" in {choice["label"] for choice in question["fix"]["choices"]}
+    assert llm["fix"]["mode"] == "replace"
+    assert {choice["label"] for choice in llm["fix"]["choices"]} == {
+        "Statistical Model", "Semantic Model"}
+
+
+def test_every_warning_names_its_element_by_label(client) -> None:
+    report = client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json()
+    for row in report["warnings"]:
+        assert row["focusLabel"] in row["message"], row["message"]
+        assert "pair:" not in row["message"] and "beam:" not in row["message"], row["message"]
+
+
+def test_the_one_click_fix_clears_the_warning(client) -> None:
+    rows = _leaf_rows(client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json())
+    ttl = LEAF_TTL
+    for label, choice in (("Customer question", "Text"), ("LLM", "Statistical Model")):
+        row = rows[label]
+        picked = next(c for c in row["fix"]["choices"] if c["label"] == choice)
+        key = "addClassUri" if row["fix"]["mode"] == "add" else "classUri"
+        ttl = client.post("/api/graph-edit", json={
+            "ttl": ttl, "op": "edit-element", "element": row["focusNode"],
+            key: picked["classUri"]}).get_json()["ttl"]
+    assert _leaf_rows(client.post("/api/validate", json={"ttl": ttl}).get_json()) == {}
+    assert "beam:Data" in ttl, "adding the kind of data dropped beam:Data"
+
+
+def test_taking_the_suggested_fix_does_not_change_what_matches(client) -> None:
+    """Retyping a motif's Data node to Text, as the old warning advised, lost a
+    motif match and its finding, because the queries read `a beam:Data`."""
+    from rdflib import Namespace
+
+    from airiskkg.assessment_runner import run_assessment_from_text
+
+    pair = Namespace("http://w3id.org/airiskkg/pair-ai#")
+    ttl = client.post("/api/graph-edit", json={
+        "ttl": "", "op": "add-motif", "motif": "RetrievalAugmentedGenerationMotif"}).get_json()["ttl"]
+
+    def matched(text: str) -> set:
+        graph = run_assessment_from_text(text).combined_graph
+        return set(graph.objects(None, pair.matchesMotif))
+
+    before = matched(ttl)
+    for row in _leaf_rows(client.post("/api/validate", json={"ttl": ttl}).get_json()).values():
+        key = "addClassUri" if row["fix"]["mode"] == "add" else "classUri"
+        ttl = client.post("/api/graph-edit", json={
+            "ttl": ttl, "op": "edit-element", "element": row["focusNode"],
+            key: row["fix"]["choices"][0]["classUri"]}).get_json()["ttl"]
+    assert not _leaf_rows(client.post("/api/validate", json={"ttl": ttl}).get_json()), (
+        "the fixes were not applied, so this compared the motif with itself")
+    assert before and matched(ttl) == before
+
+
 def test_assess_endpoint_still_works(client) -> None:
     ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     response = client.post("/api/assess", json={"ttl": ttl})
