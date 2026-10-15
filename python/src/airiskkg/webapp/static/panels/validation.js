@@ -65,6 +65,25 @@ export function renderValidation(report) {
   $("#validation-count").textContent = total ? String(total) : "";
 }
 
+/* Run after the editor settles, so the panel is never empty for a graph that
+   has something to say. One request at a time: a check started while another
+   runs waits for it, then checks whatever the editor holds by then. */
+const SETTLE_MS = 1500;
+let settleTimer = null;
+let running = null;
+
+export function scheduleValidation() {
+  clearTimeout(settleTimer);
+  if (!Editor.getValue().trim()) { clearValidation(); return; }
+  settleTimer = setTimeout(async () => {
+    if (running) await running.catch(() => {});
+    // The status bar already reports a graph that does not parse.
+    running = validateNow().catch(() => null);
+    await running;
+    running = null;
+  }, SETTLE_MS);
+}
+
 /* Checks the editor against the input contract. `open` shows the panel. */
 export async function validateNow({ open = false } = {}) {
   const ttl = Editor.getValue().trim();

@@ -22,7 +22,7 @@ import { clearRisk, initRisk } from "./panels/risk.js";
 import { RiskCanvas } from "./lib/risk_canvas.js";
 import { STARTER_BPMN, STARTER_TTL, initPalette } from "./panels/palette.js";
 import { noteChange } from "./panels/run.js";
-import { clearValidation, validateNow } from "./panels/validation.js";
+import { clearValidation, scheduleValidation, validateNow } from "./panels/validation.js";
 import { ProcessCanvas } from "./lib/process_canvas.js";
 import { state } from "./state.js";
 
@@ -77,7 +77,7 @@ async function init() {
   else closeLibrary();
 
   GraphView.init();
-  Editor.init({ onChange: refreshPreview });
+  Editor.init({ onChange: (ttl) => { refreshPreview(ttl); scheduleValidation(); } });
   initDivider();
 
   // A scope change redraws both the canvas and the findings list.

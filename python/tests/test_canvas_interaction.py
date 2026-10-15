@@ -3027,3 +3027,28 @@ def test_an_event_offers_no_type_its_flows_would_break(scene_restored) -> None:
     assert "no sequence flow may leave it" in seen["title"], "the disabled type says nothing"
     assert "Remove the outgoing flow" in seen["note"], "the panel does not say how to fix it"
     assert seen["others"] == 1, "a type the flows allow was disabled too"
+
+
+def test_the_input_contract_is_checked_without_asking(scene_restored) -> None:
+    """The panel stayed empty until Validate was pressed, so a student who never
+    pressed it never saw that nothing they drew could match."""
+    loop, handle = scene_restored
+    bare = chr(10).join([
+        "@prefix beam: <http://w3id.org/beam/core#> .",
+        "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .",
+        "@prefix ex: <http://example.org/unasked#> .",
+        'ex:S a beam:System ; rdfs:label "S" ; beam:hasResource ex:Q .',
+        'ex:Q a beam:Data ; rdfs:label "Customer question" .',
+    ])
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(bare) + "); 1"))
+    rows = _settle(loop, handle,
+                   'document.querySelectorAll("#validation-list .validation-row").length',
+                   0, tries=40)
+    seen = loop.run_until_complete(handle.js("""({
+        text: document.querySelector("#validation-list").textContent,
+        count: document.querySelector("#validation-count").textContent,
+    })"""))
+    assert rows > 0, "nothing was checked until Validate was pressed"
+    assert seen["count"] == str(rows), "the tab does not say how many there are"
+    assert "Customer question" in seen["text"]
