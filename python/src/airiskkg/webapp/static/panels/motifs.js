@@ -9,6 +9,7 @@ import { GraphView } from "../lib/graph_view.js";
 import { runMutation } from "./mutations.js";
 import { buildTray, madeSystemNote, startTrayDrag } from "./palette.js";
 import { noteChange } from "./run.js";
+import { state } from "../state.js";
 
 // ---- matches and gaps ----
 let selectedMotifRow = null;
@@ -222,6 +223,8 @@ export function addMotif(item) {
         ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
         op: "add-motif", motif: item.id,
         ...(item.riskPattern ? { riskPattern: item.riskPattern } : {}),
+        /* Where the system bar says "adding to", exactly as a palette symbol does. */
+        system: GraphView.getSelectedSystem() || state.scopedSystem || null,
       });
       noteChange(`added motif: ${item.label}`);
       Editor.setValue(ttl);

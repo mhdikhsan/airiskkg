@@ -85,3 +85,27 @@ def test_deleting_a_system_takes_what_it_holds_and_keeps_what_another_holds(clie
     assert not {"Chatbot", "Answer", "Question"} & subjects, "the system's own elements stayed"
     assert {"Search", "Index", "Archive"} <= subjects, "an element another system holds went too"
     assert (URIRef(EX + "Search"), URIRef(BEAM + "hasResource"), URIRef(EX + "Archive")) in after
+
+
+def test_a_motif_lands_in_the_system_that_is_selected(client) -> None:
+    """The system bar said "adding to: Search" while every motif went into the
+    first system in the graph, whichever one was selected."""
+    added = edit(client, TWO_SYSTEMS, "add-motif",
+                 motif="RetrievalAugmentedGenerationMotif", system=EX + "Search")
+    graph = Graph().parse(data=added["ttl"], format="turtle")
+    holder = {
+        str(system).removeprefix(EX)
+        for new in added["newIds"]
+        for system in graph.subjects(None, URIRef(new))
+        if (system, RDF.type, URIRef(BEAM + "System")) in graph
+    }
+    assert holder == {"Search"}, f"the motif's elements landed in {holder}"
+    assert added["newSystem"] is None
+
+
+def test_a_motif_is_refused_a_system_the_graph_does_not_hold(client) -> None:
+    response = client.post("/api/graph-edit", json={
+        "ttl": TWO_SYSTEMS, "op": "add-motif",
+        "motif": "RetrievalAugmentedGenerationMotif", "system": EX + "Elsewhere",
+    })
+    assert response.status_code == 400

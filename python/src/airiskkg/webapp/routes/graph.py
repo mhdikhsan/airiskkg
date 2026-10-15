@@ -56,6 +56,20 @@ def _system_for_new_elements(data: Graph) -> tuple[URIRef, bool]:
     return system, True
 
 
+def _system_asked_for(data: Graph, payload: dict) -> tuple[URIRef | None, str | None, object]:
+    """The system the reader selected, else the one new elements land in.
+
+    Returns (system, the IRI of a system made for it or None, an error response or None)."""
+    asked = payload.get("system")
+    if asked:
+        system = URIRef(asked)
+        if (system, RDF.type, BEAM.System) not in data:
+            return None, None, (jsonify({"error": "That AI system is not in this graph."}), 400)
+        return system, None, None
+    system, made = _system_for_new_elements(data)
+    return system, str(system) if made else None, None
+
+
 def _serialized(data: Graph, **extra: object) -> object:
     data.bind("beam", BEAM)
     data.bind("pair", PAIR)
@@ -172,14 +186,9 @@ def graph_edit() -> object:
         element = local[f"e{index}"]
         data.add((element, RDF.type, URIRef(class_uri)))
         data.add((element, RDFS.label, Literal(label)))
-        # The architecture the reader is looking at, when they say which.
-        asked = payload.get("system")
-        system = URIRef(asked) if asked else None
-        if system is not None and (system, RDF.type, BEAM.System) not in data:
-            return jsonify({"error": "That AI system is not in this graph."}), 400
-        if system is None:
-            system, made = _system_for_new_elements(data)
-            made_system = str(system) if made else None
+        system, made_system, refused = _system_asked_for(data, payload)
+        if refused:
+            return refused
         predicate = BEAM.hasProcess if payload.get("category") == "process" else BEAM.hasResource
         data.add((system, predicate, element))
         new_id = str(element)
@@ -310,8 +319,9 @@ def graph_edit() -> object:
             return jsonify({"error": f"Unknown motif template: {motif_id}"}), 400
         if payload.get("riskPattern"):
             template = template_in_context(motif_id, short(payload["riskPattern"]))
-        system, made = _system_for_new_elements(data)
-        made_system = str(system) if made else None
+        system, made_system, refused = _system_asked_for(data, payload)
+        if refused:
+            return refused
         existing = {str(s) for s in data.subjects() if str(s).startswith(str(local))}
         counter = [1]
 
