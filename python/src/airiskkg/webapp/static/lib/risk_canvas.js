@@ -284,6 +284,30 @@ export function createRiskCanvas() {
 
   const SHARED_GROUP = "\u0000shared";
 
+  /* A dragged box keeps its place while the layout around it moves, so a box
+     laid out later can land on it. Each laid-out box slides right along its
+     row until it is clear of the dragged ones and of those already placed. */
+  function clearOfMoved(positions) {
+    if (!manualPositions.size) return;
+    const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w
+      && a.y < b.y + b.h && b.y < a.y + a.h;
+    const taken = [...positions.entries()]
+      .filter(([id]) => manualPositions.has(id)).map(([, at]) => at);
+    const free = [...positions.entries()]
+      .filter(([id]) => !manualPositions.has(id))
+      .sort(([, a], [, b]) => a.y - b.y || a.x - b.x);
+    for (const [id, at] of free) {
+      const box = { ...at };
+      for (let tries = 0; tries < positions.size; tries += 1) {
+        const hit = taken.find((other) => overlaps(box, other));
+        if (!hit) break;
+        box.x = hit.x + hit.w + CARD_GAP_X;
+      }
+      if (box.x !== at.x) positions.set(id, box);
+      taken.push(box);
+    }
+  }
+
   function layoutDiagram(diagram, architecture) {
     const flow = layoutFlow(architecture.nodes || [], architecture.edges || []);
     const byId = new Map(diagram.nodes.map((n) => [n.id, n]));
@@ -413,6 +437,7 @@ export function createRiskCanvas() {
       const current = positions.get(id);
       if (current) positions.set(id, { ...current, x: at.x, y: at.y });
     }
+    clearOfMoved(positions);
 
     const frames = [];
     columns.forEach((column) => {

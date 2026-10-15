@@ -2922,3 +2922,67 @@ def test_a_consequence_dropped_on_a_candidate_is_recorded_against_its_findings(p
     panel = loop.run_until_complete(handle.js(
         "(document.querySelector('#risk-side') || {}).textContent || ''"))
     assert "added by hand" in panel, f"the candidate's panel does not show it: {panel[:200]!r}"
+
+
+_SYNTHETIC_RISKS = """window.__risks = (n) => {
+    const S = "urn:s";
+    const nodes = [{ id: S, band: "system", title: "System", isSystem: true,
+                     origin: "stated", systems: [S] }];
+    const links = [];
+    for (let i = 1; i <= n; i += 1) {
+        nodes.push({ id: "urn:r" + i, band: "risk", title: "Risk " + i,
+                     origin: "stated", systems: [S] });
+        links.push({ source: "urn:r" + i, target: S, kind: "attaches", label: "hasRisk" });
+    }
+    document.querySelector("#risk-canvas-empty").classList.add("hidden");
+    window.PairAI.RiskCanvas.render({ nodes, links, bands: [] },
+        { systems: [{ id: S, members: [] }], nodes: [], edges: [] }, { keepView: true });
+    return n;
+}; 1"""
+
+
+def test_a_risk_added_after_a_drag_does_not_land_on_the_dragged_box(page) -> None:
+    """A dragged box keeps its place while the layout around it moves, so the
+    next risk added was laid out right on top of it and the diagram had to be
+    untangled by hand."""
+    loop, handle = page
+    loop.run_until_complete(handle.js('document.querySelector("#level-risk").click()'))
+    time.sleep(1.5)
+    try:
+        loop.run_until_complete(handle.js(_SYNTHETIC_RISKS))
+        loop.run_until_complete(handle.js(
+            "window.PairAI.RiskCanvas.forgetLayout(); window.__risks(4);"
+            " window.PairAI.RiskCanvas.fit(); 1"))
+        time.sleep(0.5)
+        first = loop.run_until_complete(handle.js("""(() => {
+            const r = document.querySelector('#risk-canvas .rc-card[data-node="urn:r1"]')
+                .getBoundingClientRect();
+            return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2),
+                     w: r.width, h: r.height };
+        })()"""))
+        # Down one line: where a fifth risk wraps to, four to a row.
+        below = round(first["y"] + first["h"] + 26 * first["w"] / 210)
+        loop.run_until_complete(handle.drag(first["x"], first["y"], first["x"], below))
+        loop.run_until_complete(handle.js("window.__risks(5)"))
+        time.sleep(0.5)
+        seen = loop.run_until_complete(handle.js("""(() => {
+            const cards = [...document.querySelectorAll('#risk-canvas .rc-card')].map((g) => {
+                const r = g.getBoundingClientRect();
+                return { id: g.getAttribute('data-node'), x: r.left, y: r.top, w: r.width, h: r.height };
+            });
+            const moved = cards.find((c) => c.id === 'urn:r1');
+            const hits = [];
+            cards.forEach((a, i) => cards.slice(i + 1).forEach((b) => {
+                if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) {
+                    hits.push(a.id + ' x ' + b.id);
+                }
+            }));
+            return { cards: cards.length, movedY: Math.round(moved.y + moved.h / 2), hits };
+        })()"""))
+    finally:
+        loop.run_until_complete(handle.js("window.PairAI.RiskCanvas.forgetLayout(); 1"))
+        _back_to_business(loop, handle)
+
+    assert seen["cards"] == 6
+    assert abs(seen["movedY"] - below) <= 2, f"the drag did not move the box: {seen}"
+    assert seen["hits"] == [], f"a box was laid out on top of another: {seen['hits']}"
