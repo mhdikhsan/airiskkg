@@ -780,14 +780,34 @@ function applyView() {
   svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
 }
 
+function viewOnto(box) {
+  const aspect = wrap.clientWidth / Math.max(1, wrap.clientHeight);
+  let w = box.w;
+  let h = box.h;
+  if (w / h > aspect) h = w / aspect; else w = h * aspect;
+  view = { x: box.x - (w - box.w) / 2, y: box.y - (h - box.h) / 2, w, h };
+  applyView();
+}
+
 function fit() {
   if (!contentBox) return;
-  const aspect = wrap.clientWidth / Math.max(1, wrap.clientHeight);
-  let w = contentBox.w;
-  let h = contentBox.h;
-  if (w / h > aspect) h = w / aspect; else w = h * aspect;
-  view = { x: contentBox.x - (w - contentBox.w) / 2, y: contentBox.y - (h - contentBox.h) / 2, w, h };
-  applyView();
+  viewOnto(contentBox);
+}
+
+/* Brings these elements into view. In a long chain the whole-graph fit draws
+   them a few pixels high, so a highlight alone could not be seen. */
+function focus(ids) {
+  const boxes = (ids || []).map((id) => positions.get(id)).filter(Boolean);
+  if (!boxes.length || !wrap.clientWidth) return;
+  const pad = 60;
+  const x = Math.min(...boxes.map((b) => b.x)) - pad;
+  const y = Math.min(...boxes.map((b) => b.y)) - pad;
+  const w = Math.max(...boxes.map((b) => b.x + b.w)) - x + pad;
+  const h = Math.max(...boxes.map((b) => b.y + b.h)) - y + pad;
+  // Never closer than 1.5 screen pixels per unit, or one element fills the canvas.
+  const least = wrap.clientWidth / 1.5;
+  const grow = Math.max(0, least - w) / 2;
+  viewOnto({ x: x - grow, y, w: w + grow * 2, h });
 }
 
 function zoom(factor, cx, cy) {
@@ -982,6 +1002,15 @@ function init() {
   initPanZoom();
   applyView();
   window.addEventListener("resize", () => { if (contentBox) fit(); });
+  // The drawer and the editor resize the canvas without resizing the window.
+  let size = "";
+  new ResizeObserver(() => {
+    const now = `${wrap.clientWidth}x${wrap.clientHeight}`;
+    if (now === size) return;
+    size = now;
+    if (!contentBox || !wrap.clientWidth || !wrap.clientHeight) return;
+    if (highlighted.size) focus([...highlighted]); else fit();
+  }).observe(wrap);
   document.addEventListener("keydown", onKeyDown);
 }
 
@@ -1094,6 +1123,6 @@ function exportSvg(filename = "architecture.svg") {
 }
 
 export const GraphView = {
-  init, render, clear, setHighlight, fit, layoutPositions, setAnnotation, placeNodeAt,
+  init, render, clear, setHighlight, fit, focus, layoutPositions, setAnnotation, placeNodeAt,
   exportSvg, toSvgDocument, editSystem, getSelectedSystem, selectSystem,
 };

@@ -137,7 +137,13 @@ function select(card, ids) {
   $$(".finding-card.selected, .finding-place.selected").forEach((c) => c.classList.remove("selected"));
   selectedFinding = card;
   card.classList.add("selected");
+  // The evidence is architecture elements, drawn on no other level.
+  const away = state.level !== "architecture";
+  if (away) $("#level-architecture").click();
   GraphView.setHighlight(ids);
+  // After the level switch's own refit, which runs on the next frame.
+  if (away) requestAnimationFrame(() => GraphView.focus(ids));
+  else GraphView.focus(ids);
   revealInSource(ids);
 }
 
@@ -166,6 +172,7 @@ function placeRow(place, index, count) {
       selectedFinding = null;
       row.classList.remove("selected");
       GraphView.setHighlight([]);
+      GraphView.fit();
       return;
     }
     select(row, ids);
@@ -198,6 +205,7 @@ function findingCard(findings) {
       selectedFinding = null;
       card.classList.remove("selected");
       GraphView.setHighlight([]);
+      GraphView.fit();
       return;
     }
     select(card, allIds);
