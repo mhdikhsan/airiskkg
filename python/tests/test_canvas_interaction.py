@@ -673,31 +673,44 @@ def test_clicking_a_finding_shows_its_elements_on_screen(scene_restored) -> None
         '[document.querySelector("#status-text").textContent,'
         ' document.querySelector("#findings-count").textContent,'
         ' document.querySelector("#btn-assess").disabled]')))
-    at = loop.run_until_complete(handle.js("""(() => {
-        const head = document.querySelector(".finding-card .finding-head");
-        head.scrollIntoView({ block: "nearest" });
-        const r = head.getBoundingClientRect();
-        return { x: Math.round(r.left + 20), y: Math.round(r.top + r.height / 2) };
-    })()"""))
-    loop.run_until_complete(handle.click(at["x"], at["y"]))
-    time.sleep(1)
+    def click_a_finding() -> dict:
+        at = loop.run_until_complete(handle.js("""(() => {
+            const head = document.querySelector(".finding-card .finding-head");
+            head.scrollIntoView({ block: "nearest" });
+            const r = head.getBoundingClientRect();
+            return { x: Math.round(r.left + 20), y: Math.round(r.top + r.height / 2) };
+        })()"""))
+        loop.run_until_complete(handle.click(at["x"], at["y"]))
+        # Waited for: from a narrowed scope the canvas is redrawn before it is marked.
+        _settle(loop, handle, 'document.querySelectorAll("#canvas g.node.highlight").length',
+                0, tries=30)
+        return loop.run_until_complete(handle.js("""(() => {
+            const c = document.querySelector("#canvas").getBoundingClientRect();
+            const boxes = [...document.querySelectorAll("#canvas g.node.highlight .shape")]
+                .map((s) => s.getBoundingClientRect());
+            return {
+                level: window.PairAI.state.level,
+                marked: boxes.length,
+                inView: boxes.filter((r) => r.left >= c.left - 1 && r.right <= c.right + 1
+                    && r.top >= c.top - 1 && r.bottom <= c.bottom + 1).length,
+                smallest: boxes.length ? Math.min(...boxes.map((r) => r.height)) : 0,
+            };
+        })()"""))
 
-    seen = loop.run_until_complete(handle.js("""(() => {
-        const c = document.querySelector("#canvas").getBoundingClientRect();
-        const boxes = [...document.querySelectorAll("#canvas g.node.highlight .shape")]
-            .map((s) => s.getBoundingClientRect());
-        return {
-            level: window.PairAI.state.level,
-            marked: boxes.length,
-            inView: boxes.filter((r) => r.left >= c.left - 1 && r.right <= c.right + 1
-                && r.top >= c.top - 1 && r.bottom <= c.bottom + 1).length,
-            smallest: boxes.length ? Math.min(...boxes.map((r) => r.height)) : 0,
-        };
-    })()"""))
-    assert seen["level"] == "architecture", "the finding's elements stayed on a hidden canvas"
-    assert seen["marked"] > 0, "no element was marked"
-    assert seen["inView"] == seen["marked"], f"marked elements are off screen: {seen}"
-    assert seen["smallest"] >= 12, f"the marked elements are drawn too small to see: {seen}"
+    # Then from a reader who opened one activity's architecture and went back
+    # with the Business button, which keeps the scope: opening the level by hand
+    # widens it, and the redraw used to wipe the highlight.
+    for scoped in (False, True):
+        if scoped:
+            _descend(loop, handle)
+            _back_to_business(loop, handle)
+        seen = click_a_finding()
+        case = "after opening one architecture" if scoped else "from the business level"
+        assert seen["level"] == "architecture", f"{case}: the elements stayed on a hidden canvas"
+        assert seen["marked"] > 0, f"{case}: no element was marked"
+        assert seen["inView"] == seen["marked"], f"{case}: marked elements are off screen: {seen}"
+        assert seen["smallest"] >= 12, f"{case}: marked elements are too small to see: {seen}"
+        _back_to_business(loop, handle)
 
 
 def test_a_version_can_be_read_without_being_restored(page) -> None:

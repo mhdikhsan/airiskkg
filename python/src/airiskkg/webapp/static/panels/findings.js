@@ -15,6 +15,7 @@ import { ProcessCanvas } from "../lib/process_canvas.js";
 import { state } from "../state.js";
 
 let selectedFinding = null;
+let selectedIds = null;     // its evidence, kept across a re-read
 
 function controlItem(control, finding) {
   const motifs = control.realizedByMotifs || [];
@@ -136,6 +137,7 @@ function unique(items, key) {
 function select(card, ids) {
   $$(".finding-card.selected, .finding-place.selected").forEach((c) => c.classList.remove("selected"));
   selectedFinding = card;
+  selectedIds = ids;
   card.classList.add("selected");
   // The evidence is architecture elements, drawn on no other level.
   const away = state.level !== "architecture";
@@ -170,6 +172,7 @@ function placeRow(place, index, count) {
     ev.stopPropagation();
     if (selectedFinding === row) {
       selectedFinding = null;
+      selectedIds = null;
       row.classList.remove("selected");
       GraphView.setHighlight([]);
       GraphView.fit();
@@ -203,6 +206,7 @@ function findingCard(findings) {
   card.addEventListener("click", () => {
     if (selectedFinding === card) {
       selectedFinding = null;
+      selectedIds = null;
       card.classList.remove("selected");
       GraphView.setHighlight([]);
       GraphView.fit();
@@ -222,12 +226,20 @@ export function clearFindings() {
   $("#findings-empty").classList.remove("hidden");
   setStale(false);
   selectedFinding = null;
+  selectedIds = null;
   ProcessCanvas.setFindings([]);
 }
 
 export function reReadFindings() {
   // Nothing is re-run: the findings are the same, the question is narrower.
-  if (state.lastAssessment) renderFindings(state.lastAssessment);
+  if (!state.lastAssessment) return;
+  // Re-reading clears the selection, and the reader is still looking at it.
+  const picked = selectedIds;
+  renderFindings(state.lastAssessment);
+  if (picked && picked.length) {
+    GraphView.setHighlight(picked);
+    GraphView.focus(picked);
+  }
 }
 
 function findingsInScope(data) {
