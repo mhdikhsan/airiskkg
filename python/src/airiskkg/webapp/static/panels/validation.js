@@ -44,6 +44,7 @@ function validationRow(item, severity) {
 }
 
 export function clearValidation() {
+  checked = null;
   $("#validation-list").innerHTML = "";
   $("#validation-count").textContent = "";
   $("#validation-empty").classList.remove("hidden");
@@ -65,23 +66,30 @@ export function renderValidation(report) {
   $("#validation-count").textContent = total ? String(total) : "";
 }
 
-/* Run after the editor settles, so the panel is never empty for a graph that
-   has something to say. One request at a time: a check started while another
-   runs waits for it, then checks whatever the editor holds by then. */
+/* Run while the panel is open, so it is never empty for a graph that has
+   something to say: once when it opens, then after each change settles. Not
+   while it is closed, because a check takes a second or two of the server's
+   time and every canvas edit would pay for it. One request at a time: a check
+   started while another runs waits for it, then checks what the editor holds. */
 const SETTLE_MS = 1500;
 let settleTimer = null;
 let running = null;
+let checked = null;
 
-export function scheduleValidation() {
+const panelShown = () => !$("#drawer").classList.contains("collapsed")
+  && !$("#validation-list").closest(".drawer-panel").classList.contains("hidden");
+
+export function scheduleValidation({ now = false } = {}) {
   clearTimeout(settleTimer);
-  if (!Editor.getValue().trim()) { clearValidation(); return; }
+  if (!Editor.getValue().trim()) { clearValidation(); checked = null; return; }
+  if (!panelShown() || (now && checked === Editor.getValue().trim())) return;
   settleTimer = setTimeout(async () => {
     if (running) await running.catch(() => {});
     // The status bar already reports a graph that does not parse.
     running = validateNow().catch(() => null);
     await running;
     running = null;
-  }, SETTLE_MS);
+  }, now ? 0 : SETTLE_MS);
 }
 
 /* Checks the editor against the input contract. `open` shows the panel. */
@@ -94,6 +102,7 @@ export async function validateNow({ open = false } = {}) {
   const report = await postJson("/api/validate", { ttl });
   // The document moved on while this ran, so the report is about something gone.
   if (Editor.getValue().trim() !== ttl) return null;
+  checked = ttl;
   renderValidation(report);
   if (open) openDrawer("validation");
   return report;

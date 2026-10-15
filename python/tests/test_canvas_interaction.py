@@ -3053,18 +3053,30 @@ def test_the_input_contract_is_checked_without_asking(scene_restored) -> None:
         'ex:S a beam:System ; rdfs:label "S" ; beam:hasResource ex:Q .',
         'ex:Q a beam:Data ; rdfs:label "Customer question" .',
     ])
-    loop.run_until_complete(handle.js(
-        "window.PairAI.Editor.setValue(" + json.dumps(bare) + "); 1"))
-    rows = _settle(loop, handle,
-                   'document.querySelectorAll("#validation-list .validation-row").length',
-                   0, tries=40)
-    seen = loop.run_until_complete(handle.js("""({
-        text: document.querySelector("#validation-list").textContent,
-        count: document.querySelector("#validation-count").textContent,
-    })"""))
-    assert rows > 0, "nothing was checked until Validate was pressed"
-    assert seen["count"] == str(rows), "the tab does not say how many there are"
-    assert "Customer question" in seen["text"]
+    try:
+        # Opening the panel checks what is there, with no Validate press.
+        loop.run_until_complete(handle.js(
+            'document.querySelector(\'[data-drawer-tab="validation"]\').click(); 1'))
+        opened = _settle(loop, handle,
+                         'document.querySelectorAll("#validation-list .validation-row").length',
+                         0, tries=40)
+        assert opened, "opening the panel checked nothing"
+        loop.run_until_complete(handle.js(
+            "window.PairAI.Editor.setValue(" + json.dumps(bare) + "); 1"))
+        # The rows of the document before it are still listed until this one is checked.
+        checked = _settle(loop, handle,
+                          'document.querySelector("#validation-list").textContent'
+                          '.includes("Customer question")', False, tries=40)
+        seen = loop.run_until_complete(handle.js("""({
+            rows: document.querySelectorAll("#validation-list .validation-row").length,
+            count: document.querySelector("#validation-count").textContent,
+        })"""))
+        assert checked, "nothing was checked until Validate was pressed"
+        assert seen["count"] == str(seen["rows"]), "the tab does not say how many there are"
+    finally:
+        # Left open, the panel would check every document the later tests load.
+        loop.run_until_complete(handle.js(
+            """document.querySelector('[data-drawer-tab="findings"]').click(); 1"""))
 
 
 def _press(loop, handle, key, code, vk, modifiers=0):

@@ -453,13 +453,16 @@ async function init() {
   });
 
 
-  $("#drawer-toggle").addEventListener("click", toggleDrawer);
-  $("#drawer-head").addEventListener("dblclick", toggleDrawer);
+  // Opening the input contract panel is what checks the graph against it.
+  const toggleAndCheck = () => { toggleDrawer(); scheduleValidation({ now: true }); };
+  $("#drawer-toggle").addEventListener("click", toggleAndCheck);
+  $("#drawer-head").addEventListener("dblclick", toggleAndCheck);
   $$(".drawer-tab").forEach((tab) =>
     tab.addEventListener("click", () => {
       switchDrawerTab(tab.dataset.drawerTab);
       openDrawer();
       if (tab.dataset.drawerTab === "annotate") Annotate.refresh();
+      if (tab.dataset.drawerTab === "validation") scheduleValidation({ now: true });
     }));
 }
 
