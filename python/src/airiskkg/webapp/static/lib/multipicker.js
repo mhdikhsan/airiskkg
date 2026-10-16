@@ -30,17 +30,38 @@ function shelfKind(item) {
   return item.shelfId ? kindOf(item.shelfId.split(/[#/]/).pop()) : null;
 }
 
-// Orders the shelves, never filters them: some match queries constrain no class
-// at all, so hiding on the declared one hides a term that binds.
-function fitRank(item, typeUri) {
-  if (!typeUri) return 1;
-  if (item.shelfId === typeUri) return 0;
-  if ((item.appliesTo || []).includes(typeUri)) return 1;
+// 0 and 1 fit the element's class, 2 does not. A term that does not fit is
+// offered behind "Show more", never dropped: some match queries constrain no
+// class at all, so a term declared for Data can still bind on a Symbol.
+function fitRank(item, types) {
+  if (!types.length) return 1;
+  if (types.includes(item.shelfId)) return 0;
+  if ((item.appliesTo || []).some((cls) => types.includes(cls))) return 1;
   return 2;
 }
 
 function fitsSide(item, kind) {
   return !item.applies || !kind || item.applies === kind;
+}
+
+// The element's BEAM classes: all of them when known, else its most specific one.
+function typesOf(opts) {
+  return opts.typeUris || (opts.typeUri ? [opts.typeUri] : []);
+}
+
+function fits(item, opts) {
+  return fitsSide(item, opts.filterKind) && fitRank(item, typesOf(opts)) < 2;
+}
+
+/* pair:containsDataCategory is declared on beam:Data, so only a Data element
+   is offered a category; one it already carries can still be removed. */
+export function categoryPickerOptions(node, placeholder) {
+  if (node.kind === "data") return { placeholder };
+  return {
+    cannotAdd: "only on Data",
+    cannotAddWhy: "A data category says what content holds, so it goes on a Data element."
+      + " The assessment carries it along the flow from there.",
+  };
 }
 
 // One listener for every picker on the page: the annotate table rebuilds its
@@ -65,7 +86,12 @@ export const MultiPicker = function (items, selectedIds, opts) {
   const chipsEl = el("div", { class: "mp-chips" });
   const trigger = el("button", {
     type: "button", class: "mp-add", "aria-haspopup": "listbox", "aria-expanded": "false",
-  }, opts.placeholder || "+ add");
+  }, opts.cannotAdd ? opts.cannotAdd : (opts.placeholder || "+ add"));
+  // What it already carries stays removable; nothing new can be put on it.
+  if (opts.cannotAdd) {
+    trigger.disabled = true;
+    trigger.title = opts.cannotAddWhy || opts.cannotAdd;
+  }
   const search = el("input", {
     type: "text", class: "mp-search", placeholder: "Type to narrow", "aria-label": "Search terms",
   });
@@ -88,8 +114,8 @@ export const MultiPicker = function (items, selectedIds, opts) {
 
   function offered() {
     const pool = available();
-    const side = showAll ? pool : pool.filter((it) => fitsSide(it, opts.filterKind));
-    return { shown: side.filter(hits), hidden: pool.length - side.length };
+    const fitting = showAll ? pool : pool.filter((it) => fits(it, opts));
+    return { shown: fitting.filter(hits), hidden: pool.length - fitting.length };
   }
 
   /* Shelves in fit order, so the terms that go on this element come first and
@@ -101,7 +127,7 @@ export const MultiPicker = function (items, selectedIds, opts) {
       if (!bins.has(key)) bins.set(key, { items: [], rank: 3 });
       const bin = bins.get(key);
       bin.items.push(it);
-      bin.rank = Math.min(bin.rank, fitRank(it, opts.typeUri));
+      bin.rank = Math.min(bin.rank, fitRank(it, typesOf(opts)));
     }
     return [...bins.entries()]
       .sort((a, b) =>
@@ -186,11 +212,12 @@ export const MultiPicker = function (items, selectedIds, opts) {
     if (hidden > 0 && !showAll) {
       foot.appendChild(el("button", {
         type: "button", class: "mp-all",
+        title: "Terms usually put on another kind of element. Some still match here.",
         onclick: (e) => { e.stopPropagation(); showAll = true; renderList(); renderFamilies(); },
-      }, `Show ${hidden} for the other side of the graph`));
+      }, `Show ${hidden} more for other kinds of element`));
     } else if (showAll) {
       foot.appendChild(el("span", { class: "mp-note" },
-        "Showing terms for processes and resources together"));
+        "Showing every term; those under \"not this element\" are rarely right here"));
     }
   }
 

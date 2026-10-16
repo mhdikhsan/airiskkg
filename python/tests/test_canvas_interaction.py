@@ -3161,3 +3161,89 @@ def test_back_stays_in_the_workbench(scene_restored) -> None:
 
     assert first["level"] == "architecture", f"Back did not return to the level before: {first}"
     assert second["url"].endswith("_cdp_probe.html"), f"Back left the workbench: {second}"
+
+
+_KINDS = chr(10).join([
+    "@prefix beam: <http://w3id.org/beam/core#> .",
+    "@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .",
+    "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .",
+    "@prefix ex: <http://example.org/kinds#> .",
+    'ex:S a beam:System ; rdfs:label "S" ; beam:hasResource ex:Q, ex:M ; beam:hasProcess ex:P .',
+    'ex:Q a beam:Data ; rdfs:label "Question" .',
+    'ex:M a beam:StatisticalModel ; rdfs:label "LLM" ; pair:containsDataCategory pair:Information .',
+    'ex:P a beam:Generate ; rdfs:label "Generate" ; beam:use ex:Q, ex:M .',
+])
+
+
+def _open_popup_on(loop, handle, label):
+    """Click an element on the architecture canvas with real input; return its popup."""
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#node-detail").classList.add("hidden"); 1'))
+    at = loop.run_until_complete(handle.js(f"""(() => {{
+        for (const n of document.querySelectorAll('#canvas g.node')) {{
+            if (!n.textContent.startsWith({json.dumps(label)})) continue;
+            const r = n.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            const hit = document.elementFromPoint(x, y);
+            if (hit && hit.closest('g.node') === n) return {{ x, y }};
+        }}
+        return null;
+    }})()"""))
+    assert at, f"{label} cannot be clicked on the canvas"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    assert loop.run_until_complete(handle.js(
+        'document.querySelector("#nd-label").value')) == label
+
+
+def _role_offer(loop, handle):
+    trigger = loop.run_until_complete(handle.js("""(() => {
+        const r = document.querySelector('#nd-role-mp .mp-add').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    loop.run_until_complete(handle.click(trigger["x"], trigger["y"]))
+    return loop.run_until_complete(handle.js("""(() => {
+        const pop = document.querySelector('#nd-role-mp .mp-pop');
+        const cat = document.querySelector('#nd-cat-mp .mp-add');
+        return {
+            open: !pop.classList.contains('hidden'),
+            offered: pop.querySelectorAll('.mp-opt').length,
+            more: !!pop.querySelector('.mp-all'),
+            catDisabled: cat.disabled,
+            catChips: document.querySelectorAll('#nd-cat-mp .mp-chip').length,
+        };
+    })()"""))
+
+
+def test_the_popup_offers_the_terms_that_fit_the_element(scene_restored) -> None:
+    """A model was offered all 66 resource terms, most of them for data, and a
+    step was offered data categories, which only a Data element carries."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.5)
+    expected = loop.run_until_complete(handle.js("""(async () => {
+        const v = await (await fetch('/api/vocabulary')).json();
+        const fit = (cls) => v.roles.filter((r) => r.applies === 'resource'
+            && (r.shelfId === cls || (r.appliesTo || []).includes(cls))).length;
+        return { model: fit('http://w3id.org/beam/core#StatisticalModel'),
+                 data: fit('http://w3id.org/beam/core#Data') };
+    })()"""))
+
+    _open_popup_on(loop, handle, "LLM")
+    model = _role_offer(loop, handle)
+    _open_popup_on(loop, handle, "Question")
+    data = _role_offer(loop, handle)
+    _open_popup_on(loop, handle, "Generate")
+    step = _role_offer(loop, handle)
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#node-detail").classList.add("hidden"); 1'))
+
+    assert model["open"] and model["offered"] == expected["model"], (model, expected)
+    assert model["more"], "the terms for other kinds of element cannot be reached"
+    assert data["offered"] == expected["data"], (data, expected)
+    assert model["catDisabled"] and step["catDisabled"], "a data category is offered off Data"
+    assert model["catChips"] == 1, "a category the model already carries is no longer shown"
+    assert not data["catDisabled"], "a Data element is not offered its data categories"

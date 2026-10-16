@@ -1,7 +1,7 @@
 import { Editor } from "../lib/editor.js";
 import { revealInSource } from "../core/source.js";
 import { GraphView } from "../lib/graph_view.js";
-import { MultiPicker } from "../lib/multipicker.js";
+import { MultiPicker, categoryPickerOptions } from "../lib/multipicker.js";
 import { state } from "../state.js";
 "use strict";
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -48,10 +48,10 @@ function annotateRow(node) {
     placeholder: "+ add role", grouped: true,
     // The element's own BEAM class, so the offer narrows by subsumption rather
     // than by the two-way process/resource split.
-    typeUri: node.typeUri, filterKind: roleKindFor(node),
+    typeUri: node.typeUri, typeUris: node.typeUris, filterKind: roleKindFor(node),
   });
   const catPicker = MultiPicker(vocab.dataCategories, node.categoryIds || [],
-    { placeholder: "+ add category" });
+    categoryPickerOptions(node, "+ add category"));
   rows.push({ id: node.id, rolePicker, catPicker });
 
   return el("div", {

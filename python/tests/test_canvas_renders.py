@@ -991,6 +991,13 @@ def test_the_term_picker_searches_and_shows_what_each_term_means(served) -> None
           log("shelves=" + shelves.length);
           log("modelShelfFirst=" + (/Statistical Model/.test(shelves[0] || "") ? 1 : 0));
           log("marksTheRest=" + shelves.filter((s) => /not this element/.test(s)).length);
+          // the terms for other kinds of element are one click away, and marked there
+          const more = pop.querySelector(".mp-all");
+          log("offersMore=" + (more ? 1 : 0));
+          if (more) more.click();
+          const all = [...pop.querySelectorAll(".mp-shelf")].map((s) => s.textContent);
+          log("allOffered=" + pop.querySelectorAll(".mp-opt").length);
+          log("marksTheRestWhenShown=" + all.filter((s) => /not this element/.test(s)).length);
           // the element already plays Foundation LLM and Generative Model, and a
           // selected term is not offered again
           log("alreadyOn=" + row.querySelectorAll(".an-role .mp-chip").length);
@@ -1031,7 +1038,12 @@ def test_the_term_picker_searches_and_shows_what_each_term_means(served) -> None
     assert seen["modelShelfFirst"] == 1, (
         f"the terms that go on a model do not sort first: {report}"
     )
-    assert seen["marksTheRest"] >= 1, (
+    assert seen["marksTheRest"] == 0, (
+        f"terms for other kinds of element are offered first-hand on a model: {report}"
+    )
+    assert seen["offersMore"] == 1, "the terms that do not fit cannot be reached at all"
+    assert seen["allOffered"] > seen["offered"], f"Show more added nothing: {report}"
+    assert seen["marksTheRestWhenShown"] >= 1, (
         "the shelves that do not apply are offered without saying so"
     )
     assert 0 < seen["narrowed"] < seen["offered"], f"typing did not narrow the offer: {report}"

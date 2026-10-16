@@ -41,6 +41,23 @@ def test_graph_endpoint_returns_nodes_and_edges(client) -> None:
         assert edge["source"] in node_ids and edge["target"] in node_ids
 
 
+def test_a_node_reports_every_beam_class_it_is_typed_with(client) -> None:
+    """The most specific type alone is Text for an element typed Data and Text,
+    and no term applies to Text: filtering the picker on it hid every Data term
+    from an element the Data queries match."""
+    ttl = """
+    @prefix beam: <http://w3id.org/beam/core#> .
+    @prefix ex: <http://example.org/typed#> .
+    ex:sys a beam:System ; beam:hasResource ex:answer .
+    ex:answer a beam:Data, beam:Text .
+    """
+    nodes = client.post("/api/graph", json={"ttl": ttl}).get_json()["nodes"]
+    answer = next(node for node in nodes if node["id"].endswith("answer"))
+    beam = "http://w3id.org/beam/core#"
+    assert answer["typeUri"] == beam + "Text"
+    assert answer["typeUris"] == [beam + "Data", beam + "Text"]
+
+
 def test_graph_endpoint_use_edges_point_into_process(client) -> None:
     ttl = """
     @prefix beam: <http://w3id.org/beam/core#> .

@@ -1,5 +1,5 @@
 
-import { MultiPicker } from "./multipicker.js";
+import { MultiPicker, categoryPickerOptions } from "./multipicker.js";
 "use strict";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -699,8 +699,10 @@ function showDetail(node, ev) {
   const rolePicker = MultiPicker(annotationCfg.vocabulary.roles, node.roleIds || [], {
     placeholder: "+ add role", grouped: true,
     filterKind: node.kind === "process" ? "process" : "resource",
+    typeUri: node.typeUri, typeUris: node.typeUris,
   });
-  const catPicker = MultiPicker(annotationCfg.vocabulary.dataCategories, node.categoryIds || [], { placeholder: "+ add data category" });
+  const catPicker = MultiPicker(annotationCfg.vocabulary.dataCategories, node.categoryIds || [],
+    categoryPickerOptions(node, "+ add data category"));
   detailBox.querySelector("#nd-role-mp").appendChild(rolePicker.element);
   detailBox.querySelector("#nd-cat-mp").appendChild(catPicker.element);
   detailBox.classList.remove("hidden");

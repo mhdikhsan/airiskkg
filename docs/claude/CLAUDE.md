@@ -870,21 +870,28 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   rdflib hands them back in set order, so `ExternalModel` shelved differently from run to
   run until `_role_parents` sorted them.
 - **`appliesTo` is derived from what the queries write, not from what the motif declares —
-  and it orders the picker rather than filtering it.** The two sides are typed differently:
+  and the picker offers what fits first and the rest one click away.** The two sides are typed differently:
   a step is guarded `a/rdfs:subClassOf* beam:Process` in **all 62** places one appears, so a
   node declared `beam:Infer` binds a `beam:Generate` element and **the role is the
   discriminator**; a resource is typed with a bare `a beam:Data` (67×) or
   `a beam:StatisticalModel` (19×), which walks nothing. Deriving the fit from
   `pair:expectedClass` alone put **13 annotations in baseline-pinned graphs** on the wrong
   side of their own element, `GenerationStep` among them.
-  **And it must not hide, because some queries are looser than their declaration.**
-  `information_retrieval.rq` puts **no class constraint on any of its three resource nodes**,
-  only the role — so `IR_QueryNode`, declared `expectedClass beam:Data`, binds the
-  `beam:Symbol` element `SPARQL Query Template` in `simple_graph_rag.ttl`. That is 1 of the
-  148 element bindings across the tracked graphs, and 5 annotations depend on it. So the
-  shelf that fits sorts first, the rest are marked *"not this element"* and stay reachable,
-  and the only hard filter is the coarse process/resource split with its existing escape.
+  **And it must never make a term unreachable, because some queries are looser than their
+  declaration.** `information_retrieval.rq` puts **no class constraint on any of its three
+  resource nodes**, only the role — so `IR_QueryNode`, declared `expectedClass beam:Data`,
+  binds the `beam:Symbol` element `SPARQL Query Template` in `simple_graph_rag.ttl`. That is 1
+  of the 148 element bindings across the tracked graphs, and 5 annotations depend on it.
+  So since 2026-10-16 (decided with the dry-run reviewers' "offer only valid roles") the
+  picker first offers the terms whose `appliesTo` holds **any** class the element is typed
+  with (`typeUris` from `/api/graph`, never the most specific class alone: Data+Text reports
+  Text, which no term lists), and puts everything else, the other side included, behind one
+  *"Show N more"*; shown, those shelves are marked *"not this element"*. Counts on the canvas
+  popup: Data 66→55, Statistical Model 66→14, Symbol 66→3, a step stays at 57.
   `test_no_annotation_in_a_tracked_graph_is_reported_as_not_fitting` is the guard.
+- **A data category is offered on a Data element only**, because `pair:containsDataCategory`
+  is declared `rdfs:domain beam:Data`. One already written elsewhere (`simple_graph_rag.ttl`
+  puts three on its LLM) stays visible and removable; the picker just takes nothing new.
 - **A family is read off the motifs that name a term, and is never inherited.**
   `HumanOversightMotif` declares a `ResourceRole` wildcard node, so inheriting through
   ancestors tags **all 53** resource-side terms Agentic — true, and useless, because a filter
