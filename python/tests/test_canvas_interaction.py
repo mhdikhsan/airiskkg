@@ -3247,3 +3247,39 @@ def test_the_popup_offers_the_terms_that_fit_the_element(scene_restored) -> None
     assert model["catDisabled"] and step["catDisabled"], "a data category is offered off Data"
     assert model["catChips"] == 1, "a category the model already carries is no longer shown"
     assert not data["catDisabled"], "a Data element is not offered its data categories"
+
+
+def test_picking_a_role_closes_the_list_so_apply_can_be_pressed(scene_restored) -> None:
+    """The suggestion list stayed open after a pick and covered Apply."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.5)
+    _open_popup_on(loop, handle, "Question")
+    assert _role_offer(loop, handle)["open"], "the role list did not open"
+
+    option = loop.run_until_complete(handle.js("""(() => {
+        const o = document.querySelector('#nd-role-mp .mp-pop .mp-opt');
+        const r = o.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    loop.run_until_complete(handle.click(option["x"], option["y"]))
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const apply = document.querySelector('#nd-apply');
+        const r = apply.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return {
+            listOpen: !document.querySelector('#nd-role-mp .mp-pop').classList.contains('hidden'),
+            chips: document.querySelectorAll('#nd-role-mp .mp-chip').length,
+            applyOnTop: !!hit && !!hit.closest('#nd-apply'),
+        };
+    })()"""))
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#node-detail").classList.add("hidden"); 1'))
+
+    assert seen["chips"] == 1, "the pick was not recorded"
+    assert not seen["listOpen"], "the suggestion list stayed open after a pick"
+    assert seen["applyOnTop"], "Apply is still covered after a pick"

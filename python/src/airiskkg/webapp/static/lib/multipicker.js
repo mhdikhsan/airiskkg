@@ -227,15 +227,15 @@ export const MultiPicker = function (items, selectedIds, opts) {
     if (options[cursor]) options[cursor].scrollIntoView({ block: "nearest" });
   }
 
+  // Closed after a pick: left open, the list covered the Apply button below it.
   function pick(id) {
     selected.add(id);
     query = "";
     search.value = "";
     cursor = 0;
     renderChips();
-    renderList();
-    renderFamilies();
-    search.focus();
+    setOpen(false);
+    trigger.focus();
   }
 
   const closeOnOutside = (event) => {
