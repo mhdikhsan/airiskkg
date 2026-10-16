@@ -13,6 +13,7 @@ import { state } from "../state.js";
 
 // ---- matches and gaps ----
 let selectedMotifRow = null;
+let selectedMotifLabel = null;   // survives the redraw the hint check causes
 let annotationHints = new Map();
 
 function blockingHint(id) {
@@ -131,6 +132,7 @@ export function clearMotifs() {
   $("#motifs-count").textContent = "";
   $("#motifs-empty").classList.remove("hidden");
   selectedMotifRow = null;
+  selectedMotifLabel = null;
 }
 
 let lastMatches = null;
@@ -147,14 +149,37 @@ function motifRows(matches) {
   const byName = new Map();
   (matches || []).forEach((m) => {
     const label = (m.label || (m.motif && m.motif.label) || "Motif").replace(/\s+Motif$/, "");
-    const g = byName.get(label) || { label, ids: new Set(), count: 0 };
+    const g = byName.get(label) || { label, ids: new Set(), count: 0, bindings: new Map() };
     (m.nodeIds || []).forEach((id) => g.ids.add(id));
+    (m.boundElements || []).forEach((b) => {
+      const key = `${b.elementId}|${b.role}`;
+      if (!g.bindings.has(key)) g.bindings.set(key, b);
+    });
     g.count += 1;
     byName.set(label, g);
   });
   return [...byName.values()]
-    .map((g) => ({ label: g.label, nodeIds: [...g.ids], count: g.count }))
+    .map((g) => ({ label: g.label, nodeIds: [...g.ids], count: g.count, bindings: [...g.bindings.values()] }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
+/* Which of the reader's annotations made the motif match: each element, the
+   role its pattern node asks for, and the element's own role when that is a
+   refinement of it. */
+function bindingList(bindings) {
+  const rows = [...bindings]
+    .sort((a, b) => (a.element || "").localeCompare(b.element || ""))
+    .map((b) => el("li", {}, [
+      el("strong", {}, b.element),
+      el("span", { class: "motif-binding-role" }, b.role ? ` as ${b.role}` : ""),
+      b.via && b.via !== b.role
+        ? el("span", { class: "motif-binding-via" }, ` (its role ${b.via} refines it)`)
+        : null,
+    ]));
+  return el("div", { class: "motif-bindings" }, [
+    el("div", { class: "motif-bindings-lead" }, "Matched on these annotations:"),
+    el("ul", {}, rows),
+  ]);
 }
 
 export function renderMotifs(matches, gaps, options = {}) {
@@ -172,6 +197,9 @@ export function renderMotifs(matches, gaps, options = {}) {
   const empty = $("#motifs-empty");
   list.innerHTML = "";
   selectedMotifRow = null;
+  // Redrawn for the hints alone, the reader's pick is still the same match.
+  const keep = options.refetchHints === false ? selectedMotifLabel : null;
+  if (!keep) selectedMotifLabel = null;
   if (!rows.length) {
     empty.textContent = "No motifs matched. Add roles so motifs can bind, then Run assessment.";
     empty.classList.remove("hidden");
@@ -187,12 +215,23 @@ export function renderMotifs(matches, gaps, options = {}) {
     }, [
       el("span", { class: "motif-row-name" }, r.label),
       el("span", { class: "motif-row-count" }, r.count > 1 ? `×${r.count}` : "1"),
+      r.bindings.length ? bindingList(r.bindings) : null,
     ]);
+    if (keep === r.label && !selectedMotifRow) {
+      selectedMotifRow = row;
+      row.classList.add("selected");
+    }
     row.addEventListener("click", () => {
       const wasSelected = selectedMotifRow === row;
       $$(".motif-row.selected").forEach((x) => x.classList.remove("selected"));
-      if (wasSelected) { selectedMotifRow = null; GraphView.setHighlight([]); return; }
+      if (wasSelected) {
+        selectedMotifRow = null;
+        selectedMotifLabel = null;
+        GraphView.setHighlight([]);
+        return;
+      }
       selectedMotifRow = row;
+      selectedMotifLabel = r.label;
       row.classList.add("selected");
       GraphView.setHighlight(r.nodeIds);
       revealInSource(r.nodeIds);

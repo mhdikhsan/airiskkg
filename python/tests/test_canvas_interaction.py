@@ -3283,3 +3283,90 @@ def test_picking_a_role_closes_the_list_so_apply_can_be_pressed(scene_restored) 
     assert seen["chips"] == 1, "the pick was not recorded"
     assert not seen["listOpen"], "the suggestion list stayed open after a pick"
     assert seen["applyOnTop"], "Apply is still covered after a pick"
+
+
+def test_matches_on_takes_the_reader_to_the_role_and_back(page) -> None:
+    """A "matches on" chip opened the term, and the only way back was "All
+    terms": the motif the reader came from was gone."""
+    loop, handle = page
+    loop.run_until_complete(handle.js('document.querySelector("#btn-library").click()'))
+    time.sleep(1)
+    try:
+        loop.run_until_complete(handle.js("""(() => {
+            document.querySelector('.library-tab[data-library-tab="motifs"]').click();
+            [...document.querySelectorAll('#library-detail .lib-tile')]
+                .find((t) => /Information Retrieval/.test(t.textContent)).click();
+            return 1;
+        })()"""))
+        time.sleep(0.8)
+        chip = _spot(loop, handle, """(() => {
+            const c = [...document.querySelectorAll('#library-detail .lib-roles .chip')]
+                .find((x) => x.textContent === 'User Input');
+            if (c) c.scrollIntoView({ block: 'center' });
+            return c;
+        })()""")
+        assert chip, "the motif page names no role to follow"
+        loop.run_until_complete(handle.click(chip["x"], chip["y"]))
+        back = _spot(loop, handle, "document.querySelector('#library-detail .lib-back')")
+        term = loop.run_until_complete(handle.js(
+            "document.querySelector('#library-detail .lib-back').textContent"))
+        loop.run_until_complete(handle.click(back["x"], back["y"]))
+        returned = loop.run_until_complete(handle.js(
+            "document.querySelector('#library-detail').textContent"))
+
+        # And the browser's Back takes the same step.
+        chip = _spot(loop, handle, """(() => {
+            const c = [...document.querySelectorAll('#library-detail .lib-roles .chip')]
+                .find((x) => x.textContent === 'User Input');
+            if (c) c.scrollIntoView({ block: 'center' });
+            return c;
+        })()""")
+        loop.run_until_complete(handle.click(chip["x"], chip["y"]))
+        loop.run_until_complete(handle.js("history.back(); 1"))
+        time.sleep(1)
+        after_browser_back = loop.run_until_complete(handle.js("""({
+            open: !document.querySelector('#library').classList.contains('hidden'),
+            text: document.querySelector('#library-detail').textContent,
+        })"""))
+    finally:
+        loop.run_until_complete(handle.js('document.querySelector("#btn-library-close").click(); 1'))
+
+    assert term == "Back to Information Retrieval", f"the term page offers {term!r}"
+    assert "Information Retrieval" in returned and "matches elements with the roles" in returned, (
+        "Back did not return to the motif")
+    assert after_browser_back["open"], "the browser's Back closed the library"
+    assert "matches elements with the roles" in after_browser_back["text"], (
+        "the browser's Back did not return to the motif")
+
+
+def test_a_motif_match_lists_the_annotations_it_rests_on(scene_restored) -> None:
+    """A match row said only which motif matched, never why."""
+    loop, handle = scene_restored
+    ttl = example_path(GRAPH_RAG_NS).read_text(encoding="utf-8")
+    loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(" + json.dumps(ttl) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(1.5)
+    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    rows = _settle(loop, handle, "document.querySelectorAll('#motifs-list .motif-row').length",
+                   0, tries=100)
+    assert rows, "the assessment listed no motif match"
+    loop.run_until_complete(handle.js(
+        """document.querySelector('[data-drawer-tab="motifs"]').click(); 1"""))
+    time.sleep(0.5)
+    at = _spot(loop, handle, "document.querySelector('#motifs-list .motif-row .motif-row-name')")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const row = document.querySelector('#motifs-list .motif-row.selected');
+        const list = row && row.querySelector('.motif-bindings');
+        return {
+            selected: !!row,
+            hasList: !!list,
+            shown: !!list && list.checkVisibility(),
+            items: list ? [...list.querySelectorAll('li')].map((li) => li.textContent) : [],
+        };
+    })()"""))
+    loop.run_until_complete(handle.js(
+        """document.querySelector('[data-drawer-tab="findings"]').click(); 1"""))
+
+    assert seen["shown"], f"picking a match shows nothing about why it matched: {seen}"
+    assert seen["items"] and all(" as " in item for item in seen["items"]), seen["items"]

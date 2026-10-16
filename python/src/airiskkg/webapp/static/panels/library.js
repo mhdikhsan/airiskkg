@@ -154,7 +154,7 @@ function termRow(entry) {
     }, String((entry.motifs || []).length)),
   ]);
 
-  row.addEventListener("click", () => select("terms", entry.id));
+  row.addEventListener("click", () => start("terms", entry.id));
   return row;
 }
 
@@ -250,7 +250,7 @@ function railRow(entry, kind) {
 
   row.addEventListener(
     "click",
-    () => select(kind, entry.id)
+    () => start(kind, entry.id)
   );
 
   return row;
@@ -397,12 +397,25 @@ const BACK_LABEL = {
   terms: "All terms",
 };
 
+const SUFFIX = { risks: RISK_SUFFIX, motifs: MOTIF_SUFFIX, terms: /(?!)/ };
+
 function backButton() {
+  const previous = trail[trail.length - 1];
+  const from = previous && byId[previous.kind].get(previous.id);
+  if (from) {
+    return el("button", {
+      type: "button",
+      class: "btn lib-back",
+      title: "Back to the page you came from",
+      onclick: goBack,
+    }, [el("span", { class: "lib-back-arrow" }), `Back to ${shortName(from.label, SUFFIX[previous.kind])}`]);
+  }
   return el("button", {
     type: "button",
     class: "btn lib-back",
     title: "Back to the whole catalogue",
     onclick: () => {
+      trail = [];
       selected[tab] = null;
       renderRail();
       renderDetail();
@@ -484,7 +497,7 @@ function chipTo(kind, entry, suffix, extraClass) {
     type: "button",
     class: "chip clickable " + (extraClass || "tax"),
     title: entry.description || entry.label,
-    onclick: () => select(kind, entry.id),
+    onclick: () => follow(kind, entry.id),
   }, shortName(entry.label, suffix));
 }
 
@@ -510,7 +523,33 @@ function legend(template) {
     el("span", { class: "lib-legend-item" }, [swatch(kind), KIND_NAME[kind] || kind])));
 }
 
+/* What a match needs from the reader's own elements: these roles, on elements
+   joined as drawn. Hovering a role marks the node that needs it in `preview`. */
+function matchesOn(motif, preview) {
+  const mark = (roles) => {
+    preview.innerHTML = "";
+    preview.appendChild(motifPreview(motif, { highlight: roles }));
+  };
+  return el("div", {
+    class: "lib-roles",
+    title: "The motif matches where elements carry these roles and are joined as drawn",
+  }, [
+    el("span", { class: "lib-meta-lead" }, "matches elements with the roles"),
+    ...motif.roles.map((role) => el("button", {
+      type: "button",
+      class: "chip role clickable",
+      title: `Open ${role.label}. Give an element this role to fill the node marked above.`,
+      onmouseenter: () => mark([role.id]),
+      onmouseleave: () => mark([]),
+      onfocus: () => mark([role.id]),
+      onblur: () => mark([]),
+      onclick: () => follow("terms", role.id),
+    }, role.label)),
+  ]);
+}
+
 function motifCard(motif, risk) {
+  const preview = el("div", { class: "lib-preview" }, motifPreview(motif));
   return el("div", { class: "lib-card" }, [
     el("div", { class: "lib-card-head" }, [
       el("strong", {}, shortName(motif.label, MOTIF_SUFFIX)),
@@ -518,20 +557,15 @@ function motifCard(motif, risk) {
       el("span", { class: "lib-card-size" },
         motif.nodes.length + " elements · " + motif.edges.length + " relations"),
     ]),
-    el("div", { class: "lib-preview" }, motifPreview(motif)),
+    preview,
     el("div", { class: "lib-card-foot" }, [
-      motif.roles.length
-        ? el("div", { class: "lib-roles" }, [
-            el("span", { class: "lib-meta-lead" }, "matches on"),
-            ...motif.roles.map((role) => el("span", { class: "chip role" }, role.label)),
-          ])
-        : el("span"),
+      motif.roles.length ? matchesOn(motif, preview) : el("span"),
       el("div", { class: "lib-card-actions" }, [
         el("button", {
           type: "button",
           class: "btn small",
           title: "Read this motif on its own",
-          onclick: () => select("motifs", motif.id),
+          onclick: () => follow("motifs", motif.id),
         }, "Open motif"),
         el("button", {
           type: "button",
@@ -730,6 +764,7 @@ function motifDetail(entry) {
   // A control structure is what clears risk patterns, never what raises them.
   const asControl = entry.control && !risks.length;
   const against = suggestedAgainst(entry);
+  const structure = el("div", { class: "lib-preview large" }, motifPreview(entry));
 
   return [
     hero({
@@ -769,18 +804,8 @@ function motifDetail(entry) {
           tip: "Drawn from the motif's own declaration.",
           body: [
             legend(entry),
-            el("div", { class: "lib-preview large" }, motifPreview(entry)),
-            entry.roles.length
-              ? el("div", { class: "lib-roles" }, [
-                  el("span", { class: "lib-meta-lead" }, "matches on"),
-                  ...entry.roles.map((role) => el("button", {
-                    type: "button",
-                    class: "chip role clickable",
-                    title: "Open this term",
-                    onclick: () => select("terms", role.id),
-                  }, role.label)),
-                ])
-              : null,
+            structure,
+            entry.roles.length ? matchesOn(entry, structure) : null,
           ],
         }),
         relatedMotifsPanel(entry),
@@ -904,7 +929,7 @@ function termTile(entry) {
     type: "button",
     class: `lib-term ${termKind(entry)}` + (unread ? " quiet" : ""),
     title: termReach(entry),
-    onclick: () => select("terms", entry.id),
+    onclick: () => start("terms", entry.id),
   }, [
     el("span", { class: "lib-term-head" }, [
       el("span", { class: "lib-term-name" }, entry.label),
@@ -941,7 +966,7 @@ function usageCard(motif, highlight, inherited) {
     type: "button",
     class: "lib-use" + (inherited ? " inherited" : ""),
     title: (inherited ? "Reached through the term it refines: " : "Names this term: ") + motif.label,
-    onclick: () => select("motifs", motif.id),
+    onclick: () => follow("motifs", motif.id),
   }, [
     el("span", { class: "lib-use-name" }, shortName(motif.label, MOTIF_SUFFIX)),
     el("span", { class: "lib-use-shape" }, motifPreview(motif, { highlight })),
@@ -1013,7 +1038,7 @@ function termDetail(entry) {
                 el("button", {
                   type: "button",
                   class: "chip clickable",
-                  onclick: () => select("terms", parent.id),
+                  onclick: () => follow("terms", parent.id),
                 }, parent.label))),
             })
           : null,
@@ -1186,10 +1211,7 @@ function landingTile(entry, kind) {
   tile.addEventListener(
     "click",
     () =>
-      select(
-        kind,
-        entry.id
-      )
+      start(kind, entry.id)
   );
 
   return tile;
@@ -1341,6 +1363,34 @@ function showTab(next) {
 function groupOf(kind, entry) {
   if (kind === "terms") return entry.shelf || "Unshelved";
   return entry.family ? entry.family.label : "Unshelved";
+}
+
+/* The pages a reader left by following a link inside a page, newest last, so the
+   page they reach can take them back. The rail, a tab and the landing start over. */
+let trail = [];
+
+function start(kind, id) {
+  trail = [];
+  select(kind, id);
+}
+
+function follow(kind, id) {
+  if (selected[tab] && !(tab === kind && selected[tab] === id)) {
+    trail.push({ kind: tab, id: selected[tab] });
+  }
+  select(kind, id);
+}
+
+function goBack() {
+  const previous = trail.pop();
+  if (!previous) return false;
+  select(previous.kind, previous.id);
+  return true;
+}
+
+/* For the browser's Back: steps back to the page a link was followed from. */
+export function libraryBack() {
+  return isLibraryOpen() && goBack();
 }
 
 function select(kind, id) {
@@ -1587,6 +1637,7 @@ export function initLibrary() {
       button.addEventListener(
         "click",
         () => {
+          trail = [];
           showTab(
             button.dataset.libraryTab
           );

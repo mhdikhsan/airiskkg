@@ -354,6 +354,14 @@ label.btn { display: inline-flex; align-items: center; }
   font-size: 11px; color: #aebada; background: #2a3040; border: 1px solid #39415a;
   border-radius: 10px; padding: 1px 9px; min-width: 22px; text-align: center; white-space: nowrap;
 }
+.motif-row { flex-wrap: wrap; }
+/* The annotations behind a match, shown under the row the reader picked. */
+.motif-bindings { display: none; flex: 1 0 100%; font-size: 12px; color: var(--text-dim, #aebada); }
+.motif-row.selected .motif-bindings { display: block; }
+.motif-bindings ul { margin: 4px 0 0; padding-left: 18px; }
+.motif-bindings li { margin: 2px 0; }
+.motif-bindings strong { color: var(--text); font-weight: 600; }
+.motif-binding-via { font-style: italic; }
 
 /* A suggested-mitigation motif chip that can be inserted on click */
 .chip.motif-suggest.clickable { cursor: pointer; }
@@ -2422,6 +2430,8 @@ body.editor-hidden .pane-head { display: none; }
 .lib-use-shape .shape { opacity: 0.55; }
 .lib-use-shape .edge { opacity: 0.6; }
 .lib-use-shape .mp-hl .shape { opacity: 1; stroke: var(--accent); stroke-width: 8; }
+/* The node a hovered "matches elements with the roles" chip asks for. */
+.lib-preview .mp-hl .shape { stroke: var(--accent); stroke-width: 3; }
 
 .library-status {
   flex: 0 0 auto;

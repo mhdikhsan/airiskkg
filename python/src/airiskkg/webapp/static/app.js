@@ -14,7 +14,7 @@ import {
 import { clearDerivedCategories, renderDerivedCategories } from "./panels/dataflow.js";
 import { clearFindings, reReadFindings, renderFindings } from "./panels/findings.js";
 import { renderHistory } from "./panels/history.js";
-import { closeLibrary, initLibrary, isFrontDoor, isLibraryOpen, openLibrary } from "./panels/library.js";
+import { closeLibrary, initLibrary, isFrontDoor, isLibraryOpen, libraryBack, openLibrary } from "./panels/library.js";
 import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
 import { applyConnect, applyDisconnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
 import { openOverview } from "./panels/overview.js";
@@ -231,9 +231,11 @@ async function init() {
   });
 
   /* The browser's Back walks back through the workbench rather than out of it:
-     the overview, then the library, then the level before this one. */
+     the overview, the library page a link was followed from, the library, then
+     the level before this one. */
   const stepBack = () => {
     if (!$("#overview").classList.contains("hidden")) { $("#overview").classList.add("hidden"); return true; }
+    if (libraryBack()) return true;
     if (isLibraryOpen() && !isFrontDoor()) { closeLibrary(); return true; }
     const previous = state.levelTrail.pop();
     if (!previous) return false;

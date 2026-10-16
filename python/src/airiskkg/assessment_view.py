@@ -2,7 +2,7 @@ from __future__ import annotations
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 from airiskkg.assessment_runner import PAIR, AssessmentResult, applicable_controls
 from airiskkg.knowledge_base import graph_fingerprint
-from airiskkg.workbench.terms import domain_of, risk_domains, source_pair
+from airiskkg.workbench.terms import display_label, domain_of, risk_domains, source_pair
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 PROV = Namespace("http://www.w3.org/ns/prov#")
@@ -161,6 +161,16 @@ def _harm_domains(graph: Graph, entries: list[URIRef], domains: set[URIRef]) -> 
     )
 
 
+def _answering_role(graph: Graph, element: URIRef, expected: URIRef | None) -> str | None:
+    """The element's own role that satisfies `expected`, through pair:subRoleOf*."""
+    if expected is None:
+        return None
+    for role in sorted(graph.objects(element, PAIR.playsRole), key=str):
+        if role == expected or expected in set(graph.transitive_objects(role, PAIR.subRoleOf)):
+            return display_label(_label(graph, role))
+    return None
+
+
 def _motif_match_view(graph: Graph, match: URIRef) -> dict:
     motif = graph.value(match, PAIR.matchesMotif)
     bindings = sorted(graph.objects(match, PAIR.hasNodeBinding), key=str)
@@ -173,11 +183,16 @@ def _motif_match_view(graph: Graph, match: URIRef) -> dict:
         if pattern_node is None or matched_element is None:
             continue
         node_ids.append(str(matched_element))
+        expected = graph.value(pattern_node, PAIR.expectedRole)
         bound_elements.append(
             {
                 "patternNode": _local_name(pattern_node),
                 "element": _label(graph, matched_element),
                 "elementId": str(matched_element),
+                # The annotation that bound it: the role the node asks for, and the
+                # element's own role that answers it, which may be a refinement.
+                "role": display_label(_label(graph, expected)) if expected is not None else None,
+                "via": _answering_role(graph, matched_element, expected),
             }
         )
 

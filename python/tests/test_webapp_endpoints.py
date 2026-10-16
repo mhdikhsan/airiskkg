@@ -219,6 +219,18 @@ def test_no_motif_from_the_library_is_flagged_for_its_types(client) -> None:
     assert motifs and not flagged, f"motifs warned about their own types: {flagged}"
 
 
+def test_a_match_says_which_annotation_bound_each_element(client) -> None:
+    """"Matches on" named roles, never which of the reader's own annotations a
+    match rested on, so a refinement bound without anyone seeing why."""
+    ttl = example_path(GRAPH_RAG_NS).read_text(encoding="utf-8")
+    data = client.post("/api/assess", json={"ttl": ttl}).get_json()
+    bound = [b for m in data["motifMatches"] for b in m["boundElements"]]
+    assert bound and all(b["role"] for b in bound), "a binding names no role"
+    assert all(b["via"] for b in bound), "a binding names no annotation of the element"
+    refined = {(b["element"], b["role"], b["via"]) for b in bound if b["via"] != b["role"]}
+    assert ("SPARQL Query Template", "User Input", "Rewritten Query") in refined, refined
+
+
 def test_assess_endpoint_still_works(client) -> None:
     ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     response = client.post("/api/assess", json={"ttl": ttl})
