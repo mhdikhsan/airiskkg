@@ -755,9 +755,11 @@ function sequenceArrow(parent, from, to, flow) {
     "marker-end": "url(#pc-arrow)",
   }, group);
   wireConnector(group, orthPath(points), flow.id, picked, points);
-  // A default flow carries a tick through its tail; a conditional one a diamond.
+  // A default flow carries a tick through its tail; a conditional one a diamond,
+  // but only out of an activity: a gateway's branches carry their condition plain.
   const start = points[0];
   const after = points[1];
+  const fromGateway = (index.get(flow.source) || {}).shape === "gateway";
   if (flow.default) {
     const dx = Math.sign(after.x - start.x) || 0;
     const dy = Math.sign(after.y - start.y) || 0;
@@ -766,7 +768,7 @@ function sequenceArrow(parent, from, to, flow) {
         + `L ${start.x + dx * 12 + 4 - dy * 4} ${start.y + dy * 12 + 4 + dx * 4}`,
       class: "pc-flow-tick",
     }, group);
-  } else if (flow.condition) {
+  } else if (flow.condition && !fromGateway) {
     const dx = Math.sign(after.x - start.x) || 0;
     const dy = Math.sign(after.y - start.y) || 0;
     const cx = start.x + dx * 7;
@@ -777,8 +779,8 @@ function sequenceArrow(parent, from, to, flow) {
       class: "pc-flow-diamond",
     }, group);
   }
-  /* On the longest segment of the route. */
-  const caption = flow.label;
+  /* On the longest segment of the route; a branch with no name shows its condition. */
+  const caption = flow.label || flow.condition;
   if (caption) {
     let best = null;
     for (let i = 1; i < points.length; i += 1) {
@@ -1522,6 +1524,9 @@ const GATEWAY_KINDS = [
   ["complexGateway", "Complex"],
 ];
 
+// The gateways whose branches are chosen by a condition.
+const CONDITIONAL_GATEWAYS = new Set(["exclusiveGateway", "inclusiveGateway", "complexGateway"]);
+
 /* Mirrors NO_INCOMING / NO_OUTGOING in routes/graph.py, which refuses the same. */
 const SEQUENCE_FLOW_RULES = [
   { kind: "startEvent", end: "target",
@@ -1570,6 +1575,19 @@ function showNodeDetail(item, ev) {
   }).join("");
   const blockedNote = [...new Set([...blocked].filter(([value]) => value !== item.kind)
     .map(([, why]) => why))].join(" ");
+  // A gateway's branches are named where the decision is, not only on each line.
+  const branches = isEvent ? [] : (data.sequenceFlows || []).filter((f) => f.source === item.id);
+  const decides = CONDITIONAL_GATEWAYS.has(item.kind);
+  const branchRows = branches.map((f) => {
+    const to = index.get(f.target);
+    return `<div class="nd-row nd-branch">
+      <span title="${escapeHtml(to ? to.label : "")}">→ ${escapeHtml(truncate(to ? to.label || humanKind(to.kind) : "?", 14))}</span>
+      <input type="text" class="pd-branch-name" data-flow="${escapeHtml(f.id)}"
+             placeholder="yes, no" value="${escapeHtml(f.label || "")}" />
+      ${decides ? `<input type="text" class="pd-branch-when" data-flow="${escapeHtml(f.id)}"
+             placeholder="when, in words" value="${escapeHtml(f.condition || "")}" />` : ""}
+    </div>`;
+  }).join("");
   panel.innerHTML = `
     <div class="nd-head">${escapeHtml(isEvent ? "event" : "gateway")}</div>
     <label class="nd-row"><span>Name</span>
@@ -1588,11 +1606,13 @@ function showNodeDetail(item, ev) {
     ${interruptLabel ? `<label class="nd-row nd-check">
       <span>${interruptLabel}</span>
       <input type="checkbox" id="pd-interrupt"${item.interrupting !== false ? " checked" : ""} /></label>` : ""}
+    ${branches.length ? `<p class="nd-note">Branches: name each one${decides
+      ? ", and say when it is taken" : ""}</p>${branchRows}` : ""}
     <div class="nd-actions">
       <button type="button" class="btn small primary" id="pd-apply">Apply</button>
       <button type="button" class="btn small" id="pd-delete">Delete</button>
     </div>`;
-  placePanel(panel, ev, 220);
+  placePanel(panel, ev, 220 + branches.length * 34);
 
   const select = panel.querySelector("#pd-def");
   if (select) {
@@ -1609,12 +1629,24 @@ function showNodeDetail(item, ev) {
     const definitions = isEvent
       ? [...panel.querySelectorAll("#pd-defs input:checked")].map((box) => box.value) : [];
     const interrupting = panel.querySelector("#pd-interrupt");
+    const named = [...panel.querySelectorAll(".pd-branch-name")]
+      .map((input) => [input.dataset.flow, input.value.trim()]);
+    const when = [...panel.querySelectorAll(".pd-branch-when")]
+      .map((input) => [input.dataset.flow, input.value.trim()]);
     closeDetail();
     await onEdit("set-node-type", {
       element: item.id, kind, definition, definitions, label,
       // Left out when the panel did not ask, so the server keeps what is there.
       interrupting: interrupting ? interrupting.checked : undefined,
     });
+    for (const [flow, text] of named) {
+      const was = branches.find((f) => f.id === flow);
+      if (text !== ((was && was.label) || "")) await onEdit("rename", { element: flow, label: text });
+    }
+    for (const [flow, text] of when) {
+      const was = branches.find((f) => f.id === flow);
+      if (text !== ((was && was.condition) || "")) await onEdit("set-condition", { flow, text });
+    }
   });
   panel.querySelector("#pd-delete").addEventListener("click", async () => {
     closeDetail();
@@ -2592,6 +2624,8 @@ const PALETTE = [
     label: "Message catch", hint: "Waits for a message part-way through" },
   { group: "Events", op: "add-event", kind: "intermediateThrowEvent", definition: "message",
     label: "Message throw", hint: "Sends a message part-way through" },
+  { group: "Events", op: "add-event", kind: "intermediateCatchEvent", definition: "timer",
+    label: "Timer catch", hint: "Waits for a time or a delay part-way through" },
   { group: "Events", op: "add-event", kind: "endEvent", label: "End",
     hint: "Where this path of the process finishes" },
   { group: "Events", op: "add-event", kind: "endEvent", definition: "error",

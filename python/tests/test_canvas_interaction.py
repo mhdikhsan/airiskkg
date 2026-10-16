@@ -3526,3 +3526,75 @@ def test_a_store_read_and_written_by_one_step_is_drawn_both_ways(scene_restored)
         .map((t) => t.textContent).filter((t) => t.startsWith('Tickets'))""", [], tries=40)
     assert any("read by Update ticket" in t for t in titles), titles
     assert any("written by Update ticket" in t for t in titles), titles
+
+
+_XOR = """(async () => {
+    const post = async (body) => (await (await fetch("/api/process-edit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body) })).json());
+    let r = await post({ ttl: "", op: "add-pool", label: "Desk" });
+    const pool = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool, label: "Check request" });
+    const check = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-gateway", kind: "exclusiveGateway", pool, label: "Valid?" });
+    const gw = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool, label: "Answer" });
+    const answer = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool, label: "Reject" });
+    const reject = r.newId;
+    r = await post({ ttl: r.ttl, op: "connect", source: check, target: gw });
+    r = await post({ ttl: r.ttl, op: "connect", source: gw, target: answer });
+    r = await post({ ttl: r.ttl, op: "connect", source: gw, target: reject });
+    window.PairAI.Editor.setValue(r.ttl);
+    return { gw };
+})()"""
+
+
+def test_an_xor_gateway_names_its_branches_where_it_decides(scene_restored) -> None:
+    """A branch's condition could only be set by clicking its thin line, was
+    then shown in no caption, and drew the conditional diamond BPMN keeps for a
+    flow out of an activity."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_XOR))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, f"!!document.querySelector('#process-canvas [data-node=\"{ids['gw']}\"]')",
+            False, tries=40)
+    _clear_the_business_canvas(loop, handle)
+    at = _spot(loop, handle,
+               f"document.querySelector('#process-canvas [data-node=\"{ids['gw']}\"] .pc-gate-box')")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    rows = loop.run_until_complete(handle.js("""(() => {
+        const panel = document.querySelector('#process-detail');
+        const names = panel.querySelectorAll('.pd-branch-name');
+        const whens = panel.querySelectorAll('.pd-branch-when');
+        if (names.length !== 2 || whens.length !== 2) return { names: names.length, whens: whens.length };
+        names[0].value = 'yes';
+        names[1].value = 'no';
+        whens[1].value = 'anything is missing';
+        return { names: 2, whens: 2 };
+    })()"""))
+    assert rows == {"names": 2, "whens": 2}, f"the gateway editor lists {rows}"
+    apply = _spot(loop, handle, "document.querySelector('#process-detail #pd-apply')")
+    loop.run_until_complete(handle.click(apply["x"], apply["y"]))
+    seen = _settle(loop, handle, """(() => {
+        const labels = [...document.querySelectorAll('#process-canvas .pc-flow-label')]
+            .map((l) => l.textContent).sort();
+        return labels.length === 2 ? { labels,
+            diamonds: document.querySelectorAll('#process-canvas .pc-flow-diamond').length,
+            stored: window.PairAI.Editor.getValue().includes('anything is missing') } : null;
+    })()""", None, tries=40)
+
+    assert seen, "the branches were not labelled"
+    assert seen["labels"] == ["no", "yes"]
+    assert seen["stored"], "the condition was not written"
+    assert seen["diamonds"] == 0, "a gateway's branch is drawn as a conditional flow out of an activity"
+
+
+def test_the_palette_offers_an_intermediate_timer(page) -> None:
+    """Message catch and throw were the only events offered part-way through."""
+    loop, handle = page
+    _back_to_business(loop, handle)
+    _open_palette(loop, handle)
+    offered = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#process-palette .pp-item')].map((b) => b.textContent.trim())"))
+    assert "Timer catch" in offered, offered

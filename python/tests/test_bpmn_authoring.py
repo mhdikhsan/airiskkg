@@ -342,6 +342,16 @@ def test_a_move_writes_only_terms_sbpmn_declares(client) -> None:
     assert not sbpmn_violations(_graph(ttl))
 
 
+def test_an_intermediate_timer_waits_part_way_through(client, process_ttl) -> None:
+    """The palette's Timer catch: a catching intermediate event with a timer."""
+    before = view(client, process_ttl)["events"]
+    ttl = edit(client, process_ttl, "add-event", pool=CHATBOT_POOL,
+               kind="intermediateCatchEvent", definition="timer")
+    event = added(before, view(client, ttl)["events"])
+    assert (event["kind"], event["definition"]) == ("intermediateCatchEvent", "timer")
+    assert not sbpmn_violations(_graph(ttl))
+
+
 def test_a_lane_of_another_participant_is_refused(client) -> None:
     ttl, ids = _laned(client)
     response = client.post("/api/process-edit", json={
