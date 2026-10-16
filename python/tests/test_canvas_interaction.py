@@ -3598,3 +3598,37 @@ def test_the_palette_offers_an_intermediate_timer(page) -> None:
     offered = loop.run_until_complete(handle.js(
         "[...document.querySelectorAll('#process-palette .pp-item')].map((b) => b.textContent.trim())"))
     assert "Timer catch" in offered, offered
+
+
+def test_the_input_contract_panel_checks_the_bpmn_too(scene_restored) -> None:
+    """Nothing told a modeller that an end event with a flow out of it is not BPMN."""
+    loop, handle = scene_restored
+    broken = chr(10).join([
+        "@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .",
+        "@prefix bp: <https://sBPMN.github.io/2.0/properties#> .",
+        "@prefix ex: <http://example.org/badflow#> .",
+        'ex:A a bpmn:participant ; bp:name "Desk" ; bp:processRef ex:P .',
+        "ex:P a bpmn:process ; bp:contains ex:s, ex:t, ex:e .",
+        'ex:s a bpmn:startEvent ; bp:name "Begin" .',
+        'ex:t a bpmn:task ; bp:name "Answer" .',
+        'ex:e a bpmn:endEvent ; bp:name "Done" .',
+        "ex:f1 a bpmn:sequenceFlow ; bp:sourceRef ex:s ; bp:targetRef ex:t .",
+        "ex:f2 a bpmn:sequenceFlow ; bp:sourceRef ex:t ; bp:targetRef ex:e .",
+        "ex:f3 a bpmn:sequenceFlow ; bp:sourceRef ex:e ; bp:targetRef ex:t .",
+    ])
+    try:
+        loop.run_until_complete(handle.js(
+            """document.querySelector('[data-drawer-tab="validation"]').click(); 1"""))
+        loop.run_until_complete(handle.js(
+            "window.PairAI.Editor.setValue(" + json.dumps(broken) + "); 1"))
+        row = _settle(loop, handle, """(() => {
+            const r = [...document.querySelectorAll('#validation-list .validation-row')]
+                .find((x) => x.textContent.includes('is an end event'));
+            return r ? { text: r.textContent, violation: r.classList.contains('violation') } : null;
+        })()""", None, tries=40)
+    finally:
+        loop.run_until_complete(handle.js(
+            """document.querySelector('[data-drawer-tab="findings"]').click(); 1"""))
+
+    assert row, "the panel says nothing about an end event a flow leaves"
+    assert row["violation"] and "BPMN" in row["text"], row

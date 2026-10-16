@@ -26,10 +26,19 @@ def guidance_shape_ids() -> frozenset[str]:
 
 
 @lru_cache(maxsize=1)
+def process_shape_ids() -> frozenset[str]:
+    """Which shapes come from process_input_contract.ttl: BPMN, not the architecture."""
+    contract = Graph()
+    contract.parse(SHACL_DIR / "process_input_contract.ttl", format="turtle")
+    return frozenset(str(s) for s in set(contract.subjects()))
+
+
+@lru_cache(maxsize=1)
 def shapes_and_ontology() -> tuple[Graph, Graph]:
     shapes = Graph()
     shapes.parse(SHACL_DIR / "architecture_input_contract.ttl", format="turtle")
     shapes.parse(SHACL_DIR / "annotation_guidance.ttl", format="turtle")
+    shapes.parse(SHACL_DIR / "process_input_contract.ttl", format="turtle")
     ontology = Graph()
     for name in ("beam_core.ttl", "beam_core_risk.ttl", "pair_ai_pattern.ttl"):
         ontology.parse(CORE_DIR / name, format="turtle")
@@ -92,6 +101,7 @@ def shacl_report(ttl: str) -> dict:
                 # Says which of the two questions this answers, so a caller
                 # can act on one without acting on the other.
                 "guidance": str(shape) in guidance if shape is not None else False,
+                "process": str(shape) in process_shape_ids() if shape is not None else False,
             }
             if str(shape) == _LEAF_SHAPE and isinstance(focus, URIRef):
                 item["message"], item["fix"] = _leaf_type_advice(data, ontology, focus)

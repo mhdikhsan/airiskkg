@@ -1,6 +1,7 @@
 import { postJson } from "../core/api.js";
 import { $, el } from "../core/dom.js";
 import { openDrawer } from "../core/drawer.js";
+import { revealInSource } from "../core/source.js";
 import { setStatus } from "../core/status.js";
 import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
@@ -29,12 +30,17 @@ function fixRow(item) {
 function validationRow(item, severity) {
   const row = el("div", { class: `validation-row ${severity}` }, [
     el("span", { class: "sev" }, severity === "violation" ? "Violation" : "Warning"),
+    item.process
+      ? el("span", { class: "chip", title: "About the business process: BPMN syntax" }, "BPMN")
+      : null,
     el("span", { class: "msg" }, item.message),
   ]);
   if (item.focusNode) {
     row.appendChild(el("code", { class: "focus", title: item.focusNode },
       item.focusLabel || item.focusNode.split(/[#/]/).pop()));
-    row.addEventListener("click", () => GraphView.setHighlight([item.focusNode]));
+    // A process element is not on the architecture canvas; its line in the editor is.
+    row.addEventListener("click", () => (item.process
+      ? revealInSource([item.focusNode]) : GraphView.setHighlight([item.focusNode])));
   }
   if (item.fix && item.focusNode) row.appendChild(fixRow(item));
   return row;

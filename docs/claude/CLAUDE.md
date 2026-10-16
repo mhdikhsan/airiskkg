@@ -1105,9 +1105,15 @@ path. New taxonomy files need no wiring: `load_base_graph` globs `ontology/taxon
 
 ### Contracts
 
-`shacl/` answers three different questions:
+`shacl/` answers four different questions:
 
 - `architecture_input_contract.ttl` — is this graph acceptable? (Violations)
+- `process_input_contract.ttl` — is the business process well-formed BPMN? Violations for
+  the rules the editor also enforces (no sequence flow into a start or boundary event or out
+  of an end event, none between participants, no message flow inside one); warnings for
+  practice (a process with no start or end event, a step nothing leads into or nothing
+  leaves). Added 2026-10-16; all tracked scenes conform with no warning. It reaches the
+  Input contract panel tagged BPMN, and **no assessment reads it**.
 - `assessment_output_contract.ttl` — are emitted findings well formed?
 - `annotation_guidance.ttl` — will this annotation actually match anything?
 

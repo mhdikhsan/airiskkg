@@ -1,0 +1,203 @@
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix pic:  <http://w3id.org/airiskkg/shacl/process-input-contract#> .
+
+<http://w3id.org/airiskkg/shacl/process-input-contract>
+    a owl:Ontology ;
+    dct:title "PAIR-AI Business Process Input Contract"@en ;
+    sh:declare [ sh:prefix "bpmn" ; sh:namespace "https://sBPMN.github.io/2.0/classes#"^^xsd:anyURI ] ,
+               [ sh:prefix "bp" ; sh:namespace "https://sBPMN.github.io/2.0/properties#"^^xsd:anyURI ] ,
+               [ sh:prefix "rdf" ; sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ] .
+
+# Is this business process well-formed BPMN? Violations break a BPMN rule; warnings
+# are modelling practice. A name falls back to the part of the IRI after '#'.
+
+pic:StartEventHasNoIncomingFlowShape
+    a sh:NodeShape ;
+    sh:targetClass bpmn:startEvent ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "\"{?name}\" is a start event, so no sequence flow may lead into it. Remove the flow from \"{?other}\", or make it an intermediate event." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/process-input-contract> ;
+        sh:select """
+            SELECT DISTINCT $this ?name ?other WHERE {
+                ?flow a bpmn:sequenceFlow ; bp:targetRef $this ; bp:sourceRef ?from .
+                OPTIONAL { $this bp:name ?n }
+                OPTIONAL { ?from bp:name ?fn }
+                BIND(COALESCE(?n, IF(CONTAINS(STR($this), "#"), STRAFTER(STR($this), "#"), STR($this))) AS ?name)
+                BIND(COALESCE(?fn, IF(CONTAINS(STR(?from), "#"), STRAFTER(STR(?from), "#"), STR(?from))) AS ?other)
+            }
+        """ ;
+    ] .
+
+pic:BoundaryEventHasNoIncomingFlowShape
+    a sh:NodeShape ;
+    sh:targetClass bpmn:boundaryEvent ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "\"{?name}\" sits on an activity's edge, so no sequence flow may lead into it. Remove the flow from \"{?other}\"." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/process-input-contract> ;
+        sh:select """
+            SELECT DISTINCT $this ?name ?other WHERE {
+                ?flow a bpmn:sequenceFlow ; bp:targetRef $this ; bp:sourceRef ?from .
+                OPTIONAL { $this bp:name ?n }
+                OPTIONAL { ?from bp:name ?fn }
+                BIND(COALESCE(?n, IF(CONTAINS(STR($this), "#"), STRAFTER(STR($this), "#"), STR($this))) AS ?name)
+                BIND(COALESCE(?fn, IF(CONTAINS(STR(?from), "#"), STRAFTER(STR(?from), "#"), STR(?from))) AS ?other)
+            }
+        """ ;
+    ] .
+
+pic:EndEventHasNoOutgoingFlowShape
+    a sh:NodeShape ;
+    sh:targetClass bpmn:endEvent ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "\"{?name}\" is an end event, so no sequence flow may leave it. Remove the flow to \"{?other}\", or make it an intermediate event." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/process-input-contract> ;
+        sh:select """
+            SELECT DISTINCT $this ?name ?other WHERE {
+                ?flow a bpmn:sequenceFlow ; bp:sourceRef $this ; bp:targetRef ?to .
+                OPTIONAL { $this bp:name ?n }
+                OPTIONAL { ?to bp:name ?tn }
+                BIND(COALESCE(?n, IF(CONTAINS(STR($this), "#"), STRAFTER(STR($this), "#"), STR($this))) AS ?name)
+                BIND(COALESCE(?tn, IF(CONTAINS(STR(?to), "#"), STRAFTER(STR(?to), "#"), STR(?to))) AS ?other)
+            }
+        """ ;
+    ] .
+
+pic:SequenceFlowStaysInOneParticipantShape
+    a sh:NodeShape ;
+    sh:targetClass bpmn:sequenceFlow ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The sequence flow from \"{?name}\" to \"{?other}\" crosses between participants. Between participants, use a message flow." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/process-input-contract> ;
+        sh:select """
+            SELECT DISTINCT $this ?name ?other WHERE {
+                $this bp:sourceRef ?from ; bp:targetRef ?to .
+                ?one a bpmn:process ; bp:contains+ ?from .
+                ?two a bpmn:process ; bp:contains+ ?to .
+                FILTER(?one != ?two)
+                OPTIONAL { ?from bp:name ?fn }
+                OPTIONAL { ?to bp:name ?tn }
+                BIND(COALESCE(?fn, IF(CONTAINS(STR(?from), "#"), STRAFTER(STR(?from), "#"), STR(?from))) AS ?name)
+                BIND(COALESCE(?tn, IF(CONTAINS(STR(?to), "#"), STRAFTER(STR(?to), "#"), STR(?to))) AS ?other)
+            }
+        """ ;
+    ] .
+
+pic:MessageFlowJoinsTwoParticipantsShape
+    a sh:NodeShape ;
+    sh:targetClass bpmn:messageFlow ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The message flow from \"{?name}\" to \"{?other}\" stays inside one participant. Inside a participant, steps follow each other by a sequence flow." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/process-input-contract> ;
+        sh:select """
+            SELECT DISTINCT $this ?name ?other WHERE {
+                $this bp:sourceRef ?from ; bp:targetRef ?to .
+                ?process a bpmn:process ; bp:contains+ ?from .
+                ?process bp:contains+ ?to .
+                OPTIONAL { ?from bp:name ?fn }
+                OPTIONAL { ?to bp:name ?tn }
+                BIND(COALESCE(?fn, IF(CONTAINS(STR(?from), "#"), STRAFTER(STR(?from), "#"), STR(?from))) AS ?name)
+                BIND(COALESCE(?tn, IF(CONTAINS(STR(?to), "#"), STRAFTER(STR(?to), "#"), STR(?to))) AS ?other)
+            }
+        """ ;
+    ] .
+
+# Modelling practice: say where a process begins and ends, and join every step up.
+# A participant's name is what the canvas shows, so it names the process.
+
+pic:ProcessHasAStartEventShape
+    a sh:NodeShape ;
+    sh:targetClass bpmn:process ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "\"{?name}\" has no start event, so nothing says where its process begins. Add a Start event from the palette before its first step." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/process-input-contract> ;
+        sh:select """
+            SELECT DISTINCT $this ?name WHERE {
+                $this bp:contains ?step .
+                ?step a ?kind .
+                FILTER(?kind IN (bpmn:task, bpmn:userTask, bpmn:manualTask, bpmn:serviceTask,
+                    bpmn:scriptTask, bpmn:sendTask, bpmn:receiveTask, bpmn:businessRuleTask,
+                    bpmn:subProcess, bpmn:callActivity, bpmn:transaction, bpmn:adHocSubProcess))
+                FILTER NOT EXISTS { $this bp:contains ?start . ?start a bpmn:startEvent . }
+                OPTIONAL { ?pool bp:processRef $this ; bp:name ?pn }
+                OPTIONAL { $this bp:name ?n }
+                BIND(COALESCE(?pn, ?n, IF(CONTAINS(STR($this), "#"), STRAFTER(STR($this), "#"), STR($this))) AS ?name)
+            }
+        """ ;
+    ] .
+
+pic:ProcessHasAnEndEventShape
+    a sh:NodeShape ;
+    sh:targetClass bpmn:process ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "\"{?name}\" has no end event, so nothing says where its process finishes. Add an End event from the palette after its last step." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/process-input-contract> ;
+        sh:select """
+            SELECT DISTINCT $this ?name WHERE {
+                $this bp:contains ?step .
+                ?step a ?kind .
+                FILTER(?kind IN (bpmn:task, bpmn:userTask, bpmn:manualTask, bpmn:serviceTask,
+                    bpmn:scriptTask, bpmn:sendTask, bpmn:receiveTask, bpmn:businessRuleTask,
+                    bpmn:subProcess, bpmn:callActivity, bpmn:transaction, bpmn:adHocSubProcess))
+                FILTER NOT EXISTS { $this bp:contains ?end . ?end a bpmn:endEvent . }
+                OPTIONAL { ?pool bp:processRef $this ; bp:name ?pn }
+                OPTIONAL { $this bp:name ?n }
+                BIND(COALESCE(?pn, ?n, IF(CONTAINS(STR($this), "#"), STRAFTER(STR($this), "#"), STR($this))) AS ?name)
+            }
+        """ ;
+    ] .
+
+# Only where the process has a start and an end event: without them a step with no
+# flow in or out is the process's own beginning or end, which the warnings above cover.
+pic:StepIsJoinedUpShape
+    a sh:NodeShape ;
+    sh:targetClass bpmn:task, bpmn:userTask, bpmn:manualTask, bpmn:serviceTask, bpmn:scriptTask,
+        bpmn:sendTask, bpmn:receiveTask, bpmn:businessRuleTask, bpmn:subProcess, bpmn:callActivity,
+        bpmn:transaction, bpmn:adHocSubProcess, bpmn:exclusiveGateway, bpmn:parallelGateway,
+        bpmn:inclusiveGateway, bpmn:eventBasedGateway, bpmn:complexGateway,
+        bpmn:intermediateCatchEvent, bpmn:intermediateThrowEvent ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "\"{?name}\" {?gap}" ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/process-input-contract> ;
+        sh:select """
+            SELECT DISTINCT $this ?name ?gap WHERE {
+                ?process a bpmn:process ; bp:contains $this .
+                ?process bp:contains ?start . ?start a bpmn:startEvent .
+                ?process bp:contains ?end . ?end a bpmn:endEvent .
+                FILTER NOT EXISTS { $this bp:triggeredByEvent true }
+                FILTER NOT EXISTS { $this bp:isForCompensation true }
+                {
+                    FILTER NOT EXISTS { ?in a bpmn:sequenceFlow ; bp:targetRef $this . }
+                    BIND("has no sequence flow leading into it. Join it to the step before it." AS ?gap)
+                }
+                UNION
+                {
+                    FILTER NOT EXISTS { ?out a bpmn:sequenceFlow ; bp:sourceRef $this . }
+                    BIND("has no sequence flow leaving it. Join it to the next step, or to an end event." AS ?gap)
+                }
+                OPTIONAL { $this bp:name ?n }
+                BIND(COALESCE(?n, IF(CONTAINS(STR($this), "#"), STRAFTER(STR($this), "#"), STR($this))) AS ?name)
+            }
+        """ ;
+    ] .
