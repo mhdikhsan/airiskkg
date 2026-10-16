@@ -2357,6 +2357,67 @@ function fit() {
   return true;
 }
 
+function poolOf(id) {
+  const pool = lastPools.find((p) => (p.members || [])
+    .some((m) => m.id === id || (m.boundary || []).includes(id)));
+  return pool ? pool.participant.id : null;
+}
+
+/* What a move to `target` would leave that BPMN does not allow, in words, or "". */
+function brokenByMove(id, target) {
+  const moving = new Set([id, ...((index.get(id) || {}).boundary || [])]);
+  const other = (f) => (moving.has(f.source) ? f.target : f.source);
+  const touches = (f) => moving.has(f.source) || moving.has(f.target);
+  const crossing = (data.sequenceFlows || []).filter((f) => touches(f) && !moving.has(other(f))).length;
+  const joining = (data.messageFlows || []).filter((f) => touches(f) && poolOf(other(f)) === target).length;
+  const parts = [];
+  if (crossing) parts.push(`${crossing} sequence flow${crossing > 1 ? "s" : ""} would cross between participants`);
+  if (joining) parts.push(`${joining} message flow${joining > 1 ? "s" : ""} would stay inside one participant`);
+  return parts.join(" and ");
+}
+
+/* A step dropped in another lane or participant is moved there, keeping its id
+   and its flows; dropped in its own lane, the drag stays a nudge of the drawing. */
+function bandGeometry() {
+  return lastPools.map((p) => ({
+    participant: p.participant, collapsed: p.collapsed, x: p.x, y: p.y, w: p.w, h: p.h,
+    lanes: (p.lanes || []).map((l) => ({ id: l.id, implicit: l.implicit, y: l.y, h: l.h })),
+  }));
+}
+
+async function moveToBandAt(id, ev, pools = bandGeometry()) {
+  const item = index.get(id);
+  if (!item || !onEdit || item.parent || item.kind === "boundaryEvent") return;
+  if (!["activity", "event", "gateway"].includes(item.shape)) return;
+  const at = svgPoint(ev.clientX, ev.clientY);
+  const pool = pools.find((p) => !p.collapsed
+    && at.x >= p.x && at.x <= p.x + p.w && at.y >= p.y && at.y <= p.y + p.h);
+  const from = poolOf(id);
+  if (!pool || !from) return;
+  const band = (pool.lanes || []).find((b) => !b.implicit && at.y >= b.y && at.y <= b.y + b.h);
+  const laneNow = (data.lanes || []).find((lane) => (lane.members || []).includes(id));
+  const lane = band ? band.id : null;
+  if (pool.participant.id === from && (!band || lane === (laneNow ? laneNow.id : null))) return;
+
+  let convert = false;
+  if (pool.participant.id !== from) {
+    const broken = brokenByMove(id, pool.participant.id);
+    if (broken && !window.confirm(`Moving "${item.label || "this step"}" to "${pool.participant.label}":`
+      + ` ${broken}, which BPMN does not allow.\n\nTurn them into the other kind`
+      + " (sequence flow ⇄ message flow) and move it?")) {
+      manualPositions.delete(id);
+      redraw();
+      return;
+    }
+    convert = Boolean(broken);
+  }
+  // Laid out afresh in its new band, not left where the pointer let go of it.
+  manualPositions.delete(id);
+  await onEdit("move-node", {
+    element: id, pool: pool.participant.id, lane, ...(convert ? { convert: true } : {}),
+  });
+}
+
 /* Zoom about the centre; above 1 zooms in. Clamped like the wheel. */
 function zoomBy(factor) {
   if (!svg) return;
@@ -2420,6 +2481,8 @@ function initPanZoom() {
       node: drawnAt ? box : null,
       nodeFrom: drawnAt ? svgPoint(ev.clientX, ev.clientY) : null,
       nodeOrigin: drawnAt ? { x: drawnAt.x, y: drawnAt.y } : null,
+      // Where the lanes stood before the drag: a lane grows to hold a box dragged in it.
+      layoutAtStart: drawnAt ? bandGeometry() : null,
       band: bands && bands.length > 1 ? { id: bandId, bands, index: null } : null,
       moved: false,
     };
@@ -2460,6 +2523,8 @@ function initPanZoom() {
   const release = (ev) => {
     if (connecting) endConnect(ev);
     const dropped = pan && pan.moved && pan.band ? pan.band : null;
+    const movedNode = pan && pan.moved && pan.node ? pan.node : null;
+    if (movedNode && ev.type === "pointerup") moveToBandAt(movedNode, ev, pan.layoutAtStart);
     if (pan && pan.moved) {
       svg.querySelectorAll(".pc-band-drop").forEach((mark) => mark.remove());
       svg.classList.remove("panning", "dragging-node", "dragging-band");

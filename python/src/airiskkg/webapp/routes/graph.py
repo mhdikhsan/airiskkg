@@ -485,6 +485,64 @@ def _kind_of(data: Graph, node: URIRef) -> str | None:
     return None
 
 
+def _flow_kind(data: Graph, node: URIRef) -> str | None:
+    for kind in data.objects(node, RDF.type):
+        name = str(kind).removeprefix(str(BPMN))
+        if name in FLOW_NODE_KINDS:
+            return name
+    return None
+
+
+# What a message flow may not start or end on, read with the rules above.
+CANNOT_SEND = {"startEvent", "intermediateCatchEvent", "boundaryEvent", *GATEWAY_KINDS}
+CANNOT_RECEIVE = {"endEvent", "intermediateThrowEvent", *GATEWAY_KINDS}
+
+
+def _as_message_error(data: Graph, flow: URIRef) -> str | None:
+    """Why this sequence flow cannot become a message flow, or None."""
+    source, target = data.value(flow, BP.sourceRef), data.value(flow, BP.targetRef)
+    if _flow_kind(data, source) in CANNOT_SEND or _flow_kind(data, target) in CANNOT_RECEIVE:
+        return (f'The flow from "{_named(data, source)}" to "{_named(data, target)}" cannot become'
+                " a message flow: a message is sent by a task or a throwing event and received"
+                " by a task or a catching event, never by a gateway.")
+    return None
+
+
+def _as_sequence_error(data: Graph, flow: URIRef) -> str | None:
+    """Why this message flow cannot become a sequence flow, or None."""
+    source, target = data.value(flow, BP.sourceRef), data.value(flow, BP.targetRef)
+    into, out_of = _kind_of(data, target), _kind_of(data, source)
+    if into in NO_INCOMING:
+        return NO_INCOMING[into]
+    if out_of in NO_OUTGOING:
+        return NO_OUTGOING[out_of]
+    return None
+
+
+def _named(data: Graph, node: URIRef | None) -> str:
+    if node is None:
+        return "?"
+    named = data.value(node, BP.name) or data.value(node, RDFS.label)
+    return str(named) if named else str(node).rsplit("#", 1)[-1]
+
+
+def _process_of_lane(data: Graph, lane: URIRef) -> URIRef | None:
+    """The process a lane bands, through its lane set or a parent lane's."""
+    seen: set[URIRef] = set()
+    current: URIRef | None = lane
+    while current is not None and current not in seen:
+        seen.add(current)
+        holder = next(iter(data.subjects(BP.contains, current)), None) \
+            or next(iter(data.subjects(BP.lane, current)), None)
+        if holder is None:
+            return None
+        process = data.value(None, BP.laneSet, holder)
+        if process is not None:
+            return process
+        current = data.value(None, BP.childLaneSet, holder)
+    return None
+
+
 DPV = Namespace("https://w3id.org/dpv#")
 
 
@@ -835,6 +893,77 @@ def process_edit() -> object:
         elif loop:
             return jsonify({"error": f"Unknown repetition: {loop}"}), 400
         new_id = activity
+
+    elif op == "move-node":
+        """A step dropped in another lane or participant, keeping its id and flows.
+
+        Across participants a sequence flow would cross pools and a message flow
+        could end up inside one, neither of which BPMN allows. Those are refused
+        unless `convert` asks to turn each into the other kind, and a conversion
+        BPMN does not allow either is refused by name."""
+        element, pool, lane = payload.get("element"), payload.get("pool"), payload.get("lane")
+        if not element or not pool:
+            return jsonify({"error": "move-node needs an element and a participant."}), 400
+        node = URIRef(element)
+        target = _process_of_pool(data, pool)
+        if target is None:
+            return jsonify({"error": "That participant has no process to move a step into."}), 400
+        home = next((p for p in data.subjects(BP.contains, node)
+                     if (p, RDF.type, BPMN.process) in data), None)
+        if home is None:
+            return jsonify({"error": "Only a step that sits directly in a participant can be"
+                            " moved; one inside a sub-process moves with it."}), 400
+        if lane and _process_of_lane(data, URIRef(lane)) != target:
+            return jsonify({"error": "That lane is not in the participant it was dropped on."}), 400
+
+        if target != home:
+            moving = {node, *data.subjects(BP.attachedToRef, node)}
+            touching = [f for end in (BP.sourceRef, BP.targetRef)
+                        for m in moving for f in data.subjects(end, m)]
+            crossing = sorted({f for f in touching if (f, RDF.type, BPMN.sequenceFlow) in data
+                               and not ({data.value(f, BP.sourceRef), data.value(f, BP.targetRef)}
+                                        <= moving)}, key=str)
+            joining = sorted({f for f in touching if (f, RDF.type, BPMN.messageFlow) in data
+                              and target in {_process_of(data, data.value(f, BP.sourceRef)),
+                                             _process_of(data, data.value(f, BP.targetRef))}
+                              - {home}}, key=str)
+            if (crossing or joining) and not payload.get("convert"):
+                return jsonify({"error": f'Moving it to "{_named(data, URIRef(pool))}" leaves'
+                                f" {len(crossing) + len(joining)} flow(s) BPMN does not allow:"
+                                " a sequence flow stays inside one participant, and a message"
+                                " flow joins two. Allow converting them, or move it back."}), 400
+            for flow in crossing:
+                wrong = _as_message_error(data, flow)
+                if wrong:
+                    return jsonify({"error": wrong}), 400
+            for flow in joining:
+                wrong = _as_sequence_error(data, flow)
+                if wrong:
+                    return jsonify({"error": wrong}), 400
+            for flow in crossing:
+                data.remove((flow, RDF.type, BPMN.sequenceFlow))
+                data.add((flow, RDF.type, BPMN.messageFlow))
+                # Named as connect names a new message, or the canvas prints its id.
+                if data.value(flow, BP.name) is None:
+                    data.add((flow, BP.name, Literal("sends")))
+                # A condition belongs to a branch, and a message is not one.
+                for condition in list(data.objects(flow, BP.conditionExpression)):
+                    data.remove((flow, BP.conditionExpression, condition))
+                    data.remove((condition, None, None))
+            for flow in joining:
+                data.remove((flow, RDF.type, BPMN.messageFlow))
+                data.add((flow, RDF.type, BPMN.sequenceFlow))
+                data.remove((flow, BP.name, Literal("sends")))
+                # A collaboration lists its message flows; this one is no longer one.
+                data.remove((None, BP.messageFlow, flow))
+            for moved in moving:
+                data.remove((home, BP.contains, moved))
+                data.add((target, BP.contains, moved))
+        for band in list(data.subjects(BP.flowNodeRef, node)):
+            data.remove((band, BP.flowNodeRef, node))
+        if lane:
+            data.add((URIRef(lane), BP.flowNodeRef, node))
+        new_id = element
 
     elif op == "connect":
         source = payload.get("source")

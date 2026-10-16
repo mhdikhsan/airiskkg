@@ -250,6 +250,106 @@ def test_the_message_handle_refuses_a_step_in_the_same_participant(client) -> No
     assert "two different participants" in response.get_json()["error"]
 
 
+def _laned(client) -> tuple[str, dict]:
+    """Customer with two lanes and a flow inside its front office; a Desk pool."""
+    ttl, ids = "", {}
+    steps = [
+        ("customer", "add-pool", {"label": "Customer"}),
+        ("front", "add-lane", {"pool": "customer", "label": "Front office"}),
+        ("back", "add-lane", {"pool": "customer", "label": "Back office"}),
+        ("desk", "add-pool", {"label": "Desk"}),
+        ("start", "add-event", {"pool": "customer", "lane": "front", "kind": "startEvent"}),
+        ("ask", "add-activity", {"pool": "customer", "lane": "front", "kind": "task", "label": "Ask"}),
+        ("log", "add-activity", {"pool": "customer", "lane": "front", "kind": "task", "label": "Log"}),
+        ("answer", "add-activity", {"pool": "desk", "kind": "task", "label": "Answer"}),
+    ]
+    for key, op, extra in steps:
+        extra = {k: ids.get(v, v) if k in ("pool", "lane") else v for k, v in extra.items()}
+        made = client.post("/api/process-edit", json={"ttl": ttl, "op": op, **extra}).get_json()
+        ttl, ids[key] = made["ttl"], made["newId"]
+    ttl = edit(client, ttl, "connect", source=ids["start"], target=ids["ask"])
+    ttl = edit(client, ttl, "connect", source=ids["ask"], target=ids["log"])
+    return ttl, ids
+
+
+def _graph(ttl: str) -> Graph:
+    return Graph().parse(data=ttl, format="turtle")
+
+
+def test_a_step_moved_to_another_lane_keeps_its_id_and_flows(client) -> None:
+    """Moving a step meant deleting it and drawing it again."""
+    ttl, ids = _laned(client)
+    moved = _graph(edit(client, ttl, "move-node", element=ids["log"], pool=ids["customer"],
+                        lane=ids["back"]))
+    ref = URIRef(PROPS + "flowNodeRef")
+    assert (URIRef(ids["back"]), ref, URIRef(ids["log"])) in moved
+    assert (URIRef(ids["front"]), ref, URIRef(ids["log"])) not in moved
+    assert len(set(moved.subjects(RDF.type, URIRef(CLASSES + "sequenceFlow")))) == 2
+
+
+def test_a_move_that_would_break_a_flow_is_refused_unless_converted(client) -> None:
+    ttl, ids = _laned(client)
+    response = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "move-node", "element": ids["log"], "pool": ids["desk"]})
+    assert response.status_code == 400
+    assert "does not allow" in response.get_json()["error"]
+
+    moved = _graph(edit(client, ttl, "move-node", element=ids["log"], pool=ids["desk"],
+                        convert=True))
+    contains = URIRef(PROPS + "contains")
+    desk_process = moved.value(URIRef(ids["desk"]), URIRef(PROPS + "processRef"))
+    assert (desk_process, contains, URIRef(ids["log"])) in moved
+    messages = set(moved.subjects(RDF.type, URIRef(CLASSES + "messageFlow")))
+    assert len(messages) == 1, "the crossing sequence flow did not become a message flow"
+    assert moved.value(next(iter(messages)), URIRef(PROPS + "name")) is not None
+
+
+def test_a_message_flow_brought_inside_one_pool_becomes_a_sequence_flow(client) -> None:
+    ttl, ids = _laned(client)
+    ttl = edit(client, ttl, "connect", source=ids["log"], target=ids["answer"])
+    moved = _graph(edit(client, ttl, "move-node", element=ids["answer"], pool=ids["customer"],
+                        lane=ids["back"], convert=True))
+    assert not set(moved.subjects(RDF.type, URIRef(CLASSES + "messageFlow")))
+    assert len(set(moved.subjects(RDF.type, URIRef(CLASSES + "sequenceFlow")))) == 3
+
+
+def test_a_conversion_bpmn_does_not_allow_is_refused_by_name(client) -> None:
+    """A start event cannot send a message, so its flow cannot follow it out."""
+    ttl, ids = _laned(client)
+    response = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "move-node", "element": ids["ask"], "pool": ids["desk"],
+        "convert": True})
+    assert response.status_code == 400
+    assert "cannot become a message flow" in response.get_json()["error"]
+
+
+def test_a_boundary_event_moves_with_its_task(client) -> None:
+    ttl, ids = _laned(client)
+    made = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "add-event", "kind": "boundaryEvent", "attachedTo": ids["answer"],
+        "definition": "timer"}).get_json()
+    moved = _graph(edit(client, made["ttl"], "move-node", element=ids["answer"],
+                        pool=ids["customer"], lane=ids["back"]))
+    customer = moved.value(URIRef(ids["customer"]), URIRef(PROPS + "processRef"))
+    assert (customer, URIRef(PROPS + "contains"), URIRef(made["newId"])) in moved
+
+
+def test_a_move_writes_only_terms_sbpmn_declares(client) -> None:
+    ttl, ids = _laned(client)
+    ttl = edit(client, ttl, "move-node", element=ids["log"], pool=ids["desk"], convert=True)
+    ttl = edit(client, ttl, "move-node", element=ids["log"], pool=ids["customer"],
+               lane=ids["back"], convert=True)
+    assert not sbpmn_violations(_graph(ttl))
+
+
+def test_a_lane_of_another_participant_is_refused(client) -> None:
+    ttl, ids = _laned(client)
+    response = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "move-node", "element": ids["answer"], "pool": ids["desk"],
+        "lane": ids["back"]})
+    assert response.status_code == 400
+
+
 def test_a_repetition_marker_survives_the_round_trip(client, process_ttl) -> None:
     after = view(client, edit(client, process_ttl, "set-loop",
                               activity=EC + "DocumentRetrieval", loop="multiParallel"))

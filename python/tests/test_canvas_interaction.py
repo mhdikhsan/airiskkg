@@ -3438,3 +3438,67 @@ def test_a_message_flow_starts_from_the_dot_at_the_bottom_of_a_task(scene_restor
 
     assert shown == "1", "hovering a task does not reveal the message handle"
     assert written, "dragging from the bottom handle to another pool wrote no message flow"
+
+
+_LANED = """(async () => {
+    const post = async (body) => (await (await fetch("/api/process-edit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body) })).json());
+    let r = await post({ ttl: "", op: "add-pool", label: "Customer" });
+    const customer = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-lane", pool: customer, label: "Front office" });
+    const front = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-lane", pool: customer, label: "Back office" });
+    const back = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-pool", label: "Desk" });
+    const desk = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool: customer, lane: front, label: "Ask" });
+    const ask = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool: customer, lane: front, label: "Log" });
+    const log = r.newId;
+    r = await post({ ttl: r.ttl, op: "connect", source: ask, target: log });
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool: desk, label: "Answer" });
+    window.PairAI.Editor.setValue(r.ttl);
+    return { customer, front, back, desk, ask, log };
+})()"""
+
+
+def test_a_step_is_dragged_into_another_lane_and_another_pool(scene_restored) -> None:
+    """Moving a step meant deleting it and drawing it again."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_LANED))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, f"!!document.querySelector('#process-canvas [data-node=\"{ids['log']}\"]')",
+            False, tries=40)
+    _clear_the_business_canvas(loop, handle)
+    # Confirmed without a dialog: a native one would block the headless page.
+    loop.run_until_complete(handle.js("window.__asked = null;"
+                                      " window.confirm = (m) => { window.__asked = m; return true; }; 1"))
+
+    def drag_into(band_id):
+        spots = loop.run_until_complete(handle.js(f"""(() => {{
+            const box = document.querySelector('#process-canvas [data-node="{ids['log']}"] .pc-box')
+                .getBoundingClientRect();
+            const band = document.querySelector('#process-canvas [data-band="' + {json.dumps(band_id)} + '"]')
+                .getBoundingClientRect();
+            return {{ x: Math.round(box.left + box.width / 2), y: Math.round(box.top + box.height / 2),
+                      toX: Math.round(band.left + band.width * 0.75),
+                      toY: Math.round(band.top + band.height / 2) }};
+        }})()"""))
+        loop.run_until_complete(handle.drag(spots["x"], spots["y"], spots["toX"], spots["toY"]))
+        time.sleep(2)
+        return loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+
+    in_back = drag_into(ids["back"])
+    in_desk = drag_into(ids["desk"])
+    asked = loop.run_until_complete(handle.js("window.__asked"))
+
+    from rdflib import Graph, URIRef
+
+    lanes = Graph().parse(data=in_back, format="turtle")
+    joined = (URIRef(ids["back"]), URIRef("https://sBPMN.github.io/2.0/properties#flowNodeRef"),
+              URIRef(ids["log"]))
+    assert joined in lanes, "the step did not join the lane it was dropped in"
+    assert asked and "would cross between participants" in asked, f"the move asked {asked!r}"
+    assert "a bpmn:messageFlow" in in_desk, "the flow left crossing pools was not converted"
+    assert "a bpmn:sequenceFlow" not in in_desk
