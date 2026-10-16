@@ -3370,3 +3370,71 @@ def test_a_motif_match_lists_the_annotations_it_rests_on(scene_restored) -> None
 
     assert seen["shown"], f"picking a match shows nothing about why it matched: {seen}"
     assert seen["items"] and all(" as " in item for item in seen["items"]), seen["items"]
+
+
+_TWO_POOLS = """(async () => {
+    const post = async (body) => (await (await fetch("/api/process-edit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body) })).json());
+    let r = await post({ ttl: "", op: "add-pool", label: "Customer" });
+    const customer = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-pool", label: "Desk" });
+    const desk = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool: customer, label: "Ask" });
+    const ask = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool: desk, label: "Answer" });
+    const answer = r.newId;
+    window.PairAI.Editor.setValue(r.ttl);
+    return { ask, answer };
+})()"""
+
+
+def _clear_the_business_canvas(loop, handle):
+    """Fold the drawer and the palette, which float over the canvas, then fit."""
+    loop.run_until_complete(handle.js("""(() => {
+        if (!document.querySelector('#drawer').classList.contains('collapsed')) {
+            document.querySelector('#drawer-toggle').click();
+        }
+        const palette = document.querySelector('#process-palette');
+        const fold = palette.querySelector('.pp-fold');
+        if (fold && !palette.classList.contains('folded')) fold.click();
+        return 1;
+    })()"""))
+    time.sleep(0.5)
+    loop.run_until_complete(handle.js("window.PairAI.ProcessCanvas.fit(); 1"))
+    time.sleep(0.5)
+
+
+def test_a_message_flow_starts_from_the_dot_at_the_bottom_of_a_task(scene_restored) -> None:
+    """Dragging from the bottom of a task did nothing; a message flow started only
+    from the right-hand dot, which a modeller reads as the sequence flow's."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_TWO_POOLS))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, f"!!document.querySelector('#process-canvas [data-node=\"{ids['answer']}\"]')",
+            False, tries=40)
+    _clear_the_business_canvas(loop, handle)
+    spots = loop.run_until_complete(handle.js(f"""(() => {{
+        const box = (id) => document.querySelector('#process-canvas [data-node="' + id + '"]');
+        const mid = (r) => ({{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }});
+        return {{
+            ask: mid(box({json.dumps(ids["ask"])}).querySelector('.pc-box').getBoundingClientRect()),
+            mail: mid(box({json.dumps(ids["ask"])}).querySelector('.pc-port-message .pc-port-dot')
+                .getBoundingClientRect()),
+            answer: mid(box({json.dumps(ids["answer"])}).querySelector('.pc-box').getBoundingClientRect()),
+        }};
+    }})()"""))
+    loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
+        "type": "mouseMoved", "x": spots["ask"]["x"], "y": spots["ask"]["y"]}))
+    time.sleep(0.3)
+    shown = loop.run_until_complete(handle.js(
+        "getComputedStyle(document.querySelector('#process-canvas .pc-port-message .pc-port-dot'))"
+        ".opacity"))
+    loop.run_until_complete(handle.drag(spots["mail"]["x"], spots["mail"]["y"],
+                                        spots["answer"]["x"] + 40, spots["answer"]["y"]))
+    time.sleep(1.5)
+    written = loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.getValue().includes('a bpmn:messageFlow')"))
+
+    assert shown == "1", "hovering a task does not reveal the message handle"
+    assert written, "dragging from the bottom handle to another pool wrote no message flow"

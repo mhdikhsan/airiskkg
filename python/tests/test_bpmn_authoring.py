@@ -217,6 +217,39 @@ def test_two_black_box_pools_are_joined_by_a_message_flow(client) -> None:
     assert not set(joined.subjects(RDF.type, URIRef(CLASSES + "sequenceFlow")))
 
 
+def _two_pools(client) -> tuple[str, dict]:
+    ttl, ids = "", {}
+    for key, op, extra in (("customer", "add-pool", {"label": "Customer"}),
+                           ("desk", "add-pool", {"label": "Desk"})):
+        made = client.post("/api/process-edit", json={"ttl": ttl, "op": op, **extra}).get_json()
+        ttl, ids[key] = made["ttl"], made["newId"]
+    for key, pool, label in (("ask", "customer", "Ask question"), ("read", "customer", "Read answer"),
+                             ("answer", "desk", "Answer question")):
+        made = client.post("/api/process-edit", json={
+            "ttl": ttl, "op": "add-activity", "kind": "task", "pool": ids[pool],
+            "label": label}).get_json()
+        ttl, ids[key] = made["ttl"], made["newId"]
+    return ttl, ids
+
+
+def test_the_message_handle_joins_two_participants(client) -> None:
+    ttl, ids = _two_pools(client)
+    joined = Graph().parse(data=edit(client, ttl, "connect", source=ids["ask"],
+                                     target=ids["answer"], kind="message"), format="turtle")
+    assert set(joined.subjects(RDF.type, URIRef(CLASSES + "messageFlow")))
+
+
+def test_the_message_handle_refuses_a_step_in_the_same_participant(client) -> None:
+    """BPMN draws a message only between pools; inside one it is a sequence flow,
+    which the right-hand handle draws."""
+    ttl, ids = _two_pools(client)
+    response = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "connect", "source": ids["ask"], "target": ids["read"],
+        "kind": "message"})
+    assert response.status_code == 400
+    assert "two different participants" in response.get_json()["error"]
+
+
 def test_a_repetition_marker_survives_the_round_trip(client, process_ttl) -> None:
     after = view(client, edit(client, process_ttl, "set-loop",
                               activity=EC + "DocumentRetrieval", loop="multiParallel"))

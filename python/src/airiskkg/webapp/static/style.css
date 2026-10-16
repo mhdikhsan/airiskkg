@@ -1403,6 +1403,9 @@ label.btn { display: inline-flex; align-items: center; }
 .pc-event:hover .pc-port-dot,
 .pc-gateway:hover .pc-port-dot,
 .pc-port:hover .pc-port-dot { opacity: 1; }
+/* The message handle at the bottom, dashed like the message flow it starts. */
+.pc-port-message .pc-port-dot { stroke: #6b4fa3; fill: #f3effb; stroke-dasharray: 2 1.5; }
+.pc-flow.pending.message { stroke: #6b4fa3; stroke-dasharray: 6 4; }
 
 .canvas-wrap.business .canvas-empty,
 .canvas-wrap.business .system-badge,

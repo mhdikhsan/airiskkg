@@ -889,6 +889,10 @@ def process_edit() -> object:
         # Two black-box pools have no process at all, and are still two pools.
         home = _process_of(data, source_ref)
         same_process = home is not None and home == _process_of(data, target_ref)
+        if payload.get("kind") == "message" and same_process:
+            return jsonify({"error": "A message flow joins two different participants."
+                            " Drop it on a step in another pool, or use the dot on the"
+                            " right for a sequence flow."}), 400
         if same_process:
             into, out_of = _kind_of(data, target_ref), _kind_of(data, source_ref)
             if into in NO_INCOMING:

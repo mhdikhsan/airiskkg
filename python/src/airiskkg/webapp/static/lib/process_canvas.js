@@ -1087,6 +1087,19 @@ function drawActivity(parent, slot) {
     });
     node("title", {}, dot).textContent = "Drag onto another activity to connect";
 
+    // A message leaves from the bottom, the way BPMN draws it between pools.
+    // Off the centre, where message flows already drawn attach and would cover it.
+    const mail = node("g", { class: "pc-port pc-port-message", cursor: "crosshair" }, group);
+    node("circle", {
+      cx: slot.x + slot.w / 4, cy: slot.y + slot.head, r: PORT_SCREEN_R, class: "pc-port-dot",
+    }, mail);
+    mail.addEventListener("pointerdown", (ev) => {
+      ev.stopPropagation();
+      startConnect(ev, item, slot, "message");
+    });
+    node("title", {}, mail).textContent =
+      "Drag onto a step in another participant to send it a message";
+
     /* Clicking the box selects it and reveals the line that declares it. */
     group.addEventListener("click", (ev) => {
       if (ev.target.closest(".pc-marker, .pc-port, .pc-edit, .pc-risk, .pc-open")) return;
@@ -1396,9 +1409,13 @@ function svgPoint(clientX, clientY) {
   return { x: (clientX - rect.left - view.x) / view.k, y: (clientY - rect.top - view.y) / view.k };
 }
 
-function startConnect(ev, item, slot) {
-  const line = node("path", { class: "pc-flow pending" }, root);
-  connecting = { from: item, slot, line, id: ev.pointerId };
+/* `kind` is "message" from the bottom port; otherwise the pools decide. */
+function startConnect(ev, item, slot, kind = null) {
+  const line = node("path", { class: "pc-flow pending" + (kind ? ` ${kind}` : "") }, root);
+  const from = kind === "message"
+    ? { x: slot.x + slot.w / 4, y: slot.y + (slot.head || slot.h) }
+    : { x: slot.x + slot.w, y: slot.y + (slot.head || slot.h) / 2 };
+  connecting = { from: item, slot, line, id: ev.pointerId, kind, anchor: from };
   // Held for the length of the drag so it survives leaving the port, and
   // released in endConnect - a capture left standing swallows every later
   // click on the canvas.
@@ -1408,14 +1425,13 @@ function startConnect(ev, item, slot) {
 function moveConnect(ev) {
   if (!connecting) return;
   const to = svgPoint(ev.clientX, ev.clientY);
-  const x1 = connecting.slot.x + connecting.slot.w;
-  const y1 = connecting.slot.y + (connecting.slot.head || connecting.slot.h) / 2;
-  connecting.line.setAttribute("d", `M ${x1} ${y1} L ${to.x} ${to.y}`);
+  const { x, y } = connecting.anchor;
+  connecting.line.setAttribute("d", `M ${x} ${y} L ${to.x} ${to.y}`);
 }
 
 async function endConnect(ev) {
   if (!connecting) return;
-  const { from, line, id } = connecting;
+  const { from, line, id, kind } = connecting;
   connecting = null;
   line.remove();
   try { svg.releasePointerCapture(id); } catch (error) { /* already gone */ }
@@ -1426,7 +1442,7 @@ async function endConnect(ev) {
   const group = dropped && dropped.closest("[data-node]");
   const targetId = group && group.getAttribute("data-node");
   if (!targetId || targetId === from.id) return;
-  await onEdit("connect", { source: from.id, target: targetId });
+  await onEdit("connect", { source: from.id, target: targetId, ...(kind ? { kind } : {}) });
 }
 
 function closeDetail() {
