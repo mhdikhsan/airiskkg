@@ -3502,3 +3502,27 @@ def test_a_step_is_dragged_into_another_lane_and_another_pool(scene_restored) ->
     assert asked and "would cross between participants" in asked, f"the move asked {asked!r}"
     assert "a bpmn:messageFlow" in in_desk, "the flow left crossing pools was not converted"
     assert "a bpmn:sequenceFlow" not in in_desk
+
+
+def test_a_store_read_and_written_by_one_step_is_drawn_both_ways(scene_restored) -> None:
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js("""(async () => {
+        const post = async (body) => (await (await fetch("/api/process-edit", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body) })).json());
+        let r = await post({ ttl: "", op: "add-pool", label: "Desk" });
+        const pool = r.newId;
+        r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool, label: "Update ticket" });
+        const task = r.newId;
+        r = await post({ ttl: r.ttl, op: "add-data", shape: "store", label: "Tickets" });
+        const store = r.newId;
+        r = await post({ ttl: r.ttl, op: "connect", source: store, target: task });
+        r = await post({ ttl: r.ttl, op: "connect", source: task, target: store });
+        window.PairAI.Editor.setValue(r.ttl);
+        return 1;
+    })()"""))
+    _back_to_business(loop, handle)
+    titles = _settle(loop, handle, """[...document.querySelectorAll('#process-canvas title')]
+        .map((t) => t.textContent).filter((t) => t.startsWith('Tickets'))""", [], tries=40)
+    assert any("read by Update ticket" in t for t in titles), titles
+    assert any("written by Update ticket" in t for t in titles), titles

@@ -554,6 +554,11 @@ DATA_REFS = frozenset({BPMN.dataObjectReference, BPMN.dataStoreReference})
 ACTIVITY_CLASSES = frozenset(BPMN[kind] for kind in ACTIVITY_KINDS)
 
 
+def _already_joined(reading: bool) -> str:
+    return ("That step already reads this data." if reading
+            else "That step already writes this data.")
+
+
 def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str) -> str | None:
     """Join a data object or store to a step, as BPMN models it.
 
@@ -568,10 +573,11 @@ def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str)
     if held is None:
         return None
 
+    # A step may read a store and write it too: two associations, one each way.
+    prop, side = ((BP.dataInputAssociation, BP.sourceRef) if direction == "in"
+                  else (BP.dataOutputAssociation, BP.targetRef))
     used = {
         data.value(end, BP.dataStoreRef) or data.value(end, BP.dataObjectRef)
-        for prop, side in ((BP.dataInputAssociation, BP.sourceRef),
-                           (BP.dataOutputAssociation, BP.targetRef))
         for association in data.objects(activity, prop)
         for end in data.objects(association, side)
     }
@@ -1012,7 +1018,7 @@ def process_edit() -> object:
                 ), 400
             made = _join_data(data, reference, step, "in" if reading else "out")
             if made is None:
-                return jsonify({"error": "That step already uses this data."}), 400
+                return jsonify({"error": _already_joined(reading)}), 400
             return _serialized(data, newId=made)
 
         # Two black-box pools have no process at all, and are still two pools.
@@ -1140,7 +1146,7 @@ def process_edit() -> object:
             return jsonify({"error": "connect-data needs data, an activity and a direction."}), 400
         made = _join_data(data, URIRef(reference), URIRef(activity), direction)
         if made is None:
-            return jsonify({"error": "That activity already uses this data."}), 400
+            return jsonify({"error": _already_joined(direction == "in")}), 400
         new_id = made
 
     elif op == "set-condition":

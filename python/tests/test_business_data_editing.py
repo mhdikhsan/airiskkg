@@ -142,10 +142,35 @@ def test_a_data_association_joins_data_to_an_activity_and_nothing_else(client, t
             if response.status_code == 200:
                 accepted += 1
                 continue
-            assert response.get_json()["error"] == "That step already uses this data.", (
+            assert response.get_json()["error"] == "That step already reads this data.", (
                 f"refused a well-formed data association: {response.get_json()}"
             )
     assert accepted, "no data box could be joined to any activity"
+
+
+def test_a_step_can_read_a_store_and_write_it_too(client) -> None:
+    """Reading a store refused the write back: "That step already uses this data"."""
+    def post(**body):
+        response = client.post("/api/process-edit", json=body)
+        return response, response.get_json()
+
+    _, made = post(ttl="", op="add-pool", label="Desk")
+    pool = made["newId"]
+    _, made = post(ttl=made["ttl"], op="add-activity", kind="task", pool=pool, label="Update ticket")
+    task = made["newId"]
+    _, made = post(ttl=made["ttl"], op="add-data", shape="store", label="Tickets")
+    store = made["newId"]
+    _, read = post(ttl=made["ttl"], op="connect", source=store, target=task)
+    response, written = post(ttl=read["ttl"], op="connect", source=task, target=store)
+    assert response.status_code == 200, written
+
+    view = client.post("/api/process", json={"ttl": written["ttl"]}).get_json()
+    step = next(row for row in view["activities"] if row["id"] == task)
+    assert [d["label"] for d in step["reads"]] == ["Tickets"]
+    assert [d["label"] for d in step["writes"]] == ["Tickets"]
+
+    again, refused = post(ttl=written["ttl"], op="connect", source=task, target=store)
+    assert again.status_code == 400 and refused["error"] == "That step already writes this data."
 
 
 def test_an_unknown_classification_is_refused(client, tariff_ttl) -> None:
