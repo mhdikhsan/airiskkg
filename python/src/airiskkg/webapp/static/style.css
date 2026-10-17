@@ -3431,3 +3431,33 @@ summary:focus-visible {
 
 /* A row of actions wraps rather than widening the rail. */
 .concern-row.concern-triage .concern-val { gap: 6px; row-gap: 6px; }
+
+/* The risk list page: one scrolling document, not the workbench's fixed frame. */
+body.risk-list-page { display: block; height: auto; min-height: 100%; overflow: auto; }
+.risk-list { max-width: 920px; margin: 0 auto; padding: 18px 16px 48px; }
+.risk-list h1 { font-size: 22px; margin: 6px 0 4px; }
+.risk-list h2 {
+  font-size: 15px; margin: 28px 0 8px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.rl-n, .rl-count { color: var(--text-dim); font-weight: 400; }
+.rl-count { margin: 0 0 6px; font-size: 13px; }
+.rl-entry {
+  padding: 12px 14px; margin: 10px 0; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--bg-panel);
+}
+.rl-entry h3 { margin: 0 0 6px; font-size: 15px; }
+.rl-entry h3 a { color: inherit; text-decoration: none; }
+.rl-entry h3 a:hover { text-decoration: underline; }
+.rl-entry:target { border-color: var(--accent); }
+.rl-source { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 6px; }
+.rl-lede { margin: 0 0 8px; font-size: 13px; line-height: 1.45; color: var(--text-dim); }
+.rl-entry dl { margin: 0; display: grid; gap: 3px; font-size: 12.5px; }
+.rl-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; }
+.rl-row dt { color: var(--text-dim); }
+.rl-row dd { margin: 0; min-width: 0; }
+@media (max-width: 560px) {
+  .rl-row { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+.lib-page-link { color: var(--accent); }
+.risk-list a.chip { text-decoration: none; }

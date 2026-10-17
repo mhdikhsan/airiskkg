@@ -4058,3 +4058,61 @@ def test_the_renamed_labels_are_the_ones_on_screen(scene_restored) -> None:
     assert any(h.startswith("Related motifs") for h in seen["riskPage"]), seen["riskPage"]
     assert not any("Structures it applies to" in h for h in seen["riskPage"]), seen["riskPage"]
     assert seen["asked"] == ["Name of the data store:", "Name of the new system:"], seen["asked"]
+
+
+def test_every_risk_is_listed_on_one_page_under_the_name_the_library_gives_it(page) -> None:
+    """There was no one page or URL listing every risk the tool can raise."""
+    loop, handle = page
+    rail = loop.run_until_complete(handle.js("""(async () => {
+        const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+        document.querySelector('#btn-library').click();
+        await wait(1200);
+        document.querySelector('.library-tab[data-library-tab="risks"]').click();
+        await wait(400);
+        for (const shut of document.querySelectorAll('#library-list .lib-group.shut')) {
+            shut.click();
+            await wait(100);
+        }
+        const names = [...document.querySelectorAll('#library-list .lib-row-name')]
+            .map((n) => n.textContent);
+        const link = document.querySelector('#library-detail a[href="/risks"]');
+        document.querySelector('#btn-library-close').click();
+        return { names, linked: !!link };
+    })()"""))
+    listed = loop.run_until_complete(handle.js("""(async () => {
+        const served = await (await fetch('/api/library')).json();
+        const wanted = served.riskPatterns[served.riskPatterns.length - 1].id;
+        const frame = document.createElement('iframe');
+        frame.style.cssText = 'position:fixed;left:0;top:0;width:900px;height:700px;z-index:9999';
+        frame.src = '/risks#' + wanted;
+        document.body.appendChild(frame);
+        for (let i = 0; i < 60; i++) {
+            await new Promise((r) => setTimeout(r, 200));
+            const doc = frame.contentDocument;
+            if (doc && doc.querySelectorAll('.rl-entry').length) break;
+        }
+        await new Promise((r) => setTimeout(r, 300));
+        const doc = frame.contentDocument;
+        const entries = [...doc.querySelectorAll('.rl-entry')];
+        const at = doc.getElementById(wanted);
+        const out = {
+            served: served.riskPatterns.length,
+            wanted,
+            names: entries.map((s) => s.querySelector('h3').textContent),
+            rows: entries.length ? [...entries[0].querySelectorAll('dt')].map((d) => d.textContent) : [],
+            inView: !!at && at.getBoundingClientRect().top < 700 && at.getBoundingClientRect().bottom > 0,
+            wide: doc.documentElement.scrollWidth > doc.documentElement.clientWidth,
+        };
+        frame.remove();
+        return out;
+    })()"""))
+
+    assert listed["names"], "the page listed nothing"
+    assert len(listed["names"]) == listed["served"], listed
+    assert sorted(listed["names"]) == sorted(rail["names"]), (
+        "the page names a risk differently from the library rail")
+    assert listed["rows"] == ["Risk mechanism", "Raised when", "May lead to",
+                              "Suggested controls", "Related motifs"], listed["rows"]
+    assert listed["inView"], f"/risks#{listed['wanted']} did not open at that risk"
+    assert not listed["wide"], "the page scrolls sideways"
+    assert rail["linked"], "the library does not link to the page"

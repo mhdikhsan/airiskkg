@@ -26,6 +26,14 @@ def client():
     return app.test_client()
 
 
+def test_the_risk_list_has_a_url_of_its_own(client) -> None:
+    """There was no one page or URL listing every risk the tool can raise."""
+    page = client.get("/risks")
+    assert page.status_code == 200
+    assert b'src="/static/risks.js"' in page.data
+    assert client.get("/static/risks.js").status_code == 200
+
+
 def test_graph_endpoint_returns_nodes_and_edges(client) -> None:
     ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     response = client.post("/api/graph", json={"ttl": ttl})

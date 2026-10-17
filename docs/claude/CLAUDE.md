@@ -984,6 +984,8 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **Native ES modules, and the shape is enforced.** `webapp/static/` is `app.js` (entry: wiring
   only) + `state.js` + `core/` (plumbing that knows nothing about the workbench) + `lib/`
   (self-contained renderers and widgets) + `panels/` (one file per thing on screen).
+  `risks.html` + `risks.js` are a second page, `/risks`, listing every risk pattern; it names
+  them through `lib/library_text.js`, which the library uses too, so the two cannot disagree.
   `test_webapp_module_layout.py` holds three rules: **no import cycles**, **every imported name
   is actually exported**, and **exactly one browser global** (`window.PairAI`).
 - **`core/bus.js` carries four events, and each one earns its place.** A panel emits rather

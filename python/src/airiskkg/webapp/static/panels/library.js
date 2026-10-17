@@ -4,6 +4,9 @@ import { api } from "../core/api.js";
 import { on } from "../core/bus.js";
 import { $, $$, el } from "../core/dom.js";
 import { kindOf, motifPreview } from "../lib/motif_preview.js";
+import {
+  MOTIF_SUFFIX, RISK_SUFFIX, describe, groupsOfMotifs, refChip, shortName,
+} from "../lib/library_text.js";
 import { startDrawing } from "./canvas.js";
 import { addMotif } from "./motifs.js";
 
@@ -23,24 +26,6 @@ const byId = { risks: new Map(), motifs: new Map(), terms: new Map() };
 
 // Motifs a control names as a candidate structural realization.
 let controlMotifs = new Set();
-
-const RISK_SUFFIX = /\s*risk pattern$/i;
-const MOTIF_SUFFIX = /\s*Motif$/;
-
-function shortName(label, suffix) {
-  return label.replace(suffix, "").trim() || label;
-}
-
-/* Not every risk pattern carries a description of its own. */
-function describe(entry) {
-  if (entry.description) return { text: entry.description, from: null };
-
-  const source = (entry.derivedFrom || []).find((ref) => ref.definition);
-
-  return source
-    ? { text: source.definition, from: source.label }
-    : { text: "", from: null };
-}
 
 function haystack(entry) {
   return [
@@ -75,25 +60,6 @@ function entriesOf(kind) {
 
 /* Risk patterns and motifs both shelve by the family of AI system; a risk
    pattern files where most of the motifs it applies to belong. */
-function groupsOfMotifs(entries) {
-  const groups = new Map();
-
-  entries.forEach((entry) => {
-    const name = entry.family
-      ? entry.family.label
-      : "Unshelved";
-
-    if (!groups.has(name)) {
-      groups.set(name, []);
-    }
-
-    groups.get(name).push(entry);
-  });
-
-  return [...groups.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]));
-}
-
 /* Inside a family, the motifs that are variants or companions of each other sit
    together: the retrieval shapes, the RAG loops, the guardrails. */
 function groupsWithin(entries) {
@@ -334,55 +300,6 @@ function renderRail() {
 
 
 // ---- the detail ----
-
-function refChip(ref, extraClass) {
-  // "Other" is not a catalogue. A published pattern page is named by its host
-  // and linked; only a real catalogue gets a source prefix.
-
-  const body = [
-    ref.sourceShort === "Other"
-      ? null
-      : el(
-          "span",
-          { class: ref.doi ? "chip-source doi" : "chip-source" },
-          ref.doi ? "doi:" + ref.doi : ref.sourceShort
-        ),
-
-    el("span", {}, ref.label),
-  ].filter(Boolean);
-
-  const title =
-    ref.source
-    + String.fromCharCode(10)
-    + (ref.definition || ref.id);
-
-  const cls =
-    "chip "
-    + (extraClass || "");
-
-  if (ref.url) {
-    return el(
-      "a",
-      {
-        class: cls,
-        href: ref.url,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        title,
-      },
-      body
-    );
-  }
-
-  return el(
-    "span",
-    {
-      class: cls,
-      title,
-    },
-    body
-  );
-}
 
 // ---- the detail pages ----
 
@@ -1250,6 +1167,9 @@ function landing() {
   }
 
   if (tab === "risks") {
+    parts.push(el("p", { class: "lib-note" }, el("a", {
+      href: "/risks", target: "_blank", rel: "noopener", class: "lib-page-link",
+    }, "Open all risk patterns on one page")));
     groupsOfMotifs(entries).forEach(([familyName, members]) => {
       const family = members[0] ? members[0].family : null;
       parts.push(motifShelfHead(familyName, members.length, family && family.definition));
