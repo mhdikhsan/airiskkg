@@ -786,12 +786,40 @@ function applyView() {
   svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
 }
 
+/* Where on the canvas the trays floating over it leave room, in wrap pixels.
+   The open element tray is a column, so the diagram goes beside it or below
+   it, whichever draws it larger. */
+function freeArea(box, width, height) {
+  const at = wrap.getBoundingClientRect();
+  const edge = (selector) => {
+    const tray = wrap.querySelector(selector);
+    const r = tray && tray.offsetParent ? tray.getBoundingClientRect() : null;
+    return r && r.width && r.height ? { right: r.right - at.left, bottom: r.bottom - at.top } : null;
+  };
+  const gap = 12;
+  const tops = ["#system-badge", "#motif-palette"].map(edge).filter(Boolean);
+  const top = tops.length ? Math.max(...tops.map((e) => e.bottom)) + gap : 0;
+  const palette = edge("#palette");
+  const options = [{ left: 0, top }];
+  if (palette) {
+    options[0] = { left: 0, top: Math.max(top, palette.bottom + gap) };
+    options.push({ left: palette.right + gap, top });
+  }
+  const scale = (o) => Math.min((width - o.left) / box.w, (height - o.top) / box.h);
+  const room = options.filter((o) => scale(o) > 0);
+  return room.length ? room.reduce((a, b) => (scale(b) > scale(a) ? b : a)) : { left: 0, top: 0 };
+}
+
 function viewOnto(box) {
-  const aspect = wrap.clientWidth / Math.max(1, wrap.clientHeight);
-  let w = box.w;
-  let h = box.h;
-  if (w / h > aspect) h = w / aspect; else w = h * aspect;
-  view = { x: box.x - (w - box.w) / 2, y: box.y - (h - box.h) / 2, w, h };
+  const width = Math.max(1, wrap.clientWidth);
+  const height = Math.max(1, wrap.clientHeight);
+  const free = freeArea(box, width, height);
+  const k = Math.min((width - free.left) / box.w, (height - free.top) / box.h);
+  view = {
+    x: box.x - (free.left + (width - free.left - box.w * k) / 2) / k,
+    y: box.y - (free.top + (height - free.top - box.h * k) / 2) / k,
+    w: width / k, h: height / k,
+  };
   applyView();
 }
 

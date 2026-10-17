@@ -706,7 +706,15 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   every render**; the reader's own toggle wins from then on. Every palette button draws the
   shape it inserts using the same primitives as the canvas, so a button cannot drift from what
   clicking it produces. `fit()` insets the diagram below the palette, which floats over the
-  canvas.
+  canvas. **The architecture fit does the same** (2026-10-17): the element tray is a column,
+  so `freeArea()` puts the diagram beside it or below it, whichever draws it larger, and under
+  the system badge and the motif tray. On the energy scene the old fit left 5 elements under a
+  tray.
+- **A pool or a lane is resized by dragging its edge, and the size is view state.** A grip on a
+  pool's right edge widens every pool (they share one width), and one on each band's lower edge
+  makes that band taller; the last band's grip is the pool's own bottom edge. Like a dragged box
+  it is kept until reload and never written to the Turtle: BPMN keeps sizes in BPMNDI, which
+  sBPMN does not model. A band never shrinks below what it holds.
 - **Descending to the architecture is asked for, not stumbled into.** On a refined activity the
   box only *selects* — it reveals the declaring line and stops. The blue "AI system" chip opens
   the architecture; the pencil opens the editor. An activity with no architecture behind it

@@ -54,6 +54,8 @@ let paletteTouched = false;       // once the reader chooses, the choice sticks
 let collapsedPools = new Set();   // BPMN black-box pools: banded, not opened
 
 let manualPositions = new Map();
+let bandHeights = new Map();      // dragged band heights, view-only like a dragged box
+let poolWidth = 0;
 let lastFitIds = null;
 let pendingFrame = 0;
 
@@ -397,7 +399,8 @@ function layout() {
           head: item.shape === "activity" ? headHeight(item) : h,
         });
       });
-      laneH = Math.max(laneH, laneBottom - laneY);
+      const key = band.id || participant.id;
+      laneH = Math.max(laneH, laneBottom - laneY, bandHeights.get(key) || 0);
       attached.forEach(([noteId, anchor], seat) => {
         const host = placed.get(anchor);
         notes.push({
@@ -407,7 +410,7 @@ function layout() {
         });
       });
 
-      drawnBands.push({ ...band, x: POOL_LABEL_W, y: laneY, w: poolW - POOL_LABEL_W, h: laneH });
+      drawnBands.push({ ...band, key, x: POOL_LABEL_W, y: laneY, w: poolW - POOL_LABEL_W, h: laneH });
       laneY += laneH;
     });
 
@@ -438,7 +441,7 @@ function layout() {
   });
 
   reserveConversations();
-  const widest = Math.max(POOL_LABEL_W + BOX_W, ...pools.map((pool) => pool.w));
+  const widest = Math.max(POOL_LABEL_W + BOX_W, poolWidth, ...pools.map((pool) => pool.w));
   pools.forEach((pool) => {
     pool.w = widest;
     pool.lanes.forEach((lane) => { lane.w = widest - POOL_LABEL_W; });
@@ -2212,6 +2215,8 @@ function draw() {
       });
     }
 
+    if (!framed) drawResizeGrips(group, pool);
+
     // Sequence flow, from the model. Drawn under the nodes so a connector
     // never sits on top of a box it only passes.
     const edges = node("g", { class: "pc-edges" }, group);
@@ -2355,6 +2360,57 @@ function pickOnShift(ev) {
   if (picked.has(id)) picked.delete(id); else picked.add(id);
   paintPicked();
   if (onPick) onPick([...picked]);
+}
+
+/* Grips on a pool's right edge and on each band's lower edge; the last band's
+ * is the pool's own. Drawn before the nodes, so a box on an edge stays on top. */
+function drawResizeGrips(group, pool) {
+  const right = node("rect", {
+    x: pool.x + pool.w - 4, y: pool.y + 30, width: 8, height: Math.max(pool.h - 40, 8),
+    class: "pc-resize pc-resize-w",
+  }, group);
+  node("title", {}, right).textContent = "Drag to make the participants wider or narrower";
+  right.addEventListener("pointerdown", (ev) => startResize(ev, "w", null, pool.w));
+  pool.lanes.forEach((lane, at) => {
+    const last = at === pool.lanes.length - 1;
+    const grip = node("rect", {
+      x: pool.x + POOL_LABEL_W, y: (last ? pool.y + pool.h : lane.y + lane.h) - 4,
+      width: pool.w - POOL_LABEL_W - 10, height: 8, class: "pc-resize pc-resize-h",
+      "data-grip": lane.key,
+    }, group);
+    node("title", {}, grip).textContent = last || !lane.label
+      ? "Drag to make this participant taller or shorter"
+      : `Drag to make the lane "${lane.label}" taller or shorter`;
+    grip.addEventListener("pointerdown", (ev) => startResize(ev, "h", lane.key, lane.h));
+  });
+}
+
+/* Never smaller than what the band holds: the layout keeps the larger of the two. */
+function startResize(ev, axis, key, base) {
+  if (ev.button !== 0) return;
+  ev.stopPropagation();
+  ev.preventDefault();
+  const from = axis === "w" ? ev.clientX : ev.clientY;
+  let moved = false;
+  svg.setPointerCapture(ev.pointerId);
+  const move = (mv) => {
+    const shift = (axis === "w" ? mv.clientX : mv.clientY) - from;
+    if (!moved && Math.abs(shift) < 3) return;
+    moved = true;
+    const size = Math.max(0, Math.round(base + shift / view.k));
+    if (axis === "w") poolWidth = size; else bandHeights.set(key, size);
+    redraw();
+  };
+  const up = () => {
+    svg.removeEventListener("pointermove", move);
+    svg.removeEventListener("pointerup", up);
+    svg.removeEventListener("pointercancel", up);
+    try { svg.releasePointerCapture(ev.pointerId); } catch (error) { /* already gone */ }
+    if (moved) swallowNextClick = true;
+  };
+  svg.addEventListener("pointermove", move);
+  svg.addEventListener("pointerup", up);
+  svg.addEventListener("pointercancel", up);
 }
 
 function redraw() {
@@ -2878,8 +2934,8 @@ async function insertFromPalette(item, where) {
   }
 }
 
-/* Drag a shape out of the palette and drop it on a participant or a lane, as a
-   symbol is dropped on the architecture canvas. Below the threshold it stays a click. */
+/* Drag a shape out of the palette and drop it on a participant or a lane, as an
+   element is dropped on the architecture canvas. Below the threshold it stays a click. */
 function startPaletteDrag(ev, button, item) {
   if (ev.button !== 0) return;
   const from = { x: ev.clientX, y: ev.clientY };
@@ -2980,6 +3036,8 @@ function hasProcess() {
 
 function forgetLayout() {
   manualPositions = new Map();
+  bandHeights = new Map();
+  poolWidth = 0;
   lastFitIds = null;
 }
 

@@ -3896,3 +3896,88 @@ def test_shift_click_picks_several_shapes_on_the_process_and_delete_takes_them(s
     restored = loop.run_until_complete(handle.js(
         "[" + ", ".join(present.format(ids[k]) for k in ("ask", "log")) + "]"))
     assert restored == [True, True], "one undo did not bring both steps back"
+
+
+def test_the_element_tray_is_named_for_what_it_holds_and_says_what_each_is(scene_restored) -> None:
+    """The tray was called "Symbols" while Symbol is one of its own entries, and
+    each tooltip only repeated the class name."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#palette .palette-item').length", 0, tries=40)
+    tray = loop.run_until_complete(handle.js("""(() => ({
+        title: document.querySelector('#palette .tray-head span').textContent,
+        tips: [...document.querySelectorAll('#palette .palette-item')]
+            .map((chip) => [chip.textContent, chip.title]),
+    }))()"""))
+    assert tray["title"] == "Elements", tray["title"]
+    for label, tip in tray["tips"]:
+        said = tip.split(" (beam:")[0]
+        assert len(said.split()) >= 4, f"{label} has no tooltip saying what it is: {tip!r}"
+        assert "drag onto the canvas" in tip, f"{label}'s tooltip lost how to add it: {tip!r}"
+
+
+def test_the_fit_leaves_no_element_under_a_tray(scene_restored) -> None:
+    """The element tray floats over the canvas, and the fit drew the diagram under it."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.5)
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const trays = ['#palette', '#motif-palette', '#system-badge']
+            .map((s) => document.querySelector(s)).filter((e) => e && e.offsetParent)
+            .map((e) => e.getBoundingClientRect());
+        const under = [...document.querySelectorAll('#canvas g.node')].filter((g) => {
+            const r = g.getBoundingClientRect();
+            return trays.some((t) => r.left < t.right && r.right > t.left
+                                   && r.top < t.bottom && r.bottom > t.top);
+        }).map((g) => g.textContent.slice(0, 30));
+        return { trays: trays.length, under };
+    })()"""))
+    assert seen["trays"] >= 2, "the trays are not on screen to be measured against"
+    assert not seen["under"], f"after a fit these sit under a tray: {seen['under']}"
+
+
+def test_a_pool_and_a_lane_are_resized_by_dragging_their_edges(scene_restored) -> None:
+    """Pools and lanes took whatever size the layout gave them."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_LANED))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, f"!!document.querySelector('#process-canvas [data-band=\"{ids['back']}\"]')",
+            False, tries=40)
+    _clear_the_business_canvas(loop, handle)
+    loop.run_until_complete(handle.js("window.PairAI.ProcessCanvas.zoomBy(0.7); 1"))
+    time.sleep(0.5)
+    before = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+
+    sizes = f"""(() => {{
+        const box = (id) => document.querySelector('#process-canvas [data-band="' + id + '"] > rect');
+        const grip = (sel) => {{
+            const r = document.querySelector(sel).getBoundingClientRect();
+            return {{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }};
+        }};
+        return {{
+            lane: +box({json.dumps(ids['front'])}).getAttribute('height'),
+            pool: +box({json.dumps(ids['desk'])}).getAttribute('height'),
+            width: +box({json.dumps(ids['desk'])}).getAttribute('width'),
+            laneGrip: grip('#process-canvas .pc-resize-h[data-grip="' + {json.dumps(ids['front'])} + '"]'),
+            poolGrip: grip('#process-canvas [data-band="' + {json.dumps(ids['desk'])} + '"] .pc-resize-h'),
+            widthGrip: grip('#process-canvas [data-band="' + {json.dumps(ids['desk'])} + '"] .pc-resize-w'),
+        }};
+    }})()"""
+    start = loop.run_until_complete(handle.js(sizes))
+    g = start["laneGrip"]
+    loop.run_until_complete(handle.drag(g["x"], g["y"], g["x"], g["y"] + 50))
+    after_lane = loop.run_until_complete(handle.js(sizes))
+    g = after_lane["poolGrip"]
+    loop.run_until_complete(handle.drag(g["x"], g["y"], g["x"], g["y"] + 50))
+    after_pool = loop.run_until_complete(handle.js(sizes))
+    g = after_pool["widthGrip"]
+    loop.run_until_complete(handle.drag(g["x"], g["y"], g["x"] + 40, g["y"]))
+    after_width = loop.run_until_complete(handle.js(sizes))
+    left = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+
+    assert after_lane["lane"] > start["lane"] + 30, (start, after_lane)
+    assert after_pool["pool"] > start["pool"] + 30, (after_lane, after_pool)
+    assert after_width["width"] > start["width"] + 20, (after_pool, after_width)
+    assert left == before, "resizing a band wrote to the document"

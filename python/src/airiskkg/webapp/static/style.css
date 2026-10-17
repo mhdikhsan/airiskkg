@@ -1568,6 +1568,11 @@ button.motif-family:hover { color: #4a5262; }
   stroke-width: 2.4;
 }
 .pc-flow-hit { stroke: transparent; stroke-width: 14; cursor: pointer; }
+/* Drag a pool's right edge, or a band's lower edge, to resize it. */
+.pc-resize { fill: var(--accent); fill-opacity: 0; }
+.pc-resize:hover { fill-opacity: 0.35; }
+.pc-resize-w { cursor: ew-resize; }
+.pc-resize-h { cursor: ns-resize; }
 /* Shift-clicked nodes, which Delete removes together. */
 #process-canvas .pc-picked {
   filter: drop-shadow(0 0 1.5px #c0392b) drop-shadow(0 0 1.5px #c0392b);

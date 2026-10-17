@@ -163,17 +163,24 @@ ex:Generate a beam:Transform ;
 
 const BEAM_NS = "http://w3id.org/beam/core#";
 
-/* A system is not a symbol. It is the container the symbols sit in, and it
+/* A system is not an element. It is the container the elements sit in, and it
    belongs with the other system controls above the canvas, not in a tray of
    shapes to drop. See createSystem, called from the system bar. */
 const PALETTE = [
-  { label: "Data", cls: "Data", kind: "data", cat: "resource" },
-  { label: "Symbol", cls: "Symbol", kind: "symbol", cat: "resource" },
-  { label: "Model", cls: "StatisticalModel", kind: "model", cat: "resource" },
-  { label: "Transform", cls: "Transform", kind: "process", cat: "process" },
-  { label: "Infer", cls: "Infer", kind: "process", cat: "process" },
-  { label: "Train", cls: "Train", kind: "process", cat: "process" },
-  { label: "Generate", cls: "Generate", kind: "process", cat: "process" },
+  { label: "Data", cls: "Data", kind: "data", cat: "resource",
+    hint: "What flows: a question, a document, a result" },
+  { label: "Symbol", cls: "Symbol", kind: "symbol", cat: "resource",
+    hint: "Structured knowledge: a database, a knowledge graph, a label" },
+  { label: "Model", cls: "StatisticalModel", kind: "model", cat: "resource",
+    hint: "A trained statistical model, such as an LLM or a classifier" },
+  { label: "Transform", cls: "Transform", kind: "process", cat: "process",
+    hint: "A step that turns its inputs into an output" },
+  { label: "Infer", cls: "Infer", kind: "process", cat: "process",
+    hint: "A step that draws a conclusion from a model, such as a prediction" },
+  { label: "Train", cls: "Train", kind: "process", cat: "process",
+    hint: "A step that builds a model from data" },
+  { label: "Generate", cls: "Generate", kind: "process", cat: "process",
+    hint: "A step that produces new content, such as an answer" },
 ];
 
 export function createSystem(unclaimedCount, systemCount) {
@@ -250,12 +257,13 @@ export function initPalette() {
   const body = el("div", { class: "tray-body" });
   PALETTE.forEach((item) => {
     const chip = el("div",
-      { class: `palette-item ${item.kind}`, title: `Click to add, or drag onto the canvas — ${item.cls}` },
+      { class: `palette-item ${item.kind}`,
+        title: `${item.hint} (beam:${item.cls}). Click to add, or drag onto the canvas` },
       item.label);
     chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, (x, y) => addPaletteElement(item, x, y)));
     body.appendChild(chip);
   });
-  buildTray(palette, "Symbols", body);
+  buildTray(palette, "Elements", body);
 }
 
 // Click a tray item to add it (at center)
