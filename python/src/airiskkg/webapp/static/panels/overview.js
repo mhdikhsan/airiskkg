@@ -351,7 +351,7 @@ export function openOverview() {
   const process = state.lastProcess;
   if (!process || !process.stats.activities) {
     diagram.appendChild(el("p", { class: "drawer-empty" },
-      "No business process in this graph yet. Draw one on the Business canvas, or load one from Load example."));
+      "No business process in this graph yet. Draw one on the Process canvas, or load one from Load example."));
   } else {
     const svg = overviewDiagram();
     if (svg) {

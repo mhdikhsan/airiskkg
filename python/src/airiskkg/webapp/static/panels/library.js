@@ -598,7 +598,7 @@ function riskDetail(entry) {
     }),
     layout(
       [
-        panel("Structures it applies to", {
+        panel("Related motifs", {
           count: motifs.length,
           hint: motifs.length ? " " : null,
           body: motifs.length

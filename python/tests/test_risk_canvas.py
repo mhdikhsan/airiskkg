@@ -247,10 +247,10 @@ def test_the_notation_can_be_read_one_layer_and_one_architecture_at_a_time(serve
       log("risksAll=" + (chips().Risk || 0));
       log("activities=" + (chips().Activity || 0));
       log("systemsAll=" + (chips().System || 0));
-      toggle("Business");
+      toggle("Process");
       setTimeout(() => {
         log("activitiesOff=" + (chips().Activity || 0));
-        toggle("Business");
+        toggle("Process");
         toggle("Architecture");
         setTimeout(() => {
           log("systemsOff=" + (chips().System || 0));

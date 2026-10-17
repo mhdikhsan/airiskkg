@@ -3981,3 +3981,80 @@ def test_a_pool_and_a_lane_are_resized_by_dragging_their_edges(scene_restored) -
     assert after_pool["pool"] > start["pool"] + 30, (after_lane, after_pool)
     assert after_width["width"] > start["width"] + 20, (after_pool, after_width)
     assert left == before, "resizing a band wrote to the document"
+
+
+def test_the_renamed_labels_are_the_ones_on_screen(scene_restored) -> None:
+    """The renames the dry run listed, read off the page where each one shows."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    target = loop.run_until_complete(handle.js("""(() => {
+        for (const n of document.querySelectorAll('#process-canvas [data-node]')) {
+            if (!n.querySelector('.pc-box') || n.classList.contains('refined')) continue;
+            const r = n.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            const hit = document.elementFromPoint(x, y);
+            if (hit && hit.closest('[data-node]') === n) return { x, y };
+        }
+        return null;
+    })()"""))
+    assert target, "no plain activity could be clicked"
+    loop.run_until_complete(handle.click(target["x"], target["y"]))
+    carried_by = loop.run_until_complete(handle.js(
+        "(document.querySelector('#pd-refines option[value=\"__new__\"]') || {}).textContent"))
+    loop.run_until_complete(handle.js(
+        "document.querySelector('#process-detail').classList.add('hidden'); 1"))
+
+    seen = loop.run_until_complete(handle.js("""(async () => {
+        const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+        const text = (sel) => ((document.querySelector(sel) || {}).textContent || '').trim();
+        const asked = [];
+        const prompt = window.prompt;
+        window.prompt = (message) => { asked.push(message); return null; };
+        const out = {
+            level: text('#level-business'),
+            drawer: text('[data-drawer-tab="motifs"]').replace(/[0-9]+/g, '').trim(),
+            library: text('[data-library-tab="motifs"]').replace(/[0-9]+/g, '').trim(),
+        };
+        const palette = document.querySelector('#process-palette');
+        if (palette.classList.contains('folded')) palette.querySelector('.pp-fold').click();
+        await wait(300);
+        const store = [...document.querySelectorAll('#process-palette .pp-item')]
+            .find((b) => /store|database/i.test(b.textContent));
+        out.store = store ? store.textContent.trim() : null;
+        if (store) store.click();
+
+        document.querySelector('#level-architecture').click();
+        await wait(800);
+        out.tray = text('#motif-palette .tray-head span');
+        const add = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === '+ system');
+        if (add) add.click();
+
+        document.querySelector('#level-risk').click();
+        await wait(1500);
+        out.manual = [...document.querySelectorAll('#risk-palette .pp-group')].map((g) => g.textContent);
+        out.layers = [...document.querySelectorAll('.layer-toggle')].map((b) => b.textContent);
+
+        document.querySelector('#btn-library').click();
+        await wait(1200);
+        document.querySelector('.library-tab[data-library-tab="risks"]').click();
+        await wait(300);
+        const row = document.querySelector('#library-list .lib-row');
+        if (row) row.click();
+        await wait(400);
+        out.riskPage = [...document.querySelectorAll('#library-detail h3')].map((h) => h.textContent.trim());
+        document.querySelector('#btn-library-close').click();
+        window.prompt = prompt;
+        out.asked = asked;
+        return out;
+    })()"""))
+    _back_to_business(loop, handle)
+
+    assert seen["level"] == "Process", seen
+    assert seen["drawer"] == seen["library"] == seen["tray"] == "Architectural motifs", seen
+    assert seen["store"] == "Data store", seen
+    assert "Manual risk modelling" in seen["manual"], seen
+    assert "Process" in seen["layers"] and "Business" not in seen["layers"], seen
+    assert carried_by == "+ system…", carried_by
+    assert any(h.startswith("Related motifs") for h in seen["riskPage"]), seen["riskPage"]
+    assert not any("Structures it applies to" in h for h in seen["riskPage"]), seen["riskPage"]
+    assert seen["asked"] == ["Name of the data store:", "Name of the new system:"], seen["asked"]

@@ -1910,7 +1910,7 @@ function showDetail(activity, ev) {
     .concat(systems.map((s) =>
       `<option value="${s.id}"${activity.refines.includes(s.id) ? " selected" : ""}>`
       + `${escapeHtml(s.label)}</option>`))
-    .concat(['<option value="__new__">+ new AI system…</option>'])
+    .concat(['<option value="__new__">+ system…</option>'])
     .join("");
   panel.innerHTML = `
     <div class="nd-head">${escapeHtml(activity.kind)}</div>
@@ -1993,7 +1993,7 @@ function showDetail(activity, ev) {
     if (system === "__new__") {
       // Named after the activity it carries out, which is the only thing known
       // about it yet; the chip then opens it so the shape can be drawn.
-      const suggested = window.prompt("Name of the AI system that carries out this activity:",
+      const suggested = window.prompt("Name of the system that carries out this activity:",
         `${label} system`);
       if (suggested) await onEdit("add-system", { activity: activity.id, label: suggested });
       return;
@@ -2753,7 +2753,7 @@ const PALETTE = [
   
   { group: "Artifacts", op: "add-data", shape: "object", label: "Document",
     hint: "A data object: what a step reads or writes" },
-  { group: "Artifacts", op: "add-data", shape: "store", label: "Database",
+  { group: "Artifacts", op: "add-data", shape: "store", label: "Data store",
     hint: "A data store: outlives any one run of the process" },
 ];
 
@@ -2926,7 +2926,7 @@ async function insertFromPalette(item, where) {
     if (body) await onEdit("add-annotation", { ...where, text: body });
   } else if (item.op === "add-data") {
     const label = window.prompt(
-      item.shape === "store" ? "Name of the database:" : "Name of the document:");
+      item.shape === "store" ? "Name of the data store:" : "Name of the document:");
     // No activity: it stands on its own until something is joined to it.
     if (label) await onEdit("add-data", { shape: item.shape, label });
   } else {

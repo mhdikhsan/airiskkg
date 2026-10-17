@@ -360,5 +360,5 @@ export function initMotifPalette(templates) {
   search.addEventListener("input", show);
   show();
 
-  buildTray(panel, "Motifs", body, true);
+  buildTray(panel, "Architectural motifs", body, true);
 }

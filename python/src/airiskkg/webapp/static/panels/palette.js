@@ -184,7 +184,7 @@ const PALETTE = [
 ];
 
 export function createSystem(unclaimedCount, systemCount) {
-  const label = window.prompt("Name of the AI system:", "New AI system");
+  const label = window.prompt("Name of the new system:", "New system");
   if (!label) return null;
   /* Naming the architecture you just opened means "this is that architecture",
      so with nothing else on the canvas the elements simply join it - being

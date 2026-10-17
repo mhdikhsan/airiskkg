@@ -219,7 +219,7 @@ function renderPalette(show, view) {
   host.classList.toggle("hidden", !show);
   if (!show) return;
   host.innerHTML = "";
-  host.appendChild(el("span", { class: "pp-group" }, "Assess by hand"));
+  host.appendChild(el("span", { class: "pp-group" }, "Manual risk modelling"));
   Object.keys(HAND_LABEL).forEach((kind) => {
     const item = el("button", {
       type: "button", class: `pp-item band-${kind}`, "data-kind": kind,
@@ -466,7 +466,7 @@ function unfold(system, open) {
 }
 
 const LAYER_LABEL = {
-  business: "Business", architecture: "Architecture", risk: "Risk",
+  business: "Process", architecture: "Architecture", risk: "Risk",
 };
 
 function renderLayerBar(show) {
