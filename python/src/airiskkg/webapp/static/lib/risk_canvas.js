@@ -227,15 +227,18 @@ export function createRiskCanvas() {
       if (!owner || !drawn.has(owner)) continue;
       const key = `${link.source}|${owner}|${link.kind}`;
       if (!rolled.has(key)) {
-        rolled.set(key, { link: { ...link, target: owner, rolledUp: true }, of: [] });
+        rolled.set(key, { link: { ...link, target: owner, rolledUp: true }, of: [], ids: [] });
       }
       rolled.get(key).of.push(nameOf.get(link.target) || link.target);
+      rolled.get(key).ids.push(link.target);
     }
-    for (const { link, of } of rolled.values()) {
+    for (const { link, of, ids } of rolled.values()) {
       const names = [...new Set(of)].sort();
       keep({
         ...link,
         rolledUpOf: names,
+        // The elements it stands for: removing the line removes these attachments.
+        rolledUpIds: [...new Set(ids)],
         label: names.length > 2 ? `${names.length} elements` : names.join(", "),
       });
     }
@@ -920,7 +923,10 @@ export function createRiskCanvas() {
         hit.addEventListener("pointerdown", (event) => {
           event.stopPropagation();
           selected = null;
-          pickedLink = { from: link.source, to: link.target, label: link.label || link.kind };
+          pickedLink = {
+            from: link.source, to: link.target, label: link.label || link.kind,
+            standsFor: link.rolledUpIds || null,
+          };
           if (onSelect) onSelect(null);
           redraw();
         });

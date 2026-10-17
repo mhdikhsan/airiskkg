@@ -691,9 +691,14 @@ function nodeDetail(node, view) {
     reaching.forEach((g) => box.appendChild(el("div", { class: "ov-row" }, g.label)));
   }
   const joins = ((view.diagram || {}).links || [])
-    .filter((link) => link.source === node.id && link.editable)
-    .map((link) => nameOf(link.target, view));
-  if (joins.length) box.appendChild(detailRow("attached to", joins.join(" · ")));
+    .filter((link) => link.source === node.id && link.editable);
+  if (joins.length) {
+    // Written by hand, each one comes off on its own and the risk stays.
+    const handWritten = node.origin === "stated" && HAND_BANDS.has(node.band);
+    box.appendChild(detailRow("attached to", handWritten
+      ? el("span", { class: "detach-list" }, joins.map((link) => detachChip(node.id, link.target, view)))
+      : joins.map((link) => nameOf(link.target, view)).join(" · ")));
+  }
 
   if (node.origin === "stated" && node.band === "risk") {
     box.appendChild(verdictRow(node, view));
@@ -761,7 +766,35 @@ function nameOf(id, view) {
 }
 
 
+/* One attachment, named, with its own way off: the concept stays. */
+function detachChip(from, to, view) {
+  const name = nameOf(to, view);
+  const chip = el("span", { class: "chip detach" }, [
+    el("span", {}, name),
+    el("button", {
+      type: "button", class: "detach-x", title: `Detach from ${name}; the risk itself stays`,
+      "aria-label": `Detach from ${name}`,
+    }, "×"),
+  ]);
+  chip.querySelector(".detach-x").addEventListener("click", () => {
+    RiskCanvas.clearSelection();
+    edit("unlink-concept", { from, to }, `detached from ${name}`);
+  });
+  return chip;
+}
+
 function connectionDetail(line, view) {
+  // A line into a folded system stands for attachments to the parts inside it,
+  // so the parts are what come off; the system itself was never attached.
+  if ((line.standsFor || []).length) {
+    return el("div", { class: "rail-detail" }, [
+      el("h3", {}, "Connection"),
+      el("div", { class: "concern-head" }, [el("strong", {}, nameOf(line.from, view))]),
+      detailRow("joins", nameOf(line.to, view)),
+      detailRow("attached to", el("span", { class: "detach-list" },
+        line.standsFor.map((id) => detachChip(line.from, id, view)))),
+    ]);
+  }
   const box = el("div", { class: "rail-detail" }, [
     el("h3", {}, "Connection"),
     el("div", { class: "concern-head" }, [el("strong", {}, nameOf(line.from, view))]),

@@ -3673,3 +3673,57 @@ def test_the_motif_tray_starts_folded_and_finds_a_motif_by_what_it_does(page) ->
     assert all("vector store" in item["tip"].lower() or "vector store" in item["name"].lower()
                for item in found), "a search hit does not say what matched"
     assert all(item["tip"] and "Click or drag" in item["tip"] for item in found)
+
+
+def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> None:
+    """A risk attached to two parts of a folded system drew one line to the
+    system, and "remove this connection" unlinked the risk from the system,
+    which it was never attached to: nothing came off, and the only other way
+    was to delete the risk."""
+    loop, handle = scene_restored
+    risk = loop.run_until_complete(handle.js(f"""(async () => {{
+        const we = {json.dumps(WIEN_ENERGIE_NS)};
+        const r = await (await fetch("/api/scope-edit", {{
+            method: "POST", headers: {{ "Content-Type": "application/json" }},
+            body: JSON.stringify({{ ttl: window.PairAI.Editor.getValue(), op: "state-concept",
+                kind: "risk", label: "Leaky answers", attachTo: [we + "Answer", we + "Question"] }}) }})).json();
+        window.PairAI.Editor.setValue(r.ttl);
+        return r.newId;
+    }})()"""))
+    time.sleep(3)
+    loop.run_until_complete(handle.js(
+        'if (!document.querySelector("#drawer").classList.contains("collapsed")) '
+        'document.querySelector("#drawer-toggle").click(); '
+        'document.querySelector("#level-risk").click(); 1'))
+    time.sleep(2)
+    loop.run_until_complete(handle.js("window.PairAI.RiskCanvas.fit(); 1"))
+    time.sleep(0.5)
+    line = loop.run_until_complete(handle.js(f"""(() => {{
+        const hit = [...document.querySelectorAll('#risk-canvas .rc-link-hit')]
+            .find((h) => h.getAttribute('data-from') === {json.dumps(risk)});
+        if (!hit) return null;
+        const p = hit.getPointAtLength(hit.getTotalLength() / 2);
+        const m = hit.getScreenCTM();
+        return {{ x: Math.round(m.a * p.x + m.c * p.y + m.e), y: Math.round(m.b * p.x + m.d * p.y + m.f) }};
+    }})()"""))
+    assert line, "the risk draws no line to pick"
+    loop.run_until_complete(handle.click(line["x"], line["y"]))
+    off = _spot(loop, handle, """(() => {
+        const chip = [...document.querySelectorAll('#risk-side .chip.detach')]
+            .find((c) => c.textContent.startsWith('Customer question'));
+        return chip ? chip.querySelector('.detach-x') : null;
+    })()""")
+    assert off, "the line's panel offers no way to take one attachment off"
+    loop.run_until_complete(handle.click(off["x"], off["y"]))
+    time.sleep(2.5)
+
+    from rdflib import Graph, URIRef
+
+    graph = Graph().parse(data=loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()")),
+                          format="turtle")
+    has_risk = URIRef("http://w3id.org/beam/risk#hasRisk")
+    assert (URIRef(WIEN_ENERGIE_NS + "Question"), has_risk, URIRef(risk)) not in graph, (
+        "the attachment was not removed")
+    assert (URIRef(WIEN_ENERGIE_NS + "Answer"), has_risk, URIRef(risk)) in graph, (
+        "the other attachment went too")
+    assert (URIRef(risk), None, None) in graph, "the risk itself was deleted"
