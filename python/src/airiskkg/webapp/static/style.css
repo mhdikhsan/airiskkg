@@ -1622,7 +1622,10 @@ button.motif-family:hover { color: #4a5262; }
 }
 .pp-item:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .pp-item:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Waiting for a participant: a click says so, a drag onto one still adds it. */
+.pp-item.waiting { opacity: 0.55; cursor: grab; }
 .pp-note { font-size: 10.5px; color: var(--text-dim); padding-left: 4px; }
+.pp-note.pp-note-nudge { color: var(--accent); font-weight: 600; }
 
 
 /* stakeholder overview. */

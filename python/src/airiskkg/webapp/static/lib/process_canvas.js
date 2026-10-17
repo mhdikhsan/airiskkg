@@ -2786,37 +2786,18 @@ function buildPalette(host) {
     button.className = "pp-item";
     button.appendChild(paletteIcon(item));
     button.appendChild(document.createTextNode(item.label));
-    button.title = needsPool && !pool ? `${item.hint} — click a participant first` : item.hint;
-    button.disabled = needsPool && !pool;
-    button.addEventListener("click", async () => {
-      if (item.op === "add-pool") {
-        const label = window.prompt("Name of the participant (an organisation, a customer, a team):");
-        if (label) await onEdit("add-pool", { label });
-        return;
-      }
-      if (item.op === "add-lane") {
-        const label = window.prompt("Name of the lane (a role, a team, a system):");
-        if (label) await onEdit("add-lane", { pool: selectedPool, label });
-        return;
-      }
-      const where = { pool: selectedPool, lane: selectedLane };
-      if (item.op === "add-event") {
-        await onEdit("add-event", {
-          ...where, kind: item.kind, definition: item.definition || "", label: "",
-        });
-      } else if (item.op === "add-gateway") {
-        await onEdit("add-gateway", { ...where, kind: item.kind, label: "" });
-      } else if (item.op === "add-annotation") {
-        const body = window.prompt("What should the note say?");
-        if (body) await onEdit("add-annotation", { ...where, text: body });
-      } else if (item.op === "add-data") {
-        const label = window.prompt(
-          item.shape === "store" ? "Name of the database:" : "Name of the document:");
-        // No activity: it stands on its own until something is joined to it.
-        if (label) await onEdit("add-data", { shape: item.shape, label });
-      } else {
-        await onEdit("add-activity", { ...where, kind: item.kind, label: item.label });
-      }
+    // Not disabled while no participant is picked: it can still be dragged onto one.
+    const waiting = needsPool && !pool;
+    button.title = waiting
+      ? `${item.hint} — drag it onto a participant, or click one first` : `${item.hint} — click or drag`;
+    button.classList.toggle("waiting", waiting);
+    button.setAttribute("aria-disabled", waiting ? "true" : "false");
+    button.addEventListener("pointerdown", (ev) => startPaletteDrag(ev, button, item));
+    button.addEventListener("click", () => {
+      if (swallowPaletteClick) { swallowPaletteClick = false; return; }
+      if (!waiting) { insertFromPalette(item, { pool: selectedPool, lane: selectedLane }); return; }
+      note.textContent = "drag it onto a participant, or click a participant first";
+      note.classList.add("pp-note-nudge");
     });
     section.appendChild(button);
   });
@@ -2825,9 +2806,86 @@ function buildPalette(host) {
   const lane = data && (data.lanes || []).find((l) => l.id === selectedLane);
   note.textContent = pool
     ? `adding to: ${pool.label}${lane ? ` › ${lane.label}` : ""}`
-    : "click a participant to add steps to it";
+    : "click a participant to add steps to it, or drag a shape onto one";
   host.appendChild(note);
   // Visibility belongs to the level switch, not to render.
+}
+
+let swallowPaletteClick = false;
+
+/* What a palette shape adds, into `where` (a participant and maybe a lane). */
+async function insertFromPalette(item, where) {
+  if (item.op === "add-pool") {
+    const label = window.prompt("Name of the participant (an organisation, a customer, a team):");
+    if (label) await onEdit("add-pool", { label });
+    return;
+  }
+  if (item.op === "add-lane") {
+    const label = window.prompt("Name of the lane (a role, a team, a system):");
+    if (label) await onEdit("add-lane", { pool: where.pool, label });
+    return;
+  }
+  if (item.op === "add-event") {
+    await onEdit("add-event", {
+      ...where, kind: item.kind, definition: item.definition || "", label: "",
+    });
+  } else if (item.op === "add-gateway") {
+    await onEdit("add-gateway", { ...where, kind: item.kind, label: "" });
+  } else if (item.op === "add-annotation") {
+    const body = window.prompt("What should the note say?");
+    if (body) await onEdit("add-annotation", { ...where, text: body });
+  } else if (item.op === "add-data") {
+    const label = window.prompt(
+      item.shape === "store" ? "Name of the database:" : "Name of the document:");
+    // No activity: it stands on its own until something is joined to it.
+    if (label) await onEdit("add-data", { shape: item.shape, label });
+  } else {
+    await onEdit("add-activity", { ...where, kind: item.kind, label: item.label });
+  }
+}
+
+/* Drag a shape out of the palette and drop it on a participant or a lane, as a
+   symbol is dropped on the architecture canvas. Below the threshold it stays a click. */
+function startPaletteDrag(ev, button, item) {
+  if (ev.button !== 0) return;
+  const from = { x: ev.clientX, y: ev.clientY };
+  let ghost = null;
+  const move = (mv) => {
+    if (!ghost) {
+      if (Math.hypot(mv.clientX - from.x, mv.clientY - from.y) < 6) return;
+      ghost = button.cloneNode(true);
+      ghost.classList.add("palette-ghost");
+      document.body.appendChild(ghost);
+    }
+    ghost.style.left = mv.clientX + 10 + "px";
+    ghost.style.top = mv.clientY + 10 + "px";
+  };
+  const up = (uv) => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    if (!ghost) return;
+    ghost.remove();
+    swallowPaletteClick = true;
+    const box = svg.getBoundingClientRect();
+    const onCanvas = uv.clientX >= box.left && uv.clientX <= box.right
+      && uv.clientY >= box.top && uv.clientY <= box.bottom
+      && !(uv.target && uv.target.closest && uv.target.closest("#process-palette"));
+    if (!onCanvas) return;
+    const at = svgPoint(uv.clientX, uv.clientY);
+    const pool = bandGeometry().find((p) => !p.collapsed
+      && at.x >= p.x && at.x <= p.x + p.w && at.y >= p.y && at.y <= p.y + p.h);
+    const needsPool = !["add-pool", "add-data"].includes(item.op);
+    if (needsPool && !pool) return;
+    const band = pool && (pool.lanes || []).find((b) => !b.implicit && at.y >= b.y && at.y <= b.y + b.h);
+    if (pool) {
+      // The participant it landed in is now the one the palette adds to.
+      selectedPool = pool.participant.id;
+      selectedLane = band ? band.id : null;
+    }
+    insertFromPalette(item, { pool: pool ? pool.participant.id : null, lane: band ? band.id : null });
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up);
 }
 
 function init(options) {

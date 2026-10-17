@@ -3727,3 +3727,44 @@ def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> N
     assert (URIRef(WIEN_ENERGIE_NS + "Answer"), has_risk, URIRef(risk)) in graph, (
         "the other attachment went too")
     assert (URIRef(risk), None, None) in graph, "the risk itself was deleted"
+
+
+def test_a_shape_is_dragged_from_the_palette_into_a_lane(scene_restored) -> None:
+    """On the architecture canvas a symbol is dragged where it goes; on the
+    business canvas a shape could only be clicked into the selected lane."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_LANED))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, f"!!document.querySelector('#process-canvas [data-band=\"{ids['back']}\"]')",
+            False, tries=40)
+    loop.run_until_complete(handle.js("""(() => {
+        if (!document.querySelector('#drawer').classList.contains('collapsed')) {
+            document.querySelector('#drawer-toggle').click();
+        }
+        return 1;
+    })()"""))
+    _open_palette(loop, handle)
+    loop.run_until_complete(handle.js("window.PairAI.ProcessCanvas.fit(); 1"))
+    time.sleep(0.5)
+    _open_palette(loop, handle)
+    spots = loop.run_until_complete(handle.js(f"""(() => {{
+        const task = [...document.querySelectorAll('#process-palette .pp-item')]
+            .find((b) => b.textContent.trim() === 'Task');
+        task.scrollIntoView({{ block: 'nearest' }});
+        const t = task.getBoundingClientRect();
+        const band = document.querySelector('#process-canvas [data-band="{ids['back']}"]')
+            .getBoundingClientRect();
+        return {{ x: Math.round(t.left + t.width / 2), y: Math.round(t.top + t.height / 2),
+                  toX: Math.round(band.left + band.width * 0.6),
+                  toY: Math.round(band.top + band.height / 2) }};
+    }})()"""))
+    loop.run_until_complete(handle.drag(spots["x"], spots["y"], spots["toX"], spots["toY"]))
+    time.sleep(2)
+
+    from rdflib import Graph, URIRef
+
+    graph = Graph().parse(data=loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()")),
+                          format="turtle")
+    held = set(graph.objects(URIRef(ids["back"]),
+                             URIRef("https://sBPMN.github.io/2.0/properties#flowNodeRef")))
+    assert len(held) == 1, f"the dropped shape is not in the lane it was dropped on: {held}"
