@@ -34,6 +34,12 @@ def _parsed(ttl: str) -> Graph:
     return data
 
 
+def _chosen_elements(payload: dict) -> list[URIRef]:
+    """The one `element`, or every id in `elements` when several are selected."""
+    ids = payload.get("elements") or [payload.get("element")]
+    return [URIRef(i) for i in ids if isinstance(i, str) and i]
+
+
 DRAWN_AS = {
     "use": ((BEAM.use, True), (BEAM.usedBy, False)),
     "produce": ((BEAM.produce, False), (BEAM.producedBy, True)),
@@ -360,17 +366,18 @@ def graph_edit() -> object:
         return _serialized(data, newIds=new_ids, groupLabel=template["label"],
                            newSystem=made_system)
     elif op == "delete-element":
-        element_id = payload.get("element")
-        if not element_id:
+        chosen = _chosen_elements(payload)
+        if not chosen:
             return jsonify({"error": "delete-element needs an element."}), 400
-        element = URIRef(element_id)
-        doomed = {element}
+        doomed = set(chosen)
         # A system is a container: deleting it takes what it holds, except what
         # another system holds as well.
-        if (element, RDF.type, BEAM.System) in data:
+        for element in chosen:
+            if (element, RDF.type, BEAM.System) not in data:
+                continue
             kept: set[URIRef] = set()
             for other in data.subjects(RDF.type, BEAM.System):
-                if other != element and element not in _members_of(data, other):
+                if other not in chosen and element not in _members_of(data, other):
                     kept |= _members_of(data, other)
             doomed |= _members_of(data, element) - kept
         # remove each and every edge touching it (as subject or object)
@@ -552,6 +559,22 @@ DATA_REFS = frozenset({BPMN.dataObjectReference, BPMN.dataStoreReference})
 # throw from catch, so it joins data to an activity only rather than risk
 # writing an association outside the property's domain.
 ACTIVITY_CLASSES = frozenset(BPMN[kind] for kind in ACTIVITY_KINDS)
+
+
+def _appearance_doomed(data: Graph, ref: URIRef, going: set[URIRef]) -> set[URIRef]:
+    """One data box and its associations, and the thing it shows once no other box shows it."""
+    doomed = {ref}
+    doomed.update(data.subjects(BP.sourceRef, ref))
+    doomed.update(data.subjects(BP.targetRef, ref))
+    held = data.value(ref, BP.dataObjectRef) or data.value(ref, BP.dataStoreRef)
+    others = (set(data.subjects(BP.dataObjectRef, held))
+              | set(data.subjects(BP.dataStoreRef, held))) - going
+    if held is not None and not others:
+        doomed.add(held)
+        item = data.value(held, BP.itemSubjectRef)
+        if item is not None:
+            doomed.add(item)
+    return doomed
 
 
 def _already_joined(reading: bool) -> str:
@@ -1194,28 +1217,7 @@ def process_edit() -> object:
         kinds = set(data.objects(ref, RDF.type))
         if not kinds & DATA_REFS:
             return jsonify({"error": "That is not a data object or a data store."}), 400
-        held = data.value(ref, BP.dataObjectRef) or data.value(ref, BP.dataStoreRef)
-
-        doomed = {ref}
-        for prop, side in ((BP.dataInputAssociation, BP.sourceRef),
-                           (BP.dataOutputAssociation, BP.targetRef)):
-            for association in list(data.subjects(side, ref)):
-                doomed.add(association)
-        for association in list(data.subjects(BP.targetRef, ref)):
-            doomed.add(association)
-
-        others = {
-            appearance
-            for appearance in set(data.subjects(BP.dataObjectRef, held))
-            | set(data.subjects(BP.dataStoreRef, held))
-            if appearance != ref
-        }
-        if held is not None and not others:
-            doomed.add(held)
-            item = data.value(held, BP.itemSubjectRef)
-            if item is not None:
-                doomed.add(item)
-
+        doomed = _appearance_doomed(data, ref, {ref})
         for victim in doomed:
             for triple in list(data.triples((victim, None, None))):
                 data.remove(triple)
@@ -1473,15 +1475,19 @@ def process_edit() -> object:
             data.add((node, BP.name, Literal(payload["label"].strip())))
 
     elif op == "delete":
-        element = payload.get("element")
-        if not element:
+        chosen = _chosen_elements(payload)
+        if not chosen:
             return jsonify({"error": "delete needs an element."}), 400
-        node = URIRef(element)
+        appearances = [node for node in chosen if set(data.objects(node, RDF.type)) & DATA_REFS]
+        doomed = set(chosen) - set(appearances)
+        for node in appearances:
+            doomed |= _appearance_doomed(data, node, set(appearances))
         # A participant owns its process; deleting the pool without it would
         # leave a process nothing runs and activities nobody performs.
-        doomed = {node}
-        process = data.value(node, BP.processRef)
-        if process is not None:
+        for node in list(doomed):
+            process = data.value(node, BP.processRef)
+            if process is None:
+                continue
             doomed.add(process)
             doomed.update(data.objects(process, BP.contains))
             for lane_set in data.objects(process, BP.laneSet):

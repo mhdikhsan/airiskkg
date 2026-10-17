@@ -28,6 +28,7 @@ let manualPositions = new Map(); // node id -> {x,y} drag overrides (view-only)
 let lastNodeIds = "";            // to refit only when the element set changes
 let suppressFitOnce = false;     // set by placeNodeAt so a dropped node stays put
 let selectedId = null;           // the element clicked for editing (Del key target)
+let picked = new Set();          // shift-clicked elements, deleted together
 let selectedSystem = null;       // which architecture a new element joins
 let systemExtent = null;         // what the frames occupy, for the fit
 
@@ -292,6 +293,7 @@ function render(data) {
   current = data;
   highlighted = new Set();
   selectedId = null;
+  picked = new Set();
   detailBox.classList.add("hidden");
   if (!data.nodes.length) {
     svg.innerHTML = "";
@@ -551,7 +553,9 @@ function startDrag(ev, node) {
   const up = (uv) => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
-    if (!moved) {
+    if (!moved && uv.shiftKey) {
+      togglePicked(node.id);
+    } else if (!moved) {
       setHighlight([node.id]);
       selectedId = node.id;
       showDetail(node, uv);
@@ -875,23 +879,34 @@ function zoomBy(factor) {
 // evidence highlighting 
 function setHighlight(ids) {
   selectedId = null;
+  picked = new Set();
   highlighted = new Set(ids || []);
   paintHighlight();
 }
 
-// Delete / Backspace removes the clicked element
+/* Shift-click adds an element to the selection, or takes it out. */
+function togglePicked(id) {
+  const next = new Set(picked.size ? picked : (selectedId ? [selectedId] : []));
+  if (next.has(id)) next.delete(id); else next.add(id);
+  detailBox.classList.add("hidden");
+  setHighlight([...next]);
+  picked = next;
+  if (annotationCfg.onStatus) annotationCfg.onStatus("ok", `${next.size} selected`, "Delete removes them");
+}
+
+// Delete / Backspace removes the clicked element, or every shift-clicked one
 function onKeyDown(ev) {
   if (ev.key !== "Delete" && ev.key !== "Backspace") return;
-  if (!selectedId || !annotationCfg.onDelete) return;
+  if ((!selectedId && !picked.size) || !annotationCfg.onDelete) return;
   // A node picked before the level changed is not on screen to be deleted.
   if (svg.classList.contains("hidden")) return;
   const target = ev.target;
   if (target && target.matches && target.matches("input, textarea, select")) return;
   ev.preventDefault();
-  const id = selectedId;
+  const ids = picked.size ? [...picked] : [selectedId];
   detailBox.classList.add("hidden");
   setHighlight([]);
-  annotationCfg.onDelete(id);
+  annotationCfg.onDelete(ids.length > 1 ? ids : ids[0]);
 }
 
 function clear() {

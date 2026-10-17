@@ -87,6 +87,28 @@ def test_deleting_a_system_takes_what_it_holds_and_keeps_what_another_holds(clie
     assert (URIRef(EX + "Search"), URIRef(BEAM + "hasResource"), URIRef(EX + "Archive")) in after
 
 
+def test_several_selected_elements_are_deleted_in_one_edit(client) -> None:
+    """Shift-click picks several elements, and Delete took only one of them."""
+    after = Graph().parse(
+        data=edit(client, TWO_SYSTEMS, "delete-element",
+                  elements=[EX + "Question", EX + "Index"])["ttl"],
+        format="turtle")
+    subjects = {str(s).removeprefix(EX) for s in after.subjects()}
+
+    assert not {"Question", "Index"} & subjects, "a selected element stayed"
+    assert {"Chatbot", "Search", "Answer", "Archive"} <= subjects, "an unselected element went"
+    assert not set(after.triples((None, None, URIRef(EX + "Question")))), "an edge to it stayed"
+
+
+def test_two_systems_deleted_together_take_what_only_they_hold(client) -> None:
+    """Archive is held by both; with both going, nothing is left to keep it."""
+    after = Graph().parse(
+        data=edit(client, TWO_SYSTEMS, "delete-element",
+                  elements=[EX + "Chatbot", EX + "Search"])["ttl"],
+        format="turtle")
+    assert not set(after.subjects()), f"left behind: {set(after.subjects())}"
+
+
 def test_a_motif_lands_in_the_system_that_is_selected(client) -> None:
     """The system bar said "adding to: Search" while every motif went into the
     first system in the graph, whichever one was selected."""

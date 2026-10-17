@@ -1568,6 +1568,10 @@ button.motif-family:hover { color: #4a5262; }
   stroke-width: 2.4;
 }
 .pc-flow-hit { stroke: transparent; stroke-width: 14; cursor: pointer; }
+/* Shift-clicked nodes, which Delete removes together. */
+#process-canvas .pc-picked {
+  filter: drop-shadow(0 0 1.5px #c0392b) drop-shadow(0 0 1.5px #c0392b);
+}
 /* It was a tooltip target and is a control as well now. */
 .edge-hit { cursor: pointer; }
 .edge-drop, .pc-flow-drop { cursor: pointer; }

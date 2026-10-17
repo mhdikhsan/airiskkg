@@ -149,6 +149,10 @@ async function init() {
       }
     }),
     onSelect: (id) => revealInSource([id]),
+    onPick: (ids) => {
+      if (ids.length) revealInSource(ids);
+      setStatus("ok", `${ids.length} selected`, ids.length ? "Delete removes them" : "");
+    },
     onOpenArchitecture: (activity) => {
       /* Only descend into an architecture that is actually here. */
       const wanted = activity.refines[0] || null;

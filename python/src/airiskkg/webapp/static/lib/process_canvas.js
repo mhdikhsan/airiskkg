@@ -44,6 +44,8 @@ let selectedPool = null;
 let selectedLane = null;      // where a new node lands inside a banded pool
 let connecting = null;
 let swallowNextClick = false;
+let picked = new Set();       // shift-clicked nodes, deleted together
+let onPick = null;
 let findingsByActivity = new Map();
 let openRisks = new Set();
 let view = { x: 0, y: 0, k: 1 };
@@ -2324,11 +2326,36 @@ function draw() {
   });
 
   drawPickedBadge(topLayer || root);
+  paintPicked();
   if (topLayer) root.appendChild(topLayer);
   if (structureKey() !== lastFitIds && fit()) return;
   applyView();
 }
 
+
+function paintPicked() {
+  svg.querySelectorAll("[data-node]").forEach((group) => {
+    group.classList.toggle("pc-picked", picked.has(group.getAttribute("data-node")));
+  });
+}
+
+/* Shift-click adds a node to the selection, or takes it out; a plain click
+ * empties it. Read in the capture phase, before the node opens its editor. */
+function pickOnShift(ev) {
+  if (!ev.shiftKey) {
+    if (picked.size) { picked = new Set(); paintPicked(); }
+    return;
+  }
+  const hit = ev.target.closest("[data-node]");
+  if (!hit || ev.target.closest(".pc-open, .pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
+  ev.stopPropagation();
+  ev.preventDefault();
+  closeDetail();
+  const id = hit.getAttribute("data-node");
+  if (picked.has(id)) picked.delete(id); else picked.add(id);
+  paintPicked();
+  if (onPick) onPick([...picked]);
+}
 
 function redraw() {
   if (pendingFrame) return;
@@ -2479,6 +2506,13 @@ function initPanZoom() {
       if (onEdit) await onEdit("disconnect", { flow: id });
       return;
     }
+    if (picked.size && onEdit) {
+      ev.preventDefault();
+      const ids = [...picked];
+      picked = new Set();
+      await onEdit("delete", { elements: ids });
+      return;
+    }
     // The element whose editor is open is the one that was clicked, and its
     // own Delete button already knows how to remove that kind of thing.
     const remove = document.querySelector(
@@ -2574,7 +2608,7 @@ function initPanZoom() {
   };
   // Consumed in the capture phase, so the flag cannot outlive one gesture.
   svg.addEventListener("click", (ev) => {
-    if (!swallowNextClick) return;
+    if (!swallowNextClick) { pickOnShift(ev); return; }
     swallowNextClick = false;
     ev.stopPropagation();
     ev.preventDefault();
@@ -2893,6 +2927,7 @@ function init(options) {
   onOpenArchitecture = options.onOpenArchitecture || null;
   onEdit = options.onEdit || null;
   onSelect = options.onSelect || null;
+  onPick = options.onPick || null;
   if (svg) initPanZoom();
   /* A window that changes size changes how much room the diagram has, and the
    * fit is computed from that room. Without this the canvas kept the scale it
@@ -2927,6 +2962,7 @@ function setFindings(rows) {
 function render(next) {
   data = next;
   index = buildIndex(next);
+  picked = new Set();
   // Keep an activity open across a re-render, but forget one that is gone.
   expanded = new Set([...expanded].filter((id) => index.has(id)));
   const pools = new Set(next.participants.map((p) => p.id));

@@ -77,7 +77,7 @@ class _Page:
         )
         return result.get("result", {}).get("value")
 
-    async def click(self, x, y):
+    async def click(self, x, y, modifiers=0):
         import asyncio
 
         for kind in ("mousePressed", "mouseReleased"):
@@ -90,6 +90,7 @@ class _Page:
                     "button": "left",
                     "clickCount": 1,
                     "buttons": 1 if kind == "mousePressed" else 0,
+                    "modifiers": modifiers,
                 },
             )
             await asyncio.sleep(0.12)
@@ -1198,10 +1199,9 @@ def test_the_editor_folds_away_and_the_canvas_refits(page) -> None:
 
 
 def test_starter_still_works_from_its_new_home_on_the_editor(page) -> None:
-    """Starter and Clear moved out of the toolbar and onto the editor pane,
-    because they act on what is in the pane rather than on the assessment.
-    Moving markup is where handlers get orphaned, so this presses the button
-    where it now lives."""
+    """Starter moved out of the toolbar and onto the editor pane, because it
+    acts on what is in the pane rather than on the assessment. Moving markup is
+    where handlers get orphaned, so this presses the button where it now lives."""
     loop, handle = page
 
     where = loop.run_until_complete(handle.js("""(() => {
@@ -3768,3 +3768,121 @@ def test_a_shape_is_dragged_from_the_palette_into_a_lane(scene_restored) -> None
     held = set(graph.objects(URIRef(ids["back"]),
                              URIRef("https://sBPMN.github.io/2.0/properties#flowNodeRef")))
     assert len(held) == 1, f"the dropped shape is not in the lane it was dropped on: {held}"
+
+
+SHIFT = 8
+
+
+def test_clear_is_in_the_top_bar_and_works_with_the_editor_folded(scene_restored) -> None:
+    """Clear sat on the editor's own head, which folds away with the editor."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "document.body.classList.contains('editor-hidden')"
+        " || document.querySelector('#btn-editor-toggle').click(); 1"))
+    time.sleep(0.6)
+    loop.run_until_complete(handle.js("window.__asked = null;"
+                                      " window.confirm = (m) => { window.__asked = m; return true; }; 1"))
+    where = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('#btn-clear');
+        const r = b.getBoundingClientRect();
+        const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+        const hit = document.elementFromPoint(x, y);
+        return { inToolbar: !!b.closest('.app-header .toolbar'), x, y,
+                 onTop: !!hit && !!hit.closest('#btn-clear'),
+                 folded: document.body.classList.contains('editor-hidden') };
+    })()"""))
+    assert where["folded"], "the editor did not fold"
+    assert where["inToolbar"], "Clear is not in the top bar"
+    assert where["onTop"], "Clear cannot be pressed while the editor is folded"
+
+    loop.run_until_complete(handle.click(where["x"], where["y"]))
+    time.sleep(1)
+    left = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+    loop.run_until_complete(handle.js(
+        "document.body.classList.contains('editor-hidden')"
+        " && document.querySelector('#editor-rail').click(); 1"))
+    time.sleep(0.6)
+    assert loop.run_until_complete(handle.js("window.__asked")), "Clear did not ask first"
+    assert not left.strip(), f"Clear left the document: {left[:80]!r}"
+
+
+def _node_at(loop, handle, selector, attribute, value):
+    """Where a real click lands on that node, or None when something covers it."""
+    wanted = f'{selector}[{attribute}="{value}"]'
+    return loop.run_until_complete(handle.js(f"""(() => {{
+        const n = document.querySelector({json.dumps(wanted)});
+        if (!n) return null;
+        const r = (n.querySelector('.shape, .pc-box') || n).getBoundingClientRect();
+        const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+        const hit = document.elementFromPoint(x, y);
+        return hit && hit.closest({json.dumps(selector)}) === n ? {{ x, y }} : null;
+    }})()"""))
+
+
+def test_shift_click_picks_several_elements_and_delete_takes_them_all(scene_restored) -> None:
+    """Delete took the one element last clicked; there was no way to pick more."""
+    from rdflib import Graph
+
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js(
+        "document.querySelector('#drawer').classList.contains('collapsed')"
+        " || document.querySelector('#drawer-toggle').click();"
+        " window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.6)
+
+    ex = "http://example.org/kinds#"
+    for name in ("Q", "M"):
+        at = _node_at(loop, handle, "#canvas g.node", "data-id", ex + name)
+        assert at, f"{name} cannot be clicked on the canvas"
+        loop.run_until_complete(handle.click(at["x"], at["y"], modifiers=SHIFT))
+    seen = loop.run_until_complete(handle.js("""(() => ({
+        picked: [...document.querySelectorAll('#canvas g.node.highlight')].map((n) => n.dataset.id),
+        popup: !document.querySelector('#node-detail').classList.contains('hidden'),
+    }))()"""))
+    assert sorted(seen["picked"]) == [ex + "M", ex + "Q"], seen
+    assert not seen["popup"], "a shift-click opened the element's editor"
+
+    _press(loop, handle, "Delete", "Delete", 46)
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 3, tries=40)
+    left = Graph().parse(data=loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()")),
+                         format="turtle")
+    subjects = {str(s).removeprefix(ex) for s in left.subjects()}
+    assert not {"Q", "M"} & subjects, f"a picked element stayed: {subjects}"
+    assert {"S", "P"} <= subjects, f"an element nobody picked went: {subjects}"
+
+
+def test_shift_click_picks_several_shapes_on_the_process_and_delete_takes_them(scene_restored) -> None:
+    from rdflib import Graph, URIRef
+
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_LANED))
+    _back_to_business(loop, handle)
+    present = "!!document.querySelector('#process-canvas [data-node=\"{}\"]')"
+    _settle(loop, handle, present.format(ids["log"]), False, tries=40)
+    _clear_the_business_canvas(loop, handle)
+
+    for key in ("ask", "log"):
+        at = _node_at(loop, handle, "#process-canvas [data-node]", "data-node", ids[key])
+        assert at, f"{key} cannot be clicked on the canvas"
+        loop.run_until_complete(handle.click(at["x"], at["y"], modifiers=SHIFT))
+    seen = loop.run_until_complete(handle.js("""(() => ({
+        picked: [...document.querySelectorAll('#process-canvas .pc-picked')]
+            .map((n) => n.getAttribute('data-node')),
+        editor: !document.querySelector('#process-detail').classList.contains('hidden'),
+    }))()"""))
+    assert sorted(seen["picked"]) == sorted([ids["ask"], ids["log"]]), seen
+    assert not seen["editor"], "a shift-click opened the shape's editor"
+
+    _press(loop, handle, "Delete", "Delete", 46)
+    _settle(loop, handle, present.format(ids["ask"]), True, tries=40)
+    left = Graph().parse(data=loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()")),
+                         format="turtle")
+    subjects = {str(s) for s in left.subjects()}
+    assert not {ids["ask"], ids["log"]} & subjects, "a picked shape stayed"
+    assert {ids["customer"], ids["desk"]} <= subjects, "a participant nobody picked went"
+    assert not set(left.subjects(None, URIRef("https://sBPMN.github.io/2.0/classes#sequenceFlow"))), (
+        "the flow between the two deleted steps stayed")

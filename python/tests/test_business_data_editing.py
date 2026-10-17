@@ -173,6 +173,38 @@ def test_a_step_can_read_a_store_and_write_it_too(client) -> None:
     assert again.status_code == 400 and refused["error"] == "That step already writes this data."
 
 
+def test_several_selected_shapes_are_deleted_in_one_edit(client) -> None:
+    """Shift-click picks several shapes, and Delete took only the one whose editor was open."""
+    from rdflib import Graph, URIRef
+
+    def post(**body):
+        response = client.post("/api/process-edit", json=body)
+        assert response.status_code == 200, response.get_json()
+        return response.get_json()
+
+    made = post(ttl="", op="add-pool", label="Desk")
+    pool = made["newId"]
+    made = post(ttl=made["ttl"], op="add-activity", kind="task", pool=pool, label="Update ticket")
+    task = made["newId"]
+    made = post(ttl=made["ttl"], op="add-activity", kind="task", pool=pool, label="Close ticket")
+    kept = made["newId"]
+    made = post(ttl=made["ttl"], op="add-data", shape="store", label="Tickets")
+    store = made["newId"]
+    made = post(ttl=made["ttl"], op="connect", source=task, target=kept)
+    made = post(ttl=made["ttl"], op="connect", source=store, target=task)
+    held = Graph().parse(data=made["ttl"], format="turtle").value(
+        URIRef(store), URIRef("https://sBPMN.github.io/2.0/properties#dataStoreRef"))
+
+    after = Graph().parse(data=post(ttl=made["ttl"], op="delete", elements=[task, store])["ttl"],
+                          format="turtle")
+    subjects = set(after.subjects())
+    assert not {URIRef(task), URIRef(store), held} & subjects, "a selected shape stayed"
+    assert URIRef(kept) in subjects and URIRef(pool) in subjects, "an unselected shape went"
+    for kind in ("sequenceFlow", "dataInputAssociation"):
+        assert not set(after.subjects(None, URIRef("https://sBPMN.github.io/2.0/classes#" + kind))), (
+            f"a {kind} to a deleted shape stayed")
+
+
 def test_an_unknown_classification_is_refused(client, tariff_ttl) -> None:
     """The picker is built from the same table the writer validates against, so
     anything else arriving here is a bug or a hand-made request."""
