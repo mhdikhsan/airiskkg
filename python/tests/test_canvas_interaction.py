@@ -3854,6 +3854,10 @@ def test_shift_click_picks_several_elements_and_delete_takes_them_all(scene_rest
     assert not {"Q", "M"} & subjects, f"a picked element stayed: {subjects}"
     assert {"S", "P"} <= subjects, f"an element nobody picked went: {subjects}"
 
+    _press(loop, handle, "z", "KeyZ", 90, modifiers=2)
+    back = _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 1, tries=40)
+    assert back == 3, f"one undo brought back {back} of 3 elements"
+
 
 def test_shift_click_picks_several_shapes_on_the_process_and_delete_takes_them(scene_restored) -> None:
     from rdflib import Graph, URIRef
@@ -3886,3 +3890,9 @@ def test_shift_click_picks_several_shapes_on_the_process_and_delete_takes_them(s
     assert {ids["customer"], ids["desk"]} <= subjects, "a participant nobody picked went"
     assert not set(left.subjects(None, URIRef("https://sBPMN.github.io/2.0/classes#sequenceFlow"))), (
         "the flow between the two deleted steps stayed")
+
+    _press(loop, handle, "z", "KeyZ", 90, modifiers=2)
+    _settle(loop, handle, present.format(ids["ask"]), False, tries=40)
+    restored = loop.run_until_complete(handle.js(
+        "[" + ", ".join(present.format(ids[k]) for k in ("ask", "log")) + "]"))
+    assert restored == [True, True], "one undo did not bring both steps back"
