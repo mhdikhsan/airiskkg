@@ -295,27 +295,70 @@ export function initMotifPalette(templates) {
   if (!panel) return;
   if (!templates || !templates.length) { panel.style.display = "none"; return; }
   const wrap = $("#canvas-wrap");
-  const body = el("div", { class: "tray-body" });
+  const search = el("input", {
+    type: "search", class: "motif-search", placeholder: "Search motifs",
+    "aria-label": "Search motifs by name or description",
+  });
+  const none = el("p", { class: "motif-none hidden" }, "No motif matches that.");
+  const body = el("div", { class: "tray-body" }, [search]);
+  /* Families start folded and open on a click; a search opens every family it
+     finds something in, or a match inside a folded one would read as no match. */
+  const opened = new Set();
+  const shelves = [];
 
   binBy(templates, "family", "Unshelved").forEach(([family, items]) => {
-    body.appendChild(el("div", { class: "motif-family" }, [
-      el("span", {}, family),
-      el("span", { class: "motif-family-count" }, String(items.length)),
-    ]));
+    const count = el("span", { class: "motif-family-count" }, String(items.length));
+    const head = el("button", { type: "button", class: "motif-family", "aria-expanded": "false" },
+      [el("span", {}, family), count]);
+    const shelf = el("div", { class: "motif-shelf" });
+    const chips = [];
     const groups = binBy(items, "group", "Other");
     groups.forEach(([group, members]) => {
       // A family filed as one group says nothing more under a second heading.
-      if (groups.length > 1) body.appendChild(el("div", { class: "motif-group" }, group));
+      const heading = groups.length > 1 ? el("div", { class: "motif-group" }, group) : null;
+      if (heading) shelf.appendChild(heading);
       members.forEach((item) => {
         const chip = el("div", {
           class: "motif-item",
-          title: `Add ${item.label} — click or drag onto the canvas`,
-        }, item.label);
+          title: (item.description ? `${item.description}\n\n` : "")
+            + "Click or drag onto the canvas to add it.",
+        }, item.label.replace(/\s*Motif$/, ""));
         chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, () => addMotif(item)));
-        body.appendChild(chip);
+        shelf.appendChild(chip);
+        chips.push({ chip, heading, text: [item.label, item.description, group, family]
+          .filter(Boolean).join(" ").toLowerCase() });
       });
     });
+    head.addEventListener("click", () => {
+      if (opened.has(family)) opened.delete(family); else opened.add(family);
+      show();
+    });
+    body.appendChild(head);
+    body.appendChild(shelf);
+    shelves.push({ family, head, shelf, chips, count, total: items.length });
   });
+  body.appendChild(none);
+
+  const show = () => {
+    const query = search.value.trim().toLowerCase();
+    let found = 0;
+    shelves.forEach(({ family, head, shelf, chips, count, total }) => {
+      const hits = chips.filter(({ text }) => !query || text.includes(query));
+      chips.forEach(({ chip }) => chip.classList.toggle("hidden", !hits.some((h) => h.chip === chip)));
+      new Set(chips.map(({ heading }) => heading).filter(Boolean)).forEach((heading) =>
+        heading.classList.toggle("hidden", !hits.some((h) => h.heading === heading)));
+      const open = query ? hits.length > 0 : opened.has(family);
+      head.classList.toggle("hidden", Boolean(query) && !hits.length);
+      head.classList.toggle("open", open);
+      head.setAttribute("aria-expanded", String(open));
+      shelf.classList.toggle("hidden", !open);
+      count.textContent = String(query ? hits.length : total);
+      found += hits.length;
+    });
+    none.classList.toggle("hidden", found > 0);
+  };
+  search.addEventListener("input", show);
+  show();
 
   buildTray(panel, "Motifs", body, true);
 }

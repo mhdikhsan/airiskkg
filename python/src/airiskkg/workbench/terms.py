@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from rdflib import RDF, RDFS, SKOS, Graph, Namespace, URIRef
+from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 
 from airiskkg.assessment_runner import BEAM
 
@@ -55,6 +55,23 @@ def source_pair(uri: object) -> tuple[str, str]:
 def short(term: object) -> str:
     """The local part of an IRI: what a term is called, without its namespace."""
     return str(term).rsplit("#", 1)[-1].rsplit("/", 1)[-1]
+
+
+def collapsed_text(value: object) -> str | None:
+    """Curated descriptions are written as indented triple-quoted literals, and
+    a reader gets them as one paragraph rather than as the source's line breaks."""
+    if value is None:
+        return None
+    collapsed = " ".join(str(value).split())
+    return collapsed or None
+
+
+def definition_of(graph: Graph, resource: URIRef) -> str | None:
+    """What the library says a term or motif is: its definition, else its description."""
+    return collapsed_text(
+        graph.value(resource, SKOS.definition)
+        or graph.value(resource, DCTERMS.description)
+    )
 
 
 def label(graph: Graph, resource: URIRef) -> str:

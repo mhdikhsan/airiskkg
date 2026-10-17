@@ -332,6 +332,26 @@ label.btn { display: inline-flex; align-items: center; }
 }
 .motif-family:first-child { margin-top: 0; }
 .motif-family-count { font-weight: 600; color: #a7aebb; }
+/* A family folds; its marker is a CSS triangle, never a typed glyph. */
+button.motif-family {
+  width: 100%; border: 0; background: none; cursor: pointer; align-items: center;
+  font-family: inherit; text-align: left;
+}
+button.motif-family > span:first-child { display: inline-flex; align-items: center; gap: 6px; }
+button.motif-family > span:first-child::before {
+  content: ""; width: 0; height: 0;
+  border-left: 4px solid #8b93a1;
+  border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent;
+  transition: transform .12s ease; transform-origin: 2px 50%;
+}
+button.motif-family.open > span:first-child::before { transform: rotate(90deg); }
+button.motif-family:hover { color: #4a5262; }
+.motif-shelf { display: flex; flex-direction: column; gap: 5px; }
+.motif-search {
+  width: 100%; min-width: 0; box-sizing: border-box; font-size: 12px;
+  padding: 4px 7px; border: 1px solid #c6ccd8; border-radius: 6px; background: #fff;
+}
+.motif-none { font-size: 11px; color: #8b93a1; margin: 2px; }
 .motif-group {
   margin-top: 4px; padding: 0 2px 0 8px;
   font-size: 10px; color: #9aa1ad;

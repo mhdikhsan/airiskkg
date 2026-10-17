@@ -5,7 +5,7 @@ from functools import lru_cache
 from rdflib import RDF, RDFS, SKOS
 
 from airiskkg.assessment_runner import PAIR, load_base_graph
-from airiskkg.workbench.terms import PROCESS_CLASS_NAMES, display_label, short
+from airiskkg.workbench.terms import PROCESS_CLASS_NAMES, definition_of, display_label, short
 
 _MOTIF_SUPPLEMENTS = {
     "EmbeddingsMotif": {
@@ -63,6 +63,7 @@ def motif_templates() -> dict:
         label = graph.value(motif, RDFS.label)
         templates[motif_id] = {
             "label": str(label) if label else display_label(motif_id),
+            "description": definition_of(graph, motif),
             "family": _shelf_label(graph, motif, PAIR.motifFamily),
             "group": _shelf_label(graph, motif, PAIR.motifGroup),
             "nodes": nodes,
@@ -84,7 +85,9 @@ def motif_template_list() -> list[dict[str, str]]:
     is a shape of, or which ones are variants of each other."""
     return sorted(
         (
-            {"id": key, "label": tpl["label"], "family": tpl["family"], "group": tpl["group"]}
+            {"id": key, "label": tpl["label"], "family": tpl["family"], "group": tpl["group"],
+             # The tray's tooltip: the library's own words for the motif, not new ones.
+             "description": tpl["description"]}
             for key, tpl in motif_templates().items()
         ),
         key=lambda item: item["label"].lower(),

@@ -8,6 +8,8 @@ from airiskkg.assessment_runner import PAIR, load_base_graph
 from airiskkg.workbench.risk_context import link_context
 from airiskkg.workbench.templates import motif_templates
 from airiskkg.workbench.terms import (
+    collapsed_text as _text,
+    definition_of as _definition,
     display_label,
     domain_of,
     label,
@@ -33,22 +35,6 @@ _BEAMR_CONTROL = URIRef("http://w3id.org/beam/risk#RiskControl")
 _PAT = "http://w3id.org/airiskkg/patterns#"
 _TECHNICAL = PAIR.TechnicalControl
 _NON_TECHNICAL = PAIR.NonTechnicalControl
-
-
-def _text(value: object) -> str | None:
-    """Curated descriptions are written as indented triple-quoted literals, and
-    a reader gets them as one paragraph rather than as the source's line breaks."""
-    if value is None:
-        return None
-    collapsed = " ".join(str(value).split())
-    return collapsed or None
-
-
-def _definition(graph: Graph, resource: URIRef) -> str | None:
-    return _text(
-        graph.value(resource, SKOS.definition)
-        or graph.value(resource, DCTERMS.description)
-    )
 
 
 _OWN_NAMESPACES = ("http://w3id.org/airiskkg", "http://w3id.org/beam")

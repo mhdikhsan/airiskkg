@@ -2712,6 +2712,8 @@ def test_a_wheel_over_a_tray_scrolls_it_rather_than_zooming_the_canvas(page) -> 
         const host = document.querySelector('#motif-palette');
         if (!host) return null;
         if (host.classList.contains('collapsed')) host.querySelector('.tray-head').click();
+        // The families start folded; opened, they make the tray taller than its box.
+        host.querySelectorAll('.motif-family:not(.open)').forEach((head) => head.click());
         const r = host.getBoundingClientRect();
         return {
             x: Math.round(r.left + r.width / 2),
@@ -2734,6 +2736,11 @@ def test_a_wheel_over_a_tray_scrolls_it_rather_than_zooming_the_canvas(page) -> 
         top: document.querySelector('#motif-palette').scrollTop,
         transform: document.querySelector('#viewport').getAttribute('transform'),
     }))()"""))
+    # Folded again: the page is shared, and the tray starts folded for the next test.
+    loop.run_until_complete(handle.js("""(() => {
+        document.querySelectorAll('#motif-palette .motif-family.open').forEach((h) => h.click());
+        return 1;
+    })()"""))
 
     assert after["top"] > tray["top"], (
         f"the wheel did not scroll the tray (scrollTop stayed {after['top']})"
@@ -3632,3 +3639,37 @@ def test_the_input_contract_panel_checks_the_bpmn_too(scene_restored) -> None:
 
     assert row, "the panel says nothing about an end event a flow leaves"
     assert row["violation"] and "BPMN" in row["text"], row
+
+
+def test_the_motif_tray_starts_folded_and_finds_a_motif_by_what_it_does(page) -> None:
+    """47 motifs open at once, each ending in "Motif", and a tooltip that only
+    repeated the name: nothing helped a reader find the one they needed."""
+    loop, handle = page
+    _descend(loop, handle)
+    assert _on_architecture(loop, handle), "did not reach the architecture level"
+    loop.run_until_complete(handle.js("""(() => {
+        const host = document.querySelector('#motif-palette');
+        if (host.classList.contains('collapsed')) host.querySelector('.tray-head').click();
+        return 1;
+    })()"""))
+    shown = "[...document.querySelectorAll('#motif-palette .motif-item')].filter((c) => c.checkVisibility())"
+    folded = loop.run_until_complete(handle.js(shown + ".length"))
+
+    box = _spot(loop, handle, "document.querySelector('#motif-palette .motif-search')")
+    loop.run_until_complete(handle.click(box["x"], box["y"]))
+    loop.run_until_complete(handle.send("Input.insertText", {"text": "vector store"}))
+    time.sleep(0.5)
+    found = loop.run_until_complete(handle.js(shown + """.map((c) => ({
+        name: c.textContent, tip: c.title }))"""))
+    loop.run_until_complete(handle.js("""(() => {
+        const s = document.querySelector('#motif-palette .motif-search');
+        s.value = ''; s.dispatchEvent(new Event('input'));
+        return 1;
+    })()"""))
+
+    assert folded == 0, f"{folded} motifs are listed before any family is opened"
+    assert found, "searching what a motif does found nothing"
+    assert all(not item["name"].endswith("Motif") for item in found), found
+    assert all("vector store" in item["tip"].lower() or "vector store" in item["name"].lower()
+               for item in found), "a search hit does not say what matched"
+    assert all(item["tip"] and "Click or drag" in item["tip"] for item in found)

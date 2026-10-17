@@ -231,6 +231,16 @@ def test_a_match_says_which_annotation_bound_each_element(client) -> None:
     assert ("SPARQL Query Template", "User Input", "Rewritten Query") in refined, refined
 
 
+def test_the_motif_tray_carries_each_motifs_own_description(client) -> None:
+    """The tray's tooltip said "Add X Motif" and nothing about what X is; the
+    library already describes every motif, so the tray reads the same words."""
+    tray = {t["id"]: t for t in client.get("/api/vocabulary").get_json()["motifTemplates"]}
+    library = {m["id"]: m for m in client.get("/api/library").get_json()["motifs"]}
+    assert tray and set(tray) == set(library)
+    for motif_id, template in tray.items():
+        assert template["description"] == library[motif_id]["description"], motif_id
+
+
 def test_assess_endpoint_still_works(client) -> None:
     ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     response = client.post("/api/assess", json={"ttl": ttl})
