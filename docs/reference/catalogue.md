@@ -98,7 +98,7 @@ matches several families at once.
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
 | **GuardrailsMotif** | Input/output guardrail steps screen or sanitize prompts and responses around the LLM. Flow-agnostic: anchored on the guardrail decision the generation reads, so it matches whether generation consumes the user prompt directly or a constructed prompt. | LLM05, LLM07 |
-| **EvalsMotif** | Model input, output, expected output, and optional context are scored/judged into evaluation results. | — |
+| **EvalsMotif** | A scoring step rates a model's output against an expected output, reading the evaluation input, the retrieved context and a judge model, and produces a score. Its nodes play the evaluation roles (Evaluation Input, Evaluated Output, Evaluation Context), not the running system's. | — |
 
 > **A control motif is not a safe motif.** Guardrails and Evals are what
 > absence-of-control conditions look for, so their presence suppresses findings

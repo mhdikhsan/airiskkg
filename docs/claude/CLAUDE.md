@@ -874,8 +874,8 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   risk domain linked"). `test_what_a_pattern_may_lead_to_is_traversed_never_asserted` pins both
   halves: every served domain is re-derived from the graph, and that set of two is asserted.
 - **Motifs are shelved by family, and the shelving is data.** `pair:motifFamily` puts every
-  motif in one concept of `pair:MotifFamilyScheme` — **GenAI** (13), **ML serving and
-  training** (13), **Agentic** (4), **Supply chain** (1). It is a filing decision about *this
+  motif in one concept of `pair:MotifFamilyScheme` — **GenAI** (19), **Agentic** (10),
+  **ML serving and training** (8), **Supply chain** (1), counted 2026-10-18. It is a filing decision about *this
   library*, never a reading of a submitted architecture: **no match query may read it** (R2, and
   `test_no_match_query_reads_the_motif_family` enforces it), and one system routinely matches
   several families at once. A motif shelved twice or not at all fails
@@ -984,14 +984,18 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   inside the wrap.
 - **The motif tray is shelved by family, like the library shelf.** 31 entries in one
   alphabetical column said nothing about which kind of AI system each is a shape of, so
-  `motif_template_list()` carries `pair:motifFamily` and the tray groups on it: Agentic 4,
-  GenAI 13, ML serving and training 13, Supply chain 1. It is the same filing decision as the
+  `motif_template_list()` carries `pair:motifFamily` and the tray groups on it, with the counts
+  of the bullet above. It is the same filing decision as the
   library's, so the same rule holds — **no match query may read it** (R2).
-- **6 terms are inert — nothing in the 62 registered queries reads them**, directly or by
-  subsumption. Three are abstract tops and are fine (`Control Step`, `Processing Step`,
-  `Resource Role`). Three are not: **`Document Chunk`, `Embedding Vector`,
-  `Pseudonymization Step`** look usable and do nothing when applied. Open item; the rule is
-  that declared-but-unused vocabulary gets removed, not documented.
+- **5 roles are inert — nothing in the 87 registered queries reads them**, directly or by
+  subsumption (re-counted 2026-10-18; the 17 categories are filing by design and excluded). Two
+  are the tops above the categories and are fine (`Processing Step`, `Resource Role`). Three are
+  not: **`Context Detection Step`, `Job Scheduler`, `Tool Registry`** were read only by the
+  variant motifs merged in B-4 (Proactive goal creation, Batch prediction and training,
+  Tool/agent registry), and now do nothing when applied. Open item; the rule is that
+  declared-but-unused vocabulary gets removed, not documented. `Document Chunk` and `Embedding
+  Vector` were removed in B-4; `Control Step` and `Pseudonymization Step` are read since
+  `unqualified_prediction.rq` walks `subRoleOf* pair:ControlStep`.
 - **A small ODP/OQP drift, recorded so it is not rediscovered.** `Resource Role` is declared
   on a pattern node but named in no `.rq`; `Pre-trained Model` and `State Changing Step` are
   named in a `.rq` but on no pattern node.
@@ -1402,24 +1406,24 @@ anyone noticed:
 len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its siblings
 ```
 
-### Library (counted off the loaded graph, 2026-10-09)
+### Library (counted off the loaded graph, 2026-10-18)
 
 | | |
 | --- | --- |
-| Motifs | **47** — GenAI 20, ML serving and training 13, Agentic 13, Supply chain 1 |
-| Risk patterns | **33** — GenAI 10, Agentic 11, ML serving and training 11, Supply chain 1 (35 motifs carry one; 12 carry none) |
-| Pattern nodes / pattern edges | **261** / **224** — every edge crosses between an oval and a box |
-| Pattern roles | **140**: 123 roles plus 17 `pair:RoleCategory` categories (2026-10-18). The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
+| Motifs | **38** — GenAI 19, Agentic 10, ML serving and training 8, Supply chain 1 (47 before the B-4 merges) |
+| Risk patterns | **33** — GenAI 10, Agentic 11, ML serving and training 11, Supply chain 1 (26 motifs carry one; 12 carry none) |
+| Pattern nodes / pattern edges | **200** / **171** — every edge crosses between an oval and a box |
+| Pattern roles | **141**: 124 roles plus 17 `pair:RoleCategory` categories. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
 | Data categories | **7** |
 | Facet concepts | **35** (task 20, data 11, autonomy 4) |
 | Risk mechanisms | **32** |
 | Applicability conditions | **34**, carried on 38 attachments |
 | Controls | **30** `pat:Control_*` |
 | Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 40, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
-| Triples | **12 112** |
-| Motif–risk links | **123** — 39 carried by the motif alone, 84 with a named context (32 annotate the motif's own elements, 52 add the surrounding elements the risk needs) |
+| Triples | **11 392** |
+| Motif–risk links | **76** — 24 carried by the motif alone, 52 with a named context (19 annotate the motif's own elements, 33 add the surrounding elements the risk needs) |
 
-**97 registered implementations** over 96 `.rq` files: 47 match, 33 risk, 6 propagation, 9
+**88 registered implementations** over 87 `.rq` files: 38 match, 33 risk, 6 propagation, 9
 mitigation rewrites over 8 files (`response_verification.rq` is registered twice, under two
 controls for the same risk pattern), and 2 business-context derivations under
 `ontology/context/` — one of which registers as `DataCategoryPropagation`, so the runner sees 7
@@ -1438,12 +1442,16 @@ of those and 1 `BusinessFlowDerivation`.
 | Energy scene: BotTina + the business process | 5 | 11 |
 | Tariff scene: the tariff graph + its business process | 3 | 11 |
 | IT service desk scene: the agent + its business process | 4 | 12 |
-| Credit scoring (fixture): train, auto-deploy, score, decide, feed back | 3 | 17 |
+| Credit scoring (fixture): train, auto-deploy, score, decide, feed back | 3 | 11 |
 
 Moved 2026-10-09: Onyx +2 protected data to an external model (one concern, raised from the
 direct-prompting and RAG matches), the IT support agent +2 untraceable agent actions, its
 service desk scene those two plus personal data retained in agent memory, and credit scoring
 +2 model extraction and −1 supply chain on the model it trains itself.
+
+Moved 2026-10-18 (B-4): credit scoring 17 → 11 findings with its 10 concerns unchanged. The six
+serving risk patterns were raised from both the Training-to-serving and the serving match over
+the same elements; Training-to-serving now carries only its lifecycle risks.
 
 No bundled scene clears anything; `test_business_context.py` covers the clearing half by
 building an approval inline.
