@@ -658,12 +658,6 @@ pair:PromptTemplate a pair:PatternRole ;
     pair:subRoleOf pair:PromptResponseRoles ;
     skos:definition "A prompt template combining instructions and inputs."@en .
 
-pair:EmbeddingVector a pair:PatternRole ;
-    skos:prefLabel "EmbeddingVector"@en ;
-    pair:subRoleOf pair:KnowledgeContextRoles ;
-    skos:definition "A stored embedding vector."@en ;
-    skos:relatedMatch t4b:Tensor .
-
 pair:ExpectedOutput a pair:PatternRole ;
     skos:prefLabel "ExpectedOutput"@en ;
     pair:subRoleOf pair:TrainingEvaluationDataRoles ;
@@ -708,11 +702,6 @@ pair:RerankedContext a pair:PatternRole ;
     skos:prefLabel "RerankedContext"@en ;
     pair:subRoleOf pair:RetrievedContext ;
     skos:definition "Reranked, selected context fragments for generation."@en .
-
-pair:DocumentChunk a pair:PatternRole ;
-    skos:prefLabel "DocumentChunk"@en ;
-    pair:subRoleOf pair:KnowledgeContextRoles ;
-    skos:definition "A chunk of a source document used for embedding/retrieval."@en .
 
 pair:SourceDocument a pair:PatternRole ;
     skos:prefLabel "SourceDocument"@en ;

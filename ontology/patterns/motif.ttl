@@ -1612,7 +1612,7 @@ pat:Embedding_ChunkingStepNode
 pat:Embedding_DocumentChunkNode
     a pair:PatternNode ;
     rdfs:label "Document chunk"@en ;
-    rdfs:comment "The OQP identifies the chunk positionally (produced by the chunking step, used by the embedding step) without checking a role; pair:DocumentChunk is the typical annotation."@en ;
+    rdfs:comment "The OQP identifies the chunk positionally (produced by the chunking step, used by the embedding step) without checking a role."@en ;
     pair:expectedClass beam:Data .
 
 pat:Embedding_GenerationStepNode
@@ -1624,7 +1624,7 @@ pat:Embedding_GenerationStepNode
 pat:Embedding_VectorNode
     a pair:PatternNode ;
     rdfs:label "Embedding vector"@en ;
-    rdfs:comment "The OQP identifies the vector positionally (produced by the embedding step, used by the indexing step) without checking a role; pair:EmbeddingVector is the typical annotation."@en ;
+    rdfs:comment "The OQP identifies the vector positionally (produced by the embedding step, used by the indexing step) without checking a role."@en ;
     pair:expectedClass beam:Data .
 
 pat:Embedding_VectorIndexNode
