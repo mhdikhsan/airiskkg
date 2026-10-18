@@ -219,9 +219,10 @@ CASES = [
     }),
     ("PromptResponseOptimiserMotif", PROMPT_RESPONSE_OPTIMISER, set()),
     ("GoalCreationMotif", GOAL_CREATION, {"GoalHijackRiskPattern"}),
-    ("ProactiveGoalCreationMotif", PROACTIVE_GOAL_CREATION, {"GoalHijackRiskPattern"}),
+    # Merged into their base motif (B-4): the base recognises the variant's drawing.
+    ("GoalCreationMotif", PROACTIVE_GOAL_CREATION, {"GoalHijackRiskPattern"}),
     ("ModelQueryingMotif", MODEL_QUERYING, {"GoalHijackRiskPattern"}),
-    ("IncrementalModelQueryingMotif", INCREMENTAL_MODEL_QUERYING, {"GoalHijackRiskPattern"}),
+    ("ModelQueryingMotif", INCREMENTAL_MODEL_QUERYING, {"GoalHijackRiskPattern"}),
     ("PlanReflectionMotif", PLAN_REFLECTION, {
         "GoalHijackRiskPattern",
         "UnboundedConsumptionRiskPattern",
@@ -231,7 +232,7 @@ CASES = [
         "InsecureAgentCommunicationRiskPattern",
         "UnboundedConsumptionRiskPattern",
     }),
-    ("ToolAgentRegistryMotif", TOOL_AGENT_REGISTRY + TOOL_AGENT_REGISTRY_CONDITIONS, {
+    ("ToolUsingAgentMotif", TOOL_AGENT_REGISTRY + TOOL_AGENT_REGISTRY_CONDITIONS, {
         "ToolMisuseRiskPattern",
         "GoalHijackRiskPattern",
         "AgenticSupplyChainRiskPattern",
@@ -240,6 +241,10 @@ CASES = [
         "UntraceableAgentActionsRiskPattern",
     }),
 ]
+
+
+_IDS = [case[0] if [c[0] for c in CASES].count(case[0]) == 1 else f"{case[0]}-{at}"
+        for at, case in enumerate(CASES)]
 
 
 def _local(term) -> str:
@@ -273,12 +278,12 @@ def _evidence(result, pattern: str) -> set[str]:
     }
 
 
-@pytest.mark.parametrize("motif, graph, carried", CASES, ids=[case[0] for case in CASES])
+@pytest.mark.parametrize("motif, graph, carried", CASES, ids=_IDS)
 def test_the_motif_matches_its_design_pattern_drawn_as_an_architecture(motif, graph, carried) -> None:
     assert motif in _matched(_assess(graph))
 
 
-@pytest.mark.parametrize("motif, graph, carried", CASES, ids=[case[0] for case in CASES])
+@pytest.mark.parametrize("motif, graph, carried", CASES, ids=_IDS)
 def test_every_risk_pattern_the_motif_carries_fires_through_its_own_match(motif, graph, carried) -> None:
     from airiskkg.assessment_runner import load_base_graph
 
@@ -306,7 +311,7 @@ ex:Verdict a beam:Data ; pair:playsRole pair:GuardrailDecision .
 ex:Create beam:use ex:Verdict .
 """
     result = _assess(screened)
-    assert "ProactiveGoalCreationMotif" in _matched(result)
+    assert "GoalCreationMotif" in _matched(result)
     assert not _evidence(result, "GoalHijackRiskPattern")
 
 

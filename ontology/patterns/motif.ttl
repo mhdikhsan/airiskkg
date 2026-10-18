@@ -938,144 +938,23 @@ pat:MultiStage_SlowProducesResultEdge
 
 # ML system design motifs derived from the training design patterns
 
-pat:BatchTrainingMotif
-    a pair:GraphMotif ;
-    pair:implementedBy pat:BatchTrain_MatchingOQP ;
-    rdfs:label "Batch Training Motif"@en ;
-    dct:description "A scheduled job starts preprocessing of a training dataset, a training step learns a model artifact from the result, and an evaluation step scores it."@en ;
-    dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> ;
-    pair:derivedFrom pat:Cite_BatchTraining ;
-    pair:hasPatternNode
-        pat:BatchTrain_SchedulerNode ,
-        pat:BatchTrain_DatasetNode ,
-        pat:BatchTrain_PreprocessStepNode ,
-        pat:BatchTrain_JobRequestNode ,
-        pat:BatchTrain_TrainingDataNode ,
-        pat:BatchTrain_TrainingStepNode ,
-        pat:BatchTrain_ModelArtifactNode ,
-        pat:BatchTrain_EvaluationStepNode ,
-        pat:BatchTrain_EvaluationResultNode ;
-    pair:hasPatternEdge
-        pat:BatchTrain_PreprocessUsesDatasetEdge ,
-        pat:BatchTrain_JobUsesJobRequestEdge ,
-        pat:BatchTrain_SchedulerProducesJobRequestEdge ,
-        pat:BatchTrain_PreprocessProducesTrainingDataEdge ,
-        pat:BatchTrain_TrainingUsesDataEdge ,
-        pat:BatchTrain_TrainingProducesModelEdge ,
-        pat:BatchTrain_EvaluationUsesModelEdge ,
-        pat:BatchTrain_EvaluationProducesResultEdge .
-
-pat:BatchTrain_SchedulerNode
-    a pair:PatternNode ;
-    rdfs:label "Batch training scheduler"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:JobScheduler .
-
-pat:BatchTrain_DatasetNode
-    a pair:PatternNode ;
-    rdfs:label "Batch training dataset"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:TrainingDataset .
-
-pat:BatchTrain_PreprocessStepNode
-    a pair:PatternNode ;
-    rdfs:label "Batch training preprocessing step"@en ;
-    pair:expectedClass beam:Transform ;
-    pair:expectedRole pair:PreprocessingStep .
-
-pat:BatchTrain_JobRequestNode
-    a pair:PatternNode ;
-    rdfs:label "Job request"@en ;
-    pair:expectedClass beam:Data .
-
-pat:BatchTrain_TrainingDataNode
-    a pair:PatternNode ;
-    rdfs:label "Prepared training data"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PreprocessedData .
-
-pat:BatchTrain_TrainingStepNode
-    a pair:PatternNode ;
-    rdfs:label "Batch training step"@en ;
-    pair:expectedClass beam:Train ;
-    pair:expectedRole pair:TrainingStep .
-
-pat:BatchTrain_ModelArtifactNode
-    a pair:PatternNode ;
-    rdfs:label "Trained model artifact"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:ModelArtifact .
-
-pat:BatchTrain_EvaluationStepNode
-    a pair:PatternNode ;
-    rdfs:label "Model evaluation step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:EvaluationStep .
-
-pat:BatchTrain_EvaluationResultNode
-    a pair:PatternNode ;
-    rdfs:label "Model evaluation result"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:EvaluationResult .
 
 
-pat:BatchTrain_PreprocessUsesDatasetEdge
-    a pair:PatternEdge ;
-    rdfs:label "training preprocess uses dataset"@en ;
-    pair:sourcePatternNode pat:BatchTrain_PreprocessStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:BatchTrain_DatasetNode .
-
-pat:BatchTrain_JobUsesJobRequestEdge
-    a pair:PatternEdge ;
-    rdfs:label "the job reads the request that started it"@en ;
-    pair:sourcePatternNode pat:BatchTrain_PreprocessStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:BatchTrain_JobRequestNode .
-
-pat:BatchTrain_SchedulerProducesJobRequestEdge
-    a pair:PatternEdge ;
-    rdfs:label "scheduler issues the job request"@en ;
-    pair:sourcePatternNode pat:BatchTrain_SchedulerNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:BatchTrain_JobRequestNode .
-
-pat:BatchTrain_PreprocessProducesTrainingDataEdge
-    a pair:PatternEdge ;
-    rdfs:label "training preprocess produces prepared data"@en ;
-    pair:sourcePatternNode pat:BatchTrain_PreprocessStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:BatchTrain_TrainingDataNode .
 
 
-pat:BatchTrain_TrainingUsesDataEdge
-    a pair:PatternEdge ;
-    rdfs:label "training uses prepared data"@en ;
-    pair:sourcePatternNode pat:BatchTrain_TrainingStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:BatchTrain_TrainingDataNode .
-
-pat:BatchTrain_TrainingProducesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "training produces model artifact"@en ;
-    pair:sourcePatternNode pat:BatchTrain_TrainingStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:BatchTrain_ModelArtifactNode .
 
 
-pat:BatchTrain_EvaluationUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "evaluation uses model artifact"@en ;
-    pair:sourcePatternNode pat:BatchTrain_EvaluationStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:BatchTrain_ModelArtifactNode .
 
-pat:BatchTrain_EvaluationProducesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "evaluation produces result"@en ;
-    pair:sourcePatternNode pat:BatchTrain_EvaluationStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:BatchTrain_EvaluationResultNode .
+
+
+
+
+
+
+
+
+
+
 
 pat:PipelineTrainingMotif
     a pair:GraphMotif ;
@@ -1083,7 +962,8 @@ pat:PipelineTrainingMotif
     rdfs:label "Pipeline Training Motif"@en ;
     dct:description "Preprocessing, training and evaluation run as separate steps, each reading what the previous one produced: prepared data, then a model artifact."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Pipeline-training-pattern/design_en.html> ;
-    pair:derivedFrom pat:Cite_PipelineTraining ;
+    pair:derivedFrom pat:Cite_PipelineTraining ,
+        pat:Cite_BatchTraining ;
     pair:hasPatternNode
         pat:PipeTrain_SourceDataNode ,
         pat:PipeTrain_PreprocessJobNode ,
@@ -3575,7 +3455,8 @@ pat:ToolUsingAgentMotif
     pair:derivedFrom asi:asi02-tool-misuse ,
         pat:Cite_AgentAdapter ,
         pat:Cite_SinglePathPlanGenerator ,
-        pat:Cite_MultiPathPlanGenerator ;
+        pat:Cite_MultiPathPlanGenerator ,
+        pat:Cite_ToolAgentRegistry ;
     pair:hasPatternNode
         pat:ToolAgent_PlanningStepNode ,
         pat:ToolAgent_ActionStepNode ,
@@ -3948,96 +3829,17 @@ pat:GoalCreation_CreatorProducesGoalEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:GoalCreation_GoalNode .
 
-pat:ProactiveGoalCreationMotif
-    a pair:GraphMotif ;
-    rdfs:label "Proactive Goal Creation Motif"@en ;
-    dct:description "A context detection step captures the user's surroundings, and a goal creation step forms a goal from it with the user's input and the agent's memory."@en ;
-    pair:derivedFrom pat:Cite_ProactiveGoalCreator ;
-    pair:hasPatternNode
-        pat:ProactiveGoal_PromptNode ,
-        pat:ProactiveGoal_MemoryNode ,
-        pat:ProactiveGoal_DetectorNode ,
-        pat:ProactiveGoal_EnvironmentContextNode ,
-        pat:ProactiveGoal_GoalCreatorNode ,
-        pat:ProactiveGoal_GoalNode ;
-    pair:hasPatternEdge
-        pat:ProactiveGoal_DetectorProducesContextEdge ,
-        pat:ProactiveGoal_CreatorUsesContextEdge ,
-        pat:ProactiveGoal_CreatorUsesPromptEdge ,
-        pat:ProactiveGoal_CreatorUsesMemoryEdge ,
-        pat:ProactiveGoal_CreatorProducesGoalEdge ;
-    pair:implementedBy pat:ProactiveGoal_MatchingOQP .
 
-pat:ProactiveGoal_PromptNode
-    a pair:PatternNode ;
-    rdfs:label "User prompt"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
 
-pat:ProactiveGoal_MemoryNode
-    a pair:PatternNode ;
-    rdfs:label "Agent memory"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:AgentMemory .
 
-pat:ProactiveGoal_DetectorNode
-    a pair:PatternNode ;
-    rdfs:label "Detector step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:ContextDetectionStep .
 
-pat:ProactiveGoal_EnvironmentContextNode
-    a pair:PatternNode ;
-    rdfs:label "Captured environment context"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:EnvironmentContext .
 
-pat:ProactiveGoal_GoalCreatorNode
-    a pair:PatternNode ;
-    rdfs:label "Proactive goal creator step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:GoalCreationStep .
 
-pat:ProactiveGoal_GoalNode
-    a pair:PatternNode ;
-    rdfs:label "Agent goal"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:AgentGoal .
 
-pat:ProactiveGoal_DetectorProducesContextEdge
-    a pair:PatternEdge ;
-    rdfs:label "detector produces the captured context"@en ;
-    pair:sourcePatternNode pat:ProactiveGoal_DetectorNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:ProactiveGoal_EnvironmentContextNode .
 
-pat:ProactiveGoal_CreatorUsesContextEdge
-    a pair:PatternEdge ;
-    rdfs:label "goal creator uses the captured context"@en ;
-    pair:sourcePatternNode pat:ProactiveGoal_GoalCreatorNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:ProactiveGoal_EnvironmentContextNode .
 
-pat:ProactiveGoal_CreatorUsesPromptEdge
-    a pair:PatternEdge ;
-    rdfs:label "goal creator uses the user prompt"@en ;
-    pair:sourcePatternNode pat:ProactiveGoal_GoalCreatorNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:ProactiveGoal_PromptNode .
 
-pat:ProactiveGoal_CreatorUsesMemoryEdge
-    a pair:PatternEdge ;
-    rdfs:label "goal creator uses the agent memory"@en ;
-    pair:sourcePatternNode pat:ProactiveGoal_GoalCreatorNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:ProactiveGoal_MemoryNode .
 
-pat:ProactiveGoal_CreatorProducesGoalEdge
-    a pair:PatternEdge ;
-    rdfs:label "goal creator produces the goal"@en ;
-    pair:sourcePatternNode pat:ProactiveGoal_GoalCreatorNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:ProactiveGoal_GoalNode .
 
 pat:ModelQueryingMotif
     a pair:GraphMotif ;
@@ -4102,81 +3904,15 @@ pat:ModelQuery_PlanningProducesPlanEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:ModelQuery_PlanNode .
 
-pat:IncrementalModelQueryingMotif
-    a pair:GraphMotif ;
-    rdfs:label "Incremental Model Querying Motif"@en ;
-    dct:description "A planning step queries a generative model with the user's input and reads the user's feedback, building its plan step by step."@en ;
-    pair:derivedFrom pat:Cite_IncrementalModelQuerying ;
-    pair:hasPatternNode
-        pat:IncrQuery_PromptNode ,
-        pat:IncrQuery_ModelNode ,
-        pat:IncrQuery_PlanningStepNode ,
-        pat:IncrQuery_FeedbackNode ,
-        pat:IncrQuery_PlanNode ;
-    pair:hasPatternEdge
-        pat:IncrQuery_PlanningUsesPromptEdge ,
-        pat:IncrQuery_PlanningUsesModelEdge ,
-        pat:IncrQuery_PlanningUsesFeedbackEdge ,
-        pat:IncrQuery_PlanningProducesPlanEdge ;
-    pair:implementedBy pat:IncrQuery_MatchingOQP .
 
-pat:IncrQuery_PromptNode
-    a pair:PatternNode ;
-    rdfs:label "User prompt"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
 
-pat:IncrQuery_ModelNode
-    a pair:PatternNode ;
-    rdfs:label "Foundation model"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:GenerativeModel .
 
-pat:IncrQuery_PlanningStepNode
-    a pair:PatternNode ;
-    rdfs:label "Plan generation step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:PlanningStep .
 
-pat:IncrQuery_FeedbackNode
-    a pair:PatternNode ;
-    rdfs:label "User feedback"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserFeedback .
 
-pat:IncrQuery_PlanNode
-    a pair:PatternNode ;
-    rdfs:label "Plan"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:AgentPlan .
 
-pat:IncrQuery_PlanningUsesPromptEdge
-    a pair:PatternEdge ;
-    rdfs:label "planning uses the user prompt"@en ;
-    pair:sourcePatternNode pat:IncrQuery_PlanningStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:IncrQuery_PromptNode .
 
-pat:IncrQuery_PlanningUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "planning queries the foundation model"@en ;
-    pair:sourcePatternNode pat:IncrQuery_PlanningStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:IncrQuery_ModelNode .
 
-pat:IncrQuery_PlanningUsesFeedbackEdge
-    a pair:PatternEdge ;
-    rdfs:label "planning uses the user's feedback"@en ;
-    pair:sourcePatternNode pat:IncrQuery_PlanningStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:IncrQuery_FeedbackNode .
 
-pat:IncrQuery_PlanningProducesPlanEdge
-    a pair:PatternEdge ;
-    rdfs:label "planning produces the plan"@en ;
-    pair:sourcePatternNode pat:IncrQuery_PlanningStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:IncrQuery_PlanNode .
 
 pat:PlanReflectionMotif
     a pair:GraphMotif ;
@@ -4405,80 +4141,14 @@ pat:Debate_FirstAgentUsesArgumentEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:Debate_SecondArgumentNode .
 
-pat:ToolAgentRegistryMotif
-    a pair:GraphMotif ;
-    rdfs:label "Tool/Agent Registry Motif"@en ;
-    dct:description "A planning step consults a registry of tools and agents and assigns a task that a tool invocation step carries out."@en ;
-    rdfs:comment "Nests the Tool-Using Agent motif, with the assignment as its plan. An agent selected from the registry is the Agent Delegation motif's shape."@en ;
-    pair:derivedFrom pat:Cite_ToolAgentRegistry ;
-    pair:hasPatternNode
-        pat:Registry_RegistryNode ,
-        pat:Registry_CoordinatorNode ,
-        pat:Registry_AssignmentNode ,
-        pat:Registry_ToolStepNode ,
-        pat:Registry_ResultNode ;
-    pair:hasPatternEdge
-        pat:Registry_CoordinatorUsesRegistryEdge ,
-        pat:Registry_CoordinatorProducesAssignmentEdge ,
-        pat:Registry_ToolUsesAssignmentEdge ,
-        pat:Registry_ToolProducesResultEdge ;
-    pair:implementedBy pat:Registry_MatchingOQP .
 
-pat:Registry_RegistryNode
-    a pair:PatternNode ;
-    rdfs:label "Tool/agent registry"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:ToolRegistry .
 
-pat:Registry_CoordinatorNode
-    a pair:PatternNode ;
-    rdfs:label "Coordinating planning step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:PlanningStep .
 
-pat:Registry_AssignmentNode
-    a pair:PatternNode ;
-    rdfs:label "Task assignment"@en ;
-    pair:expectedClass beam:Data .
 
-pat:Registry_ToolStepNode
-    a pair:PatternNode ;
-    rdfs:label "Selected tool invocation step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:ToolInvocationStep .
 
-pat:Registry_ResultNode
-    a pair:PatternNode ;
-    rdfs:label "Tool result"@en ;
-    pair:expectedClass beam:Data .
 
-pat:Registry_CoordinatorUsesRegistryEdge
-    a pair:PatternEdge ;
-    rdfs:label "coordinator consults the registry"@en ;
-    pair:sourcePatternNode pat:Registry_CoordinatorNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:Registry_RegistryNode .
 
-pat:Registry_CoordinatorProducesAssignmentEdge
-    a pair:PatternEdge ;
-    rdfs:label "coordinator produces the task assignment"@en ;
-    pair:sourcePatternNode pat:Registry_CoordinatorNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:Registry_AssignmentNode .
 
-pat:Registry_ToolUsesAssignmentEdge
-    a pair:PatternEdge ;
-    rdfs:label "the selected tool uses the assignment"@en ;
-    pair:sourcePatternNode pat:Registry_ToolStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:Registry_AssignmentNode .
-
-pat:Registry_ToolProducesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "the selected tool produces its result"@en ;
-    pair:sourcePatternNode pat:Registry_ToolStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:Registry_ResultNode .
 
 
 #################################################################
@@ -4744,13 +4414,13 @@ pat:EvalsMotif                            pair:motifFamily pat:GenAIMotifFamily 
 
 # AgenticMotifFamily
 pat:GoalCreationMotif              pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:GoalSettingMotifGroup .
-pat:ProactiveGoalCreationMotif     pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:GoalSettingMotifGroup .
+
 pat:ModelQueryingMotif             pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:PlanningMotifGroup .
-pat:IncrementalModelQueryingMotif  pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:PlanningMotifGroup .
+
 pat:PlanReflectionMotif            pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:PlanningMotifGroup .
 pat:AgentMemoryLoopMotif           pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:AgentMemoryMotifGroup .
 pat:ToolUsingAgentMotif            pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:ToolUseMotifGroup .
-pat:ToolAgentRegistryMotif         pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:ToolUseMotifGroup .
+
 pat:AgentDelegationMotif           pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:MultiAgentCooperationMotifGroup .
 pat:VotingBasedCooperationMotif    pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:MultiAgentCooperationMotifGroup .
 pat:DebateBasedCooperationMotif    pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:MultiAgentCooperationMotifGroup .
@@ -4763,7 +4433,7 @@ pat:BatchPredictionMotif         pair:motifFamily pat:MLSystemMotifFamily ; pair
 pat:MultiStagePredictionMotif    pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
 pat:PreprocessPredictionMotif    pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
 pat:SynchronousPredictionMotif   pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
-pat:BatchTrainingMotif           pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:TrainingMotifGroup .
+
 pat:PipelineTrainingMotif        pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:TrainingMotifGroup .
 pat:TrainThenServeMotif          pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:LifecycleMotifGroup .
 pat:TrainingToServingMotif       pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:LifecycleMotifGroup .

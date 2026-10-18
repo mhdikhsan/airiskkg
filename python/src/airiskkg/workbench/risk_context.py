@@ -301,19 +301,13 @@ def _build() -> dict[tuple[str, str], dict]:
         ("PlanReflectionMotif", "PlanReflection_PlanningStepNode"),
     ):
         link("GoalHijack", motif, public_input_to(planner))
-    link("GoalHijack", "ToolAgentRegistryMotif", untrusted("Registry_RegistryNode"))
     link("GoalHijack", "GoalCreationMotif", public("GoalCreation_PromptNode"))
     link("GoalHijack", "ModelQueryingMotif", public("ModelQuery_PromptNode"))
-    link("GoalHijack", "IncrementalModelQueryingMotif", public("IncrQuery_PromptNode"))
-    link("AgenticSupplyChain", "ToolAgentRegistryMotif", third_party("Registry_RegistryNode"))
     link("AgenticSupplyChain", "ToolUsingAgentMotif", component_for("ToolAgent_PlanningStepNode"))
     link("AgenticSupplyChain", "AgentDelegationMotif", component_for("AgentDelegation_DelegatingStepNode"))
     link("UnexpectedCodeExecution", "ToolUsingAgentMotif", executes_code("ToolAgent_ActionStepNode"))
-    link("UnexpectedCodeExecution", "ToolAgentRegistryMotif", executes_code("Registry_ToolStepNode"))
     link("HumanAgentTrustExploitation", "ToolUsingAgentMotif",
          approved_on("ToolAgent_PlanNode", "ToolAgent_ActionStepNode"))
-    link("HumanAgentTrustExploitation", "ToolAgentRegistryMotif",
-         approved_on("Registry_AssignmentNode", "Registry_ToolStepNode"))
     link("IdentityPrivilegeAbuse", "AgentDelegationMotif",
          credential("AgentDelegation_DelegatingStepNode", "AgentDelegation_ReceivingStepNode"))
     link("IdentityPrivilegeAbuse", "AgentMemoryLoopMotif", credential("AgentMemory_WriteStepNode"))
@@ -342,16 +336,11 @@ def _build() -> dict[tuple[str, str], dict]:
              request_to(step, from_public=True), training_data(trainer, "SensitiveInformation"))
         link("ModelBias", motif, training_data(trainer, "SensitiveInformation"))
         link("ImproperRetraining", motif, fed_back(step, trainer))
-    link("ModelBias", "BatchTrainingMotif", personal("BatchTrain_DatasetNode"))
     link("ModelBias", "PipelineTrainingMotif", personal("PipeTrain_SourceDataNode"))
-    link("ImproperRetraining", "BatchTrainingMotif",
-         served_and_fed_back("BatchTrain_ModelArtifactNode", "BatchTrain_TrainingStepNode"))
     link("ImproperRetraining", "PipelineTrainingMotif",
          served_and_fed_back("PipeTrain_ModelArtifactNode", "PipeTrain_TrainingJobNode"))
     link("ImproperRetraining", "FineTuningMotif",
          served_and_fed_back("FineTune_FineTunedModelNode", "FineTune_TrainingStepNode"))
-    link("EvaluationDataContamination", "BatchTrainingMotif",
-         evaluated_on_training_data("BatchTrain_EvaluationStepNode", "BatchTrain_TrainingDataNode"))
     link("EvaluationDataContamination", "PipelineTrainingMotif",
          evaluated_on_training_data("PipeTrain_EvaluationJobNode", "PipeTrain_IntermediateDataNode"))
     link("EvaluationDataContamination", "FineTuningMotif",

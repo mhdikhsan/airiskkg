@@ -250,24 +250,16 @@ pat:RetrievalDataAugmentationMotif
 pat:GoalCreationMotif
     pair:hasRiskPattern pat:GoalHijackRiskPattern .
 
-pat:ProactiveGoalCreationMotif
-    pair:hasRiskPattern pat:GoalHijackRiskPattern .
 
 pat:ModelQueryingMotif
     pair:hasRiskPattern pat:GoalHijackRiskPattern .
 
-pat:IncrementalModelQueryingMotif
-    pair:hasRiskPattern pat:GoalHijackRiskPattern .
 
 pat:PlanReflectionMotif
     pair:hasRiskPattern
         pat:GoalHijackRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
 
-pat:ToolAgentRegistryMotif
-    pair:hasRiskPattern
-        pat:ToolMisuseRiskPattern ,
-        pat:GoalHijackRiskPattern .
 
 pat:VotingBasedCooperationMotif
     pair:hasRiskPattern pat:InsecureAgentCommunicationRiskPattern .
@@ -772,12 +764,6 @@ pat:MultiStage_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/multi_stage_prediction.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:BatchTrain_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Batch Training Motif matching OQP"@en ;
-    pair:implementsMotif pat:BatchTrainingMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/batch_training.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:PipeTrain_MatchingOQP
     a pair:PatternImplementation ;
@@ -947,8 +933,7 @@ pat:ToolMisuseRiskPattern
     represented policy enforcement, human approval, or rate/budget control in
     between.
     """@en ;
-    pair:hasMotif pat:ToolUsingAgentMotif ,
-        pat:ToolAgentRegistryMotif ;
+    pair:hasMotif pat:ToolUsingAgentMotif ;
     pair:hasMechanism asi:mechanism-unconstrained-tool-execution ;
     pair:hasApplicabilityCondition pat:ToolMisuse_UnmediatedActionCondition ;
     pair:mayIndicateRisk
@@ -1041,11 +1026,8 @@ pat:GoalHijackRiskPattern
     pair:hasMotif pat:ToolUsingAgentMotif ,
         pat:AgentDelegationMotif ,
         pat:GoalCreationMotif ,
-        pat:ProactiveGoalCreationMotif ,
         pat:ModelQueryingMotif ,
-        pat:IncrementalModelQueryingMotif ,
-        pat:PlanReflectionMotif ,
-        pat:ToolAgentRegistryMotif ;
+        pat:PlanReflectionMotif ;
     pair:hasMechanism asi:mechanism-goal-redirection-through-consumed-content ;
     pair:hasApplicabilityCondition pat:GoalHijack_UntrustedPlanningInputCondition ;
     pair:mayIndicateRisk
@@ -1115,12 +1097,6 @@ pat:GoalCreation_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/goal_creation.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:ProactiveGoal_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Proactive Goal Creation Motif matching OQP"@en ;
-    pair:implementsMotif pat:ProactiveGoalCreationMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/proactive_goal_creation.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:ModelQuery_MatchingOQP
     a pair:PatternImplementation ;
@@ -1129,12 +1105,6 @@ pat:ModelQuery_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/model_querying.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:IncrQuery_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Incremental Model Querying Motif matching OQP"@en ;
-    pair:implementsMotif pat:IncrementalModelQueryingMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/incremental_model_querying.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:PlanReflection_MatchingOQP
     a pair:PatternImplementation ;
@@ -1157,12 +1127,6 @@ pat:Debate_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/debate_based_cooperation.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:Registry_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Tool/Agent Registry Motif matching OQP"@en ;
-    pair:implementsMotif pat:ToolAgentRegistryMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/tool_agent_registry.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:GoalHijackOQP
     a pair:PatternImplementation ;
@@ -1471,11 +1435,6 @@ pat:TrainingToServingMotif
         pat:ModelBiasRiskPattern ,
         pat:ImproperRetrainingRiskPattern .
 
-pat:BatchTrainingMotif
-    pair:hasRiskPattern
-        pat:ModelBiasRiskPattern ,
-        pat:ImproperRetrainingRiskPattern ,
-        pat:EvaluationDataContaminationRiskPattern .
 
 pat:PipelineTrainingMotif
     pair:hasRiskPattern
@@ -1494,11 +1453,6 @@ pat:ToolUsingAgentMotif
         pat:UnexpectedCodeExecutionRiskPattern ,
         pat:HumanAgentTrustExploitationRiskPattern .
 
-pat:ToolAgentRegistryMotif
-    pair:hasRiskPattern
-        pat:AgenticSupplyChainRiskPattern ,
-        pat:UnexpectedCodeExecutionRiskPattern ,
-        pat:HumanAgentTrustExploitationRiskPattern .
 
 pat:AgentDelegationMotif
     pair:hasRiskPattern
@@ -1606,8 +1560,7 @@ pat:ModelBiasRiskPattern
     classification and no represented fairness evaluation reads the trained model
     or anything it produces.
     """@en ;
-    pair:hasMotif pat:BatchTrainingMotif ,
-        pat:PipelineTrainingMotif ,
+    pair:hasMotif pat:PipelineTrainingMotif ,
         pat:TrainThenServeMotif ,
         pat:TrainingToServingMotif ;
     pair:hasMechanism mlr:mechanism-unexamined-learned-bias ;
@@ -1694,8 +1647,7 @@ pat:ImproperRetrainingRiskPattern
     back into that step's training input, closing a loop, with no represented
     data validation, output validation or human approval on it.
     """@en ;
-    pair:hasMotif pat:BatchTrainingMotif ,
-        pat:PipelineTrainingMotif ,
+    pair:hasMotif pat:PipelineTrainingMotif ,
         pat:TrainThenServeMotif ,
         pat:TrainingToServingMotif ,
         pat:FineTuningMotif ;
@@ -1751,8 +1703,7 @@ pat:EvaluationDataContaminationRiskPattern
     training input was taken from: the training data itself, or a set it was
     drawn from.
     """@en ;
-    pair:hasMotif pat:BatchTrainingMotif ,
-        pat:PipelineTrainingMotif ,
+    pair:hasMotif pat:PipelineTrainingMotif ,
         pat:TrainThenServeMotif ,
         pat:FineTuningMotif ;
     pair:hasMechanism atlas:mechanism-evaluation-on-training-data ;
@@ -1805,7 +1756,6 @@ pat:AgenticSupplyChainRiskPattern
     represented verification step producing it or screening the planning step.
     """@en ;
     pair:hasMotif pat:ToolUsingAgentMotif ,
-        pat:ToolAgentRegistryMotif ,
         pat:AgentDelegationMotif ;
     pair:hasMechanism asi:mechanism-external-component-steers-agent ;
     pair:hasApplicabilityCondition pat:AgenticSupplyChain_ExternalComponentCondition ;
@@ -1828,8 +1778,7 @@ pat:UnexpectedCodeExecutionRiskPattern
     executes code, where no represented policy enforcement, output validation or
     human approval feeds that step.
     """@en ;
-    pair:hasMotif pat:ToolUsingAgentMotif ,
-        pat:ToolAgentRegistryMotif ;
+    pair:hasMotif pat:ToolUsingAgentMotif ;
     pair:hasMechanism asi:mechanism-agent-output-run-as-code ;
     pair:hasApplicabilityCondition pat:UnexpectedCodeExecution_UngatedExecutionCondition ;
     pair:mayIndicateRisk
@@ -1877,8 +1826,7 @@ pat:HumanAgentTrustExploitationRiskPattern
     an approval is represented, so it can follow a tool misuse finding cleared by
     human oversight.
     """@en ;
-    pair:hasMotif pat:ToolUsingAgentMotif ,
-        pat:ToolAgentRegistryMotif ;
+    pair:hasMotif pat:ToolUsingAgentMotif ;
     pair:hasMechanism asi:mechanism-approval-on-the-agents-account ;
     pair:hasApplicabilityCondition pat:HumanAgentTrust_AgentOnlyEvidenceCondition ;
     pair:mayIndicateRisk
@@ -2058,8 +2006,7 @@ pat:UntraceableAgentActionsRiskPattern
     represented logging step reads the plan or assignment the action step acts
     on, or the result it produces.
     """@en ;
-    pair:hasMotif pat:ToolUsingAgentMotif ,
-        pat:ToolAgentRegistryMotif ;
+    pair:hasMotif pat:ToolUsingAgentMotif ;
     pair:hasMechanism etm:mechanism-agent-acts-without-a-record ;
     pair:hasApplicabilityCondition pat:UntraceableAgentActions_NoRecordCondition ;
     pair:mayIndicateRisk
@@ -2145,7 +2092,7 @@ pat:ModelExtractionRiskPattern
     pair:implementedBy pat:ModelExtractionOQP .
 
 pat:ToolUsingAgentMotif pair:hasRiskPattern pat:UntraceableAgentActionsRiskPattern .
-pat:ToolAgentRegistryMotif pair:hasRiskPattern pat:UntraceableAgentActionsRiskPattern .
+
 pat:DirectPromptingMotif pair:hasRiskPattern pat:ProtectedDataToExternalModelRiskPattern .
 pat:RetrievalAugmentedGenerationMotif pair:hasRiskPattern pat:ProtectedDataToExternalModelRiskPattern .
 pat:SynchronousPredictionMotif pair:hasRiskPattern pat:ProtectedDataToExternalModelRiskPattern ,

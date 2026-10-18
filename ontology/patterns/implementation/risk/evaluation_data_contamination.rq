@@ -30,14 +30,6 @@ WHERE {
         # The training step and the evaluation of what it produced, as each motif names them.
         {
             ?match pair:hasNodeBinding ?aBinding , ?bBinding .
-            ?aBinding pair:bindsPatternNode pat:BatchTrain_TrainingStepNode ;
-                      pair:matchedElement ?trainingStep .
-            ?bBinding pair:bindsPatternNode pat:BatchTrain_EvaluationStepNode ;
-                      pair:matchedElement ?evaluationStep .
-        }
-        UNION
-        {
-            ?match pair:hasNodeBinding ?aBinding , ?bBinding .
             ?aBinding pair:bindsPatternNode pat:PipeTrain_TrainingJobNode ;
                       pair:matchedElement ?trainingStep .
             ?bBinding pair:bindsPatternNode pat:PipeTrain_EvaluationJobNode ;

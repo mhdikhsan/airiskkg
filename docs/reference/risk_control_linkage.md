@@ -12,7 +12,7 @@ Supersedes `motif_control_linkage.md` and `control_catalogue_table.md`.
 
 | Layer | Count | What it is |
 |---|---|---|
-| **Motif library** | **47** | Risk-neutral architectural shapes (`pair:GraphMotif`) |
+| **Motif library** | **43** | Risk-neutral architectural shapes (`pair:GraphMotif`) |
 | **Risk patterns** | **33** | Motif + applicability condition -> candidate finding |
 | **Suggested controls** | **30** | `pat:Control_*`, the only vocabulary in `pair:suggestedControl` |
 | | | |
@@ -73,33 +73,33 @@ they are never merged into one column.
 
 | # | Suggested control | Candidate risk | Exposing motif | Realizing motif | MIT family | Actions |
 |---|---|---|---|---|---|---|
-| 1 | **Input validation and prompt isolation**<br>`pat:Control_InputValidationAndPromptIsolation` | GoalHijack, InsecureAgentCommunication, MemoryPoisoning, PromptInjection | AdaptiveRAG, AgentDelegation, AgentMemoryLoop, DebateBasedCooperation, DirectPrompting, GoalCreation, IncrementalModelQuerying, IterativeRAG, LLMBasedInformationRetrieval, ModelQuerying, PlanReflection, ProactiveGoalCreation, QueryRewriting, RecursiveRAG, RetrievalAugmentedGeneration, ToolAgentRegistry, ToolUsingAgent, VotingBasedCooperation | **InputScreening, RetrievalScreening** | input-output-filtering, prompt-context-limiting | 0 |
-| 2 | **Output validation and sanitization**<br>`pat:Control_OutputValidationAndSanitization` | ImproperOutputHandling, SensitiveInformationDisclosure, SystemPromptLeakage, UnexpectedCodeExecution | DirectPrompting, ToolAgentRegistry, ToolUsingAgent | **OutputScreening** | content-safety-controls, input-output-filtering | 2 |
+| 1 | **Input validation and prompt isolation**<br>`pat:Control_InputValidationAndPromptIsolation` | GoalHijack, InsecureAgentCommunication, MemoryPoisoning, PromptInjection | AdaptiveRAG, AgentDelegation, AgentMemoryLoop, DebateBasedCooperation, DirectPrompting, GoalCreation, IterativeRAG, LLMBasedInformationRetrieval, ModelQuerying, PlanReflection, QueryRewriting, RecursiveRAG, RetrievalAugmentedGeneration, ToolUsingAgent, VotingBasedCooperation | **InputScreening, RetrievalScreening** | input-output-filtering, prompt-context-limiting | 0 |
+| 2 | **Output validation and sanitization**<br>`pat:Control_OutputValidationAndSanitization` | ImproperOutputHandling, SensitiveInformationDisclosure, SystemPromptLeakage, UnexpectedCodeExecution | DirectPrompting, ToolUsingAgent | **OutputScreening** | content-safety-controls, input-output-filtering | 2 |
 | 3 | **Data minimization and redaction**<br>`pat:Control_DataMinimizationAndRedaction` | PersonalDataRetained, ProtectedDataToExternalModel, SensitiveInformationDisclosure | AgentMemoryLoop, DirectPrompting, PredictionLogging, RetrievalAugmentedGeneration, SynchronousPrediction | (none) | data-minimization, privacy-control-for-user-data, redaction | 0 |
 | 4 | **Retrieval access control**<br>`pat:Control_RetrievalAccessControl` | SensitiveInformationDisclosure, VectorAndEmbeddingWeakness | Embeddings, Reranker, VectorBasedInformationRetrieval | (none) | access-management, retrieval-quality-evaluation, retrieval-source-filtering | 4 |
-| 5 | **Model and dependency provenance**<br>`pat:Control_ModelAndDependencyProvenance` | AgenticSupplyChain, DataAndModelPoisoning, SupplyChainCompromise | AgentDelegation, Embeddings, ExternalDependency, FineTuning, ModelLoad, RetrievalDataAugmentation, ToolAgentRegistry, ToolUsingAgent, TrainingToServing | (none) | model-infrastructure-security, risk-register, system-architecture-documentation | 0 |
-| 6 | **Trusted training and indexing data**<br>`pat:Control_TrustedTrainingAndIndexingData` | DataAndModelPoisoning, ImproperRetraining, MemoryPoisoning, ModelBias, VectorAndEmbeddingWeakness | AgentMemoryLoop, BatchTraining, Embeddings, FineTuning, PipelineTraining, Reranker, RetrievalDataAugmentation, TrainThenServe, TrainingToServing, VectorBasedInformationRetrieval | (none) | data-curation-process, data-governance, testing-auditing | 27 |
-| 7 | **Tool permission boundaries**<br>`pat:Control_ToolPermissionBoundaries` | ExcessiveAgency, GoalHijack, HumanAgentTrustExploitation, IdentityPrivilegeAbuse, InsecureAgentCommunication, ToolMisuse, UnqualifiedPrediction | AgentDelegation, AgentMemoryLoop, AsynchronousPrediction, BatchPrediction, DebateBasedCooperation, GoalCreation, IncrementalModelQuerying, ModelQuerying, MultiStagePrediction, PlanReflection, PreprocessPrediction, ProactiveGoalCreation, SynchronousPrediction, ToolAgentRegistry, ToolUsingAgent, TrainThenServe, TrainingToServing, VotingBasedCooperation | **ExecutionScreening, HumanOversight** | access-management, human-oversight-protocol, post-deployment-behavior-monitoring | 5 |
+| 5 | **Model and dependency provenance**<br>`pat:Control_ModelAndDependencyProvenance` | AgenticSupplyChain, DataAndModelPoisoning, SupplyChainCompromise | AgentDelegation, Embeddings, ExternalDependency, FineTuning, ModelLoad, RetrievalDataAugmentation, ToolUsingAgent, TrainingToServing | (none) | model-infrastructure-security, risk-register, system-architecture-documentation | 0 |
+| 6 | **Trusted training and indexing data**<br>`pat:Control_TrustedTrainingAndIndexingData` | DataAndModelPoisoning, ImproperRetraining, MemoryPoisoning, ModelBias, VectorAndEmbeddingWeakness | AgentMemoryLoop, Embeddings, FineTuning, PipelineTraining, Reranker, RetrievalDataAugmentation, TrainThenServe, TrainingToServing, VectorBasedInformationRetrieval | (none) | data-curation-process, data-governance, testing-auditing | 27 |
+| 7 | **Tool permission boundaries**<br>`pat:Control_ToolPermissionBoundaries` | ExcessiveAgency, GoalHijack, HumanAgentTrustExploitation, IdentityPrivilegeAbuse, InsecureAgentCommunication, ToolMisuse, UnqualifiedPrediction | AgentDelegation, AgentMemoryLoop, AsynchronousPrediction, BatchPrediction, DebateBasedCooperation, GoalCreation, ModelQuerying, MultiStagePrediction, PlanReflection, PreprocessPrediction, SynchronousPrediction, ToolUsingAgent, TrainThenServe, TrainingToServing, VotingBasedCooperation | **ExecutionScreening, HumanOversight** | access-management, human-oversight-protocol, post-deployment-behavior-monitoring | 5 |
 | 8 | **System prompt secrecy**<br>`pat:Control_SystemPromptSecrecy` | SystemPromptLeakage | DirectPrompting | (none) | prompt-context-limiting, red-teaming, system-architecture-documentation | 2 |
 | 9 | **Grounding and verification**<br>`pat:Control_GroundingAndVerification` | DirectPromptingWithoutGrounding, MisinformationFromWeakGrounding, VectorAndEmbeddingWeakness | AdaptiveRAG, DirectPrompting, Embeddings, IterativeRAG, LLMBasedInformationRetrieval, RecursiveRAG, Reranker, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval | **Evals, HybridRetriever, Reranker, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval** | human-oversight-protocol, retrieval-quality-evaluation, testing-auditing | 12 |
-| 10 | **Rate, budget, and loop control**<br>`pat:Control_RateLimitBudgetAndLoopControl` | CascadingFailures, ExcessiveAgency, ModelExtraction, ToolMisuse, TrainingDataMembershipInference, UnboundedConsumption | AgentDelegation, AsynchronousPrediction, BatchPrediction, DebateBasedCooperation, DirectPrompting, IterativeRAG, MultiStagePrediction, PlanReflection, PreprocessPrediction, QueryRewriting, RecursiveRAG, RetrievalAugmentedGeneration, SynchronousPrediction, ToolAgentRegistry, ToolUsingAgent, TrainThenServe, TrainingToServing | (none) | access-management, post-deployment-behavior-monitoring, prompt-context-limiting | 5 |
-| 11 | **Logging, monitoring, and evals**<br>`pat:Control_LoggingMonitoringAndEvals` | DataAndModelPoisoning, DatasetShift, DirectPromptingWithoutGrounding, ExcessiveAgency, GoalHijack, InsecureAgentCommunication, MemoryPoisoning, MisinformationFromWeakGrounding, PromptInjection, SupplyChainCompromise, ToolMisuse, UnboundedConsumption, UnevaluatedModel, UntraceableAgentActions | AdaptiveRAG, AgentDelegation, AgentMemoryLoop, AsynchronousPrediction, BatchPrediction, DebateBasedCooperation, DirectPrompting, Embeddings, ExternalDependency, FineTuning, GoalCreation, IncrementalModelQuerying, IterativeRAG, LLMBasedInformationRetrieval, ModelLoad, ModelQuerying, MultiStagePrediction, PlanReflection, PreprocessPrediction, ProactiveGoalCreation, QueryRewriting, RecursiveRAG, RetrievalAugmentedGeneration, RetrievalDataAugmentation, SynchronousPrediction, ToolAgentRegistry, ToolUsingAgent, TrainThenServe, TrainingToServing, VotingBasedCooperation | **Evals, PredictionLogging, PredictionMonitoring** | post-deployment-behavior-monitoring, red-teaming, testing-auditing | 15 |
+| 10 | **Rate, budget, and loop control**<br>`pat:Control_RateLimitBudgetAndLoopControl` | CascadingFailures, ExcessiveAgency, ModelExtraction, ToolMisuse, TrainingDataMembershipInference, UnboundedConsumption | AgentDelegation, AsynchronousPrediction, BatchPrediction, DebateBasedCooperation, DirectPrompting, IterativeRAG, MultiStagePrediction, PlanReflection, PreprocessPrediction, QueryRewriting, RecursiveRAG, RetrievalAugmentedGeneration, SynchronousPrediction, ToolUsingAgent, TrainThenServe, TrainingToServing | (none) | access-management, post-deployment-behavior-monitoring, prompt-context-limiting | 5 |
+| 11 | **Logging, monitoring, and evals**<br>`pat:Control_LoggingMonitoringAndEvals` | DataAndModelPoisoning, DatasetShift, DirectPromptingWithoutGrounding, ExcessiveAgency, GoalHijack, InsecureAgentCommunication, MemoryPoisoning, MisinformationFromWeakGrounding, PromptInjection, SupplyChainCompromise, ToolMisuse, UnboundedConsumption, UnevaluatedModel, UntraceableAgentActions | AdaptiveRAG, AgentDelegation, AgentMemoryLoop, AsynchronousPrediction, BatchPrediction, DebateBasedCooperation, DirectPrompting, Embeddings, ExternalDependency, FineTuning, GoalCreation, IterativeRAG, LLMBasedInformationRetrieval, ModelLoad, ModelQuerying, MultiStagePrediction, PlanReflection, PreprocessPrediction, QueryRewriting, RecursiveRAG, RetrievalAugmentedGeneration, RetrievalDataAugmentation, SynchronousPrediction, ToolUsingAgent, TrainThenServe, TrainingToServing, VotingBasedCooperation | **Evals, PredictionLogging, PredictionMonitoring** | post-deployment-behavior-monitoring, red-teaming, testing-auditing | 15 |
 | 12 | **Input and output filtering**<br>`pat:Control_Guardrails` | AdversarialEvasion, ImproperOutputHandling, PromptInjection, SensitiveInformationDisclosure, SystemPromptLeakage | AdaptiveRAG, AsynchronousPrediction, BatchPrediction, DirectPrompting, IterativeRAG, LLMBasedInformationRetrieval, MultiStagePrediction, PreprocessPrediction, QueryRewriting, RecursiveRAG, RetrievalAugmentedGeneration, SynchronousPrediction, TrainThenServe, TrainingToServing | **Guardrails, InputScreening, OutputScreening, RetrievalScreening** | content-safety-controls, input-output-filtering, model-safety-engineering | 9 |
 | 13 | **Distribution shift monitoring**<br>`pat:Control_DistributionShiftMonitoring` | DatasetShift, OutOfDomainInput | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | **PredictionLogging, PredictionMonitoring** | post-deployment-behavior-monitoring, post-deployment-monitoring, testing-auditing | 14 |
 | 14 | **Input domain validation**<br>`pat:Control_InputDomainValidation` | OutOfDomainInput | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | (none) | input-output-filtering, testing-auditing | 12 |
 | 15 | **Adversarial robustness**<br>`pat:Control_AdversarialRobustness` | AdversarialEvasion | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | (none) | input-output-filtering, model-safety-engineering, red-teaming | 9 |
-| 16 | **Pre-release model evaluation**<br>`pat:Control_PreReleaseModelEvaluation` | EvaluationDataContamination, UnevaluatedModel | AsynchronousPrediction, BatchPrediction, BatchTraining, FineTuning, MultiStagePrediction, PipelineTraining, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | **TrainThenServe** | pre-deployment-risk-assessment, staged-deployment, testing-auditing | 12 |
-| 17 | **Fairness evaluation**<br>`pat:Control_FairnessEvaluation` | ModelBias | BatchTraining, PipelineTraining, TrainThenServe, TrainingToServing | (none) | data-governance, societal-impact-assessment, testing-auditing | 27 |
+| 16 | **Pre-release model evaluation**<br>`pat:Control_PreReleaseModelEvaluation` | EvaluationDataContamination, UnevaluatedModel | AsynchronousPrediction, BatchPrediction, FineTuning, MultiStagePrediction, PipelineTraining, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | **TrainThenServe** | pre-deployment-risk-assessment, staged-deployment, testing-auditing | 12 |
+| 17 | **Fairness evaluation**<br>`pat:Control_FairnessEvaluation` | ModelBias | PipelineTraining, TrainThenServe, TrainingToServing | (none) | data-governance, societal-impact-assessment, testing-auditing | 27 |
 | 18 | **Uncertainty reporting and review**<br>`pat:Control_UncertaintyReportingAndReview` | UnqualifiedPrediction | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | **HumanOversight** | human-oversight-protocol, safety-decision-frameworks | 1 |
-| 19 | **Retraining data validation**<br>`pat:Control_RetrainingDataValidation` | ImproperRetraining | BatchTraining, FineTuning, PipelineTraining, TrainThenServe, TrainingToServing | (none) | data-curation-process, data-governance | 15 |
-| 20 | **Held-out evaluation data**<br>`pat:Control_HeldOutEvaluationData` | EvaluationDataContamination | BatchTraining, FineTuning, PipelineTraining, TrainThenServe | (none) | data-governance, testing-auditing | 26 |
+| 19 | **Retraining data validation**<br>`pat:Control_RetrainingDataValidation` | ImproperRetraining | FineTuning, PipelineTraining, TrainThenServe, TrainingToServing | (none) | data-curation-process, data-governance | 15 |
+| 20 | **Held-out evaluation data**<br>`pat:Control_HeldOutEvaluationData` | EvaluationDataContamination | FineTuning, PipelineTraining, TrainThenServe | (none) | data-governance, testing-auditing | 26 |
 | 21 | **Training data privacy**<br>`pat:Control_TrainingDataPrivacy` | TrainingDataMembershipInference | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | (none) | data-minimization, privacy-control-for-user-data | 0 |
 | 22 | **Scoped agent credentials**<br>`pat:Control_ScopedAgentCredentials` | IdentityPrivilegeAbuse | AgentDelegation, AgentMemoryLoop | (none) | access-management | 4 |
-| 23 | **Agent component verification**<br>`pat:Control_AgentComponentVerification` | AgenticSupplyChain | AgentDelegation, ToolAgentRegistry, ToolUsingAgent | (none) | model-infrastructure-security, system-architecture-documentation | 0 |
-| 24 | **Sandboxed code execution**<br>`pat:Control_SandboxedCodeExecution` | UnexpectedCodeExecution | ToolAgentRegistry, ToolUsingAgent | **ExecutionScreening** | model-infrastructure-security, technical-security-controls | 0 |
+| 23 | **Agent component verification**<br>`pat:Control_AgentComponentVerification` | AgenticSupplyChain | AgentDelegation, ToolUsingAgent | (none) | model-infrastructure-security, system-architecture-documentation | 0 |
+| 24 | **Sandboxed code execution**<br>`pat:Control_SandboxedCodeExecution` | UnexpectedCodeExecution | ToolUsingAgent | **ExecutionScreening** | model-infrastructure-security, technical-security-controls | 0 |
 | 25 | **Cascade containment**<br>`pat:Control_CascadeContainment` | CascadingFailures | AgentDelegation | **ExecutionScreening, HumanOversight** | human-oversight-protocol, incident-response-plan, post-deployment-behavior-monitoring | 1 |
-| 26 | **Independent evidence for approval**<br>`pat:Control_IndependentEvidenceForApproval` | HumanAgentTrustExploitation | ToolAgentRegistry, ToolUsingAgent | (none) | human-oversight-protocol, transparency-accountability-controls | 0 |
-| 27 | **Agent action audit log**<br>`pat:Control_AgentActionAuditLog` | UntraceableAgentActions | ToolAgentRegistry, ToolUsingAgent | (none) | post-deployment-behavior-monitoring, transparency-accountability-controls | 1 |
+| 26 | **Independent evidence for approval**<br>`pat:Control_IndependentEvidenceForApproval` | HumanAgentTrustExploitation | ToolUsingAgent | (none) | human-oversight-protocol, transparency-accountability-controls | 0 |
+| 27 | **Agent action audit log**<br>`pat:Control_AgentActionAuditLog` | UntraceableAgentActions | ToolUsingAgent | (none) | post-deployment-behavior-monitoring, transparency-accountability-controls | 1 |
 | 28 | **External provider data agreement**<br>`pat:Control_ExternalProviderDataAgreement` | ProtectedDataToExternalModel | DirectPrompting, RetrievalAugmentedGeneration, SynchronousPrediction | (none) | data-governance, privacy-control-for-user-data | 14 |
 | 29 | **Retention limits**<br>`pat:Control_RetentionLimits` | PersonalDataRetained | AgentMemoryLoop, PredictionLogging | (none) | data-governance, data-minimization | 14 |
 | 30 | **Model access hardening**<br>`pat:Control_ModelAccessHardening` | ModelExtraction | AsynchronousPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | (none) | access-management, post-deployment-behavior-monitoring | 5 |
@@ -155,21 +155,21 @@ Families with no action beneath them (6): `governance-oversight-controls`, `mode
 ## 6. Gaps
 
 1. **19 of 30 controls have no realizing motif.** The tool can advise them but cannot verify from the graph that they were applied.
-2. **12 of 47 motifs reach no control** - by design for the risk-neutral ML-serving shapes.
+2. **12 of 43 motifs reach no control** - by design for the risk-neutral ML-serving shapes.
 3. **2 risk patterns declare no motif** (`ExcessiveAgencyRiskPattern`, `SensitiveInformationDisclosureRiskPattern`) - deliberately role-anchored, so nothing appears in the Exposing-motif column even though they fire on the bundled examples.
 4. **4 circular suggestions** - the motif that triggers the finding is also the motif that would realize the suggested fix.
 5. **Coverage is bounded by the cross-walk.** LLM07, LLM08 and LLM10 have no action-level evidence at all; their control links remain prior curation.
 
 ---
 
-## 7. Motif library - all 47, by source catalogue
+## 7. Motif library - all 43, by source catalogue
 
 Motifs are risk-neutral: they describe a shape, not a problem. The grouping below
 is the *published catalogue each was derived from* (`pair:derivedFrom`), because
 that is the only classification the data actually carries. The relation is m:n,
 so a motif derived from several catalogues is listed under each of them.
 
-### Liu et al. (2025) - Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents (31)
+### Liu et al. (2025) - Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents (29)
 
 | Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
@@ -179,7 +179,6 @@ so a motif derived from several catalogues is listed under each of them.
 | `DebateBasedCooperationMotif` | Debate-based cooperation | InsecureAgentCommunication, UnboundedConsumption |
 | `HumanOversightMotif` | Human reflection | *(risk-neutral - none)* |
 | `PlanReflectionMotif` | Human reflection | GoalHijack, UnboundedConsumption |
-| `IncrementalModelQueryingMotif` | Incremental model querying | GoalHijack |
 | `ModelQueryingMotif` | Incremental model querying | GoalHijack |
 | `AgentDelegationMotif` | Multi-path plan generator | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication |
 | `ToolUsingAgentMotif` | Multi-path plan generator | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
@@ -191,7 +190,6 @@ so a motif derived from several catalogues is listed under each of them.
 | `ModelQueryingMotif` | One-shot model querying | GoalHijack |
 | `GoalCreationMotif` | Passive goal creator | GoalHijack |
 | `GoalCreationMotif` | Proactive goal creator | GoalHijack |
-| `ProactiveGoalCreationMotif` | Proactive goal creator | GoalHijack |
 | `PromptResponseOptimiserMotif` | Prompt/response optimiser | *(risk-neutral - none)* |
 | `EmbeddingsMotif` | Retrieval augmented generation | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
 | `InformationRetrievalMotif` | Retrieval augmented generation | *(risk-neutral - none)* |
@@ -202,7 +200,7 @@ so a motif derived from several catalogues is listed under each of them.
 | `PlanReflectionMotif` | Self-reflection | GoalHijack, UnboundedConsumption |
 | `AgentDelegationMotif` | Single-path plan generator | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication |
 | `ToolUsingAgentMotif` | Single-path plan generator | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
-| `ToolAgentRegistryMotif` | Tool/agent registry | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
+| `ToolUsingAgentMotif` | Tool/agent registry | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
 | `VotingBasedCooperationMotif` | Voting-based cooperation | InsecureAgentCommunication |
 
 ### Fowler - Patterns of Generative AI (13)
@@ -223,7 +221,7 @@ so a motif derived from several catalogues is listed under each of them.
 | `RetrievalAugmentedGenerationMotif` | Retrieval Augmented Generation (RAG) | MisinformationFromWeakGrounding, PromptInjection, ProtectedDataToExternalModel, UnboundedConsumption |
 | `VectorBasedInformationRetrievalMotif` | Retrieval Augmented Generation (RAG) | VectorAndEmbeddingWeakness |
 
-### Mercari ML System Design Patterns (13)
+### Mercari ML System Design Patterns (12)
 
 | Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
@@ -238,7 +236,6 @@ so a motif derived from several catalogues is listed under each of them.
 | `MultiStagePredictionMotif` | Serving | AdversarialEvasion, DatasetShift, ModelExtraction, OutOfDomainInput, TrainingDataMembershipInference, UnevaluatedModel, UnqualifiedPrediction |
 | `PreprocessPredictionMotif` | Serving | AdversarialEvasion, DatasetShift, ModelExtraction, OutOfDomainInput, TrainingDataMembershipInference, UnevaluatedModel, UnqualifiedPrediction |
 | `SynchronousPredictionMotif` | Serving | AdversarialEvasion, DatasetShift, ModelExtraction, OutOfDomainInput, ProtectedDataToExternalModel, TrainingDataMembershipInference, UnevaluatedModel, UnqualifiedPrediction |
-| `BatchTrainingMotif` | Training | EvaluationDataContamination, ImproperRetraining, ModelBias |
 | `PipelineTrainingMotif` | Training | EvaluationDataContamination, ImproperRetraining, ModelBias |
 
 ### Gao et al. (2023) - Retrieval-augmented generation for large language models: A survey (9)
@@ -306,22 +303,22 @@ so a motif derived from several catalogues is listed under each of them.
 | Risk pattern | Anchor | Motifs | Suggested controls |
 |---|---|---|---|
 | **AdversarialEvasion** | `adversarial-attack` | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | AdversarialRobustness, Guardrails |
-| **AgenticSupplyChain** | `asi04-agentic-supply-chain` | AgentDelegation, ToolAgentRegistry, ToolUsingAgent | AgentComponentVerification, ModelAndDependencyProvenance |
+| **AgenticSupplyChain** | `asi04-agentic-supply-chain` | AgentDelegation, ToolUsingAgent | AgentComponentVerification, ModelAndDependencyProvenance |
 | **CascadingFailures** | `asi08-cascading-failures` | AgentDelegation | CascadeContainment, RateLimitBudgetAndLoopControl |
 | **DataAndModelPoisoning** | `llm04-data-and-model-poisoning` | Embeddings, FineTuning, RetrievalDataAugmentation, TrainingToServing | LoggingMonitoringAndEvals, ModelAndDependencyProvenance, TrustedTrainingAndIndexingData |
 | **DatasetShift** | `dataset-shift` | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | DistributionShiftMonitoring, LoggingMonitoringAndEvals |
 | **DirectPromptingWithoutGrounding** | `llm09-misinformation` | DirectPrompting | GroundingAndVerification, LoggingMonitoringAndEvals |
-| **EvaluationDataContamination** | `data-contamination` | BatchTraining, FineTuning, PipelineTraining, TrainThenServe | HeldOutEvaluationData, PreReleaseModelEvaluation |
+| **EvaluationDataContamination** | `data-contamination` | FineTuning, PipelineTraining, TrainThenServe | HeldOutEvaluationData, PreReleaseModelEvaluation |
 | **ExcessiveAgency** | `llm06-excessive-agency` | **(none - cannot fire)** | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl, ToolPermissionBoundaries |
-| **GoalHijack** | `asi01-agent-goal-hijack` | AgentDelegation, GoalCreation, IncrementalModelQuerying, ModelQuerying, PlanReflection, ProactiveGoalCreation, ToolAgentRegistry, ToolUsingAgent | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, ToolPermissionBoundaries |
-| **HumanAgentTrustExploitation** | `asi09-human-agent-trust-exploitation` | ToolAgentRegistry, ToolUsingAgent | IndependentEvidenceForApproval, ToolPermissionBoundaries |
+| **GoalHijack** | `asi01-agent-goal-hijack` | AgentDelegation, GoalCreation, ModelQuerying, PlanReflection, ToolUsingAgent | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, ToolPermissionBoundaries |
+| **HumanAgentTrustExploitation** | `asi09-human-agent-trust-exploitation` | ToolUsingAgent | IndependentEvidenceForApproval, ToolPermissionBoundaries |
 | **IdentityPrivilegeAbuse** | `asi03-identity-and-privilege-abuse` | AgentDelegation, AgentMemoryLoop | ScopedAgentCredentials, ToolPermissionBoundaries |
 | **ImproperOutputHandling** | `llm05-improper-output-handling` | DirectPrompting | Guardrails, OutputValidationAndSanitization |
-| **ImproperRetraining** | `improper-retraining` | BatchTraining, FineTuning, PipelineTraining, TrainThenServe, TrainingToServing | RetrainingDataValidation, TrustedTrainingAndIndexingData |
+| **ImproperRetraining** | `improper-retraining` | FineTuning, PipelineTraining, TrainThenServe, TrainingToServing | RetrainingDataValidation, TrustedTrainingAndIndexingData |
 | **InsecureAgentCommunication** | `asi07-insecure-inter-agent-communication` | AgentDelegation, DebateBasedCooperation, VotingBasedCooperation | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, ToolPermissionBoundaries |
 | **MemoryPoisoning** | `asi06-memory-and-context-poisoning` | AgentMemoryLoop | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, TrustedTrainingAndIndexingData |
 | **MisinformationFromWeakGrounding** | `llm09-misinformation` | AdaptiveRAG, IterativeRAG, LLMBasedInformationRetrieval, RecursiveRAG, RetrievalAugmentedGeneration | GroundingAndVerification, LoggingMonitoringAndEvals |
-| **ModelBias** | `model-bias` | BatchTraining, PipelineTraining, TrainThenServe, TrainingToServing | FairnessEvaluation, TrustedTrainingAndIndexingData |
+| **ModelBias** | `model-bias` | PipelineTraining, TrainThenServe, TrainingToServing | FairnessEvaluation, TrustedTrainingAndIndexingData |
 | **ModelExtraction** | `extraction-attack` | AsynchronousPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | ModelAccessHardening, RateLimitBudgetAndLoopControl |
 | **OutOfDomainInput** | `out-of-domain-data` | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | DistributionShiftMonitoring, InputDomainValidation |
 | **PersonalDataRetained** | `https://taxonomy.eticas.ai/risk/weak-data-controls` | AgentMemoryLoop, PredictionLogging | DataMinimizationAndRedaction, RetentionLimits |
@@ -330,13 +327,13 @@ so a motif derived from several catalogues is listed under each of them.
 | **SensitiveInformationDisclosure** | `llm02-sensitive-information-disclosure` | **(none - cannot fire)** | DataMinimizationAndRedaction, Guardrails, OutputValidationAndSanitization, RetrievalAccessControl |
 | **SupplyChainCompromise** | `llm03-supply-chain` | ExternalDependency, FineTuning, ModelLoad | LoggingMonitoringAndEvals, ModelAndDependencyProvenance |
 | **SystemPromptLeakage** | `llm07-system-prompt-leakage` | DirectPrompting | Guardrails, OutputValidationAndSanitization, SystemPromptSecrecy |
-| **ToolMisuse** | `asi02-tool-misuse` | ToolAgentRegistry, ToolUsingAgent | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl, ToolPermissionBoundaries |
+| **ToolMisuse** | `asi02-tool-misuse` | ToolUsingAgent | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl, ToolPermissionBoundaries |
 | **TrainingDataMembershipInference** | `membership-inference-attack` | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | RateLimitBudgetAndLoopControl, TrainingDataPrivacy |
 | **UnboundedConsumption** | `llm10-unbounded-consumption` | DebateBasedCooperation, DirectPrompting, IterativeRAG, PlanReflection, QueryRewriting, RecursiveRAG, RetrievalAugmentedGeneration | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl |
 | **UnevaluatedModel** | `model-misspecification` | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainingToServing | LoggingMonitoringAndEvals, PreReleaseModelEvaluation |
-| **UnexpectedCodeExecution** | `asi05-unexpected-code-execution` | ToolAgentRegistry, ToolUsingAgent | OutputValidationAndSanitization, SandboxedCodeExecution |
+| **UnexpectedCodeExecution** | `asi05-unexpected-code-execution` | ToolUsingAgent | OutputValidationAndSanitization, SandboxedCodeExecution |
 | **UnqualifiedPrediction** | `model-uncertainty` | AsynchronousPrediction, BatchPrediction, MultiStagePrediction, PreprocessPrediction, SynchronousPrediction, TrainThenServe, TrainingToServing | ToolPermissionBoundaries, UncertaintyReportingAndReview |
-| **UntraceableAgentActions** | `https://taxonomy.eticas.ai/risk/untraceable-agent-actions` | ToolAgentRegistry, ToolUsingAgent | AgentActionAuditLog, LoggingMonitoringAndEvals |
+| **UntraceableAgentActions** | `https://taxonomy.eticas.ai/risk/untraceable-agent-actions` | ToolUsingAgent | AgentActionAuditLog, LoggingMonitoringAndEvals |
 | **VectorAndEmbeddingWeakness** | `llm08-vector-and-embedding-weaknesses` | Embeddings, Reranker, VectorBasedInformationRetrieval | GroundingAndVerification, RetrievalAccessControl, TrustedTrainingAndIndexingData |
 
 ---
@@ -486,7 +483,7 @@ document is generated from them.
 
 | File | Holds |
 |---|---|
-| `ontology/patterns/motif.ttl` | the 47 motifs and their pattern nodes/edges |
+| `ontology/patterns/motif.ttl` | the 43 motifs and their pattern nodes/edges |
 | `ontology/patterns/risk_pattern_library.ttl` | the 33 risk patterns, the 30 suggested controls, and the control-to-MIT bridge |
 | `ontology/patterns/control_mitigation_layer.ttl` | technical/non-technical classification and `realizedByMotif` |
 | `ontology/core/pair_ai_pattern.ttl` | the pattern meta-vocabulary: roles, predicates, data categories |

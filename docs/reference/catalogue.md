@@ -1,7 +1,7 @@
 # PAIR-AI Catalogue — Motifs, Risk Patterns & Annotation Roles
 
 The inventory of what PAIR-AI can recognise and flag. Counted off the loaded
-ontology on 2026-10-09: **47 motifs**, **33 risk patterns**, **123 annotation
+ontology on 2026-10-09: **47 motifs** (43 after the B-4 merges of 2026-10-18), **33 risk patterns**, **123 annotation
 roles** (140 with the 17 role categories added 2026-10-18), and **7 data categories**. Terminology follows
 [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md). This file is maintained by
 hand — if the library changes and this page does not, this page is wrong.
@@ -139,7 +139,6 @@ matches several families at once.
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **BatchTrainingMotif** | A scheduled job prepares data, trains a model, evaluates it, records artifact + evaluation. | Model bias, improper retraining, evaluation contamination |
 | **PipelineTrainingMotif** | Training decomposed into independently executable pipeline jobs with intermediate data. | Model bias, improper retraining, evaluation contamination |
 
 ### Lifecycle (train → serve)
@@ -221,7 +220,7 @@ risk pattern of their own.
 | **Dataset shift** | Dataset shift | A prediction step uses a model and no `MonitoringStep` reads both a `MonitoringBaseline` and something downstream of the step's inputs. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Distribution shift monitoring; logging/monitoring/evals |
 | **Out-of-domain data** | Out-of-domain input | A request, batch dataset, preprocessed input or user input reaches a prediction step with no `InputDomainCheckStep` upstream of it or feeding the step. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Input domain validation; distribution shift monitoring |
 | **Adversarial attack** | Adversarial evasion | An input carrying `UntrustedContent` reaches a prediction step. A `GuardrailStep` on the way stops the taint, so it clears this. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Adversarial robustness; guardrails |
-| **Model bias** | Model bias | A training step uses data carrying `SensitiveInformation` (from a DPV personal-data annotation) and no `FairnessEvaluationStep` reads the model or anything downstream of it. | Batch Training, Pipeline Training, Train-Then-Serve, Training-to-Serving | Fairness evaluation; trusted training & indexing data |
+| **Model bias** | Model bias | A training step uses data carrying `SensitiveInformation` (from a DPV personal-data annotation) and no `FairnessEvaluationStep` reads the model or anything downstream of it. | Pipeline Training, Train-Then-Serve, Training-to-Serving | Fairness evaluation; trusted training & indexing data |
 | **Model misspecification** | Unevaluated model | A model a training step produced reaches a prediction step and no `EvaluationStep` reads it or a model deployed from it. | All prediction motifs, Training-to-Serving | Pre-release model evaluation; logging/monitoring/evals |
 | **Model uncertainty** | Unqualified prediction | A prediction reaches a tool or state-changing step, or a user-facing output, and neither an `UncertaintyEstimate` from the prediction step nor a `HumanApprovalStep` reaches the same place. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Uncertainty reporting and review; tool permission boundaries |
 
@@ -229,9 +228,9 @@ risk pattern of their own.
 
 | Anchor | Risk pattern | Fires when | Declared motif | Suggested controls |
 | --- | --- | --- | --- | --- |
-| **Improper retraining** | Improper retraining | Data downstream of a model is read back by the step that trains it, with no `DataValidationStep`, `OutputValidationStep` or `HumanApprovalStep` on the loop. | Batch Training, Pipeline Training, Train-Then-Serve, Training-to-Serving, Fine Tuning | Retraining data validation; trusted training & indexing data |
+| **Improper retraining** | Improper retraining | Data downstream of a model is read back by the step that trains it, with no `DataValidationStep`, `OutputValidationStep` or `HumanApprovalStep` on the loop. | Pipeline Training, Train-Then-Serve, Training-to-Serving, Fine Tuning | Retraining data validation; trusted training & indexing data |
 | **Membership inference attack** | Training data membership inference | A model trained on `SensitiveInformation` serves requests derived from `PublicUserInput`. **No structural escape**: what reduces it is how the model is trained, so a finding is settled by triage. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Training data privacy; rate/budget/loop control |
-| **Data contamination** | Evaluation data contamination | An evaluation step reads the training data, or a set the training data was drawn from. | Batch Training, Pipeline Training, Train-Then-Serve, Fine Tuning | Held-out evaluation data; pre-release model evaluation |
+| **Data contamination** | Evaluation data contamination | An evaluation step reads the training data, or a set the training data was drawn from. | Pipeline Training, Train-Then-Serve, Fine Tuning | Held-out evaluation data; pre-release model evaluation |
 
 ### Structures no other pattern covered (added 2026-10-09)
 

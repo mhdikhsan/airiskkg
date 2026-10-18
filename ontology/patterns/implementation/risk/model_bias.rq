@@ -30,11 +30,6 @@ WHERE {
         ?match pair:hasNodeBinding ?binding .
         # The step that fits the model, as each training motif names it.
         {
-            ?binding pair:bindsPatternNode pat:BatchTrain_TrainingStepNode ;
-                     pair:matchedElement ?trainingStep .
-        }
-        UNION
-        {
             ?binding pair:bindsPatternNode pat:PipeTrain_TrainingJobNode ;
                      pair:matchedElement ?trainingStep .
         }
