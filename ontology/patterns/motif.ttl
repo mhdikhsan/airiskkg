@@ -297,10 +297,7 @@ pat:Cite_InstructionTuning a pair:DesignPatternCitation ;
 pat:InformationRetrievalMotif
     a pair:GraphMotif ;
     rdfs:label "Information Retrieval Motif"@en ;
-    dct:description """
-    Architectural motif in which a retrieval process uses a query and a
-    knowledge source and produces retrieved context.
-    """@en ;
+    dct:description "A retrieval step reads a query and a knowledge source and produces retrieved context."@en ;
     pair:derivedFrom pat:Cite_RetrievalAugmentedGeneration ,
         pat:Cite_AgentRetrievalAugmentedGeneration ,
         pat:Cite_NaiveRAG ;
@@ -317,25 +314,25 @@ pat:InformationRetrievalMotif
 
 pat:IR_QueryNode
     a pair:PatternNode ;
-    rdfs:label "Query node"@en ;
+    rdfs:label "Query"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:IR_KnowledgeSourceNode
     a pair:PatternNode ;
-    rdfs:label "Knowledge source node"@en ;
+    rdfs:label "Knowledge source"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:KnowledgeSource .
 
 pat:IR_RetrievalStepNode
     a pair:PatternNode ;
-    rdfs:label "Retrieval step node"@en ;
+    rdfs:label "Retrieval step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalStep .
 
 pat:IR_RetrievedContextNode
     a pair:PatternNode ;
-    rdfs:label "Retrieved context node"@en ;
+    rdfs:label "Retrieved context"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
@@ -365,10 +362,7 @@ pat:IR_RetrievalProducesContextEdge
 pat:VectorBasedInformationRetrievalMotif
     a pair:GraphMotif ;
     rdfs:label "Vector-based Information Retrieval Motif"@en ;
-    dct:description """
-    Architectural motif in which a retrieval process uses a vector store or
-    knowledge source and produces a retrieved result or retrieved context..
-    """@en ;
+    dct:description "A retrieval step reads a query and a vector store and produces retrieved context."@en ;
     pair:derivedFrom pat:Cite_RetrievalAugmentedGeneration ,
         pat:Cite_AgentRetrievalAugmentedGeneration ,
         pat:Cite_NaiveRAG ;
@@ -385,25 +379,25 @@ pat:VectorBasedInformationRetrievalMotif
 
 pat:VectorIR_QueryNode
     a pair:PatternNode ;
-    rdfs:label "Query node"@en ;
+    rdfs:label "Query"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:VectorIR_VectorStoreNode
     a pair:PatternNode ;
-    rdfs:label "Vector store node"@en ;
+    rdfs:label "Vector store"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:VectorStore .
 
 pat:VectorIR_RetrievalStepNode
     a pair:PatternNode ;
-    rdfs:label "Vector-based retrieval step node"@en ;
+    rdfs:label "Vector-based retrieval step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalStep .
 
 pat:VectorIR_RetrievedResultNode
     a pair:PatternNode ;
-    rdfs:label "Retrieved result node"@en ;
+    rdfs:label "Retrieved result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
@@ -433,11 +427,7 @@ pat:VectorIR_RetrievalProducesResultEdge
 pat:LLMBasedInformationRetrievalMotif
     a pair:GraphMotif ;
     rdfs:label "LLM-based Information Retrieval Motif"@en ;
-    dct:description """
-    Architectural motif in which a retrieval step uses a generative model to find
-    the items relevant to a query: a generative retriever that produces item
-    identifiers itself, or a language model that ranks what an index returned.
-    """@en ;
+    dct:description "A retrieval step uses a generative model to find what is relevant to a query and produces retrieved context."@en ;
     rdfs:comment "No knowledge source node: a generative retriever answers from what the model learned, with no index. When a source is also read, the Information Retrieval motif co-matches."@en ;
     pair:derivedFrom pat:Cite_LLMEnhancedIR ,
         pat:Cite_GenerativeRetriever ;
@@ -454,25 +444,25 @@ pat:LLMBasedInformationRetrievalMotif
 
 pat:LLMIR_QueryNode
     a pair:PatternNode ;
-    rdfs:label "Query node"@en ;
+    rdfs:label "Query"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:LLMIR_LLMNode
     a pair:PatternNode ;
-    rdfs:label "Retrieval language model node"@en ;
+    rdfs:label "Retrieval language model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:GenerativeModel .
 
 pat:LLMIR_RetrievalStepNode
     a pair:PatternNode ;
-    rdfs:label "LLM-based retrieval step node"@en ;
+    rdfs:label "LLM-based retrieval step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalStep .
 
 pat:LLMIR_RetrievedResultNode
     a pair:PatternNode ;
-    rdfs:label "Retrieved result node"@en ;
+    rdfs:label "Retrieved result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
@@ -503,7 +493,7 @@ pat:SynchronousPredictionMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:SyncPred_MatchingOQP ;
     rdfs:label "Synchronous Prediction Motif"@en ;
-    dct:description "Architectural motif in which a prediction step runs inline with a request workflow and produces a result before the workflow proceeds."@en ;
+    dct:description "A prediction step answers a request with a model, and a downstream step uses the result in the same workflow."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_SynchronousPrediction ;
     pair:hasPatternNode
@@ -520,31 +510,31 @@ pat:SynchronousPredictionMotif
 
 pat:SyncPred_RequestNode
     a pair:PatternNode ;
-    rdfs:label "Synchronous prediction request node"@en ;
+    rdfs:label "Synchronous prediction request"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionRequest .
 
 pat:SyncPred_ModelNode
     a pair:PatternNode ;
-    rdfs:label "Synchronous prediction model node"@en ;
+    rdfs:label "Synchronous prediction model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:Model .
 
 pat:SyncPred_PredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Synchronous prediction step node"@en ;
+    rdfs:label "Synchronous prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
 pat:SyncPred_ResultNode
     a pair:PatternNode ;
-    rdfs:label "Synchronous prediction result node"@en ;
+    rdfs:label "Synchronous prediction result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionResult .
 
 pat:SyncPred_DownstreamStepNode
     a pair:PatternNode ;
-    rdfs:label "Downstream workflow step node"@en ;
+    rdfs:label "Downstream workflow step"@en ;
     pair:expectedClass beam:Process .
 
 pat:SyncPred_PredictionUsesRequestEdge
@@ -580,7 +570,7 @@ pat:AsynchronousPredictionMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:AsyncPred_MatchingOQP ;
     rdfs:label "Asynchronous Prediction Motif"@en ;
-    dct:description "Architectural motif in which prediction requests are decoupled from prediction execution through a queue, cache, or similar intermediary resource."@en ;
+    dct:description "A step places prediction requests on a queue, and a prediction step takes them from the queue and produces the results."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_AsynchronousPrediction ;
     pair:hasPatternNode
@@ -597,30 +587,30 @@ pat:AsynchronousPredictionMotif
 
 pat:AsyncPred_RequestNode
     a pair:PatternNode ;
-    rdfs:label "Asynchronous prediction request node"@en ;
+    rdfs:label "Asynchronous prediction request"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionRequest .
 
 pat:AsyncPred_EnqueueStepNode
     a pair:PatternNode ;
-    rdfs:label "Prediction request enqueue step node"@en ;
+    rdfs:label "Prediction request enqueue step"@en ;
     pair:expectedClass beam:Process .
 
 pat:AsyncPred_QueueNode
     a pair:PatternNode ;
-    rdfs:label "Prediction queue node"@en ;
+    rdfs:label "Prediction queue"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionQueue .
 
 pat:AsyncPred_PredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Asynchronous prediction step node"@en ;
+    rdfs:label "Asynchronous prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
 pat:AsyncPred_ResultNode
     a pair:PatternNode ;
-    rdfs:label "Asynchronous prediction result node"@en ;
+    rdfs:label "Asynchronous prediction result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionResult .
 
@@ -656,7 +646,7 @@ pat:BatchPredictionMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:BatchPred_MatchingOQP ;
     rdfs:label "Batch Prediction Motif"@en ;
-    dct:description "Architectural motif in which a scheduled job runs prediction over a batch dataset and stores batch prediction results."@en ;
+    dct:description "A scheduled job starts a prediction step that runs a model over a batch dataset and produces the results."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_BatchPrediction ;
     pair:hasPatternNode
@@ -675,36 +665,36 @@ pat:BatchPredictionMotif
 
 pat:BatchPred_SchedulerNode
     a pair:PatternNode ;
-    rdfs:label "Batch prediction scheduler node"@en ;
+    rdfs:label "Batch prediction scheduler"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:JobScheduler .
 
 pat:BatchPred_DatasetNode
     a pair:PatternNode ;
-    rdfs:label "Batch prediction dataset node"@en ;
+    rdfs:label "Batch prediction dataset"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:BatchDataset .
 
 pat:BatchPred_ModelNode
     a pair:PatternNode ;
-    rdfs:label "Batch prediction model node"@en ;
+    rdfs:label "Batch prediction model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:Model .
 
 pat:BatchPred_JobNode
     a pair:PatternNode ;
-    rdfs:label "Batch prediction job node"@en ;
+    rdfs:label "Batch prediction job"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
 pat:BatchPred_JobRequestNode
     a pair:PatternNode ;
-    rdfs:label "Job request node"@en ;
+    rdfs:label "Job request"@en ;
     pair:expectedClass beam:Data .
 
 pat:BatchPred_ResultNode
     a pair:PatternNode ;
-    rdfs:label "Batch prediction result node"@en ;
+    rdfs:label "Batch prediction result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionResult .
 
@@ -748,7 +738,7 @@ pat:PreprocessPredictionMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:PrepPred_MatchingOQP ;
     rdfs:label "Prep-Pred / Preprocess-Prediction Motif"@en ;
-    dct:description "Architectural motif in which preprocessing and prediction are represented as separate steps connected by preprocessed data."@en ;
+    dct:description "A preprocessing step turns a prediction request into preprocessed data that a prediction step reads with a model."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_PreprocessPrediction ;
     pair:hasPatternNode
@@ -767,37 +757,37 @@ pat:PreprocessPredictionMotif
 
 pat:PrepPred_InputNode
     a pair:PatternNode ;
-    rdfs:label "Raw prediction input node"@en ;
+    rdfs:label "Raw prediction input"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionRequest .
 
 pat:PrepPred_PreprocessStepNode
     a pair:PatternNode ;
-    rdfs:label "Preprocessing step node"@en ;
+    rdfs:label "Preprocessing step"@en ;
     pair:expectedClass beam:Transform ;
     pair:expectedRole pair:PreprocessingStep .
 
 pat:PrepPred_PreprocessedDataNode
     a pair:PatternNode ;
-    rdfs:label "Preprocessed data node"@en ;
+    rdfs:label "Preprocessed data"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PreprocessedData .
 
 pat:PrepPred_ModelNode
     a pair:PatternNode ;
-    rdfs:label "Prep-pred model node"@en ;
+    rdfs:label "Prep-pred model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:Model .
 
 pat:PrepPred_PredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Prep-pred prediction step node"@en ;
+    rdfs:label "Prep-pred prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
 pat:PrepPred_ResultNode
     a pair:PatternNode ;
-    rdfs:label "Prep-pred prediction result node"@en ;
+    rdfs:label "Prep-pred prediction result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionResult .
 
@@ -841,7 +831,7 @@ pat:MultiStagePredictionMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:MultiStage_MatchingOQP ;
     rdfs:label "Multi-stage Prediction Motif"@en ;
-    dct:description "Architectural motif in which one prediction path returns a quick result while another prediction path produces a slower or richer result."@en ;
+    dct:description "A fast and a slow prediction step each answer the same request with a model and produce their own results."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_MultiStagePrediction ;
     pair:hasPatternNode
@@ -862,43 +852,43 @@ pat:MultiStagePredictionMotif
 
 pat:MultiStage_RequestNode
     a pair:PatternNode ;
-    rdfs:label "Multi-stage prediction request node"@en ;
+    rdfs:label "Multi-stage prediction request"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionRequest .
 
 pat:MultiStage_FastModelNode
     a pair:PatternNode ;
-    rdfs:label "Fast prediction model node"@en ;
+    rdfs:label "Fast prediction model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:Model .
 
 pat:MultiStage_FastPredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Fast prediction step node"@en ;
+    rdfs:label "Fast prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:FastPredictionStep .
 
 pat:MultiStage_QuickResultNode
     a pair:PatternNode ;
-    rdfs:label "Quick prediction result node"@en ;
+    rdfs:label "Quick prediction result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionResult .
 
 pat:MultiStage_SlowModelNode
     a pair:PatternNode ;
-    rdfs:label "Slow prediction model node"@en ;
+    rdfs:label "Slow prediction model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:Model .
 
 pat:MultiStage_SlowPredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Slow prediction step node"@en ;
+    rdfs:label "Slow prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:SlowPredictionStep .
 
 pat:MultiStage_ImprovedResultNode
     a pair:PatternNode ;
-    rdfs:label "Improved prediction result node"@en ;
+    rdfs:label "Improved prediction result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionResult .
 
@@ -952,7 +942,7 @@ pat:BatchTrainingMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:BatchTrain_MatchingOQP ;
     rdfs:label "Batch Training Motif"@en ;
-    dct:description "Architectural motif in which a scheduled training job prepares data, trains a model, evaluates it, and records the resulting model artifact and evaluation result."@en ;
+    dct:description "A scheduled job starts preprocessing of a training dataset, a training step learns a model artifact from the result, and an evaluation step scores it."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_BatchTraining ;
     pair:hasPatternNode
@@ -977,54 +967,54 @@ pat:BatchTrainingMotif
 
 pat:BatchTrain_SchedulerNode
     a pair:PatternNode ;
-    rdfs:label "Batch training scheduler node"@en ;
+    rdfs:label "Batch training scheduler"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:JobScheduler .
 
 pat:BatchTrain_DatasetNode
     a pair:PatternNode ;
-    rdfs:label "Batch training dataset node"@en ;
+    rdfs:label "Batch training dataset"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:TrainingDataset .
 
 pat:BatchTrain_PreprocessStepNode
     a pair:PatternNode ;
-    rdfs:label "Batch training preprocessing step node"@en ;
+    rdfs:label "Batch training preprocessing step"@en ;
     pair:expectedClass beam:Transform ;
     pair:expectedRole pair:PreprocessingStep .
 
 pat:BatchTrain_JobRequestNode
     a pair:PatternNode ;
-    rdfs:label "Job request node"@en ;
+    rdfs:label "Job request"@en ;
     pair:expectedClass beam:Data .
 
 pat:BatchTrain_TrainingDataNode
     a pair:PatternNode ;
-    rdfs:label "Prepared training data node"@en ;
+    rdfs:label "Prepared training data"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PreprocessedData .
 
 pat:BatchTrain_TrainingStepNode
     a pair:PatternNode ;
-    rdfs:label "Batch training step node"@en ;
+    rdfs:label "Batch training step"@en ;
     pair:expectedClass beam:Train ;
     pair:expectedRole pair:TrainingStep .
 
 pat:BatchTrain_ModelArtifactNode
     a pair:PatternNode ;
-    rdfs:label "Trained model artifact node"@en ;
+    rdfs:label "Trained model artifact"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:ModelArtifact .
 
 pat:BatchTrain_EvaluationStepNode
     a pair:PatternNode ;
-    rdfs:label "Model evaluation step node"@en ;
+    rdfs:label "Model evaluation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:EvaluationStep .
 
 pat:BatchTrain_EvaluationResultNode
     a pair:PatternNode ;
-    rdfs:label "Model evaluation result node"@en ;
+    rdfs:label "Model evaluation result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:EvaluationResult .
 
@@ -1091,7 +1081,7 @@ pat:PipelineTrainingMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:PipeTrain_MatchingOQP ;
     rdfs:label "Pipeline Training Motif"@en ;
-    dct:description "Architectural motif in which training is decomposed into independently executable pipeline jobs connected by intermediate data and workflow dependencies."@en ;
+    dct:description "Preprocessing, training and evaluation run as separate steps, each reading what the previous one produced: prepared data, then a model artifact."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Pipeline-training-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_PipelineTraining ;
     pair:hasPatternNode
@@ -1112,43 +1102,43 @@ pat:PipelineTrainingMotif
 
 pat:PipeTrain_SourceDataNode
     a pair:PatternNode ;
-    rdfs:label "Pipeline training source data node"@en ;
+    rdfs:label "Pipeline training source data"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:TrainingDataset .
 
 pat:PipeTrain_PreprocessJobNode
     a pair:PatternNode ;
-    rdfs:label "Pipeline preprocessing job node"@en ;
+    rdfs:label "Pipeline preprocessing job"@en ;
     pair:expectedClass beam:Transform ;
     pair:expectedRole pair:PreprocessingStep .
 
 pat:PipeTrain_IntermediateDataNode
     a pair:PatternNode ;
-    rdfs:label "Pipeline intermediate data node"@en ;
+    rdfs:label "Pipeline intermediate data"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PreprocessedData .
 
 pat:PipeTrain_TrainingJobNode
     a pair:PatternNode ;
-    rdfs:label "Pipeline training job node"@en ;
+    rdfs:label "Pipeline training job"@en ;
     pair:expectedClass beam:Train ;
     pair:expectedRole pair:TrainingStep .
 
 pat:PipeTrain_ModelArtifactNode
     a pair:PatternNode ;
-    rdfs:label "Pipeline model artifact node"@en ;
+    rdfs:label "Pipeline model artifact"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:ModelArtifact .
 
 pat:PipeTrain_EvaluationJobNode
     a pair:PatternNode ;
-    rdfs:label "Pipeline evaluation job node"@en ;
+    rdfs:label "Pipeline evaluation job"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:EvaluationStep .
 
 pat:PipeTrain_EvaluationResultNode
     a pair:PatternNode ;
-    rdfs:label "Pipeline evaluation result node"@en ;
+    rdfs:label "Pipeline evaluation result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:EvaluationResult .
 
@@ -1203,7 +1193,7 @@ pat:TrainThenServeMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:TrainServe_MatchingOQP ;
     rdfs:label "Train-Then-Serve Motif"@en ;
-    dct:description "Lifecycle motif in which training and serving are separated by evaluation, approval, and a release step before the model is used for production prediction."@en ;
+    dct:description "An evaluation step reads a trained model artifact and produces a release approval, which a deployment step reads before serving the model to a prediction step."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_TrainThenServe ;
     pair:hasPatternNode
@@ -1225,43 +1215,43 @@ pat:TrainThenServeMotif
 
 pat:TrainServe_TrainingStepNode
     a pair:PatternNode ;
-    rdfs:label "Train-then-serve training step node"@en ;
+    rdfs:label "Train-then-serve training step"@en ;
     pair:expectedClass beam:Train ;
     pair:expectedRole pair:TrainingStep .
 
 pat:TrainServe_CandidateModelNode
     a pair:PatternNode ;
-    rdfs:label "Candidate model artifact node"@en ;
+    rdfs:label "Candidate model artifact"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:ModelArtifact .
 
 pat:TrainServe_EvaluationStepNode
     a pair:PatternNode ;
-    rdfs:label "Pre-release evaluation step node"@en ;
+    rdfs:label "Pre-release evaluation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:EvaluationStep .
 
 pat:TrainServe_ApprovalNode
     a pair:PatternNode ;
-    rdfs:label "Release approval node"@en ;
+    rdfs:label "Release approval"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:ReleaseApproval .
 
 pat:TrainServe_ReleaseStepNode
     a pair:PatternNode ;
-    rdfs:label "Manual release step node"@en ;
+    rdfs:label "Manual release step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:DeploymentStep .
 
 pat:TrainServe_DeployedModelNode
     a pair:PatternNode ;
-    rdfs:label "Deployed model node"@en ;
+    rdfs:label "Deployed model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:LoadedModel .
 
 pat:TrainServe_PredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Production prediction step node"@en ;
+    rdfs:label "Production prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
@@ -1320,7 +1310,7 @@ pat:TrainingToServingMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:TrainToServe_MatchingOQP ;
     rdfs:label "Training-to-Serving Motif"@en ;
-    dct:description "Lifecycle motif in which a training pipeline automatically produces a model artifact that is built or deployed into a serving prediction path."@en ;
+    dct:description "A training pipeline produces a model artifact that a deployment step serves to a prediction step."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_TrainingToServing ;
     pair:hasPatternNode
@@ -1337,31 +1327,31 @@ pat:TrainingToServingMotif
 
 pat:TrainToServe_TrainingPipelineNode
     a pair:PatternNode ;
-    rdfs:label "Automated training pipeline node"@en ;
+    rdfs:label "Training pipeline"@en ;
     pair:expectedClass beam:Train ;
     pair:expectedRole pair:TrainingPipeline .
 
 pat:TrainToServe_ModelArtifactNode
     a pair:PatternNode ;
-    rdfs:label "Automatically trained model artifact node"@en ;
+    rdfs:label "Trained model artifact"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:ModelArtifact .
 
 pat:TrainToServe_AutoDeploymentNode
     a pair:PatternNode ;
-    rdfs:label "Automatic model deployment step node"@en ;
+    rdfs:label "Model deployment step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:DeploymentStep .
 
 pat:TrainToServe_DeployedModelNode
     a pair:PatternNode ;
-    rdfs:label "Automatically deployed model node"@en ;
+    rdfs:label "Deployed model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:LoadedModel .
 
 pat:TrainToServe_PredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Training-to-serving prediction step node"@en ;
+    rdfs:label "Training-to-serving prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
@@ -1375,14 +1365,14 @@ pat:TrainToServe_TrainingProducesModelEdge
 
 pat:TrainToServe_DeploymentUsesModelEdge
     a pair:PatternEdge ;
-    rdfs:label "automatic deployment uses model"@en ;
+    rdfs:label "deployment uses model artifact"@en ;
     pair:sourcePatternNode pat:TrainToServe_AutoDeploymentNode ;
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:TrainToServe_ModelArtifactNode .
 
 pat:TrainToServe_DeploymentProducesDeployedModelEdge
     a pair:PatternEdge ;
-    rdfs:label "automatic deployment produces deployed model"@en ;
+    rdfs:label "deployment produces deployed model"@en ;
     pair:sourcePatternNode pat:TrainToServe_AutoDeploymentNode ;
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:TrainToServe_DeployedModelNode .
@@ -1390,7 +1380,7 @@ pat:TrainToServe_DeploymentProducesDeployedModelEdge
 
 pat:TrainToServe_PredictionUsesModelEdge
     a pair:PatternEdge ;
-    rdfs:label "prediction uses automatically deployed model"@en ;
+    rdfs:label "prediction uses deployed model"@en ;
     pair:sourcePatternNode pat:TrainToServe_PredictionStepNode ;
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:TrainToServe_DeployedModelNode .
@@ -1401,7 +1391,7 @@ pat:PredictionLoggingMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:PredLog_MatchingOQP ;
     rdfs:label "Prediction Logging Motif"@en ;
-    dct:description "Operational motif in which prediction inputs, results, latency, or related events are collected into prediction logs for analysis and service improvement."@en ;
+    dct:description "A logging step reads a prediction step's request and result and writes them to a prediction log."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_PredictionLog ;
     pair:hasPatternNode
@@ -1419,31 +1409,31 @@ pat:PredictionLoggingMotif
 
 pat:PredLog_RequestNode
     a pair:PatternNode ;
-    rdfs:label "Logged prediction request node"@en ;
+    rdfs:label "Logged prediction request"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionRequest .
 
 pat:PredLog_ResultNode
     a pair:PatternNode ;
-    rdfs:label "Logged prediction result node"@en ;
+    rdfs:label "Logged prediction result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionResult .
 
 pat:PredLog_PredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Logged prediction step node"@en ;
+    rdfs:label "Logged prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
 pat:PredLog_LoggingStepNode
     a pair:PatternNode ;
-    rdfs:label "Prediction logging step node"@en ;
+    rdfs:label "Prediction logging step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:LoggingStep .
 
 pat:PredLog_LogRecordNode
     a pair:PatternNode ;
-    rdfs:label "Prediction log record node"@en ;
+    rdfs:label "Prediction log record"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionLog .
 
@@ -1487,7 +1477,7 @@ pat:PredictionMonitoringMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:PredMon_MatchingOQP ;
     rdfs:label "Prediction Monitoring Motif"@en ;
-    dct:description "Operational motif in which prediction logs or prediction result trends are monitored against expected behavior and may produce alerts."@en ;
+    dct:description "A monitoring step compares a prediction log with a baseline and produces alerts."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_PredictionMonitoring ;
     pair:hasPatternNode
@@ -1502,25 +1492,25 @@ pat:PredictionMonitoringMotif
 
 pat:PredMon_LogNode
     a pair:PatternNode ;
-    rdfs:label "Prediction monitoring log node"@en ;
+    rdfs:label "Prediction monitoring log"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionLog .
 
 pat:PredMon_BaselineNode
     a pair:PatternNode ;
-    rdfs:label "Prediction monitoring baseline node"@en ;
+    rdfs:label "Prediction monitoring baseline"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:MonitoringBaseline .
 
 pat:PredMon_MonitoringStepNode
     a pair:PatternNode ;
-    rdfs:label "Prediction monitoring step node"@en ;
+    rdfs:label "Prediction monitoring step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:MonitoringStep .
 
 pat:PredMon_AlertNode
     a pair:PatternNode ;
-    rdfs:label "Prediction monitoring alert node"@en ;
+    rdfs:label "Prediction monitoring alert"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:Alert .
 
@@ -1549,7 +1539,7 @@ pat:ModelLoadMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:ModelLoad_MatchingOQP ;
     rdfs:label "Model Load Motif"@en ;
-    dct:description "Operational motif in which a prediction server image and model artifact are managed separately, and the model is loaded by the server before prediction."@en ;
+    dct:description "A model load step reads a serving image and a separately kept model artifact and produces the model a prediction step uses."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_ModelLoad ;
     pair:hasPatternNode
@@ -1566,31 +1556,31 @@ pat:ModelLoadMotif
 
 pat:ModelLoad_ServerImageNode
     a pair:PatternNode ;
-    rdfs:label "Reusable prediction server image node"@en ;
+    rdfs:label "Reusable prediction server image"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:ServingImage .
 
 pat:ModelLoad_ModelArtifactNode
     a pair:PatternNode ;
-    rdfs:label "Separately managed model artifact node"@en ;
+    rdfs:label "Separately managed model artifact"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:ModelArtifact .
 
 pat:ModelLoad_LoadStepNode
     a pair:PatternNode ;
-    rdfs:label "Model load step node"@en ;
+    rdfs:label "Model load step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:ModelLoadStep .
 
 pat:ModelLoad_LoadedModelNode
     a pair:PatternNode ;
-    rdfs:label "Loaded model node"@en ;
+    rdfs:label "Loaded model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:LoadedModel .
 
 pat:ModelLoad_PredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Model-load prediction step node"@en ;
+    rdfs:label "Model-load prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
@@ -1627,7 +1617,7 @@ pat:ModelInImageMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:ModelImage_MatchingOQP ;
     rdfs:label "Model-in-Image Motif"@en ;
-    dct:description "Operational motif in which a trained model artifact is packaged into a serving image that is deployed as the prediction service runtime."@en ;
+    dct:description "A trained model artifact is built into a serving image, which a deployment step turns into the model a prediction step uses."@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> ;
     pair:derivedFrom pat:Cite_ModelInImage ;
     pair:hasPatternNode
@@ -1648,43 +1638,43 @@ pat:ModelInImageMotif
 
 pat:ModelImage_TrainingStepNode
     a pair:PatternNode ;
-    rdfs:label "Model-in-image training step node"@en ;
+    rdfs:label "Model-in-image training step"@en ;
     pair:expectedClass beam:Train ;
     pair:expectedRole pair:TrainingStep .
 
 pat:ModelImage_ModelArtifactNode
     a pair:PatternNode ;
-    rdfs:label "Model-in-image model artifact node"@en ;
+    rdfs:label "Model-in-image model artifact"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:ModelArtifact .
 
 pat:ModelImage_ImageBuildStepNode
     a pair:PatternNode ;
-    rdfs:label "Serving image build step node"@en ;
+    rdfs:label "Serving image build step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:ImageBuildStep .
 
 pat:ModelImage_ServingImageNode
     a pair:PatternNode ;
-    rdfs:label "Serving image containing model node"@en ;
+    rdfs:label "Serving image containing model"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:ServingImage .
 
 pat:ModelImage_DeployedModelNode
     a pair:PatternNode ;
-    rdfs:label "Deployed model node"@en ;
+    rdfs:label "Deployed model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:LoadedModel .
 
 pat:ModelImage_DeploymentStepNode
     a pair:PatternNode ;
-    rdfs:label "Model-in-image deployment step node"@en ;
+    rdfs:label "Model-in-image deployment step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:DeploymentStep .
 
 pat:ModelImage_PredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Model-in-image prediction step node"@en ;
+    rdfs:label "Model-in-image prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
@@ -1737,10 +1727,7 @@ pat:ModelImage_DeploymentProducesDeployedModelEdge
 pat:DirectPromptingMotif
     a pair:GraphMotif ;
     rdfs:label "Direct Prompting Motif"@en ;   
-    dct:description """
-    Architectural motif in which a user query is handled directly by a
-    generative model step and produces a user-facing answer. 
-    """@en ;
+    dct:description "A generation step puts the user's input to a generative model and produces output the user sees."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_DirectPrompting ,
         pat:Cite_Prompting ;
@@ -1757,25 +1744,25 @@ pat:DirectPromptingMotif
 
 pat:DP_QueryNode
     a pair:PatternNode ;
-    rdfs:label "Query node"@en ;
+    rdfs:label "Query"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:DP_ModelNode
     a pair:PatternNode ;
-    rdfs:label "LLM node"@en ;
+    rdfs:label "LLM"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:GenerativeModel .
 
 pat:DP_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Direct LLM generation step node"@en ;
+    rdfs:label "Direct LLM generation step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:GenerationStep .
 
 pat:DP_AnswerNode
     a pair:PatternNode ;
-    rdfs:label "Answer node"@en ;
+    rdfs:label "Answer"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserFacingOutput .
 
@@ -1803,11 +1790,7 @@ pat:DP_GenerationProducesAnswerEdge
 pat:PromptResponseOptimiserMotif
     a pair:GraphMotif ;
     rdfs:label "Prompt/Response Optimiser Motif"@en ;
-    dct:description """
-    GenAI motif in which an optimiser step rewrites the incoming prompt against a
-    prompt template before generation, then reworks the generated result into the
-    response it passes on.
-    """@en ;
+    dct:description "An optimisation step rewrites the user's input into a prompt from a template before generation, and reworks the generated response afterwards."@en ;
     pair:derivedFrom pat:Cite_PromptResponseOptimiser ;
     pair:hasPatternNode
         pat:PromptOpt_InputNode ,
@@ -1829,43 +1812,43 @@ pat:PromptResponseOptimiserMotif
 
 pat:PromptOpt_InputNode
     a pair:PatternNode ;
-    rdfs:label "Incoming prompt node"@en ;
+    rdfs:label "Incoming prompt"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:PromptOpt_TemplateNode
     a pair:PatternNode ;
-    rdfs:label "Prompt template node"@en ;
+    rdfs:label "Prompt template"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PromptTemplate .
 
 pat:PromptOpt_OptimiserStepNode
     a pair:PatternNode ;
-    rdfs:label "Prompt/response optimiser step node"@en ;
+    rdfs:label "Prompt/response optimiser step"@en ;
     pair:expectedClass beam:Transform ;
     pair:expectedRole pair:PromptOptimisationStep .
 
 pat:PromptOpt_OptimisedPromptNode
     a pair:PatternNode ;
-    rdfs:label "Optimised prompt node"@en ;
+    rdfs:label "Optimised prompt"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PromptTemplate .
 
 pat:PromptOpt_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Generation step node"@en ;
+    rdfs:label "Generation step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:GenerationStep .
 
 pat:PromptOpt_ResultNode
     a pair:PatternNode ;
-    rdfs:label "Generated result node"@en ;
+    rdfs:label "Generated result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:LLMResponse .
 
 pat:PromptOpt_ResponseNode
     a pair:PatternNode ;
-    rdfs:label "Optimised response node"@en ;
+    rdfs:label "Optimised response"@en ;
     pair:expectedClass beam:Data .
 
 pat:PromptOpt_OptimiserUsesInputEdge
@@ -1921,7 +1904,7 @@ pat:EvalsMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:Evals_MatchingOQP ;
     rdfs:label "Evals Motif"@en ;
-    dct:description "GenAI motif in which model input, generated output, expected output, and optional retrieval context are scored or judged to produce evaluation results for a task."@en ;
+    dct:description "A scoring step rates a model's output against an expected output, reading the input, the retrieved context and a judge model, and produces a score."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_Evals ,
         pat:Cite_AgentEvaluator ;
@@ -1943,43 +1926,43 @@ pat:EvalsMotif
 
 pat:Evals_InputNode
     a pair:PatternNode ;
-    rdfs:label "Evaluation input node"@en ;
+    rdfs:label "Evaluation input"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:Evals_ModelOutputNode
     a pair:PatternNode ;
-    rdfs:label "Evaluation model output node"@en ;
+    rdfs:label "Evaluation model output"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:LLMResponse .
 
 pat:Evals_ExpectedOutputNode
     a pair:PatternNode ;
-    rdfs:label "Expected output node"@en ;
+    rdfs:label "Expected output"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:ExpectedOutput .
 
 pat:Evals_ContextNode
     a pair:PatternNode ;
-    rdfs:label "Evaluation retrieval context node"@en ;
+    rdfs:label "Evaluation retrieval context"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
 pat:Evals_ScorerNode
     a pair:PatternNode ;
-    rdfs:label "Evaluation scorer node"@en ;
+    rdfs:label "Evaluation scorer"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:ScoringStep .
 
 pat:Evals_JudgeModelNode
     a pair:PatternNode ;
-    rdfs:label "Judge model node"@en ;
+    rdfs:label "Judge model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:JudgeModel .
 
 pat:Evals_ScoreNode
     a pair:PatternNode ;
-    rdfs:label "Evaluation score node"@en ;
+    rdfs:label "Evaluation score"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:EvaluationScore .
 
@@ -2028,7 +2011,7 @@ pat:Evals_ScorerProducesScoreEdge
 pat:EmbeddingsMotif
     a pair:GraphMotif ;
     rdfs:label "Embeddings Motif"@en ;
-    dct:description "GenAI motif in which source documents or data blocks are chunked and transformed into vectors stored in a vector index."@en ;
+    dct:description "Source documents are chunked, the chunks are embedded, and an indexing step writes the embeddings into a vector store."@en ;
     rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included an embedding-model node (pat:Embedding_ModelNode) the OQP never bound - removed. The OQP additionally matches an indexing step (uses chunk + vector, produces the index) that it does not bind as a node."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_Embeddings ,
@@ -2054,44 +2037,44 @@ pat:EmbeddingsMotif
 
 pat:Embedding_SourceDocumentNode
     a pair:PatternNode ;
-    rdfs:label "Embedding source document node"@en ;
+    rdfs:label "Embedding source document"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:SourceDocument .
 
 pat:Embedding_ChunkingStepNode
     a pair:PatternNode ;
-    rdfs:label "Document chunking step node"@en ;
+    rdfs:label "Document chunking step"@en ;
     pair:expectedClass beam:Transform ;
     pair:expectedRole pair:ChunkingStep .
 
 pat:Embedding_DocumentChunkNode
     a pair:PatternNode ;
-    rdfs:label "Document chunk node"@en ;
+    rdfs:label "Document chunk"@en ;
     rdfs:comment "The OQP identifies the chunk positionally (produced by the chunking step, used by the embedding step) without checking a role; pair:DocumentChunk is the typical annotation."@en ;
     pair:expectedClass beam:Data .
 
 pat:Embedding_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Embedding generation step node"@en ;
+    rdfs:label "Embedding generation step"@en ;
     pair:expectedClass beam:Transform ;
     pair:expectedRole pair:EmbeddingStep .
 
 pat:Embedding_VectorNode
     a pair:PatternNode ;
-    rdfs:label "Embedding vector node"@en ;
+    rdfs:label "Embedding vector"@en ;
     rdfs:comment "The OQP identifies the vector positionally (produced by the embedding step, used by the indexing step) without checking a role; pair:EmbeddingVector is the typical annotation."@en ;
     pair:expectedClass beam:Data .
 
 pat:Embedding_VectorIndexNode
     a pair:PatternNode ;
-    rdfs:label "Vector index node"@en ;
+    rdfs:label "Vector index"@en ;
     rdfs:comment "The OQP accepts a role under pair:VectorStore OR pair:VectorIndex (a disjunction the ODP vocabulary cannot express)."@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:VectorStore .
 
 pat:Embedding_IndexingStepNode
     a pair:PatternNode ;
-    rdfs:label "Vector indexing step node"@en ;
+    rdfs:label "Vector indexing step"@en ;
     pair:expectedClass beam:Process .
 
 pat:Embedding_ChunkingUsesSourceEdge
@@ -2146,11 +2129,7 @@ pat:Embedding_IndexingUsesChunkEdge
 pat:RetrievalDataAugmentationMotif
     a pair:GraphMotif ;
     rdfs:label "Retrieval Data Augmentation Motif"@en ;
-    dct:description """
-    GenAI motif in which a generative model writes training data for a retriever
-    from source documents (pseudo queries, relevance labels or whole examples) and
-    a training step learns a retrieval model from it.
-    """@en ;
+    dct:description "A generative model writes training data from source documents, and a training step learns a retriever model from it."@en ;
     pair:derivedFrom pat:Cite_TrainingDataAugmentation ,
         pat:Cite_RetrieverTrainingDataGeneration ;
     pair:hasPatternNode
@@ -2170,37 +2149,37 @@ pat:RetrievalDataAugmentationMotif
 
 pat:RetrAug_SourceDocumentNode
     a pair:PatternNode ;
-    rdfs:label "Source document node"@en ;
+    rdfs:label "Source document"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:SourceDocument .
 
 pat:RetrAug_LLMNode
     a pair:PatternNode ;
-    rdfs:label "Data-generating language model node"@en ;
+    rdfs:label "Data-generating language model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:GenerativeModel .
 
 pat:RetrAug_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Training data generation step node"@en ;
+    rdfs:label "Training data generation step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:SyntheticDataGenerationStep .
 
 pat:RetrAug_SyntheticDataNode
     a pair:PatternNode ;
-    rdfs:label "Generated training data node"@en ;
+    rdfs:label "Generated training data"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:SyntheticTrainingData .
 
 pat:RetrAug_TrainingStepNode
     a pair:PatternNode ;
-    rdfs:label "Retriever training step node"@en ;
+    rdfs:label "Retriever training step"@en ;
     pair:expectedClass beam:Train ;
     pair:expectedRole pair:TrainingStep .
 
 pat:RetrAug_RetrieverModelNode
     a pair:PatternNode ;
-    rdfs:label "Trained retriever node"@en ;
+    rdfs:label "Trained retriever"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:RetrieverModel .
 
@@ -2242,7 +2221,7 @@ pat:RetrAug_TrainingProducesModelEdge
 pat:RetrievalAugmentedGenerationMotif
     a pair:GraphMotif ;
     rdfs:label "Retrieval Augmented Generation (RAG) Motif"@en ;
-    dct:description "GenAI motif in which a user query drives retrieval of relevant context from a vector store, which is combined with the query into a prompt and sent to an LLM to produce an answer."@en ;
+    dct:description "A retrieval step reads the user's query and a knowledge source, a prompt is built from the query and what was retrieved, and a foundation model answers it."@en ;
     rdfs:comment "Query-time RAG faithful to Martin Fowler's gen-AI patterns: the retrieval step is DRIVEN BY the user query (it beam:use-s the query) and reads a vector store (a resource under pair:VectorStore or pair:VectorIndex); retrieved context may pass through intermediate steps (reranking, aggregation) before prompt construction - RAG_PromptConstructionUsesContextEdge is path-tolerant, requiring only that the consumed context plays a role under pair:RetrievedContext. Because retrieval is query-driven over a vector store, a RAG graph also satisfies the Vector-based Information Retrieval motif. Offline document embedding/indexing is modelled separately by the Embeddings motif and is intentionally not part of this query-time motif (an earlier version wired a stand-alone query-embedding step whose output dead-ended and left retrieval disconnected from the query - removed)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_RetrievalAugmentedGeneration ,
@@ -2272,55 +2251,55 @@ pat:RetrievalAugmentedGenerationMotif
 
 pat:RAG_QueryNode
     a pair:PatternNode ;
-    rdfs:label "RAG query node"@en ;
+    rdfs:label "RAG query"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:RAG_KnowledgeSourceNode
     a pair:PatternNode ;
-    rdfs:label "RAG knowledge source node"@en ;
+    rdfs:label "RAG knowledge source"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:KnowledgeSource .
 
 pat:RAG_RetrievalStepNode
     a pair:PatternNode ;
-    rdfs:label "RAG retrieval step node"@en ;
+    rdfs:label "RAG retrieval step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalStep .
 
 pat:RAG_RetrievedContextNode
     a pair:PatternNode ;
-    rdfs:label "RAG retrieved context node"@en ;
+    rdfs:label "RAG retrieved context"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
 pat:RAG_PromptConstructionStepNode
     a pair:PatternNode ;
-    rdfs:label "RAG prompt construction step node"@en ;
+    rdfs:label "RAG prompt construction step"@en ;
     pair:expectedClass beam:Transform ;
     pair:expectedRole pair:PromptConstructionStep .
 
 pat:RAG_PromptNode
     a pair:PatternNode ;
-    rdfs:label "RAG composed prompt node"@en ;
+    rdfs:label "RAG composed prompt"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PromptTemplate .
 
 pat:RAG_LLMNode
     a pair:PatternNode ;
-    rdfs:label "RAG foundation LLM node"@en ;
+    rdfs:label "RAG foundation LLM"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:FoundationLLM .
 
 pat:RAG_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "RAG generation step node"@en ;
+    rdfs:label "RAG generation step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:GenerationStep .
 
 pat:RAG_ResponseNode
     a pair:PatternNode ;
-    rdfs:label "RAG response node"@en ;
+    rdfs:label "RAG response"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:LLMResponse .
 
@@ -2333,7 +2312,7 @@ pat:RAG_RetrievalUsesQueryEdge
 
 pat:RAG_RetrievalUsesVectorStoreEdge
     a pair:PatternEdge ;
-    rdfs:label "RAG retrieval uses vector store"@en ;
+    rdfs:label "RAG retrieval uses knowledge source"@en ;
     pair:sourcePatternNode pat:RAG_RetrievalStepNode ;
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:RAG_KnowledgeSourceNode .
@@ -2394,11 +2373,7 @@ pat:RAG_GenerationProducesResponseEdge
 pat:IterativeRAGMotif
     a pair:GraphMotif ;
     rdfs:label "Iterative RAG Motif"@en ;
-    dct:description """
-    GenAI motif in which retrieval and generation alternate: a judge step reads
-    each generated answer and returns a decision the retrieval step reads, so each
-    round retrieves more targeted context from the knowledge source.
-    """@en ;
+    dct:description "Retrieval and generation alternate: a judge step reads each answer and produces a decision the retrieval step reads to retrieve again."@en ;
     rdfs:comment "The generation step may read the retrieved context through intermediate steps (reranking, aggregation), as in the RAG motif; the template draws the direct edge."@en ;
     pair:derivedFrom pat:Cite_IterativeRetrieval ;
     pair:hasPatternNode
@@ -2425,55 +2400,55 @@ pat:IterativeRAGMotif
 
 pat:IterRAG_QueryNode
     a pair:PatternNode ;
-    rdfs:label "Iterative RAG query node"@en ;
+    rdfs:label "Iterative RAG query"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:IterRAG_KnowledgeSourceNode
     a pair:PatternNode ;
-    rdfs:label "Iterative RAG knowledge source node"@en ;
+    rdfs:label "Iterative RAG knowledge source"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:KnowledgeSource .
 
 pat:IterRAG_RetrievalStepNode
     a pair:PatternNode ;
-    rdfs:label "Iterative RAG retrieval step node"@en ;
+    rdfs:label "Iterative RAG retrieval step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalStep .
 
 pat:IterRAG_RetrievedContextNode
     a pair:PatternNode ;
-    rdfs:label "Iterative RAG retrieved context node"@en ;
+    rdfs:label "Iterative RAG retrieved context"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
 pat:IterRAG_LLMNode
     a pair:PatternNode ;
-    rdfs:label "Iterative RAG language model node"@en ;
+    rdfs:label "Iterative RAG language model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:GenerativeModel .
 
 pat:IterRAG_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Iterative RAG generation step node"@en ;
+    rdfs:label "Iterative RAG generation step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:GenerationStep .
 
 pat:IterRAG_AnswerNode
     a pair:PatternNode ;
-    rdfs:label "Iterative RAG generated answer node"@en ;
+    rdfs:label "Iterative RAG generated answer"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:LLMResponse .
 
 pat:IterRAG_JudgeStepNode
     a pair:PatternNode ;
-    rdfs:label "Iterative RAG judge step node"@en ;
+    rdfs:label "Iterative RAG judge step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalJudgeStep .
 
 pat:IterRAG_DecisionNode
     a pair:PatternNode ;
-    rdfs:label "Iterative RAG retrieval decision node"@en ;
+    rdfs:label "Iterative RAG retrieval decision"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievalDecision .
 
@@ -2543,11 +2518,7 @@ pat:IterRAG_RetrievalUsesDecisionEdge
 pat:RecursiveRAGMotif
     a pair:GraphMotif ;
     rdfs:label "Recursive RAG Motif"@en ;
-    dct:description """
-    GenAI motif in which a judge step reads a generated answer and a query
-    transformation step turns its decision into a sub-query that the retrieval
-    step reads, so a complex question is retrieved for part by part.
-    """@en ;
+    dct:description "A judge step reads a generated answer, a reformulation step turns its decision into a sub-query, and a retrieval step searches with it."@en ;
     rdfs:comment "The generation step may read the retrieved context through intermediate steps, as in the RAG motif; the template draws the direct edge."@en ;
     pair:derivedFrom pat:Cite_RecursiveRetrieval ;
     pair:hasPatternNode
@@ -2578,67 +2549,67 @@ pat:RecursiveRAGMotif
 
 pat:RecRAG_QueryNode
     a pair:PatternNode ;
-    rdfs:label "Recursive RAG query node"@en ;
+    rdfs:label "Recursive RAG query"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:RecRAG_KnowledgeSourceNode
     a pair:PatternNode ;
-    rdfs:label "Recursive RAG knowledge source node"@en ;
+    rdfs:label "Recursive RAG knowledge source"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:KnowledgeSource .
 
 pat:RecRAG_RetrievalStepNode
     a pair:PatternNode ;
-    rdfs:label "Recursive RAG retrieval step node"@en ;
+    rdfs:label "Recursive RAG retrieval step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalStep .
 
 pat:RecRAG_RetrievedContextNode
     a pair:PatternNode ;
-    rdfs:label "Recursive RAG retrieved context node"@en ;
+    rdfs:label "Recursive RAG retrieved context"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
 pat:RecRAG_LLMNode
     a pair:PatternNode ;
-    rdfs:label "Recursive RAG language model node"@en ;
+    rdfs:label "Recursive RAG language model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:GenerativeModel .
 
 pat:RecRAG_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Recursive RAG generation step node"@en ;
+    rdfs:label "Recursive RAG generation step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:GenerationStep .
 
 pat:RecRAG_AnswerNode
     a pair:PatternNode ;
-    rdfs:label "Recursive RAG generated answer node"@en ;
+    rdfs:label "Recursive RAG generated answer"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:LLMResponse .
 
 pat:RecRAG_JudgeStepNode
     a pair:PatternNode ;
-    rdfs:label "Recursive RAG judge step node"@en ;
+    rdfs:label "Recursive RAG judge step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalJudgeStep .
 
 pat:RecRAG_DecisionNode
     a pair:PatternNode ;
-    rdfs:label "Recursive RAG retrieval decision node"@en ;
+    rdfs:label "Recursive RAG retrieval decision"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievalDecision .
 
 pat:RecRAG_TransformationStepNode
     a pair:PatternNode ;
-    rdfs:label "Query transformation or decomposition step node"@en ;
+    rdfs:label "Query transformation or decomposition step"@en ;
     pair:expectedClass beam:Transform ;
     pair:expectedRole pair:QueryReformulationStep .
 
 pat:RecRAG_SubQueryNode
     a pair:PatternNode ;
-    rdfs:label "Sub-query node"@en ;
+    rdfs:label "Sub-query"@en ;
     rdfs:comment "Checked as a role under pair:UserInput, like the rewritten query of the Query Rewriting motif, because it re-enters retrieval as a query. pair:SubQuery is the typical annotation."@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
@@ -2723,11 +2694,7 @@ pat:RecRAG_RetrievalUsesSubQueryEdge
 pat:AdaptiveRAGMotif
     a pair:GraphMotif ;
     rdfs:label "Adaptive RAG Motif"@en ;
-    dct:description """
-    GenAI motif in which a judge step reads the query and decides whether
-    retrieval is needed, and the retrieval step runs on that decision, so the
-    system retrieves on demand before generating.
-    """@en ;
+    dct:description "A judge step reads the query and decides whether to retrieve, a retrieval step acts on that decision, and a generation step answers from what it retrieved."@en ;
     rdfs:comment "The generation step may read the retrieved context through intermediate steps, as in the RAG motif; the template draws the direct edge. The figure's later judge-and-transform loop is the Recursive RAG motif, which co-matches when it is drawn."@en ;
     pair:derivedFrom pat:Cite_AdaptiveRetrieval ;
     pair:hasPatternNode
@@ -2753,55 +2720,55 @@ pat:AdaptiveRAGMotif
 
 pat:AdaRAG_QueryNode
     a pair:PatternNode ;
-    rdfs:label "Adaptive RAG query node"@en ;
+    rdfs:label "Adaptive RAG query"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:AdaRAG_JudgeStepNode
     a pair:PatternNode ;
-    rdfs:label "Retrieve-on-demand judge step node"@en ;
+    rdfs:label "Retrieve-on-demand judge step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalJudgeStep .
 
 pat:AdaRAG_DecisionNode
     a pair:PatternNode ;
-    rdfs:label "Adaptive RAG retrieval decision node"@en ;
+    rdfs:label "Adaptive RAG retrieval decision"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievalDecision .
 
 pat:AdaRAG_KnowledgeSourceNode
     a pair:PatternNode ;
-    rdfs:label "Adaptive RAG knowledge source node"@en ;
+    rdfs:label "Adaptive RAG knowledge source"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:KnowledgeSource .
 
 pat:AdaRAG_RetrievalStepNode
     a pair:PatternNode ;
-    rdfs:label "Adaptive RAG retrieval step node"@en ;
+    rdfs:label "Adaptive RAG retrieval step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalStep .
 
 pat:AdaRAG_RetrievedContextNode
     a pair:PatternNode ;
-    rdfs:label "Adaptive RAG retrieved context node"@en ;
+    rdfs:label "Adaptive RAG retrieved context"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
 pat:AdaRAG_LLMNode
     a pair:PatternNode ;
-    rdfs:label "Adaptive RAG language model node"@en ;
+    rdfs:label "Adaptive RAG language model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:GenerativeModel .
 
 pat:AdaRAG_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Adaptive RAG generation step node"@en ;
+    rdfs:label "Adaptive RAG generation step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:GenerationStep .
 
 pat:AdaRAG_AnswerNode
     a pair:PatternNode ;
-    rdfs:label "Adaptive RAG generated answer node"@en ;
+    rdfs:label "Adaptive RAG generated answer"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:LLMResponse .
 
@@ -2865,7 +2832,7 @@ pat:HybridRetrieverMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:Hybrid_MatchingOQP ;
     rdfs:label "Hybrid Retriever Motif"@en ;
-    dct:description "GenAI motif in which vector search and keyword or structured search are combined and aggregated to produce a candidate context set."@en ;
+    dct:description "A vector search and a keyword search each answer the user's query, and an aggregation step merges their candidates into one set."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_HybridRetriever ,
         pat:Cite_HybridRetrieval ;
@@ -2892,55 +2859,55 @@ pat:HybridRetrieverMotif
 
 pat:Hybrid_QueryNode
     a pair:PatternNode ;
-    rdfs:label "Hybrid retriever query node"@en ;
+    rdfs:label "Hybrid retriever query"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:Hybrid_VectorIndexNode
     a pair:PatternNode ;
-    rdfs:label "Hybrid retriever vector index node"@en ;
+    rdfs:label "Hybrid retriever vector index"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:VectorIndex .
 
 pat:Hybrid_KeywordIndexNode
     a pair:PatternNode ;
-    rdfs:label "Hybrid retriever keyword index node"@en ;
+    rdfs:label "Hybrid retriever keyword index"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:KeywordIndex .
 
 pat:Hybrid_VectorSearchNode
     a pair:PatternNode ;
-    rdfs:label "Vector search step node"@en ;
+    rdfs:label "Vector search step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:VectorSearchStep .
 
 pat:Hybrid_KeywordSearchNode
     a pair:PatternNode ;
-    rdfs:label "Keyword search step node"@en ;
+    rdfs:label "Keyword search step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:KeywordSearchStep .
 
 pat:Hybrid_AggregationNode
     a pair:PatternNode ;
-    rdfs:label "Hybrid retriever aggregation step node"@en ;
+    rdfs:label "Hybrid retriever aggregation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:AggregationStep .
 
 pat:Hybrid_CandidateSetNode
     a pair:PatternNode ;
-    rdfs:label "Hybrid retrieved candidate set node"@en ;
+    rdfs:label "Hybrid retrieved candidate set"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedCandidateSet .
 
 pat:Hybrid_VectorResultsNode
     a pair:PatternNode ;
-    rdfs:label "Hybrid vector search result set node"@en ;
+    rdfs:label "Hybrid vector search result set"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedCandidateSet .
 
 pat:Hybrid_KeywordResultsNode
     a pair:PatternNode ;
-    rdfs:label "Hybrid keyword search result set node"@en ;
+    rdfs:label "Hybrid keyword search result set"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedCandidateSet .
 
@@ -3012,7 +2979,7 @@ pat:Hybrid_VectorSearchProducesResultsEdge
 pat:QueryRewritingMotif
     a pair:GraphMotif ;
     rdfs:label "Query Rewriting Motif"@en ;
-    dct:description "GenAI motif in which an LLM reformulates a user query into alternative queries that are then used for retrieval."@en ;
+    dct:description "A reformulation step uses a generative model to rewrite the user's query, and a retrieval step searches with the rewritten query."@en ;
     rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included an original-query node and a rewrite-informs-retrieval edge the OQP never bound or checked - removed; the LLM node expected pair:FoundationLLM while the OQP accepts any pair:GenerativeModel."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_QueryRewriting ,
@@ -3032,32 +2999,32 @@ pat:QueryRewritingMotif
 
 pat:QueryRewrite_LLMNode
     a pair:PatternNode ;
-    rdfs:label "Query rewriting LLM node"@en ;
+    rdfs:label "Query rewriting LLM"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:GenerativeModel .
 
 pat:QueryRewrite_RewriteStepNode
     a pair:PatternNode ;
-    rdfs:label "Query rewriting step node"@en ;
+    rdfs:label "Query rewriting step"@en ;
     pair:expectedClass beam:Transform ;
     pair:expectedRole pair:QueryReformulationStep .
 
 pat:QueryRewrite_RewrittenQueryNode
     a pair:PatternNode ;
-    rdfs:label "Rewritten query node"@en ;
+    rdfs:label "Rewritten query"@en ;
     rdfs:comment "The OQP checks a role under pair:UserInput (the rewritten query re-enters retrieval as a query); modelers typically ALSO tag pair:RewrittenQuery (onyx does both)."@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:QueryRewrite_RetrievalStepNode
     a pair:PatternNode ;
-    rdfs:label "Retrieval using rewritten query node"@en ;
+    rdfs:label "Retrieval using rewritten query"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RetrievalStep .
 
 pat:QueryRewrite_RetrievedContextNode
     a pair:PatternNode ;
-    rdfs:label "Retrieved context from rewritten query node"@en ;
+    rdfs:label "Retrieved context from rewritten query"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
@@ -3092,7 +3059,7 @@ pat:QueryRewrite_RetrievalProducesContextEdge
 pat:RerankerMotif
     a pair:GraphMotif ;
     rdfs:label "Reranker Motif"@en ;
-    dct:description "GenAI motif in which a candidate set of retrieved fragments is reranked by a model so that the most useful context is passed on for generation."@en ;
+    dct:description "A reranking step uses a model to reorder retrieved context and passes the reordered context on."@en ;
     rdfs:comment "ODP reconciled to OQP behavior:the earlier declaration included a query node the OQP never bound (removed) and expected pair:RetrievedCandidateSet / pair:RerankedContext where the OQP checks pair:RetrievedContext for both candidate set and output (modelers typically ALSO tag the specific roles; onyx does both)."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_Reranker ,
@@ -3112,25 +3079,25 @@ pat:RerankerMotif
 
 pat:Reranker_CandidateSetNode
     a pair:PatternNode ;
-    rdfs:label "Reranker candidate context set node"@en ;
+    rdfs:label "Reranker candidate context set"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
 pat:Reranker_ModelNode
     a pair:PatternNode ;
-    rdfs:label "Reranker model node"@en ;
+    rdfs:label "Reranker model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:Model .
 
 pat:Reranker_RerankingStepNode
     a pair:PatternNode ;
-    rdfs:label "Reranking step node"@en ;
+    rdfs:label "Reranking step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:RerankingStep .
 
 pat:Reranker_RankedContextNode
     a pair:PatternNode ;
-    rdfs:label "Reranked context node"@en ;
+    rdfs:label "Reranked context"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
@@ -3170,10 +3137,7 @@ pat:Reranker_RerankingProducesContextEdge
 pat:InputScreeningMotif
     a pair:GraphMotif ;
     rdfs:label "Input Screening Motif"@en ;
-    dct:description """
-    Architectural motif in which a step screens user input and informs the
-    generation step it protects.
-    """@en ;
+    dct:description "An input guardrail screens the user's input and produces a decision that the generation step reads."@en ;
     pair:derivedFrom pat:Cite_Guardrails ,
         pat:Cite_MultimodalGuardrails ;
     pair:hasPatternNode
@@ -3189,25 +3153,25 @@ pat:InputScreeningMotif
 
 pat:InputScreening_UserInputNode
     a pair:PatternNode ;
-    rdfs:label "Screened user input node"@en ;
+    rdfs:label "Screened user input"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:InputScreening_ScreeningStepNode
     a pair:PatternNode ;
-    rdfs:label "Input screening step node"@en ;
+    rdfs:label "Input screening step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:InputGuardrailStep .
 
 pat:InputScreening_DecisionNode
     a pair:PatternNode ;
-    rdfs:label "Input screening decision node"@en ;
+    rdfs:label "Input screening decision"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:GuardrailDecision .
 
 pat:InputScreening_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Protected generation step node"@en ;
+    rdfs:label "Protected generation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:GenerationStep .
 
@@ -3237,10 +3201,7 @@ pat:InputScreening_GenerationUsesDecisionEdge
 pat:OutputScreeningMotif
     a pair:GraphMotif ;
     rdfs:label "Output Screening Motif"@en ;
-    dct:description """
-    Architectural motif in which a step screens a generated response before it
-    is released.
-    """@en ;
+    dct:description "An output guardrail reads the response a generation step produces."@en ;
     pair:derivedFrom pat:Cite_Guardrails ,
         pat:Cite_MultimodalGuardrails ;
     pair:hasPatternNode
@@ -3254,19 +3215,19 @@ pat:OutputScreeningMotif
 
 pat:OutputScreening_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Generation step node"@en ;
+    rdfs:label "Generation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:GenerationStep .
 
 pat:OutputScreening_ResponseNode
     a pair:PatternNode ;
-    rdfs:label "Screened response node"@en ;
+    rdfs:label "Screened response"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:LLMResponse .
 
 pat:OutputScreening_ScreeningStepNode
     a pair:PatternNode ;
-    rdfs:label "Output screening step node"@en ;
+    rdfs:label "Output screening step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:OutputGuardrailStep .
 
@@ -3291,10 +3252,7 @@ pat:OutputScreening_ScreeningUsesResponseEdge
 pat:RetrievalScreeningMotif
     a pair:GraphMotif ;
     rdfs:label "Retrieval Screening Motif"@en ;
-    dct:description """
-    Control motif in which an input guardrail step screens retrieved content,
-    and the generation step it protects reads the guardrail's decision.
-    """@en ;
+    dct:description "An input guardrail screens retrieved context and produces a decision that the generation step reads."@en ;
     pair:derivedFrom pat:Cite_MultimodalGuardrails ;
     pair:hasPatternNode
         pat:RetrievalScreening_RetrievedContextNode ,
@@ -3309,25 +3267,25 @@ pat:RetrievalScreeningMotif
 
 pat:RetrievalScreening_RetrievedContextNode
     a pair:PatternNode ;
-    rdfs:label "Screened retrieved context node"@en ;
+    rdfs:label "Screened retrieved context"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
 pat:RetrievalScreening_ScreeningStepNode
     a pair:PatternNode ;
-    rdfs:label "Retrieval guardrail step node"@en ;
+    rdfs:label "Retrieval guardrail step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:InputGuardrailStep .
 
 pat:RetrievalScreening_DecisionNode
     a pair:PatternNode ;
-    rdfs:label "Retrieval screening decision node"@en ;
+    rdfs:label "Retrieval screening decision"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:GuardrailDecision .
 
 pat:RetrievalScreening_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Protected generation step node"@en ;
+    rdfs:label "Protected generation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:GenerationStep .
 
@@ -3357,7 +3315,7 @@ pat:GuardrailsMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:Guardrails_MatchingOQP ;
     rdfs:label "Guardrails Motif"@en ;
-    dct:description "GenAI motif in which input and output guardrail steps screen or sanitize user prompts and generated responses around the primary LLM generation step."@en ;
+    dct:description "An input guardrail screens the user's input before a generation step uses it, and an output guardrail screens the response it produces."@en ;
     rdfs:comment "Flow-agnostic: the guarded generation is anchored by the guardrail decision it consumes rather than by the user prompt, so it matches whether generation reads the prompt directly or a prompt built from it."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_Guardrails ,
@@ -3382,49 +3340,49 @@ pat:GuardrailsMotif
 
 pat:Guardrails_UserPromptNode
     a pair:PatternNode ;
-    rdfs:label "Guardrails user prompt node"@en ;
+    rdfs:label "Guardrails user prompt"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:Guardrails_InputGuardrailStepNode
     a pair:PatternNode ;
-    rdfs:label "Input guardrail step node"@en ;
+    rdfs:label "Input guardrail step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:InputGuardrailStep .
 
 pat:Guardrails_InputDecisionNode
     a pair:PatternNode ;
-    rdfs:label "Input guardrail decision node"@en ;
+    rdfs:label "Input guardrail decision"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:GuardrailDecision .
 
 pat:Guardrails_LLMNode
     a pair:PatternNode ;
-    rdfs:label "Guarded LLM node"@en ;
+    rdfs:label "Guarded LLM"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:FoundationLLM .
 
 pat:Guardrails_GenerationStepNode
     a pair:PatternNode ;
-    rdfs:label "Guarded generation step node"@en ;
+    rdfs:label "Guarded generation step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:GenerationStep .
 
 pat:Guardrails_RawResponseNode
     a pair:PatternNode ;
-    rdfs:label "Raw LLM response node"@en ;
+    rdfs:label "Raw LLM response"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:LLMResponse .
 
 pat:Guardrails_OutputGuardrailStepNode
     a pair:PatternNode ;
-    rdfs:label "Output guardrail step node"@en ;
+    rdfs:label "Output guardrail step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:OutputGuardrailStep .
 
 pat:Guardrails_SanitizedResponseNode
     a pair:PatternNode ;
-    rdfs:label "Sanitized response node"@en ;
+    rdfs:label "Sanitized response"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:SanitizedOutput .
 
@@ -3483,7 +3441,7 @@ pat:FineTuningMotif
     a pair:GraphMotif ;
     pair:implementedBy pat:FineTune_MatchingOQP ;
     rdfs:label "Fine Tuning Motif"@en ;
-    dct:description "GenAI motif in which a pre-trained LLM is further trained with a task- or domain-specific dataset to produce a fine-tuned model."@en ;
+    dct:description "A fine-tuning step trains a foundation model further on a fine-tuning dataset, and an evaluation step scores the fine-tuned model."@en ;
     dct:source <https://martinfowler.com/articles/gen-ai-patterns/> ;
     pair:derivedFrom pat:Cite_FineTuning ,
         pat:Cite_PretrainFinetune ,
@@ -3504,37 +3462,37 @@ pat:FineTuningMotif
 
 pat:FineTune_BaseModelNode
     a pair:PatternNode ;
-    rdfs:label "Fine tuning base model node"@en ;
+    rdfs:label "Fine tuning base model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:FoundationLLM .
 
 pat:FineTune_DatasetNode
     a pair:PatternNode ;
-    rdfs:label "Fine tuning dataset node"@en ;
+    rdfs:label "Fine tuning dataset"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:FineTuningDataset .
 
 pat:FineTune_TrainingStepNode
     a pair:PatternNode ;
-    rdfs:label "Fine tuning training step node"@en ;
+    rdfs:label "Fine tuning training step"@en ;
     pair:expectedClass beam:Train ;
     pair:expectedRole pair:FineTuningStep .
 
 pat:FineTune_EvaluationStepNode
     a pair:PatternNode ;
-    rdfs:label "Fine tuning evaluation step node"@en ;
+    rdfs:label "Fine tuning evaluation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:EvaluationStep .
 
 pat:FineTune_EvaluationScoreNode
     a pair:PatternNode ;
-    rdfs:label "Fine tuning evaluation score node"@en ;
+    rdfs:label "Fine tuning evaluation score"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:EvaluationScore .
 
 pat:FineTune_FineTunedModelNode
     a pair:PatternNode ;
-    rdfs:label "Fine-tuned model node"@en ;
+    rdfs:label "Fine-tuned model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:FineTunedModel .
 
@@ -3577,7 +3535,7 @@ pat:FineTune_EvaluationProducesScoreEdge
 pat:ExternalDependencyMotif
     a pair:GraphMotif ;
     rdfs:label "External Dependency Motif"@en ;
-    dct:description "A supply-chain-relevant resource (external dependency, pre-trained model, model artifact, or serving image) is used by a process step. Risk-neutral: using external components is normal engineering; risk semantics are added only by the supply chain compromise risk pattern."@en ;
+    dct:description "A step uses a supply chain resource: an external dependency, a pre-trained model, a model artifact or a serving image."@en ;
     rdfs:comment "Project curation: no catalogue defines this shape, so derivedFrom names the LLM03 entry that scopes it rather than a design pattern citation."@en ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     pair:derivedFrom owasp:llm03-supply-chain ;
@@ -3590,14 +3548,14 @@ pat:ExternalDependencyMotif
 
 pat:ExtDep_ExternalResourceNode
     a pair:PatternNode ;
-    rdfs:label "External resource node"@en ;
+    rdfs:label "External resource"@en ;
     rdfs:comment "Expected role is a disjunction the ODP vocabulary cannot express: subRoleOf* of pair:ExternalDependency, pair:PretrainedModel, pair:ModelArtifact, or pair:ServingImage (see match_external_dependency.rq)."@en ;
     pair:expectedClass beam:Resource ;
     pair:expectedRole pair:ExternalDependency .
 
 pat:ExtDep_UsingStepNode
     a pair:PatternNode ;
-    rdfs:label "Using step node"@en ;
+    rdfs:label "Using step"@en ;
     pair:expectedClass beam:Process .
 
 pat:ExtDep_StepUsesResourceEdge
@@ -3611,7 +3569,7 @@ pat:ExtDep_StepUsesResourceEdge
 pat:ToolUsingAgentMotif
     a pair:GraphMotif ;
     rdfs:label "Tool-Using Agent Motif"@en ;
-    dct:description "Agentic motif in which a planning step decides on an action and hands off to a step that invokes an external tool or changes external state, producing a result the system consumes."@en ;
+    dct:description "A planning step produces an action that a tool invocation step carries out, producing a result."@en ;
     dct:source <https://genai.owasp.org/> ,
         <https://doi.org/10.1016/j.jss.2024.112278> ;
     pair:derivedFrom asi:asi02-tool-misuse ,
@@ -3633,25 +3591,25 @@ pat:ToolUsingAgentMotif
 
 pat:ToolAgent_PlanningStepNode
     a pair:PatternNode ;
-    rdfs:label "agent planning step node"@en ;
+    rdfs:label "Agent planning step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:PlanningStep .
 
 pat:ToolAgent_ActionStepNode
     a pair:PatternNode ;
-    rdfs:label "agent action step node"@en ;
+    rdfs:label "Agent action step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:ToolInvocationStep .
 
 pat:ToolAgent_ActionResultNode
     a pair:PatternNode ;
-    rdfs:label "agent action result node"@en ;
+    rdfs:label "Agent action result"@en ;
     pair:expectedClass beam:Data .
 
 pat:ToolAgent_PlanNode
     a pair:PatternNode ;
-    rdfs:label "agent action plan node"@en ;
+    rdfs:label "Agent action plan"@en ;
     pair:expectedClass beam:Data .
 
 
@@ -3679,7 +3637,7 @@ pat:ToolAgent_ActionUsesPlanEdge
 pat:AgentMemoryLoopMotif
     a pair:GraphMotif ;
     rdfs:label "Agent Memory Loop Motif"@en ;
-    dct:description "Agentic motif in which a step writes content to an agent memory store and a later step reads that same store back into a working context, so the system's own history feeds its later reasoning."@en ;
+    dct:description "One step writes to an agent's memory and another step reads that memory back into the context a later step works from."@en ;
     dct:source <https://genai.owasp.org/> ;
     pair:derivedFrom asi:asi06-memory-and-context-poisoning ;
     pair:hasPatternNode
@@ -3696,25 +3654,25 @@ pat:AgentMemoryLoopMotif
 
 pat:AgentMemory_WriteStepNode
     a pair:PatternNode ;
-    rdfs:label "memory write step node"@en ;
+    rdfs:label "Memory write step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:MemoryWriteStep .
 
 pat:AgentMemory_StoreNode
     a pair:PatternNode ;
-    rdfs:label "agent memory store node"@en ;
+    rdfs:label "Agent memory store"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentMemory .
 
 pat:AgentMemory_ReadStepNode
     a pair:PatternNode ;
-    rdfs:label "memory read step node"@en ;
+    rdfs:label "Memory read step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:MemoryReadStep .
 
 pat:AgentMemory_RecalledContextNode
     a pair:PatternNode ;
-    rdfs:label "recalled context node"@en ;
+    rdfs:label "Recalled context"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:RetrievedContext .
 
@@ -3744,7 +3702,7 @@ pat:AgentMemory_ReadProducesContextEdge
 pat:AgentDelegationMotif
     a pair:GraphMotif ;
     rdfs:label "Agent Delegation Motif"@en ;
-    dct:description "Agentic motif in which one agent's planning step produces a message that another agent's handoff step consumes and acts on, so work crosses an agent boundary."@en ;
+    dct:description "One agent's planning step produces a message that another agent's handoff step takes up, so work passes from one agent to the next."@en ;
     dct:source <https://genai.owasp.org/> ,
         <https://doi.org/10.1016/j.jss.2024.112278> ;
     pair:derivedFrom asi:asi07-insecure-inter-agent-communication ,
@@ -3764,19 +3722,19 @@ pat:AgentDelegationMotif
 
 pat:AgentDelegation_DelegatingStepNode
     a pair:PatternNode ;
-    rdfs:label "delegating agent planning step node"@en ;
+    rdfs:label "Delegating agent planning step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:PlanningStep .
 
 pat:AgentDelegation_MessageNode
     a pair:PatternNode ;
-    rdfs:label "inter-agent message node"@en ;
+    rdfs:label "Inter-agent message"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentMessage .
 
 pat:AgentDelegation_ReceivingStepNode
     a pair:PatternNode ;
-    rdfs:label "receiving agent handoff step node"@en ;
+    rdfs:label "Receiving agent handoff step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:AgentHandoffStep .
 
@@ -3799,7 +3757,7 @@ pat:AgentDelegation_ReceivingUsesMessageEdge
 pat:HumanOversightMotif
     a pair:GraphMotif ;
     rdfs:label "Human Oversight Motif"@en ;
-    dct:description "Agentic control motif in which a human approval step informs the acting step, which produces the action's result."@en ;
+    dct:description "A human approval step produces a decision that a tool invocation step reads before it produces its result."@en ;
     dct:source <https://genai.owasp.org/> ,
         <https://doi.org/10.1016/j.jss.2024.112278> ;
     pair:derivedFrom asi:asi02-tool-misuse ,
@@ -3817,25 +3775,25 @@ pat:HumanOversightMotif
 
 pat:HumanOversight_ApprovalStepNode
     a pair:PatternNode ;
-    rdfs:label "human approval step node"@en ;
+    rdfs:label "Human approval step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:HumanApprovalStep .
 
 pat:HumanOversight_ActionStepNode
     a pair:PatternNode ;
-    rdfs:label "mediated action step node"@en ;
+    rdfs:label "Mediated action step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:ToolInvocationStep .
 
 pat:HumanOversight_ActionResultNode
     a pair:PatternNode ;
-    rdfs:label "action result node"@en ;
+    rdfs:label "Action result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:ResourceRole .
 
 pat:HumanOversight_ApprovalNode
     a pair:PatternNode ;
-    rdfs:label "human approval node"@en ;
+    rdfs:label "Human approval"@en ;
     pair:expectedClass beam:Data .
 
 
@@ -3866,11 +3824,7 @@ pat:HumanOversight_ActionUsesApprovalEdge
 pat:ExecutionScreeningMotif
     a pair:GraphMotif ;
     rdfs:label "Execution Screening Motif"@en ;
-    dct:description """
-    Agentic control motif in which a policy enforcement step screens an action
-    before it is carried out, and the tool invocation step acts on the verdict it
-    produces.
-    """@en ;
+    dct:description "A policy enforcement step produces a decision that a tool invocation step reads before it acts."@en ;
     pair:derivedFrom pat:Cite_MultimodalGuardrails ;
     pair:hasPatternNode
         pat:ExecScreening_PolicyStepNode ,
@@ -3885,25 +3839,25 @@ pat:ExecutionScreeningMotif
 
 pat:ExecScreening_PolicyStepNode
     a pair:PatternNode ;
-    rdfs:label "Execution guardrail step node"@en ;
+    rdfs:label "Execution guardrail step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:PolicyEnforcementStep .
 
 pat:ExecScreening_VerdictNode
     a pair:PatternNode ;
-    rdfs:label "Policy verdict node"@en ;
+    rdfs:label "Policy verdict"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:GuardrailDecision .
 
 pat:ExecScreening_ToolStepNode
     a pair:PatternNode ;
-    rdfs:label "Screened tool invocation step node"@en ;
+    rdfs:label "Screened tool invocation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:ToolInvocationStep .
 
 pat:ExecScreening_ResultNode
     a pair:PatternNode ;
-    rdfs:label "Tool result node"@en ;
+    rdfs:label "Tool result"@en ;
     pair:expectedClass beam:Data .
 
 pat:ExecScreening_PolicyProducesVerdictEdge
@@ -3934,11 +3888,7 @@ pat:ExecScreening_ToolProducesResultEdge
 pat:GoalCreationMotif
     a pair:GraphMotif ;
     rdfs:label "Goal Creation Motif"@en ;
-    dct:description """
-    Agentic motif in which a goal creation step reads the user's prompt and the
-    agent's memory and states the goal the agent works toward, before it is
-    planned.
-    """@en ;
+    dct:description "A goal creation step reads the user's input and the agent's memory and states the goal the agent works toward."@en ;
     rdfs:comment "Named for the step rather than for being passive: a proactive goal creator reads the prompt and memory as well and matches this too. Passive would claim that no detector is present, which a motif cannot say."@en ;
     pair:derivedFrom pat:Cite_PassiveGoalCreator ,
         pat:Cite_ProactiveGoalCreator ;
@@ -3955,25 +3905,25 @@ pat:GoalCreationMotif
 
 pat:GoalCreation_PromptNode
     a pair:PatternNode ;
-    rdfs:label "User prompt node"@en ;
+    rdfs:label "User prompt"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:GoalCreation_MemoryNode
     a pair:PatternNode ;
-    rdfs:label "Agent memory node"@en ;
+    rdfs:label "Agent memory"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentMemory .
 
 pat:GoalCreation_GoalCreatorNode
     a pair:PatternNode ;
-    rdfs:label "Goal creator step node"@en ;
+    rdfs:label "Goal creator step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:GoalCreationStep .
 
 pat:GoalCreation_GoalNode
     a pair:PatternNode ;
-    rdfs:label "Agent goal node"@en ;
+    rdfs:label "Agent goal"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentGoal .
 
@@ -4001,11 +3951,7 @@ pat:GoalCreation_CreatorProducesGoalEdge
 pat:ProactiveGoalCreationMotif
     a pair:GraphMotif ;
     rdfs:label "Proactive Goal Creation Motif"@en ;
-    dct:description """
-    Agentic motif in which a detector step captures context from the user's
-    surroundings and the goal creation step forms the agent's goal from it,
-    alongside the user's prompt and the agent's memory.
-    """@en ;
+    dct:description "A context detection step captures the user's surroundings, and a goal creation step forms a goal from it with the user's input and the agent's memory."@en ;
     pair:derivedFrom pat:Cite_ProactiveGoalCreator ;
     pair:hasPatternNode
         pat:ProactiveGoal_PromptNode ,
@@ -4024,37 +3970,37 @@ pat:ProactiveGoalCreationMotif
 
 pat:ProactiveGoal_PromptNode
     a pair:PatternNode ;
-    rdfs:label "User prompt node"@en ;
+    rdfs:label "User prompt"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:ProactiveGoal_MemoryNode
     a pair:PatternNode ;
-    rdfs:label "Agent memory node"@en ;
+    rdfs:label "Agent memory"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentMemory .
 
 pat:ProactiveGoal_DetectorNode
     a pair:PatternNode ;
-    rdfs:label "Detector step node"@en ;
+    rdfs:label "Detector step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:ContextDetectionStep .
 
 pat:ProactiveGoal_EnvironmentContextNode
     a pair:PatternNode ;
-    rdfs:label "Captured environment context node"@en ;
+    rdfs:label "Captured environment context"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:EnvironmentContext .
 
 pat:ProactiveGoal_GoalCreatorNode
     a pair:PatternNode ;
-    rdfs:label "Proactive goal creator step node"@en ;
+    rdfs:label "Proactive goal creator step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:GoalCreationStep .
 
 pat:ProactiveGoal_GoalNode
     a pair:PatternNode ;
-    rdfs:label "Agent goal node"@en ;
+    rdfs:label "Agent goal"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentGoal .
 
@@ -4096,10 +4042,7 @@ pat:ProactiveGoal_CreatorProducesGoalEdge
 pat:ModelQueryingMotif
     a pair:GraphMotif ;
     rdfs:label "Model Querying Motif"@en ;
-    dct:description """
-    Agentic motif in which a planning step puts the user's prompt to a foundation
-    model and produces the plan the agent works from.
-    """@en ;
+    dct:description "A planning step puts the user's input to a generative model and produces the plan the agent works from."@en ;
     rdfs:comment "How many times the planning step queries the model is runtime behaviour a graph cannot show, so this is the shape one-shot and incremental model querying share. One-shot is not a structural claim and is not in the name."@en ;
     pair:derivedFrom pat:Cite_OneShotModelQuerying ,
         pat:Cite_IncrementalModelQuerying ;
@@ -4116,25 +4059,25 @@ pat:ModelQueryingMotif
 
 pat:ModelQuery_PromptNode
     a pair:PatternNode ;
-    rdfs:label "User prompt node"@en ;
+    rdfs:label "User prompt"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:ModelQuery_ModelNode
     a pair:PatternNode ;
-    rdfs:label "Foundation model node"@en ;
+    rdfs:label "Foundation model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:GenerativeModel .
 
 pat:ModelQuery_PlanningStepNode
     a pair:PatternNode ;
-    rdfs:label "Plan generation step node"@en ;
+    rdfs:label "Plan generation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:PlanningStep .
 
 pat:ModelQuery_PlanNode
     a pair:PatternNode ;
-    rdfs:label "Plan node"@en ;
+    rdfs:label "Plan"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentPlan .
 
@@ -4162,11 +4105,7 @@ pat:ModelQuery_PlanningProducesPlanEdge
 pat:IncrementalModelQueryingMotif
     a pair:GraphMotif ;
     rdfs:label "Incremental Model Querying Motif"@en ;
-    dct:description """
-    Agentic motif in which a planning step queries a foundation model and also
-    reads the user's feedback on its intermediate results, so the plan is built
-    step by step under the user's direction.
-    """@en ;
+    dct:description "A planning step queries a generative model with the user's input and reads the user's feedback, building its plan step by step."@en ;
     pair:derivedFrom pat:Cite_IncrementalModelQuerying ;
     pair:hasPatternNode
         pat:IncrQuery_PromptNode ,
@@ -4183,31 +4122,31 @@ pat:IncrementalModelQueryingMotif
 
 pat:IncrQuery_PromptNode
     a pair:PatternNode ;
-    rdfs:label "User prompt node"@en ;
+    rdfs:label "User prompt"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserInput .
 
 pat:IncrQuery_ModelNode
     a pair:PatternNode ;
-    rdfs:label "Foundation model node"@en ;
+    rdfs:label "Foundation model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:GenerativeModel .
 
 pat:IncrQuery_PlanningStepNode
     a pair:PatternNode ;
-    rdfs:label "Plan generation step node"@en ;
+    rdfs:label "Plan generation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:PlanningStep .
 
 pat:IncrQuery_FeedbackNode
     a pair:PatternNode ;
-    rdfs:label "User feedback node"@en ;
+    rdfs:label "User feedback"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:UserFeedback .
 
 pat:IncrQuery_PlanNode
     a pair:PatternNode ;
-    rdfs:label "Plan node"@en ;
+    rdfs:label "Plan"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentPlan .
 
@@ -4242,11 +4181,7 @@ pat:IncrQuery_PlanningProducesPlanEdge
 pat:PlanReflectionMotif
     a pair:GraphMotif ;
     rdfs:label "Plan Reflection Motif"@en ;
-    dct:description """
-    Agentic motif in which a reflection step reviews the plan a planning step
-    produced and returns feedback that the planning step reads to revise it. The
-    reviewer may be the agent itself, another agent or a person.
-    """@en ;
+    dct:description "A reflection step reviews the plan a planning step produced and returns feedback that the planning step reads to revise it."@en ;
     pair:derivedFrom pat:Cite_SelfReflection ,
         pat:Cite_CrossReflection ,
         pat:Cite_HumanReflection ;
@@ -4264,25 +4199,25 @@ pat:PlanReflectionMotif
 
 pat:PlanReflection_PlanningStepNode
     a pair:PatternNode ;
-    rdfs:label "Plan generation step node"@en ;
+    rdfs:label "Plan generation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:PlanningStep .
 
 pat:PlanReflection_PlanNode
     a pair:PatternNode ;
-    rdfs:label "Plan under review node"@en ;
+    rdfs:label "Plan under review"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentPlan .
 
 pat:PlanReflection_ReflectionStepNode
     a pair:PatternNode ;
-    rdfs:label "Plan reflection step node"@en ;
+    rdfs:label "Plan reflection step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:PlanReflectionStep .
 
 pat:PlanReflection_FeedbackNode
     a pair:PatternNode ;
-    rdfs:label "Reflection feedback node"@en ;
+    rdfs:label "Reflection feedback"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:ReflectionFeedback .
 
@@ -4317,10 +4252,7 @@ pat:PlanReflection_PlanningUsesFeedbackEdge
 pat:VotingBasedCooperationMotif
     a pair:GraphMotif ;
     rdfs:label "Voting-based Cooperation Motif"@en ;
-    dct:description """
-    Agentic motif in which two or more agents each submit a vote as a message,
-    and a vote aggregation step combines the votes into one decision.
-    """@en ;
+    dct:description "Two agent steps each produce a vote as a message, and a vote aggregation step combines the votes into one decision."@en ;
     pair:derivedFrom pat:Cite_VotingBasedCooperation ;
     pair:hasPatternNode
         pat:Voting_FirstVoterNode ,
@@ -4339,35 +4271,35 @@ pat:VotingBasedCooperationMotif
 
 pat:Voting_FirstVoterNode
     a pair:PatternNode ;
-    rdfs:label "Voting agent step node"@en ;
+    rdfs:label "Voting agent step"@en ;
     pair:expectedClass beam:Process .
 
 pat:Voting_FirstVoteNode
     a pair:PatternNode ;
-    rdfs:label "Vote node"@en ;
+    rdfs:label "Vote"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentMessage .
 
 pat:Voting_SecondVoterNode
     a pair:PatternNode ;
-    rdfs:label "Second voting agent step node"@en ;
+    rdfs:label "Second voting agent step"@en ;
     pair:expectedClass beam:Process .
 
 pat:Voting_SecondVoteNode
     a pair:PatternNode ;
-    rdfs:label "Second vote node"@en ;
+    rdfs:label "Second vote"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:AgentMessage .
 
 pat:Voting_AggregationStepNode
     a pair:PatternNode ;
-    rdfs:label "Vote aggregation step node"@en ;
+    rdfs:label "Vote aggregation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:VoteAggregationStep .
 
 pat:Voting_DecisionNode
     a pair:PatternNode ;
-    rdfs:label "Collective decision node"@en ;
+    rdfs:label "Collective decision"@en ;
     pair:expectedClass beam:Data .
 
 pat:Voting_FirstVoterProducesVoteEdge
@@ -4408,11 +4340,7 @@ pat:Voting_AggregationProducesDecisionEdge
 pat:DebateBasedCooperationMotif
     a pair:GraphMotif ;
     rdfs:label "Debate-based Cooperation Motif"@en ;
-    dct:description """
-    Agentic motif in which two agents exchange arguments in both directions,
-    each reading the other's argument and answering it, so a response is refined
-    over rounds of debate.
-    """@en ;
+    dct:description "Two agent steps each produce an argument that the other reads and answers, so the exchange runs in both directions."@en ;
     rdfs:comment "The argument role is the discriminator: a request answered by a reply is also a two-way exchange between agents, and is not a debate."@en ;
     pair:derivedFrom pat:Cite_DebateBasedCooperation ;
     pair:hasPatternNode
@@ -4429,23 +4357,23 @@ pat:DebateBasedCooperationMotif
 
 pat:Debate_FirstAgentNode
     a pair:PatternNode ;
-    rdfs:label "Debating agent step node"@en ;
+    rdfs:label "Debating agent step"@en ;
     pair:expectedClass beam:Process .
 
 pat:Debate_FirstArgumentNode
     a pair:PatternNode ;
-    rdfs:label "Argument node"@en ;
+    rdfs:label "Argument"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:DebateArgument .
 
 pat:Debate_SecondAgentNode
     a pair:PatternNode ;
-    rdfs:label "Opposing agent step node"@en ;
+    rdfs:label "Opposing agent step"@en ;
     pair:expectedClass beam:Process .
 
 pat:Debate_SecondArgumentNode
     a pair:PatternNode ;
-    rdfs:label "Counter-argument node"@en ;
+    rdfs:label "Counter-argument"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:DebateArgument .
 
@@ -4480,11 +4408,7 @@ pat:Debate_FirstAgentUsesArgumentEdge
 pat:ToolAgentRegistryMotif
     a pair:GraphMotif ;
     rdfs:label "Tool/Agent Registry Motif"@en ;
-    dct:description """
-    Agentic motif in which a coordinating planning step consults a registry of
-    tools and agents and assigns a task to the tool it selects, which carries the
-    task out.
-    """@en ;
+    dct:description "A planning step consults a registry of tools and agents and assigns a task that a tool invocation step carries out."@en ;
     rdfs:comment "Nests the Tool-Using Agent motif, with the assignment as its plan. An agent selected from the registry is the Agent Delegation motif's shape."@en ;
     pair:derivedFrom pat:Cite_ToolAgentRegistry ;
     pair:hasPatternNode
@@ -4502,30 +4426,30 @@ pat:ToolAgentRegistryMotif
 
 pat:Registry_RegistryNode
     a pair:PatternNode ;
-    rdfs:label "Tool/agent registry node"@en ;
+    rdfs:label "Tool/agent registry"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:ToolRegistry .
 
 pat:Registry_CoordinatorNode
     a pair:PatternNode ;
-    rdfs:label "Coordinating planning step node"@en ;
+    rdfs:label "Coordinating planning step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:PlanningStep .
 
 pat:Registry_AssignmentNode
     a pair:PatternNode ;
-    rdfs:label "Task assignment node"@en ;
+    rdfs:label "Task assignment"@en ;
     pair:expectedClass beam:Data .
 
 pat:Registry_ToolStepNode
     a pair:PatternNode ;
-    rdfs:label "Selected tool invocation step node"@en ;
+    rdfs:label "Selected tool invocation step"@en ;
     pair:expectedClass beam:Process ;
     pair:expectedRole pair:ToolInvocationStep .
 
 pat:Registry_ResultNode
     a pair:PatternNode ;
-    rdfs:label "Tool result node"@en ;
+    rdfs:label "Tool result"@en ;
     pair:expectedClass beam:Data .
 
 pat:Registry_CoordinatorUsesRegistryEdge
