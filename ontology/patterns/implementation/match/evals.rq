@@ -26,15 +26,15 @@ CONSTRUCT {
 }
 WHERE {
     ?context a beam:Data ;
-           pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
+           pair:playsRole/pair:subRoleOf* pair:EvaluationContext .
     ?expectedOutput a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:ExpectedOutput .
     ?input a beam:Data ;
-           pair:playsRole/pair:subRoleOf* pair:UserInput .
+           pair:playsRole/pair:subRoleOf* pair:EvaluationInput .
     ?judgeModel a beam:StatisticalModel ;
            pair:playsRole/pair:subRoleOf* pair:JudgeModel .
     ?modelOutput a beam:Data ;
-           pair:playsRole/pair:subRoleOf* pair:LLMResponse .
+           pair:playsRole/pair:subRoleOf* pair:EvaluatedOutput .
     ?score a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:EvaluationScore .
     ?scorer a/rdfs:subClassOf* beam:Process ;

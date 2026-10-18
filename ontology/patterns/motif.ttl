@@ -1490,13 +1490,13 @@ pat:Evals_InputNode
     a pair:PatternNode ;
     rdfs:label "Evaluation input"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
+    pair:expectedRole pair:EvaluationInput .
 
 pat:Evals_ModelOutputNode
     a pair:PatternNode ;
     rdfs:label "Evaluation model output"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:LLMResponse .
+    pair:expectedRole pair:EvaluatedOutput .
 
 pat:Evals_ExpectedOutputNode
     a pair:PatternNode ;
@@ -1508,7 +1508,7 @@ pat:Evals_ContextNode
     a pair:PatternNode ;
     rdfs:label "Evaluation retrieval context"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:RetrievedContext .
+    pair:expectedRole pair:EvaluationContext .
 
 pat:Evals_ScorerNode
     a pair:PatternNode ;

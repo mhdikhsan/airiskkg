@@ -663,6 +663,21 @@ pair:ExpectedOutput a pair:PatternRole ;
     pair:subRoleOf pair:TrainingEvaluationDataRoles ;
     skos:definition "A reference/expected output used in evaluation."@en .
 
+pair:EvaluationInput a pair:PatternRole ;
+    skos:prefLabel "EvaluationInput"@en ;
+    pair:subRoleOf pair:TrainingEvaluationDataRoles ;
+    skos:definition "An input from an evaluation set, put to the model under evaluation; not something a user sends the running system."@en .
+
+pair:EvaluatedOutput a pair:PatternRole ;
+    skos:prefLabel "EvaluatedOutput"@en ;
+    pair:subRoleOf pair:TrainingEvaluationDataRoles ;
+    skos:definition "What the model under evaluation produced for an evaluation input, kept for scoring rather than shown to anyone."@en .
+
+pair:EvaluationContext a pair:PatternRole ;
+    skos:prefLabel "EvaluationContext"@en ;
+    pair:subRoleOf pair:TrainingEvaluationDataRoles ;
+    skos:definition "Context recorded for an evaluation case, such as the passages retrieved for it, which the scorer judges the output against."@en .
+
 pair:EvaluationResult a pair:PatternRole ;
     skos:prefLabel "EvaluationResult"@en ;
     pair:subRoleOf pair:TrainingEvaluationDataRoles ;

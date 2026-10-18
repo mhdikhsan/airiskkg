@@ -2,7 +2,7 @@
 
 The inventory of what PAIR-AI can recognise and flag. Counted off the loaded
 ontology on 2026-10-09: **47 motifs** (38 after the B-4 merges of 2026-10-18), **33 risk patterns**, **123 annotation
-roles** (138 after 2026-10-18: 17 role categories added, Document chunk and Embedding vector removed), and **7 data categories**. Terminology follows
+roles** (141 after 2026-10-18: 17 role categories and 3 evaluation roles added, Document chunk and Embedding vector removed), and **7 data categories**. Terminology follows
 [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md). This file is maintained by
 hand — if the library changes and this page does not, this page is wrong.
 
