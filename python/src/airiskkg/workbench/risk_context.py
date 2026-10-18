@@ -304,14 +304,16 @@ def _build() -> dict[tuple[str, str], dict]:
 
     # ML training, and training into serving
     for motif, (step, trainer) in _TRAIN_AND_SERVE.items():
-        link("AdversarialEvasion", motif, request_to(step, from_public=True))
-        link("OutOfDomainInput", motif, request_to(step))
-        link("UnqualifiedPrediction", motif, request_to(step), result_shown(step))
-        link("ModelExtraction", motif, request_to(step, from_public=True))
-        link("TrainingDataMembershipInference", motif,
-             request_to(step, from_public=True), training_data(trainer, "SensitiveInformation"))
         link("ModelBias", motif, training_data(trainer, "SensitiveInformation"))
         link("ImproperRetraining", motif, fed_back(step, trainer))
+    # Training-to-serving's serving risks are the serving motif's since B-4.
+    step, trainer = _TRAIN_AND_SERVE["TrainThenServeMotif"]
+    link("AdversarialEvasion", "TrainThenServeMotif", request_to(step, from_public=True))
+    link("OutOfDomainInput", "TrainThenServeMotif", request_to(step))
+    link("UnqualifiedPrediction", "TrainThenServeMotif", request_to(step), result_shown(step))
+    link("ModelExtraction", "TrainThenServeMotif", request_to(step, from_public=True))
+    link("TrainingDataMembershipInference", "TrainThenServeMotif",
+         request_to(step, from_public=True), training_data(trainer, "SensitiveInformation"))
     link("ModelBias", "PipelineTrainingMotif", personal("PipeTrain_SourceDataNode"))
     link("ImproperRetraining", "PipelineTrainingMotif",
          served_and_fed_back("PipeTrain_ModelArtifactNode", "PipeTrain_TrainingJobNode"))

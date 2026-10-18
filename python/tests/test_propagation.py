@@ -294,7 +294,12 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
     RAG, which group into one concern); the IT support agent 8 -> 10 (two tool
     steps with no log reading them); credit scoring 16 -> 17 (model extraction
     from the serving and train-to-serve matches, +2, and supply chain no longer
-    raised on the model it trains itself, -1)."""
+    raised on the model it trains itself, -1).
+
+    Moved 2026-10-18 by B-4, which took the serving risk patterns off
+    Training-to-serving: credit scoring 17 -> 11. The six that went were raised
+    a second time on the same evidence through the train-to-serve match, so its
+    10 concerns are unchanged."""
     expected = {
         example_path(ONYX_NS): (14, 24),
         example_path(GRAPH_RAG_NS): (3, 7),
@@ -310,7 +315,7 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
         example_path(AGENT_NS): (4, 10),
         # The ML serving shape: retrained on its own decisions, deployed without
         # evaluation, scored on public applications, with no control anywhere.
-        example_path(CREDIT_SCORING_NS): (3, 17),
+        example_path(CREDIT_SCORING_NS): (3, 11),
     }
     # Every graph the repo ships is pinned.
     unpinned = set(EXAMPLE_DIR.glob("*.ttl")) - set(expected)

@@ -1353,12 +1353,7 @@ pat:TrainThenServeMotif
 
 pat:TrainingToServingMotif
     pair:hasRiskPattern
-        pat:DatasetShiftRiskPattern ,
-        pat:OutOfDomainInputRiskPattern ,
-        pat:AdversarialEvasionRiskPattern ,
         pat:UnevaluatedModelRiskPattern ,
-        pat:UnqualifiedPredictionRiskPattern ,
-        pat:TrainingDataMembershipInferenceRiskPattern ,
         pat:ModelBiasRiskPattern ,
         pat:ImproperRetrainingRiskPattern .
 
@@ -1402,8 +1397,7 @@ pat:DatasetShiftRiskPattern
     monitoring step compares what it serves against a baseline from training.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+        pat:TrainThenServeMotif ;
     pair:hasMechanism mlr:mechanism-unobserved-distribution-shift ;
     pair:hasApplicabilityCondition pat:DatasetShift_UnmonitoredServingCondition ;
     pair:mayIndicateRisk
@@ -1427,8 +1421,7 @@ pat:OutOfDomainInputRiskPattern
     that checks it lies within the domain the model was built for.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+        pat:TrainThenServeMotif ;
     pair:hasMechanism mlr:mechanism-unchecked-input-domain ;
     pair:hasApplicabilityCondition pat:OutOfDomainInput_UncheckedInputCondition ;
     pair:mayIndicateRisk
@@ -1451,8 +1444,7 @@ pat:AdversarialEvasionRiskPattern
     represented input screening on the way.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+        pat:TrainThenServeMotif ;
     pair:hasMechanism mlr:mechanism-unscreened-adversarial-input ;
     pair:hasApplicabilityCondition pat:AdversarialEvasion_UntrustedInputCondition ;
     pair:mayIndicateRisk
@@ -1527,8 +1519,7 @@ pat:UnqualifiedPredictionRiskPattern
     human review reaches the same place.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+        pat:TrainThenServeMotif ;
     pair:hasMechanism mlr:mechanism-unreported-prediction-uncertainty ;
     pair:hasApplicabilityCondition pat:UnqualifiedPrediction_ActedOnCondition ;
     pair:mayIndicateRisk
@@ -1582,8 +1573,7 @@ pat:TrainingDataMembershipInferenceRiskPattern
     does not show, so a finding is settled by triage.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+        pat:TrainThenServeMotif ;
     pair:hasMechanism atlas:mechanism-training-membership-exposed-by-queries ;
     pair:hasApplicabilityCondition pat:MembershipInference_PublicQueryCondition ;
     pair:mayIndicateRisk
@@ -1979,8 +1969,7 @@ pat:ModelExtractionRiskPattern
     the prediction step or sits upstream of the request.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+        pat:TrainThenServeMotif ;
     pair:hasMechanism atlas:mechanism-model-copied-through-open-queries ;
     pair:hasApplicabilityCondition pat:ModelExtraction_OpenQueriesCondition ;
     pair:mayIndicateRisk
@@ -2002,8 +1991,6 @@ pat:AgentMemoryLoopMotif pair:hasRiskPattern pat:PersonalDataRetainedRiskPattern
 
 
 pat:TrainThenServeMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
-pat:TrainingToServingMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
-
 pat:UntraceableAgentActionsOQP
     a pair:PatternImplementation ;
     rdfs:label "Untraceable agent actions risk pattern OQP"@en ;
