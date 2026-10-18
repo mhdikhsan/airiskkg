@@ -3700,7 +3700,11 @@ def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> N
     which it was never attached to: nothing came off, and the only other way
     was to delete the risk."""
     loop, handle = scene_restored
-    # The scene itself, not whatever an earlier test left in the editor.
+    # The scene itself, not whatever an earlier test left in the editor. Setting
+    # the editor is not opening a document, so an earlier run on another graph
+    # would stay and the risk view would draw that run instead.
+    loop.run_until_complete(handle.js(
+        "window.PairAI.state.lastAssessment = null; window.PairAI.state.lastRun = null; 1"))
     loop.run_until_complete(handle.js(_scene_js()))
     _settle(loop, handle, "window.PairAI.Editor.getValue().length", 0, tries=40)
     time.sleep(2)
@@ -3727,6 +3731,8 @@ def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> N
         return 1;
     })()"""))
     time.sleep(1)
+    drawn = f"!!document.querySelector('#risk-canvas [data-node=\"{risk}\"]')"
+    _settle(loop, handle, drawn, False, tries=40)
     loop.run_until_complete(handle.js("window.PairAI.RiskCanvas.fit(); 1"))
     time.sleep(0.5)
     line = loop.run_until_complete(handle.js(f"""(() => {{
@@ -3742,7 +3748,7 @@ def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> N
             .map((h) => h.getAttribute('data-from')))].slice(0, 8),
         layers: [...document.querySelectorAll('.layer-toggle')].map((b) => b.textContent + (b.classList.contains('on') ? '+' : '-')),
         level: document.querySelector('#canvas-wrap').className,
-        drawn: document.querySelectorAll('#risk-canvas [data-id]').length,
+        drawn: document.querySelectorAll('#risk-canvas [data-node]').length,
         empty: (document.querySelector('#risk-canvas-empty') || {}).textContent,
         run: !!(window.PairAI.state.lastAssessment),
         ttlHasRisk: window.PairAI.Editor.getValue().includes('Leaky answers'),
