@@ -236,6 +236,7 @@ export const MultiPicker = function (items, selectedIds, opts) {
     renderChips();
     setOpen(false);
     trigger.focus();
+    if (opts.onPick) opts.onPick(id);
   }
 
   const closeOnOutside = (event) => {

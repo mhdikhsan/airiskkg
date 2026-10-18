@@ -3742,6 +3742,10 @@ def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> N
             .map((h) => h.getAttribute('data-from')))].slice(0, 8),
         layers: [...document.querySelectorAll('.layer-toggle')].map((b) => b.textContent + (b.classList.contains('on') ? '+' : '-')),
         level: document.querySelector('#canvas-wrap').className,
+        drawn: document.querySelectorAll('#risk-canvas [data-id]').length,
+        empty: (document.querySelector('#risk-canvas-empty') || {}).textContent,
+        run: !!(window.PairAI.state.lastAssessment),
+        ttlHasRisk: window.PairAI.Editor.getValue().includes('Leaky answers'),
     }))()"""))
     assert line, f"the risk {risk} draws no line to pick: {why}"
     loop.run_until_complete(handle.click(line["x"], line["y"]))
@@ -4196,6 +4200,10 @@ def test_a_second_process_model_is_drawn_on_its_own_and_switched_to(scene_restor
     picked = """(() => { const s = document.querySelector('#process-palette .pp-model');
         return s ? s.selectedOptions[0].textContent : null; })()"""
 
+    # The palette scrolls; an earlier test may have left it scrolled past its top row.
+    loop.run_until_complete(handle.js(
+        "(document.querySelector('#process-palette .pp-model-add') || {scrollIntoView() {}})"
+        ".scrollIntoView({ block: 'nearest' }); 1"))
     at = _centre(loop, handle, "#process-palette .pp-model-add")
     assert at, "there is no way to start another process model"
     loop.run_until_complete(handle.click(at["x"], at["y"]))
