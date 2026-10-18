@@ -682,6 +682,12 @@ function positionDetail(ev) {
   detailBox.style.bottom = "auto";
 }
 
+/* A pick adds a chip, which on a short canvas pushes Apply below the popup's edge. */
+function showApply() {
+  const apply = detailBox.querySelector("#nd-apply");
+  if (apply) apply.scrollIntoView({ block: "nearest" });
+}
+
 function showDetail(node, ev) {
   const currentClass = node.typeUri || "";
   detailBox.innerHTML = [
@@ -704,9 +710,10 @@ function showDetail(node, ev) {
     placeholder: "+ add role", grouped: true,
     filterKind: node.kind === "process" ? "process" : "resource",
     typeUri: node.typeUri, typeUris: node.typeUris,
+    onPick: showApply,
   });
   const catPicker = MultiPicker(annotationCfg.vocabulary.dataCategories, node.categoryIds || [],
-    categoryPickerOptions(node, "+ add data category"));
+    { ...categoryPickerOptions(node, "+ add data category"), onPick: showApply });
   detailBox.querySelector("#nd-role-mp").appendChild(rolePicker.element);
   detailBox.querySelector("#nd-cat-mp").appendChild(catPicker.element);
   detailBox.classList.remove("hidden");
