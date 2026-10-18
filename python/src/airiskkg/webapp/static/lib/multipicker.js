@@ -136,9 +136,8 @@ export const MultiPicker = function (items, selectedIds, opts) {
   const pop = el("div", { class: "mp-pop hidden" }, [search, familyBar, listEl, hint, foot]);
   const container = el("div", { class: "mp" }, [chipsEl, trigger, pop]);
 
-  // A category files roles and matches nothing, so it is a folder, never a pick.
   function available() {
-    return items.filter((it) => !selected.has(it.id) && !(tree && it.category));
+    return items.filter((it) => !selected.has(it.id));
   }
 
   function shelfName(it) {
@@ -299,7 +298,7 @@ export const MultiPicker = function (items, selectedIds, opts) {
       seen.set(it.id, false);  // a cycle in the hierarchy reads as nothing below
       let rank = 3;
       let ok = false;
-      if (!it.category && familyOk(it) && (showAll || fits(it, opts))) {
+      if (it.id !== OTHER_ID && familyOk(it) && (showAll || fits(it, opts))) {
         ok = true;
         rank = fitsSide(it, opts.filterKind) ? fitRank(it, types) : 2;
       }
@@ -315,10 +314,11 @@ export const MultiPicker = function (items, selectedIds, opts) {
     rankOf = (it) => (visit(it) ? best.get(it.id) : 3);
   }
 
-  /* A row that does not go on this element is still drawn when something under
+  /* A category is picked like a role, so an element can be tagged broadly first.
+     A row that does not go on this element is still drawn when something under
      it does, as the way there; it opens rather than picks until "Show more". */
   function canPick(it) {
-    return !it.category && !selected.has(it.id) && familyOk(it) && (showAll || fits(it, opts));
+    return it.id !== OTHER_ID && !selected.has(it.id) && familyOk(it) && (showAll || fits(it, opts));
   }
 
   function under(it) {
@@ -347,7 +347,7 @@ export const MultiPicker = function (items, selectedIds, opts) {
     rows.forEach((it, at) => {
       const below = under(it);
       const chosen = selected.has(it.id);
-      const off = level === 0 ? rankOf(it) > 1 : !it.category && !fits(it, opts);
+      const off = level === 0 ? rankOf(it) > 1 : !fits(it, opts);
       const kind = level === 0 && it.id !== OTHER_ID ? shelfKind(it) : null;
       panel.appendChild(el("div", {
         class: "mp-row" + (it.category ? " folder" : "") + (off ? " off" : "")
@@ -395,7 +395,7 @@ export const MultiPicker = function (items, selectedIds, opts) {
     hint.appendChild(el("span", { class: "mp-hint-label" }, it.label));
     if (it.category) {
       hint.appendChild(el("span", { class: "mp-hint-def" },
-        "A category: it files roles and matches nothing itself, so pick a role under it."));
+        "A category: it says what kind of element this is. Motifs match once a role under it is chosen."));
     } else if (!showAll && !fits(it, opts)) {
       hint.appendChild(el("span", { class: "mp-hint-def" },
         "Usually on another kind of element, so it is the way to what refines it."

@@ -3270,10 +3270,10 @@ def test_the_popup_offers_the_terms_that_fit_the_element(scene_restored) -> None
     time.sleep(0.5)
     expected = loop.run_until_complete(handle.js("""(async () => {
         const v = await (await fetch('/api/vocabulary')).json();
-        // a category files roles, and so does the role the categories refine
+        // the roles the categories refine file them and are not offered
         const tops = new Set(v.roles.filter((r) => r.category).flatMap((r) => r.parents));
         const fit = (cls) => v.roles.filter((r) => r.applies === 'resource'
-            && !r.category && !tops.has(r.id)
+            && !tops.has(r.id)
             && (r.shelfId === cls || (r.appliesTo || []).includes(cls))).length;
         return { model: fit('http://w3id.org/beam/core#StatisticalModel'),
                  data: fit('http://w3id.org/beam/core#Data') };
@@ -3307,8 +3307,8 @@ def test_picking_a_role_closes_the_list_so_apply_can_be_pressed(scene_restored) 
     time.sleep(0.5)
     _open_popup_on(loop, handle, "Question")
     _open_role_menu(loop, handle)
-    # a category opens on a click as well as on a hover, so a touch reaches it
-    category = _centre(loop, handle, "#nd-role-mp .mp-list > .mp-row.folder")
+    # a category's arrow opens it on a click as well as on a hover, so a touch reaches it
+    category = _centre(loop, handle, "#nd-role-mp .mp-list > .mp-row.folder .mp-row-more")
     assert category, "the role list did not open"
     loop.run_until_complete(handle.click(category["x"], category["y"]))
     option = _centre(loop, handle, "#nd-role-mp .mp-fly .mp-row.pick")
@@ -3359,7 +3359,8 @@ def test_the_role_menu_cascades_from_category_to_the_role_that_refines_it(scene_
     """The role picker was one flat list, so nothing in it said that Foundation
     LLM refines Generative Model, which refines Model. It cascades now: the
     categories that fit the element, then each role under the role it refines,
-    opened by pointing at it the way a context menu opens."""
+    opened by pointing at it the way a context menu opens, and picked by its
+    label at any level, a category included."""
     loop, handle = scene_restored
     loop.run_until_complete(handle.js(
         "window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
@@ -3412,9 +3413,17 @@ def test_the_role_menu_cascades_from_category_to_the_role_that_refines_it(scene_
     _press(loop, handle, "Enter", "Enter", 13)
     chips = loop.run_until_complete(handle.js(
         "[...document.querySelectorAll('#nd-role-mp .mp-chip-label')].map((c) => c.textContent)"))
+    assert chips == ["Foundation LLM", "Model"], f"the keyboard did not walk the menu: {chips}"
+
+    # a category is picked by its label, so an element can be tagged broadly first
+    _open_role_menu(loop, handle)
+    label = _centre(loop, handle, "#nd-role-mp .mp-list > .mp-row .mp-row-label")
+    loop.run_until_complete(handle.click(label["x"], label["y"]))
+    chips = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#nd-role-mp .mp-chip-label')].map((c) => c.textContent)"))
     loop.run_until_complete(handle.js(
         'document.querySelector("#node-detail").classList.add("hidden"); 1'))
-    assert chips == ["Foundation LLM", "Model"], f"the keyboard did not walk the menu: {chips}"
+    assert chips[-1] == "Models", f"a category cannot be picked: {chips}"
 
 
 def test_matches_on_takes_the_reader_to_the_role_and_back(page) -> None:

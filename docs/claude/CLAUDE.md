@@ -958,9 +958,10 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **The role picker cascades from the categories (2026-10-18, asked for).** A flat list said
   nothing about which role refines which. The menu opens on the role categories that fit the
   element, and each row opens onto the roles under it along `pair:subRoleOf`, on a hover or on
-  its arrow, the way a context menu does; the label picks. **A category opens and never picks**,
-  because it matches nothing (`ag:CategoryOnlyShape`), and the two roles above the categories
-  (Processing Step, Resource Role) are not offered. A role that does not fit the element but
+  its arrow, the way a context menu does; the label picks, **a category's included**, because B-3
+  lets an element be tagged broadly first and refined later (`ag:CategoryOnlyShape` then warns
+  that nothing can match it yet). The two roles above the categories (Processing Step, Resource
+  Role) are not offered. A role that does not fit the element but
   leads to one that does is drawn dimmed as the way there and opens rather than picks until
   *Show more*. Typing turns the menu back into one list, shelved by category, with definitions;
   while pointing, the hint strip carries the definition. **A submenu keeps the side its cascade
