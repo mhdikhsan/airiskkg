@@ -33,21 +33,26 @@ def _example(namespace: str) -> str:
 CDP_PORT_TRIES = 6
 
 
-def _load_example_probe() -> str:
-    """A copy of the app that loads the whole scene on its own - two
-    architectures and the process that runs both - so the driver only clicks."""
-    source = (STATIC / "index.html").read_text(encoding="utf-8")
-    driver = """
-  <script>
-  window.addEventListener("load", async () => {
+def _scene_js() -> str:
+    """Load the whole scene: two architectures and the process that runs both."""
+    return """(async () => {
     const nl = String.fromCharCode(10,10);
     const a = await (await fetch("/api/examples/RAG")).json();
     const m = await (await fetch("/api/examples/ARCH")).json();
     const p = await (await fetch("/api/examples/energy_customer_service")).json();
     window.PairAI.Editor.setValue(a.ttl + nl + m.ttl + nl + p.ttl);
-  });
+    return 1;
+  })()""".replace("RAG", _example(GRAPH_RAG_NS)).replace("ARCH", _example(WIEN_ENERGIE_NS))
+
+
+def _load_example_probe() -> str:
+    """A copy of the app that loads the scene on its own, so the driver only clicks."""
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = f"""
+  <script>
+  window.addEventListener("load", () => {_scene_js()});
   </script>
-""".replace("RAG", _example(GRAPH_RAG_NS)).replace("ARCH", _example(WIEN_ENERGIE_NS))
+"""
     return source.replace("</body>", driver + "</body>")
 
 
@@ -3278,10 +3283,16 @@ def test_picking_a_role_closes_the_list_so_apply_can_be_pressed(scene_restored) 
         const apply = document.querySelector('#nd-apply');
         const r = apply.getBoundingClientRect();
         const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        const box = document.querySelector('#node-detail').getBoundingClientRect();
         return {
             listOpen: !document.querySelector('#nd-role-mp .mp-pop').classList.contains('hidden'),
             chips: document.querySelectorAll('#nd-role-mp .mp-chip').length,
             applyOnTop: !!hit && !!hit.closest('#nd-apply'),
+            why: { apply: [Math.round(r.top), Math.round(r.bottom)],
+                   popup: [Math.round(box.top), Math.round(box.bottom)],
+                   viewport: innerHeight,
+                   hit: hit ? hit.tagName + '#' + hit.id + '.' + hit.className : null,
+                   drawerOpen: !document.querySelector('#drawer').classList.contains('collapsed') },
         };
     })()"""))
     loop.run_until_complete(handle.js(
@@ -3289,7 +3300,7 @@ def test_picking_a_role_closes_the_list_so_apply_can_be_pressed(scene_restored) 
 
     assert seen["chips"] == 1, "the pick was not recorded"
     assert not seen["listOpen"], "the suggestion list stayed open after a pick"
-    assert seen["applyOnTop"], "Apply is still covered after a pick"
+    assert seen["applyOnTop"], f"Apply is still covered after a pick: {seen['why']}"
 
 
 def test_matches_on_takes_the_reader_to_the_role_and_back(page) -> None:
@@ -3353,9 +3364,17 @@ def test_a_motif_match_lists_the_annotations_it_rests_on(scene_restored) -> None
     loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(" + json.dumps(ttl) + "); 1"))
     loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
     time.sleep(1.5)
-    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
-    rows = _settle(loop, handle, "document.querySelectorAll('#motifs-list .motif-row').length",
-                   0, tries=100)
+    # Waits for this run, not for the rows an earlier test's run left listed.
+    loop.run_until_complete(handle.js(
+        "window.__runBefore = window.PairAI.state.lastAssessment;"
+        " document.querySelector('#btn-assess').click(); 1"))
+    _settle(loop, handle,
+            "(!document.querySelector('#btn-assess').disabled && "
+            "window.PairAI.state.lastAssessment && "
+            "window.PairAI.state.lastAssessment !== window.__runBefore) ? 1 : 0", 0, tries=120)
+    time.sleep(0.5)
+    rows = loop.run_until_complete(handle.js(
+        "document.querySelectorAll('#motifs-list .motif-row').length"))
     assert rows, "the assessment listed no motif match"
     loop.run_until_complete(handle.js(
         """document.querySelector('[data-drawer-tab="motifs"]').click(); 1"""))
@@ -3681,6 +3700,10 @@ def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> N
     which it was never attached to: nothing came off, and the only other way
     was to delete the risk."""
     loop, handle = scene_restored
+    # The scene itself, not whatever an earlier test left in the editor.
+    loop.run_until_complete(handle.js(_scene_js()))
+    _settle(loop, handle, "window.PairAI.Editor.getValue().length", 0, tries=40)
+    time.sleep(2)
     risk = loop.run_until_complete(handle.js(f"""(async () => {{
         const we = {json.dumps(WIEN_ENERGIE_NS)};
         const r = await (await fetch("/api/scope-edit", {{
