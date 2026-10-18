@@ -3719,6 +3719,14 @@ def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> N
         'document.querySelector("#drawer-toggle").click(); '
         'document.querySelector("#level-risk").click(); 1'))
     time.sleep(2)
+    # Every layer on and every architecture shown, whatever an earlier test left.
+    loop.run_until_complete(handle.js("""(() => {
+        document.querySelectorAll('.layer-toggle:not(.on)').forEach((b) => b.click());
+        const focus = document.querySelector('.layer-focus');
+        if (focus && focus.value) { focus.value = ''; focus.dispatchEvent(new Event('change')); }
+        return 1;
+    })()"""))
+    time.sleep(1)
     loop.run_until_complete(handle.js("window.PairAI.RiskCanvas.fit(); 1"))
     time.sleep(0.5)
     line = loop.run_until_complete(handle.js(f"""(() => {{
@@ -3729,7 +3737,13 @@ def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> N
         const m = hit.getScreenCTM();
         return {{ x: Math.round(m.a * p.x + m.c * p.y + m.e), y: Math.round(m.b * p.x + m.d * p.y + m.f) }};
     }})()"""))
-    assert line, "the risk draws no line to pick"
+    why = loop.run_until_complete(handle.js("""(() => ({
+        from: [...new Set([...document.querySelectorAll('#risk-canvas .rc-link-hit')]
+            .map((h) => h.getAttribute('data-from')))].slice(0, 8),
+        layers: [...document.querySelectorAll('.layer-toggle')].map((b) => b.textContent + (b.classList.contains('on') ? '+' : '-')),
+        level: document.querySelector('#canvas-wrap').className,
+    }))()"""))
+    assert line, f"the risk {risk} draws no line to pick: {why}"
     loop.run_until_complete(handle.click(line["x"], line["y"]))
     off = _spot(loop, handle, """(() => {
         const chip = [...document.querySelectorAll('#risk-side .chip.detach')]
@@ -3791,6 +3805,20 @@ def test_a_shape_is_dragged_from_the_palette_into_a_lane(scene_restored) -> None
     held = set(graph.objects(URIRef(ids["back"]),
                              URIRef("https://sBPMN.github.io/2.0/properties#flowNodeRef")))
     assert len(held) == 1, f"the dropped shape is not in the lane it was dropped on: {held}"
+
+    # A drag released off its button fires no click; the next click must still add.
+    loop.run_until_complete(handle.js("window.__asked = [];"
+                                      " window.prompt = (m) => { window.__asked.push(m); return null; }; 1"))
+    at = loop.run_until_complete(handle.js("""(() => {
+        const store = [...document.querySelectorAll('#process-palette .pp-item')]
+            .find((b) => b.textContent.trim() === 'Data store');
+        store.scrollIntoView({ block: 'nearest' });
+        const r = store.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    asked = loop.run_until_complete(handle.js("window.__asked"))
+    assert asked == ["Name of the data store:"], f"the first click after a drag did nothing: {asked}"
 
 
 SHIFT = 8
@@ -4027,24 +4055,32 @@ def test_the_renamed_labels_are_the_ones_on_screen(scene_restored) -> None:
     loop.run_until_complete(handle.js(
         "document.querySelector('#process-detail').classList.add('hidden'); 1"))
 
+    store = loop.run_until_complete(handle.js("""(async () => {
+        window.__asked = [];
+        window.__prompt = window.prompt;
+        window.prompt = (message) => { window.__asked.push(message); return null; };
+        const palette = document.querySelector('#process-palette');
+        if (palette.classList.contains('folded')) palette.querySelector('.pp-fold').click();
+        await new Promise((r) => setTimeout(r, 300));
+        const store = [...document.querySelectorAll('#process-palette .pp-item')]
+            .find((b) => /store|database/i.test(b.textContent));
+        if (!store) return null;
+        store.scrollIntoView({ block: 'nearest' });
+        const r = store.getBoundingClientRect();
+        return { label: store.textContent.trim(),
+                 x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert store, "the process palette offers no data store"
+    loop.run_until_complete(handle.click(store["x"], store["y"]))
+
     seen = loop.run_until_complete(handle.js("""(async () => {
         const wait = (ms) => new Promise((r) => setTimeout(r, ms));
         const text = (sel) => ((document.querySelector(sel) || {}).textContent || '').trim();
-        const asked = [];
-        const prompt = window.prompt;
-        window.prompt = (message) => { asked.push(message); return null; };
         const out = {
             level: text('#level-business'),
             drawer: text('[data-drawer-tab="motifs"]').replace(/[0-9]+/g, '').trim(),
             library: text('[data-library-tab="motifs"]').replace(/[0-9]+/g, '').trim(),
         };
-        const palette = document.querySelector('#process-palette');
-        if (palette.classList.contains('folded')) palette.querySelector('.pp-fold').click();
-        await wait(300);
-        const store = [...document.querySelectorAll('#process-palette .pp-item')]
-            .find((b) => /store|database/i.test(b.textContent));
-        out.store = store ? store.textContent.trim() : null;
-        if (store) store.click();
 
         document.querySelector('#level-architecture').click();
         await wait(800);
@@ -4066,15 +4102,15 @@ def test_the_renamed_labels_are_the_ones_on_screen(scene_restored) -> None:
         await wait(400);
         out.riskPage = [...document.querySelectorAll('#library-detail h3')].map((h) => h.textContent.trim());
         document.querySelector('#btn-library-close').click();
-        window.prompt = prompt;
-        out.asked = asked;
+        window.prompt = window.__prompt;
+        out.asked = window.__asked;
         return out;
     })()"""))
     _back_to_business(loop, handle)
 
     assert seen["level"] == "Process", seen
     assert seen["drawer"] == seen["library"] == seen["tray"] == "Architectural motifs", seen
-    assert seen["store"] == "Data store", seen
+    assert store["label"] == "Data store", store
     assert "Manual risk modelling" in seen["manual"], seen
     assert "Process" in seen["layers"] and "Business" not in seen["layers"], seen
     assert carried_by == "+ system…", carried_by
@@ -4092,6 +4128,11 @@ def test_every_risk_is_listed_on_one_page_under_the_name_the_library_gives_it(pa
         await wait(1200);
         document.querySelector('.library-tab[data-library-tab="risks"]').click();
         await wait(400);
+        // Back to the landing, whatever page an earlier test left open.
+        for (let i = 0; i < 6 && document.querySelector('#library-detail .lib-back'); i++) {
+            document.querySelector('#library-detail .lib-back').click();
+            await wait(250);
+        }
         for (const shut of document.querySelectorAll('#library-list .lib-group.shut')) {
             shut.click();
             await wait(100);

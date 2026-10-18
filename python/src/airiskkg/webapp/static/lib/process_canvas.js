@@ -3022,6 +3022,8 @@ async function insertFromPalette(item, where) {
    element is dropped on the architecture canvas. Below the threshold it stays a click. */
 function startPaletteDrag(ev, button, item) {
   if (ev.button !== 0) return;
+  // A drag released off its button fires no click, so a flag left armed would eat this one.
+  swallowPaletteClick = false;
   const from = { x: ev.clientX, y: ev.clientY };
   let ghost = null;
   const move = (mv) => {
