@@ -489,451 +489,133 @@ pat:LLMIR_RetrievalProducesResultEdge
 
 # ML system design motifs derived from the serving design patterns
 
-pat:SynchronousPredictionMotif
+pat:PredictionServingMotif
     a pair:GraphMotif ;
-    pair:implementedBy pat:SyncPred_MatchingOQP ;
-    rdfs:label "Synchronous Prediction Motif"@en ;
-    dct:description "A prediction step answers a request with a model, and a downstream step uses the result in the same workflow."@en ;
-    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> ;
-    pair:derivedFrom pat:Cite_SynchronousPrediction ;
+    pair:implementedBy pat:Serving_MatchingOQP ;
+    rdfs:label "Prediction Serving Motif"@en ;
+    dct:description "A prediction step applies a model to a request, a queued request, a batch or preprocessed data, and produces a prediction result."@en ;
+    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Synchronous-pattern/design_en.html> ,
+        <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> ,
+        <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> ,
+        <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> ,
+        <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> ;
+    pair:derivedFrom pat:Cite_SynchronousPrediction ,
+        pat:Cite_AsynchronousPrediction ,
+        pat:Cite_BatchPrediction ,
+        pat:Cite_MultiStagePrediction ,
+        pat:Cite_PreprocessPrediction ;
     pair:hasPatternNode
-        pat:SyncPred_RequestNode ,
-        pat:SyncPred_ModelNode ,
-        pat:SyncPred_PredictionStepNode ,
-        pat:SyncPred_ResultNode ,
-        pat:SyncPred_DownstreamStepNode ;
+        pat:Serving_InputNode ,
+        pat:Serving_ModelNode ,
+        pat:Serving_PredictionStepNode ,
+        pat:Serving_ResultNode ;
     pair:hasPatternEdge
-        pat:SyncPred_PredictionUsesRequestEdge ,
-        pat:SyncPred_PredictionUsesModelEdge ,
-        pat:SyncPred_PredictionProducesResultEdge ,
-        pat:SyncPred_DownstreamUsesResultEdge .
+        pat:Serving_PredictionUsesInputEdge ,
+        pat:Serving_PredictionUsesModelEdge ,
+        pat:Serving_PredictionProducesResultEdge .
 
-pat:SyncPred_RequestNode
+pat:Serving_InputNode
     a pair:PatternNode ;
-    rdfs:label "Synchronous prediction request"@en ;
+    rdfs:label "Prediction input"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionRequest .
 
-pat:SyncPred_ModelNode
+pat:Serving_PredictionUsesInputEdge
+    a pair:PatternEdge ;
+    rdfs:label "prediction step uses its input"@en ;
+    pair:sourcePatternNode pat:Serving_PredictionStepNode ;
+    pair:patternPredicate beam:use ;
+    pair:targetPatternNode pat:Serving_InputNode .
+
+pat:Serving_ModelNode
     a pair:PatternNode ;
-    rdfs:label "Synchronous prediction model"@en ;
+    rdfs:label "Served model"@en ;
     pair:expectedClass beam:StatisticalModel ;
     pair:expectedRole pair:Model .
 
-pat:SyncPred_PredictionStepNode
+pat:Serving_PredictionStepNode
     a pair:PatternNode ;
-    rdfs:label "Synchronous prediction step"@en ;
+    rdfs:label "Prediction step"@en ;
     pair:expectedClass beam:Infer ;
     pair:expectedRole pair:PredictionStep .
 
-pat:SyncPred_ResultNode
+pat:Serving_ResultNode
     a pair:PatternNode ;
-    rdfs:label "Synchronous prediction result"@en ;
+    rdfs:label "Prediction result"@en ;
     pair:expectedClass beam:Data ;
     pair:expectedRole pair:PredictionResult .
 
-pat:SyncPred_DownstreamStepNode
-    a pair:PatternNode ;
-    rdfs:label "Downstream workflow step"@en ;
-    pair:expectedClass beam:Process .
-
-pat:SyncPred_PredictionUsesRequestEdge
+pat:Serving_PredictionUsesModelEdge
     a pair:PatternEdge ;
-    rdfs:label "synchronous prediction uses request"@en ;
-    pair:sourcePatternNode pat:SyncPred_PredictionStepNode ;
+    rdfs:label "prediction step uses the model"@en ;
+    pair:sourcePatternNode pat:Serving_PredictionStepNode ;
     pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:SyncPred_RequestNode .
+    pair:targetPatternNode pat:Serving_ModelNode .
 
-pat:SyncPred_PredictionUsesModelEdge
+pat:Serving_PredictionProducesResultEdge
     a pair:PatternEdge ;
-    rdfs:label "synchronous prediction uses model"@en ;
-    pair:sourcePatternNode pat:SyncPred_PredictionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:SyncPred_ModelNode .
-
-pat:SyncPred_PredictionProducesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "synchronous prediction produces result"@en ;
-    pair:sourcePatternNode pat:SyncPred_PredictionStepNode ;
+    rdfs:label "prediction step produces the result"@en ;
+    pair:sourcePatternNode pat:Serving_PredictionStepNode ;
     pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:SyncPred_ResultNode .
+    pair:targetPatternNode pat:Serving_ResultNode .
 
 
-pat:SyncPred_DownstreamUsesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "downstream step uses the prediction result"@en ;
-    pair:sourcePatternNode pat:SyncPred_DownstreamStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:SyncPred_ResultNode .
-
-pat:AsynchronousPredictionMotif
-    a pair:GraphMotif ;
-    pair:implementedBy pat:AsyncPred_MatchingOQP ;
-    rdfs:label "Asynchronous Prediction Motif"@en ;
-    dct:description "A step places prediction requests on a queue, and a prediction step takes them from the queue and produces the results."@en ;
-    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> ;
-    pair:derivedFrom pat:Cite_AsynchronousPrediction ;
-    pair:hasPatternNode
-        pat:AsyncPred_RequestNode ,
-        pat:AsyncPred_EnqueueStepNode ,
-        pat:AsyncPred_QueueNode ,
-        pat:AsyncPred_PredictionStepNode ,
-        pat:AsyncPred_ResultNode ;
-    pair:hasPatternEdge
-        pat:AsyncPred_EnqueueUsesRequestEdge ,
-        pat:AsyncPred_EnqueueProducesQueueEdge ,
-        pat:AsyncPred_PredictionUsesQueueEdge ,
-        pat:AsyncPred_PredictionProducesResultEdge .
-
-pat:AsyncPred_RequestNode
-    a pair:PatternNode ;
-    rdfs:label "Asynchronous prediction request"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PredictionRequest .
-
-pat:AsyncPred_EnqueueStepNode
-    a pair:PatternNode ;
-    rdfs:label "Prediction request enqueue step"@en ;
-    pair:expectedClass beam:Process .
-
-pat:AsyncPred_QueueNode
-    a pair:PatternNode ;
-    rdfs:label "Prediction queue"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PredictionQueue .
-
-pat:AsyncPred_PredictionStepNode
-    a pair:PatternNode ;
-    rdfs:label "Asynchronous prediction step"@en ;
-    pair:expectedClass beam:Infer ;
-    pair:expectedRole pair:PredictionStep .
-
-pat:AsyncPred_ResultNode
-    a pair:PatternNode ;
-    rdfs:label "Asynchronous prediction result"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PredictionResult .
-
-pat:AsyncPred_EnqueueUsesRequestEdge
-    a pair:PatternEdge ;
-    rdfs:label "enqueue step uses prediction request"@en ;
-    pair:sourcePatternNode pat:AsyncPred_EnqueueStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:AsyncPred_RequestNode .
-
-pat:AsyncPred_EnqueueProducesQueueEdge
-    a pair:PatternEdge ;
-    rdfs:label "enqueue step produces queued prediction request"@en ;
-    pair:sourcePatternNode pat:AsyncPred_EnqueueStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:AsyncPred_QueueNode .
-
-pat:AsyncPred_PredictionUsesQueueEdge
-    a pair:PatternEdge ;
-    rdfs:label "asynchronous prediction uses queue"@en ;
-    pair:sourcePatternNode pat:AsyncPred_PredictionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:AsyncPred_QueueNode .
-
-pat:AsyncPred_PredictionProducesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "asynchronous prediction produces result"@en ;
-    pair:sourcePatternNode pat:AsyncPred_PredictionStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:AsyncPred_ResultNode .
-
-pat:BatchPredictionMotif
-    a pair:GraphMotif ;
-    pair:implementedBy pat:BatchPred_MatchingOQP ;
-    rdfs:label "Batch Prediction Motif"@en ;
-    dct:description "A scheduled job starts a prediction step that runs a model over a batch dataset and produces the results."@en ;
-    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> ;
-    pair:derivedFrom pat:Cite_BatchPrediction ;
-    pair:hasPatternNode
-        pat:BatchPred_SchedulerNode ,
-        pat:BatchPred_DatasetNode ,
-        pat:BatchPred_ModelNode ,
-        pat:BatchPred_JobNode ,
-        pat:BatchPred_JobRequestNode ,
-        pat:BatchPred_ResultNode ;
-    pair:hasPatternEdge
-        pat:BatchPred_JobUsesDatasetEdge ,
-        pat:BatchPred_JobUsesModelEdge ,
-        pat:BatchPred_SchedulerProducesJobRequestEdge ,
-        pat:BatchPred_JobUsesJobRequestEdge ,
-        pat:BatchPred_JobProducesResultEdge .
-
-pat:BatchPred_SchedulerNode
-    a pair:PatternNode ;
-    rdfs:label "Batch prediction scheduler"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:JobScheduler .
-
-pat:BatchPred_DatasetNode
-    a pair:PatternNode ;
-    rdfs:label "Batch prediction dataset"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:BatchDataset .
-
-pat:BatchPred_ModelNode
-    a pair:PatternNode ;
-    rdfs:label "Batch prediction model"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:Model .
-
-pat:BatchPred_JobNode
-    a pair:PatternNode ;
-    rdfs:label "Batch prediction job"@en ;
-    pair:expectedClass beam:Infer ;
-    pair:expectedRole pair:PredictionStep .
-
-pat:BatchPred_JobRequestNode
-    a pair:PatternNode ;
-    rdfs:label "Job request"@en ;
-    pair:expectedClass beam:Data .
-
-pat:BatchPred_ResultNode
-    a pair:PatternNode ;
-    rdfs:label "Batch prediction result"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PredictionResult .
 
 
-pat:BatchPred_JobUsesDatasetEdge
-    a pair:PatternEdge ;
-    rdfs:label "batch prediction job uses dataset"@en ;
-    pair:sourcePatternNode pat:BatchPred_JobNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:BatchPred_DatasetNode .
-
-pat:BatchPred_JobUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "batch prediction job uses model"@en ;
-    pair:sourcePatternNode pat:BatchPred_JobNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:BatchPred_ModelNode .
-
-pat:BatchPred_JobProducesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "batch prediction job produces result"@en ;
-    pair:sourcePatternNode pat:BatchPred_JobNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:BatchPred_ResultNode .
-
-pat:BatchPred_JobUsesJobRequestEdge
-    a pair:PatternEdge ;
-    rdfs:label "the job reads the request that started it"@en ;
-    pair:sourcePatternNode pat:BatchPred_JobNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:BatchPred_JobRequestNode .
-
-pat:BatchPred_SchedulerProducesJobRequestEdge
-    a pair:PatternEdge ;
-    rdfs:label "scheduler issues the job request"@en ;
-    pair:sourcePatternNode pat:BatchPred_SchedulerNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:BatchPred_JobRequestNode .
-
-pat:PreprocessPredictionMotif
-    a pair:GraphMotif ;
-    pair:implementedBy pat:PrepPred_MatchingOQP ;
-    rdfs:label "Prep-Pred / Preprocess-Prediction Motif"@en ;
-    dct:description "A preprocessing step turns a prediction request into preprocessed data that a prediction step reads with a model."@en ;
-    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Prep-pred-pattern/design_en.html> ;
-    pair:derivedFrom pat:Cite_PreprocessPrediction ;
-    pair:hasPatternNode
-        pat:PrepPred_InputNode ,
-        pat:PrepPred_PreprocessStepNode ,
-        pat:PrepPred_PreprocessedDataNode ,
-        pat:PrepPred_ModelNode ,
-        pat:PrepPred_PredictionStepNode ,
-        pat:PrepPred_ResultNode ;
-    pair:hasPatternEdge
-        pat:PrepPred_PreprocessUsesInputEdge ,
-        pat:PrepPred_PreprocessProducesDataEdge ,
-        pat:PrepPred_PredictionUsesDataEdge ,
-        pat:PrepPred_PredictionUsesModelEdge ,
-        pat:PrepPred_PredictionProducesResultEdge .
-
-pat:PrepPred_InputNode
-    a pair:PatternNode ;
-    rdfs:label "Raw prediction input"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PredictionRequest .
-
-pat:PrepPred_PreprocessStepNode
-    a pair:PatternNode ;
-    rdfs:label "Preprocessing step"@en ;
-    pair:expectedClass beam:Transform ;
-    pair:expectedRole pair:PreprocessingStep .
-
-pat:PrepPred_PreprocessedDataNode
-    a pair:PatternNode ;
-    rdfs:label "Preprocessed data"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PreprocessedData .
-
-pat:PrepPred_ModelNode
-    a pair:PatternNode ;
-    rdfs:label "Prep-pred model"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:Model .
-
-pat:PrepPred_PredictionStepNode
-    a pair:PatternNode ;
-    rdfs:label "Prep-pred prediction step"@en ;
-    pair:expectedClass beam:Infer ;
-    pair:expectedRole pair:PredictionStep .
-
-pat:PrepPred_ResultNode
-    a pair:PatternNode ;
-    rdfs:label "Prep-pred prediction result"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PredictionResult .
-
-pat:PrepPred_PreprocessUsesInputEdge
-    a pair:PatternEdge ;
-    rdfs:label "preprocess uses raw input"@en ;
-    pair:sourcePatternNode pat:PrepPred_PreprocessStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:PrepPred_InputNode .
-
-pat:PrepPred_PreprocessProducesDataEdge
-    a pair:PatternEdge ;
-    rdfs:label "preprocess produces preprocessed data"@en ;
-    pair:sourcePatternNode pat:PrepPred_PreprocessStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:PrepPred_PreprocessedDataNode .
 
 
-pat:PrepPred_PredictionUsesDataEdge
-    a pair:PatternEdge ;
-    rdfs:label "prediction uses preprocessed data"@en ;
-    pair:sourcePatternNode pat:PrepPred_PredictionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:PrepPred_PreprocessedDataNode .
-
-pat:PrepPred_PredictionUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "prediction uses model"@en ;
-    pair:sourcePatternNode pat:PrepPred_PredictionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:PrepPred_ModelNode .
-
-pat:PrepPred_PredictionProducesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "prediction produces result"@en ;
-    pair:sourcePatternNode pat:PrepPred_PredictionStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:PrepPred_ResultNode .
-
-pat:MultiStagePredictionMotif
-    a pair:GraphMotif ;
-    pair:implementedBy pat:MultiStage_MatchingOQP ;
-    rdfs:label "Multi-stage Prediction Motif"@en ;
-    dct:description "A fast and a slow prediction step each answer the same request with a model and produce their own results."@en ;
-    dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> ;
-    pair:derivedFrom pat:Cite_MultiStagePrediction ;
-    pair:hasPatternNode
-        pat:MultiStage_RequestNode ,
-        pat:MultiStage_FastModelNode ,
-        pat:MultiStage_FastPredictionStepNode ,
-        pat:MultiStage_QuickResultNode ,
-        pat:MultiStage_SlowModelNode ,
-        pat:MultiStage_SlowPredictionStepNode ,
-        pat:MultiStage_ImprovedResultNode ;
-    pair:hasPatternEdge
-        pat:MultiStage_FastUsesRequestEdge ,
-        pat:MultiStage_FastUsesModelEdge ,
-        pat:MultiStage_FastProducesResultEdge ,
-        pat:MultiStage_SlowUsesRequestEdge ,
-        pat:MultiStage_SlowUsesModelEdge ,
-        pat:MultiStage_SlowProducesResultEdge .
-
-pat:MultiStage_RequestNode
-    a pair:PatternNode ;
-    rdfs:label "Multi-stage prediction request"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PredictionRequest .
-
-pat:MultiStage_FastModelNode
-    a pair:PatternNode ;
-    rdfs:label "Fast prediction model"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:Model .
-
-pat:MultiStage_FastPredictionStepNode
-    a pair:PatternNode ;
-    rdfs:label "Fast prediction step"@en ;
-    pair:expectedClass beam:Infer ;
-    pair:expectedRole pair:FastPredictionStep .
-
-pat:MultiStage_QuickResultNode
-    a pair:PatternNode ;
-    rdfs:label "Quick prediction result"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PredictionResult .
-
-pat:MultiStage_SlowModelNode
-    a pair:PatternNode ;
-    rdfs:label "Slow prediction model"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:Model .
-
-pat:MultiStage_SlowPredictionStepNode
-    a pair:PatternNode ;
-    rdfs:label "Slow prediction step"@en ;
-    pair:expectedClass beam:Infer ;
-    pair:expectedRole pair:SlowPredictionStep .
-
-pat:MultiStage_ImprovedResultNode
-    a pair:PatternNode ;
-    rdfs:label "Improved prediction result"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PredictionResult .
-
-pat:MultiStage_FastUsesRequestEdge
-    a pair:PatternEdge ;
-    rdfs:label "fast prediction uses request"@en ;
-    pair:sourcePatternNode pat:MultiStage_FastPredictionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:MultiStage_RequestNode .
-
-pat:MultiStage_FastUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "fast prediction uses model"@en ;
-    pair:sourcePatternNode pat:MultiStage_FastPredictionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:MultiStage_FastModelNode .
-
-pat:MultiStage_FastProducesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "fast prediction produces quick result"@en ;
-    pair:sourcePatternNode pat:MultiStage_FastPredictionStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:MultiStage_QuickResultNode .
 
 
-pat:MultiStage_SlowUsesRequestEdge
-    a pair:PatternEdge ;
-    rdfs:label "slow prediction uses request"@en ;
-    pair:sourcePatternNode pat:MultiStage_SlowPredictionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:MultiStage_RequestNode .
 
-pat:MultiStage_SlowUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "slow prediction uses model"@en ;
-    pair:sourcePatternNode pat:MultiStage_SlowPredictionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:MultiStage_SlowModelNode .
 
-pat:MultiStage_SlowProducesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "slow prediction produces improved result"@en ;
-    pair:sourcePatternNode pat:MultiStage_SlowPredictionStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:MultiStage_ImprovedResultNode .
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ML system design motifs derived from the training design patterns
@@ -4276,12 +3958,11 @@ pat:HumanOversightMotif            pair:motifFamily pat:AgenticMotifFamily ; pai
 pat:ExecutionScreeningMotif        pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:AgentOversightMotifGroup .
 
 # MLSystemMotifFamily
-pat:AsynchronousPredictionMotif  pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
-pat:BatchPredictionMotif         pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
-pat:MultiStagePredictionMotif    pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
-pat:PreprocessPredictionMotif    pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
-pat:SynchronousPredictionMotif   pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
 
+
+
+
+pat:PredictionServingMotif   pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:ServingMotifGroup .
 pat:PipelineTrainingMotif        pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:TrainingMotifGroup .
 pat:TrainThenServeMotif          pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:LifecycleMotifGroup .
 pat:TrainingToServingMotif       pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:LifecycleMotifGroup .

@@ -1,0 +1,45 @@
+PREFIX pat:  <http://w3id.org/airiskkg/patterns#>
+PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+PREFIX beam: <http://w3id.org/beam/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+    ?match
+        a pair:MotifMatch ;
+        rdfs:label "Prediction Serving Motif match"@en ;
+        pair:matchesMotif pat:PredictionServingMotif ;
+        pair:hasNodeBinding ?inputBinding , ?modelBinding , ?predictionStepBinding , ?resultBinding .
+
+    ?inputBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Serving_InputNode ; pair:matchedElement ?input .
+    ?modelBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Serving_ModelNode ; pair:matchedElement ?model .
+    ?predictionStepBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Serving_PredictionStepNode ; pair:matchedElement ?predictionStep .
+    ?resultBinding a pair:NodeBinding ; pair:bindsPatternNode pat:Serving_ResultNode ; pair:matchedElement ?result .
+}
+WHERE {
+    ?predictionStep a/rdfs:subClassOf* beam:Process ;
+                    pair:playsRole/pair:subRoleOf* pair:PredictionStep ;
+                    beam:use ?model ;
+                    beam:use ?input ;
+                    beam:produce ?result .
+    # What the merged serving variants each read: a request, a queue of them,
+    # a batch, or a request already preprocessed.
+    VALUES ?inputRole { pair:PredictionRequest pair:PredictionQueue pair:BatchDataset pair:PreprocessedData }
+    ?input a beam:Data ;
+           pair:playsRole/pair:subRoleOf* ?inputRole .
+    ?model a beam:StatisticalModel ;
+           pair:playsRole/pair:subRoleOf* pair:Model .
+    ?result a beam:Data ;
+            pair:playsRole/pair:subRoleOf* pair:PredictionResult .
+
+    BIND(IRI(CONCAT(
+        "http://w3id.org/airiskkg/generated/motif-match/prediction-serving/",
+        ENCODE_FOR_URI(STR(?predictionStep)), "/",
+        ENCODE_FOR_URI(STR(?model)), "/",
+        ENCODE_FOR_URI(STR(?input)), "/",
+        ENCODE_FOR_URI(STR(?result))
+    )) AS ?match)
+    BIND(IRI(CONCAT(STR(?match), "/binding/input")) AS ?inputBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/model")) AS ?modelBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/prediction-step")) AS ?predictionStepBinding)
+    BIND(IRI(CONCAT(STR(?match), "/binding/result")) AS ?resultBinding)
+}

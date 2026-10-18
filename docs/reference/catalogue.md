@@ -1,7 +1,7 @@
 # PAIR-AI Catalogue — Motifs, Risk Patterns & Annotation Roles
 
 The inventory of what PAIR-AI can recognise and flag. Counted off the loaded
-ontology on 2026-10-09: **47 motifs** (42 after the B-4 merges of 2026-10-18), **33 risk patterns**, **123 annotation
+ontology on 2026-10-09: **47 motifs** (38 after the B-4 merges of 2026-10-18), **33 risk patterns**, **123 annotation
 roles** (140 with the 17 role categories added 2026-10-18), and **7 data categories**. Terminology follows
 [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md). This file is maintained by
 hand — if the library changes and this page does not, this page is wrong.
@@ -129,11 +129,7 @@ matches several families at once.
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **SynchronousPredictionMotif** | A prediction step runs inline with a request and returns before the workflow proceeds. | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference |
-| **AsynchronousPredictionMotif** | Prediction requests decoupled from execution via a queue/cache. | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference |
-| **BatchPredictionMotif** | A scheduled job runs prediction over a batch dataset and stores results. | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference |
-| **PreprocessPredictionMotif** | Preprocessing and prediction as separate steps connected by preprocessed data. | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference |
-| **MultiStagePredictionMotif** | One path returns a quick result while another produces a slower/richer result. | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference |
+| **PredictionServingMotif** | A prediction step applies a model to a request, a queued request, a batch or preprocessed data, and produces a prediction result (merged 2026-10-18 from the synchronous, asynchronous, batch, prep-pred and multi-stage serving motifs). | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference, model extraction, protected data to external model |
 
 ### Training
 
@@ -237,7 +233,7 @@ risk pattern of their own.
 | Anchor | Risk pattern | Fires when | Declared motif | Suggested controls |
 | --- | --- | --- | --- | --- |
 | **Eticas: untraceable agent actions** | Untraceable agent actions | No `LoggingStep` reads what an agent's tool or state-changing step acts on or produces. | Tool-Using Agent, Tool/Agent Registry | Agent action audit log; logging/monitoring/evals |
-| **IBM: personal information in prompt** | Protected data to external model | A generation or prediction step uses a model playing `ExternalModel` and reads content carrying `SensitiveInformation` or `ConfidentialInformation`, other than the provider's own credential. A redaction step upstream clears it. | Direct Prompting, RAG, Synchronous Prediction | Data minimization & redaction; external provider data agreement |
+| **IBM: personal information in prompt** | Protected data to external model | A generation or prediction step uses a model playing `ExternalModel` and reads content carrying `SensitiveInformation` or `ConfidentialInformation`, other than the provider's own credential. A redaction step upstream clears it. | Direct Prompting, RAG, Prediction Serving | Data minimization & redaction; external provider data agreement |
 | **Eticas: weak data controls** | Personal data retained | A prediction log or an agent memory carries `SensitiveInformation`. A writer that also redacts clears it. | Prediction Logging, Agent Memory Loop | Data minimization & redaction; retention limits |
 | **IBM: extraction attack** | Model extraction | A model trained in the represented system serves requests derived from `PublicUserInput`, with no `RateLimitControlStep` feeding the step or upstream of the request. | Prediction motifs, Train-Then-Serve, Training-to-Serving | Model access hardening; rate/budget/loop control |
 

@@ -155,14 +155,6 @@ def trained_here(model: str, on_personal: bool = False) -> tuple:
     )
 
 
-def served_model(step: str) -> tuple:
-    return _adds(
-        "the step serves a model",
-        [_node("Context_Model", "StatisticalModel", "Model", ["Model"])],
-        [[step, "use", "Context_Model"]],
-    )
-
-
 def training_data(step: str, category: str | None = None) -> tuple:
     says = {
         None: "the training step reads training data",
@@ -231,17 +223,9 @@ def _context(*parts) -> dict:
 
 
 _PREDICTION = {
-    # motif: (prediction step, model or None, request, result)
-    "SynchronousPredictionMotif": ("SyncPred_PredictionStepNode", "SyncPred_ModelNode",
-                                   "SyncPred_RequestNode", "SyncPred_ResultNode"),
-    "AsynchronousPredictionMotif": ("AsyncPred_PredictionStepNode", None,
-                                    "AsyncPred_RequestNode", "AsyncPred_ResultNode"),
-    "BatchPredictionMotif": ("BatchPred_JobNode", "BatchPred_ModelNode",
-                             "BatchPred_DatasetNode", "BatchPred_ResultNode"),
-    "PreprocessPredictionMotif": ("PrepPred_PredictionStepNode", "PrepPred_ModelNode",
-                                  "PrepPred_InputNode", "PrepPred_ResultNode"),
-    "MultiStagePredictionMotif": ("MultiStage_FastPredictionStepNode", "MultiStage_FastModelNode",
-                                  "MultiStage_RequestNode", "MultiStage_QuickResultNode"),
+    # motif: (prediction step, model, request, result)
+    "PredictionServingMotif": ("Serving_PredictionStepNode", "Serving_ModelNode",
+                               "Serving_InputNode", "Serving_ResultNode"),
 }
 _TRAIN_AND_SERVE = {
     # motif: (prediction step, training step)
@@ -250,14 +234,9 @@ _TRAIN_AND_SERVE = {
 }
 
 
-def _model_of(motif: str) -> tuple:
-    step, model, _, _ = _PREDICTION[motif]
-    return () if model else (served_model(step),)
-
-
 def _trained(motif: str, on_personal: bool = False) -> tuple:
-    step, model, _, _ = _PREDICTION[motif]
-    return _model_of(motif) + (trained_here(model or "Context_Model", on_personal),)
+    _step, model, _request, _result = _PREDICTION[motif]
+    return (trained_here(model, on_personal),)
 
 
 def _build() -> dict[tuple[str, str], dict]:
@@ -285,8 +264,8 @@ def _build() -> dict[tuple[str, str], dict]:
          hosted("DP_ModelNode"), personal("DP_QueryNode"))
     link("ProtectedDataToExternalModel", "RetrievalAugmentedGenerationMotif",
          hosted("RAG_LLMNode"), personal("RAG_QueryNode"))
-    link("ProtectedDataToExternalModel", "SynchronousPredictionMotif",
-         hosted("SyncPred_ModelNode"), personal("SyncPred_RequestNode"))
+    link("ProtectedDataToExternalModel", "PredictionServingMotif",
+         hosted("Serving_ModelNode"), personal("Serving_InputNode"))
     link("DataAndModelPoisoning", "EmbeddingsMotif", untrusted("Embedding_SourceDocumentNode"))
     link("DataAndModelPoisoning", "FineTuningMotif", untrusted("FineTune_DatasetNode"))
     link("DataAndModelPoisoning", "RetrievalDataAugmentationMotif", untrusted("RetrAug_SourceDocumentNode"))
@@ -320,10 +299,8 @@ def _build() -> dict[tuple[str, str], dict]:
         link("AdversarialEvasion", motif, public(request))
         link("TrainingDataMembershipInference", motif, public(request), *_trained(motif, on_personal=True))
         link("UnevaluatedModel", motif, *_trained(motif))
-        if motif != "SynchronousPredictionMotif":
-            link("UnqualifiedPrediction", motif, shown(result))
-        if motif != "BatchPredictionMotif":
-            link("ModelExtraction", motif, public(request), *_trained(motif))
+        link("UnqualifiedPrediction", motif, shown(result))
+        link("ModelExtraction", motif, public(request), *_trained(motif))
 
     # ML training, and training into serving
     for motif, (step, trainer) in _TRAIN_AND_SERVE.items():

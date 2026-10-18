@@ -29,32 +29,7 @@ WHERE {
         ?match pair:hasNodeBinding ?binding .
         # The step that serves the model, as each prediction motif names it.
         {
-            ?binding pair:bindsPatternNode pat:SyncPred_PredictionStepNode ;
-                     pair:matchedElement ?predictionStep .
-        }
-        UNION
-        {
-            ?binding pair:bindsPatternNode pat:AsyncPred_PredictionStepNode ;
-                     pair:matchedElement ?predictionStep .
-        }
-        UNION
-        {
-            ?binding pair:bindsPatternNode pat:BatchPred_JobNode ;
-                     pair:matchedElement ?predictionStep .
-        }
-        UNION
-        {
-            ?binding pair:bindsPatternNode pat:PrepPred_PredictionStepNode ;
-                     pair:matchedElement ?predictionStep .
-        }
-        UNION
-        {
-            ?binding pair:bindsPatternNode pat:MultiStage_FastPredictionStepNode ;
-                     pair:matchedElement ?predictionStep .
-        }
-        UNION
-        {
-            ?binding pair:bindsPatternNode pat:MultiStage_SlowPredictionStepNode ;
+            ?binding pair:bindsPatternNode pat:Serving_PredictionStepNode ;
                      pair:matchedElement ?predictionStep .
         }
         UNION
