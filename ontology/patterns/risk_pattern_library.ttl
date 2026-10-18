@@ -227,11 +227,6 @@ pat:IterativeRAGMotif
         pat:MisinformationFromWeakGroundingRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
 
-pat:RecursiveRAGMotif
-    pair:hasRiskPattern
-        pat:PromptInjectionRiskPattern ,
-        pat:MisinformationFromWeakGroundingRiskPattern ,
-        pat:UnboundedConsumptionRiskPattern .
 
 pat:AdaptiveRAGMotif
     pair:hasRiskPattern
@@ -309,7 +304,6 @@ pat:PromptInjectionRiskPattern
     pair:hasMotif pat:DirectPromptingMotif ,
         pat:RetrievalAugmentedGenerationMotif ,
         pat:IterativeRAGMotif ,
-        pat:RecursiveRAGMotif ,
         pat:AdaptiveRAGMotif ,
         pat:LLMBasedInformationRetrievalMotif ,
         pat:QueryRewritingMotif ;
@@ -503,7 +497,6 @@ pat:MisinformationFromWeakGroundingRiskPattern
     rdfs:label "Misinformation from weak grounding risk pattern"@en ;
     pair:hasMotif pat:RetrievalAugmentedGenerationMotif ,
         pat:IterativeRAGMotif ,
-        pat:RecursiveRAGMotif ,
         pat:AdaptiveRAGMotif ,
         pat:LLMBasedInformationRetrievalMotif ;
     pair:hasMechanism owasp:mechanism-unsupported-generation ;
@@ -535,7 +528,6 @@ pat:UnboundedConsumptionRiskPattern
     pair:hasMotif pat:DirectPromptingMotif ,
         pat:RetrievalAugmentedGenerationMotif ,
         pat:IterativeRAGMotif ,
-        pat:RecursiveRAGMotif ,
         pat:QueryRewritingMotif ,
         pat:PlanReflectionMotif ,
         pat:DebateBasedCooperationMotif ;
@@ -884,12 +876,6 @@ pat:IterRAG_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/iterative_rag.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:RecRAG_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Recursive RAG motif matching OQP"@en ;
-    pair:implementsMotif pat:RecursiveRAGMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/recursive_rag.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:AdaRAG_MatchingOQP
     a pair:PatternImplementation ;

@@ -432,8 +432,7 @@ def test_every_motif_is_served_with_its_family_and_group(client) -> None:
     assert all(m["family"] and m["group"] for m in motifs)
     rag_variants = {m["id"] for m in motifs if m["group"]["label"] == "Retrieval augmented generation"}
     assert rag_variants == {
-        "RetrievalAugmentedGenerationMotif", "IterativeRAGMotif",
-        "RecursiveRAGMotif", "AdaptiveRAGMotif",
+        "RetrievalAugmentedGenerationMotif", "IterativeRAGMotif", "AdaptiveRAGMotif",
     }
     retrieval = {m["id"] for m in motifs if m["group"]["label"] == "Information retrieval"}
     assert {"InformationRetrievalMotif", "VectorBasedInformationRetrievalMotif",

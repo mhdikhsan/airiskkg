@@ -60,20 +60,6 @@ WHERE {
         {
             ?match
                 a pair:MotifMatch ;
-                pair:matchesMotif pat:RecursiveRAGMotif ;
-                pair:hasNodeBinding ?queryBinding , ?retrievedCtxBinding ,
-                    ?genStepBinding , ?llmBinding , ?responseBinding .
-            ?queryBinding        pair:bindsPatternNode pat:RecRAG_QueryNode ;            pair:matchedElement ?query .
-            ?retrievedCtxBinding pair:bindsPatternNode pat:RecRAG_RetrievedContextNode ; pair:matchedElement ?retrievedCtx .
-            ?genStepBinding      pair:bindsPatternNode pat:RecRAG_GenerationStepNode ;   pair:matchedElement ?genStep .
-            ?llmBinding          pair:bindsPatternNode pat:RecRAG_LLMNode ;              pair:matchedElement ?llm .
-            ?responseBinding     pair:bindsPatternNode pat:RecRAG_AnswerNode ;           pair:matchedElement ?response .
-            BIND(pat:RecursiveRAGMotif AS ?motif)
-        }
-        UNION
-        {
-            ?match
-                a pair:MotifMatch ;
                 pair:matchesMotif pat:AdaptiveRAGMotif ;
                 pair:hasNodeBinding ?queryBinding , ?retrievedCtxBinding ,
                     ?genStepBinding , ?llmBinding , ?responseBinding .

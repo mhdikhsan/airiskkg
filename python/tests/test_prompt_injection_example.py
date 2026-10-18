@@ -242,7 +242,6 @@ def test_the_declared_motifs_are_the_ones_the_paper_names(scene) -> None:
         "QueryRewritingMotif",
         "RetrievalAugmentedGenerationMotif",
         "IterativeRAGMotif",
-        "RecursiveRAGMotif",
         "AdaptiveRAGMotif",
         "LLMBasedInformationRetrievalMotif",
     }

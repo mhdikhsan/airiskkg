@@ -201,7 +201,7 @@ CASES = [
         "MisinformationFromWeakGroundingRiskPattern",
         "UnboundedConsumptionRiskPattern",
     }),
-    ("RecursiveRAGMotif", RECURSIVE_RAG, {
+    ("IterativeRAGMotif", RECURSIVE_RAG, {
         "PromptInjectionRiskPattern",
         "MisinformationFromWeakGroundingRiskPattern",
         "UnboundedConsumptionRiskPattern",

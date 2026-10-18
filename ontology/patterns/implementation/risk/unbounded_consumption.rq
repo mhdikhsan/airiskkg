@@ -36,7 +36,6 @@ WHERE {
                 pat:QueryRewritingMotif
                 pat:RetrievalAugmentedGenerationMotif
                 pat:IterativeRAGMotif
-                pat:RecursiveRAGMotif
                 pat:PlanReflectionMotif
                 pat:DebateBasedCooperationMotif
             }

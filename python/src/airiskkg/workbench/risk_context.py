@@ -271,7 +271,6 @@ def _build() -> dict[tuple[str, str], dict]:
     link("PromptInjection", "RetrievalAugmentedGenerationMotif", shown("RAG_ResponseNode"))
     link("PromptInjection", "AdaptiveRAGMotif", shown("AdaRAG_AnswerNode"))
     link("PromptInjection", "IterativeRAGMotif", shown("IterRAG_AnswerNode"))
-    link("PromptInjection", "RecursiveRAGMotif", shown("RecRAG_AnswerNode"))
     link("PromptInjection", "QueryRewritingMotif",
          answer_from("QueryRewrite_RetrievedContextNode", "QueryRewrite_LLMNode"))
     link("PromptInjection", "LLMBasedInformationRetrievalMotif",

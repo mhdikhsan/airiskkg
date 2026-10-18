@@ -2253,9 +2253,10 @@ pat:RAG_GenerationProducesResponseEdge
 pat:IterativeRAGMotif
     a pair:GraphMotif ;
     rdfs:label "Iterative RAG Motif"@en ;
-    dct:description "Retrieval and generation alternate: a judge step reads each answer and produces a decision the retrieval step reads to retrieve again."@en ;
+    dct:description "Retrieval and generation alternate: a judge step reads each answer, and the retrieval step retrieves again from its decision, directly or through a sub-query a reformulation step makes of it."@en ;
     rdfs:comment "The generation step may read the retrieved context through intermediate steps (reranking, aggregation), as in the RAG motif; the template draws the direct edge."@en ;
-    pair:derivedFrom pat:Cite_IterativeRetrieval ;
+    pair:derivedFrom pat:Cite_IterativeRetrieval ,
+        pat:Cite_RecursiveRetrieval ;
     pair:hasPatternNode
         pat:IterRAG_QueryNode ,
         pat:IterRAG_KnowledgeSourceNode ,
@@ -2395,181 +2396,28 @@ pat:IterRAG_RetrievalUsesDecisionEdge
     pair:patternPredicate beam:use ;
     pair:targetPatternNode pat:IterRAG_DecisionNode .
 
-pat:RecursiveRAGMotif
-    a pair:GraphMotif ;
-    rdfs:label "Recursive RAG Motif"@en ;
-    dct:description "A judge step reads a generated answer, a reformulation step turns its decision into a sub-query, and a retrieval step searches with it."@en ;
-    rdfs:comment "The generation step may read the retrieved context through intermediate steps, as in the RAG motif; the template draws the direct edge."@en ;
-    pair:derivedFrom pat:Cite_RecursiveRetrieval ;
-    pair:hasPatternNode
-        pat:RecRAG_QueryNode ,
-        pat:RecRAG_KnowledgeSourceNode ,
-        pat:RecRAG_RetrievalStepNode ,
-        pat:RecRAG_RetrievedContextNode ,
-        pat:RecRAG_LLMNode ,
-        pat:RecRAG_GenerationStepNode ,
-        pat:RecRAG_AnswerNode ,
-        pat:RecRAG_JudgeStepNode ,
-        pat:RecRAG_DecisionNode ,
-        pat:RecRAG_TransformationStepNode ,
-        pat:RecRAG_SubQueryNode ;
-    pair:hasPatternEdge
-        pat:RecRAG_RetrievalUsesQueryEdge ,
-        pat:RecRAG_RetrievalUsesKnowledgeSourceEdge ,
-        pat:RecRAG_RetrievalProducesContextEdge ,
-        pat:RecRAG_GenerationUsesContextEdge ,
-        pat:RecRAG_GenerationUsesLLMEdge ,
-        pat:RecRAG_GenerationProducesAnswerEdge ,
-        pat:RecRAG_JudgeUsesAnswerEdge ,
-        pat:RecRAG_JudgeProducesDecisionEdge ,
-        pat:RecRAG_TransformationUsesDecisionEdge ,
-        pat:RecRAG_TransformationProducesSubQueryEdge ,
-        pat:RecRAG_RetrievalUsesSubQueryEdge ;
-    pair:implementedBy pat:RecRAG_MatchingOQP .
 
-pat:RecRAG_QueryNode
-    a pair:PatternNode ;
-    rdfs:label "Recursive RAG query"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
 
-pat:RecRAG_KnowledgeSourceNode
-    a pair:PatternNode ;
-    rdfs:label "Recursive RAG knowledge source"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:KnowledgeSource .
 
-pat:RecRAG_RetrievalStepNode
-    a pair:PatternNode ;
-    rdfs:label "Recursive RAG retrieval step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:RetrievalStep .
 
-pat:RecRAG_RetrievedContextNode
-    a pair:PatternNode ;
-    rdfs:label "Recursive RAG retrieved context"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:RetrievedContext .
 
-pat:RecRAG_LLMNode
-    a pair:PatternNode ;
-    rdfs:label "Recursive RAG language model"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:GenerativeModel .
 
-pat:RecRAG_GenerationStepNode
-    a pair:PatternNode ;
-    rdfs:label "Recursive RAG generation step"@en ;
-    pair:expectedClass beam:Infer ;
-    pair:expectedRole pair:GenerationStep .
 
-pat:RecRAG_AnswerNode
-    a pair:PatternNode ;
-    rdfs:label "Recursive RAG generated answer"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:LLMResponse .
 
-pat:RecRAG_JudgeStepNode
-    a pair:PatternNode ;
-    rdfs:label "Recursive RAG judge step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:RetrievalJudgeStep .
 
-pat:RecRAG_DecisionNode
-    a pair:PatternNode ;
-    rdfs:label "Recursive RAG retrieval decision"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:RetrievalDecision .
 
-pat:RecRAG_TransformationStepNode
-    a pair:PatternNode ;
-    rdfs:label "Query transformation or decomposition step"@en ;
-    pair:expectedClass beam:Transform ;
-    pair:expectedRole pair:QueryReformulationStep .
 
-pat:RecRAG_SubQueryNode
-    a pair:PatternNode ;
-    rdfs:label "Sub-query"@en ;
-    rdfs:comment "Checked as a role under pair:UserInput, like the rewritten query of the Query Rewriting motif, because it re-enters retrieval as a query. pair:SubQuery is the typical annotation."@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
 
-pat:RecRAG_RetrievalUsesQueryEdge
-    a pair:PatternEdge ;
-    rdfs:label "retrieval uses the query"@en ;
-    pair:sourcePatternNode pat:RecRAG_RetrievalStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RecRAG_QueryNode .
 
-pat:RecRAG_RetrievalUsesKnowledgeSourceEdge
-    a pair:PatternEdge ;
-    rdfs:label "retrieval uses the knowledge source"@en ;
-    pair:sourcePatternNode pat:RecRAG_RetrievalStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RecRAG_KnowledgeSourceNode .
 
-pat:RecRAG_RetrievalProducesContextEdge
-    a pair:PatternEdge ;
-    rdfs:label "retrieval produces retrieved context"@en ;
-    pair:sourcePatternNode pat:RecRAG_RetrievalStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:RecRAG_RetrievedContextNode .
 
-pat:RecRAG_GenerationUsesContextEdge
-    a pair:PatternEdge ;
-    rdfs:label "generation uses the retrieved context"@en ;
-    pair:sourcePatternNode pat:RecRAG_GenerationStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RecRAG_RetrievedContextNode .
 
-pat:RecRAG_GenerationUsesLLMEdge
-    a pair:PatternEdge ;
-    rdfs:label "generation uses the language model"@en ;
-    pair:sourcePatternNode pat:RecRAG_GenerationStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RecRAG_LLMNode .
 
-pat:RecRAG_GenerationProducesAnswerEdge
-    a pair:PatternEdge ;
-    rdfs:label "generation produces an answer"@en ;
-    pair:sourcePatternNode pat:RecRAG_GenerationStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:RecRAG_AnswerNode .
 
-pat:RecRAG_JudgeUsesAnswerEdge
-    a pair:PatternEdge ;
-    rdfs:label "judge uses the answer"@en ;
-    pair:sourcePatternNode pat:RecRAG_JudgeStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RecRAG_AnswerNode .
 
-pat:RecRAG_JudgeProducesDecisionEdge
-    a pair:PatternEdge ;
-    rdfs:label "judge produces a retrieval decision"@en ;
-    pair:sourcePatternNode pat:RecRAG_JudgeStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:RecRAG_DecisionNode .
 
-pat:RecRAG_TransformationUsesDecisionEdge
-    a pair:PatternEdge ;
-    rdfs:label "query transformation uses the judge's decision"@en ;
-    pair:sourcePatternNode pat:RecRAG_TransformationStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RecRAG_DecisionNode .
 
-pat:RecRAG_TransformationProducesSubQueryEdge
-    a pair:PatternEdge ;
-    rdfs:label "query transformation produces a sub-query"@en ;
-    pair:sourcePatternNode pat:RecRAG_TransformationStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:RecRAG_SubQueryNode .
 
-pat:RecRAG_RetrievalUsesSubQueryEdge
-    a pair:PatternEdge ;
-    rdfs:label "retrieval uses the sub-query"@en ;
-    pair:sourcePatternNode pat:RecRAG_RetrievalStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:RecRAG_SubQueryNode .
 
 pat:AdaptiveRAGMotif
     a pair:GraphMotif ;
@@ -4403,7 +4251,7 @@ pat:EmbeddingsMotif                       pair:motifFamily pat:GenAIMotifFamily 
 pat:RetrievalDataAugmentationMotif        pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
 pat:RetrievalAugmentedGenerationMotif     pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:RetrievalAugmentedGenerationMotifGroup .
 pat:IterativeRAGMotif                     pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:RetrievalAugmentedGenerationMotifGroup .
-pat:RecursiveRAGMotif                     pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:RetrievalAugmentedGenerationMotifGroup .
+
 pat:AdaptiveRAGMotif                      pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:RetrievalAugmentedGenerationMotifGroup .
 pat:GuardrailsMotif                       pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:GuardrailsMotifGroup .
 pat:InputScreeningMotif                   pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:GuardrailsMotifGroup .
