@@ -41,10 +41,10 @@ ag:StepRoleNeedsAProcessTypeShape
 ag:CategoryOnlyShape
     a sh:NodeShape ;
     sh:targetSubjectsOf pair:playsRole ;
-    sh:severity sh:Info ;
+    sh:severity sh:Warning ;
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "This element is tagged with a category only ({?category}). A category says what kind of element it is; choose a role under it in the role picker for motifs to match it." ;
+        sh:message "Tagged with the category {?category} only, so no motif can match it yet. Click it on the canvas and choose a role under {?category}." ;
         sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
         sh:select """
             PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>

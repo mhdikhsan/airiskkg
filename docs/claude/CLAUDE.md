@@ -890,7 +890,7 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   "Controls" above `pair:ControlStep`, because those two are read by queries and cannot be
   categories themselves. **No query names a category**, and every query walks `subRoleOf*`
   upward, so inserting the level changed no match or finding. A category-only tag gets the
-  `ag:CategoryOnlyShape` hint; a resource category still satisfies a node that accepts any
+  `ag:CategoryOnlyShape` warning (a warning, because the Input contract panel lists no Info rows); a resource category still satisfies a node that accepts any
   resource role (Human oversight's result node). A category is shelved where its members are
   (`role_shelf`), and a role reached *through* a category keeps the route it had before, so
   no existing role moved shelf or side. Categories are inert in queries by design, like the

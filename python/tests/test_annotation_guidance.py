@@ -209,5 +209,5 @@ def test_a_category_only_tag_is_told_to_choose_a_role(shapes, ontology) -> None:
         ex:docs a beam:Data ; pair:playsRole pair:KnowledgeContextRoles , pair:KnowledgeSource .
         """,
     )
-    assert _fired_on(reports, "find", "tagged with a category only (Retrieval)")
+    assert _fired_on(reports, "find", "Tagged with the category Retrieval only")
     assert not _fired_on(reports, "docs", "category only"), "a refined element was told to refine"
