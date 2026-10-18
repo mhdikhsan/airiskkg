@@ -3748,7 +3748,9 @@ def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> N
             .map((h) => h.getAttribute('data-from')))].slice(0, 8),
         layers: [...document.querySelectorAll('.layer-toggle')].map((b) => b.textContent + (b.classList.contains('on') ? '+' : '-')),
         level: document.querySelector('#canvas-wrap').className,
-        drawn: document.querySelectorAll('#risk-canvas [data-node]').length,
+        drawn: [...document.querySelectorAll('#risk-canvas [data-node]')]
+            .map((n) => n.getAttribute('data-node').split(/[#/]/).pop()),
+        lines: document.querySelectorAll('#risk-canvas .rc-link').length,
         empty: (document.querySelector('#risk-canvas-empty') || {}).textContent,
         run: !!(window.PairAI.state.lastAssessment),
         ttlHasRisk: window.PairAI.Editor.getValue().includes('Leaky answers'),
