@@ -246,7 +246,8 @@ Read before non-trivial changes.
   flows and nothing the declaration does not have. Four had drifted ("informs" after
   `beam:inform` was removed, "vector store" for a knowledge source, "optional" for a required
   node). The review of all 47, with keep/fix/merge/drop recommendations, is on the to-do
-  page's B-4 child page; **no merge or drop has been applied**, as each changes motif queries.
+  page's B-4 child page. **Decisions 1–4 were applied 2026-10-18** (merges, Training-to-serving,
+  Embeddings roles, Evals roles: 47 → 38 motifs); the four drop candidates are still open.
 - **Motifs match structure only (R2)** — roles and flow relations, reading **no** facet.
   Situational context enters at the applicability phase, never at matching.
 - **Motifs may nest, deliberately.** The library is not an antichain; a smaller motif can be
@@ -894,8 +895,8 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   resource role (Human oversight's result node). A category is shelved where its members are
   (`role_shelf`), and a role reached *through* a category keeps the route it had before, so
   no existing role moved shelf or side. Categories are inert in queries by design, like the
-  abstract tops. The picker does not group by category yet: that would replace the class
-  shelves below in the picker, so it waits for a decision.
+  abstract tops. The role picker cascades by category and groups its search list by category
+  (see below); the element's class still decides what it offers first.
 - **A term is shelved by the BEAM class it goes on, not by its top-level role.** The role
   hierarchy cannot shelve 97 terms: it has 4 tops and they hold **50 / 32 / 12 / 3**, so half
   the vocabulary sat under `Resource Role`. The shelf is `pair:expectedClass`, read off the
@@ -999,7 +1000,12 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   `unqualified_prediction.rq` walks `subRoleOf* pair:ControlStep`.
 - **A small ODP/OQP drift, recorded so it is not rediscovered.** `Resource Role` is declared
   on a pattern node but named in no `.rq`; `Pre-trained Model` and `State Changing Step` are
-  named in a `.rq` but on no pattern node.
+  named in a `.rq` but on no pattern node. **Since the B-4 serving merge** `prediction_serving.rq`
+  accepts four input roles (Prediction Request, Prediction Queue, Batch Dataset, Preprocessed
+  Data) while `Serving_InputNode` declares Prediction Request only, because a pattern node holds
+  one `pair:expectedRole` everywhere the code reads it. So the term pages show no serving motif
+  for the other three. A parent role over the four would close it; open item, asked on the B-4
+  page.
 - **The gap report's element candidates are not annotation suggestions.** `motif_gaps()`
   filters near-misses by BEAM class alone, so on the helpdesk graph it emits **428**
   element-level hints and offers the same four processes for Embedding Step, Chunking Step and
@@ -1459,4 +1465,9 @@ building an approval inline.
 
 ### Test suite
 
-**382 of 463 tests** in ~5 min by default; ~14 min for all 463 (counted 2026-10-04, full run green).
+**551 of 685 tests** in ~8 min by default; the interaction module alone takes ~11 min (counted
+2026-10-18). Two browser tests fail on this branch before and after B-3/B-4:
+`test_the_detail_opens_folded_and_the_reader_chooses_what_to_read` (`KeyError: 'folds'`) and
+`test_one_attachment_comes_off_a_risk_and_the_risk_stays`, which passes on its own and fails in
+module order. **Do not run browser suites side by side**: under that load six scope tests fail
+on timing and the run took 55 min.

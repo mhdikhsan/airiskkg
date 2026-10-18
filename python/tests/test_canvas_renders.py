@@ -1445,7 +1445,7 @@ def test_a_term_page_marks_where_the_term_sits(served) -> None:
     annotate marked, and one reached through a refined term is told apart."""
     seen = _probe(served, "termpage", _OPEN + """
   <script>
-  window.addEventListener("load", () => setTimeout(() => openOn("terms", "Batch Dataset", () => {
+  window.addEventListener("load", () => setTimeout(() => openOn("terms", "Training Dataset", () => {
     const uses = [...document.querySelectorAll("#library-detail .lib-use")];
     log("uses=" + uses.length);
     log("marked=" + uses.filter((u) => u.querySelector(".mp-hl")).length);
@@ -1454,7 +1454,7 @@ def test_a_term_page_marks_where_the_term_sits(served) -> None:
   </script>
 """)
     assert "uses" in seen, f"the probe never reported: {seen['_report']!r}"
-    assert seen["uses"] == 2, f"Batch Dataset is read by {seen['uses']} structures here, not 2"
+    assert seen["uses"] == 2, f"Training Dataset is read by {seen['uses']} structures here, not 2"
     assert seen["marked"] == 2, "a structure is drawn without the term's place in it"
     assert seen["inherited"] == 1, "the structure reached by refinement is not told apart"
 
