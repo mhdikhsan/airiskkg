@@ -2,7 +2,7 @@
 
 The inventory of what PAIR-AI can recognise and flag. Counted off the loaded
 ontology on 2026-10-09: **47 motifs**, **33 risk patterns**, **123 annotation
-roles**, and **7 data categories**. Terminology follows
+roles** (140 with the 17 role categories added 2026-10-18), and **7 data categories**. Terminology follows
 [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md). This file is maintained by
 hand — if the library changes and this page does not, this page is wrong.
 
@@ -263,8 +263,11 @@ failures. Missing findings usually mean a missing role, not a safe system.*
 
 Assign with `pair:playsRole`. Roles are organised into sub-role hierarchies
 (shown by the groups below); a motif that asks for a parent role also matches its
-sub-roles (`pair:subRoleOf*`). The four top-level roles are `ResourceRole`,
-`ProcessingStep`, `ControlStep`, and `UserInput`.
+sub-roles (`pair:subRoleOf*`). Since 2026-10-18 the four top-level terms are
+`ResourceRole`, `ProcessingStep`, `ControlRoles` and `UserInputRoles`, and every role
+that used to hang directly under a top is filed under one of 17 `pair:RoleCategory`
+categories (Retrieval, Generation, Agent steps, Knowledge and context, Models, …).
+No query names a category, so the groups below still describe what matches.
 
 The groups below are the sub-role hierarchy, which is the ontology's own
 organisation. The workbench shelves the same 97 roles differently — by the BEAM

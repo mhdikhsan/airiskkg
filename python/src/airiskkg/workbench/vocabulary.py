@@ -135,9 +135,21 @@ def role_shelf(graph: Graph) -> dict[URIRef, URIRef]:
                 return candidate
         return sorted(candidates, key=str)[0]
 
+    categories = set(graph.subjects(RDF.type, PAIR.RoleCategory))
+
     def resolve(role: URIRef, seen: frozenset) -> URIRef | None:
         if role in classes:
             return most_general(classes[role])
+        # A category goes where the roles it groups go, never where its parent does:
+        # through Resource Role, "Models" would be offered on Data. A role reached
+        # through a category keeps the route it had before categories existed.
+        if role in categories and not seen:
+            found = {
+                shelf for child in children.get(role, ())
+                if child not in seen
+                for shelf in [resolve(child, seen | {role})] if shelf is not None
+            }
+            return most_general(found) if found else None
         for parent in parents.get(role, ()):
             if parent not in seen:
                 found = resolve(parent, seen | {role})

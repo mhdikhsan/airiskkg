@@ -813,3 +813,38 @@ def test_a_finding_is_titled_by_the_risk_pattern_that_raised_it(libraries) -> No
         if title.lower() != f"candidate {name}".lower():
             offenders.append(f"{path.name}: {title!r} for {name!r}")
     assert not offenders, "\n".join(sorted(offenders))
+
+
+def test_every_role_is_filed_under_one_category_that_no_query_names(libraries) -> None:
+    """B-3: the roles hung directly under four top terms, so the vocabulary read as
+    one flat list. A category files roles without matching: if a query named one,
+    tagging an element with it would start raising candidates."""
+    from airiskkg.paths import REPO_ROOT
+
+    categories = set(libraries.subjects(RDF.type, PAIR.RoleCategory))
+    assert len(categories) >= 10, "the categories are gone"
+    roles = set(libraries.subjects(RDF.type, PAIR.PatternRole)) - categories
+
+    def filed_under(role, seen=frozenset()):
+        found = set()
+        for parent in libraries.objects(role, PAIR.subRoleOf):
+            if parent in categories:
+                found.add(parent)
+            elif parent not in seen:
+                found |= filed_under(parent, seen | {role})
+        return found
+
+    tops = {PAIR.ProcessingStep, PAIR.ResourceRole}
+    unfiled = sorted(str(r) for r in roles - tops if not filed_under(r))
+    assert not unfiled, "roles under no category: " + ", ".join(unfiled)
+    for top in tops:
+        assert not [r for r in libraries.subjects(PAIR.subRoleOf, top) if r not in categories], (
+            f"a role still hangs directly under {top}")
+
+    queries = (REPO_ROOT / "ontology").rglob("*.rq")
+    texts = {q.name: q.read_text(encoding="utf-8") for q in queries}
+    named = [(name, str(c)) for name, text in texts.items() for c in categories
+             if re.search(r"pair:" + str(c).rsplit("#", 1)[-1] + r"", text) or str(c) in text]
+    assert not named, f"a query names a category: {named}"
+    assert not set(libraries.objects(None, PAIR.expectedRole)) & categories, (
+        "a pattern node asks for a category")

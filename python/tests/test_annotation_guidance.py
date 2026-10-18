@@ -196,3 +196,18 @@ def test_guidance_never_changes_whether_a_graph_conforms(shapes, ontology) -> No
     )
     assert list(results.subjects(SH.resultSeverity, SH.Violation)) == []
     assert list(results.subjects(SH.resultSeverity, None)), "expected advisory results"
+
+
+def test_a_category_only_tag_is_told_to_choose_a_role(shapes, ontology) -> None:
+    """A category files roles and matches nothing a detailed node asks for, so
+    an element tagged with nothing else would silently raise nothing."""
+    reports = _messages(
+        shapes,
+        ontology,
+        """
+        ex:find a beam:Process ; pair:playsRole pair:RetrievalRoles .
+        ex:docs a beam:Data ; pair:playsRole pair:KnowledgeContextRoles , pair:KnowledgeSource .
+        """,
+    )
+    assert _fired_on(reports, "find", "tagged with a category only (Retrieval)")
+    assert not _fired_on(reports, "docs", "category only"), "a refined element was told to refine"

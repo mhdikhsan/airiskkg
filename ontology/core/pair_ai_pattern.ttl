@@ -33,6 +33,11 @@ pair:PatternRole a owl:Class ;
     rdfs:label "Pattern Role"@en ;
     rdfs:comment "An abstract functional role assigned to a concrete architecture element. A role labels one element's function; a motif is a structure over several roles."@en .
 
+pair:RoleCategory a owl:Class ;
+    rdfs:subClassOf pair:PatternRole ;
+    rdfs:label "Role Category"@en ;
+    rdfs:comment "A pattern role that groups the roles under it, so an element can be tagged with what kind of thing it is first and with a detailed role later. No motif names a category, so a category alone matches no motif node that asks for a detailed role."@en .
+
 pair:DataCategory a owl:Class ;
     rdfs:subClassOf skos:Concept ;
     rdfs:label "Data Category"@en ;
@@ -412,6 +417,7 @@ pair:ProcessingStep a pair:PatternRole ;
     skos:closeMatch t4b:Process .
 
 pair:ControlStep a pair:PatternRole ;
+    pair:subRoleOf pair:ControlRoles ;
     skos:prefLabel "Control Step"@en ;
     skos:definition "A step in the workflow of an AI system that implements a risk control or mitigation measure, such as input/output screening, validation, or rate limiting."@en ;
     skos:relatedMatch airo:RiskControl , dpv:RiskMitigationMeasure .
@@ -421,9 +427,97 @@ pair:ResourceRole a pair:PatternRole ;
     skos:definition "A role played by a non-process resource in an AI system: data, models, stores, or artifacts. Corresponds to the non-process Boxology boxes (data, symbols, models)."@en ;
     skos:relatedMatch t4b:Artifact .
 
+### Role categories
+
+pair:RetrievalRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Retrieval"@en ;
+    skos:definition "Steps that find and select context for a query: retrieval, reranking, query rewriting and the judgement of whether to retrieve."@en ;
+    pair:subRoleOf pair:ProcessingStep .
+
+pair:DataPreparationRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Data preparation"@en ;
+    skos:definition "Steps that turn data into the form another step reads: preprocessing, chunking, embedding and aggregation."@en ;
+    pair:subRoleOf pair:ProcessingStep .
+
+pair:GenerationRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Generation"@en ;
+    skos:definition "Steps that build a prompt or produce content with a generative model."@en ;
+    pair:subRoleOf pair:ProcessingStep .
+
+pair:PredictionRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Prediction"@en ;
+    skos:definition "Steps that apply a trained model to a request and produce a prediction."@en ;
+    pair:subRoleOf pair:ProcessingStep .
+
+pair:TrainingEvaluationRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Training and evaluation"@en ;
+    skos:definition "Steps that train, fine-tune, evaluate or score a model."@en ;
+    pair:subRoleOf pair:ProcessingStep .
+
+pair:DeploymentOperationRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Deployment and operation"@en ;
+    skos:definition "Steps that deploy, load, schedule, log or monitor a model in service."@en ;
+    pair:subRoleOf pair:ProcessingStep .
+
+pair:AgentStepRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Agent steps"@en ;
+    skos:definition "Steps an agent takes: planning, reflecting, handing off, invoking tools, writing memory and changing state."@en ;
+    pair:subRoleOf pair:ProcessingStep .
+
+pair:KnowledgeContextRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Knowledge and context"@en ;
+    skos:definition "Sources of knowledge and what is retrieved from them: stores, documents, chunks, embeddings and retrieved context."@en ;
+    pair:subRoleOf pair:ResourceRole .
+
+pair:PromptResponseRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Prompts and responses"@en ;
+    skos:definition "What goes into a generative model and what comes out: prompt templates, responses, user-facing output and screening decisions."@en ;
+    pair:subRoleOf pair:ResourceRole .
+
+pair:ModelRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Models"@en ;
+    skos:definition "Trained models of any kind: foundation, fine-tuned, judge, retriever, loaded and external models."@en ;
+    pair:subRoleOf pair:ResourceRole .
+
+pair:DependencyCredentialRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Dependencies and credentials"@en ;
+    skos:definition "What a system takes from outside or uses to act on others' behalf: external dependencies and access credentials."@en ;
+    pair:subRoleOf pair:ResourceRole .
+
+pair:TrainingEvaluationDataRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Training and evaluation data"@en ;
+    skos:definition "Data that trains or judges a model: training and fine-tuning datasets, expected outputs, scores, results and release approvals."@en ;
+    pair:subRoleOf pair:ResourceRole .
+
+pair:PredictionDataRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Prediction data"@en ;
+    skos:definition "What a prediction service takes in and gives out: requests, batches, queues, preprocessed data and results."@en ;
+    pair:subRoleOf pair:ResourceRole .
+
+pair:OperationRecordRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Operation records"@en ;
+    skos:definition "What running a model in service leaves behind or needs: logs, alerts, monitoring baselines and serving images."@en ;
+    pair:subRoleOf pair:ResourceRole .
+
+pair:AgentStateRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Agent state"@en ;
+    skos:definition "What an agent works from and passes on: goals, plans, messages, reflection feedback, tool registries and environment context."@en ;
+    pair:subRoleOf pair:ResourceRole .
+
+pair:UserInputRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "User input"@en ;
+    skos:definition "What a person puts into the system, from a typed question to feedback on a result."@en ;
+    skos:relatedMatch airo:Input , dpv:ProvidedData .
+
+pair:ControlRoles a pair:PatternRole , pair:RoleCategory ;
+    skos:prefLabel "Controls"@en ;
+    skos:definition "Steps that screen, validate, approve, limit or redact on the way through the system."@en ;
+    skos:relatedMatch airo:RiskControl , dpv:RiskMitigationMeasure .
+
 ### Input/output roles
 
 pair:UserInput a pair:PatternRole ;
+    pair:subRoleOf pair:UserInputRoles ;
     skos:prefLabel "User Input"@en ;
     skos:definition "Information provided directly by a user, such as through a user interface or API input."@en ;
     skos:relatedMatch airo:Input , dpv:ProvidedData .
@@ -435,7 +529,7 @@ pair:PublicUserInput a pair:PatternRole ;
 
 pair:UserFacingOutput a pair:PatternRole ;
     skos:prefLabel "UserFacingOutput"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PromptResponseRoles ;
     skos:definition "Data exposed to a user or downstream consumer."@en ;
     skos:relatedMatch airo:Output .
 
@@ -453,7 +547,7 @@ pair:UserFeedback a pair:PatternRole ;
 
 pair:KnowledgeSource a pair:PatternRole ;
     skos:prefLabel "Knowledge Source"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:KnowledgeContextRoles ;
     skos:definition "A source of information that an AI system can access, such as a database, knowledge graph, or external API."@en ;
     skos:relatedMatch t4b:KG , t4b:DB .
 
@@ -484,7 +578,7 @@ pair:KeywordIndex a pair:PatternRole ;
 
 pair:Model a pair:PatternRole ;
     skos:prefLabel "Model"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:ModelRoles ;
     skos:definition "A machine learning or statistical model resource. Corresponds to the Boxology model box."@en ;
     skos:closeMatch t4b:Model ;
     skos:relatedMatch ai:Model , airo:AIModel .
@@ -551,7 +645,7 @@ pair:RetrieverModel a pair:PatternRole ;
 
 pair:RetrievedContext a pair:PatternRole ;
     skos:prefLabel "RetrievedContext"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:KnowledgeContextRoles ;
     skos:definition "Content returned by a retrieval step for use as context."@en .
 
 pair:RetrievedResult a pair:PatternRole ;
@@ -561,43 +655,43 @@ pair:RetrievedResult a pair:PatternRole ;
 
 pair:PromptTemplate a pair:PatternRole ;
     skos:prefLabel "PromptTemplate"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PromptResponseRoles ;
     skos:definition "A prompt template combining instructions and inputs."@en .
 
 pair:EmbeddingVector a pair:PatternRole ;
     skos:prefLabel "EmbeddingVector"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:KnowledgeContextRoles ;
     skos:definition "A stored embedding vector."@en ;
     skos:relatedMatch t4b:Tensor .
 
 pair:ExpectedOutput a pair:PatternRole ;
     skos:prefLabel "ExpectedOutput"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:TrainingEvaluationDataRoles ;
     skos:definition "A reference/expected output used in evaluation."@en .
 
 pair:EvaluationResult a pair:PatternRole ;
     skos:prefLabel "EvaluationResult"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:TrainingEvaluationDataRoles ;
     skos:definition "The result produced by an evaluation step."@en  .
 
 pair:EvaluationScore a pair:PatternRole ;
     skos:prefLabel "EvaluationScore"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:TrainingEvaluationDataRoles ;
     skos:definition "A numeric score produced by an evaluation step."@en  .
 
 pair:LLMResponse a pair:PatternRole ;
     skos:prefLabel "LLMResponse"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PromptResponseRoles ;
     skos:definition "A response produced by a generative model prior to output screening."@en  .
 
 pair:GuardrailDecision a pair:PatternRole ;
     skos:prefLabel "GuardrailDecision"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PromptResponseRoles ;
     skos:definition "A decision (allow/block) produced by a guardrail step."@en  .
 
 pair:SanitizedOutput a pair:PatternRole ;
     skos:prefLabel "SanitizedOutput"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PromptResponseRoles ;
     skos:definition "Output that has passed an output guardrail/sanitization step."@en  .
 
 pair:RewrittenQuery a pair:PatternRole ;
@@ -607,7 +701,7 @@ pair:RewrittenQuery a pair:PatternRole ;
 
 pair:RetrievedCandidateSet a pair:PatternRole ;
     skos:prefLabel "RetrievedCandidateSet"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:KnowledgeContextRoles ;
     skos:definition "A set of retrieved candidate fragments prior to reranking."@en .
 
 pair:RerankedContext a pair:PatternRole ;
@@ -617,79 +711,79 @@ pair:RerankedContext a pair:PatternRole ;
 
 pair:DocumentChunk a pair:PatternRole ;
     skos:prefLabel "DocumentChunk"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:KnowledgeContextRoles ;
     skos:definition "A chunk of a source document used for embedding/retrieval."@en .
 
 pair:SourceDocument a pair:PatternRole ;
     skos:prefLabel "SourceDocument"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:KnowledgeContextRoles ;
     skos:definition "A source document ingested into a knowledge base."@en  .
 
 pair:PredictionRequest a pair:PatternRole ;
     skos:prefLabel "PredictionRequest"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PredictionDataRoles ;
     skos:definition "An incoming request for a prediction."@en .
 
 pair:PredictionResult a pair:PatternRole ;
     skos:prefLabel "PredictionResult"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PredictionDataRoles ;
     skos:definition "The result of a prediction step."@en .
 
 pair:PredictionQueue a pair:PatternRole ;
     skos:prefLabel "PredictionQueue"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PredictionDataRoles ;
     skos:definition "A queue holding prediction requests."@en .
 
 pair:PredictionLog a pair:PatternRole ;
     skos:prefLabel "PredictionLog"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:OperationRecordRoles ;
     skos:definition "A log of predictions for monitoring/audit."@en  .
 
 pair:TrainingDataset a pair:PatternRole ;
     skos:prefLabel "TrainingDataset"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:TrainingEvaluationDataRoles ;
     skos:definition "A dataset used to train a model."@en ;
     skos:closeMatch ai:TrainingData .
 
 pair:FineTuningDataset a pair:PatternRole ;
     skos:prefLabel "FineTuningDataset"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:TrainingEvaluationDataRoles ;
     skos:definition "A dataset used to fine-tune a model."@en ;
     skos:relatedMatch ai:TrainingData  .
 
 pair:BatchDataset a pair:PatternRole ;
     skos:prefLabel "BatchDataset"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PredictionDataRoles ;
     skos:definition "A dataset processed in batch."@en  .
 
 pair:PreprocessedData a pair:PatternRole ;
     skos:prefLabel "PreprocessedData"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PredictionDataRoles ;
     skos:definition "Data produced by a preprocessing step."@en  .
 
 pair:MonitoringBaseline a pair:PatternRole ;
     skos:prefLabel "MonitoringBaseline"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:OperationRecordRoles ;
     skos:definition "A baseline used by a monitoring step."@en  .
 
 pair:Alert a pair:PatternRole ;
     skos:prefLabel "Alert"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:OperationRecordRoles ;
     skos:definition "An alert raised by a monitoring step."@en .
 
 pair:ServingImage a pair:PatternRole ;
     skos:prefLabel "ServingImage"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:OperationRecordRoles ;
     skos:definition "A container image used to serve a model."@en ; .
 
 pair:ReleaseApproval a pair:PatternRole ;
     skos:prefLabel "ReleaseApproval"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:TrainingEvaluationDataRoles ;
     skos:definition "An approval artifact gating a release."@en .
 
 pair:RetrievalDecision a pair:PatternRole ;
     skos:prefLabel "RetrievalDecision"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:KnowledgeContextRoles ;
     skos:definition "What a retrieval judge decides: whether to retrieve, or retrieve again, and for what need. Read by the next retrieval or query transformation step."@en .
 
 pair:SubQuery a pair:PatternRole ;
@@ -704,34 +798,34 @@ pair:SyntheticTrainingData a pair:PatternRole ;
 
 pair:AgentGoal a pair:PatternRole ;
     skos:prefLabel "AgentGoal"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:AgentStateRoles ;
     skos:definition "The goal an agent sets out to achieve, as its goal creation step states it for planning."@en .
 
 pair:AgentPlan a pair:PatternRole ;
     skos:prefLabel "AgentPlan"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:AgentStateRoles ;
     skos:definition "The plan a planning step produces: the steps an agent intends to take toward its goal, as one path or with alternatives."@en .
 
 pair:EnvironmentContext a pair:PatternRole ;
     skos:prefLabel "EnvironmentContext"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:AgentStateRoles ;
     skos:definition "Context captured from the user's surroundings, such as a screen, a sensor reading or an open document, rather than supplied by the user. Treated as untrusted by the taint propagation query, since nothing in the graph vouches for what the environment contains."@en .
 
 pair:ReflectionFeedback a pair:PatternRole ;
     skos:prefLabel "ReflectionFeedback"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:AgentStateRoles ;
     skos:definition "Feedback a reflection step returns on a plan and its reasoning, which the planning step reads to revise the plan."@en .
 
 pair:ToolRegistry a pair:PatternRole ;
     skos:prefLabel "ToolRegistry"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:AgentStateRoles ;
     skos:definition "A catalogue of the tools, agents and models an agent can call on, described by capability and cost, which a coordinating step consults to choose who carries out a task."@en .
 
 ### External-dependency roles 
 
 pair:ExternalDependency a pair:PatternRole ;
     skos:prefLabel "ExternalDependency"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:DependencyCredentialRoles ;
     skos:definition "A resource sourced from outside the modeled organization's control whose provenance and integrity the submitted graph cannot vouch for."@en  .
 
 pair:ExternalModel a pair:PatternRole ;
@@ -751,13 +845,13 @@ pair:ExternalProviderCredential a pair:PatternRole ;
 
 pair:AccessCredential a pair:PatternRole ;
     skos:prefLabel "AccessCredential"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:DependencyCredentialRoles ;
     skos:definition "Authentication material that lets a step act on a system: an API key, an OAuth token, a service account, or a delegated user session. Whoever uses it acts with the access it grants."@en ;
     dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi03-identity-and-privilege-abuse> .
 
 pair:UncertaintyEstimate a pair:PatternRole ;
     skos:prefLabel "UncertaintyEstimate"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:PromptResponseRoles ;
     skos:definition "A measure of how far a single prediction can be trusted, produced alongside it: a confidence score, a prediction interval, or a predictive distribution."@en ;
     dct:source <https://doi.org/10.1016/j.dss.2022.113800> .
 
@@ -770,36 +864,36 @@ pair:SystemPrompt a pair:PatternRole ;
 
 pair:GenerationStep a pair:PatternRole ;
     skos:prefLabel "GenerationStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:GenerationRoles ;
     skos:definition "A step that runs a generative model to produce output (Boxology infer process)."@en ;
     skos:relatedMatch t4b:Infer , ai:NaturalLanguageGeneration  .
 
 pair:EmbeddingStep a pair:PatternRole ;
     skos:prefLabel "EmbeddingStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:DataPreparationRoles ;
     skos:definition "A step that produces embeddings from data (Boxology embed/transform process)."@en ;
     skos:closeMatch t4b:Embed .
 
 pair:RetrievalStep a pair:PatternRole ;
     skos:prefLabel "RetrievalStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:RetrievalRoles ;
     skos:definition "A step that retrieves fragments from a knowledge source."@en ;
     skos:relatedMatch ai:InformationRetrieval .
 
 pair:RerankingStep a pair:PatternRole ;
     skos:prefLabel "RerankingStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:RetrievalRoles ;
     skos:definition "A step that reranks retrieved candidates."@en  .
 
 pair:QueryReformulationStep a pair:PatternRole ;
     skos:prefLabel "QueryReformulationStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:RetrievalRoles ;
     skos:definition "A step that reformulates a query (Boxology transform process)."@en ;
     skos:relatedMatch t4b:Transform .
 
 pair:PromptConstructionStep a pair:PatternRole ;
     skos:prefLabel "PromptConstructionStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:GenerationRoles ;
     skos:definition "A step that assembles a prompt from inputs and context (Boxology transform process)."@en ;
     skos:relatedMatch t4b:Transform  .
 
@@ -810,7 +904,7 @@ pair:PromptOptimisationStep a pair:PatternRole ;
 
 pair:RetrievalJudgeStep a pair:PatternRole ;
     skos:prefLabel "RetrievalJudgeStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:RetrievalRoles ;
     skos:definition "A step that judges a query or a draft answer and decides whether retrieval runs, or runs again, and for what: the judge of iterative, recursive and adaptive retrieval. A decision about retrieval, not a verification of the answer for the user."@en .
 
 pair:SyntheticDataGenerationStep a pair:PatternRole ;
@@ -820,12 +914,12 @@ pair:SyntheticDataGenerationStep a pair:PatternRole ;
 
 pair:ScoringStep a pair:PatternRole ;
     skos:prefLabel "ScoringStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:TrainingEvaluationRoles ;
     skos:definition "A step that scores a model output during evaluation."@en .
 
 pair:EvaluationStep a pair:PatternRole ;
     skos:prefLabel "EvaluationStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:TrainingEvaluationRoles ;
     skos:definition "A step that evaluates model behavior."@en ;
     skos:relatedMatch ai:Benchmarking  .
 
@@ -837,19 +931,19 @@ pair:FairnessEvaluationStep a pair:PatternRole ;
 
 pair:PredictionStep a pair:PatternRole ;
     skos:prefLabel "PredictionStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:PredictionRoles ;
     skos:definition "A step that runs model inference to produce a prediction (Boxology infer process)."@en ;
     skos:relatedMatch t4b:Infer  .
 
 pair:PreprocessingStep a pair:PatternRole ;
     skos:prefLabel "PreprocessingStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:DataPreparationRoles ;
     skos:definition "A step that preprocesses input data (Boxology transform process)."@en ;
     skos:relatedMatch t4b:Transform , ai:DataPreparation .
 
 pair:ChunkingStep a pair:PatternRole ;
     skos:prefLabel "ChunkingStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:DataPreparationRoles ;
     skos:definition "A step that splits documents into chunks (Boxology transform process)."@en ;
     skos:relatedMatch t4b:Transform  .
 
@@ -867,78 +961,78 @@ pair:KeywordSearchStep a pair:PatternRole ;
 
 pair:AggregationStep a pair:PatternRole ;
     skos:prefLabel "AggregationStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:DataPreparationRoles ;
     skos:definition "A step aggregating results from multiple searches."@en  .
 
 pair:TrainingStep a pair:PatternRole ;
     skos:prefLabel "TrainingStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:TrainingEvaluationRoles ;
     skos:definition "A step that trains a model (Boxology train process)."@en ;
     skos:closeMatch ai:ModelTraining ;
     skos:relatedMatch t4b:Train .
 
 pair:TrainingPipeline a pair:PatternRole ;
     skos:prefLabel "TrainingPipeline"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:TrainingEvaluationRoles ;
     skos:definition "A pipeline orchestrating model training."@en .
 
 pair:FineTuningStep a pair:PatternRole ;
     skos:prefLabel "FineTuningStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:TrainingEvaluationRoles ;
     skos:definition "A step that fine-tunes a pre-trained model."@en ;
     skos:closeMatch ai:ModelFineTuning  .
 
 pair:DeploymentStep a pair:PatternRole ;
     skos:prefLabel "DeploymentStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:DeploymentOperationRoles ;
     skos:definition "A step that deploys a model to serving."@en ;
     skos:relatedMatch ai:DeploymentStage  .
 
 pair:ModelLoadStep a pair:PatternRole ;
     skos:prefLabel "ModelLoadStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:DeploymentOperationRoles ;
     skos:definition "A step that loads a model into a runtime."@en  .
 
 pair:ImageBuildStep a pair:PatternRole ;
     skos:prefLabel "ImageBuildStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:DeploymentOperationRoles ;
     skos:definition "A step that builds a serving image."@en .
 
 pair:LoggingStep a pair:PatternRole ;
     skos:prefLabel "LoggingStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:DeploymentOperationRoles ;
     skos:definition "A step that logs predictions or events."@en .
 
 pair:MonitoringStep a pair:PatternRole ;
     skos:prefLabel "MonitoringStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:DeploymentOperationRoles ;
     skos:definition "A step that monitors a deployed model."@en .
 
 pair:JobScheduler a pair:PatternRole ;
     skos:prefLabel "JobScheduler"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:DeploymentOperationRoles ;
     skos:definition "A step that schedules jobs in a workflow."@en  .
 
 pair:ToolInvocationStep a pair:PatternRole ;
     skos:prefLabel "ToolInvocationStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:AgentStepRoles ;
     skos:definition "A step that invokes an external tool, plugin, or API on behalf of the system."@en .
 
 pair:StateChangingStep a pair:PatternRole ;
     skos:prefLabel "StateChangingStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:AgentStepRoles ;
     skos:definition "A step that changes external state: writes, transactions, or other actions with side effects outside the system boundary."@en .
 
 ### Agentic steps
 
 pair:PlanningStep a pair:PatternRole ;
     skos:prefLabel "PlanningStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:AgentStepRoles ;
     skos:definition "A step in which the system decides what to do next - selecting a tool, ordering sub-tasks, or revising a goal - rather than producing the user-facing answer itself. What distinguishes an agent from a single generation call."@en .
 
 pair:MemoryWriteStep a pair:PatternRole ;
     skos:prefLabel "MemoryWriteStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:AgentStepRoles ;
     skos:definition "A step that commits content to agent memory for reuse in later turns or sessions."@en .
 
 pair:MemoryReadStep a pair:PatternRole ;
@@ -948,13 +1042,13 @@ pair:MemoryReadStep a pair:PatternRole ;
 
 pair:AgentHandoffStep a pair:PatternRole ;
     skos:prefLabel "AgentHandoffStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:AgentStepRoles ;
     skos:definition "A step that receives work from another agent and acts on it."@en ;
     dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi07-insecure-inter-agent-communication> .
 
 pair:AgentMessage a pair:PatternRole ;
     skos:prefLabel "AgentMessage"@en ;
-    pair:subRoleOf pair:ResourceRole ;
+    pair:subRoleOf pair:AgentStateRoles ;
     skos:definition "Content passed from one agent to another to hand off a task, a result, or a request. A resource role rather than a step role, because what a validation step can inspect is the message, not the handoff."@en ;
     dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi07-insecure-inter-agent-communication> .
 
@@ -976,12 +1070,12 @@ pair:GoalCreationStep a pair:PatternRole ;
 
 pair:ContextDetectionStep a pair:PatternRole ;
     skos:prefLabel "ContextDetectionStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:AgentStepRoles ;
     skos:definition "A step that captures context from the user's surroundings for the agent, such as what is on a screen or a sensor reading (the detector of a proactive goal creator)."@en .
 
 pair:PlanReflectionStep a pair:PatternRole ;
     skos:prefLabel "PlanReflectionStep"@en ;
-    pair:subRoleOf pair:ProcessingStep ;
+    pair:subRoleOf pair:AgentStepRoles ;
     skos:definition "A step that reviews a plan and the reasoning behind it and returns feedback for revising it. The reviewer may be the agent itself (self-reflection), another agent (cross-reflection) or a person (human reflection)."@en .
 
 pair:VoteAggregationStep a pair:PatternRole ;

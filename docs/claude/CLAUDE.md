@@ -239,6 +239,14 @@ Read before non-trivial changes.
   exclusivity, or sufficiency claim — *direct*, *only*, *pure*, *without*, *unmediated*,
   *standalone* — belongs to an applicability condition. A risk pattern name may carry the
   negative; **a motif name may not.** Sweep motif labels whenever the library version changes.
+  The sweep reaches descriptions and pattern-node labels too: Training-to-serving said
+  "automatic", which claims no human gate, until 2026-10-18.
+- **A motif's description is one sentence about the structure it matches** (B-4, 2026-10-18):
+  it is the tooltip in the motif tray and the library, so it names the declared roles and
+  flows and nothing the declaration does not have. Four had drifted ("informs" after
+  `beam:inform` was removed, "vector store" for a knowledge source, "optional" for a required
+  node). The review of all 47, with keep/fix/merge/drop recommendations, is on the to-do
+  page's B-4 child page; **no merge or drop has been applied**, as each changes motif queries.
 - **Motifs match structure only (R2)** — roles and flow relations, reading **no** facet.
   Situational context enters at the applicability phase, never at matching.
 - **Motifs may nest, deliberately.** The library is not an antichain; a smaller motif can be
@@ -875,6 +883,19 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 
 ### The annotation vocabulary
 
+- **Roles are filed under 17 categories, and a category files without matching** (B-3,
+  2026-10-18). `pair:RoleCategory` roles sit between the tops and every role that used to hang
+  directly under one, one category each: 7 under Processing Step, 8 under Resource Role
+  ("Models" above `pair:Model`), and two new tops, "User input" above `pair:UserInput` and
+  "Controls" above `pair:ControlStep`, because those two are read by queries and cannot be
+  categories themselves. **No query names a category**, and every query walks `subRoleOf*`
+  upward, so inserting the level changed no match or finding. A category-only tag gets the
+  `ag:CategoryOnlyShape` hint; a resource category still satisfies a node that accepts any
+  resource role (Human oversight's result node). A category is shelved where its members are
+  (`role_shelf`), and a role reached *through* a category keeps the route it had before, so
+  no existing role moved shelf or side. Categories are inert in queries by design, like the
+  abstract tops. The picker does not group by category yet: that would replace the class
+  shelves below in the picker, so it waits for a decision.
 - **A term is shelved by the BEAM class it goes on, not by its top-level role.** The role
   hierarchy cannot shelve 97 terms: it has 4 tops and they hold **50 / 32 / 12 / 3**, so half
   the vocabulary sat under `Resource Role`. The shelf is `pair:expectedClass`, read off the
@@ -1376,7 +1397,7 @@ len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its sibl
 | Motifs | **47** — GenAI 20, ML serving and training 13, Agentic 13, Supply chain 1 |
 | Risk patterns | **33** — GenAI 10, Agentic 11, ML serving and training 11, Supply chain 1 (35 motifs carry one; 12 carry none) |
 | Pattern nodes / pattern edges | **261** / **224** — every edge crosses between an oval and a box |
-| Pattern roles | **123**. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
+| Pattern roles | **140**: 123 roles plus 17 `pair:RoleCategory` categories (2026-10-18). The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
 | Data categories | **7** |
 | Facet concepts | **35** (task 20, data 11, autonomy 4) |
 | Risk mechanisms | **32** |

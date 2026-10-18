@@ -514,7 +514,7 @@ def test_vocabulary_roles_are_grouped_by_top_level_role(client) -> None:
     # groups are the ontology's top-level roles, which are their own group
     groups = {role["group"] for role in roles}
     by_id = {role["id"]: role for role in roles}
-    for top in ("ProcessingStep", "ControlStep", "ResourceRole", "UserInput"):
+    for top in ("ProcessingStep", "ControlRoles", "ResourceRole", "UserInputRoles"):
         uri = f"http://w3id.org/airiskkg/pair-ai#{top}"
         assert by_id[uri]["group"] == by_id[uri]["label"]
         assert by_id[uri]["label"] in groups
@@ -541,7 +541,7 @@ def test_vocabulary_roles_declare_which_element_kind_they_apply_to(client) -> No
     # a family is process or resource, never both
     assert all(len(kinds) == 1 for kinds in by_group.values()), by_group
     assert by_group["Processing Step"] == {"process"}
-    assert by_group["Control Step"] == {"process"}
+    assert by_group["Controls"] == {"process"}
     assert by_group["Resource Role"] == {"resource"}
 
 
