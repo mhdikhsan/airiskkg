@@ -138,14 +138,16 @@ async function init() {
     svg: "#process-canvas",
     onEdit: (op, payload) => runMutation(async () => {
       try {
-        const { ttl } = await postJson("/api/process-edit", {
+        const made = await postJson("/api/process-edit", {
           ttl: Editor.getValue(), op, ...payload,
         });
         noteChange(`business process: ${op.replace(/-/g, " ")}`);
-        Editor.setValue(ttl);
+        Editor.setValue(made.ttl);
         setStatus("ok", `Business process updated (${op})`);
+        return made;
       } catch (error) {
         setStatus("error", "Could not edit the process: " + error.message.split(String.fromCharCode(10))[0]);
+        return null;
       }
     }),
     onSelect: (id) => revealInSource([id]),

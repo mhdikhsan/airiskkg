@@ -754,7 +754,29 @@ def process_edit() -> object:
         data.add((participant, BP.processRef, process))
         data.add((process, RDF.type, BPMN.process))
         data.add((process, BP.name, Literal(f"{label} process")))
+        model = URIRef(payload["model"]) if payload.get("model") else None
+        if model is not None and (model, RDF.type, BPMN.collaboration) in data:
+            data.add((model, BP.contains, participant))
         new_id = str(participant)
+
+    elif op == "add-model":
+        label = (payload.get("label") or "New process model").strip()
+        collaborations = list(data.subjects(RDF.type, BPMN.collaboration))
+        filed = {p for c in collaborations for p in data.objects(c, BP.contains)}
+        loose = [p for p in data.subjects(RDF.type, BPMN.participant) if p not in filed]
+        # The pools already drawn keep the model they were drawn in, which is
+        # implicit only while there is one.
+        if loose and len(collaborations) <= 1:
+            home = collaborations[0] if collaborations else _fresh(data, "model")
+            if not collaborations:
+                data.add((home, RDF.type, BPMN.collaboration))
+                data.add((home, BP.name, Literal("Business process")))
+            for participant in loose:
+                data.add((home, BP.contains, participant))
+        model = _fresh(data, "model")
+        data.add((model, RDF.type, BPMN.collaboration))
+        data.add((model, BP.name, Literal(label)))
+        new_id = str(model)
 
     elif op == "add-activity":
         kind = payload.get("kind")

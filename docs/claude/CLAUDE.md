@@ -697,6 +697,16 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   this, and inventing a `bp:` term is what the vocabulary ceiling forbids. Unlike a dragged box,
   which stays in `manualPositions` and is forgotten on reload, this is in the Turtle: it is the
   diagram's reading order, not a nudge.
+- **A document holds several process models, one per `bpmn:collaboration`** (2026-10-18), so a
+  development process can sit beside the business process. A model is the participants its
+  collaboration `bp:contains`; the canvas draws one at a time, picked beside the palette's fold,
+  and a participant added from the palette joins the model on screen. While there is only one
+  collaboration a pool it does not name is drawn with it, because `it_service_desk.ttl` declares
+  one that names nobody; with several, such pools get an entry of their own. **`add-model` files
+  those pools into the existing collaboration first** (or into a new "Business process" when there
+  is none), since a second model is the moment it has to be said which model they are in. No query
+  reads a collaboration, so a model changes nothing the assessment finds. A data box nothing reads
+  or writes belongs to no participant and is drawn in every model.
 - **A pool collapses to a band.** BPMN's black-box pool: a collapsed participant keeps its band
   and name, its members keep a slot on that band so message flow still lands on the pool, and
   nothing inside is drawn. A participant with no process is that band from the start, with no

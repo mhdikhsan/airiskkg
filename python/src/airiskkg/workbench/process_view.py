@@ -565,6 +565,30 @@ def _participants(graph: Graph) -> list[dict]:
     return rows
 
 
+def _models(graph: Graph, participants: list[dict]) -> list[dict]:
+    """One process model per bpmn:collaboration, with the pools it contains.
+
+    A pool no collaboration names is drawn with the only model there is; with
+    several models it has an entry of its own rather than joining every one."""
+    drawn = [row["id"] for row in participants if not row["bandOnly"]]
+    models = []
+    for collaboration in graph.subjects(RDF.type, _cls("collaboration")):
+        held = {str(p) for p in graph.objects(collaboration, _prop("contains"))}
+        models.append({
+            "id": str(collaboration),
+            "label": _label_of(graph, collaboration),
+            "participants": [p for p in drawn if p in held],
+        })
+    models.sort(key=lambda model: (model["label"], model["id"]))
+    filed = {p for model in models for p in model["participants"]}
+    loose = [p for p in drawn if p not in filed]
+    if len(models) == 1:
+        models[0]["participants"] += loose
+    elif models and loose:
+        models.append({"id": "", "label": "Not in a process model", "participants": loose})
+    return models
+
+
 def _sequence_flows(graph: Graph) -> list[dict]:
     """What the diagram must actually draw."""
     defaults = {
@@ -866,8 +890,10 @@ def process_view(graph: Graph, ttl_text: str | None = None) -> dict:
         if str(system) not in refined_systems
     ]
 
+    participants = _participants(graph)
     return _stamp_lines({
-        "participants": _participants(graph),
+        "participants": participants,
+        "models": _models(graph, participants),
         "processes": processes,
         "lanes": lanes,
         "activities": rows,
@@ -890,7 +916,7 @@ def process_view(graph: Graph, ttl_text: str | None = None) -> dict:
         "refinedSystems": _refined_systems(graph),
         "contextOptions": list(system_context_options()),
         "stats": {
-            "participants": len(_participants(graph)),
+            "participants": len(participants),
             "processes": len(processes),
             "activities": len(rows),
             "events": len(event_rows),

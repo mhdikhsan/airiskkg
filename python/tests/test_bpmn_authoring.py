@@ -342,6 +342,48 @@ def test_a_move_writes_only_terms_sbpmn_declares(client) -> None:
     assert not sbpmn_violations(_graph(ttl))
 
 
+def _models(client, ttl: str) -> dict:
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+    return {model["label"]: model["participants"] for model in view["models"]}
+
+
+def test_a_second_process_model_keeps_the_first_ones_pools(client) -> None:
+    """A document held one process model; the development process had nowhere to go."""
+    ttl, ids = _two_pools(client)
+    assert _models(client, ttl) == {}, "a model was reported where none is declared"
+
+    made = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "add-model", "label": "Development process"}).get_json()
+    models = _models(client, made["ttl"])
+    assert set(models) == {"Business process", "Development process"}, models
+    assert sorted(models["Business process"]) == sorted([ids["customer"], ids["desk"]]), models
+    assert models["Development process"] == []
+
+    joined = client.post("/api/process-edit", json={
+        "ttl": made["ttl"], "op": "add-pool", "label": "Data team", "model": made["newId"]}).get_json()
+    models = _models(client, joined["ttl"])
+    assert models["Development process"] == [joined["newId"]], models
+    assert joined["newId"] not in models["Business process"], models
+    assert not sbpmn_violations(_graph(joined["ttl"]))
+
+
+def test_a_lone_collaboration_draws_every_pool(client) -> None:
+    """A collaboration that names no participant still holds the only process there is."""
+    ttl, ids = _two_pools(client)
+    lone = ttl + f"""
+<http://example.org/m#Desk> a <{CLASSES}collaboration> ; <{PROPS}name> "IT service desk" .
+"""
+    models = _models(client, lone)
+    assert sorted(models["IT service desk"]) == sorted([ids["customer"], ids["desk"]]), models
+
+    made = client.post("/api/process-edit", json={
+        "ttl": lone, "op": "add-model", "label": "Development process"}).get_json()
+    graph = _graph(made["ttl"])
+    filed = set(graph.objects(URIRef("http://example.org/m#Desk"), URIRef(PROPS + "contains")))
+    assert filed == {URIRef(ids["customer"]), URIRef(ids["desk"])}, (
+        "the pools it drew did not stay with it once a second model came")
+
+
 def test_an_intermediate_timer_waits_part_way_through(client, process_ttl) -> None:
     """The palette's Timer catch: a catching intermediate event with a timer."""
     before = view(client, process_ttl)["events"]

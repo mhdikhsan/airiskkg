@@ -4116,3 +4116,56 @@ def test_every_risk_is_listed_on_one_page_under_the_name_the_library_gives_it(pa
     assert listed["inView"], f"/risks#{listed['wanted']} did not open at that risk"
     assert not listed["wide"], "the page scrolls sideways"
     assert rail["linked"], "the library does not link to the page"
+
+
+def test_a_second_process_model_is_drawn_on_its_own_and_switched_to(scene_restored) -> None:
+    """The canvas held one process model, so the development process had nowhere to go."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_TWO_POOLS))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, "document.querySelectorAll('#process-canvas .pc-pool').length", 0, tries=40)
+    loop.run_until_complete(handle.js(
+        "window.__answers = ['Development process', 'Data team'];"
+        " window.prompt = () => window.__answers.shift() || null; 1"))
+    pools = """[...document.querySelectorAll('#process-canvas .pc-pool')]
+        .map((g) => g.getAttribute('data-band')).sort()"""
+    picked = """(() => { const s = document.querySelector('#process-palette .pp-model');
+        return s ? s.selectedOptions[0].textContent : null; })()"""
+
+    at = _centre(loop, handle, "#process-palette .pp-model-add")
+    assert at, "there is no way to start another process model"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    _settle(loop, handle, picked, None, tries=40)
+    opened = loop.run_until_complete(handle.js(picked))
+    empty = loop.run_until_complete(handle.js(pools))
+
+    loop.run_until_complete(handle.js("""(() => {
+        const palette = document.querySelector('#process-palette');
+        if (palette.classList.contains('folded')) palette.querySelector('.pp-fold').click();
+        return 1;
+    })()"""))
+    time.sleep(0.4)
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = [...document.querySelectorAll('#process-palette .pp-item')]
+            .find((item) => item.textContent.trim() === 'Participant');
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    _settle(loop, handle, "document.querySelectorAll('#process-canvas .pc-pool').length", 0, tries=40)
+    in_new = loop.run_until_complete(handle.js(pools))
+
+    loop.run_until_complete(handle.js("""(() => {
+        const s = document.querySelector('#process-palette .pp-model');
+        s.value = [...s.options].find((o) => o.textContent.startsWith('Business process')).value;
+        s.dispatchEvent(new Event('change'));
+        return 1;
+    })()"""))
+    time.sleep(0.8)
+    back = loop.run_until_complete(handle.js(pools))
+
+    assert opened == "Development process (0)", f"the new model was not opened: {opened!r}"
+    assert empty == [], f"the new model drew the other model's pools: {empty}"
+    assert len(in_new) == 1 and in_new[0] not in (ids["ask"], ids["answer"]), in_new
+    assert len(back) == 2 and in_new[0] not in back, (
+        f"switching back drew {back}, the new pool was {in_new}")

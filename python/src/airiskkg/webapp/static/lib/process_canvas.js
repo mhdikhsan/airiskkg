@@ -42,6 +42,8 @@ let contextOptions = [];
 let dataClasses = [];
 let selectedPool = null;
 let selectedLane = null;      // where a new node lands inside a banded pool
+let selectedModel = null;     // which bpmn:collaboration is drawn
+let wantedModel = null;       // one just made, opened once it arrives
 let connecting = null;
 let swallowNextClick = false;
 let picked = new Set();       // shift-clicked nodes, deleted together
@@ -245,7 +247,8 @@ function layout() {
   /* A choreography is laid out like a process, inside a frame instead of a
    * pool; a participant it names only on its bands gets no pool of its own. */
   const frames = [
-    ...(data.participants || []).filter((participant) => !participant.bandOnly),
+    ...(data.participants || []).filter((participant) => !participant.bandOnly
+      && inModel(participant.id)),
     ...(data.choreographies || []).map((chor) => ({
       id: chor.id, label: chor.label, process: chor.id, multiple: false, choreography: true,
     })),
@@ -2262,8 +2265,10 @@ function draw() {
 
   const loose = (data.dataNodes || []).filter((entry) => !(entry.links || []).length);
   if (loose.length) {
+    // Below the pools as well as their boxes: an empty pool places no box.
     const bottom = Math.max(
-      0, ...[...placed.values()].map((slot) => slot.y + (slot.h || 0))) + 56;
+      0, ...[...placed.values()].map((slot) => slot.y + (slot.h || 0)),
+      ...pools.map((pool) => pool.y + pool.h)) + 56;
     loose.forEach((entry, seat) => {
       const at = manualPositions.get(entry.id)
         || { x: 40 + seat * (DATA_W + 46), y: bottom };
@@ -2411,6 +2416,83 @@ function startResize(ev, axis, key, base) {
   svg.addEventListener("pointermove", move);
   svg.addEventListener("pointerup", up);
   svg.addEventListener("pointercancel", up);
+}
+
+/* The model on the canvas: the one picked, else the first with pools in it. */
+function currentModel() {
+  const models = (data && data.models) || [];
+  return models.find((m) => m.id === selectedModel)
+    || models.find((m) => m.participants.length) || models[0] || null;
+}
+
+function inModel(id) {
+  const model = currentModel();
+  return !model || model.participants.includes(id);
+}
+
+function showModel(id) {
+  selectedModel = id;
+  const shown = data.participants.filter((p) => inModel(p.id));
+  selectedPool = shown.length ? shown[0].id : null;
+  selectedLane = null;
+  closeDetail();
+  draw();
+  renderPalette();
+  fit();
+}
+
+/* Which process model is drawn, and the way to start another. */
+function modelControl() {
+  const box = document.createElement("span");
+  box.className = "pp-models";
+  const models = (data && data.models) || [];
+  const current = currentModel();
+  if (models.length) {
+    const pick = document.createElement("select");
+    pick.className = "pp-model";
+    pick.title = "The process model on the canvas";
+    models.forEach((model) => {
+      const option = document.createElement("option");
+      option.value = model.id;
+      option.textContent = `${model.label} (${model.participants.length})`;
+      option.selected = Boolean(current) && model.id === current.id;
+      pick.appendChild(option);
+    });
+    pick.addEventListener("change", () => showModel(pick.value));
+    box.appendChild(pick);
+    if (current && current.id) {
+      const rename = document.createElement("button");
+      rename.type = "button";
+      rename.className = "pp-model-rename";
+      rename.textContent = "Rename";
+      rename.title = "Rename this process model";
+      rename.addEventListener("click", async () => {
+        const label = window.prompt("Name of the process model:", current.label);
+        if (label && label.trim() !== current.label) {
+          await onEdit("rename", { element: current.id, label: label.trim() });
+        }
+      });
+      box.appendChild(rename);
+    }
+  }
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "pp-model-add";
+  add.textContent = "+ process model";
+  add.title = "Start another process model, such as the development process beside the business process";
+  add.addEventListener("click", async () => {
+    const label = window.prompt("Name of the process model:", "Development process");
+    if (!label || !label.trim()) return;
+    const made = await onEdit("add-model", { label: label.trim() });
+    if (!made || !made.newId) return;
+    wantedModel = made.newId;
+    if ((data.models || []).some((m) => m.id === wantedModel)) {
+      wantedModel = null;
+      showModel(made.newId);
+    }
+  });
+  box.appendChild(add);
+  return box;
 }
 
 function redraw() {
@@ -2854,6 +2936,7 @@ function buildPalette(host) {
     fit();
   });
   host.appendChild(fold);
+  host.appendChild(modelControl());
   if (paletteFolded) return;
 
   const sections = new Map();
@@ -2907,7 +2990,8 @@ let swallowPaletteClick = false;
 async function insertFromPalette(item, where) {
   if (item.op === "add-pool") {
     const label = window.prompt("Name of the participant (an organisation, a customer, a team):");
-    if (label) await onEdit("add-pool", { label });
+    const model = currentModel();
+    if (label) await onEdit("add-pool", { label, ...(model && model.id ? { model: model.id } : {}) });
     return;
   }
   if (item.op === "add-lane") {
@@ -3019,10 +3103,15 @@ function render(next) {
   data = next;
   index = buildIndex(next);
   picked = new Set();
+  if (wantedModel !== null && (next.models || []).some((m) => m.id === wantedModel)) {
+    selectedModel = wantedModel;
+    wantedModel = null;
+  }
   // Keep an activity open across a re-render, but forget one that is gone.
   expanded = new Set([...expanded].filter((id) => index.has(id)));
   const pools = new Set(next.participants.map((p) => p.id));
-  if (!pools.has(selectedPool)) selectedPool = next.participants.length ? next.participants[0].id : null;
+  const shown = next.participants.filter((p) => inModel(p.id));
+  if (!pools.has(selectedPool) || !inModel(selectedPool)) selectedPool = shown.length ? shown[0].id : null;
   const lanes = new Set((next.lanes || []).map((l) => l.id));
   if (!lanes.has(selectedLane)) selectedLane = null;
   collapsedPools = new Set([...collapsedPools].filter((id) => pools.has(id)));
