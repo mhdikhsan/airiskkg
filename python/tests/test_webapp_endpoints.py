@@ -544,6 +544,24 @@ def test_vocabulary_roles_declare_which_element_kind_they_apply_to(client) -> No
     assert by_group["Resource Role"] == {"resource"}
 
 
+def test_every_role_the_menu_offers_is_filed_under_a_category(client) -> None:
+    """The role picker cascades from the categories down `pair:subRoleOf`, so a
+    role that reaches no category would only be found by typing. The roles the
+    categories refine (Processing Step, Resource Role) file and are not offered."""
+    roles = {role["id"]: role for role in client.get("/api/vocabulary").get_json()["roles"]}
+    assert all(isinstance(role["parents"], list) for role in roles.values())
+    categories = {rid for rid, role in roles.items() if role["category"]}
+    above = {parent for rid in categories for parent in roles[rid]["parents"]}
+    assert len(categories) == 17 and len(above) == 2, (len(categories), above)
+
+    def filed(rid, seen=()):
+        return rid in categories or any(
+            filed(parent, seen + (rid,)) for parent in roles[rid]["parents"] if parent not in seen)
+
+    loose = [roles[rid]["label"] for rid in roles if rid not in above and not filed(rid)]
+    assert not loose, f"reachable only by search: {loose}"
+
+
 BEAM_NS = "http://w3id.org/beam/core#"
 
 

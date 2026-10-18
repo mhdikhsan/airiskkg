@@ -955,6 +955,18 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   a definition, and **all 97 terms carry a `skos:definition` the UI served none of**. That is
   what made `RetrievedContext`, `RetrievedResult` and `DocumentChunk` undecidable in a scroll
   of bare labels. Definitions are served for the 7 data categories too.
+- **The role picker cascades from the categories (2026-10-18, asked for).** A flat list said
+  nothing about which role refines which. The menu opens on the role categories that fit the
+  element, and each row opens onto the roles under it along `pair:subRoleOf`, on a hover or on
+  its arrow, the way a context menu does; the label picks. **A category opens and never picks**,
+  because it matches nothing (`ag:CategoryOnlyShape`), and the two roles above the categories
+  (Processing Step, Resource Role) are not offered. A role that does not fit the element but
+  leads to one that does is drawn dimmed as the way there and opens rather than picks until
+  *Show more*. Typing turns the menu back into one list, shelved by category, with definitions;
+  while pointing, the hint strip carries the definition. **A submenu keeps the side its cascade
+  started on**, or the third menu lands back on the first. Data categories stay a flat list.
+  `test_the_role_menu_cascades_from_category_to_the_role_that_refines_it` drives it with real
+  pointer moves and keys.
 - **A shelf heading is a band, not a caption.** It carries the canvas swatch for its class,
   an edge in the class's colour and a count, and it is sticky inside its own `.mp-group`, so
   the class a term goes on stays in view while its terms scroll and leaves with the last one.
@@ -965,7 +977,7 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   when the space below is short, and repositioned on scroll and resize because the popup it
   sits in scrolls under it.
 - **The canvas wheel handler must skip the overlays.** `.palette`, `.motif-palette`,
-  `.node-detail` and `.mp-pop` are children of `#canvas-wrap`, and its wheel handler called
+  `.node-detail`, `.mp-pop` and the role menu's `.mp-fly` submenus are children of `#canvas-wrap`, and its wheel handler called
   `preventDefault()` on everything outside the business level — so a 31-entry tray taller
   than the viewport could not be reached with a mouse at all, and the wheel zoomed instead.
   `OVERLAYS` in `graph_view.js` is the list; add to it when a new scrolling overlay lands

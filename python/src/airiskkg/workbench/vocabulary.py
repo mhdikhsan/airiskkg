@@ -266,6 +266,9 @@ def role_vocab_terms(graph: Graph) -> list[dict]:
             "id": str(subject),
             "label": display_label(label(graph, subject)),
             "definition": _definition(graph, subject),
+            # what the picker cascades from: categories first, then each role under its parent
+            "parents": sorted(str(p) for p in graph.objects(subject, PAIR.subRoleOf)),
+            "category": (subject, RDF.type, PAIR.RoleCategory) in graph,
         }
         if top is not None:
             term["group"] = display_label(label(graph, top))

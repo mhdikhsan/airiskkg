@@ -5,7 +5,7 @@ import { MultiPicker, categoryPickerOptions } from "./multipicker.js";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 // Things that sit over the canvas and do their own scrolling.
-const OVERLAYS = ".palette, .motif-palette, .node-detail, .mp-pop";
+const OVERLAYS = ".palette, .motif-palette, .node-detail, .mp-pop, .mp-fly";
 
 const NODE_H = 44;
 const LAYER_GAP = 110;
@@ -707,7 +707,7 @@ function showDetail(node, ev) {
   ].join("");
   // multi-value pickers: an element may carry several roles / data categories
   const rolePicker = MultiPicker(annotationCfg.vocabulary.roles, node.roleIds || [], {
-    placeholder: "+ add role", grouped: true,
+    placeholder: "+ add role", tree: true,
     filterKind: node.kind === "process" ? "process" : "resource",
     typeUri: node.typeUri, typeUris: node.typeUris,
     onPick: showApply,

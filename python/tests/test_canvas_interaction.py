@@ -101,6 +101,14 @@ class _Page:
             await asyncio.sleep(0.12)
         await asyncio.sleep(0.7)
 
+    async def hover(self, x, y):
+        """A pointer move with no button down, which is what opens a submenu."""
+        import asyncio
+
+        await self.send("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y,
+                                                     "button": "none", "buttons": 0})
+        await asyncio.sleep(0.4)
+
     async def drag(self, x1, y1, x2, y2):
         """A press, a real move, and a release - which is what makes the browser
         treat it as a drag rather than a click."""
@@ -2797,8 +2805,7 @@ def test_the_term_picker_is_not_clipped_by_the_popup_it_opens_in(page) -> None:
             hostHeight: Math.round(h.height),
             onScreen: p.top >= 0 && p.bottom <= window.innerHeight + 1
                       && p.left >= 0 && p.right <= window.innerWidth + 1,
-            options: pop.querySelectorAll('.mp-opt').length,
-            overflows: list.scrollHeight > list.clientHeight + 4,
+            categories: pop.querySelectorAll('.mp-list > .mp-row.folder').length,
             fixed: getComputedStyle(pop).position === 'fixed',
         };
     })()"""))
@@ -2806,8 +2813,20 @@ def test_the_term_picker_is_not_clipped_by_the_popup_it_opens_in(page) -> None:
 
     assert seen["fixed"], "the popover is still positioned inside the clipping popup"
     assert seen["onScreen"], "the popover is placed partly off screen"
-    assert seen["options"] > 10, f"only {seen['options']} terms are reachable"
-    assert seen["overflows"], "the list does not overflow, so scrolling is untested"
+    assert seen["categories"] >= 5, f"only {seen['categories']} categories are offered"
+
+    # typed into, the menu becomes one list, which is the one that has to scroll
+    narrowed = loop.run_until_complete(handle.js("""(() => {
+        const pop = document.querySelector('.node-detail .mp-pop');
+        const search = pop.querySelector('.mp-search');
+        search.value = 'a';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        const list = pop.querySelector('.mp-list');
+        return { options: pop.querySelectorAll('.mp-opt').length,
+                 overflows: list.scrollHeight > list.clientHeight + 4 };
+    })()"""))
+    assert narrowed["options"] > 10, f"only {narrowed['options']} terms are reachable"
+    assert narrowed["overflows"], "the list does not overflow, so scrolling is untested"
 
     scrolled = loop.run_until_complete(handle.js("""(() => {
         const list = document.querySelector('.node-detail .mp-pop .mp-list');
@@ -3207,18 +3226,31 @@ def _open_popup_on(loop, handle, label):
         'document.querySelector("#nd-label").value')) == label
 
 
-def _role_offer(loop, handle):
-    trigger = loop.run_until_complete(handle.js("""(() => {
-        const r = document.querySelector('#nd-role-mp .mp-add').getBoundingClientRect();
-        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
-    })()"""))
+def _open_role_menu(loop, handle):
+    trigger = _centre(loop, handle, "#nd-role-mp .mp-add")
     loop.run_until_complete(handle.click(trigger["x"], trigger["y"]))
+
+
+def _role_offer(loop, handle):
+    """Open the role menu and walk every submenu, counting the terms it offers."""
+    _open_role_menu(loop, handle)
     return loop.run_until_complete(handle.js("""(() => {
         const pop = document.querySelector('#nd-role-mp .mp-pop');
         const cat = document.querySelector('#nd-cat-mp .mp-add');
+        const offered = new Set();
+        const walk = (panel, depth) => {
+            for (const row of panel.querySelectorAll(':scope > .mp-row')) {
+                if (row.classList.contains('pick')) offered.add(row.dataset.id);
+                const more = row.querySelector('.mp-row-more');
+                if (!more) continue;
+                more.click();
+                walk(document.querySelectorAll('#nd-role-mp .mp-fly')[depth], depth + 1);
+            }
+        };
+        walk(pop.querySelector('.mp-list'), 0);
         return {
             open: !pop.classList.contains('hidden'),
-            offered: pop.querySelectorAll('.mp-opt').length,
+            offered: offered.size,
             more: !!pop.querySelector('.mp-all'),
             catDisabled: cat.disabled,
             catChips: document.querySelectorAll('#nd-cat-mp .mp-chip').length,
@@ -3238,7 +3270,10 @@ def test_the_popup_offers_the_terms_that_fit_the_element(scene_restored) -> None
     time.sleep(0.5)
     expected = loop.run_until_complete(handle.js("""(async () => {
         const v = await (await fetch('/api/vocabulary')).json();
+        // a category files roles, and so does the role the categories refine
+        const tops = new Set(v.roles.filter((r) => r.category).flatMap((r) => r.parents));
         const fit = (cls) => v.roles.filter((r) => r.applies === 'resource'
+            && !r.category && !tops.has(r.id)
             && (r.shelfId === cls || (r.appliesTo || []).includes(cls))).length;
         return { model: fit('http://w3id.org/beam/core#StatisticalModel'),
                  data: fit('http://w3id.org/beam/core#Data') };
@@ -3271,13 +3306,13 @@ def test_picking_a_role_closes_the_list_so_apply_can_be_pressed(scene_restored) 
     loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
     time.sleep(0.5)
     _open_popup_on(loop, handle, "Question")
-    assert _role_offer(loop, handle)["open"], "the role list did not open"
-
-    option = loop.run_until_complete(handle.js("""(() => {
-        const o = document.querySelector('#nd-role-mp .mp-pop .mp-opt');
-        const r = o.getBoundingClientRect();
-        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
-    })()"""))
+    _open_role_menu(loop, handle)
+    # a category opens on a click as well as on a hover, so a touch reaches it
+    category = _centre(loop, handle, "#nd-role-mp .mp-list > .mp-row.folder")
+    assert category, "the role list did not open"
+    loop.run_until_complete(handle.click(category["x"], category["y"]))
+    option = _centre(loop, handle, "#nd-role-mp .mp-fly .mp-row.pick")
+    assert option, "a category opened onto nothing to pick"
     loop.run_until_complete(handle.click(option["x"], option["y"]))
     seen = loop.run_until_complete(handle.js("""(() => {
         const apply = document.querySelector('#nd-apply');
@@ -3285,7 +3320,8 @@ def test_picking_a_role_closes_the_list_so_apply_can_be_pressed(scene_restored) 
         const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         const box = document.querySelector('#node-detail').getBoundingClientRect();
         return {
-            listOpen: !document.querySelector('#nd-role-mp .mp-pop').classList.contains('hidden'),
+            listOpen: !document.querySelector('#nd-role-mp .mp-pop').classList.contains('hidden')
+                || !!document.querySelector('#nd-role-mp .mp-fly'),
             chips: document.querySelectorAll('#nd-role-mp .mp-chip').length,
             applyOnTop: !!hit && !!hit.closest('#nd-apply'),
             why: { apply: [Math.round(r.top), Math.round(r.bottom)],
@@ -3301,6 +3337,84 @@ def test_picking_a_role_closes_the_list_so_apply_can_be_pressed(scene_restored) 
     assert seen["chips"] == 1, "the pick was not recorded"
     assert not seen["listOpen"], "the suggestion list stayed open after a pick"
     assert seen["applyOnTop"], f"Apply is still covered after a pick: {seen['why']}"
+
+
+def _menu_rows(loop, handle):
+    """Each open submenu: its box and its rows with their centres."""
+    return loop.run_until_complete(handle.js("""(() => {
+        const box = (n) => { const r = n.getBoundingClientRect();
+            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
+        return [...document.querySelectorAll('#nd-role-mp .mp-fly')].map((panel) => ({
+            box: box(panel),
+            rows: [...panel.querySelectorAll(':scope > .mp-row')].map((row) => {
+                const r = row.getBoundingClientRect();
+                return { label: row.querySelector('.mp-row-label').textContent,
+                         x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+            }),
+        }));
+    })()"""))
+
+
+def test_the_role_menu_cascades_from_category_to_the_role_that_refines_it(scene_restored) -> None:
+    """The role picker was one flat list, so nothing in it said that Foundation
+    LLM refines Generative Model, which refines Model. It cascades now: the
+    categories that fit the element, then each role under the role it refines,
+    opened by pointing at it the way a context menu opens."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.5)
+    _open_popup_on(loop, handle, "LLM")
+    _open_role_menu(loop, handle)
+
+    roots = loop.run_until_complete(handle.js("""[...document.querySelectorAll(
+        '#nd-role-mp .mp-list > .mp-row')].map((r) => r.querySelector('.mp-row-label').textContent)"""))
+    assert roots and roots[0] == "Models", f"the categories for a model do not come first: {roots}"
+
+    trail = ["Models", "Model", "Generative Model", "Foundation LLM"]
+    at = _centre(loop, handle, "#nd-role-mp .mp-list > .mp-row")
+    loop.run_until_complete(handle.hover(at["x"], at["y"]))
+    hints = []
+    for depth, label in enumerate(trail[1:]):
+        menus = _menu_rows(loop, handle)
+        assert len(menus) == depth + 1, f"pointing at {trail[depth]} opened {len(menus)} menus"
+        row = next((r for r in menus[-1]["rows"] if r["label"] == label), None)
+        assert row, f"{label} is not under {trail[depth]}: {[r['label'] for r in menus[-1]['rows']]}"
+        loop.run_until_complete(handle.hover(row["x"], row["y"]))
+        hints.append(loop.run_until_complete(handle.js(
+            "document.querySelector('#nd-role-mp .mp-hint').textContent")))
+
+    menus = _menu_rows(loop, handle)
+    for menu in menus:
+        b = menu["box"]
+        assert b["left"] >= 0 and b["top"] >= 0, f"a submenu is off screen: {b}"
+    first, third = menus[0]["box"], menus[2]["box"]
+    assert first["right"] <= third["left"] + 4 or third["right"] <= first["left"] + 4, (
+        f"the third menu landed back on the first: {first} {third}")
+    assert hints[1].startswith("Generative Model"), f"the hint does not say what it points at: {hints}"
+
+    leaf = next(r for r in menus[-1]["rows"] if r["label"] == "Foundation LLM")
+    loop.run_until_complete(handle.click(leaf["x"], leaf["y"]))
+    seen = loop.run_until_complete(handle.js("""({
+        chips: [...document.querySelectorAll('#nd-role-mp .mp-chip-label')].map((c) => c.textContent),
+        menus: document.querySelectorAll('#nd-role-mp .mp-fly').length,
+    })"""))
+    assert seen["chips"] == ["Foundation LLM"], f"the pick was not recorded: {seen}"
+    assert seen["menus"] == 0, "a submenu stayed open after the pick"
+
+    # and by keyboard: down onto Models, right into it, Enter picks Model
+    _open_role_menu(loop, handle)
+    _press(loop, handle, "ArrowDown", "ArrowDown", 40)
+    _press(loop, handle, "ArrowRight", "ArrowRight", 39)
+    _press(loop, handle, "Enter", "Enter", 13)
+    chips = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#nd-role-mp .mp-chip-label')].map((c) => c.textContent)"))
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#node-detail").classList.add("hidden"); 1'))
+    assert chips == ["Foundation LLM", "Model"], f"the keyboard did not walk the menu: {chips}"
 
 
 def test_matches_on_takes_the_reader_to_the_role_and_back(page) -> None:

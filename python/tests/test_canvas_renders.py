@@ -952,10 +952,13 @@ def test_the_term_picker_searches_and_shows_what_each_term_means(served) -> None
     """97 terms on four shelves put 50 under one heading, in a native <select>
     that could neither search nor show a definition.
 
-    Four facts, measured on the one model element in the bundled example: the
-    picker opens, every option carries its definition, the shelf that goes on
-    this element sorts first, and typing narrows the offer. The shelf orders
-    rather than filters, because some match queries constrain no class at all.
+    Measured on the one model element in the bundled example: the role menu
+    opens on the categories, the ones that go on a model come first, pointing
+    at one opens what is filed under it and says what it is, the categories for
+    other kinds of element are one click away and marked, and typing turns the
+    menu into one narrowed list where every option carries its definition. The
+    fit orders rather than filters, because some match queries constrain no
+    class at all.
     """
     browser = _browser()
     if not browser:
@@ -985,32 +988,38 @@ def test_the_term_picker_searches_and_shows_what_each_term_means(served) -> None
         setTimeout(() => {
           const pop = row.querySelector(".mp-pop");
           log("popOpen=" + (pop && !pop.classList.contains("hidden") ? 1 : 0));
-          log("offered=" + pop.querySelectorAll(".mp-opt").length);
-          log("withDef=" + pop.querySelectorAll(".mp-opt-def").length);
-          const shelves = [...pop.querySelectorAll(".mp-shelf")].map((s) => s.textContent);
-          log("shelves=" + shelves.length);
-          log("modelShelfFirst=" + (/Statistical Model/.test(shelves[0] || "") ? 1 : 0));
-          log("marksTheRest=" + shelves.filter((s) => /not this element/.test(s)).length);
-          // the terms for other kinds of element are one click away, and marked there
-          const more = pop.querySelector(".mp-all");
-          log("offersMore=" + (more ? 1 : 0));
-          if (more) more.click();
-          const all = [...pop.querySelectorAll(".mp-shelf")].map((s) => s.textContent);
-          log("allOffered=" + pop.querySelectorAll(".mp-opt").length);
-          log("marksTheRestWhenShown=" + all.filter((s) => /not this element/.test(s)).length);
-          // the element already plays Foundation LLM and Generative Model, and a
-          // selected term is not offered again
-          log("alreadyOn=" + row.querySelectorAll(".an-role .mp-chip").length);
-          const search = pop.querySelector(".mp-search");
-          search.value = "artifact";
-          search.dispatchEvent(new Event("input", { bubbles: true }));
+          const roots = [...pop.querySelectorAll(".mp-list > .mp-row")];
+          log("offered=" + roots.length);
+          log("allFolders=" + (roots.every((r) => r.classList.contains("folder")) ? 1 : 0));
+          log("modelFirst=" + (/^Models/.test((roots[0] || {}).textContent || "") ? 1 : 0));
+          log("marksTheRest=" + roots.filter((r) => r.classList.contains("off")).length);
+          roots[0].dispatchEvent(new MouseEvent("mouseenter"));
+          const said = pop.querySelector(".mp-hint").textContent;
           setTimeout(() => {
-            const left = pop.querySelectorAll(".mp-opt");
-            log("narrowed=" + left.length);
-            if (!left.length) return;
-            left[0].click();
+            log("opensOnPoint=" + row.querySelectorAll(".mp-fly").length);
+            log("hintNamesIt=" + (/^Models/.test(said) ? 1 : 0));
+            // the categories for other kinds of element are one click away, and marked there
+            const more = pop.querySelector(".mp-all");
+            log("offersMore=" + (more ? 1 : 0));
+            if (more) more.click();
+            const all = [...pop.querySelectorAll(".mp-list > .mp-row")];
+            log("allOffered=" + all.length);
+            log("marksTheRestWhenShown=" + all.filter((r) => r.classList.contains("off")).length);
+            // the element already plays Foundation LLM and Generative Model, and a
+            // selected term is not offered again
+            log("alreadyOn=" + row.querySelectorAll(".an-role .mp-chip").length);
+            const search = pop.querySelector(".mp-search");
+            search.value = "artifact";
+            search.dispatchEvent(new Event("input", { bubbles: true }));
             setTimeout(() => {
-              log("chips=" + row.querySelectorAll(".an-role .mp-chip").length);
+              const left = pop.querySelectorAll(".mp-opt");
+              log("narrowed=" + left.length);
+              log("withDef=" + pop.querySelectorAll(".mp-opt-def").length);
+              if (!left.length) return;
+              left[0].click();
+              setTimeout(() => {
+                log("chips=" + row.querySelectorAll(".an-role .mp-chip").length);
+              }, 300);
             }, 300);
           }, 300);
         }, 700);
@@ -1033,20 +1042,22 @@ def test_the_term_picker_searches_and_shows_what_each_term_means(served) -> None
     assert seen["foundModelRow"] == 1, f"no model row to annotate: {report}"
     assert seen["popOpen"] == 1, "the picker did not open"
     assert seen["offered"] > 0, "the picker offered nothing"
-    assert seen["withDef"] == seen["offered"], "an option is offered without its definition"
-    assert seen["shelves"] > 1, "the offer is not shelved at all"
-    assert seen["modelShelfFirst"] == 1, (
-        f"the terms that go on a model do not sort first: {report}"
+    assert seen["allFolders"] == 1, f"the menu does not open on the categories: {report}"
+    assert seen["modelFirst"] == 1, (
+        f"the categories that go on a model do not sort first: {report}"
     )
     assert seen["marksTheRest"] == 0, (
-        f"terms for other kinds of element are offered first-hand on a model: {report}"
+        f"categories for other kinds of element are offered first-hand on a model: {report}"
     )
+    assert seen["opensOnPoint"] == 1, f"pointing at a category opened nothing: {report}"
+    assert seen["hintNamesIt"] == 1, f"the hint does not say what is pointed at: {report}"
     assert seen["offersMore"] == 1, "the terms that do not fit cannot be reached at all"
     assert seen["allOffered"] > seen["offered"], f"Show more added nothing: {report}"
     assert seen["marksTheRestWhenShown"] >= 1, (
-        "the shelves that do not apply are offered without saying so"
+        "the categories that do not apply are offered without saying so"
     )
-    assert 0 < seen["narrowed"] < seen["offered"], f"typing did not narrow the offer: {report}"
+    assert 0 < seen["narrowed"] < 20, f"typing did not narrow the offer: {report}"
+    assert seen["withDef"] == seen["narrowed"], "an option is offered without its definition"
     assert seen["chips"] == seen["alreadyOn"] + 1, (
         f"picking a term did not record it: {report}"
     )
