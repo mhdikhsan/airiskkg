@@ -17,7 +17,7 @@ const DATA_W = 30;
 const DATA_H = 36;
 const DATA_BAND = 92;
 const NOTE_W = 150;
-const RISK_ROW_H = 17;
+const RISK_LINE_H = 14;
 const CHILD_H = 30;
 const BAND_H = 20;       // a participant band on a choreography activity
 const ENV_PAD = 28;      // room above and below a choreography task for its messages
@@ -113,14 +113,33 @@ export function humanKind(kind) {
 
 function dataOf(activity) {
   if (!activity.reads) return [];
-  return [
-    ...activity.reads.map((d) => ({ ...d, direction: "in" })),
-    ...activity.writes.map((d) => ({ ...d, direction: "out" })),
-  ];
+  const seen = new Map();
+  [...activity.reads.map((d) => ({ ...d, direction: "in" })),
+    ...activity.writes.map((d) => ({ ...d, direction: "out" }))].forEach((d) => {
+    const had = seen.get(d.id);
+    // a step that reads and writes one box draws it once, with an arrow each way
+    seen.set(d.id, had ? { ...had, direction: "both" } : d);
+  });
+  return [...seen.values()];
 }
+
+const DIRECTION_WORDS = { in: "reads", out: "writes", both: "reads and writes" };
 
 function riskOf(item) {
   return findingsByActivity.get(item.id) || null;
+}
+
+/* The candidate risks an activity carries, each named once and wrapped rather than cut. */
+function riskLines(risk) {
+  const counts = new Map();
+  risk.items.forEach((entry) => {
+    const name = String(entry.label).replace(/^Candidate\s+/i, "");
+    counts.set(name, (counts.get(name) || 0) + 1);
+  });
+  return [...counts.entries()].map(([name, n]) => {
+    const text = name.charAt(0).toUpperCase() + name.slice(1) + (n > 1 ? ` (×${n})` : "");
+    return wrap(text, 30, 2);
+  });
 }
 
 /** Every flow node of the model in one table, tagged with how it is drawn. */
@@ -162,7 +181,7 @@ function sizeOf(item) {
     h += item.children.length * CHILD_H + 10;
   }
   const risk = riskOf(item);
-  if (risk && openRisks.has(item.id)) h += risk.items.length * RISK_ROW_H + 12;
+  if (risk && openRisks.has(item.id)) h += riskLines(risk).flat().length * RISK_LINE_H + 16;
   return { w: BOX_W, h };
 }
 
@@ -934,11 +953,12 @@ function dataGlyph(parent, x, y, item) {
 }
 
 
-function dataAssociation(parent, x1, y1, x2, y2) {
+function dataAssociation(parent, x1, y1, x2, y2, both = false) {
   node("path", {
     d: `M ${x1} ${y1} L ${x2} ${y2}`,
     class: "pc-data-link",
     "marker-end": "url(#pc-arrow-data)",
+    ...(both ? { "marker-start": "url(#pc-arrow-data)" } : {}),
   }, parent);
 }
 
@@ -954,7 +974,9 @@ function drawData(parent, slot) {
     g.setAttribute("data-node", item.id);
     wireDataNode(g, { ...item, links: item.links || [{ direction: item.direction }] },
       { x: cx - DATA_W / 2, y: top });
-    if (item.direction === "in") {
+    if (item.direction === "both") {
+      dataAssociation(g, cx, top + DATA_H + 2, cx, slot.y - 4, true);
+    } else if (item.direction === "in") {
       dataAssociation(g, cx, top + DATA_H + 2, cx, slot.y - 4);
     } else {
       dataAssociation(g, cx, slot.y - 4, cx, top + DATA_H + 2);
@@ -967,7 +989,7 @@ function drawData(parent, slot) {
       centred(g, cx, top - 4, item.kinds.map(humanKind).join(", "), "pc-data-kind");
     }
     const title = node("title", {}, g);
-    title.textContent = `${item.label} — ${item.direction === "in" ? "read by" : "written by"} `
+    title.textContent = `${item.label} — ${{ in: "read by", out: "written by", both: "read and written by" }[item.direction]} `
       + `${slot.item.label}`
       + (item.kinds.length
         ? `\nClassified: ${item.kinds.join(", ")}`
@@ -1062,10 +1084,13 @@ function drawActivity(parent, slot) {
       : "Show the candidate risks found here";
 
     if (open) {
-      let rowY = slot.y + slot.h - risk.items.length * RISK_ROW_H - 6;
-      risk.items.forEach((entry) => {
-        text(group, slot.x + 26, rowY + 11, `• ${truncate(entry.label, 34)}`, "pc-risk-item");
-        rowY += RISK_ROW_H;
+      const rows = riskLines(risk);
+      let rowY = slot.y + slot.h - rows.flat().length * RISK_LINE_H - 8;
+      rows.forEach((lines) => {
+        lines.forEach((line, at) => {
+          text(group, slot.x + 18, rowY + 11, `${at ? "  " : "• "}${line}`, "pc-risk-item");
+          rowY += RISK_LINE_H;
+        });
       });
     }
   }
@@ -1706,9 +1731,21 @@ function dpvIriFor(name) {
   return (row && row.iri) || name;
 }
 
-function showDataDetail(entry, ev) {
+function showDataDetail(shown, ev) {
   const panel = document.querySelector("#process-detail");
   if (!panel) return;
+  // a box drawn in a step carries that one link; the model's entry has them all
+  const entry = (data.dataNodes || []).find((n) => n.id === shown.id) || shown;
+  const ways = new Map();
+  (entry.links || []).forEach((link) => {
+    if (!link.activity) return;
+    const had = ways.get(link.activity);
+    ways.set(link.activity, had && had !== link.direction ? "both" : link.direction);
+  });
+  const usedBy = [...ways.entries()].map(([id, way]) => ({ id, way, activity: index.get(id) }))
+    .filter((row) => row.activity);
+  const carryTo = usedBy.find((row) => (row.activity.refines || []).length === 1);
+  const systemName = carryTo ? ((systems || []).find((s) => s.id === carryTo.activity.refines[0]) || {}).label : null;
   const options = classOptions(entry.kinds[0] || "");
   panel.innerHTML = `
     <div class="nd-head">${entry.store ? "data store" : "data object"}</div>
@@ -1735,17 +1772,35 @@ function showDataDetail(entry, ev) {
       ? "named, so the classification lands here and nowhere else"
       : "not named, so the classification lands wherever content enters the system"}</div>`
     : ""}
-    <div class="nd-note">${entry.links.length
-      ? `read or written by ${entry.links.length} step${entry.links.length === 1 ? "" : "s"}`
-      : "nothing reads it yet - drag from its handle to a step"}</div>
+    ${usedBy.length ? usedBy.map((row) => `
+    <label class="nd-row"><span>${escapeHtml(truncate(row.activity.label, 18))}</span>
+      <select class="pd-data-way" data-activity="${escapeHtml(row.id)}" data-was="${row.way}"
+        >${options(Object.entries(DIRECTION_WORDS), row.way)}</select></label>`).join("")
+      : `<div class="nd-note">nothing reads it yet - drag from its handle to a step</div>`}
+    ${carryTo && !(entry.realisedBy || []).length ? `
+    <div class="pd-add">
+      <button type="button" class="btn small" id="pd-data-carry"
+        title="A Data element of that system, named after this one and linked to it">
+        Add to the ${escapeHtml(systemName || "system")} architecture</button>
+    </div>` : ""}
     <div class="nd-actions">
       <button type="button" class="btn small primary" id="pd-data-apply">Apply</button>
       <button type="button" class="btn small" id="pd-data-delete">Delete</button>
     </div>`;
   placePanel(panel, ev, 210);
 
+  const carry = panel.querySelector("#pd-data-carry");
+  if (carry) {
+    carry.addEventListener("click", async () => {
+      closeDetail();
+      await onEdit("carry-data", { activity: carryTo.id, reference: entry.id });
+    });
+  }
+
   panel.querySelector("#pd-data-apply").addEventListener("click", async () => {
     const name = panel.querySelector("#pd-data-name").value.trim();
+    const turns = [...panel.querySelectorAll(".pd-data-way")]
+      .filter((select) => select.value !== select.dataset.was);
     const shape = panel.querySelector("#pd-data-shape").value;
     const classification = panel.querySelector("#pd-data-class").value;
     const realises = panel.querySelector("#pd-data-realises");
@@ -1763,6 +1818,11 @@ function showDataDetail(entry, ev) {
     }
     if (classification !== (entry.kinds[0] || "")) {
       await onEdit("classify-data", { reference: entry.id, classification });
+    }
+    for (const select of turns) {
+      await onEdit("set-data-direction", {
+        reference: entry.id, activity: select.dataset.activity, direction: select.value,
+      });
     }
   });
   panel.querySelector("#pd-data-delete").addEventListener("click", async () => {
@@ -1860,23 +1920,6 @@ function showLaneDetail(lane, ev) {
   });
 }
 
-
-const DATA_SHAPES = [["object", "Document"], ["store", "Data store"]];
-
-function dataRows(activity) {
-  const items = dataOf(activity);
-  if (!items.length) return '<div class="pd-empty">No data attached yet.</div>';
-  return items.map((item) => `
-    <div class="pd-data" data-ref="${escapeHtml(item.id)}">
-      <span class="pd-dir">${item.direction === "in" ? "reads" : "writes"}</span>
-      <span class="pd-name" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</span>
-      <select class="pd-shape" title="A document is a folded page, a data store a cylinder"
-        >${options(DATA_SHAPES, item.store ? "store" : "object")}</select>
-      <select class="pd-class">${classOptions(item.kinds[0] || "")}</select>
-      <button type="button" class="pd-drop" title="Detach this data from the activity">×</button>
-    </div>`).join("");
-}
-
 const LOOP_KINDS = [
   ["", "— runs once —"],
   ["standard", "Loop"],
@@ -1951,15 +1994,7 @@ function showDetail(activity, ev) {
     ${contextRows(activity)}
     <label class="nd-row"><span>Repetition</span>
       <select id="pd-loop">${options(LOOP_KINDS, activity.markers.loop || "")}</select></label>
-    <div class="pd-section">Data</div>
-    ${dataRows(activity)}
-    <div class="pd-add">
-      <select id="pd-dir"><option value="in">reads</option><option value="out">writes</option><option value="both">reads and writes</option></select>
-      <input type="text" id="pd-data-name" placeholder="name of the data" />
-      <select id="pd-data-shape">${options(DATA_SHAPES, "object")}</select>
-      <select id="pd-data-class">${classOptions("")}</select>
-      <button type="button" class="btn small" id="pd-data-add">Add</button>
-    </div>
+    <div class="nd-note">Data is drawn with the palette and joined by an arrow; click a data box for what it holds and which way it goes.</div>
     <div class="pd-add">
       <select id="pd-boundary">${options(EVENT_DEFINITIONS, "error")}</select>
       <button type="button" class="btn small" id="pd-boundary-add">Attach boundary event</button>
@@ -1970,22 +2005,6 @@ function showDetail(activity, ev) {
     </div>`;
   placePanel(panel, ev, 340);
 
-  panel.querySelectorAll(".pd-data").forEach((row) => {
-    const reference = row.dataset.ref;
-    row.querySelector(".pd-class").addEventListener("change", async (event) => {
-      closeDetail();
-      await onEdit("classify-data", { reference, classification: event.target.value });
-    });
-    row.querySelector(".pd-shape").addEventListener("change", async (event) => {
-      closeDetail();
-      await onEdit("set-data-shape", { reference, shape: event.target.value });
-    });
-    row.querySelector(".pd-drop").addEventListener("click", async () => {
-      closeDetail();
-      await onEdit("detach-data", { reference, activity: activity.id });
-    });
-  });
-
   const carry = panel.querySelector("#pd-carry");
   if (carry) {
     carry.addEventListener("click", async () => {
@@ -1994,14 +2013,16 @@ function showDetail(activity, ev) {
     });
   }
 
-  panel.querySelector("#pd-data-add").addEventListener("click", async () => {
-    const label = panel.querySelector("#pd-data-name").value.trim();
-    if (!label) return;
-    const direction = panel.querySelector("#pd-dir").value;
-    const classification = panel.querySelector("#pd-data-class").value;
-    const shape = panel.querySelector("#pd-data-shape").value;
+  panel.querySelector("#pd-refines").addEventListener("change", async (event) => {
+    const system = event.target.value;
     closeDetail();
-    await onEdit("add-data", { activity: activity.id, direction, label, classification, shape });
+    if (system === "__new__") {
+      const label = panel.querySelector("#pd-name").value.trim() || activity.label;
+      const suggested = window.prompt("Name of the system that carries out this activity:", `${label} system`);
+      if (suggested) await onEdit("add-system", { activity: activity.id, label: suggested });
+      return;
+    }
+    await onEdit("set-refines", { activity: activity.id, system });
   });
 
   panel.querySelector("#pd-boundary-add").addEventListener("click", async () => {
@@ -2014,11 +2035,9 @@ function showDetail(activity, ev) {
 
   panel.querySelector("#pd-apply").addEventListener("click", async () => {
     const name = panel.querySelector("#pd-name").value.trim();
-    const system = panel.querySelector("#pd-refines").value;
     const loop = panel.querySelector("#pd-loop").value;
     const stepPicker = panel.querySelector("#pd-steps");
     const steps = stepPicker ? [...stepPicker.selectedOptions].map((o) => o.value) : null;
-    const label = name || activity.label;
     const context = [...panel.querySelectorAll(".pd-context")]
       .filter((select) => select.value !== select.dataset.held)
       .map((select) => ({
@@ -2029,18 +2048,6 @@ function showDetail(activity, ev) {
     if (name && name !== activity.label) await onEdit("rename", { element: activity.id, label: name });
     if (loop !== (activity.markers.loop || "")) {
       await onEdit("set-loop", { activity: activity.id, loop });
-    }
-    if (system === "__new__") {
-      // Named after the activity it carries out, which is the only thing known
-      // about it yet; the chip then opens it so the shape can be drawn.
-      const suggested = window.prompt("Name of the system that carries out this activity:",
-        `${label} system`);
-      if (suggested) await onEdit("add-system", { activity: activity.id, label: suggested });
-      return;
-    }
-    if (!activity.refines.includes(system) || activity.refines.length !== 1) {
-      await onEdit("set-refines", { activity: activity.id, system });
-      return;  // the steps offered were the old system's
     }
     const had = activity.steps || [];
     if (steps && (steps.length !== had.length || steps.some((id) => !had.includes(id)))) {

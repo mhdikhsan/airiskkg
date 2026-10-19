@@ -386,8 +386,7 @@ export function initMotifPalette(templates) {
       // A family filed as one group says nothing more under a second heading.
       const heading = groups.length > 1 ? el("div", { class: "motif-group" }, group) : null;
       if (heading) shelf.appendChild(heading);
-      // a sub-motif sits under the general motif it refines; one whose general motif
-      // is shelved elsewhere says which
+      // a sub-motif sits under the general motif it refines, where that one is on this shelf
       const here = new Set(members.map((m) => m.id));
       const parentOf = (m) => (m.refines || []).find((id) => here.has(id));
       const ordered = [];
@@ -397,14 +396,10 @@ export function initMotifPalette(templates) {
       };
       members.filter((m) => !parentOf(m)).forEach((m) => place(m, 0));
       ordered.forEach(([item, depth]) => {
-        const away = depth ? [] : (item.refines || []).map((id) => motifById.get(id)).filter(Boolean);
         const chip = el("div", {
           class: "motif-item" + (depth ? ` motif-sub depth-${Math.min(depth, 2)}` : ""),
           title: "Click for what it is; drag onto the canvas to add it.",
-        }, [
-          shortName(item),
-          away.length ? el("span", { class: "motif-of" }, ` · of ${away.map(shortName).join(", ")}`) : null,
-        ]);
+        }, shortName(item));
         chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap,
           () => { closeMotifCard(); addMotif(item); }, () => openMotifCard(item, chip)));
         shelf.appendChild(chip);

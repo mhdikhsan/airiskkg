@@ -515,8 +515,20 @@ def test_dragging_the_canvas_is_not_a_click(page) -> None:
     assert chip, "no chip to let go over"
     target_x = round(chip["left"] + chip["width"] / 2)
     target_y = round(chip["top"] + chip["height"] / 2)
+    # A pan starts on empty canvas. Where 140px to the left lands depends on how the
+    # diagram was fitted, and starting on a box drags the box onto its neighbour,
+    # covering the chip every later test clicks.
+    start = loop.run_until_complete(handle.js(f"""(() => {{
+        for (const [dx, dy] of [[-140, 0], [-140, 60], [-140, -60], [-220, 0], [-140, 120], [-140, -120]]) {{
+            const hit = document.elementFromPoint({target_x} + dx, {target_y} + dy);
+            if (hit && hit.closest('#process-canvas') && !hit.closest('[data-node], .pc-pool-strip, .pc-lane-strip'))
+                return [{target_x} + dx, {target_y} + dy];
+        }}
+        return null;
+    }})()"""))
+    assert start, "no empty canvas near the chip to start a pan from"
 
-    loop.run_until_complete(handle.drag(target_x - 140, target_y, target_x, target_y))
+    loop.run_until_complete(handle.drag(start[0], start[1], target_x, target_y))
     assert not _on_architecture(loop, handle), "a drag was treated as a click"
 
 
@@ -789,9 +801,9 @@ def test_clicking_a_plain_activity_opens_an_editor_for_it(page) -> None:
         return {
             hidden: panel.classList.contains('hidden'),
             display: getComputedStyle(panel).display,
-            fields: ['#pd-name', '#pd-refines', '#pd-data-add'].filter((s) => panel.querySelector(s)),
-            dataRows: panel.querySelectorAll('.pd-data').length,
-            classes: panel.querySelectorAll('#pd-data-class option').length,
+            fields: ['#pd-name', '#pd-refines', '#pd-loop'].filter((s) => panel.querySelector(s)),
+            // data is edited on the data box, not here
+            dataRows: panel.querySelectorAll('.pd-data, #pd-data-add').length,
         };
     })()"""))
 
@@ -800,7 +812,7 @@ def test_clicking_a_plain_activity_opens_an_editor_for_it(page) -> None:
         "the editor opened but CSS hides it on the business level - which is the bug"
     )
     assert len(seen["fields"]) == 3, f"the editor is missing controls: {seen['fields']}"
-    assert seen["classes"] > 0, "the data classification picker has no options"
+    assert seen["dataRows"] == 0, "the activity editor still edits data, which the data box does"
 
     loop.run_until_complete(handle.js(
         'document.querySelector("#process-detail").classList.add("hidden")'))
@@ -3673,8 +3685,8 @@ def test_a_store_read_and_written_by_one_step_is_drawn_both_ways(scene_restored)
     _back_to_business(loop, handle)
     titles = _settle(loop, handle, """[...document.querySelectorAll('#process-canvas title')]
         .map((t) => t.textContent).filter((t) => t.startsWith('Tickets'))""", [], tries=40)
-    assert any("read by Update ticket" in t for t in titles), titles
-    assert any("written by Update ticket" in t for t in titles), titles
+    # one box with an arrow each way (asked for 2026-10-19), not the same store drawn twice
+    assert len(titles) == 1 and "read and written by Update ticket" in titles[0], titles
 
 
 _XOR = """(async () => {
@@ -4472,7 +4484,12 @@ def test_the_starter_scene_names_the_steps_an_activity_is_carried_out_by(scene_r
         return { pencil: part('.pc-edit'), chip: part('.pc-open') };
     })()"""
     where = _settle(loop, handle, find, None, tries=40)
-    assert where and where["pencil"] and where["chip"], f"Starter did not draw the refined activity: {where}"
+    state = loop.run_until_complete(handle.js("""(() => ({
+        level: window.PairAI.state.level, scoped: window.PairAI.state.scopedSystem,
+        starts: window.PairAI.Editor.getValue().slice(0, 80),
+        drawn: [...document.querySelectorAll('#process-canvas .pc-activity')].map((g) => g.textContent.slice(0, 20)),
+        model: [...document.querySelectorAll('select')].map((s) => s.value).join('|') }))()"""))
+    assert where and where["pencil"] and where["chip"], f"Starter did not draw the refined activity: {where} {state}"
 
     loop.run_until_complete(handle.click(where["pencil"]["x"], where["pencil"]["y"]))
     time.sleep(1)
@@ -4541,3 +4558,31 @@ def test_an_edit_on_the_process_canvas_keeps_the_process_level(scene_restored) -
         time.sleep(2.5)
         seen["deleted the last pool"] = loop.run_until_complete(handle.js(level))
     assert all(seen.values()), f"an edit left the process level: {seen} (palette: {names})"
+
+
+def test_a_box_a_step_reads_and_writes_is_drawn_once_with_two_arrowheads(scene_restored) -> None:
+    """Read and written is one box with an arrow each way, never the same box twice."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    loop.run_until_complete(handle.js("""(async () => {
+      const get = async (name) => (await fetch('/api/examples/' + name)).json();
+      const a = await get('support_chatbot'), p = await get('customer_support');
+      const ttl = a.ttl + String.fromCharCode(10, 10) + p.ttl;
+      const r = await (await fetch('/api/process-edit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ttl, op: 'set-data-direction', reference: 'http://w3id.org/airiskkg/example/customer-support#KnowledgeRef',
+          activity: 'http://w3id.org/airiskkg/example/customer-support#AnswerQuestion', direction: 'both' }) })).json();
+      window.PairAI.Editor.setValue(r.ttl);
+      return 1; })()"""))
+    seen = _settle(loop, handle, """(() => {
+        const boxes = [...document.querySelectorAll('#process-canvas [data-node]')]
+          .filter((g) => g.querySelector('.pc-data-label') && g.textContent.includes('Knowledge base'));
+        if (!boxes.length) return null;
+        const links = boxes.flatMap((g) => [...g.querySelectorAll('.pc-data-link')]);
+        const both = links.filter((l) => l.getAttribute('marker-start')).length;
+        // waited for the edit's redraw, not for the drawing that was there before it
+        return both ? { boxes: boxes.length, both } : null;
+    })()""", None, tries=30)
+    assert seen, "the knowledge base was not drawn"
+    # the store is also written by the agent's step, so it is drawn by that step too: one box per step
+    assert seen["both"] == 1, f"no box carries an arrow each way: {seen}"
+    assert seen["boxes"] == 2, f"one step drew the box twice: {seen}"

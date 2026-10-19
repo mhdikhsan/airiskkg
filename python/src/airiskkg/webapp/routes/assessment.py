@@ -70,10 +70,13 @@ def possible() -> object:
     compile their queries under the parse lock, so it never makes the next request wait;
     and it stops once a newer question has been asked."""
     payload = request.get_json(silent=True) or {}
+    mine = _latest[0] = next(_ASKED)
+    if payload.get("stop"):
+        # the page moved on: the search still running is for a drawing nobody is looking at
+        return jsonify({"stopped": True})
     ttl = (payload.get("ttl") or "").strip()
     if not ttl:
         return jsonify({"error": "Provide an architecture graph (Turtle)."}), 400
-    mine = _latest[0] = next(_ASKED)
     try:
         with SPARQL_LOCK:
             result = run_assessment_from_text(ttl)

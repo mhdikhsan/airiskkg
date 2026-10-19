@@ -18,7 +18,7 @@ import { closeLibrary, initLibrary, isFrontDoor, isLibraryOpen, libraryBack, ope
 import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
 import { applyConnect, applyDisconnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
 import { openOverview } from "./panels/overview.js";
-import { clearPossible, initPossible } from "./panels/possible.js";
+import { clearPossible, initPossible, stopPossible } from "./panels/possible.js";
 import { clearRisk, initRisk, refreshRegister, renderRisk } from "./panels/risk.js";
 import { RiskCanvas } from "./lib/risk_canvas.js";
 import { initPalette } from "./panels/palette.js";
@@ -29,7 +29,6 @@ import { state } from "./state.js";
 
 // The tutorial's scenario, which Starter loads: a process with the architecture it refines.
 const STARTER_SCENE = "customer_support";
-const STARTER_ARCHITECTURE = "support_chatbot";
 
 // split divider 
 function initDivider() {
@@ -82,7 +81,7 @@ async function init() {
   else closeLibrary();
 
   GraphView.init();
-  Editor.init({ onChange: (ttl) => { refreshPreview(ttl); scheduleValidation(); } });
+  Editor.init({ onChange: (ttl) => { stopPossible(); refreshPreview(ttl); scheduleValidation(); } });
   initDivider();
 
   // A scope change redraws both the canvas and the findings list.
@@ -194,6 +193,18 @@ async function init() {
         noteChange(`business process: ${op.replace(/-/g, " ")}`);
         Editor.setValue(made.ttl);
         setStatus("ok", `Business process updated (${op})`);
+        // data reaching an activity that refines a system: the reader says whether it is in the architecture too
+        const offer = made.carryable;
+        if (offer && window.confirm(`Add ${offer.data.length === 1 ? `"${offer.data[0]}"` : `${offer.data.length} data items (${offer.data.join(", ")})`}`
+            + ` to the ${offer.system} architecture as well?`)) {
+          const carried = await postJson("/api/process-edit", {
+            ttl: Editor.getValue(), op: "carry-data", activity: offer.activity,
+            ...(offer.reference ? { reference: offer.reference } : {}),
+          });
+          noteChange("business process: carry data into the architecture");
+          Editor.setValue(carried.ttl);
+          setStatus("ok", `Added to the ${offer.system} architecture`, `${carried.newIds.length} data element(s)`);
+        }
         return made;
       } catch (error) {
         setStatus("error", "Could not edit the process: " + error.message.split(String.fromCharCode(10))[0]);
@@ -382,10 +393,9 @@ async function init() {
   });
 
   $("#btn-starter").addEventListener("click", async () => {
-    // the tutorial's scenario: the business process with its architecture, or the architecture alone
-    const business = state.level === "business";
+    // the tutorial's scenario, from any level: the business process with the system it refines
     settleChoice();
-    await loadExample(business ? STARTER_SCENE : STARTER_ARCHITECTURE);
+    await loadExample(STARTER_SCENE);
   });
 
   

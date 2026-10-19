@@ -406,8 +406,14 @@ export async function refreshPreview(ttl) {
   }
   scheduleStaleCheck(ttl);
   try {
-    const data = await postJson("/api/graph", { ttl, scope: state.scopedSystem });
+    let data = await postJson("/api/graph", { ttl, scope: state.scopedSystem });
     if (seq !== previewSeq) return;
+    // a scope naming a system the drawing no longer holds would draw nothing at all
+    if (state.scopedSystem && !(data.systems || []).some((system) => system.id === state.scopedSystem)) {
+      resetScope();
+      data = await postJson("/api/graph", { ttl, scope: null });
+      if (seq !== previewSeq) return;
+    }
     state.lastGraph = data;
     GraphView.render(data);
     /* After the architecture is known, so the level decision has something to

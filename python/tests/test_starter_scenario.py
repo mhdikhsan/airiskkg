@@ -136,28 +136,46 @@ def test_a_new_system_drops_the_steps_of_the_old_one(client) -> None:
     assert _activity(client, moved)["steps"] == []
 
 
-def test_data_drawn_on_a_refined_activity_is_in_its_architecture_at_once(client) -> None:
-    """Attached to an activity that refines a system, a data object gets its element
-    there straight away; attached to one that refines nothing, it stays in the process."""
+def test_data_drawn_on_a_refined_activity_is_offered_to_its_architecture(client) -> None:
+    """Attached to an activity that refines a system, a data object is offered to that
+    architecture rather than put there unasked; carrying it then makes its element.
+    Attached to an activity that refines nothing, nothing is offered."""
     scene = _scene()
-    added = _edit(client, scene, "add-data", activity=ANSWER_QUESTION, direction="in",
-                  label="Order history", classification="PersonalData", shape="store")
-    graph = Graph().parse(data=added, format="turtle")
+    response = client.post("/api/process-edit", json={
+        "ttl": scene, "op": "add-data", "activity": ANSWER_QUESTION, "direction": "in",
+        "label": "Order history", "classification": "PersonalData", "shape": "store"})
+    body = response.get_json()
+    offer = body["carryable"]
+    assert offer and offer["data"] == ["Order history"] and offer["system"] == "Support chatbot", offer
     beam = "http://w3id.org/beam/core#"
-    store = next(s for s in graph.subjects(URIRef("https://sBPMN.github.io/2.0/properties#name"), None)
-                 if str(graph.value(s, URIRef("https://sBPMN.github.io/2.0/properties#name"))) == "Order history"
-                 and (s, RDF.type, URIRef("https://sBPMN.github.io/2.0/classes#dataStore")) in graph)
-    element = graph.value(store, PAIR.realisedBy)
-    assert element is not None, "the store names no element"
-    assert (URIRef(CSA + "SupportChatbot"), URIRef(beam + "hasResource"), element) in graph
-    assert (element, RDF.type, URIRef(beam + "Data")) in graph
+    before = len(set(Graph().parse(data=body["ttl"], format="turtle").subjects(RDF.type, URIRef(beam + "Data"))))
+    assert before == len(set(Graph().parse(data=scene, format="turtle").subjects(RDF.type, URIRef(beam + "Data")))), (
+        "the data reached the architecture before anybody said so")
 
-    plain = _edit(client, scene, "add-data", activity=CSP + "EscalateToAgent", direction="out",
-                  label="Escalation note", classification="")
-    after = Graph().parse(data=plain, format="turtle")
-    assert len(set(after.subjects(RDF.type, URIRef(beam + "Data")))) == len(
-        set(Graph().parse(data=scene, format="turtle").subjects(RDF.type, URIRef(beam + "Data")))), (
-        "data of an activity that refines nothing reached an architecture")
+    carried = client.post("/api/process-edit", json={
+        "ttl": body["ttl"], "op": "carry-data", "activity": offer["activity"], "reference": offer["reference"]})
+    assert carried.status_code == 200, carried.get_json()
+    graph = Graph().parse(data=carried.get_json()["ttl"], format="turtle")
+    bp = "https://sBPMN.github.io/2.0/properties#"
+    store = next(s for s, o in graph.subject_objects(URIRef(bp + "name")) if str(o) == "Order history")
+    element = graph.value(store, PAIR.realisedBy)
+    assert element is not None and (URIRef(CSA + "SupportChatbot"), URIRef(beam + "hasResource"), element) in graph
+
+    plain = client.post("/api/process-edit", json={
+        "ttl": scene, "op": "add-data", "activity": CSP + "EscalateToAgent", "direction": "out",
+        "label": "Escalation note", "classification": ""}).get_json()
+    assert plain.get("carryable") is None, "an activity that refines nothing offered an architecture"
+
+
+def test_a_system_given_to_an_activity_with_data_offers_that_data(client) -> None:
+    scene = _scene().replace("    pair:refinedBy csa:SupportChatbot ;\n", "")
+    body = client.post("/api/process-edit", json={
+        "ttl": scene, "op": "set-refines", "activity": ANSWER_QUESTION, "system": CSA + "SupportChatbot"}).get_json()
+    assert body.get("carryable") is None, "offered data that already names its element"
+    bare = scene.replace("    pair:realisedBy csa:KnowledgeBase .", "    bp:name \"Knowledge base\" .")
+    body = client.post("/api/process-edit", json={
+        "ttl": bare, "op": "set-refines", "activity": ANSWER_QUESTION, "system": CSA + "SupportChatbot"}).get_json()
+    assert body["carryable"]["data"] == ["Knowledge base"], body.get("carryable")
 
 
 def test_a_step_reads_and_writes_one_data_box_in_one_edit(client) -> None:
@@ -179,3 +197,47 @@ def test_a_step_reads_and_writes_one_data_box_in_one_edit(client) -> None:
     again = client.post("/api/process-edit", json={
         "ttl": both, "op": "connect-data", "data": str(ref), "activity": str(step), "direction": "both"})
     assert again.status_code == 400, "joined the same store twice"
+
+
+def test_the_direction_of_a_data_link_changes_in_place(client) -> None:
+    """Reads, writes or both: the associations are rewritten on the same box."""
+    scene = _scene()
+    bp = "https://sBPMN.github.io/2.0/properties#"
+    ref = CSP + "KnowledgeRef"
+
+    def ways(ttl):
+        g = Graph().parse(data=ttl, format="turtle")
+        step = URIRef(ANSWER_QUESTION)
+        reads = {g.value(a, URIRef(bp + "sourceRef")) for a in g.objects(step, URIRef(bp + "dataInputAssociation"))}
+        writes = {g.value(a, URIRef(bp + "targetRef")) for a in g.objects(step, URIRef(bp + "dataOutputAssociation"))}
+        return URIRef(ref) in reads, URIRef(ref) in writes
+
+    assert ways(scene) == (True, False)
+    both = _edit(client, scene, "set-data-direction", reference=ref, activity=ANSWER_QUESTION, direction="both")
+    assert ways(both) == (True, True)
+    out = _edit(client, both, "set-data-direction", reference=ref, activity=ANSWER_QUESTION, direction="out")
+    assert ways(out) == (False, True)
+    refused = client.post("/api/process-edit", json={
+        "ttl": scene, "op": "set-data-direction", "reference": CSP + "RecordsRef",
+        "activity": ANSWER_QUESTION, "direction": "in"})
+    assert refused.status_code == 400, "turned a link that does not exist"
+
+
+def test_a_data_box_joined_both_ways_by_drawing_stays_one_box(client) -> None:
+    """Drawn from the box to a step it is read, from the step to the box it is written;
+    drawing both is one box with an arrow each way, never a copy of the box."""
+    scene = _scene()
+    added = client.post("/api/process-edit", json={
+        "ttl": scene, "op": "add-data", "label": "Session store", "shape": "store"}).get_json()
+    ref = added["newId"]
+    step = CSP + "LogConversation"
+    read = _edit(client, added["ttl"], "connect", source=ref, target=step)
+    both = _edit(client, read, "connect", source=step, target=ref)
+    graph = Graph().parse(data=both, format="turtle")
+    bp = "https://sBPMN.github.io/2.0/properties#"
+    store = next(s for s, o in graph.subject_objects(URIRef(bp + "name")) if str(o) == "Session store")
+    assert len(set(graph.subjects(URIRef(bp + "dataStoreRef"), store))) == 1, "drawing the write copied the box"
+    node = URIRef(step)
+    reads = {graph.value(a, URIRef(bp + "sourceRef")) for a in graph.objects(node, URIRef(bp + "dataInputAssociation"))}
+    writes = {graph.value(a, URIRef(bp + "targetRef")) for a in graph.objects(node, URIRef(bp + "dataOutputAssociation"))}
+    assert URIRef(ref) in reads and URIRef(ref) in writes

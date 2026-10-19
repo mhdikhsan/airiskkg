@@ -21,6 +21,7 @@ const SHOWN = 4;
 let asked = 0;
 let showAll = false;
 let last = null;
+let searching = false;  // a search the server is still running for this page
 
 function why(need) {
   return need.why ? el("span", { class: "possible-was" }, ` - if ${need.why}`) : null;
@@ -144,11 +145,14 @@ async function load() {
   host.appendChild(el("p", { class: "possible-lede possible-looking" },
     "Looking for risks a fuller diagram would raise..."));
   try {
+    searching = true;
     const report = await postJson("/api/possible", { ttl });
+    searching = false;
     if (mine !== asked || Editor.getValue().trim() !== ttl) return;  // a later run owns the panel
     last = report;
     render();
   } catch (_) {
+    searching = false;
     if (mine === asked) host.innerHTML = "";
   }
 }
@@ -176,7 +180,16 @@ export function initPossible() {
   on("scope:changed", render);
 }
 
+/* The drawing changed under a running search: it is for a document nobody is looking at. */
+export function stopPossible() {
+  if (!searching) return;
+  searching = false;
+  asked += 1;
+  postJson("/api/possible", { stop: true }).catch(() => {});
+}
+
 export function clearPossible() {
+  stopPossible();
   asked += 1;
   last = null;
   const host = $("#possible-list");

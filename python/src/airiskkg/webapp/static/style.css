@@ -1058,7 +1058,7 @@ button.motif-family:hover { color: #4a5262; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.pd-shape, .pd-class, .pd-add select, .pd-add input {
+.pd-shape, .pd-class, .pd-way, .pd-data-way, .pd-add select, .pd-add input {
   border: 1px solid #c6ccd8;
   border-radius: 5px;
   padding: 2px 4px;
@@ -1092,7 +1092,8 @@ button.motif-family:hover { color: #4a5262; }
 .pd-add select { flex: 1 1 0; min-width: 0; }
 .pd-add .btn { flex: 0 0 auto; }
 .pd-shape { flex: none; max-width: 96px; }
-.pd-data .pd-shape, .pd-data .pd-class { flex: 0 1 auto; min-width: 0; }
+.pd-data .pd-shape, .pd-data .pd-class, .pd-data .pd-way { flex: 0 1 auto; min-width: 0; }
+.pd-way { color: #9a6b1f; max-width: 92px; }
 .pd-data .pd-name { flex: 1 1 40px; }
 
 .validation-row {
@@ -1802,7 +1803,7 @@ button.motif-family:hover { color: #4a5262; }
 .pc-risk-box { fill: #fdf1e7; stroke: #d08a45; stroke-width: 1.2; }
 .pc-risk-label { fill: #8a4f19; font-size: 9.5px; font-weight: 600; }
 .pc-risk:hover .pc-risk-box { fill: #f9e3d0; }
-.pc-risk-item { fill: #8a4f19; font-size: 10.5px; }
+.pc-risk-item { fill: #8a4f19; font-size: 11.5px; }
 
 /* The opening question. Two layers, two jobs, and which one someone came to do. */
 .start-question { font-size: 15px; color: #5a6273; margin: 0 0 14px; }
@@ -3563,12 +3564,7 @@ body.risk-list-page { display: block; height: auto; min-height: 100%; overflow: 
 .motif-card-risks { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
 .motif-card-note { margin: 6px 0; font-size: 11px; color: var(--text-dim); }
 .motif-card-actions { display: flex; gap: 6px; justify-content: flex-end; }
-/* A sub-motif under the general motif it is a more detailed form of. */
-.motif-item.motif-sub { position: relative; }
-.motif-item.motif-sub.depth-1 { margin-left: 14px; }
-.motif-item.motif-sub.depth-2 { margin-left: 28px; }
-.motif-item.motif-sub::before {
-  position: absolute; left: -9px; top: 50%; width: 6px; height: 6px; margin-top: -6px;
-  border-left: 1px solid var(--text-dim); border-bottom: 1px solid var(--text-dim); content: "";
-}
-.motif-of { color: var(--text-dim); font-size: 10.5px; }
+/* A sub-motif under the general motif it refines: the same box, its text set in, an accent inside. */
+.motif-item.motif-sub { box-shadow: inset 3px 0 0 var(--accent); }
+.motif-item.motif-sub.depth-1 { padding-left: 18px; }
+.motif-item.motif-sub.depth-2 { padding-left: 28px; }

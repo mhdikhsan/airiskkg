@@ -629,6 +629,15 @@ def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str)
     if not missing:
         return None
 
+    # drawn the other way onto a box this step already uses: that box, never a copy of it
+    own = next((end for prop, side in ends.values()
+                for association in data.objects(activity, prop)
+                for end in data.objects(association, side)
+                if (data.value(end, BP.dataStoreRef) or data.value(end, BP.dataObjectRef)) == held), None)
+    if own is not None:
+        made = [_associate(data, own, activity, way) for way in missing]
+        return str(made[-1])
+
     if _in_use(data, reference):
         appearance = _fresh(data, "dataref")
         data.add((appearance, RDF.type,
@@ -664,6 +673,30 @@ def _in_use(data: Graph, reference: URIRef) -> bool:
                            (BP.dataOutputAssociation, BP.targetRef))
         for association in data.objects(None, prop)
     )
+
+
+def _carryable(data: Graph, node: URIRef, only: URIRef | None = None) -> dict | None:
+    """What carrying would add for this activity: the system it refines and the data
+    it touches that names no element yet. None when there is nothing to ask about."""
+    systems = list(data.objects(node, PAIR.refinedBy))
+    if len(systems) != 1:
+        return None
+    names = []
+    for held, end in ((BP.dataInputAssociation, BP.sourceRef), (BP.dataOutputAssociation, BP.targetRef)):
+        for association in data.objects(node, held):
+            for reference in data.objects(association, end):
+                if only is not None and reference != only:
+                    continue
+                obj = data.value(reference, BP.dataObjectRef) or data.value(reference, BP.dataStoreRef) or reference
+                if data.value(obj, PAIR.realisedBy) is None:
+                    name = str(data.value(obj, BP.name) or data.value(reference, BP.name) or "Data")
+                    if name not in names:
+                        names.append(name)
+    if not names:
+        return None
+    label = data.value(systems[0], RDFS.label)
+    return {"activity": str(node), "reference": str(only) if only is not None else None,
+            "system": str(label) if label else "the system", "data": names}
 
 
 def _carry_data(data: Graph, node: URIRef, only: URIRef | None = None) -> list[str]:
@@ -815,6 +848,7 @@ def process_edit() -> object:
         return jsonify({"error": f"Could not parse the graph: {error}"}), 400
 
     new_id = None
+    carryable = None
 
     if op == "add-pool":
         label = (payload.get("label") or "New participant").strip()
@@ -1135,8 +1169,7 @@ def process_edit() -> object:
             made = _join_data(data, reference, step, "in" if reading else "out")
             if made is None:
                 return jsonify({"error": _already_joined(reading)}), 400
-            _carry_data(data, step, only=reference)
-            return _serialized(data, newId=made)
+            return _serialized(data, newId=made, carryable=_carryable(data, step, only=reference))
 
         # Two black-box pools have no process at all, and are still two pools.
         home = _process_of(data, source_ref)
@@ -1193,6 +1226,7 @@ def process_edit() -> object:
             if step not in kept:
                 data.remove((URIRef(activity), PAIR.carriedOutBy, step))
         new_id = activity
+        carryable = _carryable(data, URIRef(activity))
 
     elif op == "set-steps":
         activity = payload.get("activity")
@@ -1220,7 +1254,8 @@ def process_edit() -> object:
             return jsonify({"error": "carry-data needs an activity."}), 400
         if len(list(data.objects(URIRef(activity), PAIR.refinedBy))) != 1:
             return jsonify({"error": "Only an activity that refines a system can carry its data there."}), 400
-        made = _carry_data(data, URIRef(activity))
+        only = URIRef(payload["reference"]) if payload.get("reference") else None
+        made = _carry_data(data, URIRef(activity), only=only)
         if not made:
             return jsonify({"error": "Everything this activity reads or writes already names its element."}), 400
         data.bind("bpmn", BPMN)
@@ -1277,7 +1312,7 @@ def process_edit() -> object:
         for way in (["in", "out"] if direction == "both" else [direction]):
             _associate(data, reference, node, way)
         new_id = str(reference)
-        _carry_data(data, node, only=reference)
+        carryable = _carryable(data, node, only=reference)
 
     elif op == "connect-data":
         """One data node, joined to another activity.
@@ -1296,7 +1331,7 @@ def process_edit() -> object:
             return jsonify({"error": "That step already reads and writes this data." if direction == "both"
                             else _already_joined(direction == "in")}), 400
         new_id = made
-        _carry_data(data, URIRef(activity), only=URIRef(reference))
+        carryable = _carryable(data, URIRef(activity), only=URIRef(reference))
 
     elif op == "set-condition":
         """The words on a branch out of a gateway.
@@ -1535,6 +1570,31 @@ def process_edit() -> object:
             data.add((target, RDF.type, BPMN.dataObject))
         new_id = str(ref)
 
+    elif op == "set-data-direction":
+        """Whether a step reads this data, writes it, or both: its associations are
+        rewritten on the same box, so a store a step updates stays one box."""
+        reference = payload.get("reference")
+        activity = payload.get("activity")
+        direction = payload.get("direction")
+        if not (reference and activity) or direction not in ("in", "out", "both"):
+            return jsonify({"error": "set-data-direction needs a reference, an activity and a direction."}), 400
+        ref, node = URIRef(reference), URIRef(activity)
+        found = False
+        for prop in (BP.dataInputAssociation, BP.dataOutputAssociation):
+            for association in list(data.objects(node, prop)):
+                ends = set(data.objects(association, BP.sourceRef)) | set(data.objects(association, BP.targetRef))
+                if ref not in ends:
+                    continue
+                found = True
+                data.remove((node, prop, association))
+                for triple in list(data.triples((association, None, None))):
+                    data.remove(triple)
+        if not found:
+            return jsonify({"error": "That step does not read or write this data."}), 400
+        for way in (["in", "out"] if direction == "both" else [direction]):
+            _associate(data, ref, node, way)
+        new_id = reference
+
     elif op == "detach-data":
         reference = payload.get("reference")
         activity = payload.get("activity")
@@ -1645,4 +1705,4 @@ def process_edit() -> object:
 
     data.bind("bpmn", BPMN)
     data.bind("bp", BP)
-    return _serialized(data, newId=new_id)
+    return _serialized(data, newId=new_id, carryable=carryable)

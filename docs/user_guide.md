@@ -123,7 +123,7 @@ stay in sync both ways**:
 | --- | --- |
 | **Load example ▾** | Load a graph. Under **Bundled**: `customer_support` (the starter scenario: a business process with the chatbot it runs), `support_chatbot` (that chatbot alone) and `simple_graph_rag` (a small, fully annotated graph RAG). Under **Local**: anything you dropped in `ontology/example_local/`; see [Your own graphs](#26-your-own-graphs). |
 | **Open .ttl** | Upload your own Turtle file. |
-| **Starter** | Replace the editor with the [starter scenario](#27-the-starter-scenario): on the business level the whole scene, on the architecture level the chatbot alone. |
+| **Starter** | Replace the editor with the [starter scenario](#27-the-starter-scenario): the business process with the chatbot it runs, from any level. |
 | **Clear** | Empty both the code and the diagram (asks to confirm). |
 | **Validate** | Check the graph against the SHACL *input contract* — reports in the **Input contract** drawer tab. |
 | **Run assessment** | Run the full motif-matching + risk-interpretation pipeline; results land in the **Findings** and **Motifs** tabs. |

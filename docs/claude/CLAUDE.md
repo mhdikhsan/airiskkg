@@ -464,9 +464,12 @@ in `NOTICE.md`.
   no element into a `beam:Data` of that system, linked by `realisedBy`, so the classification
   reaches it through the bridge and is never copied as a facet. Only when exactly one step is
   named does that step read or write it, because with several the process does not say which.
-  **Data attached to a refined activity is carried at once** (`add-data`, `connect-data` and a
-  dragged connection all call `_carry_data`), so a store drawn in the process is in the
-  architecture without a second step; the button carries what was drawn before.
+  **Carrying is offered, not done unasked** (changed 2026-10-19 after one day of carrying at
+  once): when data joins an activity that refines a system (`add-data`, `connect-data`, a dragged
+  connection) or an activity holding data is given a system (`set-refines`), the reply carries
+  `carryable` (the system, the data names) and the page asks once; yes runs `carry-data`, which
+  takes an optional `reference`. The data box's own panel offers "Add to the … architecture" too.
+  Choosing an activity's system applies at once, so adding data next no longer loses it.
 - **`pair:realisedBy` is the statement; the edge rule is the fallback.** Named, that element and
   no other; unnamed, the edge. `pair:targetInferred` on the derivation says which, because only
   one of them is somebody's claim. The picker offers the resources of the architectures the
@@ -714,7 +717,13 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   `dataStore`, so it is dropped on a retype rather than carried into a domain sBPMN does not
   declare. **A step reads and writes one box in one edit** (`direction: "both"` on `add-data` and
   `connect-data`, "reads and writes" in the activity editor): two associations on the same
-  reference, so a store a step updates is one box with an arrow each way.
+  reference, so a store a step updates is one box with an arrow each way: the canvas merges a
+  step's read and write of one box into one entry drawn once with an arrowhead at each end.
+  `set-data-direction` turns an existing link (reads, writes, both). **Data is edited on the data
+  box, never on the activity** (2026-10-19, asked for): the palette draws it, an arrow joins it
+  (box to step reads, step to box writes, both ways is one box with two arrowheads, because
+  `_join_data` reuses the step's own box), and its panel holds the name, the shape, the category,
+  the direction per step and "Add to the … architecture".
 - **A band's place in the stack is the reader's to choose, and it is dragged.** Pools and lanes
   sorted by label, so a participant could not be moved where the diagram needs it — the order
   was a side effect of naming. The gesture is a grab on the band's **name strip**, which is a
@@ -772,7 +781,10 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   is the state of a process that so far holds only a data object or a note, and of one whose
   last pool was just deleted. Any BPMN on the page now counts as a process, and the fallback
   never overrides a level chosen by hand. `test_an_edit_on_the_process_canvas_keeps_the_process_level`
-  fails on the old code.
+  fails on the old code. **A scope naming a system the drawing no longer holds is dropped**: it
+  drew an empty canvas under a badge naming the system that was left (reported 2026-10-19).
+- **An activity's risk list names each risk once and wraps it**, without "Candidate" and with
+  "×2" where a pattern recurs, in 11.5px; truncated at 34 characters it could not be read.
 
 ### The front door
 
@@ -1043,9 +1055,10 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **Sub-motifs are shown, not matched (decision 3B; C after the tutorial).** `pair:refinesMotif`
   names the general motif a motif is a more detailed form of (Hybrid retriever, Reranker,
   Query rewriting and RAG under Information retrieval; Iterative and Adaptive RAG under RAG;
-  Guardrails under Input and Output screening; 16 links). The tray indents a sub-motif under its
-  general motif and says "of X" when that one is shelved elsewhere; the motif's card links both
-  levels. **No match query reads it** (the family guard covers it), and it is not yet a
+  Guardrails under Input and Output screening; 16 links). In the tray a sub-motif follows its
+  general motif on the same shelf in a box of the same width, its text set in with an accent
+  inside the box (an L connector and an "of X" note were tried and removed as untidy); the
+  motif's card links both levels. **No match query reads it** (the family guard covers it), and it is not yet a
   promise that the detailed motif contains the general one: today only 7 motifs contain another,
   so a general drawing still does not raise a variant's risks. Option C, every sub-motif
   containing its parent with the shared risks moved up, is the plan after the tutorial,
@@ -1102,7 +1115,9 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   graph took 64 s (BotTina); budgeted, 34 s. **The search never makes another request wait**:
   `/api/possible` holds the SPARQL lock only for its assessment and runs the search on its own
   copies (their queries compile under `_PARSE_LOCK`), and a newer assessment or search stops
-  it. Holding the lock for the whole search made every request after an assessment queue for
+  it, as does the page when its drawing changes or is replaced (`{"stop": true}`): the search
+  shares the server's process, and one left running for a drawing nobody looks at slowed
+  everything after it, which is what failed the browser suites in order. Holding the lock for the whole search made every request after an assessment queue for
   up to 30 s. Its cards carry `possible-card`, never `finding-card`, which findings code and
   tests select on.
   **They never gate or change detection**: nothing is written to the submitted graph, no query
@@ -1346,7 +1361,7 @@ the gitignored `docs/evaluation/` imports them and cannot be updated from a clon
 
 - **`ontology/example/` — what the deployment offers, and only that**: `simple_graph_rag.ttl`,
   `support_chatbot.ttl` and `context/customer_support.ttl`, the tutorial's starter scene (A-P1
-  decision 3, 2026-10-19), which **Starter** loads. This is the list the example dropdown shows,
+  decision 3, 2026-10-19), which **Starter** loads from any level. This is the list the example dropdown shows,
   so it stays small on purpose. `it_support_agent.ttl` and `context/it_service_desk.ttl` are
   fixtures since `3f9c60f`.
 - **`python/tests/fixtures/` — graphs a test needs that the deployment does not offer**:
@@ -1579,8 +1594,11 @@ building an approval inline.
 2026-10-19). Two browser tests fail on this branch before and after B-3/B-4:
 `test_the_detail_opens_folded_and_the_reader_chooses_what_to_read` (`KeyError: 'folds'`) and
 `test_one_attachment_comes_off_a_risk_and_the_risk_stays`, which passes on its own and fails in
-module order. **Open since 2026-10-19:** three full `-m browser` runs each failed about nine
-scope and level tests in `test_canvas_interaction.py` (the risk badge, descending, the finding
-click, a new example's scope, Starter) that pass when the module runs alone; the one full run on
-`515ff00` passed them. The cause is not pinned down. **Do not run browser suites side by side**: under that load six scope tests fail
+module order. **Open since 2026-10-19:** the scope and level tests in `test_canvas_interaction.py`
+fail in some full runs and not others (from 2 to 10 failures over the same code). Three causes
+were found and fixed: a possible-risk search left running for a page that had moved on, a scope
+naming a system the drawing no longer held, and `test_dragging_the_canvas_is_not_a_click`
+starting its pan on whatever box the fit put there. What is left starts with
+`test_the_risk_badge_folds_the_findings_it_counts` sometimes waiting longer than its 30 s for an
+assessment. **Do not run browser suites side by side**: under that load six scope tests fail
 on timing and the run took 55 min.
