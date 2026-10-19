@@ -799,6 +799,14 @@ def process_view(graph: Graph, ttl_text: str | None = None) -> dict:
                 "reads": reads,
                 "writes": writes,
                 "refines": [str(s) for s in graph.objects(activity, PAIR.refinedBy)],
+                "steps": sorted(str(s) for s in graph.objects(activity, PAIR.carriedOutBy)),
+                # the steps it could name: those of the systems it refines, and no others
+                "stepOptions": sorted(
+                    ({"id": str(step), "label": _label_of(graph, step)}
+                     for system in graph.objects(activity, PAIR.refinedBy)
+                     for step in graph.objects(system, BEAM.hasProcess)),
+                    key=lambda row: (row["label"], row["id"]),
+                ),
                 "calls": [str(c) for c in graph.objects(activity, _prop("calledElement"))],
                 "markers": _markers(graph, activity, kind),
                 "boundary": sorted(boundary_of.get(str(activity), [])),

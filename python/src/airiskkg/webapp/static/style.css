@@ -3151,6 +3151,12 @@ body.editor-hidden .pane-head { display: none; }
 .rc-mark { font: 9px system-ui, sans-serif; }
 .rc-flow { cursor: pointer; }
 .rc-flow-label { font: 11.5px system-ui, sans-serif; fill: #16181d; }
+/* A neighbour of what is picked: outlined, never drawn as picked itself. */
+.rc-flow.ctx .rc-box { stroke-dasharray: 4 3; stroke-width: 2.2; }
+.flow-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.flow-side { display: inline-flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.flow-here { font-weight: 600; }
+.flow-arrow { color: var(--text-dim); }
 /* One frame per architecture, drawn behind its own boxes.
  *
  * This is the same device the architecture canvas uses for a system boundary,

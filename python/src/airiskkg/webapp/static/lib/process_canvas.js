@@ -1905,6 +1905,32 @@ function contextRows(activity) {
 }
 
 
+/* The steps of the refined system that do this activity's work, and the way
+   to bring the data it reads and writes into that system. */
+function stepRows(activity) {
+  const options = activity.stepOptions || [];
+  if (!activity.refines.length) return "";
+  const picker = options.length ? `
+    <label class="nd-row"><span>Steps</span>
+      <select id="pd-steps" multiple size="${Math.min(4, options.length)}">
+        ${options.map((o) => `<option value="${escapeHtml(o.id)}"${
+          (activity.steps || []).includes(o.id) ? " selected" : ""}>${escapeHtml(o.label)}</option>`).join("")}
+      </select></label>
+    <div class="nd-note">${(activity.steps || []).length
+      ? "its risks are the ones these steps and its data meet"
+      : "no step named, so every risk of the system is listed under it"}</div>`
+    : `<div class="nd-note">the system has no steps yet</div>`;
+  const loose = [...activity.reads, ...activity.writes].filter((d) => !(d.realisedBy || []).length);
+  const carry = loose.length ? `
+    <div class="pd-add">
+      <button type="button" class="btn small" id="pd-carry"
+        title="Each becomes a Data element of the system, named after it and linked to it">
+        Carry ${loose.length} data item${loose.length === 1 ? "" : "s"} into the architecture</button>
+    </div>` : "";
+  return picker + carry;
+}
+
+
 function showDetail(activity, ev) {
   const panel = document.querySelector("#process-detail");
   if (!panel) return;
@@ -1921,6 +1947,7 @@ function showDetail(activity, ev) {
       <input type="text" id="pd-name" value="${escapeHtml(activity.label)}" /></label>
     <label class="nd-row"><span>Carried out by</span>
       <select id="pd-refines">${systemOptions}</select></label>
+    ${stepRows(activity)}
     ${contextRows(activity)}
     <label class="nd-row"><span>Repetition</span>
       <select id="pd-loop">${options(LOOP_KINDS, activity.markers.loop || "")}</select></label>
@@ -1959,6 +1986,14 @@ function showDetail(activity, ev) {
     });
   });
 
+  const carry = panel.querySelector("#pd-carry");
+  if (carry) {
+    carry.addEventListener("click", async () => {
+      closeDetail();
+      await onEdit("carry-data", { activity: activity.id });
+    });
+  }
+
   panel.querySelector("#pd-data-add").addEventListener("click", async () => {
     const label = panel.querySelector("#pd-data-name").value.trim();
     if (!label) return;
@@ -1981,6 +2016,8 @@ function showDetail(activity, ev) {
     const name = panel.querySelector("#pd-name").value.trim();
     const system = panel.querySelector("#pd-refines").value;
     const loop = panel.querySelector("#pd-loop").value;
+    const stepPicker = panel.querySelector("#pd-steps");
+    const steps = stepPicker ? [...stepPicker.selectedOptions].map((o) => o.value) : null;
     const label = name || activity.label;
     const context = [...panel.querySelectorAll(".pd-context")]
       .filter((select) => select.value !== select.dataset.held)
@@ -2001,7 +2038,14 @@ function showDetail(activity, ev) {
       if (suggested) await onEdit("add-system", { activity: activity.id, label: suggested });
       return;
     }
-    await onEdit("set-refines", { activity: activity.id, system });
+    if (!activity.refines.includes(system) || activity.refines.length !== 1) {
+      await onEdit("set-refines", { activity: activity.id, system });
+      return;  // the steps offered were the old system's
+    }
+    const had = activity.steps || [];
+    if (steps && (steps.length !== had.length || steps.some((id) => !had.includes(id)))) {
+      await onEdit("set-steps", { activity: activity.id, steps });
+    }
   });
   panel.querySelector("#pd-delete").addEventListener("click", async () => {
     closeDetail();

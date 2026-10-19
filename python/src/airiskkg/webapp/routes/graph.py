@@ -1132,7 +1132,77 @@ def process_edit() -> object:
         data.remove((URIRef(activity), PAIR.refinedBy, None))
         if system:
             data.add((URIRef(activity), PAIR.refinedBy, URIRef(system)))
+        # a step of the system it no longer refines does not carry it out
+        kept = _members_of(data, URIRef(system)) if system else set()
+        for step in list(data.objects(URIRef(activity), PAIR.carriedOutBy)):
+            if step not in kept:
+                data.remove((URIRef(activity), PAIR.carriedOutBy, step))
         new_id = activity
+
+    elif op == "set-steps":
+        activity = payload.get("activity")
+        steps = payload.get("steps")
+        if not activity or not isinstance(steps, list):
+            return jsonify({"error": "set-steps needs an activity and a list of steps."}), 400
+        node = URIRef(activity)
+        offered = {
+            step for system in data.objects(node, PAIR.refinedBy)
+            for step in data.objects(system, BEAM.hasProcess)
+        }
+        chosen = [URIRef(s) for s in steps if s]
+        if any(step not in offered for step in chosen):
+            return jsonify({"error": "That step is not in the system this activity refines."}), 400
+        data.remove((node, PAIR.carriedOutBy, None))
+        for step in chosen:
+            data.add((node, PAIR.carriedOutBy, step))
+        new_id = activity
+
+    elif op == "carry-data":
+        """Each data object or store the activity reads or writes becomes a Data
+        element of the system it refines, unless it already names one. The
+        element is linked by pair:realisedBy, so the classification reaches it
+        through the bridge and is not copied as a facet."""
+        activity = payload.get("activity")
+        if not activity:
+            return jsonify({"error": "carry-data needs an activity."}), 400
+        node = URIRef(activity)
+        systems = list(data.objects(node, PAIR.refinedBy))
+        if len(systems) != 1:
+            return jsonify({"error": "Only an activity that refines a system can carry its data there."}), 400
+        system = systems[0]
+        steps = list(data.objects(node, PAIR.carriedOutBy))
+        made, carried = [], {}
+        for held, end, flow in ((BP.dataInputAssociation, BP.sourceRef, BEAM.use),
+                                (BP.dataOutputAssociation, BP.targetRef, BEAM.produce)):
+            for association in data.objects(node, held):
+                for reference in data.objects(association, end):
+                    obj = data.value(reference, BP.dataObjectRef) or data.value(reference, BP.dataStoreRef) or reference
+                    if obj in carried:  # a store the activity both reads and writes is one element
+                        if len(steps) == 1:
+                            data.add((steps[0], flow, carried[obj]))
+                        continue
+                    if data.value(obj, PAIR.realisedBy) is not None:
+                        continue
+                    existing = {str(s) for s in data.subjects() if str(s).startswith(str(LOCAL))}
+                    index = 1
+                    while str(LOCAL[f"e{index}"]) in existing:
+                        index += 1
+                    element = LOCAL[f"e{index}"]
+                    name = data.value(obj, BP.name) or data.value(reference, BP.name) or Literal("Data")
+                    data.add((element, RDF.type, BEAM.Data))
+                    data.add((element, RDFS.label, Literal(str(name))))
+                    data.add((system, BEAM.hasResource, element))
+                    data.add((obj, PAIR.realisedBy, element))
+                    carried[obj] = element
+                    # in the direction the process draws it, when one step is named to draw it from
+                    if len(steps) == 1:
+                        data.add((steps[0], flow, element))
+                    made.append(str(element))
+        if not made:
+            return jsonify({"error": "Everything this activity reads or writes already names its element."}), 400
+        data.bind("bpmn", BPMN)
+        data.bind("bp", BP)
+        return _serialized(data, newId=made[0], newIds=made)
 
     elif op == "add-data":
         # Free-standing when no activity is named: a store is a thing in its own

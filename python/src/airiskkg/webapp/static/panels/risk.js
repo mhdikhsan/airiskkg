@@ -272,6 +272,7 @@ function concernDetail(group, view) {
 
   body.push(foldRow("where", `${group.evidence.length} element${group.evidence.length > 1 ? "s" : ""}`,
     group.evidence.map((e) => e.label).join(" → ")));
+  body.push(flowStrip(evidenceIds, "its elements"));
 
   if (group.statedRisks.length) {
     body.push(detailRow("also stated", group.statedRisks.map((r) => el("span", {
@@ -521,6 +522,7 @@ function renderRail() {
   const side = $("#risk-side");
   if (!side) return;
   side.innerHTML = "";
+  RiskCanvas.setContext([]);  // a pick that has context sets it again below
   const view = drawable();
   const picked = RiskCanvas.selected();
   const line = RiskCanvas.link();
@@ -593,6 +595,43 @@ function statedOnly(diagram) {
 }
 
 
+/* What flows into and out of a set of elements, read off the architecture's own edges. */
+function neighbourhood(ids) {
+  const inside = new Set(ids);
+  const from = new Set();
+  const to = new Set();
+  ((state.lastGraph || {}).edges || []).forEach((edge) => {
+    if (edge.kind !== "use" && edge.kind !== "produce") return;
+    if (inside.has(edge.target) && !inside.has(edge.source)) from.add(edge.source);
+    if (inside.has(edge.source) && !inside.has(edge.target)) to.add(edge.target);
+  });
+  return { from: [...from], to: [...to] };
+}
+
+/* The context of a pick, on demand: a strip of its neighbours, outlined on the canvas too. */
+function flowStrip(ids, here) {
+  const { from, to } = neighbourhood(ids);
+  RiskCanvas.setContext([...from, ...to]);
+  const nodes = new Map(((state.lastGraph || {}).nodes || []).map((node) => [node.id, node]));
+  const chips = (list) => list.length
+    ? list.map((id) => {
+      const chip = el("button", {
+        type: "button", class: "chip clickable flow-neighbour",
+        title: `Pick ${(nodes.get(id) || {}).label || id}`,
+      }, (nodes.get(id) || {}).label || id.split(/[#/]/).pop());
+      chip.addEventListener("click", () => { RiskCanvas.select(id); renderRail(); });
+      return chip;
+    })
+    : [el("span", { class: "dim" }, "nothing")];
+  return detailRow("flow", el("div", { class: "flow-strip" }, [
+    el("span", { class: "flow-side" }, chips(from)),
+    el("span", { class: "flow-arrow", "aria-hidden": "true" }, "→"),
+    el("span", { class: "flow-here" }, here),
+    el("span", { class: "flow-arrow", "aria-hidden": "true" }, "→"),
+    el("span", { class: "flow-side" }, chips(to)),
+  ]));
+}
+
 function elementDetail(id, view) {
   const graph = state.lastGraph || {};
   const element = (graph.nodes || []).find((node) => node.id === id);
@@ -612,6 +651,7 @@ function elementDetail(id, view) {
   if (element.categories && element.categories.length) {
     box.appendChild(detailRow("carries", element.categories.join(" · ")));
   }
+  box.appendChild(flowStrip([id], "this"));
   box.appendChild(detailRow(
     here.length ? `${here.length} concern${here.length > 1 ? "s" : ""}` : "concerns",
     here.length

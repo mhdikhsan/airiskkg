@@ -121,9 +121,9 @@ stay in sync both ways**:
 
 | Button | What it does |
 | --- | --- |
-| **Load example ▾** | Load an architecture graph. Under **Bundled**: `simple_graph_rag` (a small, fully-annotated graph-RAG) and `it_support_agent` (a tool-using agent, the one offered graph that reaches the agentic layer). Under **Local**: anything you dropped in `ontology/example_local/` — see [Your own graphs](#26-your-own-graphs). |
+| **Load example ▾** | Load a graph. Under **Bundled**: `customer_support` (the starter scenario: a business process with the chatbot it runs), `support_chatbot` (that chatbot alone) and `simple_graph_rag` (a small, fully annotated graph RAG). Under **Local**: anything you dropped in `ontology/example_local/`; see [Your own graphs](#26-your-own-graphs). |
 | **Open .ttl** | Upload your own Turtle file. |
-| **Starter** | Replace the editor with a minimal starter graph to build from. |
+| **Starter** | Replace the editor with the [starter scenario](#27-the-starter-scenario): on the business level the whole scene, on the architecture level the chatbot alone. |
 | **Clear** | Empty both the code and the diagram (asks to confirm). |
 | **Validate** | Check the graph against the SHACL *input contract* — reports in the **Input contract** drawer tab. |
 | **Run assessment** | Run the full motif-matching + risk-interpretation pipeline; results land in the **Findings** and **Motifs** tabs. |
@@ -144,6 +144,42 @@ Nothing there can be published by accident:
 
 `python/tests/test_private_examples.py` enforces all four of those, so a change
 that would start leaking fails the suite rather than a review.
+
+### 2.7 The starter scenario
+
+**Starter** loads a customer support scene, the same one the tutorial uses. A
+customer sends a question; the shop's chatbot answers it; when it is not confident,
+it escalates to a support agent, who reviews the draft, checks the customer records,
+updates the knowledge base and sends the reply. Every conversation is logged.
+
+| Part | What is in it |
+| --- | --- |
+| Process (`customer_support`) | Two pools, *Customer* and *Shop support*, with the lanes *Chatbot* and *Support agent*; a message start event, an XOR on confidence that merges again before *Log conversation*; three message flows; two data stores, *Knowledge base* (read by the chatbot, written by the agent) and *Customer records* (read by the agent, written by *Log conversation*). |
+| Join | *Answer question* is refined by the *Support chatbot* system and names the three steps that carry it out. *Question*, *Knowledge base* and *Draft answer* name the architecture elements they are. |
+| Architecture (`support_chatbot`) | A RAG chatbot: *Find passages* retrieves from the knowledge base, *Build prompt* combines the question, the passages and the answering instructions, and *Generate answer* calls a hosted LLM. |
+
+Running the assessment on the whole scene raises six candidate concerns. Each
+one is a structural candidate for the team to discuss, not a confirmed defect.
+
+| Concern | Why it is raised |
+| --- | --- |
+| Prompt injection (through the passages) | A public question shapes what is retrieved, and the passages reach the model with no input screen in between. |
+| Prompt injection (through the prompt) | The same question is also written into the prompt itself, which is a second path to the model. |
+| Misinformation from weak grounding | The model produces the answer, and no verification or evaluation step over what it produced is represented. |
+| Protected data to an external model | The process marks the question as personal data, and the prompt carrying it is sent to a hosted model. |
+| Sensitive information disclosure | Personal data reaches an answer the customer sees, with no redaction or output screen on the way out. |
+| Supply chain compromise | The generation step uses an external model, so the answer depends on a component the shop does not build. |
+
+Two things to notice in the tutorial:
+
+- **The architecture alone raises a different set.** Without the process,
+  nothing says the question is personal, so the two personal-data concerns are
+  not raised, and *Improper output handling* is.
+- **The agent's review clears *Improper output handling*,** because a human
+  task after *Answer question* reads the draft answer. It clears it for the
+  whole activity, although confident answers take the *yes* branch and skip the
+  review. The library reads "a review follows on some path", not "on every
+  path". That makes it a good thing to discuss when triaging.
 
 ### 2.3 Editing the diagram (right pane)
 

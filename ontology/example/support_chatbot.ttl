@@ -1,0 +1,66 @@
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix csa:  <http://w3id.org/airiskkg/example/support-chatbot#> .
+
+### The system
+
+csa:SupportChatbot a beam:Element, beam:System ;
+    rdfs:label "Support chatbot" ;
+    beam:description "Answers customer questions from the product knowledge base, using a hosted LLM." ;
+    beam:context "Customer support of a mid-sized online shop; customers reach it from the website without logging in." ;
+    beam:hasProcess csa:FindPassages, csa:BuildPrompt, csa:GenerateAnswer ;
+    beam:hasResource csa:Question, csa:KnowledgeBase, csa:Passages, csa:Instructions, csa:Prompt,
+                     csa:HostedLLM, csa:Answer .
+
+### What comes in
+
+csa:Question a beam:Data ;
+    rdfs:label "Customer question" ;
+    pair:playsRole pair:PublicUserInput .
+
+csa:KnowledgeBase a beam:Data ;
+    rdfs:label "Knowledge base" ;
+    pair:playsRole pair:KnowledgeSource .
+
+csa:Instructions a beam:Data ;
+    rdfs:label "Answering instructions" ;
+    pair:playsRole pair:SystemPrompt .
+
+csa:HostedLLM a beam:StatisticalModel ;
+    rdfs:label "Hosted LLM" ;
+    pair:playsRole pair:FoundationLLM, pair:ExternalModel .
+
+### Retrieval
+
+csa:FindPassages a beam:Process ;
+    rdfs:label "Find passages" ;
+    pair:playsRole pair:RetrievalStep ;
+    beam:use csa:Question, csa:KnowledgeBase ;
+    beam:produce csa:Passages .
+
+csa:Passages a beam:Data ;
+    rdfs:label "Passages" ;
+    pair:playsRole pair:RetrievedContext .
+
+### Generation
+
+csa:BuildPrompt a beam:Transform ;
+    rdfs:label "Build prompt" ;
+    pair:playsRole pair:PromptConstructionStep ;
+    beam:use csa:Question, csa:Passages, csa:Instructions ;
+    beam:produce csa:Prompt .
+
+csa:Prompt a beam:Data ;
+    rdfs:label "Prompt" ;
+    pair:playsRole pair:PromptTemplate .
+
+csa:GenerateAnswer a beam:Infer ;
+    rdfs:label "Generate answer" ;
+    pair:playsRole pair:GenerationStep ;
+    beam:use csa:Prompt, csa:HostedLLM ;
+    beam:produce csa:Answer .
+
+csa:Answer a beam:Data ;
+    rdfs:label "Answer" ;
+    pair:playsRole pair:LLMResponse, pair:UserFacingOutput .

@@ -11,6 +11,7 @@ from conftest import (  # noqa: E402
     CREDIT_SCORING_NS,
     GRAPH_RAG_NS,
     ONYX_NS,
+    SUPPORT_CHATBOT_NS,
     TARIFF_NS,
     WIEN_ENERGIE_NS,
     example_path,
@@ -316,6 +317,8 @@ def test_propagation_leaves_the_bundled_examples_unchanged() -> None:
         # The ML serving shape: retrained on its own decisions, deployed without
         # evaluation, scored on public applications, with no control anywhere.
         example_path(CREDIT_SCORING_NS): (3, 11),
+        # The tutorial's starter: one RAG over a knowledge base with a hosted model.
+        example_path(SUPPORT_CHATBOT_NS): (3, 6),
     }
     # Every graph the repo ships is pinned.
     unpinned = set(EXAMPLE_DIR.glob("*.ttl")) - set(expected)

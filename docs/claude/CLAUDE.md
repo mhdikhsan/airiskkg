@@ -453,6 +453,17 @@ in `NOTICE.md`.
   knowledge source. **The architecture-side route, `personal_data_category.rq`, never had a role
   restriction** — only the business-analyst route did, which is the one route used by the person
   most likely to know the data is personal.
+- **An activity names the steps that carry it out, by `pair:carriedOutBy`** (A-P1 decision 1,
+  2026-10-19). A link from a `bpmn:activity` to a `beam:Process` of the system it refines, never
+  a subsumption, and no query reads it. The editor offers only that system's steps
+  (`set-steps` refuses any other), changing the system drops them, and the chip highlights them
+  when it opens the architecture. Findings are listed under an activity by the elements it names
+  as its own (its steps, what they use and produce, and the elements its data objects are);
+  an activity that names none still carries every finding of its system. **"Carry into the
+  architecture"** (`carry-data`) turns each data object or store the activity touches that names
+  no element into a `beam:Data` of that system, linked by `realisedBy`, so the classification
+  reaches it through the bridge and is never copied as a facet. Only when exactly one step is
+  named does that step read or write it, because with several the process does not say which.
 - **`pair:realisedBy` is the statement; the edge rule is the fallback.** Named, that element and
   no other; unnamed, the edge. `pair:targetInferred` on the derivation says which, because only
   one of them is somebody's claim. The picker offers the resources of the architectures the
@@ -575,6 +586,12 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   impact still chains off the consequence. The live register has no run to say which concern
   holds a finding, so its line names the finding and `findingEnd` says which end; `mergeStated`
   in `risk.js` resolves it. No query reads either relation.
+- **An element's flow is shown on demand, not drawn** (A-P1 decision 2, 2026-10-19). Picking an
+  element or a concern adds a *flow* row to its detail (what feeds it, what it feeds, read off the
+  architecture's own use/produce edges) and outlines those neighbours dashed on the canvas.
+  Nothing is drawn until something is picked, because the view was cut from 84 lines to 53 for
+  reading like an architecture diagram. Ordering boxes by flow (option C) waits on whether
+  readers still lose their place.
 - **A frame is measured round where its boxes stand.** It was measured before dragged positions
   applied, so a part moved past the edge left the architecture it belongs to;
   `test_a_part_dragged_past_its_frame_takes_the_frame_with_it` drives the drag with real input.
@@ -1004,6 +1021,42 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   everywhere the code reads it, so a motif that accepts several input roles names their common
   parent: `Prediction input` was added over the four inputs Prediction serving accepts, so its
   declaration and its query say the same thing.
+- **A drawing that says less than a motif still leads to its risks: possible risks (2026-10-19,
+  asked for "at any cost").** People tag at their own level (B-3 invites a category first) and
+  leave parts out, and a strict match then finds nothing where the risk is real.
+  `workbench/possible.py` matches each risk-carrying motif again with three relaxations: a
+  coarser tag (a category or a role the wanted one refines), an untagged element of the right
+  class, and up to a third of the nodes missing. Each **reading** becomes suggestions, and it
+  counts only if **the motif's own matcher** then matches it, run on the drawing plus the role
+  and class hierarchy and bound to the reading's elements: a declaration is not trusted to say
+  what its query matches. The library's own risk queries then run on one working copy carrying
+  that reading alone, **bound to its match** (unbound, a query walks every match, and
+  `embeddings.rq` alone took 85 s on such a copy), and everything added is taken out again.
+  A second pass adds the **conditions** a risk pattern reads: roles from its query text and
+  from the propagation queries that turn roles into categories, and the marks
+  `risk_context.py` names for that motif–risk link. Never a role inside a `FILTER NOT EXISTS`,
+  since suggesting an escape clears the risk; and an element is asked only for roles under its
+  own tag, of its node's category, or of the category its class implies. The conditions are cut
+  to the fewest that still raise the risk. Whatever the copy raises that the run did not is a
+  **possible risk**, with the suggestions it rests on. Overlapping possible risks of one pattern
+  collapse to the cheapest, and one that overlaps a finding is dropped. Readings are checked
+  cheapest first within a **time budget** (`BUDGET_SECONDS`, 30 s), and the panel says how many
+  were left unchecked. A role inside one query's `FILTER NOT EXISTS` is barred **for that pattern
+  only** (`barriers`): barred globally, `GenerationStep` was never asked for memory poisoning,
+  because another query uses it as an escape. Measured 2026-10-19 on degraded copies of the seven
+  tracked graphs: of 70 concerns, strict matching keeps 0 with every role replaced by its
+  category, 2 with its parent, and 11 with half the elements untagged; with the possible risks,
+  and the starter graph added (75), the same risk is raised at mostly the same place for **72, 70
+  and 62**, identical with the 30 s budget and without it. What is lost with half untagged is
+  mostly a fact only the modeller knows, such as that an input is public. Unbudgeted, the slowest
+  graph took 64 s (BotTina); budgeted, 34 s.
+  **They never gate or change detection**: nothing is written to the submitted graph, no query
+  reads anything this adds, `test_looking_for_possible_risks_changes_nothing_that_is_detected`
+  holds it, and the UI keeps them dashed and below the findings. "Apply" writes the
+  suggestions (a role replaces the coarser tag it refines) and re-runs the assessment, which
+  then raises the risk for real: `test_applying_a_possible_risk_raises_it`. A node accepts the
+  roles its matcher reads that no node declares, which is how External dependency's one
+  resource node takes a pre-trained model, an artifact or a serving image.
 - **The gap report's element candidates are not annotation suggestions.** `motif_gaps()`
   filters near-misses by BEAM class alone, so on the helpdesk graph it emits **428**
   element-level hints and offers the same four processes for Embedding Step, Chunking Step and
@@ -1237,8 +1290,10 @@ the gitignored `docs/evaluation/` imports them and cannot be updated from a clon
 ### Example graphs
 
 - **`ontology/example/` — what the deployment offers, and only that**: `simple_graph_rag.ttl`,
-  `it_support_agent.ttl`, and `context/it_service_desk.ttl`. This is the list the example
-  dropdown shows, so it stays small on purpose.
+  `support_chatbot.ttl` and `context/customer_support.ttl`, the tutorial's starter scene (A-P1
+  decision 3, 2026-10-19), which **Starter** loads. This is the list the example dropdown shows,
+  so it stays small on purpose. `it_support_agent.ttl` and `context/it_service_desk.ttl` are
+  fixtures since `3f9c60f`.
 - **`python/tests/fixtures/` — graphs a test needs that the deployment does not offer**:
   `onyx_rag_chatbot.ttl` (the only graph exercising query rewriting, reranking, embeddings and
   supply chain), `ml_credit_scoring.ttl` (the only graph that trains or serves a classical
@@ -1309,7 +1364,7 @@ nested motifs co-match by design, so the number is structural coverage.
 
 `test_propagation.py` asserts the per-graph baselines and names the graphs by namespace.
 `test_agentic_assessment.py` covers the agentic layer with an inline graph;
-`it_support_agent.ttl` covers it as a bundled example.
+`it_support_agent.ttl` covers it as a fixture.
 
 When library counts change, **update `docs/reference/catalogue.md` in the same commit** —
 nothing regenerates it.
@@ -1425,7 +1480,7 @@ len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its sibl
 | Applicability conditions | **34**, carried on 38 attachments |
 | Controls | **30** `pat:Control_*` |
 | Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 40, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
-| Triples | **11 061** |
+| Triples | **11 066** |
 | Motif–risk links | **68** — 20 carried by the motif alone, 48 with a named context (19 annotate the motif's own elements, 29 add the surrounding elements the risk needs) |
 
 **84 registered implementations** over 83 `.rq` files: 34 match, 33 risk, 6 propagation, 9
@@ -1448,6 +1503,8 @@ of those and 1 `BusinessFlowDerivation`.
 | Tariff scene: the tariff graph + its business process | 3 | 11 |
 | IT service desk scene: the agent + its business process | 4 | 12 |
 | Credit scoring (fixture): train, auto-deploy, score, decide, feed back | 3 | 11 |
+| Support chatbot (the starter architecture) | 3 | 6 |
+| Customer support scene: the chatbot + its process (the starter) | 3 | 6 |
 
 Moved 2026-10-09: Onyx +2 protected data to an external model (one concern, raised from the
 direct-prompting and RAG matches), the IT support agent +2 untraceable agent actions, its

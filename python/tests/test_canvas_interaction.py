@@ -4432,3 +4432,49 @@ def test_a_possible_risk_is_offered_and_one_click_makes_it_a_finding(scene_resto
     wanted = at["label"].replace("Possible ", "Candidate ")
     assert after and wanted in titles, f"applying {at['label']} did not raise it: {titles}"
 
+
+def test_the_starter_scene_names_the_steps_an_activity_is_carried_out_by(scene_restored) -> None:
+    """Starter loads the tutorial's scene; the activity's editor offers the steps of the
+    system it refines, and the chip opens that system with those steps picked out."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    at = loop.run_until_complete(handle.js("""(() => {
+        const r = document.querySelector('#btn-starter').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    find = """(() => {
+        const box = [...document.querySelectorAll('#process-canvas .pc-activity')]
+            .find((g) => g.textContent.includes('Answer question'));
+        if (!box) return null;
+        const part = (sel) => { const n = box.querySelector(sel); if (!n) return null;
+            const r = n.getBoundingClientRect();
+            return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; };
+        return { pencil: part('.pc-edit'), chip: part('.pc-open') };
+    })()"""
+    where = _settle(loop, handle, find, None, tries=40)
+    assert where and where["pencil"] and where["chip"], f"Starter did not draw the refined activity: {where}"
+
+    loop.run_until_complete(handle.click(where["pencil"]["x"], where["pencil"]["y"]))
+    time.sleep(1)
+    editor = loop.run_until_complete(handle.js("""(() => {
+        const steps = document.querySelector('#process-detail #pd-steps');
+        return {
+            offered: steps ? steps.options.length : 0,
+            named: steps ? [...steps.selectedOptions].map((o) => o.textContent).sort() : [],
+            carry: !!document.querySelector('#process-detail #pd-carry'),
+        };
+    })()"""))
+    assert editor["named"] == ["Build prompt", "Find passages", "Generate answer"], editor
+    assert editor["offered"] == 3, "offered a step of a system this activity does not refine"
+    assert not editor["carry"], "offered to carry data that already names its element"
+    loop.run_until_complete(handle.js('document.querySelector("#process-detail").classList.add("hidden")'))
+
+    where = loop.run_until_complete(handle.js(find))
+    loop.run_until_complete(handle.click(where["chip"]["x"], where["chip"]["y"]))
+    picked = _settle(loop, handle, """(() => [...document.querySelectorAll('#canvas .node.highlight')]
+        .map((g) => g.textContent.trim()).filter(Boolean).length || null)()""", None, tries=30)
+    assert _on_architecture(loop, handle), "the chip did not open the architecture"
+    labels = loop.run_until_complete(handle.js("""[...document.querySelectorAll('.node.highlight')]
+        .map((g) => g.dataset.id.split('#').pop()).sort()"""))
+    assert labels == ["BuildPrompt", "FindPassages", "GenerateAnswer"], (picked, labels)

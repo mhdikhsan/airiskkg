@@ -736,3 +736,50 @@ def test_a_disclosure_marker_is_drawn_rather_than_typed(served) -> None:
         f"the marker is not the drawn triangle: {fields['widths']!r}"
     )
     assert fields["overflows"] == "false", "the detail scrolls sideways"
+
+
+def _starter_scene(body: str) -> str:
+    """The tutorial's starter: one architecture under the customer support process."""
+    return _scene(body).replace(
+        "/api/examples/" + ARCH, "/api/examples/support_chatbot",
+    ).replace(
+        "/api/examples/" + PROC, "/api/examples/customer_support",
+    )
+
+
+def test_picking_shows_what_feeds_it_and_what_it_feeds(served) -> None:
+    """Context on demand: nothing extra is drawn until a box is picked, then its
+    neighbours are named in the detail and outlined on the canvas."""
+    report = _drive(served, _starter_scene("""
+      document.querySelector(".rc-unfold").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      setTimeout(() => {
+        log("outlinedBefore=" + document.querySelectorAll(".rc-flow.ctx").length);
+        const passages = [...document.querySelectorAll(".rc-flow")]
+          .find((g) => g.querySelector(".rc-flow-label")?.textContent === "Passages");
+        log("found=" + !!passages);
+        passages.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+        window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+        setTimeout(() => {
+          const sides = [...document.querySelectorAll(".rail-detail .flow-strip .flow-side")];
+          log("from=" + (sides[0] ? [...sides[0].querySelectorAll(".flow-neighbour")].map((c) => c.textContent).join("/") : "none"));
+          log("to=" + (sides[1] ? [...sides[1].querySelectorAll(".flow-neighbour")].map((c) => c.textContent).join("/") : "none"));
+          log("outlined=" + [...document.querySelectorAll(".rc-flow.ctx .rc-flow-label")].map((t) => t.textContent).sort().join("/"));
+          const risk = pickRisk();
+          risk.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+          window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+          setTimeout(() => {
+            log("concernStrip=" + !!document.querySelector(".rail-detail .flow-strip"));
+            log("concernOutlined=" + document.querySelectorAll(".rc-flow.ctx").length);
+          }, 900);
+        }, 900);
+      }, 900);
+    """))
+
+    fields = _fields(report)
+    assert fields["found"] == "true", fields
+    assert fields["outlinedBefore"] == "0", "context was drawn before anything was picked"
+    assert fields["from"] == "Find passages", fields
+    assert fields["to"] == "Build prompt", fields
+    assert fields["outlined"] == "Build prompt/Find passages", "the neighbours named are not the ones outlined"
+    assert fields["concernStrip"] == "true", "a picked concern does not say what surrounds its elements"
+    assert int(fields["concernOutlined"]) > 0, fields

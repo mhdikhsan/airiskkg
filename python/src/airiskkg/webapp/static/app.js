@@ -21,11 +21,15 @@ import { openOverview } from "./panels/overview.js";
 import { clearPossible, initPossible } from "./panels/possible.js";
 import { clearRisk, initRisk, refreshRegister, renderRisk } from "./panels/risk.js";
 import { RiskCanvas } from "./lib/risk_canvas.js";
-import { STARTER_BPMN, STARTER_TTL, initPalette } from "./panels/palette.js";
+import { initPalette } from "./panels/palette.js";
 import { noteChange } from "./panels/run.js";
 import { clearValidation, scheduleValidation, validateNow } from "./panels/validation.js";
 import { ProcessCanvas } from "./lib/process_canvas.js";
 import { state } from "./state.js";
+
+// The tutorial's scenario, which Starter loads: a process with the architecture it refines.
+const STARTER_SCENE = "customer_support";
+const STARTER_ARCHITECTURE = "support_chatbot";
 
 // split divider 
 function initDivider() {
@@ -96,6 +100,44 @@ async function init() {
 
   on("document:replaced", forgetTheLastDocument);
 
+  /* An example replaces the document; a process brings the architectures it refines. */
+  const loadExample = async (name) => {
+    try {
+      const example = await api(`/api/examples/${encodeURIComponent(name)}`);
+      if (example.kind === "process") {
+        const wanted = (example.requires || []).filter((r) => r.example);
+        const parts = [];
+        for (const requirement of wanted) {
+          const architecture = await api(`/api/examples/${encodeURIComponent(requirement.example)}`);
+          parts.push(architecture.ttl);
+        }
+        parts.push(example.ttl);
+
+        forgetTheLastDocument();
+        noteChange(`loaded scene: ${name}`);
+        Editor.setValue(parts.join(String.fromCharCode(10, 10)));
+        openDrawer("process");
+
+        const orphans = example.missing || [];
+        if (orphans.length) {
+          setStatus("error",
+            `${orphans.length} activity target(s) have no bundled architecture`,
+            "the process will draw, but there is nothing to assess for them");
+        } else {
+          setStatus("ok", `Loaded ${name}`,
+            wanted.length ? `with ${wanted.length} architecture(s) it refines` : "no architecture to bring");
+        }
+      } else {
+        forgetTheLastDocument();
+        noteChange(`loaded example: ${name}`);
+        Editor.setValue(example.ttl);
+        setStatus("ok", `Loaded example: ${name}`);
+      }
+    } catch (error) {
+      setStatus("error", error.message);
+    }
+  };
+
   on("scope:changed", () => {
     /* Awaited, because the panels below read state.lastGraph to decide what is
      * on screen, and refreshPreview is what sets it. Re-rendering first showed
@@ -111,6 +153,11 @@ async function init() {
       }
       // The annotate table is a view of the same graph, so it narrows with it.
       Annotate.refresh();
+      // last, because redrawing the canvas clears any highlight
+      if (state.highlightOnScope) {
+        GraphView.setHighlight(state.highlightOnScope);
+        state.highlightOnScope = null;
+      }
     });
   });
 
@@ -171,9 +218,11 @@ async function init() {
       }
       state.scopedSystem = wanted;
       setLevel("architecture", activity);
+      // the steps it names, when it names them: that is where its work is drawn
+      state.highlightOnScope = (activity.steps || []).length ? activity.steps : null;
       emit("scope:changed");
       GraphView.setHighlight([]);
-      revealInSource(activity.refines);
+      revealInSource((activity.steps || []).length ? activity.steps : activity.refines);
       setStatus("ok", `Opened ${activity.label}`, "click the breadcrumb to go back");
     },
   });
@@ -298,44 +347,8 @@ async function init() {
     }
   } catch (_) { /* non-fatal */ }
 
-  $("#example-select").addEventListener("change", async (ev) => {
-    const name = ev.target.value;
-    if (!name) return;
-    try {
-      const example = await api(`/api/examples/${encodeURIComponent(name)}`);
-      if (example.kind === "process") {
-        /* Replaces, exactly like an architecture example does. */
-        const wanted = (example.requires || []).filter((r) => r.example);
-        const parts = [];
-        for (const requirement of wanted) {
-          const architecture = await api(`/api/examples/${encodeURIComponent(requirement.example)}`);
-          parts.push(architecture.ttl);
-        }
-        parts.push(example.ttl);
-
-        forgetTheLastDocument();
-        noteChange(`loaded scene: ${name}`);
-        Editor.setValue(parts.join(String.fromCharCode(10, 10)));
-        openDrawer("process");
-
-        const orphans = example.missing || [];
-        if (orphans.length) {
-          setStatus("error",
-            `${orphans.length} activity target(s) have no bundled architecture`,
-            "the process will draw, but there is nothing to assess for them");
-        } else {
-          setStatus("ok", `Loaded ${name}`,
-            wanted.length ? `with ${wanted.length} architecture(s) it refines` : "no architecture to bring");
-        }
-      } else {
-        forgetTheLastDocument();
-        noteChange(`loaded example: ${name}`);
-        Editor.setValue(example.ttl);
-        setStatus("ok", `Loaded example: ${name}`);
-      }
-    } catch (error) {
-      setStatus("error", error.message);
-    }
+  $("#example-select").addEventListener("change", (ev) => {
+    if (ev.target.value) loadExample(ev.target.value);
   });
 
   $("#file-input").addEventListener("change", (ev) => {
@@ -368,13 +381,11 @@ async function init() {
     ev.target.value = "";
   });
 
-  $("#btn-starter").addEventListener("click", () => {
+  $("#btn-starter").addEventListener("click", async () => {
+    // the tutorial's scenario: the business process with its architecture, or the architecture alone
     const business = state.level === "business";
     settleChoice();
-    forgetTheLastDocument();
-    noteChange(business ? "starter business process" : "starter architecture");
-    Editor.setValue(business ? STARTER_BPMN : STARTER_TTL);
-    setStatus("ok", "Starter graph loaded");
+    await loadExample(business ? STARTER_SCENE : STARTER_ARCHITECTURE);
   });
 
   

@@ -13,6 +13,8 @@ export const state = {
 
   openedFrom: null,  // the activity a reader descended through
 
+  highlightOnScope: null,  // what to pick out once a scope change has redrawn the canvas
+
   lastProcess: null,
 
   lastAssessment: null,

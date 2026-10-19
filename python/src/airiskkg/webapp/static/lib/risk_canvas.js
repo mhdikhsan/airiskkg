@@ -66,6 +66,7 @@ export function createRiskCanvas() {
   let view = { x: 0, y: 0, k: 1 };
   let manualPositions = new Map();
   let selected = null;
+  let context = new Set();  // the neighbours of what is picked, outlined on demand
   let pickedLink = null;
   let lastDraw = null;
 
@@ -672,7 +673,7 @@ export function createRiskCanvas() {
   function drawFlowNode(entry, layer, highlighted, positions) {
     const style = FLOW_STYLE[entry.node.kind] || FLOW_STYLE.other;
     const group = make("g", {
-      class: "rc-flow" + (highlighted ? " hit" : ""),
+      class: "rc-flow" + (highlighted ? " hit" : "") + (!highlighted && context.has(entry.id) ? " ctx" : ""),
       "data-node": entry.id,
       transform: `translate(${entry.x},${entry.y})`,
     });
@@ -851,6 +852,18 @@ export function createRiskCanvas() {
       selected = id || null;
       pickedLink = null;
       redraw();
+    },
+
+    /* Outline these elements as the context of what is picked; [] clears it. */
+    setContext(ids) {
+      const next = new Set(ids || []);
+      if (next.size === context.size && [...next].every((id) => context.has(id))) return;
+      context = next;
+      redraw();
+    },
+
+    context() {
+      return [...context];
     },
 
     render(diagram, architecture, options = {}) {

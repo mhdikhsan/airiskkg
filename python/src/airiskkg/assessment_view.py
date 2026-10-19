@@ -26,6 +26,12 @@ def _local_name(uri: URIRef) -> str:
 # A business element names itself with bp:name, not rdfs:label.
 _BP_NAME_PROP = URIRef("https://sBPMN.github.io/2.0/properties#name")
 _BP_ITEM_SUBJECT = URIRef("https://sBPMN.github.io/2.0/properties#itemSubjectRef")
+_BP_DATA_IN = URIRef("https://sBPMN.github.io/2.0/properties#dataInputAssociation")
+_BP_DATA_OUT = URIRef("https://sBPMN.github.io/2.0/properties#dataOutputAssociation")
+_BP_SOURCE = URIRef("https://sBPMN.github.io/2.0/properties#sourceRef")
+_BP_TARGET = URIRef("https://sBPMN.github.io/2.0/properties#targetRef")
+_BP_OBJECT_REF = URIRef("https://sBPMN.github.io/2.0/properties#dataObjectRef")
+_BP_STORE_REF = URIRef("https://sBPMN.github.io/2.0/properties#dataStoreRef")
 
 
 def _label(graph: Graph, resource: URIRef) -> str:
@@ -261,6 +267,22 @@ def _derived_categories(result: AssessmentResult) -> list[dict]:
     )
 
 
+def _carried_by(graph: Graph, activity) -> set:
+    """The elements an activity names as its own: its steps, what they use and
+    produce, and the elements its data objects say they are."""
+    steps = set(graph.objects(activity, PAIR.carriedOutBy))
+    own = set(steps)
+    for step in steps:
+        own |= set(graph.objects(step, BEAM.use)) | set(graph.objects(step, BEAM.produce))
+    for held, end in ((_BP_DATA_IN, _BP_SOURCE), (_BP_DATA_OUT, _BP_TARGET)):
+        for association in graph.objects(activity, held):
+            for reference in graph.objects(association, end):
+                for obj in (reference, graph.value(reference, _BP_OBJECT_REF), graph.value(reference, _BP_STORE_REF)):
+                    if obj is not None:
+                        own |= set(graph.objects(obj, PAIR.realisedBy))
+    return own
+
+
 def _findings_by_activity(result: AssessmentResult, findings: list) -> list[dict]:
     system_of_element: dict = {}
     for system in result.working_graph.subjects(RDF.type, BEAM.System):
@@ -269,12 +291,15 @@ def _findings_by_activity(result: AssessmentResult, findings: list) -> list[dict
                 system_of_element.setdefault(element, set()).add(system)
 
     rows = []
-    for activity in result.working_graph.subjects(PAIR.refinedBy, None):
-        systems = set(result.working_graph.objects(activity, PAIR.refinedBy))
+    graph = result.working_graph
+    for activity in set(graph.subjects(PAIR.refinedBy, None)):
+        systems = set(graph.objects(activity, PAIR.refinedBy))
+        own = _carried_by(graph, activity)
         attributed = []
         for finding in findings:
             evidence = set(result.risk_findings.objects(finding, PAIR.hasEvidence))
-            if any(system_of_element.get(element, set()) & systems for element in evidence):
+            # where it names its steps or its data, those; otherwise the whole system
+            if (evidence & own) if own else any(system_of_element.get(e, set()) & systems for e in evidence):
                 attributed.append(finding)
         name = result.working_graph.value(activity, _BP_NAME) or result.working_graph.value(
             activity, RDFS.label
