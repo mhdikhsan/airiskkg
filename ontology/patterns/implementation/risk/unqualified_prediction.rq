@@ -33,11 +33,6 @@ WHERE {
             ?binding pair:bindsPatternNode pat:Serving_PredictionStepNode ;
                      pair:matchedElement ?predictionStep .
         }
-        UNION
-        {
-            ?binding pair:bindsPatternNode pat:TrainServe_PredictionStepNode ;
-                     pair:matchedElement ?predictionStep .
-        }
 
         ?predictionStep beam:produce ?prediction .
         ?prediction a beam:Data ;

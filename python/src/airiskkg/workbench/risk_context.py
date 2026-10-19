@@ -126,24 +126,6 @@ def recalled_into_generation(recalled: str) -> tuple:
     )
 
 
-def request_to(step: str, from_public: bool = False) -> tuple:
-    roles = ["PredictionRequest", "PublicUserInput"] if from_public else ["PredictionRequest"]
-    return _adds(
-        "a request from the public reaches the prediction step" if from_public
-        else "a request reaches the prediction step",
-        [_node("Context_Request", "Data", "Prediction Request", roles)],
-        [[step, "use", "Context_Request"]],
-    )
-
-
-def result_shown(step: str) -> tuple:
-    return _adds(
-        "its prediction is shown to a user",
-        [_node("Context_Result", "Data", "Prediction Result", ["PredictionResult", "UserFacingOutput"])],
-        [[step, "produce", "Context_Result"]],
-    )
-
-
 def trained_here(model: str, on_personal: bool = False) -> tuple:
     cats = ["SensitiveInformation"] if on_personal else []
     return _adds(
@@ -306,14 +288,7 @@ def _build() -> dict[tuple[str, str], dict]:
     for motif, (step, trainer) in _TRAIN_AND_SERVE.items():
         link("ModelBias", motif, training_data(trainer, "SensitiveInformation"))
         link("ImproperRetraining", motif, fed_back(step, trainer))
-    # Training-to-serving's serving risks are the serving motif's since B-4.
-    step, trainer = _TRAIN_AND_SERVE["TrainThenServeMotif"]
-    link("AdversarialEvasion", "TrainThenServeMotif", request_to(step, from_public=True))
-    link("OutOfDomainInput", "TrainThenServeMotif", request_to(step))
-    link("UnqualifiedPrediction", "TrainThenServeMotif", request_to(step), result_shown(step))
-    link("ModelExtraction", "TrainThenServeMotif", request_to(step, from_public=True))
-    link("TrainingDataMembershipInference", "TrainThenServeMotif",
-         request_to(step, from_public=True), training_data(trainer, "SensitiveInformation"))
+    # Both lifecycle motifs leave their serving risks to the serving motif since B-4.
     link("ModelBias", "PipelineTrainingMotif", personal("PipeTrain_SourceDataNode"))
     link("ImproperRetraining", "PipelineTrainingMotif",
          served_and_fed_back("PipeTrain_ModelArtifactNode", "PipeTrain_TrainingJobNode"))

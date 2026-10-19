@@ -34,11 +34,6 @@ WHERE {
             ?binding pair:bindsPatternNode pat:Serving_PredictionStepNode ;
                      pair:matchedElement ?predictionStep .
         }
-        UNION
-        {
-            ?binding pair:bindsPatternNode pat:TrainServe_PredictionStepNode ;
-                     pair:matchedElement ?predictionStep .
-        }
 
         ?predictionStep beam:use ?servedModel , ?request .
         ?servedModel a beam:StatisticalModel .
