@@ -91,18 +91,6 @@ ex:Train a beam:Train ; pair:playsRole pair:TrainingStep ;
 ex:Retriever a beam:StatisticalModel ; pair:playsRole pair:RetrieverModel .
 """
 
-PROMPT_RESPONSE_OPTIMISER = """
-ex:Input a beam:Data ; pair:playsRole pair:UserInput .
-ex:Template a beam:Data ; pair:playsRole pair:PromptTemplate .
-ex:Optimise a beam:Transform ; pair:playsRole pair:PromptOptimisationStep ;
-    beam:use ex:Input , ex:Template , ex:Result ; beam:produce ex:Prompt , ex:Reply .
-ex:Prompt a beam:Data ; pair:playsRole pair:PromptTemplate .
-ex:Generate a beam:Infer ; pair:playsRole pair:GenerationStep ;
-    beam:use ex:Prompt ; beam:produce ex:Result .
-ex:Result a beam:Data ; pair:playsRole pair:LLMResponse .
-ex:Reply a beam:Data .
-"""
-
 GOAL_CREATION = """
 ex:Prompt a beam:Data ; pair:playsRole pair:PublicUserInput .
 ex:Memory a beam:Data ; pair:playsRole pair:AgentMemory .
@@ -116,8 +104,7 @@ ex:Goal a beam:Data ; pair:playsRole pair:AgentGoal .
 PROACTIVE_GOAL_CREATION = """
 ex:Prompt a beam:Data ; pair:playsRole pair:UserInput .
 ex:Memory a beam:Data ; pair:playsRole pair:AgentMemory .
-ex:Detect a beam:Process ; pair:playsRole pair:ContextDetectionStep ;
-    beam:produce ex:Screen .
+ex:Detect a beam:Process ; beam:produce ex:Screen .
 ex:Screen a beam:Data ; pair:playsRole pair:EnvironmentContext .
 ex:Create a beam:Process ; pair:playsRole pair:GoalCreationStep ;
     beam:use ex:Prompt , ex:Memory , ex:Screen ; beam:produce ex:Goal .
@@ -157,16 +144,19 @@ ex:Tally a beam:Process ; pair:playsRole pair:VoteAggregationStep ;
 ex:Outcome a beam:Data .
 """
 
+# A debate is a delegation hop answered back, so it is drawn with the delegation roles.
 DEBATE = """
-ex:Proponent a beam:Process ; beam:produce ex:Claim ; beam:use ex:Rebuttal .
-ex:Opponent a beam:Process ; beam:produce ex:Rebuttal ; beam:use ex:Claim .
+ex:Proponent a beam:Process ; pair:playsRole pair:PlanningStep ;
+    beam:produce ex:Claim ; beam:use ex:Rebuttal .
+ex:Opponent a beam:Process ; pair:playsRole pair:AgentHandoffStep ;
+    beam:produce ex:Rebuttal ; beam:use ex:Claim .
 ex:Claim a beam:Data ; pair:playsRole pair:DebateArgument .
 ex:Rebuttal a beam:Data ; pair:playsRole pair:DebateArgument .
 """
 
 TOOL_AGENT_REGISTRY = """
 ex:Ticket a beam:Data ; pair:playsRole pair:PublicUserInput .
-ex:Catalogue a beam:Data ; pair:playsRole pair:ToolRegistry .
+ex:Catalogue a beam:Data .
 ex:Coordinate a beam:Process ; pair:playsRole pair:PlanningStep ;
     beam:use ex:Catalogue , ex:Ticket ; beam:produce ex:Assignment .
 ex:Assignment a beam:Data .
@@ -217,7 +207,6 @@ CASES = [
     ("RetrievalDataAugmentationMotif", RETRIEVAL_DATA_AUGMENTATION, {
         "DataAndModelPoisoningRiskPattern",
     }),
-    ("PromptResponseOptimiserMotif", PROMPT_RESPONSE_OPTIMISER, set()),
     ("GoalCreationMotif", GOAL_CREATION, {"GoalHijackRiskPattern"}),
     # Merged into their base motif (B-4): the base recognises the variant's drawing.
     ("GoalCreationMotif", PROACTIVE_GOAL_CREATION, {"GoalHijackRiskPattern"}),
@@ -228,10 +217,6 @@ CASES = [
         "UnboundedConsumptionRiskPattern",
     }),
     ("VotingBasedCooperationMotif", VOTING, {"InsecureAgentCommunicationRiskPattern"}),
-    ("DebateBasedCooperationMotif", DEBATE, {
-        "InsecureAgentCommunicationRiskPattern",
-        "UnboundedConsumptionRiskPattern",
-    }),
     ("ToolUsingAgentMotif", TOOL_AGENT_REGISTRY + TOOL_AGENT_REGISTRY_CONDITIONS, {
         "ToolMisuseRiskPattern",
         "GoalHijackRiskPattern",
@@ -315,16 +300,14 @@ ex:Create beam:use ex:Verdict .
     assert not _evidence(result, "GoalHijackRiskPattern")
 
 
-def test_a_reply_between_two_agents_is_not_a_debate() -> None:
-    """Request and reply is also a two-way exchange between agents. The argument
-    role is what tells a debate apart, so plain messages do not match it."""
-    result = _assess("""
-ex:Asker a beam:Process ; beam:produce ex:Request ; beam:use ex:Reply .
-ex:Helper a beam:Process ; beam:use ex:Request ; beam:produce ex:Reply .
-ex:Request a beam:Data ; pair:playsRole pair:AgentMessage .
-ex:Reply a beam:Data ; pair:playsRole pair:AgentMessage .
-""")
-    assert "DebateBasedCooperationMotif" not in _matched(result)
+def test_a_debate_is_a_delegation_answered_back() -> None:
+    """Debate-based cooperation was merged into Agent delegation (B-4): a debate
+    is the hop answered back, so it still raises the two risks the debate motif
+    carried, the exchange left unmediated and the loop left unbounded."""
+    result = _assess(DEBATE)
+    assert "AgentDelegationMotif" in _matched(result)
+    raised = {pattern for pattern, motif in _raised(result) if motif == "AgentDelegationMotif"}
+    assert {"InsecureAgentCommunicationRiskPattern", "UnboundedConsumptionRiskPattern"} <= raised, raised
 
 
 # ---- the control structures ----

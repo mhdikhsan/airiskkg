@@ -36,13 +36,7 @@ WHERE {
         ?predictionStep beam:use ?input .
         ?input a beam:Data ;
                pair:playsRole ?inputRole .
-        { ?inputRole pair:subRoleOf* pair:PredictionRequest }
-        UNION
-        { ?inputRole pair:subRoleOf* pair:PredictionQueue }
-        UNION
-        { ?inputRole pair:subRoleOf* pair:BatchDataset }
-        UNION
-        { ?inputRole pair:subRoleOf* pair:PreprocessedData }
+        { ?inputRole pair:subRoleOf* pair:PredictionInput }
         UNION
         { ?inputRole pair:subRoleOf* pair:UserInput }
 

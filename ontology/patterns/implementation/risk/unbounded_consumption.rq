@@ -37,7 +37,7 @@ WHERE {
                 pat:RetrievalAugmentedGenerationMotif
                 pat:IterativeRAGMotif
                 pat:PlanReflectionMotif
-                pat:DebateBasedCooperationMotif
+                pat:AgentDelegationMotif
             }
             ?loopSource (beam:produce/^beam:use)+ ?loopTarget .
             ?loopTarget (beam:produce/^beam:use)+ ?loopSource .

@@ -259,10 +259,6 @@ pat:PlanReflectionMotif
 pat:VotingBasedCooperationMotif
     pair:hasRiskPattern pat:InsecureAgentCommunicationRiskPattern .
 
-pat:DebateBasedCooperationMotif
-    pair:hasRiskPattern
-        pat:InsecureAgentCommunicationRiskPattern ,
-        pat:UnboundedConsumptionRiskPattern .
 
 pat:EmbeddingsMotif
     pair:hasRiskPattern
@@ -282,8 +278,6 @@ pat:FineTuningMotif
         pat:SupplyChainCompromiseRiskPattern ,
         pat:DataAndModelPoisoningRiskPattern .
 
-pat:ModelLoadMotif
-    pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
 
 pat:ExternalDependencyMotif
     pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
@@ -329,8 +323,7 @@ pat:SupplyChainCompromiseRiskPattern
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Supply chain compromise risk pattern"@en ;
     pair:hasMotif pat:ExternalDependencyMotif ,
-        pat:FineTuningMotif ,
-        pat:ModelLoadMotif ;
+        pat:FineTuningMotif ;
     pair:hasMechanism owasp:mechanism-supply-chain-compromise ;
     pair:hasApplicabilityCondition pat:SupplyChain_ExternalDependencyCondition ;
     pair:mayIndicateRisk
@@ -530,7 +523,7 @@ pat:UnboundedConsumptionRiskPattern
         pat:IterativeRAGMotif ,
         pat:QueryRewritingMotif ,
         pat:PlanReflectionMotif ,
-        pat:DebateBasedCooperationMotif ;
+        pat:AgentDelegationMotif ;
     pair:hasMechanism owasp:mechanism-unbounded-resource-consumption ;
     pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ,
         pat:UnboundedConsumption_RepeatablePathCondition ;
@@ -766,19 +759,7 @@ pat:PredMon_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/prediction_monitoring.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:ModelLoad_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Model Load Motif matching OQP"@en ;
-    pair:implementsMotif pat:ModelLoadMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/model_load.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
-pat:ModelImage_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Model-in-Image Motif matching OQP"@en ;
-    pair:implementsMotif pat:ModelInImageMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/model_in_image.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:FineTune_MatchingOQP
     a pair:PatternImplementation ;
@@ -836,12 +817,6 @@ pat:RetrAug_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/retrieval_data_augmentation.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:PromptOpt_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Prompt/response optimiser motif matching OQP"@en ;
-    pair:implementsMotif pat:PromptResponseOptimiserMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/prompt_response_optimiser.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:IterRAG_MatchingOQP
     a pair:PatternImplementation ;
@@ -1014,8 +989,7 @@ pat:InsecureAgentCommunicationRiskPattern
     to the channel.
     """@en ;
     pair:hasMotif pat:AgentDelegationMotif ,
-        pat:VotingBasedCooperationMotif ,
-        pat:DebateBasedCooperationMotif ;
+        pat:VotingBasedCooperationMotif ;
     pair:hasMechanism asi:mechanism-unauthenticated-agent-handoff ;
     pair:hasApplicabilityCondition pat:InsecureAgentCommunication_UnvalidatedHandoffCondition ;
     pair:mayIndicateRisk
@@ -1078,13 +1052,6 @@ pat:Voting_MatchingOQP
     rdfs:label "Voting-based Cooperation Motif matching OQP"@en ;
     pair:implementsMotif pat:VotingBasedCooperationMotif ;
     pair:implementationPath "ontology/patterns/implementation/match/voting_based_cooperation.rq" ;
-    pair:producesOutputType pair:MotifMatch .
-
-pat:Debate_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Debate-based Cooperation Motif matching OQP"@en ;
-    pair:implementsMotif pat:DebateBasedCooperationMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/debate_based_cooperation.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
 
@@ -1375,7 +1342,8 @@ pat:AgentDelegationMotif
     pair:hasRiskPattern
         pat:IdentityPrivilegeAbuseRiskPattern ,
         pat:AgenticSupplyChainRiskPattern ,
-        pat:CascadingFailuresRiskPattern .
+        pat:CascadingFailuresRiskPattern ,
+        pat:UnboundedConsumptionRiskPattern .
 
 pat:AgentMemoryLoopMotif
     pair:hasRiskPattern pat:IdentityPrivilegeAbuseRiskPattern .

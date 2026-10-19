@@ -43,13 +43,6 @@ WHERE {
             ?stepBinding pair:bindsPatternNode pat:FineTune_TrainingStepNode ;
                          pair:matchedElement ?usingStep .
         }
-        UNION
-        {
-            ?resourceBinding pair:bindsPatternNode pat:ModelLoad_ModelArtifactNode ;
-                             pair:matchedElement ?externalResource .
-            ?stepBinding pair:bindsPatternNode pat:ModelLoad_LoadStepNode ;
-                         pair:matchedElement ?usingStep .
-        }
 
         # External by declaration, or an artifact that enters the graph rather than being built in it.
         {

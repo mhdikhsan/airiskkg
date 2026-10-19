@@ -723,9 +723,14 @@ pair:SourceDocument a pair:PatternRole ;
     pair:subRoleOf pair:KnowledgeContextRoles ;
     skos:definition "A source document ingested into a knowledge base."@en  .
 
+pair:PredictionInput a pair:PatternRole ;
+    skos:prefLabel "PredictionInput"@en ;
+    pair:subRoleOf pair:PredictionDataRoles ;
+    skos:definition "What a prediction step reads to make a prediction: a request, a queue of requests, a batch, or data already preprocessed for it."@en .
+
 pair:PredictionRequest a pair:PatternRole ;
     skos:prefLabel "PredictionRequest"@en ;
-    pair:subRoleOf pair:PredictionDataRoles ;
+    pair:subRoleOf pair:PredictionInput ;
     skos:definition "An incoming request for a prediction."@en .
 
 pair:PredictionResult a pair:PatternRole ;
@@ -735,7 +740,7 @@ pair:PredictionResult a pair:PatternRole ;
 
 pair:PredictionQueue a pair:PatternRole ;
     skos:prefLabel "PredictionQueue"@en ;
-    pair:subRoleOf pair:PredictionDataRoles ;
+    pair:subRoleOf pair:PredictionInput ;
     skos:definition "A queue holding prediction requests."@en .
 
 pair:PredictionLog a pair:PatternRole ;
@@ -757,12 +762,12 @@ pair:FineTuningDataset a pair:PatternRole ;
 
 pair:BatchDataset a pair:PatternRole ;
     skos:prefLabel "BatchDataset"@en ;
-    pair:subRoleOf pair:PredictionDataRoles ;
+    pair:subRoleOf pair:PredictionInput ;
     skos:definition "A dataset processed in batch."@en  .
 
 pair:PreprocessedData a pair:PatternRole ;
     skos:prefLabel "PreprocessedData"@en ;
-    pair:subRoleOf pair:PredictionDataRoles ;
+    pair:subRoleOf pair:PredictionInput ;
     skos:definition "Data produced by a preprocessing step."@en  .
 
 pair:MonitoringBaseline a pair:PatternRole ;
@@ -820,10 +825,6 @@ pair:ReflectionFeedback a pair:PatternRole ;
     pair:subRoleOf pair:AgentStateRoles ;
     skos:definition "Feedback a reflection step returns on a plan and its reasoning, which the planning step reads to revise the plan."@en .
 
-pair:ToolRegistry a pair:PatternRole ;
-    skos:prefLabel "ToolRegistry"@en ;
-    pair:subRoleOf pair:AgentStateRoles ;
-    skos:definition "A catalogue of the tools, agents and models an agent can call on, described by capability and cost, which a coordinating step consults to choose who carries out a task."@en .
 
 ### External-dependency roles 
 
@@ -992,15 +993,7 @@ pair:DeploymentStep a pair:PatternRole ;
     skos:definition "A step that deploys a model to serving."@en ;
     skos:relatedMatch ai:DeploymentStage  .
 
-pair:ModelLoadStep a pair:PatternRole ;
-    skos:prefLabel "ModelLoadStep"@en ;
-    pair:subRoleOf pair:DeploymentOperationRoles ;
-    skos:definition "A step that loads a model into a runtime."@en  .
 
-pair:ImageBuildStep a pair:PatternRole ;
-    skos:prefLabel "ImageBuildStep"@en ;
-    pair:subRoleOf pair:DeploymentOperationRoles ;
-    skos:definition "A step that builds a serving image."@en .
 
 pair:LoggingStep a pair:PatternRole ;
     skos:prefLabel "LoggingStep"@en ;
@@ -1012,10 +1005,6 @@ pair:MonitoringStep a pair:PatternRole ;
     pair:subRoleOf pair:DeploymentOperationRoles ;
     skos:definition "A step that monitors a deployed model."@en .
 
-pair:JobScheduler a pair:PatternRole ;
-    skos:prefLabel "JobScheduler"@en ;
-    pair:subRoleOf pair:DeploymentOperationRoles ;
-    skos:definition "A step that schedules jobs in a workflow."@en  .
 
 pair:ToolInvocationStep a pair:PatternRole ;
     skos:prefLabel "ToolInvocationStep"@en ;
@@ -1072,10 +1061,6 @@ pair:GoalCreationStep a pair:PatternRole ;
     pair:subRoleOf pair:PlanningStep ;
     skos:definition "A step that works out the goal an agent pursues, from what the user asked and the context it holds, before the goal is planned: a passive or proactive goal creator."@en .
 
-pair:ContextDetectionStep a pair:PatternRole ;
-    skos:prefLabel "ContextDetectionStep"@en ;
-    pair:subRoleOf pair:AgentStepRoles ;
-    skos:definition "A step that captures context from the user's surroundings for the agent, such as what is on a screen or a sensor reading (the detector of a proactive goal creator)."@en .
 
 pair:PlanReflectionStep a pair:PatternRole ;
     skos:prefLabel "PlanReflectionStep"@en ;
@@ -1238,7 +1223,6 @@ pair:AgentPlan dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:AggregationStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:Alert dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
 pair:BatchDataset dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> .   
-pair:ContextDetectionStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:DebateArgument dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:EnvironmentContext dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:EvaluationResult dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> .   
@@ -1250,9 +1234,7 @@ pair:FastPredictionStep dct:source <https://mercari.github.io/ml-system-design-p
 pair:GoalCreationStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:GuardrailDecision dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:HumanApprovalStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   
-pair:ImageBuildStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> .   
 pair:InputGuardrailStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
-pair:JobScheduler dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> .   
 pair:JudgeModel dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:LLMResponse dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .  
 pair:LoadedModel dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> .   
@@ -1260,7 +1242,6 @@ pair:LoggingStep dct:source <https://mercari.github.io/ml-system-design-pattern/
 pair:MemoryReadStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
 pair:MemoryValidationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
 pair:MemoryWriteStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
-pair:ModelLoadStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> . 
 pair:MonitoringBaseline dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
 pair:MonitoringStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
 pair:OutputGuardrailStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
@@ -1296,7 +1277,6 @@ pair:SyntheticDataGenerationStep dct:source <https://doi.org/10.1145/3748304> .
 pair:SyntheticTrainingData dct:source <https://doi.org/10.1145/3748304> .
 pair:SystemPrompt dct:source <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm07-system-prompt-leakage> .   
 pair:ToolInvocationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   
-pair:ToolRegistry dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:TrainingPipeline dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Training-to-serving-pattern/design_en.html> .   
 pair:UserFeedback dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:VoteAggregationStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .

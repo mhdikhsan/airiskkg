@@ -59,26 +59,6 @@ WHERE {
             ?receivingBinding  pair:bindsPatternNode pat:Voting_AggregationStepNode ;
                                pair:matchedElement ?receivingStep .
         }
-        UNION
-        {
-            ?match pair:hasNodeBinding ?delegatingBinding , ?messageBinding , ?receivingBinding .
-            ?delegatingBinding pair:bindsPatternNode pat:Debate_FirstAgentNode ;
-                               pair:matchedElement ?delegatingStep .
-            ?messageBinding    pair:bindsPatternNode pat:Debate_FirstArgumentNode ;
-                               pair:matchedElement ?message .
-            ?receivingBinding  pair:bindsPatternNode pat:Debate_SecondAgentNode ;
-                               pair:matchedElement ?receivingStep .
-        }
-        UNION
-        {
-            ?match pair:hasNodeBinding ?delegatingBinding , ?messageBinding , ?receivingBinding .
-            ?delegatingBinding pair:bindsPatternNode pat:Debate_SecondAgentNode ;
-                               pair:matchedElement ?delegatingStep .
-            ?messageBinding    pair:bindsPatternNode pat:Debate_SecondArgumentNode ;
-                               pair:matchedElement ?message .
-            ?receivingBinding  pair:bindsPatternNode pat:Debate_FirstAgentNode ;
-                               pair:matchedElement ?receivingStep .
-        }
 
         FILTER NOT EXISTS {
             ?mediatingStep pair:playsRole ?mediatingRole .

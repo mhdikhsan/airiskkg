@@ -179,6 +179,14 @@ def approved_on(seen: str, action: str) -> tuple:
     )
 
 
+def answered_back(delegating: str, receiving: str) -> tuple:
+    return _adds(
+        "the receiving agent answers back, and the exchange goes round with no bound on the rounds",
+        [_node("Context_Reply", "Data", "Reply", ["AgentMessage"])],
+        [[receiving, "produce", "Context_Reply"], [delegating, "use", "Context_Reply"]],
+    )
+
+
 def handed_on(receiving: str) -> tuple:
     return _adds(
         "the receiving agent hands the work on to another agent that acts on it",
@@ -272,6 +280,8 @@ def _build() -> dict[tuple[str, str], dict]:
          credential("AgentDelegation_DelegatingStepNode", "AgentDelegation_ReceivingStepNode"))
     link("IdentityPrivilegeAbuse", "AgentMemoryLoopMotif", credential("AgentMemory_WriteStepNode"))
     link("CascadingFailures", "AgentDelegationMotif", handed_on("AgentDelegation_ReceivingStepNode"))
+    link("UnboundedConsumption", "AgentDelegationMotif",
+         answered_back("AgentDelegation_DelegatingStepNode", "AgentDelegation_ReceivingStepNode"))
     link("MemoryPoisoning", "AgentMemoryLoopMotif", recalled_into_generation("AgentMemory_RecalledContextNode"))
     link("PersonalDataRetained", "AgentMemoryLoopMotif", stores_personal("AgentMemory_StoreNode"))
     link("PersonalDataRetained", "PredictionLoggingMotif", personal("PredLog_RequestNode"))

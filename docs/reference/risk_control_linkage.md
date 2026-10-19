@@ -12,7 +12,7 @@ Supersedes `motif_control_linkage.md` and `control_catalogue_table.md`.
 
 | Layer | Count | What it is |
 |---|---|---|
-| **Motif library** | **38** | Risk-neutral architectural shapes (`pair:GraphMotif`) |
+| **Motif library** | **34** | Risk-neutral architectural shapes (`pair:GraphMotif`) |
 | **Risk patterns** | **33** | Motif + applicability condition -> candidate finding |
 | **Suggested controls** | **30** | `pat:Control_*`, the only vocabulary in `pair:suggestedControl` |
 | | | |
@@ -73,17 +73,17 @@ they are never merged into one column.
 
 | # | Suggested control | Candidate risk | Exposing motif | Realizing motif | MIT family | Actions |
 |---|---|---|---|---|---|---|
-| 1 | **Input validation and prompt isolation**<br>`pat:Control_InputValidationAndPromptIsolation` | GoalHijack, InsecureAgentCommunication, MemoryPoisoning, PromptInjection | AdaptiveRAG, AgentDelegation, AgentMemoryLoop, DebateBasedCooperation, DirectPrompting, GoalCreation, IterativeRAG, LLMBasedInformationRetrieval, ModelQuerying, PlanReflection, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent, VotingBasedCooperation | **InputScreening, RetrievalScreening** | input-output-filtering, prompt-context-limiting | 0 |
+| 1 | **Input validation and prompt isolation**<br>`pat:Control_InputValidationAndPromptIsolation` | GoalHijack, InsecureAgentCommunication, MemoryPoisoning, PromptInjection | AdaptiveRAG, AgentDelegation, AgentMemoryLoop, DirectPrompting, GoalCreation, IterativeRAG, LLMBasedInformationRetrieval, ModelQuerying, PlanReflection, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent, VotingBasedCooperation | **InputScreening, RetrievalScreening** | input-output-filtering, prompt-context-limiting | 0 |
 | 2 | **Output validation and sanitization**<br>`pat:Control_OutputValidationAndSanitization` | ImproperOutputHandling, SensitiveInformationDisclosure, SystemPromptLeakage, UnexpectedCodeExecution | DirectPrompting, ToolUsingAgent | **OutputScreening** | content-safety-controls, input-output-filtering | 2 |
 | 3 | **Data minimization and redaction**<br>`pat:Control_DataMinimizationAndRedaction` | PersonalDataRetained, ProtectedDataToExternalModel, SensitiveInformationDisclosure | AgentMemoryLoop, DirectPrompting, PredictionLogging, PredictionServing, RetrievalAugmentedGeneration | (none) | data-minimization, privacy-control-for-user-data, redaction | 0 |
 | 4 | **Retrieval access control**<br>`pat:Control_RetrievalAccessControl` | SensitiveInformationDisclosure, VectorAndEmbeddingWeakness | Embeddings, Reranker, VectorBasedInformationRetrieval | (none) | access-management, retrieval-quality-evaluation, retrieval-source-filtering | 4 |
-| 5 | **Model and dependency provenance**<br>`pat:Control_ModelAndDependencyProvenance` | AgenticSupplyChain, DataAndModelPoisoning, SupplyChainCompromise | AgentDelegation, Embeddings, ExternalDependency, FineTuning, ModelLoad, RetrievalDataAugmentation, ToolUsingAgent, TrainingToServing | (none) | model-infrastructure-security, risk-register, system-architecture-documentation | 0 |
+| 5 | **Model and dependency provenance**<br>`pat:Control_ModelAndDependencyProvenance` | AgenticSupplyChain, DataAndModelPoisoning, SupplyChainCompromise | AgentDelegation, Embeddings, ExternalDependency, FineTuning, RetrievalDataAugmentation, ToolUsingAgent, TrainingToServing | (none) | model-infrastructure-security, risk-register, system-architecture-documentation | 0 |
 | 6 | **Trusted training and indexing data**<br>`pat:Control_TrustedTrainingAndIndexingData` | DataAndModelPoisoning, ImproperRetraining, MemoryPoisoning, ModelBias, VectorAndEmbeddingWeakness | AgentMemoryLoop, Embeddings, FineTuning, PipelineTraining, Reranker, RetrievalDataAugmentation, TrainThenServe, TrainingToServing, VectorBasedInformationRetrieval | (none) | data-curation-process, data-governance, testing-auditing | 27 |
-| 7 | **Tool permission boundaries**<br>`pat:Control_ToolPermissionBoundaries` | ExcessiveAgency, GoalHijack, HumanAgentTrustExploitation, IdentityPrivilegeAbuse, InsecureAgentCommunication, ToolMisuse, UnqualifiedPrediction | AgentDelegation, AgentMemoryLoop, DebateBasedCooperation, GoalCreation, ModelQuerying, PlanReflection, PredictionServing, ToolUsingAgent, VotingBasedCooperation | **ExecutionScreening, HumanOversight** | access-management, human-oversight-protocol, post-deployment-behavior-monitoring | 5 |
+| 7 | **Tool permission boundaries**<br>`pat:Control_ToolPermissionBoundaries` | ExcessiveAgency, GoalHijack, HumanAgentTrustExploitation, IdentityPrivilegeAbuse, InsecureAgentCommunication, ToolMisuse, UnqualifiedPrediction | AgentDelegation, AgentMemoryLoop, GoalCreation, ModelQuerying, PlanReflection, PredictionServing, ToolUsingAgent, VotingBasedCooperation | **ExecutionScreening, HumanOversight** | access-management, human-oversight-protocol, post-deployment-behavior-monitoring | 5 |
 | 8 | **System prompt secrecy**<br>`pat:Control_SystemPromptSecrecy` | SystemPromptLeakage | DirectPrompting | (none) | prompt-context-limiting, red-teaming, system-architecture-documentation | 2 |
 | 9 | **Grounding and verification**<br>`pat:Control_GroundingAndVerification` | DirectPromptingWithoutGrounding, MisinformationFromWeakGrounding, VectorAndEmbeddingWeakness | AdaptiveRAG, DirectPrompting, Embeddings, IterativeRAG, LLMBasedInformationRetrieval, Reranker, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval | **Evals, HybridRetriever, Reranker, RetrievalAugmentedGeneration, VectorBasedInformationRetrieval** | human-oversight-protocol, retrieval-quality-evaluation, testing-auditing | 12 |
-| 10 | **Rate, budget, and loop control**<br>`pat:Control_RateLimitBudgetAndLoopControl` | CascadingFailures, ExcessiveAgency, ModelExtraction, ToolMisuse, TrainingDataMembershipInference, UnboundedConsumption | AgentDelegation, DebateBasedCooperation, DirectPrompting, IterativeRAG, PlanReflection, PredictionServing, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent | (none) | access-management, post-deployment-behavior-monitoring, prompt-context-limiting | 5 |
-| 11 | **Logging, monitoring, and evals**<br>`pat:Control_LoggingMonitoringAndEvals` | DataAndModelPoisoning, DatasetShift, DirectPromptingWithoutGrounding, ExcessiveAgency, GoalHijack, InsecureAgentCommunication, MemoryPoisoning, MisinformationFromWeakGrounding, PromptInjection, SupplyChainCompromise, ToolMisuse, UnboundedConsumption, UnevaluatedModel, UntraceableAgentActions | AdaptiveRAG, AgentDelegation, AgentMemoryLoop, DebateBasedCooperation, DirectPrompting, Embeddings, ExternalDependency, FineTuning, GoalCreation, IterativeRAG, LLMBasedInformationRetrieval, ModelLoad, ModelQuerying, PlanReflection, PredictionServing, QueryRewriting, RetrievalAugmentedGeneration, RetrievalDataAugmentation, ToolUsingAgent, TrainingToServing, VotingBasedCooperation | **Evals, PredictionLogging, PredictionMonitoring** | post-deployment-behavior-monitoring, red-teaming, testing-auditing | 15 |
+| 10 | **Rate, budget, and loop control**<br>`pat:Control_RateLimitBudgetAndLoopControl` | CascadingFailures, ExcessiveAgency, ModelExtraction, ToolMisuse, TrainingDataMembershipInference, UnboundedConsumption | AgentDelegation, DirectPrompting, IterativeRAG, PlanReflection, PredictionServing, QueryRewriting, RetrievalAugmentedGeneration, ToolUsingAgent | (none) | access-management, post-deployment-behavior-monitoring, prompt-context-limiting | 5 |
+| 11 | **Logging, monitoring, and evals**<br>`pat:Control_LoggingMonitoringAndEvals` | DataAndModelPoisoning, DatasetShift, DirectPromptingWithoutGrounding, ExcessiveAgency, GoalHijack, InsecureAgentCommunication, MemoryPoisoning, MisinformationFromWeakGrounding, PromptInjection, SupplyChainCompromise, ToolMisuse, UnboundedConsumption, UnevaluatedModel, UntraceableAgentActions | AdaptiveRAG, AgentDelegation, AgentMemoryLoop, DirectPrompting, Embeddings, ExternalDependency, FineTuning, GoalCreation, IterativeRAG, LLMBasedInformationRetrieval, ModelQuerying, PlanReflection, PredictionServing, QueryRewriting, RetrievalAugmentedGeneration, RetrievalDataAugmentation, ToolUsingAgent, TrainingToServing, VotingBasedCooperation | **Evals, PredictionLogging, PredictionMonitoring** | post-deployment-behavior-monitoring, red-teaming, testing-auditing | 15 |
 | 12 | **Input and output filtering**<br>`pat:Control_Guardrails` | AdversarialEvasion, ImproperOutputHandling, PromptInjection, SensitiveInformationDisclosure, SystemPromptLeakage | AdaptiveRAG, DirectPrompting, IterativeRAG, LLMBasedInformationRetrieval, PredictionServing, QueryRewriting, RetrievalAugmentedGeneration | **Guardrails, InputScreening, OutputScreening, RetrievalScreening** | content-safety-controls, input-output-filtering, model-safety-engineering | 9 |
 | 13 | **Distribution shift monitoring**<br>`pat:Control_DistributionShiftMonitoring` | DatasetShift, OutOfDomainInput | PredictionServing | **PredictionLogging, PredictionMonitoring** | post-deployment-behavior-monitoring, post-deployment-monitoring, testing-auditing | 14 |
 | 14 | **Input domain validation**<br>`pat:Control_InputDomainValidation` | OutOfDomainInput | PredictionServing | (none) | input-output-filtering, testing-auditing | 12 |
@@ -155,32 +155,32 @@ Families with no action beneath them (6): `governance-oversight-controls`, `mode
 ## 6. Gaps
 
 1. **19 of 30 controls have no realizing motif.** The tool can advise them but cannot verify from the graph that they were applied.
-2. **12 of 38 motifs reach no control** - by design for the risk-neutral ML-serving shapes.
+2. **10 of 34 motifs reach no control** - by design for the risk-neutral ML-serving shapes.
 3. **2 risk patterns declare no motif** (`ExcessiveAgencyRiskPattern`, `SensitiveInformationDisclosureRiskPattern`) - deliberately role-anchored, so nothing appears in the Exposing-motif column even though they fire on the bundled examples.
 4. **4 circular suggestions** - the motif that triggers the finding is also the motif that would realize the suggested fix.
 5. **Coverage is bounded by the cross-walk.** LLM07, LLM08 and LLM10 have no action-level evidence at all; their control links remain prior curation.
 
 ---
 
-## 7. Motif library - all 38, by source catalogue
+## 7. Motif library - all 34, by source catalogue
 
 Motifs are risk-neutral: they describe a shape, not a problem. The grouping below
 is the *published catalogue each was derived from* (`pair:derivedFrom`), because
 that is the only classification the data actually carries. The relation is m:n,
 so a motif derived from several catalogues is listed under each of them.
 
-### Liu et al. (2025) - Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents (29)
+### Liu et al. (2025) - Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents (28)
 
 | Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
 | `ToolUsingAgentMotif` | Agent adapter | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
 | `EvalsMotif` | Agent evaluator | *(risk-neutral - none)* |
 | `PlanReflectionMotif` | Cross-reflection | GoalHijack, UnboundedConsumption |
-| `DebateBasedCooperationMotif` | Debate-based cooperation | InsecureAgentCommunication, UnboundedConsumption |
+| `AgentDelegationMotif` | Debate-based cooperation | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication, UnboundedConsumption |
 | `HumanOversightMotif` | Human reflection | *(risk-neutral - none)* |
 | `PlanReflectionMotif` | Human reflection | GoalHijack, UnboundedConsumption |
 | `ModelQueryingMotif` | Incremental model querying | GoalHijack |
-| `AgentDelegationMotif` | Multi-path plan generator | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication |
+| `AgentDelegationMotif` | Multi-path plan generator | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication, UnboundedConsumption |
 | `ToolUsingAgentMotif` | Multi-path plan generator | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
 | `ExecutionScreeningMotif` | Multimodal guardrails | *(risk-neutral - none)* |
 | `GuardrailsMotif` | Multimodal guardrails | *(risk-neutral - none)* |
@@ -190,15 +190,14 @@ so a motif derived from several catalogues is listed under each of them.
 | `ModelQueryingMotif` | One-shot model querying | GoalHijack |
 | `GoalCreationMotif` | Passive goal creator | GoalHijack |
 | `GoalCreationMotif` | Proactive goal creator | GoalHijack |
-| `PromptResponseOptimiserMotif` | Prompt/response optimiser | *(risk-neutral - none)* |
 | `EmbeddingsMotif` | Retrieval augmented generation | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
 | `InformationRetrievalMotif` | Retrieval augmented generation | *(risk-neutral - none)* |
 | `RerankerMotif` | Retrieval augmented generation | VectorAndEmbeddingWeakness |
 | `RetrievalAugmentedGenerationMotif` | Retrieval augmented generation | MisinformationFromWeakGrounding, PromptInjection, ProtectedDataToExternalModel, UnboundedConsumption |
 | `VectorBasedInformationRetrievalMotif` | Retrieval augmented generation | VectorAndEmbeddingWeakness |
-| `AgentDelegationMotif` | Role-based cooperation | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication |
+| `AgentDelegationMotif` | Role-based cooperation | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication, UnboundedConsumption |
 | `PlanReflectionMotif` | Self-reflection | GoalHijack, UnboundedConsumption |
-| `AgentDelegationMotif` | Single-path plan generator | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication |
+| `AgentDelegationMotif` | Single-path plan generator | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication, UnboundedConsumption |
 | `ToolUsingAgentMotif` | Single-path plan generator | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
 | `ToolUsingAgentMotif` | Tool/agent registry | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
 | `VotingBasedCooperationMotif` | Voting-based cooperation | InsecureAgentCommunication |
@@ -235,14 +234,13 @@ so a motif derived from several catalogues is listed under each of them.
 | `IterativeRAGMotif` | Recursive retrieval | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
 | `RerankerMotif` | Reranking | VectorAndEmbeddingWeakness |
 
-### Mercari ML System Design Patterns (8)
+### Mercari ML System Design Patterns (7)
 
 | Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
 | `TrainThenServeMotif` | Lifecycle | EvaluationDataContamination, ImproperRetraining, ModelBias |
 | `TrainingToServingMotif` | Lifecycle | DataAndModelPoisoning, ImproperRetraining, ModelBias, UnevaluatedModel |
-| `ModelInImageMotif` | Operation | *(risk-neutral - none)* |
-| `ModelLoadMotif` | Operation | SupplyChainCompromise |
+| `ExternalDependencyMotif` | Operation | SupplyChainCompromise |
 | `PredictionLoggingMotif` | Operation | PersonalDataRetained |
 | `PredictionMonitoringMotif` | Operation | *(risk-neutral - none)* |
 | `PredictionServingMotif` | Serving | AdversarialEvasion, DatasetShift, ModelExtraction, OutOfDomainInput, ProtectedDataToExternalModel, TrainingDataMembershipInference, UnevaluatedModel, UnqualifiedPrediction |
@@ -252,7 +250,7 @@ so a motif derived from several catalogues is listed under each of them.
 
 | Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
-| `AgentDelegationMotif` | agentic | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication |
+| `AgentDelegationMotif` | agentic | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication, UnboundedConsumption |
 | `AgentMemoryLoopMotif` | agentic | IdentityPrivilegeAbuse, MemoryPoisoning, PersonalDataRetained |
 | `HumanOversightMotif` | agentic | *(risk-neutral - none)* |
 | `ToolUsingAgentMotif` | agentic | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
@@ -311,7 +309,7 @@ so a motif derived from several catalogues is listed under each of them.
 | **IdentityPrivilegeAbuse** | `asi03-identity-and-privilege-abuse` | AgentDelegation, AgentMemoryLoop | ScopedAgentCredentials, ToolPermissionBoundaries |
 | **ImproperOutputHandling** | `llm05-improper-output-handling` | DirectPrompting | Guardrails, OutputValidationAndSanitization |
 | **ImproperRetraining** | `improper-retraining` | FineTuning, PipelineTraining, TrainThenServe, TrainingToServing | RetrainingDataValidation, TrustedTrainingAndIndexingData |
-| **InsecureAgentCommunication** | `asi07-insecure-inter-agent-communication` | AgentDelegation, DebateBasedCooperation, VotingBasedCooperation | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, ToolPermissionBoundaries |
+| **InsecureAgentCommunication** | `asi07-insecure-inter-agent-communication` | AgentDelegation, VotingBasedCooperation | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, ToolPermissionBoundaries |
 | **MemoryPoisoning** | `asi06-memory-and-context-poisoning` | AgentMemoryLoop | InputValidationAndPromptIsolation, LoggingMonitoringAndEvals, TrustedTrainingAndIndexingData |
 | **MisinformationFromWeakGrounding** | `llm09-misinformation` | AdaptiveRAG, IterativeRAG, LLMBasedInformationRetrieval, RetrievalAugmentedGeneration | GroundingAndVerification, LoggingMonitoringAndEvals |
 | **ModelBias** | `model-bias` | PipelineTraining, TrainThenServe, TrainingToServing | FairnessEvaluation, TrustedTrainingAndIndexingData |
@@ -321,11 +319,11 @@ so a motif derived from several catalogues is listed under each of them.
 | **PromptInjection** | `llm01-prompt-injection` | AdaptiveRAG, DirectPrompting, IterativeRAG, LLMBasedInformationRetrieval, QueryRewriting, RetrievalAugmentedGeneration | Guardrails, InputValidationAndPromptIsolation, LoggingMonitoringAndEvals |
 | **ProtectedDataToExternalModel** | `personal-information-in-prompt` | DirectPrompting, PredictionServing, RetrievalAugmentedGeneration | DataMinimizationAndRedaction, ExternalProviderDataAgreement |
 | **SensitiveInformationDisclosure** | `llm02-sensitive-information-disclosure` | **(none - cannot fire)** | DataMinimizationAndRedaction, Guardrails, OutputValidationAndSanitization, RetrievalAccessControl |
-| **SupplyChainCompromise** | `llm03-supply-chain` | ExternalDependency, FineTuning, ModelLoad | LoggingMonitoringAndEvals, ModelAndDependencyProvenance |
+| **SupplyChainCompromise** | `llm03-supply-chain` | ExternalDependency, FineTuning | LoggingMonitoringAndEvals, ModelAndDependencyProvenance |
 | **SystemPromptLeakage** | `llm07-system-prompt-leakage` | DirectPrompting | Guardrails, OutputValidationAndSanitization, SystemPromptSecrecy |
 | **ToolMisuse** | `asi02-tool-misuse` | ToolUsingAgent | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl, ToolPermissionBoundaries |
 | **TrainingDataMembershipInference** | `membership-inference-attack` | PredictionServing | RateLimitBudgetAndLoopControl, TrainingDataPrivacy |
-| **UnboundedConsumption** | `llm10-unbounded-consumption` | DebateBasedCooperation, DirectPrompting, IterativeRAG, PlanReflection, QueryRewriting, RetrievalAugmentedGeneration | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl |
+| **UnboundedConsumption** | `llm10-unbounded-consumption` | AgentDelegation, DirectPrompting, IterativeRAG, PlanReflection, QueryRewriting, RetrievalAugmentedGeneration | LoggingMonitoringAndEvals, RateLimitBudgetAndLoopControl |
 | **UnevaluatedModel** | `model-misspecification` | PredictionServing, TrainingToServing | LoggingMonitoringAndEvals, PreReleaseModelEvaluation |
 | **UnexpectedCodeExecution** | `asi05-unexpected-code-execution` | ToolUsingAgent | OutputValidationAndSanitization, SandboxedCodeExecution |
 | **UnqualifiedPrediction** | `model-uncertainty` | PredictionServing | ToolPermissionBoundaries, UncertaintyReportingAndReview |
@@ -479,7 +477,7 @@ document is generated from them.
 
 | File | Holds |
 |---|---|
-| `ontology/patterns/motif.ttl` | the 38 motifs and their pattern nodes/edges |
+| `ontology/patterns/motif.ttl` | the 34 motifs and their pattern nodes/edges |
 | `ontology/patterns/risk_pattern_library.ttl` | the 33 risk patterns, the 30 suggested controls, and the control-to-MIT bridge |
 | `ontology/patterns/control_mitigation_layer.ttl` | technical/non-technical classification and `realizedByMotif` |
 | `ontology/core/pair_ai_pattern.ttl` | the pattern meta-vocabulary: roles, predicates, data categories |

@@ -1,8 +1,8 @@
 # PAIR-AI Catalogue — Motifs, Risk Patterns & Annotation Roles
 
 The inventory of what PAIR-AI can recognise and flag. Counted off the loaded
-ontology on 2026-10-09: **47 motifs** (38 after the B-4 merges of 2026-10-18), **33 risk patterns**, **123 annotation
-roles** (141 after 2026-10-18: 17 role categories and 3 evaluation roles added, Document chunk and Embedding vector removed), and **7 data categories**. Terminology follows
+ontology on 2026-10-09: **47 motifs** (34 after B-4, 2026-10-18/19: merges and two removals), **33 risk patterns**, **123 annotation
+roles** (137 after B-3/B-4: 17 role categories, 3 evaluation roles and Prediction input added; Document chunk, Embedding vector, Context detection step, Job scheduler, Tool registry, Image build step and Model load step removed), and **7 data categories**. Terminology follows
 [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md). This file is maintained by
 hand — if the library changes and this page does not, this page is wrong.
 
@@ -122,14 +122,14 @@ matches several families at once.
 | --- | --- | --- |
 | **ToolUsingAgentMotif** | A planning step decides on an action and produces that plan; a step reads it to invoke an external tool or change external state, producing a result the system consumes. Risk-neutral: acting through tools is what makes an agent useful. | ASI01, ASI02, ASI04, ASI05, ASI09 |
 | **AgentMemoryLoopMotif** | A step writes content to an agent memory store and a later step reads that same store back into a working context — the loop through a store is the distinguishing shape, and why one bad write outlives the turn that produced it. | ASI03, ASI06 |
-| **AgentDelegationMotif** | One agent's planning step produces a message that another agent's handoff step consumes and acts on, so work crosses an agent boundary. The named message is what makes the crossing assessable. | ASI01, ASI03, ASI04, ASI07, ASI08 |
+| **AgentDelegationMotif** | One agent's planning step produces a message that another agent's handoff step consumes and acts on, so work crosses an agent boundary. The named message is what makes the crossing assessable. A debate is this hop answered back (Debate-based cooperation was merged into it), and in a loop it also raises unbounded consumption. | ASI01, ASI03, ASI04, ASI07, ASI08, LLM10 |
 | **HumanOversightMotif** | A human approval step produces an approval the acting step reads before it produces the action's result. A **control** motif: matching it *suppresses* the tool-misuse finding on the mediated path rather than raising anything. | — (suppresses ASI02) |
 
 ### Prediction / serving (classic ML)
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **PredictionServingMotif** | A prediction step applies a model to a request, a queued request, a batch or preprocessed data, and produces a prediction result (merged 2026-10-18 from the synchronous, asynchronous, batch, prep-pred and multi-stage serving motifs). | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference, model extraction, protected data to external model |
+| **PredictionServingMotif** | A prediction step applies a model to a request, a queued request, a batch or preprocessed data, and produces a prediction result; the input node names `PredictionInput` (merged 2026-10-18 from the synchronous, asynchronous, batch, prep-pred and multi-stage serving motifs). | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference, model extraction, protected data to external model |
 
 ### Training
 
@@ -148,8 +148,6 @@ matches several families at once.
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **ModelLoadMotif** | Server image and model artifact managed separately; model loaded before prediction. | LLM03 |
-| **ModelInImageMotif** | A trained artifact packaged into a serving image, deployed as the model the prediction step serves from. | — (it trains its own artifact, so nothing enters from outside) |
 | **PredictionLoggingMotif** | Prediction inputs/results/latency collected into logs. | — |
 | **PredictionMonitoringMotif** | Logs/result trends monitored against expected behavior; may raise alerts. | — |
 
@@ -157,7 +155,7 @@ matches several families at once.
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **ExternalDependencyMotif** | An external dependency, pre-trained model, artifact, or serving image is used by a step. Risk-neutral by itself. | LLM03 |
+| **ExternalDependencyMotif** | An external dependency, pre-trained model, artifact, or serving image is used by a step. Risk-neutral by itself. Model load was merged into it: a load step reading an artifact or a serving image is this shape. | LLM03 |
 
 ---
 
@@ -181,7 +179,7 @@ shows which, and inserting a motif from there adds the context.
 | --- | --- | --- | --- | --- |
 | **LLM01** | Prompt injection | Untrusted content (from retrieval/tools, tainted by public input) reaches generation → user output, with no input/output control. | Direct Prompting, RAG, Query Rewriting | Guardrails; input validation & prompt isolation; logging/monitoring/evals |
 | **LLM02** | Sensitive data retrieval exposure | The store **and** the retrieved result carry `SensitiveInformation` → generation → user output, no disclosure control. | Vector-IR | Data minimization & redaction; guardrails; output validation & sanitization; retrieval access control |
-| **LLM03** | Supply chain compromise | A resource marked external, or an artifact nothing in the graph produces, is used. A model the system trains itself is not raised. | External Dependency, Fine Tuning, Model Load | Model & dependency provenance; logging/monitoring/evals |
+| **LLM03** | Supply chain compromise | A resource marked external, or an artifact nothing in the graph produces, is used. A model the system trains itself is not raised. | External Dependency, Fine Tuning | Model & dependency provenance; logging/monitoring/evals |
 | **LLM04** | Data & model poisoning | A bound source tagged `UntrustedContent` enters embeddings / fine-tuning / training-to-serving. | Embeddings, Fine Tuning, Training-to-Serving | Trusted training & indexing data; model & dependency provenance; logging/monitoring/evals |
 | **LLM05** | Improper output handling | Generation → user output with no `OutputValidationStep` / `OutputGuardrailStep`. | Direct Prompting, Guardrails | Output validation & sanitization; guardrails |
 | **LLM06** | Excessive agency | What the generation step produces reaches a `ToolInvocationStep` / `StateChangingStep` along a chain of resources, with no control on it. | *none — deliberately role-anchored, applies to any match binding the generation step* | Tool permission boundaries; rate/budget/loop control; logging/monitoring/evals |
@@ -349,6 +347,7 @@ class each is annotated on — because the four top-level roles hold 50, 32, 12 
 
 | Role | Definition |
 | --- | --- |
+| `PredictionInput` | What a prediction step reads: a request, a queue of requests, a batch, or preprocessed data. The four roles below sit under it, so the serving motif names it. |
 | `PredictionRequest` | An incoming request for a prediction. |
 | `PredictionResult` | The result of a prediction step. |
 | `PredictionQueue` | A queue holding prediction requests. |
@@ -406,11 +405,8 @@ class each is annotated on — because the four top-level roles hold 50, 32, 12 
 | `TrainingPipeline` | Orchestrates model training. |
 | `FineTuningStep` | Fine-tunes a pre-trained model. |
 | `DeploymentStep` | Deploys a model to serving. |
-| `ModelLoadStep` | Loads a model into a runtime. |
-| `ImageBuildStep` | Builds a serving image. |
 | `LoggingStep` | Logs predictions or events. |
 | `MonitoringStep` | Monitors a deployed model. |
-| `JobScheduler` | Schedules jobs in a workflow. |
 | `ToolInvocationStep` | Invokes an external tool/plugin/API (agentic tool use). |
 | `CodeExecutionStep` | A `ToolInvocationStep` that runs what it receives as code: an interpreter, shell, eval, template engine, deserializer. Read by ASI05. |
 | `StateChangingStep` | Changes external state (writes, transactions, side effects). |

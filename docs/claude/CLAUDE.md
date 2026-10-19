@@ -63,7 +63,7 @@ Rules are stated first and justified in one clause. The incidents behind them ar
   `test_derived_from_points_at_an_entity_never_at_a_document`. Pointed at a URL, `derivedFrom`
   only repeats `dct:source`, and *"which motifs came from this design pattern?"* stops being
   answerable. That is what 23 motif references to one Fowler article URL cost.
-- **A design pattern is identified by a `pair:DesignPatternCitation`, never modelled.** The 34
+- **A design pattern is identified by a `pair:DesignPatternCitation`, never modelled.** The 52
   handles at the top of `motif.ttl` carry a label and a `dct:source` (a DOI handle adds an APA
   `dct:bibliographicCitation`, which the linkage generator reads), and nothing else.
   `test_a_design_pattern_citation_stays_a_citation` fails on any other predicate, because a
@@ -82,7 +82,8 @@ Rules are stated first and justified in one clause. The incidents behind them ar
   motifs point `derivedFrom` at their OWASP ASI concepts, because their structural signature was
   inferred from a *risk* entry; three of them have since gained a handle in the agent design
   pattern catalogue, and `AgentMemoryLoopMotif` still has none. `ExternalDependencyMotif` names
-  `owasp:llm03-supply-chain` for the same reason and has no handle either. Keep that visible; it
+  `owasp:llm03-supply-chain` for the same reason, and its one handle (Mercari's *Model load*)
+  arrived only when Model load was merged into it in B-4. Keep that visible; it
   is a weaker derivation and must be described as one.
 - **No motif rests on a blog alone (2026-10-07).** Four motifs cited only Fowler's article:
   Direct Prompting, Fine Tuning, Hybrid Retriever and Query Rewriting. Each now also cites a
@@ -246,8 +247,11 @@ Read before non-trivial changes.
   flows and nothing the declaration does not have. Four had drifted ("informs" after
   `beam:inform` was removed, "vector store" for a knowledge source, "optional" for a required
   node). The review of all 47, with keep/fix/merge/drop recommendations, is on the to-do
-  page's B-4 child page. **Decisions 1–4 were applied 2026-10-18** (merges, Training-to-serving,
-  Embeddings roles, Evals roles: 47 → 38 motifs); the four drop candidates are still open.
+  page's B-4 child page. **Every decision on it is applied** (2026-10-18/19): the variants merged
+  into the motif they contain, Debate into Agent delegation and Model load into External
+  dependency, Prompt/response optimiser and Model-in-image removed (they carried no risk and
+  realised no control), and both lifecycle motifs leave their serving risks to Prediction
+  serving: **47 → 34 motifs**, with every tracked graph's concerns unchanged.
 - **Motifs match structure only (R2)** — roles and flow relations, reading **no** facet.
   Situational context enters at the applicability phase, never at matching.
 - **Motifs may nest, deliberately.** The library is not an antichain; a smaller motif can be
@@ -875,8 +879,8 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   risk domain linked"). `test_what_a_pattern_may_lead_to_is_traversed_never_asserted` pins both
   halves: every served domain is re-derived from the graph, and that set of two is asserted.
 - **Motifs are shelved by family, and the shelving is data.** `pair:motifFamily` puts every
-  motif in one concept of `pair:MotifFamilyScheme` — **GenAI** (19), **Agentic** (10),
-  **ML serving and training** (8), **Supply chain** (1), counted 2026-10-18. It is a filing decision about *this
+  motif in one concept of `pair:MotifFamilyScheme` — **GenAI** (18), **Agentic** (9),
+  **ML serving and training** (6), **Supply chain** (1), counted 2026-10-19. It is a filing decision about *this
   library*, never a reading of a submitted architecture: **no match query may read it** (R2, and
   `test_no_match_query_reads_the_motif_family` enforces it), and one system routinely matches
   several families at once. A motif shelved twice or not at all fails
@@ -989,23 +993,17 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   `motif_template_list()` carries `pair:motifFamily` and the tray groups on it, with the counts
   of the bullet above. It is the same filing decision as the
   library's, so the same rule holds — **no match query may read it** (R2).
-- **5 roles are inert — nothing in the 87 registered queries reads them**, directly or by
-  subsumption (re-counted 2026-10-18; the 17 categories are filing by design and excluded). Two
-  are the tops above the categories and are fine (`Processing Step`, `Resource Role`). Three are
-  not: **`Context Detection Step`, `Job Scheduler`, `Tool Registry`** were read only by the
-  variant motifs merged in B-4 (Proactive goal creation, Batch prediction and training,
-  Tool/agent registry), and now do nothing when applied. Open item; the rule is that
-  declared-but-unused vocabulary gets removed, not documented. `Document Chunk` and `Embedding
-  Vector` were removed in B-4; `Control Step` and `Pseudonymization Step` are read since
-  `unqualified_prediction.rq` walks `subRoleOf* pair:ControlStep`.
+- **Only the two tops above the categories are inert**: nothing in the registered queries reads
+  `Processing Step` or `Resource Role`, directly or by subsumption, and they are filing roles like
+  the 17 categories (re-counted 2026-10-19). Every role a merge or removal left unread is
+  removed with it: Document chunk and Embedding vector, Context detection step, Job scheduler,
+  Tool registry, Image build step and Model load step. Re-run the count after a motif goes.
 - **A small ODP/OQP drift, recorded so it is not rediscovered.** `Resource Role` is declared
   on a pattern node but named in no `.rq`; `Pre-trained Model` and `State Changing Step` are
-  named in a `.rq` but on no pattern node. **Since the B-4 serving merge** `prediction_serving.rq`
-  accepts four input roles (Prediction Request, Prediction Queue, Batch Dataset, Preprocessed
-  Data) while `Serving_InputNode` declares Prediction Request only, because a pattern node holds
-  one `pair:expectedRole` everywhere the code reads it. So the term pages show no serving motif
-  for the other three. A parent role over the four would close it; open item, asked on the B-4
-  page.
+  named in a `.rq` but on no pattern node. **A pattern node holds one `pair:expectedRole`**
+  everywhere the code reads it, so a motif that accepts several input roles names their common
+  parent: `Prediction input` was added over the four inputs Prediction serving accepts, so its
+  declaration and its query say the same thing.
 - **The gap report's element candidates are not annotation suggestions.** `motif_gaps()`
   filters near-misses by BEAM class alone, so on the helpdesk graph it emits **428**
   element-level hints and offers the same four processes for Embedding Step, Chunking Step and
@@ -1413,24 +1411,24 @@ anyone noticed:
 len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its siblings
 ```
 
-### Library (counted off the loaded graph, 2026-10-18)
+### Library (counted off the loaded graph, 2026-10-19)
 
 | | |
 | --- | --- |
-| Motifs | **38** — GenAI 19, Agentic 10, ML serving and training 8, Supply chain 1 (47 before the B-4 merges) |
-| Risk patterns | **33** — GenAI 10, Agentic 11, ML serving and training 11, Supply chain 1 (26 motifs carry one; 12 carry none) |
-| Pattern nodes / pattern edges | **200** / **171** — every edge crosses between an oval and a box |
-| Pattern roles | **141**: 124 roles plus 17 `pair:RoleCategory` categories. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
+| Motifs | **34** — GenAI 18, Agentic 9, ML serving and training 6, Supply chain 1 (47 before B-4) |
+| Risk patterns | **33** — GenAI 10, Agentic 11, ML serving and training 11, Supply chain 1 (24 motifs carry one; 10 carry none) |
+| Pattern nodes / pattern edges | **177** / **150** — every edge crosses between an oval and a box |
+| Pattern roles | **137**: 120 roles plus 17 `pair:RoleCategory` categories. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
 | Data categories | **7** |
 | Facet concepts | **35** (task 20, data 11, autonomy 4) |
 | Risk mechanisms | **32** |
 | Applicability conditions | **34**, carried on 38 attachments |
 | Controls | **30** `pat:Control_*` |
 | Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 40, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
-| Triples | **11 392** |
-| Motif–risk links | **76** — 24 carried by the motif alone, 52 with a named context (19 annotate the motif's own elements, 33 add the surrounding elements the risk needs) |
+| Triples | **11 061** |
+| Motif–risk links | **68** — 20 carried by the motif alone, 48 with a named context (19 annotate the motif's own elements, 29 add the surrounding elements the risk needs) |
 
-**88 registered implementations** over 87 `.rq` files: 38 match, 33 risk, 6 propagation, 9
+**84 registered implementations** over 83 `.rq` files: 34 match, 33 risk, 6 propagation, 9
 mitigation rewrites over 8 files (`response_verification.rq` is registered twice, under two
 controls for the same risk pattern), and 2 business-context derivations under
 `ontology/context/` — one of which registers as `DataCategoryPropagation`, so the runner sees 7

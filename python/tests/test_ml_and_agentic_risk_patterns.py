@@ -299,7 +299,7 @@ ex:Recalled a beam:Data ; rdfs:label "Recalled" ; pair:playsRole pair:RetrievedC
 
 REGISTRY = AGENT + """
 ex:Planning beam:use ex:Registry ; beam:produce ex:Assignment .
-ex:Registry a beam:Data ; rdfs:label "Public tool registry" ; pair:playsRole pair:ToolRegistry, pair:ThirdPartyPackage .
+ex:Registry a beam:Data ; rdfs:label "Public tool registry" ; pair:playsRole pair:ThirdPartyPackage .
 ex:Assignment a beam:Data ; rdfs:label "Assignment" .
 ex:Call a beam:Process ; rdfs:label "Call the tool" ; pair:playsRole pair:ToolInvocationStep ;
     beam:use ex:Assignment ; beam:produce ex:Result .
@@ -311,7 +311,7 @@ def test_an_external_registry_steering_an_agent_raises_agentic_supply_chain() ->
     assert "AgenticSupplyChainRiskPattern" in _patterns(REGISTRY)
     verified = REGISTRY.replace("ex:Planning beam:use ex:Registry ;", "ex:Planning beam:use ex:Pinned ;") + """
 ex:Verify a beam:Process ; pair:playsRole pair:PolicyEnforcementStep ; beam:use ex:Registry ; beam:produce ex:Pinned .
-ex:Pinned a beam:Data ; rdfs:label "Verified, pinned registry" ; pair:playsRole pair:ToolRegistry .
+ex:Pinned a beam:Data ; rdfs:label "Verified, pinned registry" .
 """
     assert "AgenticSupplyChainRiskPattern" not in _patterns(verified)
 

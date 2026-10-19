@@ -21,11 +21,8 @@ WHERE {
                     beam:use ?model ;
                     beam:use ?input ;
                     beam:produce ?result .
-    # What the merged serving variants each read: a request, a queue of them,
-    # a batch, or a request already preprocessed.
-    VALUES ?inputRole { pair:PredictionRequest pair:PredictionQueue pair:BatchDataset pair:PreprocessedData }
     ?input a beam:Data ;
-           pair:playsRole/pair:subRoleOf* ?inputRole .
+           pair:playsRole/pair:subRoleOf* pair:PredictionInput .
     ?model a beam:StatisticalModel ;
            pair:playsRole/pair:subRoleOf* pair:Model .
     ?result a beam:Data ;

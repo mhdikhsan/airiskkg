@@ -396,7 +396,8 @@ def test_a_paper_is_cited_by_its_doi(client) -> None:
     data = client.get("/api/library").get_json()
     refs = {ref["id"]: ref for motif in data["motifs"] for ref in motif["derivedFrom"]}
     papers = [ref for ref in refs.values() if "doi.org/" in (ref["url"] or "")]
-    assert len(papers) == 32, f"expected 32 DOI-cited design patterns, got {len(papers)}"
+    # 31 since B-4: the prompt/response optimiser's handle went with its motif
+    assert len(papers) == 31, f"expected 31 DOI-cited design patterns, got {len(papers)}"
     for ref in papers:
         assert ref.get("doi") and ref["sourceShort"] == ref["doi"], ref
         assert ref["url"] == "https://doi.org/" + ref["doi"], ref

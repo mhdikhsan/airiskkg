@@ -107,9 +107,6 @@ pat:Cite_ModelLoad a pair:DesignPatternCitation ;
     skos:prefLabel "Model load pattern"@en ;
     dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> .
 
-pat:Cite_ModelInImage a pair:DesignPatternCitation ;
-    skos:prefLabel "Model in image pattern"@en ;
-    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> .
 
 # Liu et al., Agent Design Pattern Catalogue (J. Systems & Software 220, 2025).
 # Peer-reviewed, 18 patterns from an SLR of 57 studies, each with the full
@@ -155,10 +152,6 @@ pat:Cite_ProactiveGoalCreator a pair:DesignPatternCitation ;
     dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
     dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 
-pat:Cite_PromptResponseOptimiser a pair:DesignPatternCitation ;
-    skos:prefLabel "Prompt/response optimiser"@en ;
-    dct:bibliographicCitation "Liu, Y., Lo, S. K., Lu, Q., Zhu, L., Zhao, D., Xu, X., Harrer, S., & Whittle, J. (2025). Agent design pattern catalogue: A collection of architectural patterns for foundation model based agents. The Journal of Systems & Software, 220, 112278."@en ;
-    dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 
 pat:Cite_OneShotModelQuerying a pair:DesignPatternCitation ;
     skos:prefLabel "One-shot model querying"@en ;
@@ -518,7 +511,7 @@ pat:Serving_InputNode
     a pair:PatternNode ;
     rdfs:label "Prediction input"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PredictionRequest .
+    pair:expectedRole pair:PredictionInput .
 
 pat:Serving_PredictionUsesInputEdge
     a pair:PatternEdge ;
@@ -1097,191 +1090,29 @@ pat:PredMon_MonitoringProducesAlertEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:PredMon_AlertNode .
 
-pat:ModelLoadMotif
-    a pair:GraphMotif ;
-    pair:implementedBy pat:ModelLoad_MatchingOQP ;
-    rdfs:label "Model Load Motif"@en ;
-    dct:description "A model load step reads a serving image and a separately kept model artifact and produces the model a prediction step uses."@en ;
-    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> ;
-    pair:derivedFrom pat:Cite_ModelLoad ;
-    pair:hasPatternNode
-        pat:ModelLoad_ServerImageNode ,
-        pat:ModelLoad_ModelArtifactNode ,
-        pat:ModelLoad_LoadStepNode ,
-        pat:ModelLoad_LoadedModelNode ,
-        pat:ModelLoad_PredictionStepNode ;
-    pair:hasPatternEdge
-        pat:ModelLoad_LoadUsesImageEdge ,
-        pat:ModelLoad_LoadUsesModelArtifactEdge ,
-        pat:ModelLoad_LoadProducesLoadedModelEdge ,
-        pat:ModelLoad_PredictionUsesLoadedModelEdge .
-
-pat:ModelLoad_ServerImageNode
-    a pair:PatternNode ;
-    rdfs:label "Reusable prediction server image"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:ServingImage .
-
-pat:ModelLoad_ModelArtifactNode
-    a pair:PatternNode ;
-    rdfs:label "Separately managed model artifact"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:ModelArtifact .
-
-pat:ModelLoad_LoadStepNode
-    a pair:PatternNode ;
-    rdfs:label "Model load step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:ModelLoadStep .
-
-pat:ModelLoad_LoadedModelNode
-    a pair:PatternNode ;
-    rdfs:label "Loaded model"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:LoadedModel .
-
-pat:ModelLoad_PredictionStepNode
-    a pair:PatternNode ;
-    rdfs:label "Model-load prediction step"@en ;
-    pair:expectedClass beam:Infer ;
-    pair:expectedRole pair:PredictionStep .
-
-pat:ModelLoad_LoadUsesImageEdge
-    a pair:PatternEdge ;
-    rdfs:label "model load uses server image"@en ;
-    pair:sourcePatternNode pat:ModelLoad_LoadStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:ModelLoad_ServerImageNode .
-
-pat:ModelLoad_LoadUsesModelArtifactEdge
-    a pair:PatternEdge ;
-    rdfs:label "model load uses model artifact"@en ;
-    pair:sourcePatternNode pat:ModelLoad_LoadStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:ModelLoad_ModelArtifactNode .
-
-pat:ModelLoad_LoadProducesLoadedModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "model load produces loaded model"@en ;
-    pair:sourcePatternNode pat:ModelLoad_LoadStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:ModelLoad_LoadedModelNode .
 
 
-pat:ModelLoad_PredictionUsesLoadedModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "prediction uses loaded model"@en ;
-    pair:sourcePatternNode pat:ModelLoad_PredictionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:ModelLoad_LoadedModelNode .
-
-pat:ModelInImageMotif
-    a pair:GraphMotif ;
-    pair:implementedBy pat:ModelImage_MatchingOQP ;
-    rdfs:label "Model-in-Image Motif"@en ;
-    dct:description "A trained model artifact is built into a serving image, which a deployment step turns into the model a prediction step uses."@en ;
-    dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-in-image-pattern/design_en.html> ;
-    pair:derivedFrom pat:Cite_ModelInImage ;
-    pair:hasPatternNode
-        pat:ModelImage_TrainingStepNode ,
-        pat:ModelImage_ModelArtifactNode ,
-        pat:ModelImage_ImageBuildStepNode ,
-        pat:ModelImage_ServingImageNode ,
-        pat:ModelImage_DeploymentStepNode ,
-        pat:ModelImage_DeployedModelNode ,
-        pat:ModelImage_PredictionStepNode ;
-    pair:hasPatternEdge
-        pat:ModelImage_TrainingProducesModelEdge ,
-        pat:ModelImage_ImageBuildUsesModelEdge ,
-        pat:ModelImage_ImageBuildProducesImageEdge ,
-        pat:ModelImage_DeploymentUsesImageEdge ,
-        pat:ModelImage_PredictionUsesDeployedModelEdge ,
-        pat:ModelImage_DeploymentProducesDeployedModelEdge .
-
-pat:ModelImage_TrainingStepNode
-    a pair:PatternNode ;
-    rdfs:label "Model-in-image training step"@en ;
-    pair:expectedClass beam:Train ;
-    pair:expectedRole pair:TrainingStep .
-
-pat:ModelImage_ModelArtifactNode
-    a pair:PatternNode ;
-    rdfs:label "Model-in-image model artifact"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:ModelArtifact .
-
-pat:ModelImage_ImageBuildStepNode
-    a pair:PatternNode ;
-    rdfs:label "Serving image build step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:ImageBuildStep .
-
-pat:ModelImage_ServingImageNode
-    a pair:PatternNode ;
-    rdfs:label "Serving image containing model"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:ServingImage .
-
-pat:ModelImage_DeployedModelNode
-    a pair:PatternNode ;
-    rdfs:label "Deployed model"@en ;
-    pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:LoadedModel .
-
-pat:ModelImage_DeploymentStepNode
-    a pair:PatternNode ;
-    rdfs:label "Model-in-image deployment step"@en ;
-    pair:expectedClass beam:Process ;
-    pair:expectedRole pair:DeploymentStep .
-
-pat:ModelImage_PredictionStepNode
-    a pair:PatternNode ;
-    rdfs:label "Model-in-image prediction step"@en ;
-    pair:expectedClass beam:Infer ;
-    pair:expectedRole pair:PredictionStep .
-
-pat:ModelImage_TrainingProducesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "training produces model artifact for image"@en ;
-    pair:sourcePatternNode pat:ModelImage_TrainingStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:ModelImage_ModelArtifactNode .
 
 
-pat:ModelImage_ImageBuildUsesModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "image build uses model artifact"@en ;
-    pair:sourcePatternNode pat:ModelImage_ImageBuildStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:ModelImage_ModelArtifactNode .
 
-pat:ModelImage_ImageBuildProducesImageEdge
-    a pair:PatternEdge ;
-    rdfs:label "image build produces serving image"@en ;
-    pair:sourcePatternNode pat:ModelImage_ImageBuildStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:ModelImage_ServingImageNode .
 
-pat:ModelImage_DeploymentUsesImageEdge
-    a pair:PatternEdge ;
-    rdfs:label "deployment uses serving image"@en ;
-    pair:sourcePatternNode pat:ModelImage_DeploymentStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:ModelImage_ServingImageNode .
 
-pat:ModelImage_PredictionUsesDeployedModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "prediction uses the deployed model"@en ;
-    pair:sourcePatternNode pat:ModelImage_PredictionStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:ModelImage_DeployedModelNode .
 
-pat:ModelImage_DeploymentProducesDeployedModelEdge
-    a pair:PatternEdge ;
-    rdfs:label "deployment produces the deployed model"@en ;
-    pair:sourcePatternNode pat:ModelImage_DeploymentStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:ModelImage_DeployedModelNode .
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # GenAI product motifs 
@@ -1349,118 +1180,20 @@ pat:DP_GenerationProducesAnswerEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:DP_AnswerNode .
 
-pat:PromptResponseOptimiserMotif
-    a pair:GraphMotif ;
-    rdfs:label "Prompt/Response Optimiser Motif"@en ;
-    dct:description "An optimisation step rewrites the user's input into a prompt from a template before generation, and reworks the generated response afterwards."@en ;
-    pair:derivedFrom pat:Cite_PromptResponseOptimiser ;
-    pair:hasPatternNode
-        pat:PromptOpt_InputNode ,
-        pat:PromptOpt_TemplateNode ,
-        pat:PromptOpt_OptimiserStepNode ,
-        pat:PromptOpt_OptimisedPromptNode ,
-        pat:PromptOpt_GenerationStepNode ,
-        pat:PromptOpt_ResultNode ,
-        pat:PromptOpt_ResponseNode ;
-    pair:hasPatternEdge
-        pat:PromptOpt_OptimiserUsesInputEdge ,
-        pat:PromptOpt_OptimiserUsesTemplateEdge ,
-        pat:PromptOpt_OptimiserProducesPromptEdge ,
-        pat:PromptOpt_GenerationUsesPromptEdge ,
-        pat:PromptOpt_GenerationProducesResultEdge ,
-        pat:PromptOpt_OptimiserUsesResultEdge ,
-        pat:PromptOpt_OptimiserProducesResponseEdge ;
-    pair:implementedBy pat:PromptOpt_MatchingOQP .
 
-pat:PromptOpt_InputNode
-    a pair:PatternNode ;
-    rdfs:label "Incoming prompt"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:UserInput .
 
-pat:PromptOpt_TemplateNode
-    a pair:PatternNode ;
-    rdfs:label "Prompt template"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PromptTemplate .
 
-pat:PromptOpt_OptimiserStepNode
-    a pair:PatternNode ;
-    rdfs:label "Prompt/response optimiser step"@en ;
-    pair:expectedClass beam:Transform ;
-    pair:expectedRole pair:PromptOptimisationStep .
 
-pat:PromptOpt_OptimisedPromptNode
-    a pair:PatternNode ;
-    rdfs:label "Optimised prompt"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:PromptTemplate .
 
-pat:PromptOpt_GenerationStepNode
-    a pair:PatternNode ;
-    rdfs:label "Generation step"@en ;
-    pair:expectedClass beam:Infer ;
-    pair:expectedRole pair:GenerationStep .
 
-pat:PromptOpt_ResultNode
-    a pair:PatternNode ;
-    rdfs:label "Generated result"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:LLMResponse .
 
-pat:PromptOpt_ResponseNode
-    a pair:PatternNode ;
-    rdfs:label "Optimised response"@en ;
-    pair:expectedClass beam:Data .
 
-pat:PromptOpt_OptimiserUsesInputEdge
-    a pair:PatternEdge ;
-    rdfs:label "optimiser uses the incoming prompt"@en ;
-    pair:sourcePatternNode pat:PromptOpt_OptimiserStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:PromptOpt_InputNode .
 
-pat:PromptOpt_OptimiserUsesTemplateEdge
-    a pair:PatternEdge ;
-    rdfs:label "optimiser uses the prompt template"@en ;
-    pair:sourcePatternNode pat:PromptOpt_OptimiserStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:PromptOpt_TemplateNode .
 
-pat:PromptOpt_OptimiserProducesPromptEdge
-    a pair:PatternEdge ;
-    rdfs:label "optimiser produces the optimised prompt"@en ;
-    pair:sourcePatternNode pat:PromptOpt_OptimiserStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:PromptOpt_OptimisedPromptNode .
 
-pat:PromptOpt_GenerationUsesPromptEdge
-    a pair:PatternEdge ;
-    rdfs:label "generation uses the optimised prompt"@en ;
-    pair:sourcePatternNode pat:PromptOpt_GenerationStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:PromptOpt_OptimisedPromptNode .
 
-pat:PromptOpt_GenerationProducesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "generation produces the result"@en ;
-    pair:sourcePatternNode pat:PromptOpt_GenerationStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:PromptOpt_ResultNode .
 
-pat:PromptOpt_OptimiserUsesResultEdge
-    a pair:PatternEdge ;
-    rdfs:label "optimiser uses the generated result"@en ;
-    pair:sourcePatternNode pat:PromptOpt_OptimiserStepNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:PromptOpt_ResultNode .
 
-pat:PromptOpt_OptimiserProducesResponseEdge
-    a pair:PatternEdge ;
-    rdfs:label "optimiser produces the optimised response"@en ;
-    pair:sourcePatternNode pat:PromptOpt_OptimiserStepNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:PromptOpt_ResponseNode .
 
 pat:EvalsMotif
     a pair:GraphMotif ;
@@ -2948,7 +2681,8 @@ pat:ExternalDependencyMotif
     dct:description "A step uses a supply chain resource: an external dependency, a pre-trained model, a model artifact or a serving image."@en ;
     rdfs:comment "Project curation: no catalogue defines this shape, so derivedFrom names the LLM03 entry that scopes it rather than a design pattern citation."@en ;
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
-    pair:derivedFrom owasp:llm03-supply-chain ;
+    pair:derivedFrom owasp:llm03-supply-chain ,
+        pat:Cite_ModelLoad ;
     pair:hasPatternNode
         pat:ExtDep_ExternalResourceNode ,
         pat:ExtDep_UsingStepNode ;
@@ -3119,7 +2853,8 @@ pat:AgentDelegationMotif
     pair:derivedFrom asi:asi07-insecure-inter-agent-communication ,
         pat:Cite_RoleBasedCooperation ,
         pat:Cite_SinglePathPlanGenerator ,
-        pat:Cite_MultiPathPlanGenerator ;
+        pat:Cite_MultiPathPlanGenerator ,
+        pat:Cite_DebateBasedCooperation ;
     pair:hasPatternNode
         pat:AgentDelegation_DelegatingStepNode ,
         pat:AgentDelegation_MessageNode ,
@@ -3603,73 +3338,14 @@ pat:Voting_AggregationProducesDecisionEdge
     pair:patternPredicate beam:produce ;
     pair:targetPatternNode pat:Voting_DecisionNode .
 
-pat:DebateBasedCooperationMotif
-    a pair:GraphMotif ;
-    rdfs:label "Debate-based Cooperation Motif"@en ;
-    dct:description "Two agent steps each produce an argument that the other reads and answers, so the exchange runs in both directions."@en ;
-    rdfs:comment "The argument role is the discriminator: a request answered by a reply is also a two-way exchange between agents, and is not a debate."@en ;
-    pair:derivedFrom pat:Cite_DebateBasedCooperation ;
-    pair:hasPatternNode
-        pat:Debate_FirstAgentNode ,
-        pat:Debate_FirstArgumentNode ,
-        pat:Debate_SecondAgentNode ,
-        pat:Debate_SecondArgumentNode ;
-    pair:hasPatternEdge
-        pat:Debate_FirstAgentProducesArgumentEdge ,
-        pat:Debate_SecondAgentUsesArgumentEdge ,
-        pat:Debate_SecondAgentProducesArgumentEdge ,
-        pat:Debate_FirstAgentUsesArgumentEdge ;
-    pair:implementedBy pat:Debate_MatchingOQP .
 
-pat:Debate_FirstAgentNode
-    a pair:PatternNode ;
-    rdfs:label "Debating agent step"@en ;
-    pair:expectedClass beam:Process .
 
-pat:Debate_FirstArgumentNode
-    a pair:PatternNode ;
-    rdfs:label "Argument"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:DebateArgument .
 
-pat:Debate_SecondAgentNode
-    a pair:PatternNode ;
-    rdfs:label "Opposing agent step"@en ;
-    pair:expectedClass beam:Process .
 
-pat:Debate_SecondArgumentNode
-    a pair:PatternNode ;
-    rdfs:label "Counter-argument"@en ;
-    pair:expectedClass beam:Data ;
-    pair:expectedRole pair:DebateArgument .
 
-pat:Debate_FirstAgentProducesArgumentEdge
-    a pair:PatternEdge ;
-    rdfs:label "an agent produces its argument"@en ;
-    pair:sourcePatternNode pat:Debate_FirstAgentNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:Debate_FirstArgumentNode .
 
-pat:Debate_SecondAgentUsesArgumentEdge
-    a pair:PatternEdge ;
-    rdfs:label "the other agent reads the argument"@en ;
-    pair:sourcePatternNode pat:Debate_SecondAgentNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:Debate_FirstArgumentNode .
 
-pat:Debate_SecondAgentProducesArgumentEdge
-    a pair:PatternEdge ;
-    rdfs:label "the other agent produces a counter-argument"@en ;
-    pair:sourcePatternNode pat:Debate_SecondAgentNode ;
-    pair:patternPredicate beam:produce ;
-    pair:targetPatternNode pat:Debate_SecondArgumentNode .
 
-pat:Debate_FirstAgentUsesArgumentEdge
-    a pair:PatternEdge ;
-    rdfs:label "the first agent reads the counter-argument"@en ;
-    pair:sourcePatternNode pat:Debate_FirstAgentNode ;
-    pair:patternPredicate beam:use ;
-    pair:targetPatternNode pat:Debate_SecondArgumentNode .
 
 
 
@@ -3922,7 +3598,7 @@ pat:ExternalDependencyMotifGroup
 
 # GenAIMotifFamily
 pat:DirectPromptingMotif                  pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:PromptingMotifGroup .
-pat:PromptResponseOptimiserMotif          pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:PromptingMotifGroup .
+
 pat:InformationRetrievalMotif             pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
 pat:VectorBasedInformationRetrievalMotif  pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
 pat:LLMBasedInformationRetrievalMotif     pair:motifFamily pat:GenAIMotifFamily ; pair:motifGroup pat:InformationRetrievalMotifGroup .
@@ -3953,7 +3629,7 @@ pat:ToolUsingAgentMotif            pair:motifFamily pat:AgenticMotifFamily ; pai
 
 pat:AgentDelegationMotif           pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:MultiAgentCooperationMotifGroup .
 pat:VotingBasedCooperationMotif    pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:MultiAgentCooperationMotifGroup .
-pat:DebateBasedCooperationMotif    pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:MultiAgentCooperationMotifGroup .
+
 pat:HumanOversightMotif            pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:AgentOversightMotifGroup .
 pat:ExecutionScreeningMotif        pair:motifFamily pat:AgenticMotifFamily ; pair:motifGroup pat:AgentOversightMotifGroup .
 
@@ -3966,8 +3642,7 @@ pat:PredictionServingMotif   pair:motifFamily pat:MLSystemMotifFamily ; pair:mot
 pat:PipelineTrainingMotif        pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:TrainingMotifGroup .
 pat:TrainThenServeMotif          pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:LifecycleMotifGroup .
 pat:TrainingToServingMotif       pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:LifecycleMotifGroup .
-pat:ModelInImageMotif            pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:OperationMotifGroup .
-pat:ModelLoadMotif               pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:OperationMotifGroup .
+
 pat:PredictionLoggingMotif       pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:OperationMotifGroup .
 pat:PredictionMonitoringMotif    pair:motifFamily pat:MLSystemMotifFamily ; pair:motifGroup pat:OperationMotifGroup .
 
