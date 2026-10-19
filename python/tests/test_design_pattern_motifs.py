@@ -135,13 +135,13 @@ ex:Critique a beam:Data ; pair:playsRole pair:ReflectionFeedback .
 """
 
 VOTING = """
-ex:VoterA a beam:Process ; beam:produce ex:VoteA .
-ex:VoterB a beam:Process ; beam:produce ex:VoteB .
+ex:VoterA a beam:Process ; pair:playsRole pair:VotingStep ; beam:produce ex:VoteA .
+ex:VoterB a beam:Process ; pair:playsRole pair:VotingStep ; beam:produce ex:VoteB .
 ex:VoteA a beam:Data ; pair:playsRole pair:AgentMessage .
 ex:VoteB a beam:Data ; pair:playsRole pair:AgentMessage .
 ex:Tally a beam:Process ; pair:playsRole pair:VoteAggregationStep ;
     beam:use ex:VoteA , ex:VoteB ; beam:produce ex:Outcome .
-ex:Outcome a beam:Data .
+ex:Outcome a beam:Data ; pair:playsRole pair:CollectiveDecision .
 """
 
 # A debate is a delegation hop answered back, so it is drawn with the delegation roles.
@@ -354,7 +354,7 @@ ex:Plan a beam:Process ; pair:playsRole pair:PlanningStep ; beam:produce ex:Step
 ex:Steps a beam:Data .
 ex:CallTool a beam:Process ; pair:playsRole pair:ToolInvocationStep ;
     beam:use ex:Steps ; beam:produce ex:ToolOutput .
-ex:ToolOutput a beam:Data .
+ex:ToolOutput a beam:Data ; pair:playsRole pair:ActionResult .
 """
     before = run_assessment_from_text(architecture)
     finding = next(before.risk_findings.subjects(

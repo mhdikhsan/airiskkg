@@ -115,7 +115,7 @@ export function initPalette() {
 }
 
 // Click a tray item to add it (at center)
-export function startTrayDrag(ev, chip, wrap, onDrop) {
+export function startTrayDrag(ev, chip, wrap, onDrop, onClick) {
   ev.preventDefault();
   ev.stopPropagation();
   const startX = ev.clientX;
@@ -138,7 +138,7 @@ export function startTrayDrag(ev, chip, wrap, onDrop) {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
     ghost.remove();
-    if (!moved) { onDrop(null, null); return; } // click -> add at center
+    if (!moved) { if (onClick) onClick(); else onDrop(null, null); return; } // click -> add at center, or what the caller asks
     const r = wrap.getBoundingClientRect();
     const inside = uv.clientX >= r.left && uv.clientX <= r.right && uv.clientY >= r.top && uv.clientY <= r.bottom;
     const onTray = uv.target && uv.target.closest && (uv.target.closest(".palette") || uv.target.closest(".motif-palette"));

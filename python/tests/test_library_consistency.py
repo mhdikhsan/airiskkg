@@ -425,10 +425,44 @@ def test_no_match_query_reads_the_motif_family(libraries) -> None:
         for path in sorted((REPO_ROOT / "ontology").rglob("*.rq"))
         if any(
             term in path.read_text(encoding="utf-8")
-            for term in ("motifFamily", "motifGroup", "riskPatternFamily")
+            for term in ("motifFamily", "motifGroup", "riskPatternFamily", "refinesMotif")
         )
     ]
     assert not offenders, "motif shelving read during matching: " + ", ".join(offenders)
+
+
+def test_a_sub_motif_names_a_general_motif_and_never_itself(libraries) -> None:
+    """pair:refinesMotif shows two levels in the tray and the library: a sub-motif
+    names the general motif it is a more detailed form of, and the levels never
+    loop back on themselves."""
+    motifs = set(libraries.subjects(RDF.type, PAIR.GraphMotif))
+    links = list(libraries.subject_objects(PAIR.refinesMotif))
+    assert links, "no sub-motif is declared"
+    assert all(a in motifs and b in motifs and a != b for a, b in links), links
+    for motif in motifs:
+        assert motif not in set(libraries.transitive_objects(motif, PAIR.refinesMotif)) - {motif}, motif
+
+
+def test_a_pattern_node_with_a_role_is_matched_on_it(libraries) -> None:
+    """A part that names a role in its motif's declaration is read by the matcher
+    (directly or through a role it refines), so the tag a drawing needs is the one
+    the drawing shows. Nodes with no role are the motif's open parts."""
+    offenders = []
+    for motif in libraries.subjects(RDF.type, PAIR.GraphMotif):
+        implementation = libraries.value(motif, PAIR.implementedBy)
+        path = libraries.value(implementation, PAIR.implementationPath) if implementation is not None else None
+        if path is None:
+            continue
+        query = (REPO_ROOT / str(path)).read_text(encoding="utf-8")
+        named = set(re.findall(r"pair:(\w+)", query))
+        for node in libraries.objects(motif, PAIR.hasPatternNode):
+            role = libraries.value(node, PAIR.expectedRole)
+            if role is None:
+                continue
+            reach = {str(r).rsplit("#", 1)[-1] for r in libraries.transitive_objects(role, PAIR.subRoleOf)}
+            if not reach & named:
+                offenders.append(f"{str(node).rsplit('#', 1)[-1]} ({str(role).rsplit('#', 1)[-1]})")
+    assert not offenders, "roles declared on parts their matcher never reads: " + ", ".join(sorted(offenders))
 
 
 def _control_structures(libraries) -> set:

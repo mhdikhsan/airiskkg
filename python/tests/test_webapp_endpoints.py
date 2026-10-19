@@ -623,7 +623,7 @@ def test_what_a_term_applies_to_follows_what_the_queries_write(client) -> None:
     roles = client.get("/api/vocabulary").get_json()["roles"]
     by_label = {role["label"]: role for role in roles}
 
-    generation = by_label["Generation Step"]
+    generation = by_label["Generate"]
     assert f"{BEAM_NS}Generate" in generation["appliesTo"], (
         "a Generate step is what the examples actually type, and it binds"
     )
@@ -801,7 +801,7 @@ def test_assess_reports_why_a_near_miss_motif_did_not_match(client) -> None:
     rag = next(gap for label, gap in gaps.items() if "Retrieval Augmented" in label)
     assert rag["satisfied"] < rag["total"]
     missing = " | ".join(edge["text"] for edge in rag["missingEdges"])
-    assert "Retrieval Step" in missing and "User Input" in missing
+    assert "no Retrieve uses a User Input" in missing, missing
 
 
 def test_assess_gaps_exclude_motifs_that_matched(client) -> None:

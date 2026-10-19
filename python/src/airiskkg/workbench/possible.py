@@ -30,7 +30,7 @@ from airiskkg.assessment_runner import (
     run_construct_query,
 )
 from airiskkg.workbench.templates import motif_templates
-from airiskkg.workbench.terms import PROCESS_CLASS_NAMES, display_label, label, short
+from airiskkg.workbench.terms import PROCESS_CLASS_NAMES, display_label, label, role_label, short
 
 PLACEHOLDER = "urn:pair-ai:possible:"
 _PAT = "http://w3id.org/airiskkg/patterns#"
@@ -749,7 +749,8 @@ def _distinct(entries: list[dict], raised: set[tuple]) -> list[dict]:
 BUDGET_SECONDS = 30.0
 
 
-def possible_risks(ttl: str, result: AssessmentResult | None = None, budget: float | None = BUDGET_SECONDS) -> dict:
+def possible_risks(ttl: str, result: AssessmentResult | None = None, budget: float | None = BUDGET_SECONDS,
+                   stop=None) -> dict:
     """Possible risks for a submitted Turtle graph, each with the suggestions it rests on.
 
     Readings are checked cheapest first and the check stops at the budget, so a
@@ -785,7 +786,8 @@ def possible_risks(ttl: str, result: AssessmentResult | None = None, budget: flo
     grouped: dict[tuple, dict] = {}
     unchecked = 0
     for at, reading in enumerate(readings):
-        if budget is not None and time.monotonic() - started > budget:
+        # out of time, or a newer question was asked: what is left is reported unchecked
+        if (budget is not None and time.monotonic() - started > budget) or (stop is not None and stop()):
             unchecked = len(readings) - at
             break
         suggestions = _suggestions(reading, base)
@@ -803,16 +805,16 @@ def possible_risks(ttl: str, result: AssessmentResult | None = None, budget: flo
         if s.kind == "category":
             return {"kind": "category", "condition": True, "why": s.why,
                     "element": str(s.element), "elementLabel": label(base, s.element),
-                    "category": str(s.category), "categoryLabel": display_label(short(s.category))}
+                    "category": str(s.category), "categoryLabel": role_label(s.category)}
         if s.kind == "role":
             was = sorted((r for r in base.objects(s.element, PAIR.playsRole)), key=str)
             return {"kind": "role", "condition": s.condition, "why": s.why,
                     "element": str(s.element), "elementLabel": label(base, s.element),
-                    "role": str(s.role), "roleLabel": display_label(short(s.role)),
+                    "role": str(s.role), "roleLabel": role_label(s.role),
                     "was": [display_label(label(base, r)) for r in was]}
         return {"kind": "add", "cls": s.node["cls"], "label": s.node["label"],
                 "role": str(s.role) if s.role is not None else None,
-                "roleLabel": display_label(short(s.role)) if s.role is not None else None,
+                "roleLabel": role_label(s.role) if s.role is not None else None,
                 "links": [{"predicate": p, "outgoing": out, "element": str(o), "elementLabel": label(base, o)}
                           for p, o, out in s.links]}
 

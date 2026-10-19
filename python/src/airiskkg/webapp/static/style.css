@@ -694,7 +694,8 @@ button.motif-family:hover { color: #4a5262; }
 .summary-row .stat.bad { color: var(--error); }
 .summary-row .hint { color: var(--text-dim); font-size: 12px; }
 
-.finding-card {
+/* a possible risk is drawn like a finding, and is never one: findings code selects on .finding-card */
+.finding-card, .possible-card {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
@@ -3546,3 +3547,28 @@ body.risk-list-page { display: block; height: auto; min-height: 100%; overflow: 
 .lib-page-link { color: var(--accent); }
 .risk-list a.chip { text-decoration: none; }
 
+/* A motif's detail beside the tray, read the way a picked box is on the risk canvas. */
+.motif-card {
+  position: fixed; z-index: 60; width: 300px; max-width: calc(100vw - 16px);
+  background: var(--bg-panel); color: var(--text, inherit); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); padding: 10px 12px; font-size: 12px; min-width: 0;
+}
+.motif-card-kind { font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.motif-card-title { display: block; font-size: 14px; margin: 2px 0 4px; }
+.motif-card-desc { margin: 0 0 6px; line-height: 1.4; }
+.motif-card-preview { display: flex; justify-content: center; overflow: hidden; margin: 4px 0 6px; }
+.motif-card-preview svg { max-width: 100%; height: auto; }
+.motif-card-row { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+.motif-card-key { color: var(--text-dim); flex: none; }
+.motif-card-risks { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.motif-card-note { margin: 6px 0; font-size: 11px; color: var(--text-dim); }
+.motif-card-actions { display: flex; gap: 6px; justify-content: flex-end; }
+/* A sub-motif under the general motif it is a more detailed form of. */
+.motif-item.motif-sub { position: relative; }
+.motif-item.motif-sub.depth-1 { margin-left: 14px; }
+.motif-item.motif-sub.depth-2 { margin-left: 28px; }
+.motif-item.motif-sub::before {
+  position: absolute; left: -9px; top: 50%; width: 6px; height: 6px; margin-top: -6px;
+  border-left: 1px solid var(--text-dim); border-bottom: 1px solid var(--text-dim); content: "";
+}
+.motif-of { color: var(--text-dim); font-size: 10.5px; }

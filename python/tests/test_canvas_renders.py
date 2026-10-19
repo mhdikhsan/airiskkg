@@ -1442,10 +1442,13 @@ def test_a_motif_page_fits_its_panel_at_any_width(served) -> None:
 
 def test_a_term_page_marks_where_the_term_sits(served) -> None:
     """Every structure that reads a term is drawn with the element the term would
-    annotate marked, and one reached through a refined term is told apart."""
+    annotate marked, and one reached through a refined term is told apart. Synthetic
+    training data is named by Retrieval data augmentation and reached by Pipeline training
+    through Training Dataset. (Training Dataset itself lost its inherited structure when
+    Human oversight's result node stopped accepting any resource role, 2026-10-19.)"""
     seen = _probe(served, "termpage", _OPEN + """
   <script>
-  window.addEventListener("load", () => setTimeout(() => openOn("terms", "Training Dataset", () => {
+  window.addEventListener("load", () => setTimeout(() => openOn("terms", "Synthetic Training Data", () => {
     const uses = [...document.querySelectorAll("#library-detail .lib-use")];
     log("uses=" + uses.length);
     log("marked=" + uses.filter((u) => u.querySelector(".mp-hl")).length);
@@ -1454,7 +1457,7 @@ def test_a_term_page_marks_where_the_term_sits(served) -> None:
   </script>
 """)
     assert "uses" in seen, f"the probe never reported: {seen['_report']!r}"
-    assert seen["uses"] == 2, f"Training Dataset is read by {seen['uses']} structures here, not 2"
+    assert seen["uses"] == 2, f"Synthetic Training Data is read by {seen['uses']} structures here, not 2"
     assert seen["marked"] == 2, "a structure is drawn without the term's place in it"
     assert seen["inherited"] == 1, "the structure reached by refinement is not told apart"
 

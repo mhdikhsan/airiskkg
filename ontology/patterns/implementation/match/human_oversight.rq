@@ -30,8 +30,8 @@ WHERE {
     UNION
     { ?actionRole pair:subRoleOf* pair:StateChangingStep }
 
-    ?actionResult a beam:Data .
-    ?approval a beam:Data .
+    ?actionResult a beam:Data ; pair:playsRole/pair:subRoleOf* pair:ActionResult .
+    ?approval a beam:Data ; pair:playsRole/pair:subRoleOf* pair:HumanApproval .
 
     FILTER(?approvalStep != ?actionStep)
 

@@ -2,7 +2,7 @@
 
 The inventory of what PAIR-AI can recognise and flag. Counted off the loaded
 ontology on 2026-10-09: **47 motifs** (34 after B-4, 2026-10-18/19: merges and two removals), **33 risk patterns**, **123 annotation
-roles** (137 after B-3/B-4: 17 role categories, 3 evaluation roles and Prediction input added; Document chunk, Embedding vector, Context detection step, Job scheduler, Tool registry, Image build step and Model load step removed), and **7 data categories**. Terminology follows
+roles** (137 after B-3/B-4: 17 role categories, 3 evaluation roles and Prediction input added; Document chunk, Embedding vector, Context detection step, Job scheduler, Tool registry, Image build step and Model load step removed; 141 on 2026-10-19, with Voting, Collective decision, Action result and Approval for the parts that had no role), and **7 data categories**. Step roles are named as verbs since 2026-10-19 (Retrieve, Generate, Construct prompt; labels only, the IRIs keep "Step"), and LLM Response is called Response. Terminology follows
 [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md). This file is maintained by
 hand — if the library changes and this page does not, this page is wrong.
 

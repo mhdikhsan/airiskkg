@@ -59,7 +59,7 @@ def test_a_diagram_tagged_by_category_still_leads_to_its_risks() -> None:
     rag = [r for r in report["risks"] if r["motif"] == "RetrievalAugmentedGenerationMotif"]
     assert rag, "the RAG reading of the diagram raised nothing"
     roles = {(n["elementLabel"], n["roleLabel"]) for r in rag for n in r["needs"] if n["kind"] == "role"}
-    assert ("Find passages", "Retrieval Step") in roles, roles
+    assert ("Find passages", "Retrieve") in roles, roles
 
 
 def test_applying_a_possible_risk_raises_it() -> None:

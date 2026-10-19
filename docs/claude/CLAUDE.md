@@ -464,6 +464,9 @@ in `NOTICE.md`.
   no element into a `beam:Data` of that system, linked by `realisedBy`, so the classification
   reaches it through the bridge and is never copied as a facet. Only when exactly one step is
   named does that step read or write it, because with several the process does not say which.
+  **Data attached to a refined activity is carried at once** (`add-data`, `connect-data` and a
+  dragged connection all call `_carry_data`), so a store drawn in the process is in the
+  architecture without a second step; the button carries what was drawn before.
 - **`pair:realisedBy` is the statement; the edge rule is the fallback.** Named, that element and
   no other; unnamed, the edge. `pair:targetInferred` on the derivation says which, because only
   one of them is somebody's claim. The picker offers the resources of the architectures the
@@ -709,7 +712,9 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   (`object` | `store`); `set-data-shape` retypes in place, keeping the name, classification
   and associations a finding reads. `bp:isCollection` is declared on `dataObject` and not on
   `dataStore`, so it is dropped on a retype rather than carried into a domain sBPMN does not
-  declare.
+  declare. **A step reads and writes one box in one edit** (`direction: "both"` on `add-data` and
+  `connect-data`, "reads and writes" in the activity editor): two associations on the same
+  reference, so a store a step updates is one box with an arrow each way.
 - **A band's place in the stack is the reader's to choose, and it is dragged.** Pools and lanes
   sorted by label, so a participant could not be moved where the diagram needs it — the order
   was a side effect of naming. The gesture is a grab on the band's **name strip**, which is a
@@ -761,6 +766,13 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   carries neither, so its box opens the editor. **One control per box, never two meanings for
   the same click.** `test_the_chip_opens_the_architecture_and_the_box_does_not` holds both
   halves.
+
+- **An edit never moves the reader off the level they picked** (fixed 2026-10-19). The canvas
+  fell back to the architecture whenever the process held no participant and no activity, which
+  is the state of a process that so far holds only a data object or a note, and of one whose
+  last pool was just deleted. Any BPMN on the page now counts as a process, and the fallback
+  never overrides a level chosen by hand. `test_an_edit_on_the_process_canvas_keeps_the_process_level`
+  fails on the old code.
 
 ### The front door
 
@@ -912,8 +924,9 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   "Controls" above `pair:ControlStep`, because those two are read by queries and cannot be
   categories themselves. **No query names a category**, and every query walks `subRoleOf*`
   upward, so inserting the level changed no match or finding. A category-only tag gets the
-  `ag:CategoryOnlyShape` warning (a warning, because the Input contract panel lists no Info rows); a resource category still satisfies a node that accepts any
-  resource role (Human oversight's result node). A category is shelved where its members are
+  `ag:CategoryOnlyShape` warning (a warning, because the Input contract panel lists no Info rows). (A resource category used to
+  satisfy Human oversight's result node, which accepted any resource role; that node reads
+  `Action result` since 2026-10-19.) A category is shelved where its members are
   (`role_shelf`), and a role reached *through* a category keeps the route it had before, so
   no existing role moved shelf or side. Categories are inert in queries by design, like the
   abstract tops. The role picker cascades by category and groups its search list by category
@@ -954,8 +967,8 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   is declared `rdfs:domain beam:Data`. One already written elsewhere (`simple_graph_rag.ttl`
   puts three on its LLM) stays visible and removable; the picker just takes nothing new.
 - **A family is read off the motifs that name a term, and is never inherited.**
-  `HumanOversightMotif` declares a `ResourceRole` wildcard node, so inheriting through
-  ancestors tags **all 53** resource-side terms Agentic — true, and useless, because a filter
+  `HumanOversightMotif` declared a `ResourceRole` wildcard node until 2026-10-19, so inheriting
+  through ancestors tagged **all 53** resource-side terms Agentic — true, and useless, because a filter
   matching everything is not a filter. Direct naming gives Agentic 10 / GenAI 36 / ML 28 /
   Supply chain 1. **A term with no family of its own is never hidden by a family filter**: it
   is a refinement that inherits, and `serves` is the field that says so. Skipping top-level
@@ -1005,6 +1018,42 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   than the viewport could not be reached with a mouse at all, and the wheel zoomed instead.
   `OVERLAYS` in `graph_view.js` is the list; add to it when a new scrolling overlay lands
   inside the wrap.
+- **Names follow the source documents (2026-10-19, asked for).** A step role is named as the
+  verb its source draws it with (the RAG survey's Query → Retrieve → Generate → Judge →
+  Response): Retrieve, Generate, Construct prompt, Rewrite query, Rerank, Invoke tool, Screen
+  input, Approve, …, and an LLM's output is a **Response**. **Labels only**: every IRI keeps its
+  name, so no query, graph or finding moved; "Processing step" keeps its word because it names
+  the process side and is never offered. The categories keep their nouns (Retrieval,
+  Generation, Prediction), which a verb never clashes with. **A motif draws each part under its
+  role's name**, so the drawing, the motif library's "matches elements with the roles" and the
+  terms library say the same thing; all three name a role through `terms.role_label` (the
+  `prefLabel`), never the IRI. A part with no role shows its declared label. *Agent memory
+  loop* is called **Agent memory**, because nothing in it closes a loop; the IRI is unchanged.
+- **The GenAI motifs read a generative model.** RAG, Guardrails and Fine tuning accepted only a
+  `Foundation LLM`, which confused readers beside motifs reading `Generative Model`; they now
+  read `Generative Model`, and a foundation LLM still binds because it refines it. Every
+  tracked graph's matches and findings were identical after the change.
+- **The open parts got roles (decision 5B).** Voting-based cooperation's voters (`Voting`) and
+  its decision (`Collective decision`), Execution screening's and Human oversight's results
+  (`Action result`, a tool's return or a change made) and Human oversight's approval
+  (`Approval`) are now named in the declaration and read by the matcher, so those three motifs
+  are stricter. No tracked graph matched any of them, so no baseline moved. The Tool-using
+  agent's plan and result, External dependency's using step and Embeddings' chunk, vector and
+  indexing step are still open: making them stricter would cost tracked findings.
+- **Sub-motifs are shown, not matched (decision 3B; C after the tutorial).** `pair:refinesMotif`
+  names the general motif a motif is a more detailed form of (Hybrid retriever, Reranker,
+  Query rewriting and RAG under Information retrieval; Iterative and Adaptive RAG under RAG;
+  Guardrails under Input and Output screening; 16 links). The tray indents a sub-motif under its
+  general motif and says "of X" when that one is shelved elsewhere; the motif's card links both
+  levels. **No match query reads it** (the family guard covers it), and it is not yet a
+  promise that the detailed motif contains the general one: today only 7 motifs contain another,
+  so a general drawing still does not raise a variant's risks. Option C, every sub-motif
+  containing its parent with the shared risks moved up, is the plan after the tutorial,
+  starting with the retrieval family.
+- **A motif opens a card, not a tooltip.** Clicking a tray row shows the motif's family, its
+  description, its drawing, the risk patterns it carries, its sub-motif levels and **Add to
+  canvas**, beside the tray; a drag still adds it. The tray list carries `nodes`, `edges`,
+  `risks`, `refines` and `refinedBy` for it.
 - **The motif tray is shelved by family, like the library shelf.** 31 entries in one
   alphabetical column said nothing about which kind of AI system each is a shape of, so
   `motif_template_list()` carries `pair:motifFamily` and the tray groups on it, with the counts
@@ -1015,9 +1064,10 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   the 17 categories (re-counted 2026-10-19). Every role a merge or removal left unread is
   removed with it: Document chunk and Embedding vector, Context detection step, Job scheduler,
   Tool registry, Image build step and Model load step. Re-run the count after a motif goes.
-- **A small ODP/OQP drift, recorded so it is not rediscovered.** `Resource Role` is declared
-  on a pattern node but named in no `.rq`; `Pre-trained Model` and `State Changing Step` are
-  named in a `.rq` but on no pattern node. **A pattern node holds one `pair:expectedRole`**
+- **A small ODP/OQP drift, recorded so it is not rediscovered.** `Pre-trained Model` and
+  `State Changing Step` are named in a `.rq` but on no pattern node. The other half, a role
+  declared on a node and read by no `.rq` (`Resource Role` on Human oversight's result), is gone
+  since 2026-10-19 and held by `test_a_pattern_node_with_a_role_is_matched_on_it`. **A pattern node holds one `pair:expectedRole`**
   everywhere the code reads it, so a motif that accepts several input roles names their common
   parent: `Prediction input` was added over the four inputs Prediction serving accepts, so its
   declaration and its query say the same thing.
@@ -1049,7 +1099,12 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   and the starter graph added (75), the same risk is raised at mostly the same place for **72, 70
   and 62**, identical with the 30 s budget and without it. What is lost with half untagged is
   mostly a fact only the modeller knows, such as that an input is public. Unbudgeted, the slowest
-  graph took 64 s (BotTina); budgeted, 34 s.
+  graph took 64 s (BotTina); budgeted, 34 s. **The search never makes another request wait**:
+  `/api/possible` holds the SPARQL lock only for its assessment and runs the search on its own
+  copies (their queries compile under `_PARSE_LOCK`), and a newer assessment or search stops
+  it. Holding the lock for the whole search made every request after an assessment queue for
+  up to 30 s. Its cards carry `possible-card`, never `finding-card`, which findings code and
+  tests select on.
   **They never gate or change detection**: nothing is written to the submitted graph, no query
   reads anything this adds, `test_looking_for_possible_risks_changes_nothing_that_is_detected`
   holds it, and the UI keeps them dashed and below the findings. "Apply" writes the
@@ -1473,7 +1528,7 @@ len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its sibl
 | Motifs | **34** — GenAI 18, Agentic 9, ML serving and training 6, Supply chain 1 (47 before B-4) |
 | Risk patterns | **33** — GenAI 10, Agentic 11, ML serving and training 11, Supply chain 1 (24 motifs carry one; 10 carry none) |
 | Pattern nodes / pattern edges | **177** / **150** — every edge crosses between an oval and a box |
-| Pattern roles | **137**: 120 roles plus 17 `pair:RoleCategory` categories. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
+| Pattern roles | **141**: 124 roles plus 17 `pair:RoleCategory` categories. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
 | Data categories | **7** |
 | Facet concepts | **35** (task 20, data 11, autonomy 4) |
 | Risk mechanisms | **32** |
@@ -1520,9 +1575,12 @@ building an approval inline.
 
 ### Test suite
 
-**551 of 685 tests** in ~8 min by default; the interaction module alone takes ~11 min (counted
-2026-10-18). Two browser tests fail on this branch before and after B-3/B-4:
+**566 of 704 tests** in ~13 min by default, and 138 browser tests in ~18 min (counted
+2026-10-19). Two browser tests fail on this branch before and after B-3/B-4:
 `test_the_detail_opens_folded_and_the_reader_chooses_what_to_read` (`KeyError: 'folds'`) and
 `test_one_attachment_comes_off_a_risk_and_the_risk_stays`, which passes on its own and fails in
-module order. **Do not run browser suites side by side**: under that load six scope tests fail
+module order. **Open since 2026-10-19:** three full `-m browser` runs each failed about nine
+scope and level tests in `test_canvas_interaction.py` (the risk badge, descending, the finding
+click, a new example's scope, Starter) that pass when the module runs alone; the one full run on
+`515ff00` passed them. The cause is not pinned down. **Do not run browser suites side by side**: under that load six scope tests fail
 on timing and the run took 55 min.

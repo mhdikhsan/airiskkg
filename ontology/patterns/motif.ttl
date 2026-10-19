@@ -1584,7 +1584,7 @@ pat:RAG_LLMNode
     a pair:PatternNode ;
     rdfs:label "RAG foundation LLM"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:FoundationLLM .
+    pair:expectedRole pair:GenerativeModel .
 
 pat:RAG_GenerationStepNode
     a pair:PatternNode ;
@@ -2503,7 +2503,7 @@ pat:Guardrails_LLMNode
     a pair:PatternNode ;
     rdfs:label "Guarded LLM"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:FoundationLLM .
+    pair:expectedRole pair:GenerativeModel .
 
 pat:Guardrails_GenerationStepNode
     a pair:PatternNode ;
@@ -2607,7 +2607,7 @@ pat:FineTune_BaseModelNode
     a pair:PatternNode ;
     rdfs:label "Fine tuning base model"@en ;
     pair:expectedClass beam:StatisticalModel ;
-    pair:expectedRole pair:FoundationLLM .
+    pair:expectedRole pair:GenerativeModel .
 
 pat:FineTune_DatasetNode
     a pair:PatternNode ;
@@ -2781,7 +2781,7 @@ pat:ToolAgent_ActionUsesPlanEdge
 
 pat:AgentMemoryLoopMotif
     a pair:GraphMotif ;
-    rdfs:label "Agent Memory Loop Motif"@en ;
+    rdfs:label "Agent Memory Motif"@en ;
     dct:description "One step writes to an agent's memory and another step reads that memory back into the context a later step works from."@en ;
     dct:source <https://genai.owasp.org/> ;
     pair:derivedFrom asi:asi06-memory-and-context-poisoning ;
@@ -2935,12 +2935,13 @@ pat:HumanOversight_ActionResultNode
     a pair:PatternNode ;
     rdfs:label "Action result"@en ;
     pair:expectedClass beam:Data ;
-    pair:expectedRole pair:ResourceRole .
+    pair:expectedRole pair:ActionResult .
 
 pat:HumanOversight_ApprovalNode
     a pair:PatternNode ;
     rdfs:label "Human approval"@en ;
-    pair:expectedClass beam:Data .
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:HumanApproval .
 
 
 pat:HumanOversight_ActionProducesResultEdge
@@ -3004,7 +3005,8 @@ pat:ExecScreening_ToolStepNode
 pat:ExecScreening_ResultNode
     a pair:PatternNode ;
     rdfs:label "Tool result"@en ;
-    pair:expectedClass beam:Data .
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:ActionResult .
 
 pat:ExecScreening_PolicyProducesVerdictEdge
     a pair:PatternEdge ;
@@ -3273,7 +3275,8 @@ pat:VotingBasedCooperationMotif
 pat:Voting_FirstVoterNode
     a pair:PatternNode ;
     rdfs:label "Voting agent step"@en ;
-    pair:expectedClass beam:Process .
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:VotingStep .
 
 pat:Voting_FirstVoteNode
     a pair:PatternNode ;
@@ -3284,7 +3287,8 @@ pat:Voting_FirstVoteNode
 pat:Voting_SecondVoterNode
     a pair:PatternNode ;
     rdfs:label "Second voting agent step"@en ;
-    pair:expectedClass beam:Process .
+    pair:expectedClass beam:Process ;
+    pair:expectedRole pair:VotingStep .
 
 pat:Voting_SecondVoteNode
     a pair:PatternNode ;
@@ -3301,7 +3305,8 @@ pat:Voting_AggregationStepNode
 pat:Voting_DecisionNode
     a pair:PatternNode ;
     rdfs:label "Collective decision"@en ;
-    pair:expectedClass beam:Data .
+    pair:expectedClass beam:Data ;
+    pair:expectedRole pair:CollectiveDecision .
 
 pat:Voting_FirstVoterProducesVoteEdge
     a pair:PatternEdge ;
@@ -3649,3 +3654,22 @@ pat:PredictionMonitoringMotif    pair:motifFamily pat:MLSystemMotifFamily ; pair
 # SupplyChainMotifFamily
 pat:ExternalDependencyMotif  pair:motifFamily pat:SupplyChainMotifFamily ; pair:motifGroup pat:ExternalDependencyMotifGroup .
 
+### Sub-motifs: a motif names the general motif it is a more detailed form of.
+### Read by the tray and the library only; no match query reads it (R2).
+
+pat:VectorBasedInformationRetrievalMotif pair:refinesMotif pat:InformationRetrievalMotif .
+pat:LLMBasedInformationRetrievalMotif pair:refinesMotif pat:InformationRetrievalMotif .
+pat:HybridRetrieverMotif pair:refinesMotif pat:InformationRetrievalMotif .
+pat:QueryRewritingMotif pair:refinesMotif pat:InformationRetrievalMotif .
+pat:RerankerMotif pair:refinesMotif pat:InformationRetrievalMotif .
+pat:RetrievalAugmentedGenerationMotif pair:refinesMotif pat:InformationRetrievalMotif .
+pat:IterativeRAGMotif pair:refinesMotif pat:RetrievalAugmentedGenerationMotif .
+pat:AdaptiveRAGMotif pair:refinesMotif pat:RetrievalAugmentedGenerationMotif .
+pat:GuardrailsMotif pair:refinesMotif pat:InputScreeningMotif , pat:OutputScreeningMotif .
+pat:ExecutionScreeningMotif pair:refinesMotif pat:ToolUsingAgentMotif .
+pat:HumanOversightMotif pair:refinesMotif pat:ToolUsingAgentMotif .
+pat:VotingBasedCooperationMotif pair:refinesMotif pat:AgentDelegationMotif .
+pat:PlanReflectionMotif pair:refinesMotif pat:ModelQueryingMotif .
+pat:PredictionLoggingMotif pair:refinesMotif pat:PredictionServingMotif .
+pat:TrainingToServingMotif pair:refinesMotif pat:PipelineTrainingMotif .
+pat:TrainThenServeMotif pair:refinesMotif pat:PipelineTrainingMotif , pat:PredictionServingMotif .

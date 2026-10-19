@@ -1954,7 +1954,7 @@ function showDetail(activity, ev) {
     <div class="pd-section">Data</div>
     ${dataRows(activity)}
     <div class="pd-add">
-      <select id="pd-dir"><option value="in">reads</option><option value="out">writes</option></select>
+      <select id="pd-dir"><option value="in">reads</option><option value="out">writes</option><option value="both">reads and writes</option></select>
       <input type="text" id="pd-data-name" placeholder="name of the data" />
       <select id="pd-data-shape">${options(DATA_SHAPES, "object")}</select>
       <select id="pd-data-class">${classOptions("")}</select>

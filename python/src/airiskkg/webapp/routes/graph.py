@@ -613,15 +613,20 @@ def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str)
     if held is None:
         return None
 
-    # A step may read a store and write it too: two associations, one each way.
-    prop, side = ((BP.dataInputAssociation, BP.sourceRef) if direction == "in"
-                  else (BP.dataOutputAssociation, BP.targetRef))
-    used = {
-        data.value(end, BP.dataStoreRef) or data.value(end, BP.dataObjectRef)
-        for association in data.objects(activity, prop)
-        for end in data.objects(association, side)
-    }
-    if held in used:
+    # A step may read a store and write it too: two associations, one each way, on one box.
+    wanted = ["in", "out"] if direction == "both" else [direction]
+    ends = {"in": (BP.dataInputAssociation, BP.sourceRef), "out": (BP.dataOutputAssociation, BP.targetRef)}
+    missing = []
+    for way in wanted:
+        prop, side = ends[way]
+        used = {
+            data.value(end, BP.dataStoreRef) or data.value(end, BP.dataObjectRef)
+            for association in data.objects(activity, prop)
+            for end in data.objects(association, side)
+        }
+        if held not in used:
+            missing.append(way)
+    if not missing:
         return None
 
     if _in_use(data, reference):
@@ -631,8 +636,14 @@ def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str)
         data.add((appearance, BP.dataStoreRef if store else BP.dataObjectRef, held))
         reference = appearance
 
+    made = [_associate(data, reference, activity, way) for way in missing]
+    return str(made[-1])
+
+
+def _associate(data: Graph, reference: URIRef, activity: URIRef, way: str) -> URIRef:
+    """One data association, with both ends, as BPMN models it: `in` reads, `out` writes."""
     association = _fresh(data, "dassoc")
-    if direction == "in":
+    if way == "in":
         data.add((association, RDF.type, BPMN.dataInputAssociation))
         data.add((association, BP.sourceRef, reference))
         data.add((association, BP.targetRef, activity))
@@ -642,7 +653,7 @@ def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str)
         data.add((association, BP.sourceRef, activity))
         data.add((association, BP.targetRef, reference))
         data.add((activity, BP.dataOutputAssociation, association))
-    return str(association)
+    return association
 
 
 def _in_use(data: Graph, reference: URIRef) -> bool:
@@ -653,6 +664,49 @@ def _in_use(data: Graph, reference: URIRef) -> bool:
                            (BP.dataOutputAssociation, BP.targetRef))
         for association in data.objects(None, prop)
     )
+
+
+def _carry_data(data: Graph, node: URIRef, only: URIRef | None = None) -> list[str]:
+    """Give each data object or store an activity touches a beam:Data in the one
+    system it refines, linked by pair:realisedBy, unless it already names one.
+
+    The classification then reaches the element through the bridge and is never
+    copied as a facet. Only when exactly one step is named does that step read
+    or write it, because with several the process does not say which. `only`
+    limits it to one data reference, for data just attached.
+    """
+    systems = list(data.objects(node, PAIR.refinedBy))
+    if len(systems) != 1:
+        return []
+    system = systems[0]
+    steps = list(data.objects(node, PAIR.carriedOutBy))
+    made, carried = [], {}
+    for held, end, flow in ((BP.dataInputAssociation, BP.sourceRef, BEAM.use),
+                            (BP.dataOutputAssociation, BP.targetRef, BEAM.produce)):
+        for association in data.objects(node, held):
+            for reference in data.objects(association, end):
+                if only is not None and reference != only:
+                    continue
+                obj = data.value(reference, BP.dataObjectRef) or data.value(reference, BP.dataStoreRef) or reference
+                element = carried.get(obj)
+                if element is None:
+                    if data.value(obj, PAIR.realisedBy) is not None:
+                        continue
+                    existing = {str(s) for s in data.subjects() if str(s).startswith(str(LOCAL))}
+                    index = 1
+                    while str(LOCAL[f"e{index}"]) in existing:
+                        index += 1
+                    element = LOCAL[f"e{index}"]
+                    name = data.value(obj, BP.name) or data.value(reference, BP.name) or Literal("Data")
+                    data.add((element, RDF.type, BEAM.Data))
+                    data.add((element, RDFS.label, Literal(str(name))))
+                    data.add((system, BEAM.hasResource, element))
+                    data.add((obj, PAIR.realisedBy, element))
+                    carried[obj] = element
+                    made.append(str(element))
+                if len(steps) == 1:
+                    data.add((steps[0], flow, element))
+    return made
 
 
 def _fresh(data: Graph, prefix: str) -> URIRef:
@@ -1081,6 +1135,7 @@ def process_edit() -> object:
             made = _join_data(data, reference, step, "in" if reading else "out")
             if made is None:
                 return jsonify({"error": _already_joined(reading)}), 400
+            _carry_data(data, step, only=reference)
             return _serialized(data, newId=made)
 
         # Two black-box pools have no process at all, and are still two pools.
@@ -1159,45 +1214,13 @@ def process_edit() -> object:
 
     elif op == "carry-data":
         """Each data object or store the activity reads or writes becomes a Data
-        element of the system it refines, unless it already names one. The
-        element is linked by pair:realisedBy, so the classification reaches it
-        through the bridge and is not copied as a facet."""
+        element of the system it refines, unless it already names one."""
         activity = payload.get("activity")
         if not activity:
             return jsonify({"error": "carry-data needs an activity."}), 400
-        node = URIRef(activity)
-        systems = list(data.objects(node, PAIR.refinedBy))
-        if len(systems) != 1:
+        if len(list(data.objects(URIRef(activity), PAIR.refinedBy))) != 1:
             return jsonify({"error": "Only an activity that refines a system can carry its data there."}), 400
-        system = systems[0]
-        steps = list(data.objects(node, PAIR.carriedOutBy))
-        made, carried = [], {}
-        for held, end, flow in ((BP.dataInputAssociation, BP.sourceRef, BEAM.use),
-                                (BP.dataOutputAssociation, BP.targetRef, BEAM.produce)):
-            for association in data.objects(node, held):
-                for reference in data.objects(association, end):
-                    obj = data.value(reference, BP.dataObjectRef) or data.value(reference, BP.dataStoreRef) or reference
-                    if obj in carried:  # a store the activity both reads and writes is one element
-                        if len(steps) == 1:
-                            data.add((steps[0], flow, carried[obj]))
-                        continue
-                    if data.value(obj, PAIR.realisedBy) is not None:
-                        continue
-                    existing = {str(s) for s in data.subjects() if str(s).startswith(str(LOCAL))}
-                    index = 1
-                    while str(LOCAL[f"e{index}"]) in existing:
-                        index += 1
-                    element = LOCAL[f"e{index}"]
-                    name = data.value(obj, BP.name) or data.value(reference, BP.name) or Literal("Data")
-                    data.add((element, RDF.type, BEAM.Data))
-                    data.add((element, RDFS.label, Literal(str(name))))
-                    data.add((system, BEAM.hasResource, element))
-                    data.add((obj, PAIR.realisedBy, element))
-                    carried[obj] = element
-                    # in the direction the process draws it, when one step is named to draw it from
-                    if len(steps) == 1:
-                        data.add((steps[0], flow, element))
-                    made.append(str(element))
+        made = _carry_data(data, URIRef(activity))
         if not made:
             return jsonify({"error": "Everything this activity reads or writes already names its element."}), 400
         data.bind("bpmn", BPMN)
@@ -1209,7 +1232,7 @@ def process_edit() -> object:
         # right, and one drawn per reader reads as several different stores.
         activity = payload.get("activity")
         direction = payload.get("direction")
-        if activity and direction not in ("in", "out"):
+        if activity and direction not in ("in", "out", "both"):
             return jsonify({"error": "add-data needs a direction when it names an activity."}), 400
         classification = payload.get("classification") or ""
         if classification and classification not in data_class_names():
@@ -1251,18 +1274,10 @@ def process_edit() -> object:
         if node is None:
             new_id = str(reference)
             return _serialized(data, newId=new_id)
-        association = _fresh(data, "dassoc")
-        if direction == "in":
-            data.add((association, RDF.type, BPMN.dataInputAssociation))
-            data.add((association, BP.sourceRef, reference))
-            data.add((association, BP.targetRef, node))
-            data.add((node, BP.dataInputAssociation, association))
-        else:
-            data.add((association, RDF.type, BPMN.dataOutputAssociation))
-            data.add((association, BP.sourceRef, node))
-            data.add((association, BP.targetRef, reference))
-            data.add((node, BP.dataOutputAssociation, association))
+        for way in (["in", "out"] if direction == "both" else [direction]):
+            _associate(data, reference, node, way)
         new_id = str(reference)
+        _carry_data(data, node, only=reference)
 
     elif op == "connect-data":
         """One data node, joined to another activity.
@@ -1274,12 +1289,14 @@ def process_edit() -> object:
         reference = payload.get("data")
         activity = payload.get("activity")
         direction = payload.get("direction")
-        if not reference or not activity or direction not in ("in", "out"):
+        if not reference or not activity or direction not in ("in", "out", "both"):
             return jsonify({"error": "connect-data needs data, an activity and a direction."}), 400
         made = _join_data(data, URIRef(reference), URIRef(activity), direction)
         if made is None:
-            return jsonify({"error": _already_joined(direction == "in")}), 400
+            return jsonify({"error": "That step already reads and writes this data." if direction == "both"
+                            else _already_joined(direction == "in")}), 400
         new_id = made
+        _carry_data(data, URIRef(activity), only=URIRef(reference))
 
     elif op == "set-condition":
         """The words on a branch out of a gateway.

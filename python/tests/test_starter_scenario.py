@@ -134,3 +134,48 @@ def test_a_new_system_drops_the_steps_of_the_old_one(client) -> None:
     scene = _scene()
     moved = _edit(client, scene, "set-refines", activity=ANSWER_QUESTION, system="")
     assert _activity(client, moved)["steps"] == []
+
+
+def test_data_drawn_on_a_refined_activity_is_in_its_architecture_at_once(client) -> None:
+    """Attached to an activity that refines a system, a data object gets its element
+    there straight away; attached to one that refines nothing, it stays in the process."""
+    scene = _scene()
+    added = _edit(client, scene, "add-data", activity=ANSWER_QUESTION, direction="in",
+                  label="Order history", classification="PersonalData", shape="store")
+    graph = Graph().parse(data=added, format="turtle")
+    beam = "http://w3id.org/beam/core#"
+    store = next(s for s in graph.subjects(URIRef("https://sBPMN.github.io/2.0/properties#name"), None)
+                 if str(graph.value(s, URIRef("https://sBPMN.github.io/2.0/properties#name"))) == "Order history"
+                 and (s, RDF.type, URIRef("https://sBPMN.github.io/2.0/classes#dataStore")) in graph)
+    element = graph.value(store, PAIR.realisedBy)
+    assert element is not None, "the store names no element"
+    assert (URIRef(CSA + "SupportChatbot"), URIRef(beam + "hasResource"), element) in graph
+    assert (element, RDF.type, URIRef(beam + "Data")) in graph
+
+    plain = _edit(client, scene, "add-data", activity=CSP + "EscalateToAgent", direction="out",
+                  label="Escalation note", classification="")
+    after = Graph().parse(data=plain, format="turtle")
+    assert len(set(after.subjects(RDF.type, URIRef(beam + "Data")))) == len(
+        set(Graph().parse(data=scene, format="turtle").subjects(RDF.type, URIRef(beam + "Data")))), (
+        "data of an activity that refines nothing reached an architecture")
+
+
+def test_a_step_reads_and_writes_one_data_box_in_one_edit(client) -> None:
+    """A store a step both reads and writes is one box with an arrow each way."""
+    scene = _scene()
+    both = _edit(client, scene, "add-data", activity=CSP + "LogConversation", direction="both",
+                 label="Session store", shape="store")
+    graph = Graph().parse(data=both, format="turtle")
+    bp = "https://sBPMN.github.io/2.0/properties#"
+    store = next(s for s, o in graph.subject_objects(URIRef(bp + "name")) if str(o) == "Session store")
+    refs = set(graph.subjects(URIRef(bp + "dataStoreRef"), store))
+    assert len(refs) == 1, "one store drew several boxes"
+    ref = next(iter(refs))
+    step = URIRef(CSP + "LogConversation")
+    reads = {graph.value(a, URIRef(bp + "sourceRef")) for a in graph.objects(step, URIRef(bp + "dataInputAssociation"))}
+    writes = {graph.value(a, URIRef(bp + "targetRef")) for a in graph.objects(step, URIRef(bp + "dataOutputAssociation"))}
+    assert ref in reads and ref in writes, "the step does not both read and write it"
+
+    again = client.post("/api/process-edit", json={
+        "ttl": both, "op": "connect-data", "data": str(ref), "activity": str(step), "direction": "both"})
+    assert again.status_code == 400, "joined the same store twice"

@@ -50,7 +50,7 @@ WHERE {
              beam:use ?prompt ;
              beam:use ?llm ;
              beam:produce ?response .
-    ?llm      a beam:StatisticalModel ; pair:playsRole/pair:subRoleOf* pair:FoundationLLM .
+    ?llm      a beam:StatisticalModel ; pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
     ?response a beam:Data ; pair:playsRole/pair:subRoleOf* pair:LLMResponse .
 
     BIND(IRI(CONCAT(

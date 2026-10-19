@@ -24,7 +24,7 @@ CONSTRUCT {
 }
 WHERE {
     ?baseModel a beam:StatisticalModel ;
-           pair:playsRole/pair:subRoleOf* pair:FoundationLLM .
+           pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
     ?dataset a beam:Data ;
            pair:playsRole/pair:subRoleOf* pair:FineTuningDataset .
     ?evaluationScore a beam:Data ;

@@ -14,6 +14,7 @@ from airiskkg.workbench.terms import (
     domain_of,
     label,
     risk_domains,
+    role_label,
     short,
     source_pair,
 )
@@ -199,7 +200,7 @@ def _motif_entry(graph: Graph, motif: URIRef, template: dict | None) -> dict:
         "family": _family(graph, motif),
         "group": _group(graph, motif),
         "derivedFrom": _sorted_refs(graph, motif, PAIR.derivedFrom),
-        "roles": [{"id": role, "label": display_label(role)} for role in roles],
+        "roles": [{"id": role, "label": role_label(PAIR[role])} for role in roles],
         "nodes": nodes,
         "edges": edges,
         "riskPatterns": sorted(

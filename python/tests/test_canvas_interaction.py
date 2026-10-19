@@ -3801,8 +3801,25 @@ def test_the_motif_tray_starts_folded_and_finds_a_motif_by_what_it_does(page) ->
     loop.run_until_complete(handle.click(box["x"], box["y"]))
     loop.run_until_complete(handle.send("Input.insertText", {"text": "vector store"}))
     time.sleep(0.5)
-    found = loop.run_until_complete(handle.js(shown + """.map((c) => ({
-        name: c.textContent, tip: c.title }))"""))
+    found = loop.run_until_complete(handle.js(shown + """.map((c) => ({ name: c.textContent }))"""))
+    # A click opens what the motif is, beside the tray, rather than a tooltip.
+    first = _spot(loop, handle, shown + "[0]")
+    before = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue().length"))
+    loop.run_until_complete(handle.click(first["x"], first["y"]))
+    time.sleep(0.6)
+    card = loop.run_until_complete(handle.js("""(() => {
+        const c = document.querySelector('.motif-card');
+        if (!c) return null;
+        const r = c.getBoundingClientRect();
+        return {
+            text: c.textContent, drawn: !!c.querySelector('svg.motif-preview .mp-node, svg.motif-preview rect'),
+            inWindow: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight,
+            add: !!c.querySelector('.btn.primary'),
+        };
+    })()"""))
+    after = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue().length"))
+    loop.run_until_complete(handle.send("Input.dispatchKeyEvent", {"type": "keyDown", "key": "Escape"}))
+    closed = loop.run_until_complete(handle.js("!document.querySelector('.motif-card')"))
     loop.run_until_complete(handle.js("""(() => {
         const s = document.querySelector('#motif-palette .motif-search');
         s.value = ''; s.dispatchEvent(new Event('input'));
@@ -3812,9 +3829,11 @@ def test_the_motif_tray_starts_folded_and_finds_a_motif_by_what_it_does(page) ->
     assert folded == 0, f"{folded} motifs are listed before any family is opened"
     assert found, "searching what a motif does found nothing"
     assert all(not item["name"].endswith("Motif") for item in found), found
-    assert all("vector store" in item["tip"].lower() or "vector store" in item["name"].lower()
-               for item in found), "a search hit does not say what matched"
-    assert all(item["tip"] and "Click or drag" in item["tip"] for item in found)
+    assert card, "clicking a motif opened no detail"
+    assert "vector store" in card["text"].lower(), "the detail of a search hit does not say what matched"
+    assert card["drawn"] and card["add"] and card["inWindow"], card
+    assert before == after, "a click to read a motif added it to the canvas"
+    assert closed, "Escape did not close the detail"
 
 
 def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> None:
@@ -4478,3 +4497,47 @@ def test_the_starter_scene_names_the_steps_an_activity_is_carried_out_by(scene_r
     labels = loop.run_until_complete(handle.js("""[...document.querySelectorAll('.node.highlight')]
         .map((g) => g.dataset.id.split('#').pop()).sort()"""))
     assert labels == ["BuildPrompt", "FindPassages", "GenerateAnswer"], (picked, labels)
+
+
+def test_an_edit_on_the_process_canvas_keeps_the_process_level(scene_restored) -> None:
+    """Adding or deleting on the business canvas rewrites the document, and the
+    rewrite must not carry the reader off to the architecture: not when what is
+    on the page is only a data object or a note, and not when the last pool goes."""
+    loop, handle = scene_restored
+    level = "document.querySelector('#level-business').classList.contains('active')"
+    # a palette entry may ask for a name; a dialog would block a headless page
+    loop.run_until_complete(handle.js("window.prompt = () => 'Probe'; window.confirm = () => true; 1"))
+    loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(''); 1"))
+    time.sleep(1.5)
+    at = _spot(loop, handle, "document.querySelector('#level-business')")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(1)
+    seen = {"start": loop.run_until_complete(handle.js(level))}
+    names = loop.run_until_complete(handle.js("""(() => {
+        const host = document.querySelector('#process-palette');
+        if (!host.querySelector('.pp-item')) host.querySelector('.pp-fold')?.click();
+        return [...host.querySelectorAll('.pp-item')].map((b) => b.textContent.trim());
+    })()"""))
+    artifacts = [n for n in names if n.lower() in ("data object", "data store", "text annotation", "note")]
+    assert artifacts, names
+    for label in artifacts[:2]:
+        _add_from_palette(loop, handle, label)
+        seen["added " + label] = loop.run_until_complete(handle.js(level))
+    pool = next((n for n in names if n.lower() in ("participant", "pool")), None)
+    if pool:
+        _add_from_palette(loop, handle, pool)
+        seen["added " + pool] = loop.run_until_complete(handle.js(level))
+        loop.run_until_complete(handle.js("""(async () => {
+            const ttl = window.PairAI.Editor.getValue();
+            const view = await (await fetch('/api/process', { method: 'POST',
+                headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ttl }) })).json();
+            const id = view.participants[0].id;
+            const out = await (await fetch('/api/process-edit', { method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ttl, op: 'delete', element: id }) })).json();
+            window.PairAI.Editor.setValue(out.ttl);
+            return 1;
+        })()"""))
+        time.sleep(2.5)
+        seen["deleted the last pool"] = loop.run_until_complete(handle.js(level))
+    assert all(seen.values()), f"an edit left the process level: {seen} (palette: {names})"

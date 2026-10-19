@@ -30,12 +30,14 @@ WHERE {
     # Each pair of votes once, not once in each order.
     FILTER(STR(?firstVote) < STR(?secondVote))
 
-    ?firstVoter a/rdfs:subClassOf* beam:Process ; beam:produce ?firstVote .
-    ?secondVoter a/rdfs:subClassOf* beam:Process ; beam:produce ?secondVote .
+    ?firstVoter a/rdfs:subClassOf* beam:Process ;
+                pair:playsRole/pair:subRoleOf* pair:VotingStep ; beam:produce ?firstVote .
+    ?secondVoter a/rdfs:subClassOf* beam:Process ;
+                 pair:playsRole/pair:subRoleOf* pair:VotingStep ; beam:produce ?secondVote .
     FILTER(?firstVoter != ?secondVoter)
     FILTER(?firstVoter != ?aggregation && ?secondVoter != ?aggregation)
 
-    ?decision a beam:Data .
+    ?decision a beam:Data ; pair:playsRole/pair:subRoleOf* pair:CollectiveDecision .
     FILTER(?decision != ?firstVote && ?decision != ?secondVote)
 
     BIND(IRI(CONCAT(

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 
-from airiskkg.assessment_runner import BEAM
+from airiskkg.assessment_runner import BEAM, PAIR
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 MIT_DOMAIN_TAXONOMY = URIRef(
@@ -91,6 +92,19 @@ def display_label(text: str) -> str:
     spaced = text.replace("_", " ").replace("-", " ")
     spaced = _ACRONYM_BOUNDARY.sub(" ", _CAMEL_BOUNDARY.sub(" ", spaced))
     return re.sub(r"\s+", " ", spaced).strip()
+
+
+@lru_cache(maxsize=1)
+def _role_labels() -> dict[URIRef, str]:
+    from airiskkg.assessment_runner import load_base_graph
+
+    graph = load_base_graph()
+    return {role: display_label(label(graph, role)) for role in graph.subjects(RDF.type, PAIR.PatternRole)}
+
+
+def role_label(role: URIRef) -> str:
+    """What a role or category is called: its prefLabel, never its IRI."""
+    return _role_labels().get(role) or display_label(short(role))
 
 
 def class_terms(pairs: list[tuple[URIRef, str]]) -> list[dict[str, str]]:

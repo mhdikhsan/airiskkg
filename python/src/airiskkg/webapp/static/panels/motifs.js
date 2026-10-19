@@ -8,6 +8,7 @@ import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
 import { runMutation } from "./mutations.js";
 import { buildTray, madeSystemNote, startTrayDrag } from "./palette.js";
+import { motifPreview } from "../lib/motif_preview.js";
 import { noteChange } from "./run.js";
 import { state } from "../state.js";
 
@@ -290,10 +291,78 @@ function binBy(items, key, fallback) {
   return [...bins.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
+let motifCard = null;
+const motifById = new Map();
+const shortName = (item) => item.label.replace(/\s*Motif$/, "");
+
+function closeMotifCard() {
+  if (motifCard) motifCard.remove();
+  motifCard = null;
+}
+
+/* What a motif is, beside the tray: its drawing, its words and the risks it carries.
+   The reading the risk canvas gives a picked box, instead of a tooltip. */
+function openMotifCard(item, chip) {
+  const levels = (ids) => ids.map((id) => motifById.get(id)).filter(Boolean).map((other) => {
+    const link = el("button", { type: "button", class: "chip clickable" }, shortName(other));
+    link.addEventListener("click", () => openMotifCard(other, chip));
+    return link;
+  });
+  const same = motifCard && motifCard.dataset.motif === item.id;
+  closeMotifCard();
+  if (same) return;
+  const add = el("button", { type: "button", class: "btn small primary" }, "Add to canvas");
+  const close = el("button", { type: "button", class: "btn small" }, "Close");
+  const risks = item.risks || [];
+  motifCard = el("div", {
+    class: "motif-card", "data-motif": item.id, role: "dialog", "aria-label": item.label,
+  }, [
+    el("div", { class: "motif-card-kind" }, `Motif · ${item.family}`),
+    el("strong", { class: "motif-card-title" }, item.label.replace(/\s*Motif$/, "")),
+    item.description ? el("p", { class: "motif-card-desc" }, item.description) : null,
+    el("div", { class: "motif-card-preview" }, motifPreview(item)),
+    el("div", { class: "motif-card-row" }, [
+      el("span", { class: "motif-card-key" }, "carries"),
+      risks.length
+        ? el("span", { class: "motif-card-risks" }, risks.map((r) => el("span", { class: "chip" }, r)))
+        : el("span", { class: "dim" }, "no risk pattern of its own"),
+    ]),
+    (item.refines || []).length ? el("div", { class: "motif-card-row" }, [
+      el("span", { class: "motif-card-key" }, "detailed form of"),
+      el("span", { class: "motif-card-risks" }, levels(item.refines)),
+    ]) : null,
+    (item.refinedBy || []).length ? el("div", { class: "motif-card-row" }, [
+      el("span", { class: "motif-card-key" }, "detailed forms"),
+      el("span", { class: "motif-card-risks" }, levels(item.refinedBy)),
+    ]) : null,
+    el("p", { class: "motif-card-note" },
+      "Structure only: a risk is raised when its conditions hold over the match."),
+    el("div", { class: "motif-card-actions" }, [add, close]),
+  ]);
+  add.addEventListener("click", () => { closeMotifCard(); addMotif(item); });
+  close.addEventListener("click", closeMotifCard);
+  document.body.appendChild(motifCard);
+  // beside the tray, on whichever side has room, and inside the window
+  const tray = chip.closest(".motif-palette").getBoundingClientRect();
+  const row = chip.getBoundingClientRect();
+  const card = motifCard.getBoundingClientRect();
+  const left = tray.left - card.width - 8 >= 8
+    ? tray.left - card.width - 8
+    : Math.min(tray.right + 8, innerWidth - card.width - 8);
+  motifCard.style.left = `${Math.max(8, left)}px`;
+  motifCard.style.top = `${Math.max(8, Math.min(row.top, innerHeight - card.height - 8))}px`;
+}
+
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") closeMotifCard(); });
+document.addEventListener("pointerdown", (ev) => {
+  if (motifCard && !ev.target.closest(".motif-card, .motif-item")) closeMotifCard();
+});
+
 export function initMotifPalette(templates) {
   const panel = $("#motif-palette");
   if (!panel) return;
   if (!templates || !templates.length) { panel.style.display = "none"; return; }
+  templates.forEach((item) => motifById.set(item.id, item));
   const wrap = $("#canvas-wrap");
   const search = el("input", {
     type: "search", class: "motif-search", placeholder: "Search motifs",
@@ -317,13 +386,27 @@ export function initMotifPalette(templates) {
       // A family filed as one group says nothing more under a second heading.
       const heading = groups.length > 1 ? el("div", { class: "motif-group" }, group) : null;
       if (heading) shelf.appendChild(heading);
-      members.forEach((item) => {
+      // a sub-motif sits under the general motif it refines; one whose general motif
+      // is shelved elsewhere says which
+      const here = new Set(members.map((m) => m.id));
+      const parentOf = (m) => (m.refines || []).find((id) => here.has(id));
+      const ordered = [];
+      const place = (m, depth) => {
+        ordered.push([m, depth]);
+        members.filter((c) => parentOf(c) === m.id).forEach((c) => place(c, depth + 1));
+      };
+      members.filter((m) => !parentOf(m)).forEach((m) => place(m, 0));
+      ordered.forEach(([item, depth]) => {
+        const away = depth ? [] : (item.refines || []).map((id) => motifById.get(id)).filter(Boolean);
         const chip = el("div", {
-          class: "motif-item",
-          title: (item.description ? `${item.description}\n\n` : "")
-            + "Click or drag onto the canvas to add it.",
-        }, item.label.replace(/\s*Motif$/, ""));
-        chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, () => addMotif(item)));
+          class: "motif-item" + (depth ? ` motif-sub depth-${Math.min(depth, 2)}` : ""),
+          title: "Click for what it is; drag onto the canvas to add it.",
+        }, [
+          shortName(item),
+          away.length ? el("span", { class: "motif-of" }, ` · of ${away.map(shortName).join(", ")}`) : null,
+        ]);
+        chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap,
+          () => { closeMotifCard(); addMotif(item); }, () => openMotifCard(item, chip)));
         shelf.appendChild(chip);
         chips.push({ chip, heading, text: [item.label, item.description, group, family]
           .filter(Boolean).join(" ").toLowerCase() });

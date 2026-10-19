@@ -6,14 +6,16 @@ import { setStatus } from "../core/status.js";
 import { onScreen } from "../core/systems.js";
 import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
+import { state } from "../state.js";
 import { runMutation } from "./mutations.js";
 import { noteChange } from "./run.js";
 "use strict";
 
 /* Risks the library would raise if the diagram said a little more: a category
-   tag made precise, a role the risk depends on, a part left out. Asked for after
-   each run, because finding them means checking each reading of the drawing,
-   and kept apart from the findings: none of them has been raised. */
+   tag made precise, a role the risk depends on, a part left out. Looked for on
+   their own only after a run that raised nothing, and otherwise on a click: the
+   search checks each reading of the drawing for up to half a minute. Kept apart
+   from the findings, because none of them has been raised. */
 
 const SHOWN = 4;
 let asked = 0;
@@ -110,7 +112,7 @@ function render() {
   host.appendChild(el("p", { class: "possible-lede" },
     "Not raised yet. Each would be, if the diagram said what is listed under it. Apply it only if it is true of your system."));
   (showAll ? ordered : ordered.slice(0, SHOWN)).forEach((risks) => {
-    host.appendChild(el("div", { class: "finding-card possible-card" }, [
+    host.appendChild(el("div", { class: "possible-card" }, [
       el("div", { class: "finding-head" }, [
         el("strong", {}, risks[0].label.replace(/^Candidate /, "Possible ")),
         el("span", { class: "chip finding-places" }, risks.length === 1 ? "1 place" : `${risks.length} places`),
@@ -151,8 +153,26 @@ async function load() {
   }
 }
 
+/* After a run: a drawing that raised nothing is searched at once, any other is offered the search. */
+function afterRun() {
+  const host = $("#possible-list");
+  if (!host) return;
+  asked += 1;
+  last = null;
+  host.innerHTML = "";
+  const raised = ((state.lastAssessment || {}).findings || []).length;
+  if (!raised) { load(); return; }
+  host.appendChild(el("div", { class: "possible-head" }, [
+    el("button", {
+      type: "button", class: "btn small possible-look",
+      title: "What the library would raise if the diagram said a little more (takes up to half a minute)",
+      onclick: () => load(),
+    }, "Look for possible risks"),
+  ]));
+}
+
 export function initPossible() {
-  on("assessment:rendered", load);
+  on("assessment:rendered", afterRun);
   on("scope:changed", render);
 }
 

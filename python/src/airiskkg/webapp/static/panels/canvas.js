@@ -158,11 +158,14 @@ async function refreshProcess(ttl) {
   ProcessCanvas.render(data);
   mapSource([...data.participants, ...data.activities, ...(data.events || []),
     ...(data.gateways || []), ...(data.lanes || [])], "business");
-  const hasProcess = data.stats.activities > 0 || (data.participants || []).length > 0;
+  // any BPMN on the page is a process being drawn, even a data object or a note before the first pool
+  const hasProcess = data.stats.activities > 0 || ["participants", "dataNodes", "artifacts", "events", "gateways"]
+    .some((key) => (data[key] || []).length > 0);
   $("#level-switch").classList.toggle("hidden", awaitingChoice && !hasProcess);
   setTabVisible("process", hasProcess);
 
-  if (!hasProcess && state.level === "business") setLevel("architecture");
+  // never away from a level the reader picked: an edit that empties the process is still theirs
+  if (!hasProcess && state.level === "business" && !state.levelChosenByHand) setLevel("architecture");
   else if (hasProcess && !hadProcess && !state.levelChosenByHand) setLevel("business");
   hadProcess = hasProcess;
 
