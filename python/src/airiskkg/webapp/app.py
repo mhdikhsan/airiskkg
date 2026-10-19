@@ -41,6 +41,9 @@ Reading the graph
                                      the near-miss motif gap report, and the
                                      risk view: the same run grouped into
                                      concerns and read against the stated scope.
+    ``POST /api/possible``           Possible risks: what the library would
+                                     raise if the drawing said a little more,
+                                     each with the suggestions it rests on.
     ``POST /api/apply-control``      Insert a control onto the path a finding
                                      cites, via the registered SPARQL rewrite,
                                      and return the amended architecture.

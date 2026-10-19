@@ -19,6 +19,7 @@ from airiskkg.workbench.process_view import (
     process_view,
     system_context_options,
 )
+from airiskkg.workbench.possible import apply_needs
 from airiskkg.workbench.risk_context import template_in_context
 from airiskkg.workbench.templates import motif_templates
 from airiskkg.workbench.terms import PROCESS_CLASS_NAMES, short
@@ -365,6 +366,22 @@ def graph_edit() -> object:
 
         return _serialized(data, newIds=new_ids, groupLabel=template["label"],
                            newSystem=made_system)
+    elif op == "apply-suggestions":
+        needs = payload.get("needs") or []
+        if not needs:
+            return jsonify({"error": "apply-suggestions needs the suggestions to apply."}), 400
+        existing = {str(s) for s in data.subjects() if str(s).startswith(str(local))}
+        counter = [1]
+
+        def _fresh_suggestion_id() -> URIRef:
+            while str(local[f"e{counter[0]}"]) in existing:
+                counter[0] += 1
+            node = local[f"e{counter[0]}"]
+            existing.add(str(node))
+            return node
+
+        touched = apply_needs(data, needs, _fresh_suggestion_id)
+        return _serialized(data, newIds=touched)
     elif op == "delete-element":
         chosen = _chosen_elements(payload)
         if not chosen:

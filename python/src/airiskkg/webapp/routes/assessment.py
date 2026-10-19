@@ -15,6 +15,7 @@ from airiskkg.assessment_runner import (
 from airiskkg.assessment_view import summarize_result
 from airiskkg.webapp.runtime import SPARQL_LOCK
 from airiskkg.workbench.gaps import motif_gaps
+from airiskkg.workbench.possible import possible_risks
 from airiskkg.workbench.risk_view import risk_view
 from airiskkg.workbench.validation import shacl_report
 
@@ -52,6 +53,21 @@ def assess() -> object:
     summary["motifGaps"] = gaps
     summary["riskView"] = risk_view(summary, result.combined_graph, gaps=gaps, result=result)
     return jsonify(summary)
+
+
+@assessment_routes.post("/api/possible")
+def possible() -> object:
+    """Risks the library would raise if the diagram said a little more; asked for after a run."""
+    payload = request.get_json(silent=True) or {}
+    ttl = (payload.get("ttl") or "").strip()
+    if not ttl:
+        return jsonify({"error": "Provide an architecture graph (Turtle)."}), 400
+    try:
+        with SPARQL_LOCK:
+            report = possible_risks(ttl)
+    except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
+        return jsonify({"error": f"Could not look for possible risks: {error}"}), 400
+    return jsonify(report)
 
 
 @assessment_routes.post("/api/apply-control")

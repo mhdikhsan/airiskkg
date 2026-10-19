@@ -4372,3 +4372,63 @@ def test_a_second_process_model_is_drawn_on_its_own_and_switched_to(scene_restor
     assert len(in_new) == 1 and in_new[0] not in (ids["ask"], ids["answer"]), in_new
     assert len(back) == 2 and in_new[0] not in back, (
         f"switching back drew {back}, the new pool was {in_new}")
+
+
+_BY_CATEGORY = chr(10).join([
+    "@prefix beam: <http://w3id.org/beam/core#> .",
+    "@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .",
+    "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .",
+    "@prefix ex: <http://example.org/possible#> .",
+    'ex:S a beam:System ; rdfs:label "Help desk" ; beam:hasProcess ex:Retrieve, ex:Build, ex:Generate ;'
+    " beam:hasResource ex:Question, ex:Manuals, ex:Passages, ex:Prompt, ex:LLM, ex:Answer .",
+    'ex:Question a beam:Data ; rdfs:label "Question" ; pair:playsRole pair:UserInputRoles .',
+    'ex:Manuals a beam:Data ; rdfs:label "Manuals" ; pair:playsRole pair:KnowledgeContextRoles .',
+    'ex:Retrieve a beam:Process ; rdfs:label "Find passages" ; pair:playsRole pair:RetrievalRoles ;'
+    " beam:use ex:Question, ex:Manuals ; beam:produce ex:Passages .",
+    'ex:Passages a beam:Data ; rdfs:label "Passages" ; pair:playsRole pair:KnowledgeContextRoles .',
+    'ex:Build a beam:Transform ; rdfs:label "Build prompt" ; pair:playsRole pair:GenerationRoles ;'
+    " beam:use ex:Question, ex:Passages ; beam:produce ex:Prompt .",
+    'ex:Prompt a beam:Data ; rdfs:label "Prompt" ; pair:playsRole pair:PromptResponseRoles .',
+    'ex:LLM a beam:StatisticalModel ; rdfs:label "LLM" ; pair:playsRole pair:ModelRoles .',
+    'ex:Generate a beam:Infer ; rdfs:label "Answer" ; pair:playsRole pair:GenerationRoles ;'
+    " beam:use ex:Prompt, ex:LLM ; beam:produce ex:Answer .",
+    'ex:Answer a beam:Data ; rdfs:label "Reply" ; pair:playsRole pair:PromptResponseRoles .',
+])
+
+
+def test_a_possible_risk_is_offered_and_one_click_makes_it_a_finding(scene_restored) -> None:
+    """A RAG tagged only with categories raises nothing, because a category
+    matches nothing. Under the findings it is offered as possible risks, each
+    with the tags it needs, and applying one raises it for real."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(_BY_CATEGORY) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("""(() => {
+        if (document.querySelector('#drawer').classList.contains('collapsed'))
+            document.querySelector('#drawer-toggle').click();
+        document.querySelector('[data-drawer-tab="findings"]').click();
+        document.querySelector('#btn-assess').click();
+        return 1;
+    })()"""))
+    cards = _settle(loop, handle, "document.querySelectorAll('#possible-list .possible-place').length", 0, tries=120)
+    assert cards, "no possible risk was offered for a diagram tagged by category"
+    before = loop.run_until_complete(handle.js(
+        "Number(document.querySelector('#findings-count').textContent || 0)"))
+    assert before == 0, "a category raised a finding on its own"
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('#possible-list .possible-place .btn');
+        b.scrollIntoView({ block: 'center' });
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2),
+                 label: b.closest('.possible-card').querySelector('strong').textContent };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    after = _settle(loop, handle, "Number(document.querySelector('#findings-count').textContent || 0)", 0, tries=120)
+    titles = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#findings-list .finding-head strong')].map((s) => s.textContent)"))
+    wanted = at["label"].replace("Possible ", "Candidate ")
+    assert after and wanted in titles, f"applying {at['label']} did not raise it: {titles}"
+

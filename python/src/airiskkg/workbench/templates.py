@@ -7,17 +7,6 @@ from rdflib import RDF, RDFS, SKOS
 from airiskkg.assessment_runner import PAIR, load_base_graph
 from airiskkg.workbench.terms import PROCESS_CLASS_NAMES, definition_of, display_label, short
 
-_MOTIF_SUPPLEMENTS = {
-    "EmbeddingsMotif": {
-        "nodes": [{"key": "Embedding_IndexingStep", "cls": "Transform", "label": "Indexing", "roles": []}],
-        "edges": [
-            ["Embedding_IndexingStep", "use", "Embedding_DocumentChunkNode"],
-            ["Embedding_IndexingStep", "use", "Embedding_VectorNode"],
-            ["Embedding_IndexingStep", "produce", "Embedding_VectorIndexNode"],
-        ],
-    },
-}
-
 
 @lru_cache(maxsize=1)
 def motif_templates() -> dict:
@@ -56,10 +45,6 @@ def motif_templates() -> dict:
                 continue
             edges.append([short(src), short(pred), short(dst)])
         motif_id = short(motif)
-        supplement = _MOTIF_SUPPLEMENTS.get(motif_id)
-        if supplement:
-            nodes.extend(supplement["nodes"])
-            edges.extend(supplement["edges"])
         label = graph.value(motif, RDFS.label)
         templates[motif_id] = {
             "label": str(label) if label else display_label(motif_id),

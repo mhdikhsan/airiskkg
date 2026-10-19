@@ -751,6 +751,24 @@ button.motif-family:hover { color: #4a5262; }
 .finding-place-evidence { font-size: 12px; color: #c9d2e3; overflow-wrap: anywhere; }
 .finding-place-motifs { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
 
+/* Possible risks: raised by nothing yet, so drawn dashed beside the findings, as derived is beside stated. */
+.possible-head { display: flex; gap: 8px; align-items: center; margin: 14px 0 2px; }
+.possible-lede { font-size: 12px; color: var(--text-dim); margin: 2px 0 6px; }
+.possible-card { border-style: dashed; }
+.possible-place {
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-width: 0;
+  cursor: pointer;
+}
+.possible-place:hover { border-color: #3d4452; }
+.possible-needs { margin: 6px 0; padding-left: 18px; font-size: 12px; }
+.possible-needs li { margin: 2px 0; overflow-wrap: anywhere; }
+.possible-was { color: var(--text-dim); }
+.possible-cond { margin-left: 6px; font-size: 10.5px; }
+.possible-more { margin-top: 6px; }
+
 /* Control mitigation tiers */
 .ctrl-group { margin: 6px 0; }
 .ctrl-group-head {
@@ -3521,3 +3539,4 @@ body.risk-list-page { display: block; height: auto; min-height: 100%; overflow: 
 }
 .lib-page-link { color: var(--accent); }
 .risk-list a.chip { text-decoration: none; }
+

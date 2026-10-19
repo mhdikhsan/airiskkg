@@ -18,6 +18,7 @@ import { closeLibrary, initLibrary, isFrontDoor, isLibraryOpen, libraryBack, ope
 import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
 import { applyConnect, applyDisconnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
 import { openOverview } from "./panels/overview.js";
+import { clearPossible, initPossible } from "./panels/possible.js";
 import { clearRisk, initRisk, refreshRegister, renderRisk } from "./panels/risk.js";
 import { RiskCanvas } from "./lib/risk_canvas.js";
 import { STARTER_BPMN, STARTER_TTL, initPalette } from "./panels/palette.js";
@@ -85,6 +86,7 @@ async function init() {
   const forgetTheLastDocument = () => {
     resetScope();
     clearFindings();
+    clearPossible();
     clearMotifs();
     clearDerivedCategories();
     clearValidation();
@@ -131,6 +133,7 @@ async function init() {
 
   initPalette();
   initRisk();
+  initPossible();
   initMotifPalette(vocabulary.motifTemplates || []);
   renderHistory();
 
