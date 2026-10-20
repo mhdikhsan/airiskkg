@@ -63,7 +63,7 @@ Rules are stated first and justified in one clause. The incidents behind them ar
   `test_derived_from_points_at_an_entity_never_at_a_document`. Pointed at a URL, `derivedFrom`
   only repeats `dct:source`, and *"which motifs came from this design pattern?"* stops being
   answerable. That is what 23 motif references to one Fowler article URL cost.
-- **A design pattern is identified by a `pair:DesignPatternCitation`, never modelled.** The 34
+- **A design pattern is identified by a `pair:DesignPatternCitation`, never modelled.** The 52
   handles at the top of `motif.ttl` carry a label and a `dct:source` (a DOI handle adds an APA
   `dct:bibliographicCitation`, which the linkage generator reads), and nothing else.
   `test_a_design_pattern_citation_stays_a_citation` fails on any other predicate, because a
@@ -82,7 +82,8 @@ Rules are stated first and justified in one clause. The incidents behind them ar
   motifs point `derivedFrom` at their OWASP ASI concepts, because their structural signature was
   inferred from a *risk* entry; three of them have since gained a handle in the agent design
   pattern catalogue, and `AgentMemoryLoopMotif` still has none. `ExternalDependencyMotif` names
-  `owasp:llm03-supply-chain` for the same reason and has no handle either. Keep that visible; it
+  `owasp:llm03-supply-chain` for the same reason, and its one handle (Mercari's *Model load*)
+  arrived only when Model load was merged into it in B-4. Keep that visible; it
   is a weaker derivation and must be described as one.
 - **No motif rests on a blog alone (2026-10-07).** Four motifs cited only Fowler's article:
   Direct Prompting, Fine Tuning, Hybrid Retriever and Query Rewriting. Each now also cites a
@@ -239,6 +240,18 @@ Read before non-trivial changes.
   exclusivity, or sufficiency claim — *direct*, *only*, *pure*, *without*, *unmediated*,
   *standalone* — belongs to an applicability condition. A risk pattern name may carry the
   negative; **a motif name may not.** Sweep motif labels whenever the library version changes.
+  The sweep reaches descriptions and pattern-node labels too: Training-to-serving said
+  "automatic", which claims no human gate, until 2026-10-18.
+- **A motif's description is one sentence about the structure it matches** (B-4, 2026-10-18):
+  it is the tooltip in the motif tray and the library, so it names the declared roles and
+  flows and nothing the declaration does not have. Four had drifted ("informs" after
+  `beam:inform` was removed, "vector store" for a knowledge source, "optional" for a required
+  node). The review of all 47, with keep/fix/merge/drop recommendations, is on the to-do
+  page's B-4 child page. **Every decision on it is applied** (2026-10-18/19): the variants merged
+  into the motif they contain, Debate into Agent delegation and Model load into External
+  dependency, Prompt/response optimiser and Model-in-image removed (they carried no risk and
+  realised no control), and both lifecycle motifs leave their serving risks to Prediction
+  serving: **47 → 34 motifs**, with every tracked graph's concerns unchanged.
 - **Motifs match structure only (R2)** — roles and flow relations, reading **no** facet.
   Situational context enters at the applicability phase, never at matching.
 - **Motifs may nest, deliberately.** The library is not an antichain; a smaller motif can be
@@ -440,6 +453,23 @@ in `NOTICE.md`.
   knowledge source. **The architecture-side route, `personal_data_category.rq`, never had a role
   restriction** — only the business-analyst route did, which is the one route used by the person
   most likely to know the data is personal.
+- **An activity names the steps that carry it out, by `pair:carriedOutBy`** (A-P1 decision 1,
+  2026-10-19). A link from a `bpmn:activity` to a `beam:Process` of the system it refines, never
+  a subsumption, and no query reads it. The editor offers only that system's steps
+  (`set-steps` refuses any other), changing the system drops them, and the chip highlights them
+  when it opens the architecture. Findings are listed under an activity by the elements it names
+  as its own (its steps, what they use and produce, and the elements its data objects are);
+  an activity that names none still carries every finding of its system. **"Carry into the
+  architecture"** (`carry-data`) turns each data object or store the activity touches that names
+  no element into a `beam:Data` of that system, linked by `realisedBy`, so the classification
+  reaches it through the bridge and is never copied as a facet. Only when exactly one step is
+  named does that step read or write it, because with several the process does not say which.
+  **Carrying is offered, not done unasked** (changed 2026-10-19 after one day of carrying at
+  once): when data joins an activity that refines a system (`add-data`, `connect-data`, a dragged
+  connection) or an activity holding data is given a system (`set-refines`), the reply carries
+  `carryable` (the system, the data names) and the page asks once; yes runs `carry-data`, which
+  takes an optional `reference`. The data box's own panel offers "Add to the … architecture" too.
+  Choosing an activity's system applies at once, so adding data next no longer loses it.
 - **`pair:realisedBy` is the statement; the edge rule is the fallback.** Named, that element and
   no other; unnamed, the edge. `pair:targetInferred` on the derivation says which, because only
   one of them is somebody's claim. The picker offers the resources of the architectures the
@@ -562,6 +592,15 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   impact still chains off the consequence. The live register has no run to say which concern
   holds a finding, so its line names the finding and `findingEnd` says which end; `mergeStated`
   in `risk.js` resolves it. No query reads either relation.
+- **The risk view follows the document while it is on screen** (2026-10-20). It re-read the
+  register only on a run, a risk edit or a level switch, so a stated risk pasted into the Turtle
+  never appeared. A pick and an outline repaint at once; only a drag waits for a frame.
+- **An element's flow is shown on demand, not drawn** (A-P1 decision 2, 2026-10-19). Picking an
+  element or a concern adds a *flow* row to its detail (what feeds it, what it feeds, read off the
+  architecture's own use/produce edges) and outlines those neighbours dashed on the canvas.
+  Nothing is drawn until something is picked, because the view was cut from 84 lines to 53 for
+  reading like an architecture diagram. Ordering boxes by flow (option C) waits on whether
+  readers still lose their place.
 - **A frame is measured round where its boxes stand.** It was measured before dragged positions
   applied, so a part moved past the edge left the architecture it belongs to;
   `test_a_part_dragged_past_its_frame_takes_the_frame_with_it` drives the drag with real input.
@@ -636,12 +675,52 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   text annotations. **The vocabulary ceiling is `external/sbpmn/sbpmn_2.0.ttl`** —
   `test_bpmn_authoring.py` fails on a class or property it does not declare. A diagram that
   cannot say "this branches" asserts an order of work the model never claimed.
+- **The rest of BPMN 2.0 is drawn too (2026-10-13)**: Multiple and Parallel Multiple events,
+  a dashed non-interrupting start in an event sub-process, the message envelope on a message
+  flow, conversation diagrams (conversation, sub-conversation, call conversation, double-line
+  links) and choreography diagrams (task, sub-choreography, call choreography, participant
+  bands with their messages). `test_bpmn_notation.py` reads it off the view and
+  `test_the_rest_of_bpmn_is_drawn_as_bpmn_draws_it` off the canvas. Three readings to keep:
+  **Multiple is not a class** — it is two or more `bp:eventDefinition`s on one event, and
+  Parallel Multiple adds `bp:parallelMultiple`, declared on a catch event only, so the editor
+  refuses it on a throw. **A choreography's band order is BPMNDI**, which sBPMN does not
+  model, so the initiator is drawn on top by convention, as pool order once was before
+  `pair:bandOrder`. **A participant named only on choreography bands gets no pool**, and a
+  choreography task's own `messageFlowRef` flows are its bands, not message flow between
+  pools. Conversations and choreographies are drawn from the Turtle; the palette does not
+  author them yet.
 - **Sequence flow is routed from the model, never from adjacency.** `process_view` emits
   `sequenceFlows`; the canvas layers nodes by longest path and routes orthogonally. **Never
   draw a connector from layout order.** Whether a connection is a sequence flow or a message
   flow is read from the containment, never asked.
 - **Editing is a server-side rewrite.** `/api/process-edit` and `/api/graph-edit` keep the
   Turtle in the editor as the single source of truth.
+- **A blank document is a graph with nothing in it, never an error (2026-10-14).**
+  `/api/graph-edit` refused empty Turtle, and deleting the last element serializes to a bare
+  newline, which the client's `getValue() || prefix` fallback does not catch — so every add
+  after that failed with "Provide a graph to edit" until a reload. Reported by a partner
+  tester as a show stopper. `test_architecture_editing.py` holds it.
+- **A system moves with its frame** (2026-10-20, asked for). A press on a frame's own area
+  drags every element it holds (view state, like a dragged element); a press that does not move
+  selects the system as before. This is how a reader separates systems that overlap after
+  their parts were arranged in a narrower view.
+- **An addition keeps the reader's view, and a dragged spot dies with its element** (2026-10-20,
+  reported). A new element takes the lowest free id (`local:e0`, `e1`, ...), so a motif added
+  after a delete stood where the deleted, dragged elements had: a frame drag pins every member.
+  `render()` drops a manual position whose element is gone (unless scoped), `fit()` never
+  draws larger than drawn size, and an addition (or removal) that fits on screen does not refit:
+  one that does not is panned into view at the same zoom, zoomed out to only when it cannot fit.
+  Anything that is not a pure addition or removal is another drawing and is fitted afresh.
+- **A highlight that points something out does not dim the rest.** `setHighlight(ids, { dim:
+  false })` outlines the steps an activity names when the chip opens its architecture, and
+  opening another activity lets go of the finding picked before, which otherwise came back on
+  the redraw and greyed the architecture until a click on blank canvas.
+- **An element always lands in a system.** With none in the graph, `add-element` makes
+  "My system" exactly as `add-motif` always did (`_system_for_new_elements`), because an
+  element in no system cannot be named by a business activity. The system bar, with its
+  "+ system", shows on an empty architecture canvas too; it was hidden until something was
+  drawn, which left no way to draw the container first. **Deleting a system takes what it
+  holds**, except what another system also holds, after the editor confirms the count.
 - **One gesture picks the connector, so `connect` has to check the ends.** A data box dragged
   onto another data box used to write a data association *from data to data*, which says
   nothing about who reads either one; dragged onto an event or gateway it wrote
@@ -654,7 +733,15 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   (`object` | `store`); `set-data-shape` retypes in place, keeping the name, classification
   and associations a finding reads. `bp:isCollection` is declared on `dataObject` and not on
   `dataStore`, so it is dropped on a retype rather than carried into a domain sBPMN does not
-  declare.
+  declare. **A step reads and writes one box in one edit** (`direction: "both"` on `add-data` and
+  `connect-data`, "reads and writes" in the activity editor): two associations on the same
+  reference, so a store a step updates is one box with an arrow each way: the canvas merges a
+  step's read and write of one box into one entry drawn once with an arrowhead at each end.
+  `set-data-direction` turns an existing link (reads, writes, both). **Data is edited on the data
+  box, never on the activity** (2026-10-19, asked for): the palette draws it, an arrow joins it
+  (box to step reads, step to box writes, both ways is one box with two arrowheads, because
+  `_join_data` reuses the step's own box), and its panel holds the name, the shape, the category,
+  the direction per step and "Add to the … architecture".
 - **A band's place in the stack is the reader's to choose, and it is dragged.** Pools and lanes
   sorted by label, so a participant could not be moved where the diagram needs it — the order
   was a side effect of naming. The gesture is a grab on the band's **name strip**, which is a
@@ -672,6 +759,16 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   this, and inventing a `bp:` term is what the vocabulary ceiling forbids. Unlike a dragged box,
   which stays in `manualPositions` and is forgotten on reload, this is in the Turtle: it is the
   diagram's reading order, not a nudge.
+- **A document holds several process models, one per `bpmn:collaboration`** (2026-10-18), so a
+  development process can sit beside the business process. A model is the participants its
+  collaboration `bp:contains`; the canvas draws one at a time, picked beside the palette's fold,
+  and a participant added from the palette joins the model on screen. While there is only one
+  collaboration a pool it does not name is drawn with it, because `it_service_desk.ttl` declares
+  one that names nobody; with several, such pools get an entry of their own. **`add-model` files
+  those pools into the existing collaboration first** (or into a new "Business process" when there
+  is none), since a second model is the moment it has to be said which model they are in. No query
+  reads a collaboration, so a model changes nothing the assessment finds. A data box nothing reads
+  or writes belongs to no participant and is drawn in every model.
 - **A pool collapses to a band.** BPMN's black-box pool: a collapsed participant keeps its band
   and name, its members keep a slot on that band so message flow still lands on the pool, and
   nothing inside is drawn. A participant with no process is that band from the start, with no
@@ -681,13 +778,39 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   every render**; the reader's own toggle wins from then on. Every palette button draws the
   shape it inserts using the same primitives as the canvas, so a button cannot drift from what
   clicking it produces. `fit()` insets the diagram below the palette, which floats over the
-  canvas.
+  canvas. **The architecture fit does the same** (2026-10-17): the element tray is a column,
+  so `freeArea()` puts the diagram beside it or below it, whichever draws it larger, and under
+  the system badge and the motif tray. On the energy scene the old fit left 5 elements under a
+  tray.
+- **A pool or a lane is resized by dragging its edge, and the size is view state.** A grip on a
+  pool's right edge widens every pool (they share one width), and one on each band's lower edge
+  makes that band taller; the last band's grip is the pool's own bottom edge. Like a dragged box
+  it is kept until reload and never written to the Turtle: BPMN keeps sizes in BPMNDI, which
+  sBPMN does not model. A band never shrinks below what it holds.
 - **Descending to the architecture is asked for, not stumbled into.** On a refined activity the
   box only *selects* — it reveals the declaring line and stops. The blue "AI system" chip opens
   the architecture; the pencil opens the editor. An activity with no architecture behind it
   carries neither, so its box opens the editor. **One control per box, never two meanings for
   the same click.** `test_the_chip_opens_the_architecture_and_the_box_does_not` holds both
   halves.
+
+- **An edit never moves the reader off the level they picked** (fixed 2026-10-19). The canvas
+  fell back to the architecture whenever the process held no participant and no activity, which
+  is the state of a process that so far holds only a data object or a note, and of one whose
+  last pool was just deleted. Any BPMN on the page now counts as a process, and the fallback
+  never overrides a level chosen by hand. `test_an_edit_on_the_process_canvas_keeps_the_process_level`
+  fails on the old code. **A scope naming a system the drawing no longer holds is dropped**: it
+  drew an empty canvas under a badge naming the system that was left (reported 2026-10-19).
+- **A connector dot never takes a click from what it sits on** (2026-10-20). Dots are sized in
+  screen pixels, so zoomed out one grows over a small data box or an activity's chip: a press on
+  a data box's dot that goes nowhere opens the box's panel, and the chip is drawn above the dots.
+  The data panel had also thrown on every linked box, because a local `options` shadowed the
+  helper of that name. **A data box's dot is drawn behind the box** and only what sticks out of it
+  starts a connector, so a press on the box moves it: **a box a step uses is dragged like any
+  box** (2026-10-20, asked for), kept in `manualPositions`, and its association then runs between
+  the two boxes' rims. Drawn by every step that uses it, it moves from the copy grabbed.
+- **An activity's risk list names each risk once and wraps it**, without "Candidate" and with
+  "×2" where a pattern recurs, in 11.5px; truncated at 34 characters it could not be read.
 
 ### The front door
 
@@ -823,8 +946,8 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   risk domain linked"). `test_what_a_pattern_may_lead_to_is_traversed_never_asserted` pins both
   halves: every served domain is re-derived from the graph, and that set of two is asserted.
 - **Motifs are shelved by family, and the shelving is data.** `pair:motifFamily` puts every
-  motif in one concept of `pair:MotifFamilyScheme` — **GenAI** (13), **ML serving and
-  training** (13), **Agentic** (4), **Supply chain** (1). It is a filing decision about *this
+  motif in one concept of `pair:MotifFamilyScheme` — **GenAI** (18), **Agentic** (9),
+  **ML serving and training** (6), **Supply chain** (1), counted 2026-10-19. It is a filing decision about *this
   library*, never a reading of a submitted architecture: **no match query may read it** (R2, and
   `test_no_match_query_reads_the_motif_family` enforces it), and one system routinely matches
   several families at once. A motif shelved twice or not at all fails
@@ -832,6 +955,20 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 
 ### The annotation vocabulary
 
+- **Roles are filed under 17 categories, and a category files without matching** (B-3,
+  2026-10-18). `pair:RoleCategory` roles sit between the tops and every role that used to hang
+  directly under one, one category each: 7 under Processing Step, 8 under Resource Role
+  ("Models" above `pair:Model`), and two new tops, "User input" above `pair:UserInput` and
+  "Controls" above `pair:ControlStep`, because those two are read by queries and cannot be
+  categories themselves. **No query names a category**, and every query walks `subRoleOf*`
+  upward, so inserting the level changed no match or finding. A category-only tag gets the
+  `ag:CategoryOnlyShape` warning (a warning, because the Input contract panel lists no Info rows). (A resource category used to
+  satisfy Human oversight's result node, which accepted any resource role; that node reads
+  `Action result` since 2026-10-19.) A category is shelved where its members are
+  (`role_shelf`), and a role reached *through* a category keeps the route it had before, so
+  no existing role moved shelf or side. Categories are inert in queries by design, like the
+  abstract tops. The role picker cascades by category and groups its search list by category
+  (see below); the element's class still decides what it offers first.
 - **A term is shelved by the BEAM class it goes on, not by its top-level role.** The role
   hierarchy cannot shelve 97 terms: it has 4 tops and they hold **50 / 32 / 12 / 3**, so half
   the vocabulary sat under `Resource Role`. The shelf is `pair:expectedClass`, read off the
@@ -845,24 +982,31 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   rdflib hands them back in set order, so `ExternalModel` shelved differently from run to
   run until `_role_parents` sorted them.
 - **`appliesTo` is derived from what the queries write, not from what the motif declares —
-  and it orders the picker rather than filtering it.** The two sides are typed differently:
+  and the picker offers what fits first and the rest one click away.** The two sides are typed differently:
   a step is guarded `a/rdfs:subClassOf* beam:Process` in **all 62** places one appears, so a
   node declared `beam:Infer` binds a `beam:Generate` element and **the role is the
   discriminator**; a resource is typed with a bare `a beam:Data` (67×) or
   `a beam:StatisticalModel` (19×), which walks nothing. Deriving the fit from
   `pair:expectedClass` alone put **13 annotations in baseline-pinned graphs** on the wrong
   side of their own element, `GenerationStep` among them.
-  **And it must not hide, because some queries are looser than their declaration.**
-  `information_retrieval.rq` puts **no class constraint on any of its three resource nodes**,
-  only the role — so `IR_QueryNode`, declared `expectedClass beam:Data`, binds the
-  `beam:Symbol` element `SPARQL Query Template` in `simple_graph_rag.ttl`. That is 1 of the
-  148 element bindings across the tracked graphs, and 5 annotations depend on it. So the
-  shelf that fits sorts first, the rest are marked *"not this element"* and stay reachable,
-  and the only hard filter is the coarse process/resource split with its existing escape.
+  **And it must never make a term unreachable, because some queries are looser than their
+  declaration.** `information_retrieval.rq` puts **no class constraint on any of its three
+  resource nodes**, only the role — so `IR_QueryNode`, declared `expectedClass beam:Data`,
+  binds the `beam:Symbol` element `SPARQL Query Template` in `simple_graph_rag.ttl`. That is 1
+  of the 148 element bindings across the tracked graphs, and 5 annotations depend on it.
+  So since 2026-10-16 (decided with the dry-run reviewers' "offer only valid roles") the
+  picker first offers the terms whose `appliesTo` holds **any** class the element is typed
+  with (`typeUris` from `/api/graph`, never the most specific class alone: Data+Text reports
+  Text, which no term lists), and puts everything else, the other side included, behind one
+  *"Show N more"*; shown, those shelves are marked *"not this element"*. Counts on the canvas
+  popup: Data 66→55, Statistical Model 66→14, Symbol 66→3, a step stays at 57.
   `test_no_annotation_in_a_tracked_graph_is_reported_as_not_fitting` is the guard.
+- **A data category is offered on a Data element only**, because `pair:containsDataCategory`
+  is declared `rdfs:domain beam:Data`. One already written elsewhere (`simple_graph_rag.ttl`
+  puts three on its LLM) stays visible and removable; the picker just takes nothing new.
 - **A family is read off the motifs that name a term, and is never inherited.**
-  `HumanOversightMotif` declares a `ResourceRole` wildcard node, so inheriting through
-  ancestors tags **all 53** resource-side terms Agentic — true, and useless, because a filter
+  `HumanOversightMotif` declared a `ResourceRole` wildcard node until 2026-10-19, so inheriting
+  through ancestors tagged **all 53** resource-side terms Agentic — true, and useless, because a filter
   matching everything is not a filter. Direct naming gives Agentic 10 / GenAI 36 / ML 28 /
   Supply chain 1. **A term with no family of its own is never hidden by a family filter**: it
   is a refinement that inherits, and `serves` is the field that says so. Skipping top-level
@@ -884,6 +1028,21 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   a definition, and **all 97 terms carry a `skos:definition` the UI served none of**. That is
   what made `RetrievedContext`, `RetrievedResult` and `DocumentChunk` undecidable in a scroll
   of bare labels. Definitions are served for the 7 data categories too.
+- **The role picker cascades from the categories (2026-10-18, asked for).** A flat list said
+  nothing about which role refines which. The menu opens on the role categories that fit the
+  element, and each row opens onto the roles under it along `pair:subRoleOf`, on a hover or on
+  its arrow, the way a context menu does; the label picks, **a category's included**, because B-3
+  lets an element be tagged broadly first and refined later (`ag:CategoryOnlyShape` then warns
+  that nothing can match it yet). The two roles above the categories (Processing Step, Resource
+  Role) are not offered. A role that does not fit the element but
+  leads to one that does is drawn dimmed as the way there and opens rather than picks until
+  *Show more*. **A role that has finer roles heads its own submenu** as "Use <role>" (2026-10-20):
+  an arrow read as "cannot stop here", so Generative Model looked unpickable beside Foundation
+  LLM. Typing turns the menu back into one list, shelved by category, with definitions;
+  while pointing, the hint strip carries the definition. **A submenu keeps the side its cascade
+  started on**, or the third menu lands back on the first. Data categories stay a flat list.
+  `test_the_role_menu_cascades_from_category_to_the_role_that_refines_it` drives it with real
+  pointer moves and keys.
 - **A shelf heading is a band, not a caption.** It carries the canvas swatch for its class,
   an edge in the class's colour and a count, and it is sticky inside its own `.mp-group`, so
   the class a term goes on stays in view while its terms scroll and leaves with the last one.
@@ -894,24 +1053,108 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   when the space below is short, and repositioned on scroll and resize because the popup it
   sits in scrolls under it.
 - **The canvas wheel handler must skip the overlays.** `.palette`, `.motif-palette`,
-  `.node-detail` and `.mp-pop` are children of `#canvas-wrap`, and its wheel handler called
+  `.node-detail`, `.mp-pop` and the role menu's `.mp-fly` submenus are children of `#canvas-wrap`, and its wheel handler called
   `preventDefault()` on everything outside the business level — so a 31-entry tray taller
   than the viewport could not be reached with a mouse at all, and the wheel zoomed instead.
   `OVERLAYS` in `graph_view.js` is the list; add to it when a new scrolling overlay lands
   inside the wrap.
+- **Names follow the source documents (2026-10-19, asked for).** A step role is named as the
+  verb its source draws it with (the RAG survey's Query → Retrieve → Generate → Judge →
+  Response): Retrieve, Generate, Construct prompt, Rewrite query, Rerank, Invoke tool, Screen
+  input, Approve, …, and an LLM's output is a **Response**. **Labels only**: every IRI keeps its
+  name, so no query, graph or finding moved; "Processing step" keeps its word because it names
+  the process side and is never offered. The categories keep their nouns (Retrieval,
+  Generation, Prediction), which a verb never clashes with. **A motif draws each part under its
+  role's name**, so the drawing, the motif library's "matches elements with the roles" and the
+  terms library say the same thing; all three name a role through `terms.role_label` (the
+  `prefLabel`), never the IRI. A part with no role shows its declared label. *Agent memory
+  loop* is called **Agent memory**, because nothing in it closes a loop; the IRI is unchanged.
+- **The GenAI motifs read a generative model.** RAG, Guardrails and Fine tuning accepted only a
+  `Foundation LLM`, which confused readers beside motifs reading `Generative Model`; they now
+  read `Generative Model`, and a foundation LLM still binds because it refines it. Every
+  tracked graph's matches and findings were identical after the change.
+- **The open parts got roles (decision 5B).** Voting-based cooperation's voters (`Voting`) and
+  its decision (`Collective decision`), Execution screening's and Human oversight's results
+  (`Action result`, a tool's return or a change made) and Human oversight's approval
+  (`Approval`) are now named in the declaration and read by the matcher, so those three motifs
+  are stricter. No tracked graph matched any of them, so no baseline moved. The Tool-using
+  agent's plan and result, External dependency's using step and Embeddings' chunk, vector and
+  indexing step are still open: making them stricter would cost tracked findings.
+- **Sub-motifs are shown, not matched (decision 3B; C after the tutorial).** `pair:refinesMotif`
+  names the general motif a motif is a more detailed form of (Hybrid retriever, Reranker,
+  Query rewriting and RAG under Information retrieval; Iterative and Adaptive RAG under RAG;
+  Guardrails under Input and Output screening; 16 links). In the tray a sub-motif follows its
+  general motif on the same shelf in a box of the same width, its text set in with an accent
+  inside the box (an L connector and an "of X" note were tried and removed as untidy); the
+  motif's card links both levels. **No match query reads it** (the family guard covers it), and it is not yet a
+  promise that the detailed motif contains the general one: today only 7 motifs contain another,
+  so a general drawing still does not raise a variant's risks. Option C, every sub-motif
+  containing its parent with the shared risks moved up, is the plan after the tutorial,
+  starting with the retrieval family.
+- **A motif opens a card, not a tooltip.** Clicking a tray row shows the motif's family, its
+  description, its drawing, the risk patterns it carries, its sub-motif levels and **Add to
+  canvas**, beside the tray; a drag still adds it. The tray list carries `nodes`, `edges`,
+  `risks`, `refines` and `refinedBy` for it.
 - **The motif tray is shelved by family, like the library shelf.** 31 entries in one
   alphabetical column said nothing about which kind of AI system each is a shape of, so
-  `motif_template_list()` carries `pair:motifFamily` and the tray groups on it: Agentic 4,
-  GenAI 13, ML serving and training 13, Supply chain 1. It is the same filing decision as the
+  `motif_template_list()` carries `pair:motifFamily` and the tray groups on it, with the counts
+  of the bullet above. It is the same filing decision as the
   library's, so the same rule holds — **no match query may read it** (R2).
-- **6 terms are inert — nothing in the 62 registered queries reads them**, directly or by
-  subsumption. Three are abstract tops and are fine (`Control Step`, `Processing Step`,
-  `Resource Role`). Three are not: **`Document Chunk`, `Embedding Vector`,
-  `Pseudonymization Step`** look usable and do nothing when applied. Open item; the rule is
-  that declared-but-unused vocabulary gets removed, not documented.
-- **A small ODP/OQP drift, recorded so it is not rediscovered.** `Resource Role` is declared
-  on a pattern node but named in no `.rq`; `Pre-trained Model` and `State Changing Step` are
-  named in a `.rq` but on no pattern node.
+- **Only the two tops above the categories are inert**: nothing in the registered queries reads
+  `Processing Step` or `Resource Role`, directly or by subsumption, and they are filing roles like
+  the 17 categories (re-counted 2026-10-19). Every role a merge or removal left unread is
+  removed with it: Document chunk and Embedding vector, Context detection step, Job scheduler,
+  Tool registry, Image build step and Model load step. Re-run the count after a motif goes.
+- **A small ODP/OQP drift, recorded so it is not rediscovered.** `Pre-trained Model` and
+  `State Changing Step` are named in a `.rq` but on no pattern node. The other half, a role
+  declared on a node and read by no `.rq` (`Resource Role` on Human oversight's result), is gone
+  since 2026-10-19 and held by `test_a_pattern_node_with_a_role_is_matched_on_it`. **A pattern node holds one `pair:expectedRole`**
+  everywhere the code reads it, so a motif that accepts several input roles names their common
+  parent: `Prediction input` was added over the four inputs Prediction serving accepts, so its
+  declaration and its query say the same thing.
+- **A drawing that says less than a motif still leads to its risks: possible risks (2026-10-19,
+  asked for "at any cost").** People tag at their own level (B-3 invites a category first) and
+  leave parts out, and a strict match then finds nothing where the risk is real.
+  `workbench/possible.py` matches each risk-carrying motif again with three relaxations: a
+  coarser tag (a category or a role the wanted one refines), an untagged element of the right
+  class, and up to a third of the nodes missing. Each **reading** becomes suggestions, and it
+  counts only if **the motif's own matcher** then matches it, run on the drawing plus the role
+  and class hierarchy and bound to the reading's elements: a declaration is not trusted to say
+  what its query matches. The library's own risk queries then run on one working copy carrying
+  that reading alone, **bound to its match** (unbound, a query walks every match, and
+  `embeddings.rq` alone took 85 s on such a copy), and everything added is taken out again.
+  A second pass adds the **conditions** a risk pattern reads: roles from its query text and
+  from the propagation queries that turn roles into categories, and the marks
+  `risk_context.py` names for that motif–risk link. Never a role inside a `FILTER NOT EXISTS`,
+  since suggesting an escape clears the risk; and an element is asked only for roles under its
+  own tag, of its node's category, or of the category its class implies. The conditions are cut
+  to the fewest that still raise the risk. Whatever the copy raises that the run did not is a
+  **possible risk**, with the suggestions it rests on. Overlapping possible risks of one pattern
+  collapse to the cheapest, and one that overlaps a finding is dropped. Readings are checked
+  cheapest first within a **time budget** (`BUDGET_SECONDS`, 30 s), and the panel says how many
+  were left unchecked. A role inside one query's `FILTER NOT EXISTS` is barred **for that pattern
+  only** (`barriers`): barred globally, `GenerationStep` was never asked for memory poisoning,
+  because another query uses it as an escape. Measured 2026-10-19 on degraded copies of the seven
+  tracked graphs: of 70 concerns, strict matching keeps 0 with every role replaced by its
+  category, 2 with its parent, and 11 with half the elements untagged; with the possible risks,
+  and the starter graph added (75), the same risk is raised at mostly the same place for **72, 70
+  and 62**, identical with the 30 s budget and without it. What is lost with half untagged is
+  mostly a fact only the modeller knows, such as that an input is public. Unbudgeted, the slowest
+  graph took 64 s (BotTina); budgeted, 34 s. **The search never makes another request wait**:
+  `/api/possible` holds the SPARQL lock only for its assessment and runs the search on its own
+  copies (their queries compile under `_PARSE_LOCK`), and a newer assessment or search stops
+  it, as does the page when its drawing changes or is replaced (`{"stop": true}`): the search
+  shares the server's process, and one left running for a drawing nobody looks at slowed
+  everything after it, which is what failed the browser suites in order. Holding the lock for the whole search made every request after an assessment queue for
+  up to 30 s. Its cards carry `possible-card`, never `finding-card`, which findings code and
+  tests select on.
+  **They never gate or change detection**: nothing is written to the submitted graph, no query
+  reads anything this adds, `test_looking_for_possible_risks_changes_nothing_that_is_detected`
+  holds it, and the UI keeps them dashed and below the findings. "Apply" writes the
+  suggestions (a role replaces the coarser tag it refines) and re-runs the assessment, which
+  then raises the risk for real: `test_applying_a_possible_risk_raises_it`. A node accepts the
+  roles its matcher reads that no node declares, which is how External dependency's one
+  resource node takes a pre-trained model, an artifact or a serving image.
 - **The gap report's element candidates are not annotation suggestions.** `motif_gaps()`
   filters near-misses by BEAM class alone, so on the helpdesk graph it emits **428**
   element-level hints and offers the same four processes for Embedding Step, Chunking Step and
@@ -944,6 +1187,8 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **Native ES modules, and the shape is enforced.** `webapp/static/` is `app.js` (entry: wiring
   only) + `state.js` + `core/` (plumbing that knows nothing about the workbench) + `lib/`
   (self-contained renderers and widgets) + `panels/` (one file per thing on screen).
+  `risks.html` + `risks.js` are a second page, `/risks`, listing every risk pattern; it names
+  them through `lib/library_text.js`, which the library uses too, so the two cannot disagree.
   `test_webapp_module_layout.py` holds three rules: **no import cycles**, **every imported name
   is actually exported**, and **exactly one browser global** (`window.PairAI`).
 - **`core/bus.js` carries four events, and each one earns its place.** A panel emits rather
@@ -966,7 +1211,9 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   `dispatchEvent(new MouseEvent(...))` lands on whatever element you name it at, so it proves
   nothing when pointer capture is retargeting real clicks. `test_canvas_interaction.py` drives
   the DevTools protocol; `test_canvas_renders.py` loads the page in a headless browser.
-  **Assert on what is painted.**
+  **Assert on what is painted.** `test_canvas_renders.py` and `test_risk_canvas.py` run Chrome with
+  `--dump-dom` under a virtual time budget, where **`requestAnimationFrame` never fires**: a
+  change painted only on a frame is invisible there, which is why a pick repaints at once.
 
 ---
 
@@ -1073,9 +1320,15 @@ path. New taxonomy files need no wiring: `load_base_graph` globs `ontology/taxon
 
 ### Contracts
 
-`shacl/` answers three different questions:
+`shacl/` answers four different questions:
 
 - `architecture_input_contract.ttl` — is this graph acceptable? (Violations)
+- `process_input_contract.ttl` — is the business process well-formed BPMN? Violations for
+  the rules the editor also enforces (no sequence flow into a start or boundary event or out
+  of an end event, none between participants, no message flow inside one); warnings for
+  practice (a process with no start or end event, a step nothing leads into or nothing
+  leaves). Added 2026-10-16; all tracked scenes conform with no warning. It reaches the
+  Input contract panel tagged BPMN, and **no assessment reads it**.
 - `assessment_output_contract.ttl` — are emitted findings well formed?
 - `annotation_guidance.ttl` — will this annotation actually match anything?
 
@@ -1137,8 +1390,10 @@ the gitignored `docs/evaluation/` imports them and cannot be updated from a clon
 ### Example graphs
 
 - **`ontology/example/` — what the deployment offers, and only that**: `simple_graph_rag.ttl`,
-  `it_support_agent.ttl`, and `context/it_service_desk.ttl`. This is the list the example
-  dropdown shows, so it stays small on purpose.
+  `support_chatbot.ttl` and `context/customer_support.ttl`, the tutorial's starter scene (A-P1
+  decision 3, 2026-10-19), which **Starter** loads from any level. This is the list the example dropdown shows,
+  so it stays small on purpose. `it_support_agent.ttl` and `context/it_service_desk.ttl` are
+  fixtures since `3f9c60f`.
 - **`python/tests/fixtures/` — graphs a test needs that the deployment does not offer**:
   `onyx_rag_chatbot.ttl` (the only graph exercising query rewriting, reranking, embeddings and
   supply chain), `ml_credit_scoring.ttl` (the only graph that trains or serves a classical
@@ -1209,7 +1464,7 @@ nested motifs co-match by design, so the number is structural coverage.
 
 `test_propagation.py` asserts the per-graph baselines and names the graphs by namespace.
 `test_agentic_assessment.py` covers the agentic layer with an inline graph;
-`it_support_agent.ttl` covers it as a bundled example.
+`it_support_agent.ttl` covers it as a fixture.
 
 When library counts change, **update `docs/reference/catalogue.md` in the same commit** —
 nothing regenerates it.
@@ -1233,6 +1488,11 @@ nothing regenerates it.
   graph — callers parse an architecture into it — so **never return the cached instance**.
   Editing a `.ttl` in a live server needs `reload_knowledge_base()`; Flask's reloader watches
   Python only.
+- **A browser opens six connections to one host, and a request waiting on `SPARQL_LOCK` holds
+  one.** `loadAnnotationHints` sent `/api/validate` on every motif render, unthrottled; behind a
+  31 s assessment five of them queued and the sixth connection was the assessment, so loading an
+  example hung with nothing on the server to show for it. Anything the page sends on a redraw
+  keeps one request in flight and skips a document it already checked.
 - **`load_base_graph()` copies ~7 800 triples, so never call it inside a loop.** Resolve what
   you need from it once and cache that. `_is_data` asked it per resource and took
   `/api/process` from 0.02 s to **4.24 s**, which slowed the browser suites enough that ten of
@@ -1311,24 +1571,24 @@ anyone noticed:
 len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its siblings
 ```
 
-### Library (counted off the loaded graph, 2026-10-09)
+### Library (counted off the loaded graph, 2026-10-19)
 
 | | |
 | --- | --- |
-| Motifs | **47** — GenAI 20, ML serving and training 13, Agentic 13, Supply chain 1 |
-| Risk patterns | **33** — GenAI 10, Agentic 11, ML serving and training 11, Supply chain 1 (35 motifs carry one; 12 carry none) |
-| Pattern nodes / pattern edges | **261** / **224** — every edge crosses between an oval and a box |
-| Pattern roles | **123**. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
+| Motifs | **34** — GenAI 18, Agentic 9, ML serving and training 6, Supply chain 1 (47 before B-4) |
+| Risk patterns | **33** — GenAI 10, Agentic 11, ML serving and training 11, Supply chain 1 (24 motifs carry one; 10 carry none) |
+| Pattern nodes / pattern edges | **177** / **150** — every edge crosses between an oval and a box |
+| Pattern roles | **141**: 124 roles plus 17 `pair:RoleCategory` categories. The per-shelf, origin and reach figures below them were counted at 97 on 2026-10-04 and have not been re-counted since |
 | Data categories | **7** |
 | Facet concepts | **35** (task 20, data 11, autonomy 4) |
 | Risk mechanisms | **32** |
 | Applicability conditions | **34**, carried on 38 attachments |
 | Controls | **30** `pat:Control_*` |
 | Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 40, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
-| Triples | **12 112** |
-| Motif–risk links | **123** — 39 carried by the motif alone, 84 with a named context (32 annotate the motif's own elements, 52 add the surrounding elements the risk needs) |
+| Triples | **11 066** |
+| Motif–risk links | **68** — 20 carried by the motif alone, 48 with a named context (19 annotate the motif's own elements, 29 add the surrounding elements the risk needs) |
 
-**97 registered implementations** over 96 `.rq` files: 47 match, 33 risk, 6 propagation, 9
+**84 registered implementations** over 83 `.rq` files: 34 match, 33 risk, 6 propagation, 9
 mitigation rewrites over 8 files (`response_verification.rq` is registered twice, under two
 controls for the same risk pattern), and 2 business-context derivations under
 `ontology/context/` — one of which registers as `DataCategoryPropagation`, so the runner sees 7
@@ -1347,16 +1607,29 @@ of those and 1 `BusinessFlowDerivation`.
 | Energy scene: BotTina + the business process | 5 | 11 |
 | Tariff scene: the tariff graph + its business process | 3 | 11 |
 | IT service desk scene: the agent + its business process | 4 | 12 |
-| Credit scoring (fixture): train, auto-deploy, score, decide, feed back | 3 | 17 |
+| Credit scoring (fixture): train, auto-deploy, score, decide, feed back | 3 | 11 |
+| Support chatbot (the starter architecture) | 3 | 6 |
+| Customer support scene: the chatbot + its process (the starter) | 3 | 6 |
 
 Moved 2026-10-09: Onyx +2 protected data to an external model (one concern, raised from the
 direct-prompting and RAG matches), the IT support agent +2 untraceable agent actions, its
 service desk scene those two plus personal data retained in agent memory, and credit scoring
 +2 model extraction and −1 supply chain on the model it trains itself.
 
+Moved 2026-10-18 (B-4): credit scoring 17 → 11 findings with its 10 concerns unchanged. The six
+serving risk patterns were raised from both the Training-to-serving and the serving match over
+the same elements; Training-to-serving now carries only its lifecycle risks.
+
 No bundled scene clears anything; `test_business_context.py` covers the clearing half by
 building an approval inline.
 
 ### Test suite
 
-**382 of 463 tests** in ~5 min by default; ~14 min for all 463 (counted 2026-10-04, full run green).
+**569 of 714 tests** by default, and 145 browser tests in ~30 min; all pass (counted
+2026-10-20, the first fully green run on this branch). The browser failures that came and went
+were each a test inheriting state an earlier one left: a canvas panned until the chip sat under
+the header, another level on screen, a motif match still picked, a concern raised in six places
+measured as if it were one, and one that clicked a stated risk where it meant a concern. And one
+was real: queued hint checks took every browser connection (see the six-connection trap above).
+**Do not run browser suites side by side**: under that load six scope tests fail on timing and
+the run took 55 min.

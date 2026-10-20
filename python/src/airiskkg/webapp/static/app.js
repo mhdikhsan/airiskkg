@@ -12,27 +12,32 @@ import {
   askAgain, refreshPreview, refreshSystemBar, resetScope, setLevel, settleChoice, startDrawing,
 } from "./panels/canvas.js";
 import { clearDerivedCategories, renderDerivedCategories } from "./panels/dataflow.js";
-import { clearFindings, reReadFindings, renderFindings } from "./panels/findings.js";
+import { clearFindings, forgetPickedFinding, reReadFindings, renderFindings } from "./panels/findings.js";
 import { renderHistory } from "./panels/history.js";
-import { closeLibrary, initLibrary, isLibraryOpen, openLibrary } from "./panels/library.js";
+import { closeLibrary, initLibrary, isFrontDoor, isLibraryOpen, libraryBack, openLibrary } from "./panels/library.js";
 import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
 import { applyConnect, applyDisconnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
 import { openOverview } from "./panels/overview.js";
-import { clearRisk, initRisk } from "./panels/risk.js";
+import { clearPossible, initPossible, stopPossible } from "./panels/possible.js";
+import { clearRisk, initRisk, refreshRegister, renderRisk } from "./panels/risk.js";
 import { RiskCanvas } from "./lib/risk_canvas.js";
-import { STARTER_BPMN, STARTER_TTL, initPalette } from "./panels/palette.js";
+import { initPalette } from "./panels/palette.js";
 import { noteChange } from "./panels/run.js";
-import { clearValidation, renderValidation } from "./panels/validation.js";
+import { clearValidation, scheduleValidation, validateNow } from "./panels/validation.js";
 import { ProcessCanvas } from "./lib/process_canvas.js";
 import { state } from "./state.js";
+
+// The tutorial's scenario, which Starter loads: a process with the architecture it refines.
+const STARTER_SCENE = "customer_support";
 
 // split divider 
 function initDivider() {
   const divider = $("#divider");
   const editorPane = $("#editor-pane");
   let dragging = false;
+  let width = "";   // the width the reader dragged to, kept while the editor is folded
   divider.addEventListener("pointerdown", (ev) => {
-    if (ev.target.closest("button")) return;
+    if (ev.target.closest("button") || document.body.classList.contains("editor-hidden")) return;
     dragging = true;
     try { divider.setPointerCapture(ev.pointerId); } catch (error) { /* already gone */ }
     document.body.classList.add("resizing");
@@ -42,7 +47,8 @@ function initDivider() {
     const main = $(".workbench");
     const rect = main.getBoundingClientRect();
     const ratio = Math.min(0.75, Math.max(0.2, (ev.clientX - rect.left) / rect.width));
-    editorPane.style.flex = `0 0 ${ratio * 100}%`;
+    width = `0 0 ${ratio * 100}%`;
+    editorPane.style.flex = width;
     GraphView.fit();
   });
   divider.addEventListener("pointerup", () => {
@@ -56,6 +62,8 @@ function initDivider() {
   const toggle = $("#btn-editor-toggle");
   const setEditorFolded = (folded) => {
     document.body.classList.toggle("editor-hidden", folded);
+    // an inline width beats the folded rule, so it is set aside while folded and put back after
+    editorPane.style.flex = folded ? "" : width;
     toggle.innerHTML = folded ? "&#8250;" : "&#8249;";
     toggle.title = folded ? "Show the editor" : "Hide the editor";
     // Both canvases size to their container, and the container just changed.
@@ -77,7 +85,7 @@ async function init() {
   else closeLibrary();
 
   GraphView.init();
-  Editor.init({ onChange: refreshPreview });
+  Editor.init({ onChange: (ttl) => { stopPossible(); refreshPreview(ttl); scheduleValidation(); } });
   initDivider();
 
   // A scope change redraws both the canvas and the findings list.
@@ -85,6 +93,7 @@ async function init() {
   const forgetTheLastDocument = () => {
     resetScope();
     clearFindings();
+    clearPossible();
     clearMotifs();
     clearDerivedCategories();
     clearValidation();
@@ -93,6 +102,44 @@ async function init() {
   };
 
   on("document:replaced", forgetTheLastDocument);
+
+  /* An example replaces the document; a process brings the architectures it refines. */
+  const loadExample = async (name) => {
+    try {
+      const example = await api(`/api/examples/${encodeURIComponent(name)}`);
+      if (example.kind === "process") {
+        const wanted = (example.requires || []).filter((r) => r.example);
+        const parts = [];
+        for (const requirement of wanted) {
+          const architecture = await api(`/api/examples/${encodeURIComponent(requirement.example)}`);
+          parts.push(architecture.ttl);
+        }
+        parts.push(example.ttl);
+
+        forgetTheLastDocument();
+        noteChange(`loaded scene: ${name}`);
+        Editor.setValue(parts.join(String.fromCharCode(10, 10)));
+        openDrawer("process");
+
+        const orphans = example.missing || [];
+        if (orphans.length) {
+          setStatus("error",
+            `${orphans.length} activity target(s) have no bundled architecture`,
+            "the process will draw, but there is nothing to assess for them");
+        } else {
+          setStatus("ok", `Loaded ${name}`,
+            wanted.length ? `with ${wanted.length} architecture(s) it refines` : "no architecture to bring");
+        }
+      } else {
+        forgetTheLastDocument();
+        noteChange(`loaded example: ${name}`);
+        Editor.setValue(example.ttl);
+        setStatus("ok", `Loaded example: ${name}`);
+      }
+    } catch (error) {
+      setStatus("error", error.message);
+    }
+  };
 
   on("scope:changed", () => {
     /* Awaited, because the panels below read state.lastGraph to decide what is
@@ -109,6 +156,12 @@ async function init() {
       }
       // The annotate table is a view of the same graph, so it narrows with it.
       Annotate.refresh();
+      // last, because redrawing the canvas clears any highlight
+      if (state.highlightOnScope) {
+        // pointed out, not singled out: the rest of the architecture stays readable
+        GraphView.setHighlight(state.highlightOnScope, { dim: false });
+        state.highlightOnScope = null;
+      }
     });
   });
 
@@ -131,6 +184,7 @@ async function init() {
 
   initPalette();
   initRisk();
+  initPossible();
   initMotifPalette(vocabulary.motifTemplates || []);
   renderHistory();
 
@@ -138,17 +192,35 @@ async function init() {
     svg: "#process-canvas",
     onEdit: (op, payload) => runMutation(async () => {
       try {
-        const { ttl } = await postJson("/api/process-edit", {
+        const made = await postJson("/api/process-edit", {
           ttl: Editor.getValue(), op, ...payload,
         });
         noteChange(`business process: ${op.replace(/-/g, " ")}`);
-        Editor.setValue(ttl);
+        Editor.setValue(made.ttl);
         setStatus("ok", `Business process updated (${op})`);
+        // data reaching an activity that refines a system: the reader says whether it is in the architecture too
+        const offer = made.carryable;
+        if (offer && window.confirm(`Add ${offer.data.length === 1 ? `"${offer.data[0]}"` : `${offer.data.length} data items (${offer.data.join(", ")})`}`
+            + ` to the ${offer.system} architecture as well?`)) {
+          const carried = await postJson("/api/process-edit", {
+            ttl: Editor.getValue(), op: "carry-data", activity: offer.activity,
+            ...(offer.reference ? { reference: offer.reference } : {}),
+          });
+          noteChange("business process: carry data into the architecture");
+          Editor.setValue(carried.ttl);
+          setStatus("ok", `Added to the ${offer.system} architecture`, `${carried.newIds.length} data element(s)`);
+        }
+        return made;
       } catch (error) {
         setStatus("error", "Could not edit the process: " + error.message.split(String.fromCharCode(10))[0]);
+        return null;
       }
     }),
     onSelect: (id) => revealInSource([id]),
+    onPick: (ids) => {
+      if (ids.length) revealInSource(ids);
+      setStatus("ok", `${ids.length} selected`, ids.length ? "Delete removes them" : "");
+    },
     onOpenArchitecture: (activity) => {
       /* Only descend into an architecture that is actually here. */
       const wanted = activity.refines[0] || null;
@@ -162,9 +234,12 @@ async function init() {
       }
       state.scopedSystem = wanted;
       setLevel("architecture", activity);
+      // the steps it names, when it names them: that is where its work is drawn
+      state.highlightOnScope = (activity.steps || []).length ? activity.steps : null;
+      forgetPickedFinding();
       emit("scope:changed");
       GraphView.setHighlight([]);
-      revealInSource(activity.refines);
+      revealInSource((activity.steps || []).length ? activity.steps : activity.refines);
       setStatus("ok", `Opened ${activity.label}`, "click the breadcrumb to go back");
     },
   });
@@ -208,6 +283,54 @@ async function init() {
   });
   setLevel(state.level);
 
+  /* The zoom buttons act on the canvas on screen; the risk level has its own. */
+  const onProcess = () => state.level === "business";
+  $("#btn-zoom-in").addEventListener("click", () =>
+    (onProcess() ? ProcessCanvas.zoomBy(1.25) : GraphView.zoomBy(1.25)));
+  $("#btn-zoom-out").addEventListener("click", () =>
+    (onProcess() ? ProcessCanvas.zoomBy(0.8) : GraphView.zoomBy(0.8)));
+  $("#btn-fit").addEventListener("click", () => (onProcess() ? ProcessCanvas.fit() : GraphView.fit()));
+
+  /* Undo and redo the document, except inside a field, which has its own. */
+  document.addEventListener("keydown", (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey) || ev.altKey) return;
+    const key = ev.key.toLowerCase();
+    const again = (key === "z" && ev.shiftKey) || (key === "y" && !ev.shiftKey);
+    if (key !== "z" && !again) return;
+    const on = document.activeElement;
+    if (on && on.closest && on.closest("input, textarea, select, [contenteditable]")) return;
+    ev.preventDefault();
+    const done = again ? Editor.redo() : Editor.undo();
+    if (done) noteChange(again ? "redo" : "undo");
+    setStatus("ok", done ? (again ? "Redone" : "Undone") : `Nothing to ${again ? "redo" : "undo"}`);
+  });
+
+  /* The browser's Back walks back through the workbench rather than out of it:
+     the overview, the library page a link was followed from, the library, then
+     the level before this one. */
+  const stepBack = () => {
+    if (!$("#overview").classList.contains("hidden")) { $("#overview").classList.add("hidden"); return true; }
+    if (libraryBack()) return true;
+    if (isLibraryOpen() && !isFrontDoor()) { closeLibrary(); return true; }
+    const previous = state.levelTrail.pop();
+    if (!previous) return false;
+    const widening = state.scopedSystem !== null;
+    state.scopedSystem = null;
+    setLevel(previous, null, { back: true });
+    if (previous === "risk") refreshRegister().then(renderRisk);
+    if (widening) emit("scope:changed");
+    return true;
+  };
+  history.replaceState({ pairai: "root" }, "");
+  history.pushState({ pairai: "here" }, "");
+  window.addEventListener("popstate", () => {
+    if (stepBack()) { history.pushState({ pairai: "here" }, ""); return; }
+    // Nothing would be lost, so Back may leave as it always did.
+    if (!Editor.getValue().trim()) { history.back(); return; }
+    history.pushState({ pairai: "here" }, "");
+    setStatus("ok", "Back stays in PAIR-AI while a diagram is open", "close the tab to leave");
+  });
+
   $("#btn-history-clear").addEventListener("click", () => {
     if (!VersionHistory.list().length) return;
     if (!window.confirm("Delete every recorded version from this browser? This cannot be undone.")) return;
@@ -241,44 +364,8 @@ async function init() {
     }
   } catch (_) { /* non-fatal */ }
 
-  $("#example-select").addEventListener("change", async (ev) => {
-    const name = ev.target.value;
-    if (!name) return;
-    try {
-      const example = await api(`/api/examples/${encodeURIComponent(name)}`);
-      if (example.kind === "process") {
-        /* Replaces, exactly like an architecture example does. */
-        const wanted = (example.requires || []).filter((r) => r.example);
-        const parts = [];
-        for (const requirement of wanted) {
-          const architecture = await api(`/api/examples/${encodeURIComponent(requirement.example)}`);
-          parts.push(architecture.ttl);
-        }
-        parts.push(example.ttl);
-
-        forgetTheLastDocument();
-        noteChange(`loaded scene: ${name}`);
-        Editor.setValue(parts.join(String.fromCharCode(10, 10)));
-        openDrawer("process");
-
-        const orphans = example.missing || [];
-        if (orphans.length) {
-          setStatus("error",
-            `${orphans.length} activity target(s) have no bundled architecture`,
-            "the process will draw, but there is nothing to assess for them");
-        } else {
-          setStatus("ok", `Loaded ${name}`,
-            wanted.length ? `with ${wanted.length} architecture(s) it refines` : "no architecture to bring");
-        }
-      } else {
-        forgetTheLastDocument();
-        noteChange(`loaded example: ${name}`);
-        Editor.setValue(example.ttl);
-        setStatus("ok", `Loaded example: ${name}`);
-      }
-    } catch (error) {
-      setStatus("error", error.message);
-    }
+  $("#example-select").addEventListener("change", (ev) => {
+    if (ev.target.value) loadExample(ev.target.value);
   });
 
   $("#file-input").addEventListener("change", (ev) => {
@@ -311,13 +398,10 @@ async function init() {
     ev.target.value = "";
   });
 
-  $("#btn-starter").addEventListener("click", () => {
-    const business = state.level === "business";
+  $("#btn-starter").addEventListener("click", async () => {
+    // the tutorial's scenario, from any level: the business process with the system it refines
     settleChoice();
-    forgetTheLastDocument();
-    noteChange(business ? "starter business process" : "starter architecture");
-    Editor.setValue(business ? STARTER_BPMN : STARTER_TTL);
-    setStatus("ok", "Starter graph loaded");
+    await loadExample(STARTER_SCENE);
   });
 
   
@@ -343,15 +427,13 @@ async function init() {
   });
 
   $("#btn-validate").addEventListener("click", async () => {
-    const ttl = Editor.getValue().trim();
-    if (!ttl) { setStatus("error", "Nothing to validate - the editor is empty."); return; }
+    if (!Editor.getValue().trim()) { setStatus("error", "Nothing to validate - the editor is empty."); return; }
     const button = $("#btn-validate");
     button.disabled = true;
     setStatus("busy", "Validating against the input contract…");
     try {
-      const report = await postJson("/api/validate", { ttl });
-      renderValidation(report);
-      openDrawer("validation");
+      const report = await validateNow({ open: true });
+      if (!report) return;
       setStatus(report.conforms ? "ok" : "error",
         report.conforms ? "Input contract satisfied" : `${report.violations.length} contract violation(s)`);
     } catch (error) {
@@ -409,13 +491,16 @@ async function init() {
   });
 
 
-  $("#drawer-toggle").addEventListener("click", toggleDrawer);
-  $("#drawer-head").addEventListener("dblclick", toggleDrawer);
+  // Opening the input contract panel is what checks the graph against it.
+  const toggleAndCheck = () => { toggleDrawer(); scheduleValidation({ now: true }); };
+  $("#drawer-toggle").addEventListener("click", toggleAndCheck);
+  $("#drawer-head").addEventListener("dblclick", toggleAndCheck);
   $$(".drawer-tab").forEach((tab) =>
     tab.addEventListener("click", () => {
       switchDrawerTab(tab.dataset.drawerTab);
       openDrawer();
       if (tab.dataset.drawerTab === "annotate") Annotate.refresh();
+      if (tab.dataset.drawerTab === "validation") scheduleValidation({ now: true });
     }));
 }
 

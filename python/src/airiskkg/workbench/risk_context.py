@@ -126,24 +126,6 @@ def recalled_into_generation(recalled: str) -> tuple:
     )
 
 
-def request_to(step: str, from_public: bool = False) -> tuple:
-    roles = ["PredictionRequest", "PublicUserInput"] if from_public else ["PredictionRequest"]
-    return _adds(
-        "a request from the public reaches the prediction step" if from_public
-        else "a request reaches the prediction step",
-        [_node("Context_Request", "Data", "Prediction Request", roles)],
-        [[step, "use", "Context_Request"]],
-    )
-
-
-def result_shown(step: str) -> tuple:
-    return _adds(
-        "its prediction is shown to a user",
-        [_node("Context_Result", "Data", "Prediction Result", ["PredictionResult", "UserFacingOutput"])],
-        [[step, "produce", "Context_Result"]],
-    )
-
-
 def trained_here(model: str, on_personal: bool = False) -> tuple:
     cats = ["SensitiveInformation"] if on_personal else []
     return _adds(
@@ -152,14 +134,6 @@ def trained_here(model: str, on_personal: bool = False) -> tuple:
         [_node("Context_Training", "Train", "Training Step", ["TrainingStep"]),
          _node("Context_TrainingData", "Data", "Training Data", ["TrainingDataset"], cats)],
         [["Context_Training", "use", "Context_TrainingData"], ["Context_Training", "produce", model]],
-    )
-
-
-def served_model(step: str) -> tuple:
-    return _adds(
-        "the step serves a model",
-        [_node("Context_Model", "StatisticalModel", "Model", ["Model"])],
-        [[step, "use", "Context_Model"]],
     )
 
 
@@ -205,6 +179,14 @@ def approved_on(seen: str, action: str) -> tuple:
     )
 
 
+def answered_back(delegating: str, receiving: str) -> tuple:
+    return _adds(
+        "the receiving agent answers back, and the exchange goes round with no bound on the rounds",
+        [_node("Context_Reply", "Data", "Reply", ["AgentMessage"])],
+        [[receiving, "produce", "Context_Reply"], [delegating, "use", "Context_Reply"]],
+    )
+
+
 def handed_on(receiving: str) -> tuple:
     return _adds(
         "the receiving agent hands the work on to another agent that acts on it",
@@ -231,17 +213,9 @@ def _context(*parts) -> dict:
 
 
 _PREDICTION = {
-    # motif: (prediction step, model or None, request, result)
-    "SynchronousPredictionMotif": ("SyncPred_PredictionStepNode", "SyncPred_ModelNode",
-                                   "SyncPred_RequestNode", "SyncPred_ResultNode"),
-    "AsynchronousPredictionMotif": ("AsyncPred_PredictionStepNode", None,
-                                    "AsyncPred_RequestNode", "AsyncPred_ResultNode"),
-    "BatchPredictionMotif": ("BatchPred_JobNode", "BatchPred_ModelNode",
-                             "BatchPred_DatasetNode", "BatchPred_ResultNode"),
-    "PreprocessPredictionMotif": ("PrepPred_PredictionStepNode", "PrepPred_ModelNode",
-                                  "PrepPred_InputNode", "PrepPred_ResultNode"),
-    "MultiStagePredictionMotif": ("MultiStage_FastPredictionStepNode", "MultiStage_FastModelNode",
-                                  "MultiStage_RequestNode", "MultiStage_QuickResultNode"),
+    # motif: (prediction step, model, request, result)
+    "PredictionServingMotif": ("Serving_PredictionStepNode", "Serving_ModelNode",
+                               "Serving_InputNode", "Serving_ResultNode"),
 }
 _TRAIN_AND_SERVE = {
     # motif: (prediction step, training step)
@@ -250,14 +224,9 @@ _TRAIN_AND_SERVE = {
 }
 
 
-def _model_of(motif: str) -> tuple:
-    step, model, _, _ = _PREDICTION[motif]
-    return () if model else (served_model(step),)
-
-
 def _trained(motif: str, on_personal: bool = False) -> tuple:
-    step, model, _, _ = _PREDICTION[motif]
-    return _model_of(motif) + (trained_here(model or "Context_Model", on_personal),)
+    _step, model, _request, _result = _PREDICTION[motif]
+    return (trained_here(model, on_personal),)
 
 
 def _build() -> dict[tuple[str, str], dict]:
@@ -271,7 +240,6 @@ def _build() -> dict[tuple[str, str], dict]:
     link("PromptInjection", "RetrievalAugmentedGenerationMotif", shown("RAG_ResponseNode"))
     link("PromptInjection", "AdaptiveRAGMotif", shown("AdaRAG_AnswerNode"))
     link("PromptInjection", "IterativeRAGMotif", shown("IterRAG_AnswerNode"))
-    link("PromptInjection", "RecursiveRAGMotif", shown("RecRAG_AnswerNode"))
     link("PromptInjection", "QueryRewritingMotif",
          answer_from("QueryRewrite_RetrievedContextNode", "QueryRewrite_LLMNode"))
     link("PromptInjection", "LLMBasedInformationRetrievalMotif",
@@ -286,8 +254,8 @@ def _build() -> dict[tuple[str, str], dict]:
          hosted("DP_ModelNode"), personal("DP_QueryNode"))
     link("ProtectedDataToExternalModel", "RetrievalAugmentedGenerationMotif",
          hosted("RAG_LLMNode"), personal("RAG_QueryNode"))
-    link("ProtectedDataToExternalModel", "SynchronousPredictionMotif",
-         hosted("SyncPred_ModelNode"), personal("SyncPred_RequestNode"))
+    link("ProtectedDataToExternalModel", "PredictionServingMotif",
+         hosted("Serving_ModelNode"), personal("Serving_InputNode"))
     link("DataAndModelPoisoning", "EmbeddingsMotif", untrusted("Embedding_SourceDocumentNode"))
     link("DataAndModelPoisoning", "FineTuningMotif", untrusted("FineTune_DatasetNode"))
     link("DataAndModelPoisoning", "RetrievalDataAugmentationMotif", untrusted("RetrAug_SourceDocumentNode"))
@@ -301,23 +269,19 @@ def _build() -> dict[tuple[str, str], dict]:
         ("PlanReflectionMotif", "PlanReflection_PlanningStepNode"),
     ):
         link("GoalHijack", motif, public_input_to(planner))
-    link("GoalHijack", "ToolAgentRegistryMotif", untrusted("Registry_RegistryNode"))
     link("GoalHijack", "GoalCreationMotif", public("GoalCreation_PromptNode"))
     link("GoalHijack", "ModelQueryingMotif", public("ModelQuery_PromptNode"))
-    link("GoalHijack", "IncrementalModelQueryingMotif", public("IncrQuery_PromptNode"))
-    link("AgenticSupplyChain", "ToolAgentRegistryMotif", third_party("Registry_RegistryNode"))
     link("AgenticSupplyChain", "ToolUsingAgentMotif", component_for("ToolAgent_PlanningStepNode"))
     link("AgenticSupplyChain", "AgentDelegationMotif", component_for("AgentDelegation_DelegatingStepNode"))
     link("UnexpectedCodeExecution", "ToolUsingAgentMotif", executes_code("ToolAgent_ActionStepNode"))
-    link("UnexpectedCodeExecution", "ToolAgentRegistryMotif", executes_code("Registry_ToolStepNode"))
     link("HumanAgentTrustExploitation", "ToolUsingAgentMotif",
          approved_on("ToolAgent_PlanNode", "ToolAgent_ActionStepNode"))
-    link("HumanAgentTrustExploitation", "ToolAgentRegistryMotif",
-         approved_on("Registry_AssignmentNode", "Registry_ToolStepNode"))
     link("IdentityPrivilegeAbuse", "AgentDelegationMotif",
          credential("AgentDelegation_DelegatingStepNode", "AgentDelegation_ReceivingStepNode"))
     link("IdentityPrivilegeAbuse", "AgentMemoryLoopMotif", credential("AgentMemory_WriteStepNode"))
     link("CascadingFailures", "AgentDelegationMotif", handed_on("AgentDelegation_ReceivingStepNode"))
+    link("UnboundedConsumption", "AgentDelegationMotif",
+         answered_back("AgentDelegation_DelegatingStepNode", "AgentDelegation_ReceivingStepNode"))
     link("MemoryPoisoning", "AgentMemoryLoopMotif", recalled_into_generation("AgentMemory_RecalledContextNode"))
     link("PersonalDataRetained", "AgentMemoryLoopMotif", stores_personal("AgentMemory_StoreNode"))
     link("PersonalDataRetained", "PredictionLoggingMotif", personal("PredLog_RequestNode"))
@@ -327,31 +291,19 @@ def _build() -> dict[tuple[str, str], dict]:
         link("AdversarialEvasion", motif, public(request))
         link("TrainingDataMembershipInference", motif, public(request), *_trained(motif, on_personal=True))
         link("UnevaluatedModel", motif, *_trained(motif))
-        if motif != "SynchronousPredictionMotif":
-            link("UnqualifiedPrediction", motif, shown(result))
-        if motif != "BatchPredictionMotif":
-            link("ModelExtraction", motif, public(request), *_trained(motif))
+        link("UnqualifiedPrediction", motif, shown(result))
+        link("ModelExtraction", motif, public(request), *_trained(motif))
 
     # ML training, and training into serving
     for motif, (step, trainer) in _TRAIN_AND_SERVE.items():
-        link("AdversarialEvasion", motif, request_to(step, from_public=True))
-        link("OutOfDomainInput", motif, request_to(step))
-        link("UnqualifiedPrediction", motif, request_to(step), result_shown(step))
-        link("ModelExtraction", motif, request_to(step, from_public=True))
-        link("TrainingDataMembershipInference", motif,
-             request_to(step, from_public=True), training_data(trainer, "SensitiveInformation"))
         link("ModelBias", motif, training_data(trainer, "SensitiveInformation"))
         link("ImproperRetraining", motif, fed_back(step, trainer))
-    link("ModelBias", "BatchTrainingMotif", personal("BatchTrain_DatasetNode"))
+    # Both lifecycle motifs leave their serving risks to the serving motif since B-4.
     link("ModelBias", "PipelineTrainingMotif", personal("PipeTrain_SourceDataNode"))
-    link("ImproperRetraining", "BatchTrainingMotif",
-         served_and_fed_back("BatchTrain_ModelArtifactNode", "BatchTrain_TrainingStepNode"))
     link("ImproperRetraining", "PipelineTrainingMotif",
          served_and_fed_back("PipeTrain_ModelArtifactNode", "PipeTrain_TrainingJobNode"))
     link("ImproperRetraining", "FineTuningMotif",
          served_and_fed_back("FineTune_FineTunedModelNode", "FineTune_TrainingStepNode"))
-    link("EvaluationDataContamination", "BatchTrainingMotif",
-         evaluated_on_training_data("BatchTrain_EvaluationStepNode", "BatchTrain_TrainingDataNode"))
     link("EvaluationDataContamination", "PipelineTrainingMotif",
          evaluated_on_training_data("PipeTrain_EvaluationJobNode", "PipeTrain_IntermediateDataNode"))
     link("EvaluationDataContamination", "FineTuningMotif",

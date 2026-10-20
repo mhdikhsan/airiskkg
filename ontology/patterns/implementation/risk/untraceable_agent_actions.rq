@@ -40,19 +40,6 @@ WHERE {
             ?resultBinding pair:bindsPatternNode pat:ToolAgent_ActionResultNode ;
                            pair:matchedElement ?actionResult .
         }
-        UNION
-        {
-            ?match pair:hasNodeBinding ?planningBinding , ?instructionBinding ,
-                                       ?actionBinding , ?resultBinding .
-            ?planningBinding pair:bindsPatternNode pat:Registry_CoordinatorNode ;
-                             pair:matchedElement ?planningStep .
-            ?instructionBinding pair:bindsPatternNode pat:Registry_AssignmentNode ;
-                                pair:matchedElement ?instruction .
-            ?actionBinding pair:bindsPatternNode pat:Registry_ToolStepNode ;
-                           pair:matchedElement ?actionStep .
-            ?resultBinding pair:bindsPatternNode pat:Registry_ResultNode ;
-                           pair:matchedElement ?actionResult .
-        }
 
         # Anything the action step reads or writes counts as a record of it.
         FILTER NOT EXISTS {

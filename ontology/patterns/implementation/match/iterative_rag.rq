@@ -28,14 +28,17 @@ WHERE {
                beam:produce ?decision .
     ?decision a beam:Data ; pair:playsRole/pair:subRoleOf* pair:RetrievalDecision .
 
-    # The loop: the next retrieval reads what the judge decided.
+    # The loop: the next retrieval reads what the judge decided, directly or as
+    # what a step makes of it, such as a sub-query.
+    ?decision (^beam:use/beam:produce)* ?steer .
     ?retrievalStep a/rdfs:subClassOf* beam:Process ;
                    pair:playsRole/pair:subRoleOf* pair:RetrievalStep ;
-                   beam:use ?decision ;
+                   beam:use ?steer ;
                    beam:use ?query ;
                    beam:use ?knowledgeSource ;
                    beam:produce ?retrievedCtx .
     ?query a beam:Data ; pair:playsRole/pair:subRoleOf* pair:UserInput .
+    FILTER(?query != ?steer)
     ?knowledgeSource a beam:Data ; pair:playsRole/pair:subRoleOf* pair:KnowledgeSource .
     ?retrievedCtx a beam:Data ; pair:playsRole/pair:subRoleOf* pair:RetrievedContext .
     ?retrievedCtx (^beam:use/beam:produce)* ?ctxForGeneration .

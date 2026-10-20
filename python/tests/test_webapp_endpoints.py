@@ -26,6 +26,14 @@ def client():
     return app.test_client()
 
 
+def test_the_risk_list_has_a_url_of_its_own(client) -> None:
+    """There was no one page or URL listing every risk the tool can raise."""
+    page = client.get("/risks")
+    assert page.status_code == 200
+    assert b'src="/static/risks.js"' in page.data
+    assert client.get("/static/risks.js").status_code == 200
+
+
 def test_graph_endpoint_returns_nodes_and_edges(client) -> None:
     ttl = example_path(ONYX_NS).read_text(encoding="utf-8")
     response = client.post("/api/graph", json={"ttl": ttl})
@@ -39,6 +47,23 @@ def test_graph_endpoint_returns_nodes_and_edges(client) -> None:
     node_ids = {node["id"] for node in data["nodes"]}
     for edge in data["edges"]:
         assert edge["source"] in node_ids and edge["target"] in node_ids
+
+
+def test_a_node_reports_every_beam_class_it_is_typed_with(client) -> None:
+    """The most specific type alone is Text for an element typed Data and Text,
+    and no term applies to Text: filtering the picker on it hid every Data term
+    from an element the Data queries match."""
+    ttl = """
+    @prefix beam: <http://w3id.org/beam/core#> .
+    @prefix ex: <http://example.org/typed#> .
+    ex:sys a beam:System ; beam:hasResource ex:answer .
+    ex:answer a beam:Data, beam:Text .
+    """
+    nodes = client.post("/api/graph", json={"ttl": ttl}).get_json()["nodes"]
+    answer = next(node for node in nodes if node["id"].endswith("answer"))
+    beam = "http://w3id.org/beam/core#"
+    assert answer["typeUri"] == beam + "Text"
+    assert answer["typeUris"] == [beam + "Data", beam + "Text"]
 
 
 def test_graph_endpoint_use_edges_point_into_process(client) -> None:
@@ -136,6 +161,92 @@ def test_validate_endpoint_returns_annotation_guidance_hints(client) -> None:
     assert report["conforms"] is True, "guidance must never affect conformance"
     assert report["hints"], "annotation-guidance hints are missing from the report"
     assert any("retrieval step" in hint["message"] for hint in report["hints"])
+
+
+LEAF_TTL = """
+@prefix ex: <http://example.org/leaf#> .
+@prefix beam: <http://w3id.org/beam/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+ex:sys a beam:System ; beam:hasResource ex:q, ex:llm ; beam:hasProcess ex:gen .
+ex:q a beam:Data ; rdfs:label "Customer question" .
+ex:llm a beam:Model ; rdfs:label "LLM" .
+ex:gen a beam:Generate ; rdfs:label "Answer generation" ; beam:use ex:q, ex:llm .
+"""
+
+
+def _leaf_rows(report: dict) -> dict:
+    return {row["focusLabel"]: row for row in report["warnings"] if row.get("fix")}
+
+
+def test_the_leaf_class_warning_names_the_element_and_how_to_fix_it(client) -> None:
+    """Students read "should be typed to a leaf class (beam:Data ...)" and had
+    no idea what to do about it."""
+    rows = _leaf_rows(client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json())
+
+    llm = rows["LLM"]
+    assert llm["message"].startswith('"LLM"')
+    assert "leaf class" not in llm["message"] and "beam:" not in llm["message"]
+    assert {choice["label"] for choice in llm["fix"]["choices"]} == {
+        "Statistical Model", "Semantic Model"}
+
+
+def test_plain_data_is_not_asked_what_kind_of_data_it_is(client) -> None:
+    """Asking for the kind of data read as something to fix, and changed
+    nothing: the match queries read beam:Data itself, and a label names it."""
+    rows = _leaf_rows(client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json())
+    assert "Customer question" not in rows
+
+
+def test_every_warning_names_its_element_by_label(client) -> None:
+    report = client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json()
+    for row in report["warnings"]:
+        assert row["focusLabel"] in row["message"], row["message"]
+        assert "pair:" not in row["message"] and "beam:" not in row["message"], row["message"]
+
+
+def test_the_one_click_fix_clears_the_warning(client) -> None:
+    llm = _leaf_rows(client.post("/api/validate", json={"ttl": LEAF_TTL}).get_json())["LLM"]
+    picked = next(c for c in llm["fix"]["choices"] if c["label"] == "Statistical Model")
+    ttl = client.post("/api/graph-edit", json={
+        "ttl": LEAF_TTL, "op": "edit-element", "element": llm["focusNode"],
+        "classUri": picked["classUri"]}).get_json()["ttl"]
+    assert _leaf_rows(client.post("/api/validate", json={"ttl": ttl}).get_json()) == {}
+
+
+def test_no_motif_from_the_library_is_flagged_for_its_types(client) -> None:
+    """Every motif types its nodes as the queries read them, so inserting one
+    must not raise a warning about its types."""
+    motifs = [m["id"] for m in client.get("/api/vocabulary").get_json()["motifTemplates"]]
+    flagged = {}
+    for motif in motifs:
+        ttl = client.post("/api/graph-edit", json={
+            "ttl": "", "op": "add-motif", "motif": motif}).get_json()["ttl"]
+        rows = _leaf_rows(client.post("/api/validate", json={"ttl": ttl}).get_json())
+        if rows:
+            flagged[motif] = sorted(rows)
+    assert motifs and not flagged, f"motifs warned about their own types: {flagged}"
+
+
+def test_a_match_says_which_annotation_bound_each_element(client) -> None:
+    """"Matches on" named roles, never which of the reader's own annotations a
+    match rested on, so a refinement bound without anyone seeing why."""
+    ttl = example_path(GRAPH_RAG_NS).read_text(encoding="utf-8")
+    data = client.post("/api/assess", json={"ttl": ttl}).get_json()
+    bound = [b for m in data["motifMatches"] for b in m["boundElements"]]
+    assert bound and all(b["role"] for b in bound), "a binding names no role"
+    assert all(b["via"] for b in bound), "a binding names no annotation of the element"
+    refined = {(b["element"], b["role"], b["via"]) for b in bound if b["via"] != b["role"]}
+    assert ("SPARQL Query Template", "User Input", "Rewritten Query") in refined, refined
+
+
+def test_the_motif_tray_carries_each_motifs_own_description(client) -> None:
+    """The tray's tooltip said "Add X Motif" and nothing about what X is; the
+    library already describes every motif, so the tray reads the same words."""
+    tray = {t["id"]: t for t in client.get("/api/vocabulary").get_json()["motifTemplates"]}
+    library = {m["id"]: m for m in client.get("/api/library").get_json()["motifs"]}
+    assert tray and set(tray) == set(library)
+    for motif_id, template in tray.items():
+        assert template["description"] == library[motif_id]["description"], motif_id
 
 
 def test_assess_endpoint_still_works(client) -> None:
@@ -285,7 +396,8 @@ def test_a_paper_is_cited_by_its_doi(client) -> None:
     data = client.get("/api/library").get_json()
     refs = {ref["id"]: ref for motif in data["motifs"] for ref in motif["derivedFrom"]}
     papers = [ref for ref in refs.values() if "doi.org/" in (ref["url"] or "")]
-    assert len(papers) == 32, f"expected 32 DOI-cited design patterns, got {len(papers)}"
+    # 31 since B-4: the prompt/response optimiser's handle went with its motif
+    assert len(papers) == 31, f"expected 31 DOI-cited design patterns, got {len(papers)}"
     for ref in papers:
         assert ref.get("doi") and ref["sourceShort"] == ref["doi"], ref
         assert ref["url"] == "https://doi.org/" + ref["doi"], ref
@@ -321,8 +433,7 @@ def test_every_motif_is_served_with_its_family_and_group(client) -> None:
     assert all(m["family"] and m["group"] for m in motifs)
     rag_variants = {m["id"] for m in motifs if m["group"]["label"] == "Retrieval augmented generation"}
     assert rag_variants == {
-        "RetrievalAugmentedGenerationMotif", "IterativeRAGMotif",
-        "RecursiveRAGMotif", "AdaptiveRAGMotif",
+        "RetrievalAugmentedGenerationMotif", "IterativeRAGMotif", "AdaptiveRAGMotif",
     }
     retrieval = {m["id"] for m in motifs if m["group"]["label"] == "Information retrieval"}
     assert {"InformationRetrievalMotif", "VectorBasedInformationRetrievalMotif",
@@ -403,7 +514,7 @@ def test_vocabulary_roles_are_grouped_by_top_level_role(client) -> None:
     # groups are the ontology's top-level roles, which are their own group
     groups = {role["group"] for role in roles}
     by_id = {role["id"]: role for role in roles}
-    for top in ("ProcessingStep", "ControlStep", "ResourceRole", "UserInput"):
+    for top in ("ProcessingStep", "ControlRoles", "ResourceRole", "UserInputRoles"):
         uri = f"http://w3id.org/airiskkg/pair-ai#{top}"
         assert by_id[uri]["group"] == by_id[uri]["label"]
         assert by_id[uri]["label"] in groups
@@ -430,8 +541,26 @@ def test_vocabulary_roles_declare_which_element_kind_they_apply_to(client) -> No
     # a family is process or resource, never both
     assert all(len(kinds) == 1 for kinds in by_group.values()), by_group
     assert by_group["Processing Step"] == {"process"}
-    assert by_group["Control Step"] == {"process"}
+    assert by_group["Controls"] == {"process"}
     assert by_group["Resource Role"] == {"resource"}
+
+
+def test_every_role_the_menu_offers_is_filed_under_a_category(client) -> None:
+    """The role picker cascades from the categories down `pair:subRoleOf`, so a
+    role that reaches no category would only be found by typing. The roles the
+    categories refine (Processing Step, Resource Role) file and are not offered."""
+    roles = {role["id"]: role for role in client.get("/api/vocabulary").get_json()["roles"]}
+    assert all(isinstance(role["parents"], list) for role in roles.values())
+    categories = {rid for rid, role in roles.items() if role["category"]}
+    above = {parent for rid in categories for parent in roles[rid]["parents"]}
+    assert len(categories) == 17 and len(above) == 2, (len(categories), above)
+
+    def filed(rid, seen=()):
+        return rid in categories or any(
+            filed(parent, seen + (rid,)) for parent in roles[rid]["parents"] if parent not in seen)
+
+    loose = [roles[rid]["label"] for rid in roles if rid not in above and not filed(rid)]
+    assert not loose, f"reachable only by search: {loose}"
 
 
 BEAM_NS = "http://w3id.org/beam/core#"
@@ -494,7 +623,7 @@ def test_what_a_term_applies_to_follows_what_the_queries_write(client) -> None:
     roles = client.get("/api/vocabulary").get_json()["roles"]
     by_label = {role["label"]: role for role in roles}
 
-    generation = by_label["Generation Step"]
+    generation = by_label["Generate"]
     assert f"{BEAM_NS}Generate" in generation["appliesTo"], (
         "a Generate step is what the examples actually type, and it binds"
     )
@@ -672,7 +801,7 @@ def test_assess_reports_why_a_near_miss_motif_did_not_match(client) -> None:
     rag = next(gap for label, gap in gaps.items() if "Retrieval Augmented" in label)
     assert rag["satisfied"] < rag["total"]
     missing = " | ".join(edge["text"] for edge in rag["missingEdges"])
-    assert "Retrieval Step" in missing and "User Input" in missing
+    assert "no Retrieve uses a User Input" in missing, missing
 
 
 def test_assess_gaps_exclude_motifs_that_matched(client) -> None:

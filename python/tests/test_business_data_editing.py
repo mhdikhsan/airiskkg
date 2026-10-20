@@ -142,10 +142,67 @@ def test_a_data_association_joins_data_to_an_activity_and_nothing_else(client, t
             if response.status_code == 200:
                 accepted += 1
                 continue
-            assert response.get_json()["error"] == "That step already uses this data.", (
+            assert response.get_json()["error"] == "That step already reads this data.", (
                 f"refused a well-formed data association: {response.get_json()}"
             )
     assert accepted, "no data box could be joined to any activity"
+
+
+def test_a_step_can_read_a_store_and_write_it_too(client) -> None:
+    """Reading a store refused the write back: "That step already uses this data"."""
+    def post(**body):
+        response = client.post("/api/process-edit", json=body)
+        return response, response.get_json()
+
+    _, made = post(ttl="", op="add-pool", label="Desk")
+    pool = made["newId"]
+    _, made = post(ttl=made["ttl"], op="add-activity", kind="task", pool=pool, label="Update ticket")
+    task = made["newId"]
+    _, made = post(ttl=made["ttl"], op="add-data", shape="store", label="Tickets")
+    store = made["newId"]
+    _, read = post(ttl=made["ttl"], op="connect", source=store, target=task)
+    response, written = post(ttl=read["ttl"], op="connect", source=task, target=store)
+    assert response.status_code == 200, written
+
+    view = client.post("/api/process", json={"ttl": written["ttl"]}).get_json()
+    step = next(row for row in view["activities"] if row["id"] == task)
+    assert [d["label"] for d in step["reads"]] == ["Tickets"]
+    assert [d["label"] for d in step["writes"]] == ["Tickets"]
+
+    again, refused = post(ttl=written["ttl"], op="connect", source=task, target=store)
+    assert again.status_code == 400 and refused["error"] == "That step already writes this data."
+
+
+def test_several_selected_shapes_are_deleted_in_one_edit(client) -> None:
+    """Shift-click picks several shapes, and Delete took only the one whose editor was open."""
+    from rdflib import Graph, URIRef
+
+    def post(**body):
+        response = client.post("/api/process-edit", json=body)
+        assert response.status_code == 200, response.get_json()
+        return response.get_json()
+
+    made = post(ttl="", op="add-pool", label="Desk")
+    pool = made["newId"]
+    made = post(ttl=made["ttl"], op="add-activity", kind="task", pool=pool, label="Update ticket")
+    task = made["newId"]
+    made = post(ttl=made["ttl"], op="add-activity", kind="task", pool=pool, label="Close ticket")
+    kept = made["newId"]
+    made = post(ttl=made["ttl"], op="add-data", shape="store", label="Tickets")
+    store = made["newId"]
+    made = post(ttl=made["ttl"], op="connect", source=task, target=kept)
+    made = post(ttl=made["ttl"], op="connect", source=store, target=task)
+    held = Graph().parse(data=made["ttl"], format="turtle").value(
+        URIRef(store), URIRef("https://sBPMN.github.io/2.0/properties#dataStoreRef"))
+
+    after = Graph().parse(data=post(ttl=made["ttl"], op="delete", elements=[task, store])["ttl"],
+                          format="turtle")
+    subjects = set(after.subjects())
+    assert not {URIRef(task), URIRef(store), held} & subjects, "a selected shape stayed"
+    assert URIRef(kept) in subjects and URIRef(pool) in subjects, "an unselected shape went"
+    for kind in ("sequenceFlow", "dataInputAssociation"):
+        assert not set(after.subjects(None, URIRef("https://sBPMN.github.io/2.0/classes#" + kind))), (
+            f"a {kind} to a deleted shape stayed")
 
 
 def test_an_unknown_classification_is_refused(client, tariff_ttl) -> None:

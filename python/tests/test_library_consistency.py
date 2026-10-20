@@ -425,10 +425,44 @@ def test_no_match_query_reads_the_motif_family(libraries) -> None:
         for path in sorted((REPO_ROOT / "ontology").rglob("*.rq"))
         if any(
             term in path.read_text(encoding="utf-8")
-            for term in ("motifFamily", "motifGroup", "riskPatternFamily")
+            for term in ("motifFamily", "motifGroup", "riskPatternFamily", "refinesMotif")
         )
     ]
     assert not offenders, "motif shelving read during matching: " + ", ".join(offenders)
+
+
+def test_a_sub_motif_names_a_general_motif_and_never_itself(libraries) -> None:
+    """pair:refinesMotif shows two levels in the tray and the library: a sub-motif
+    names the general motif it is a more detailed form of, and the levels never
+    loop back on themselves."""
+    motifs = set(libraries.subjects(RDF.type, PAIR.GraphMotif))
+    links = list(libraries.subject_objects(PAIR.refinesMotif))
+    assert links, "no sub-motif is declared"
+    assert all(a in motifs and b in motifs and a != b for a, b in links), links
+    for motif in motifs:
+        assert motif not in set(libraries.transitive_objects(motif, PAIR.refinesMotif)) - {motif}, motif
+
+
+def test_a_pattern_node_with_a_role_is_matched_on_it(libraries) -> None:
+    """A part that names a role in its motif's declaration is read by the matcher
+    (directly or through a role it refines), so the tag a drawing needs is the one
+    the drawing shows. Nodes with no role are the motif's open parts."""
+    offenders = []
+    for motif in libraries.subjects(RDF.type, PAIR.GraphMotif):
+        implementation = libraries.value(motif, PAIR.implementedBy)
+        path = libraries.value(implementation, PAIR.implementationPath) if implementation is not None else None
+        if path is None:
+            continue
+        query = (REPO_ROOT / str(path)).read_text(encoding="utf-8")
+        named = set(re.findall(r"pair:(\w+)", query))
+        for node in libraries.objects(motif, PAIR.hasPatternNode):
+            role = libraries.value(node, PAIR.expectedRole)
+            if role is None:
+                continue
+            reach = {str(r).rsplit("#", 1)[-1] for r in libraries.transitive_objects(role, PAIR.subRoleOf)}
+            if not reach & named:
+                offenders.append(f"{str(node).rsplit('#', 1)[-1]} ({str(role).rsplit('#', 1)[-1]})")
+    assert not offenders, "roles declared on parts their matcher never reads: " + ", ".join(sorted(offenders))
 
 
 def _control_structures(libraries) -> set:
@@ -813,3 +847,38 @@ def test_a_finding_is_titled_by_the_risk_pattern_that_raised_it(libraries) -> No
         if title.lower() != f"candidate {name}".lower():
             offenders.append(f"{path.name}: {title!r} for {name!r}")
     assert not offenders, "\n".join(sorted(offenders))
+
+
+def test_every_role_is_filed_under_one_category_that_no_query_names(libraries) -> None:
+    """B-3: the roles hung directly under four top terms, so the vocabulary read as
+    one flat list. A category files roles without matching: if a query named one,
+    tagging an element with it would start raising candidates."""
+    from airiskkg.paths import REPO_ROOT
+
+    categories = set(libraries.subjects(RDF.type, PAIR.RoleCategory))
+    assert len(categories) >= 10, "the categories are gone"
+    roles = set(libraries.subjects(RDF.type, PAIR.PatternRole)) - categories
+
+    def filed_under(role, seen=frozenset()):
+        found = set()
+        for parent in libraries.objects(role, PAIR.subRoleOf):
+            if parent in categories:
+                found.add(parent)
+            elif parent not in seen:
+                found |= filed_under(parent, seen | {role})
+        return found
+
+    tops = {PAIR.ProcessingStep, PAIR.ResourceRole}
+    unfiled = sorted(str(r) for r in roles - tops if not filed_under(r))
+    assert not unfiled, "roles under no category: " + ", ".join(unfiled)
+    for top in tops:
+        assert not [r for r in libraries.subjects(PAIR.subRoleOf, top) if r not in categories], (
+            f"a role still hangs directly under {top}")
+
+    queries = (REPO_ROOT / "ontology").rglob("*.rq")
+    texts = {q.name: q.read_text(encoding="utf-8") for q in queries}
+    named = [(name, str(c)) for name, text in texts.items() for c in categories
+             if re.search(r"pair:" + str(c).rsplit("#", 1)[-1] + r"", text) or str(c) in text]
+    assert not named, f"a query names a category: {named}"
+    assert not set(libraries.objects(None, PAIR.expectedRole)) & categories, (
+        "a pattern node asks for a category")

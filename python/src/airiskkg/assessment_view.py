@@ -2,7 +2,7 @@ from __future__ import annotations
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
 from airiskkg.assessment_runner import PAIR, AssessmentResult, applicable_controls
 from airiskkg.knowledge_base import graph_fingerprint
-from airiskkg.workbench.terms import domain_of, risk_domains, source_pair
+from airiskkg.workbench.terms import display_label, domain_of, risk_domains, source_pair
 
 _NEXUS = Namespace("http://w3id.org/airiskkg/taxonomy/nexus#")
 PROV = Namespace("http://www.w3.org/ns/prov#")
@@ -26,6 +26,12 @@ def _local_name(uri: URIRef) -> str:
 # A business element names itself with bp:name, not rdfs:label.
 _BP_NAME_PROP = URIRef("https://sBPMN.github.io/2.0/properties#name")
 _BP_ITEM_SUBJECT = URIRef("https://sBPMN.github.io/2.0/properties#itemSubjectRef")
+_BP_DATA_IN = URIRef("https://sBPMN.github.io/2.0/properties#dataInputAssociation")
+_BP_DATA_OUT = URIRef("https://sBPMN.github.io/2.0/properties#dataOutputAssociation")
+_BP_SOURCE = URIRef("https://sBPMN.github.io/2.0/properties#sourceRef")
+_BP_TARGET = URIRef("https://sBPMN.github.io/2.0/properties#targetRef")
+_BP_OBJECT_REF = URIRef("https://sBPMN.github.io/2.0/properties#dataObjectRef")
+_BP_STORE_REF = URIRef("https://sBPMN.github.io/2.0/properties#dataStoreRef")
 
 
 def _label(graph: Graph, resource: URIRef) -> str:
@@ -161,6 +167,16 @@ def _harm_domains(graph: Graph, entries: list[URIRef], domains: set[URIRef]) -> 
     )
 
 
+def _answering_role(graph: Graph, element: URIRef, expected: URIRef | None) -> str | None:
+    """The element's own role that satisfies `expected`, through pair:subRoleOf*."""
+    if expected is None:
+        return None
+    for role in sorted(graph.objects(element, PAIR.playsRole), key=str):
+        if role == expected or expected in set(graph.transitive_objects(role, PAIR.subRoleOf)):
+            return display_label(_label(graph, role))
+    return None
+
+
 def _motif_match_view(graph: Graph, match: URIRef) -> dict:
     motif = graph.value(match, PAIR.matchesMotif)
     bindings = sorted(graph.objects(match, PAIR.hasNodeBinding), key=str)
@@ -173,11 +189,16 @@ def _motif_match_view(graph: Graph, match: URIRef) -> dict:
         if pattern_node is None or matched_element is None:
             continue
         node_ids.append(str(matched_element))
+        expected = graph.value(pattern_node, PAIR.expectedRole)
         bound_elements.append(
             {
                 "patternNode": _local_name(pattern_node),
                 "element": _label(graph, matched_element),
                 "elementId": str(matched_element),
+                # The annotation that bound it: the role the node asks for, and the
+                # element's own role that answers it, which may be a refinement.
+                "role": display_label(_label(graph, expected)) if expected is not None else None,
+                "via": _answering_role(graph, matched_element, expected),
             }
         )
 
@@ -246,6 +267,22 @@ def _derived_categories(result: AssessmentResult) -> list[dict]:
     )
 
 
+def _carried_by(graph: Graph, activity) -> set:
+    """The elements an activity names as its own: its steps, what they use and
+    produce, and the elements its data objects say they are."""
+    steps = set(graph.objects(activity, PAIR.carriedOutBy))
+    own = set(steps)
+    for step in steps:
+        own |= set(graph.objects(step, BEAM.use)) | set(graph.objects(step, BEAM.produce))
+    for held, end in ((_BP_DATA_IN, _BP_SOURCE), (_BP_DATA_OUT, _BP_TARGET)):
+        for association in graph.objects(activity, held):
+            for reference in graph.objects(association, end):
+                for obj in (reference, graph.value(reference, _BP_OBJECT_REF), graph.value(reference, _BP_STORE_REF)):
+                    if obj is not None:
+                        own |= set(graph.objects(obj, PAIR.realisedBy))
+    return own
+
+
 def _findings_by_activity(result: AssessmentResult, findings: list) -> list[dict]:
     system_of_element: dict = {}
     for system in result.working_graph.subjects(RDF.type, BEAM.System):
@@ -254,12 +291,15 @@ def _findings_by_activity(result: AssessmentResult, findings: list) -> list[dict
                 system_of_element.setdefault(element, set()).add(system)
 
     rows = []
-    for activity in result.working_graph.subjects(PAIR.refinedBy, None):
-        systems = set(result.working_graph.objects(activity, PAIR.refinedBy))
+    graph = result.working_graph
+    for activity in set(graph.subjects(PAIR.refinedBy, None)):
+        systems = set(graph.objects(activity, PAIR.refinedBy))
+        own = _carried_by(graph, activity)
         attributed = []
         for finding in findings:
             evidence = set(result.risk_findings.objects(finding, PAIR.hasEvidence))
-            if any(system_of_element.get(element, set()) & systems for element in evidence):
+            # where it names its steps or its data, those; otherwise the whole system
+            if (evidence & own) if own else any(system_of_element.get(e, set()) & systems for e in evidence):
                 attributed.append(finding)
         name = result.working_graph.value(activity, _BP_NAME) or result.working_graph.value(
             activity, RDFS.label

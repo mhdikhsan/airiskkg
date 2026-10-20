@@ -952,10 +952,13 @@ def test_the_term_picker_searches_and_shows_what_each_term_means(served) -> None
     """97 terms on four shelves put 50 under one heading, in a native <select>
     that could neither search nor show a definition.
 
-    Four facts, measured on the one model element in the bundled example: the
-    picker opens, every option carries its definition, the shelf that goes on
-    this element sorts first, and typing narrows the offer. The shelf orders
-    rather than filters, because some match queries constrain no class at all.
+    Measured on the one model element in the bundled example: the role menu
+    opens on the categories, the ones that go on a model come first, pointing
+    at one opens what is filed under it and says what it is, the categories for
+    other kinds of element are one click away and marked, and typing turns the
+    menu into one narrowed list where every option carries its definition. The
+    fit orders rather than filters, because some match queries constrain no
+    class at all.
     """
     browser = _browser()
     if not browser:
@@ -985,25 +988,38 @@ def test_the_term_picker_searches_and_shows_what_each_term_means(served) -> None
         setTimeout(() => {
           const pop = row.querySelector(".mp-pop");
           log("popOpen=" + (pop && !pop.classList.contains("hidden") ? 1 : 0));
-          log("offered=" + pop.querySelectorAll(".mp-opt").length);
-          log("withDef=" + pop.querySelectorAll(".mp-opt-def").length);
-          const shelves = [...pop.querySelectorAll(".mp-shelf")].map((s) => s.textContent);
-          log("shelves=" + shelves.length);
-          log("modelShelfFirst=" + (/Statistical Model/.test(shelves[0] || "") ? 1 : 0));
-          log("marksTheRest=" + shelves.filter((s) => /not this element/.test(s)).length);
-          // the element already plays Foundation LLM and Generative Model, and a
-          // selected term is not offered again
-          log("alreadyOn=" + row.querySelectorAll(".an-role .mp-chip").length);
-          const search = pop.querySelector(".mp-search");
-          search.value = "artifact";
-          search.dispatchEvent(new Event("input", { bubbles: true }));
+          const roots = [...pop.querySelectorAll(".mp-list > .mp-row")];
+          log("offered=" + roots.length);
+          log("allFolders=" + (roots.every((r) => r.classList.contains("folder")) ? 1 : 0));
+          log("modelFirst=" + (/^Models/.test((roots[0] || {}).textContent || "") ? 1 : 0));
+          log("marksTheRest=" + roots.filter((r) => r.classList.contains("off")).length);
+          roots[0].dispatchEvent(new MouseEvent("mouseenter"));
+          const said = pop.querySelector(".mp-hint").textContent;
           setTimeout(() => {
-            const left = pop.querySelectorAll(".mp-opt");
-            log("narrowed=" + left.length);
-            if (!left.length) return;
-            left[0].click();
+            log("opensOnPoint=" + row.querySelectorAll(".mp-fly").length);
+            log("hintNamesIt=" + (/^Models/.test(said) ? 1 : 0));
+            // the categories for other kinds of element are one click away, and marked there
+            const more = pop.querySelector(".mp-all");
+            log("offersMore=" + (more ? 1 : 0));
+            if (more) more.click();
+            const all = [...pop.querySelectorAll(".mp-list > .mp-row")];
+            log("allOffered=" + all.length);
+            log("marksTheRestWhenShown=" + all.filter((r) => r.classList.contains("off")).length);
+            // the element already plays Foundation LLM and Generative Model, and a
+            // selected term is not offered again
+            log("alreadyOn=" + row.querySelectorAll(".an-role .mp-chip").length);
+            const search = pop.querySelector(".mp-search");
+            search.value = "artifact";
+            search.dispatchEvent(new Event("input", { bubbles: true }));
             setTimeout(() => {
-              log("chips=" + row.querySelectorAll(".an-role .mp-chip").length);
+              const left = pop.querySelectorAll(".mp-opt");
+              log("narrowed=" + left.length);
+              log("withDef=" + pop.querySelectorAll(".mp-opt-def").length);
+              if (!left.length) return;
+              left[0].click();
+              setTimeout(() => {
+                log("chips=" + row.querySelectorAll(".an-role .mp-chip").length);
+              }, 300);
             }, 300);
           }, 300);
         }, 700);
@@ -1026,15 +1042,22 @@ def test_the_term_picker_searches_and_shows_what_each_term_means(served) -> None
     assert seen["foundModelRow"] == 1, f"no model row to annotate: {report}"
     assert seen["popOpen"] == 1, "the picker did not open"
     assert seen["offered"] > 0, "the picker offered nothing"
-    assert seen["withDef"] == seen["offered"], "an option is offered without its definition"
-    assert seen["shelves"] > 1, "the offer is not shelved at all"
-    assert seen["modelShelfFirst"] == 1, (
-        f"the terms that go on a model do not sort first: {report}"
+    assert seen["allFolders"] == 1, f"the menu does not open on the categories: {report}"
+    assert seen["modelFirst"] == 1, (
+        f"the categories that go on a model do not sort first: {report}"
     )
-    assert seen["marksTheRest"] >= 1, (
-        "the shelves that do not apply are offered without saying so"
+    assert seen["marksTheRest"] == 0, (
+        f"categories for other kinds of element are offered first-hand on a model: {report}"
     )
-    assert 0 < seen["narrowed"] < seen["offered"], f"typing did not narrow the offer: {report}"
+    assert seen["opensOnPoint"] == 1, f"pointing at a category opened nothing: {report}"
+    assert seen["hintNamesIt"] == 1, f"the hint does not say what is pointed at: {report}"
+    assert seen["offersMore"] == 1, "the terms that do not fit cannot be reached at all"
+    assert seen["allOffered"] > seen["offered"], f"Show more added nothing: {report}"
+    assert seen["marksTheRestWhenShown"] >= 1, (
+        "the categories that do not apply are offered without saying so"
+    )
+    assert 0 < seen["narrowed"] < 20, f"typing did not narrow the offer: {report}"
+    assert seen["withDef"] == seen["narrowed"], "an option is offered without its definition"
     assert seen["chips"] == seen["alreadyOn"] + 1, (
         f"picking a term did not record it: {report}"
     )
@@ -1419,10 +1442,13 @@ def test_a_motif_page_fits_its_panel_at_any_width(served) -> None:
 
 def test_a_term_page_marks_where_the_term_sits(served) -> None:
     """Every structure that reads a term is drawn with the element the term would
-    annotate marked, and one reached through a refined term is told apart."""
+    annotate marked, and one reached through a refined term is told apart. Synthetic
+    training data is named by Retrieval data augmentation and reached by Pipeline training
+    through Training Dataset. (Training Dataset itself lost its inherited structure when
+    Human oversight's result node stopped accepting any resource role, 2026-10-19.)"""
     seen = _probe(served, "termpage", _OPEN + """
   <script>
-  window.addEventListener("load", () => setTimeout(() => openOn("terms", "Batch Dataset", () => {
+  window.addEventListener("load", () => setTimeout(() => openOn("terms", "Synthetic Training Data", () => {
     const uses = [...document.querySelectorAll("#library-detail .lib-use")];
     log("uses=" + uses.length);
     log("marked=" + uses.filter((u) => u.querySelector(".mp-hl")).length);
@@ -1431,7 +1457,7 @@ def test_a_term_page_marks_where_the_term_sits(served) -> None:
   </script>
 """)
     assert "uses" in seen, f"the probe never reported: {seen['_report']!r}"
-    assert seen["uses"] == 2, f"Batch Dataset is read by {seen['uses']} structures here, not 2"
+    assert seen["uses"] == 2, f"Synthetic Training Data is read by {seen['uses']} structures here, not 2"
     assert seen["marked"] == 2, "a structure is drawn without the term's place in it"
     assert seen["inherited"] == 1, "the structure reached by refinement is not told apart"
 
@@ -1459,3 +1485,104 @@ def test_each_landing_says_what_it_is_in_one_line(served) -> None:
     for tab in ("risks", "motifs", "terms"):
         assert 0 < seen[tab] <= 130, f"the {tab} note is {seen[tab]} characters"
     assert seen["capped"] == 0, "the note is still held to a narrow column"
+
+
+def test_the_rest_of_bpmn_is_drawn_as_bpmn_draws_it(served) -> None:
+    """Multiple triggers, a start that does not interrupt, a message on a flow,
+    conversations and a choreography: each is a shape of its own, and before
+    this none of them was drawn at all, or was drawn as something else."""
+    from bpmn_notation import NOTATION_TTL
+
+    seen = _probe(served, "notation", """
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  window.addEventListener("error", () => log("threw=1"));
+  window.addEventListener("load", () => setTimeout(() => {
+    window.PairAI.Editor.setValue(GRAPH_TTL);
+    setTimeout(() => {
+      document.querySelector("#level-business").click();
+      setTimeout(() => {
+        const canvas = document.querySelector("#process-canvas");
+        const all = (sel) => canvas.querySelectorAll(sel).length;
+        const glyph = (start) => [...canvas.querySelectorAll(".pc-ev-glyph path")]
+          .filter((p) => p.getAttribute("d").startsWith(start));
+        log("pentagons=" + glyph("M 0 -7.5 L 7.1").length);
+        log("filled=" + glyph("M 0 -7.5 L 7.1").filter((p) => p.closest(".throwing")).length);
+        log("pluses=" + glyph("M -2 -7 H 2").length);
+        log("envelopes=" + all(".pc-env"));
+        log("replies=" + all(".pc-env.shaded"));
+        log("hexagons=" + all(".pc-conv-box"));
+        log("calls=" + all(".pc-conv-box.call"));
+        log("convLinks=" + all(".pc-conv-link"));
+        log("chor=" + all(".pc-chor"));
+        log("bands=" + all(".pc-chor-band"));
+        log("shaded=" + all(".pc-chor-band.shaded"));
+        log("callChor=" + all(".pc-chor-box.call"));
+        log("frames=" + all(".pc-chor-frame"));
+        log("pools=" + all(".pc-pool"));
+        log("messages=" + all(".pc-msg"));
+        const watch = [...canvas.querySelectorAll(".pc-activity")]
+          .find((g) => g.textContent.includes("Watch for"));
+        watch.querySelector(".pc-mk-sub").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        setTimeout(() => {
+          log("openStart=" + all(".pc-ev-ring.start.open"));
+          log("done=1");
+        }, 600);
+      }, 1500);
+    }, 2500);
+  }, 2000));
+  </script>
+""".replace("GRAPH_TTL", json.dumps(NOTATION_TTL)))
+    assert seen.get("done") == 1, f"the probe never finished: {seen['_report']!r}"
+    assert "threw" not in seen, f"the page threw while drawing: {seen['_report']!r}"
+    assert (seen["pentagons"], seen["filled"]) == (2, 1), (
+        "a multiple event is a pentagon, filled when it throws"
+    )
+    assert seen["pluses"] == 1, "a parallel multiple event is an open plus"
+    assert (seen["envelopes"], seen["replies"]) == (3, 1), (
+        "one message on a flow and two on the quote's bands, the reply shaded"
+    )
+    assert (seen["hexagons"], seen["calls"], seen["convLinks"]) == (3, 1, 5)
+    assert (seen["chor"], seen["bands"], seen["shaded"], seen["callChor"]) == (3, 6, 3, 1)
+    assert (seen["frames"], seen["pools"]) == (1, 3), (
+        "a choreography is framed, and its band-only participants get no pool"
+    )
+    assert seen["messages"] == 1, "a choreography task's own message flow was drawn between pools"
+    assert seen["openStart"] == 1, "the start of the event sub-process is not drawn non-interrupting"
+
+
+def test_a_blank_architecture_canvas_can_be_drawn_on(served) -> None:
+    """A blank canvas hid the system bar, so there was no way to draw the
+    container first, and a symbol added there belonged to no system."""
+    seen = _probe(served, "blank", """
+  <script>
+  const log = (m) => { document.getElementById("probe-log").textContent += m + "|"; };
+  const shown = (sel) => {
+    const node = document.querySelector(sel);
+    return node && node.checkVisibility() ? 1 : 0;
+  };
+  window.addEventListener("load", () => setTimeout(() => {
+    log("frontDoor=" + shown("#system-badge .system-badge-add"));
+    document.querySelector("#library-start-architecture").click();
+    setTimeout(() => {
+      log("started=" + shown("#system-badge .system-badge-add"));
+      const chip = [...document.querySelectorAll("#palette .palette-item")]
+        .find((c) => c.textContent === "Data");
+      chip.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+      setTimeout(() => {
+        log("nodes=" + document.querySelectorAll("#canvas g.node").length);
+        log("frames=" + document.querySelectorAll("#canvas .system-bound").length);
+        log("orphans=" + document.querySelectorAll("#system-badge .system-badge-orphans").length);
+        log("done=1");
+      }, 1500);
+    }, 1500);
+  }, 2500));
+  </script>
+""")
+    assert seen.get("done") == 1, f"the probe never finished: {seen['_report']!r}"
+    assert seen["frontDoor"] == 0, "the system bar shows over the front door's choice"
+    assert seen["started"] == 1, "a blank architecture canvas offers no way to make a system"
+    assert (seen["nodes"], seen["frames"], seen["orphans"]) == (1, 1, 0), (
+        f"the first symbol did not land in a system: {seen['_report']!r}"
+    )

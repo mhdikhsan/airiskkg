@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 from datetime import datetime, timezone
 
 from flask import Blueprint, Response, jsonify, request
@@ -15,6 +16,7 @@ from airiskkg.assessment_runner import (
 from airiskkg.assessment_view import summarize_result
 from airiskkg.webapp.runtime import SPARQL_LOCK
 from airiskkg.workbench.gaps import motif_gaps
+from airiskkg.workbench.possible import possible_risks
 from airiskkg.workbench.risk_view import risk_view
 from airiskkg.workbench.validation import shacl_report
 
@@ -41,6 +43,7 @@ def assess() -> object:
     ttl = (payload.get("ttl") or "").strip()
     if not ttl:
         return jsonify({"error": "Provide an architecture graph (Turtle) to assess."}), 400
+    _latest[0] = next(_ASKED)  # a search for the last run's possible risks is no longer wanted
     try:
         architecture = Graph().parse(data=ttl, format="turtle")
         with SPARQL_LOCK:
@@ -52,6 +55,35 @@ def assess() -> object:
     summary["motifGaps"] = gaps
     summary["riskView"] = risk_view(summary, result.combined_graph, gaps=gaps, result=result)
     return jsonify(summary)
+
+
+# Each assessment and each request for possible risks supersedes the search still running.
+_ASKED = itertools.count()
+_latest = [0]
+
+
+@assessment_routes.post("/api/possible")
+def possible() -> object:
+    """Risks the library would raise if the diagram said a little more; asked for after a run.
+
+    Only the assessment holds the lock. The search runs on copies of its own, which
+    compile their queries under the parse lock, so it never makes the next request wait;
+    and it stops once a newer question has been asked."""
+    payload = request.get_json(silent=True) or {}
+    mine = _latest[0] = next(_ASKED)
+    if payload.get("stop"):
+        # the page moved on: the search still running is for a drawing nobody is looking at
+        return jsonify({"stopped": True})
+    ttl = (payload.get("ttl") or "").strip()
+    if not ttl:
+        return jsonify({"error": "Provide an architecture graph (Turtle)."}), 400
+    try:
+        with SPARQL_LOCK:
+            result = run_assessment_from_text(ttl)
+        report = possible_risks(ttl, result, stop=lambda: _latest[0] != mine)
+    except Exception as error:  # noqa: BLE001 - surface parse/query errors to the UI
+        return jsonify({"error": f"Could not look for possible risks: {error}"}), 400
+    return jsonify(report)
 
 
 @assessment_routes.post("/api/apply-control")

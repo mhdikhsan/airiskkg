@@ -1,6 +1,8 @@
 """Flask application serving the PAIR-AI risk assessment UI.
 Reading the graph
     ``GET  /``                       Single-page UI.
+    ``GET  /risks``                  Every risk pattern on one page, under the
+                                     library's labels; ``#<id>`` opens at one.
     ``GET  /api/library``            The risk pattern library and the motif
                                      library: what the knowledge base can
                                      recognise, before a graph is submitted.
@@ -39,6 +41,9 @@ Reading the graph
                                      the near-miss motif gap report, and the
                                      risk view: the same run grouped into
                                      concerns and read against the stated scope.
+    ``POST /api/possible``           Possible risks: what the library would
+                                     raise if the drawing said a little more,
+                                     each with the suggestions it rests on.
     ``POST /api/apply-control``      Insert a control onto the path a finding
                                      cites, via the registered SPARQL rewrite,
                                      and return the amended architecture.
@@ -70,6 +75,10 @@ def create_app(
     @app.get("/")
     def index() -> object:
         return send_from_directory(app.static_folder, "index.html")
+
+    @app.get("/risks")
+    def risk_list() -> object:
+        return send_from_directory(app.static_folder, "risks.html")
 
     for blueprint in BLUEPRINTS:
         app.register_blueprint(blueprint)

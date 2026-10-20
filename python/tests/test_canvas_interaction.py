@@ -33,21 +33,26 @@ def _example(namespace: str) -> str:
 CDP_PORT_TRIES = 6
 
 
-def _load_example_probe() -> str:
-    """A copy of the app that loads the whole scene on its own - two
-    architectures and the process that runs both - so the driver only clicks."""
-    source = (STATIC / "index.html").read_text(encoding="utf-8")
-    driver = """
-  <script>
-  window.addEventListener("load", async () => {
+def _scene_js() -> str:
+    """Load the whole scene: two architectures and the process that runs both."""
+    return """(async () => {
     const nl = String.fromCharCode(10,10);
     const a = await (await fetch("/api/examples/RAG")).json();
     const m = await (await fetch("/api/examples/ARCH")).json();
     const p = await (await fetch("/api/examples/energy_customer_service")).json();
     window.PairAI.Editor.setValue(a.ttl + nl + m.ttl + nl + p.ttl);
-  });
+    return 1;
+  })()""".replace("RAG", _example(GRAPH_RAG_NS)).replace("ARCH", _example(WIEN_ENERGIE_NS))
+
+
+def _load_example_probe() -> str:
+    """A copy of the app that loads the scene on its own, so the driver only clicks."""
+    source = (STATIC / "index.html").read_text(encoding="utf-8")
+    driver = f"""
+  <script>
+  window.addEventListener("load", () => {_scene_js()});
   </script>
-""".replace("RAG", _example(GRAPH_RAG_NS)).replace("ARCH", _example(WIEN_ENERGIE_NS))
+"""
     return source.replace("</body>", driver + "</body>")
 
 
@@ -77,7 +82,7 @@ class _Page:
         )
         return result.get("result", {}).get("value")
 
-    async def click(self, x, y):
+    async def click(self, x, y, modifiers=0):
         import asyncio
 
         for kind in ("mousePressed", "mouseReleased"):
@@ -90,10 +95,19 @@ class _Page:
                     "button": "left",
                     "clickCount": 1,
                     "buttons": 1 if kind == "mousePressed" else 0,
+                    "modifiers": modifiers,
                 },
             )
             await asyncio.sleep(0.12)
         await asyncio.sleep(0.7)
+
+    async def hover(self, x, y):
+        """A pointer move with no button down, which is what opens a submenu."""
+        import asyncio
+
+        await self.send("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y,
+                                                     "button": "none", "buttons": 0})
+        await asyncio.sleep(0.4)
 
     async def drag(self, x1, y1, x2, y2):
         """A press, a real move, and a release - which is what makes the browser
@@ -184,18 +198,30 @@ def _box(loop, handle):
 
 def _chip(loop, handle):
     """The blue "AI system" chip - the one way down to the architecture."""
+    # one a click would reach: a panel an earlier test left open can sit over the first chip
     return loop.run_until_complete(handle.js("""(() => {
-        const c = document.querySelector('.pc-activity.refined .pc-open');
-        if (!c) return null;
-        const r = c.getBoundingClientRect();
-        return { left: r.left, top: r.top, width: r.width, height: r.height };
+        document.querySelector('#process-detail')?.classList.add('hidden');
+        let covered = null;
+        for (const c of document.querySelectorAll('.pc-activity.refined .pc-open')) {
+            const r = c.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            if (hit && hit.closest('.pc-open') === c) return { left: r.left, top: r.top, width: r.width, height: r.height };
+            covered = hit ? (hit.getAttribute('class') || hit.tagName) : 'nothing';
+        }
+        return covered ? { covered } : null;
     })()"""))
 
 
 def _descend(loop, handle):
     """Open the architecture the way a reader now has to: by asking for it."""
     chip = _chip(loop, handle)
-    assert chip, "no refined activity offered a chip to descend through"
+    if chip and "left" not in chip:
+        # an earlier test left another level on screen, or panned the chip under the header
+        _back_to_business(loop, handle)
+        loop.run_until_complete(handle.js("window.PairAI.ProcessCanvas.fit(); 1"))
+        time.sleep(0.4)
+        chip = _chip(loop, handle)
+    assert chip and "left" in chip, f"no refined activity offered a chip to descend through: {chip}"
     loop.run_until_complete(handle.click(
         round(chip["left"] + chip["width"] / 2), round(chip["top"] + chip["height"] / 2)))
     return chip
@@ -250,6 +276,7 @@ def scene_restored(page):
         "returnByValue": True,
     }))
     _settle(loop, handle, "window.PairAI.Editor.getValue().length", 0, tries=40)
+    _editor_open(loop, handle)
     # The level too, and the selection.
     loop.run_until_complete(handle.js(
         "window.PairAI.GraphView && window.PairAI.GraphView.selectSystem"
@@ -289,6 +316,13 @@ def _settle(loop, handle, expression, unwanted, tries=20):
             return value
         time.sleep(0.4)
     return loop.run_until_complete(handle.js(expression))
+
+
+def _editor_open(loop, handle):
+    """The editor shown: a test that folds it and fails leaves the Starter button off screen."""
+    loop.run_until_complete(handle.js(
+        "document.body.classList.contains('editor-hidden') && document.querySelector('#editor-rail').click(); 1"))
+    time.sleep(0.4)
 
 
 def _back_to_business(loop, handle):
@@ -498,11 +532,23 @@ def test_dragging_the_canvas_is_not_a_click(page) -> None:
     """Panning ends in a click the reader did not mean."""
     loop, handle = page
     chip = _chip(loop, handle)
-    assert chip, "no chip to let go over"
+    assert chip and "left" in chip, f"no chip to let go over: {chip}"
     target_x = round(chip["left"] + chip["width"] / 2)
     target_y = round(chip["top"] + chip["height"] / 2)
+    # A pan starts on empty canvas. Where 140px to the left lands depends on how the
+    # diagram was fitted, and starting on a box drags the box onto its neighbour,
+    # covering the chip every later test clicks.
+    start = loop.run_until_complete(handle.js(f"""(() => {{
+        for (const [dx, dy] of [[-140, 0], [-140, 60], [-140, -60], [-220, 0], [-140, 120], [-140, -120]]) {{
+            const hit = document.elementFromPoint({target_x} + dx, {target_y} + dy);
+            if (hit && hit.closest('#process-canvas') && !hit.closest('[data-node], .pc-pool-strip, .pc-lane-strip'))
+                return [{target_x} + dx, {target_y} + dy];
+        }}
+        return null;
+    }})()"""))
+    assert start, "no empty canvas near the chip to start a pan from"
 
-    loop.run_until_complete(handle.drag(target_x - 140, target_y, target_x, target_y))
+    loop.run_until_complete(handle.drag(start[0], start[1], target_x, target_y))
     assert not _on_architecture(loop, handle), "a drag was treated as a click"
 
 
@@ -514,10 +560,11 @@ def test_the_risk_badge_folds_the_findings_it_counts(page) -> None:
 
     # Waited for, not slept through.
     loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    # as long as the finding-click test allows for the same assessment of the same scene
     _settle(loop, handle,
-            'Number(document.querySelector("#findings-count").textContent || 0)', 0, tries=75)
+            'Number(document.querySelector("#findings-count").textContent || 0)', 0, tries=150)
     loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
-    _settle(loop, handle, 'document.querySelectorAll(".pc-risk").length', 0, tries=25)
+    _settle(loop, handle, 'document.querySelectorAll(".pc-risk").length', 0, tries=40)
     # Fitted first: an earlier test leaves its pan behind, and a badge panned
     # off the pane cannot be pressed however well it folds.
     loop.run_until_complete(handle.js('window.PairAI.ProcessCanvas.fit(); 1'))
@@ -661,6 +708,64 @@ def test_the_findings_list_follows_the_architecture_on_screen(page) -> None:
     _back_to_business(loop, handle)
 
 
+def test_clicking_a_finding_shows_its_elements_on_screen(scene_restored) -> None:
+    """A student clicked a finding and saw nothing: from the business level the
+    evidence is on a canvas that is not drawn, and on the architecture level the
+    opened drawer left the whole graph a few pixels high."""
+    loop, handle = scene_restored
+    # the drawer is what is measured, so the editor beside the canvas is folded; the teardown opens it
+    loop.run_until_complete(handle.js(
+        "document.body.classList.contains('editor-hidden') || document.querySelector('#btn-editor-toggle').click(); 1"))
+    time.sleep(0.4)
+    _back_to_business(loop, handle)
+    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    found = _settle(loop, handle, 'document.querySelectorAll(".finding-card").length', 0, tries=150)
+    assert found, "the assessment never listed a finding: " + str(loop.run_until_complete(handle.js(
+        '[document.querySelector("#status-text").textContent,'
+        ' document.querySelector("#findings-count").textContent,'
+        ' document.querySelector("#btn-assess").disabled]')))
+    def click_a_finding() -> dict:
+        at = loop.run_until_complete(handle.js("""(() => {
+            // one place: a concern raised in six marks most of the graph, which cannot be drawn large
+            const heads = [...document.querySelectorAll(".finding-card .finding-head")];
+            const head = heads.find((h) => !/\d+ places/.test(h.textContent)) || heads[0];
+            head.scrollIntoView({ block: "nearest" });
+            const r = head.getBoundingClientRect();
+            return { x: Math.round(r.left + 20), y: Math.round(r.top + r.height / 2) };
+        })()"""))
+        loop.run_until_complete(handle.click(at["x"], at["y"]))
+        # Waited for: from a narrowed scope the canvas is redrawn before it is marked.
+        _settle(loop, handle, 'document.querySelectorAll("#canvas g.node.highlight").length',
+                0, tries=30)
+        return loop.run_until_complete(handle.js("""(() => {
+            const c = document.querySelector("#canvas").getBoundingClientRect();
+            const boxes = [...document.querySelectorAll("#canvas g.node.highlight .shape")]
+                .map((s) => s.getBoundingClientRect());
+            return {
+                level: window.PairAI.state.level,
+                marked: boxes.length,
+                inView: boxes.filter((r) => r.left >= c.left - 1 && r.right <= c.right + 1
+                    && r.top >= c.top - 1 && r.bottom <= c.bottom + 1).length,
+                smallest: boxes.length ? Math.min(...boxes.map((r) => r.height)) : 0,
+            };
+        })()"""))
+
+    # Then from a reader who opened one activity's architecture and went back
+    # with the Business button, which keeps the scope: opening the level by hand
+    # widens it, and the redraw used to wipe the highlight.
+    for scoped in (False, True):
+        if scoped:
+            _descend(loop, handle)
+            _back_to_business(loop, handle)
+        seen = click_a_finding()
+        case = "after opening one architecture" if scoped else "from the business level"
+        assert seen["level"] == "architecture", f"{case}: the elements stayed on a hidden canvas"
+        assert seen["marked"] > 0, f"{case}: no element was marked"
+        assert seen["inView"] == seen["marked"], f"{case}: marked elements are off screen: {seen}"
+        assert seen["smallest"] >= 12, f"{case}: marked elements are too small to see: {seen}"
+        _back_to_business(loop, handle)
+
+
 def test_a_version_can_be_read_without_being_restored(page) -> None:
     """Restore replaces the graph on screen, which is a commitment."""
     loop, handle = page
@@ -723,9 +828,9 @@ def test_clicking_a_plain_activity_opens_an_editor_for_it(page) -> None:
         return {
             hidden: panel.classList.contains('hidden'),
             display: getComputedStyle(panel).display,
-            fields: ['#pd-name', '#pd-refines', '#pd-data-add'].filter((s) => panel.querySelector(s)),
-            dataRows: panel.querySelectorAll('.pd-data').length,
-            classes: panel.querySelectorAll('#pd-data-class option').length,
+            fields: ['#pd-name', '#pd-refines', '#pd-loop'].filter((s) => panel.querySelector(s)),
+            // data is edited on the data box, not here
+            dataRows: panel.querySelectorAll('.pd-data, #pd-data-add').length,
         };
     })()"""))
 
@@ -734,7 +839,7 @@ def test_clicking_a_plain_activity_opens_an_editor_for_it(page) -> None:
         "the editor opened but CSS hides it on the business level - which is the bug"
     )
     assert len(seen["fields"]) == 3, f"the editor is missing controls: {seen['fields']}"
-    assert seen["classes"] > 0, "the data classification picker has no options"
+    assert seen["dataRows"] == 0, "the activity editor still edits data, which the data box does"
 
     loop.run_until_complete(handle.js(
         'document.querySelector("#process-detail").classList.add("hidden")'))
@@ -972,6 +1077,9 @@ def test_a_new_example_forgets_the_scope_of_the_last_one(scene_restored) -> None
     time.sleep(4)
 
     after = loop.run_until_complete(handle.js("""(() => ({
+        starts: window.PairAI.Editor.getValue().slice(0, 70),
+        status: (document.querySelector('#status-text') || {}).textContent,
+        options: [...document.querySelectorAll('#example-select option')].map((o) => o.value).join(','),
         scoped: window.PairAI.state.scopedSystem,
         openedFrom: window.PairAI.state.openedFrom ? window.PairAI.state.openedFrom.label : null,
         crumb: !document.querySelector("#breadcrumb").classList.contains("hidden"),
@@ -979,7 +1087,7 @@ def test_a_new_example_forgets_the_scope_of_the_last_one(scene_restored) -> None
 
 
     assert after["scoped"] is None, (
-        f"the new example is still narrowed to {after['scoped']} from the previous one"
+        f"the new example is still narrowed to {after['scoped']} from the previous one: {after}"
     )
     assert after["openedFrom"] is None, (
         f"the breadcrumb still names {after['openedFrom']}, an activity of the previous example"
@@ -1146,10 +1254,9 @@ def test_the_editor_folds_away_and_the_canvas_refits(page) -> None:
 
 
 def test_starter_still_works_from_its_new_home_on_the_editor(page) -> None:
-    """Starter and Clear moved out of the toolbar and onto the editor pane,
-    because they act on what is in the pane rather than on the assessment.
-    Moving markup is where handlers get orphaned, so this presses the button
-    where it now lives."""
+    """Starter moved out of the toolbar and onto the editor pane, because it
+    acts on what is in the pane rather than on the assessment. Moving markup is
+    where handlers get orphaned, so this presses the button where it now lives."""
     loop, handle = page
 
     where = loop.run_until_complete(handle.js("""(() => {
@@ -1298,7 +1405,7 @@ def test_adding_the_first_participant_stays_on_the_business_layer(page) -> None:
     })()"""))
     at = loop.run_until_complete(handle.js("""(() => {
         const b = [...document.querySelectorAll('#process-palette .pp-item')]
-            .find((x) => x.textContent.trim() === 'Participant');
+            .find((x) => x.textContent.trim() === 'Pool');
         if (!b) return null;
         const r = b.getBoundingClientRect();
         return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
@@ -1336,7 +1443,7 @@ def test_three_lanes_on_a_new_participant_are_all_drawn(page) -> None:
         window.prompt = () => window.__answers[window.__i++];
     }})()"""))
 
-    _add_from_palette(loop, handle, "Participant")
+    _add_from_palette(loop, handle, "Pool")
     for _ in range(3):
         _add_from_palette(loop, handle, "Lane")
 
@@ -1370,7 +1477,7 @@ def test_a_step_lands_in_the_lane_that_was_selected(page) -> None:
         window.prompt = () => window.__answers[window.__i++];
     }})()"""))
 
-    _add_from_palette(loop, handle, "Participant")
+    _add_from_palette(loop, handle, "Pool")
     for _ in range(3):
         _add_from_palette(loop, handle, "Lane")
 
@@ -1423,7 +1530,7 @@ def test_putting_something_in_a_lane_does_not_move_the_lane(page) -> None:
         window.__answers = {names!r}; window.__i = 0;
         window.prompt = () => window.__answers[window.__i++];
     }})()"""))
-    _add_from_palette(loop, handle, "Participant")
+    _add_from_palette(loop, handle, "Pool")
     for _ in range(3):
         _add_from_palette(loop, handle, "Lane")
 
@@ -1574,6 +1681,59 @@ def test_a_system_is_named_and_described_from_the_architecture_canvas(scene_rest
         f"the description is not served back to the canvas: {written}"
     )
 
+
+
+def test_a_flow_between_two_systems_does_not_lay_one_frame_over_the_other(scene_restored) -> None:
+    """A log one system writes feeds the other, which feeds back. Laid out as
+    one chain, the second system's parts sat at both ends and its frame
+    covered the first."""
+    loop, handle = scene_restored
+    looped = chr(10).join([
+        '@prefix beam: <http://w3id.org/beam/core#> .',
+        '@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .',
+        '@prefix ex:   <http://example.org/looped#> .',
+        'ex:Expansion a beam:System ; rdfs:label "Expansion" ;',
+        '    beam:hasProcess ex:Extract ; beam:hasResource ex:Taxonomy .',
+        'ex:Extract a beam:Transform ; rdfs:label "Extract" ;',
+        '    beam:use ex:Log ; beam:produce ex:Taxonomy .',
+        'ex:Taxonomy a beam:Data ; rdfs:label "Taxonomy" .',
+        'ex:Recommender a beam:System ; rdfs:label "Recommender" ;',
+        '    beam:hasProcess ex:Record , ex:Recommend ;',
+        '    beam:hasResource ex:Query , ex:Log , ex:Result .',
+        'ex:Query a beam:Data ; rdfs:label "Query" .',
+        'ex:Record a beam:Transform ; rdfs:label "Record" ;',
+        '    beam:use ex:Query ; beam:produce ex:Log .',
+        'ex:Log a beam:Data ; rdfs:label "Log" .',
+        'ex:Recommend a beam:Infer ; rdfs:label "Recommend" ;',
+        '    beam:use ex:Query , ex:Taxonomy ; beam:produce ex:Result .',
+        'ex:Result a beam:Data ; rdfs:label "Result" .',
+    ])
+    loop.run_until_complete(handle.send("Runtime.evaluate", {
+        "expression": "window.PairAI.Editor.setValue(" + json.dumps(looped) + ")",
+        "returnByValue": True,
+    }))
+    _settle(
+        loop, handle,
+        "((window.PairAI.state.lastGraph || {}).systems || []).length === 2", False, tries=60,
+    )
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle,
+            "document.querySelectorAll('#canvas .system-bound').length", 0, tries=40)
+
+    frames = loop.run_until_complete(handle.js("""(() =>
+        [...document.querySelectorAll('#canvas .system-bound')].map((g) => {
+            const r = g.querySelector('.system-bound-box');
+            return {
+                label: g.querySelector('.system-bound-label').textContent,
+                x: Number(r.getAttribute('x')), y: Number(r.getAttribute('y')),
+                w: Number(r.getAttribute('width')), h: Number(r.getAttribute('height')),
+            };
+        }))()"""))
+    assert len(frames) == 2, f"two systems drew {len(frames)} frames: {frames}"
+    a, b = frames
+    apart = (a["x"] + a["w"] <= b["x"] or b["x"] + b["w"] <= a["x"]
+             or a["y"] + a["h"] <= b["y"] or b["y"] + b["h"] <= a["y"])
+    assert apart, f"one system's frame is drawn over the other's: {frames}"
 
 
 def test_a_selected_system_is_where_a_new_element_lands(scene_restored) -> None:
@@ -2607,6 +2767,8 @@ def test_a_wheel_over_a_tray_scrolls_it_rather_than_zooming_the_canvas(page) -> 
         const host = document.querySelector('#motif-palette');
         if (!host) return null;
         if (host.classList.contains('collapsed')) host.querySelector('.tray-head').click();
+        // The families start folded; opened, they make the tray taller than its box.
+        host.querySelectorAll('.motif-family:not(.open)').forEach((head) => head.click());
         const r = host.getBoundingClientRect();
         return {
             x: Math.round(r.left + r.width / 2),
@@ -2629,6 +2791,11 @@ def test_a_wheel_over_a_tray_scrolls_it_rather_than_zooming_the_canvas(page) -> 
         top: document.querySelector('#motif-palette').scrollTop,
         transform: document.querySelector('#viewport').getAttribute('transform'),
     }))()"""))
+    # Folded again: the page is shared, and the tray starts folded for the next test.
+    loop.run_until_complete(handle.js("""(() => {
+        document.querySelectorAll('#motif-palette .motif-family.open').forEach((h) => h.click());
+        return 1;
+    })()"""))
 
     assert after["top"] > tray["top"], (
         f"the wheel did not scroll the tray (scrollTop stayed {after['top']})"
@@ -2680,8 +2847,7 @@ def test_the_term_picker_is_not_clipped_by_the_popup_it_opens_in(page) -> None:
             hostHeight: Math.round(h.height),
             onScreen: p.top >= 0 && p.bottom <= window.innerHeight + 1
                       && p.left >= 0 && p.right <= window.innerWidth + 1,
-            options: pop.querySelectorAll('.mp-opt').length,
-            overflows: list.scrollHeight > list.clientHeight + 4,
+            categories: pop.querySelectorAll('.mp-list > .mp-row.folder').length,
             fixed: getComputedStyle(pop).position === 'fixed',
         };
     })()"""))
@@ -2689,8 +2855,20 @@ def test_the_term_picker_is_not_clipped_by_the_popup_it_opens_in(page) -> None:
 
     assert seen["fixed"], "the popover is still positioned inside the clipping popup"
     assert seen["onScreen"], "the popover is placed partly off screen"
-    assert seen["options"] > 10, f"only {seen['options']} terms are reachable"
-    assert seen["overflows"], "the list does not overflow, so scrolling is untested"
+    assert seen["categories"] >= 5, f"only {seen['categories']} categories are offered"
+
+    # typed into, the menu becomes one list, which is the one that has to scroll
+    narrowed = loop.run_until_complete(handle.js("""(() => {
+        const pop = document.querySelector('.node-detail .mp-pop');
+        const search = pop.querySelector('.mp-search');
+        search.value = 'a';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        const list = pop.querySelector('.mp-list');
+        return { options: pop.querySelectorAll('.mp-opt').length,
+                 overflows: list.scrollHeight > list.clientHeight + 4 };
+    })()"""))
+    assert narrowed["options"] > 10, f"only {narrowed['options']} terms are reachable"
+    assert narrowed["overflows"], "the list does not overflow, so scrolling is untested"
 
     scrolled = loop.run_until_complete(handle.js("""(() => {
         const list = document.querySelector('.node-detail .mp-pop .mp-list');
@@ -2808,7 +2986,9 @@ def test_a_consequence_dropped_on_a_candidate_is_recorded_against_its_findings(p
     assert aim, "no candidate risk box could be dropped on"
 
     loop.run_until_complete(handle.drag(aim["fromX"], aim["fromY"], aim["x"], aim["y"]))
-    time.sleep(2.5)
+    # waited for the edit to come back, not for a guess at how long it takes
+    _settle(loop, handle, "/findingHasConsequence/.test(window.PairAI.Editor.getValue())", False, tries=30)
+    time.sleep(0.8)
     seen = loop.run_until_complete(handle.js(f"""(() => {{
         const ttl = window.PairAI.Editor.getValue();
         const lines = [...document.querySelectorAll('#risk-canvas .rc-edge-label')]
@@ -2830,3 +3010,1840 @@ def test_a_consequence_dropped_on_a_candidate_is_recorded_against_its_findings(p
     panel = loop.run_until_complete(handle.js(
         "(document.querySelector('#risk-side') || {}).textContent || ''"))
     assert "added by hand" in panel, f"the candidate's panel does not show it: {panel[:200]!r}"
+
+
+_SYNTHETIC_RISKS = """window.__risks = (n) => {
+    const S = "urn:s";
+    const nodes = [{ id: S, band: "system", title: "System", isSystem: true,
+                     origin: "stated", systems: [S] }];
+    const links = [];
+    for (let i = 1; i <= n; i += 1) {
+        nodes.push({ id: "urn:r" + i, band: "risk", title: "Risk " + i,
+                     origin: "stated", systems: [S] });
+        links.push({ source: "urn:r" + i, target: S, kind: "attaches", label: "hasRisk" });
+    }
+    document.querySelector("#risk-canvas-empty").classList.add("hidden");
+    window.PairAI.RiskCanvas.render({ nodes, links, bands: [] },
+        { systems: [{ id: S, members: [] }], nodes: [], edges: [] }, { keepView: true });
+    return n;
+}; 1"""
+
+
+def test_a_risk_added_after_a_drag_does_not_land_on_the_dragged_box(page) -> None:
+    """A dragged box keeps its place while the layout around it moves, so the
+    next risk added was laid out right on top of it and the diagram had to be
+    untangled by hand."""
+    loop, handle = page
+    loop.run_until_complete(handle.js('document.querySelector("#level-risk").click()'))
+    time.sleep(1.5)
+    try:
+        loop.run_until_complete(handle.js(_SYNTHETIC_RISKS))
+        loop.run_until_complete(handle.js(
+            "window.PairAI.RiskCanvas.forgetLayout(); window.__risks(4);"
+            " window.PairAI.RiskCanvas.fit(); 1"))
+        time.sleep(0.5)
+        first = loop.run_until_complete(handle.js("""(() => {
+            const r = document.querySelector('#risk-canvas .rc-card[data-node="urn:r1"]')
+                .getBoundingClientRect();
+            return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2),
+                     w: r.width, h: r.height };
+        })()"""))
+        # Down one line: where a fifth risk wraps to, four to a row.
+        below = round(first["y"] + first["h"] + 26 * first["w"] / 210)
+        loop.run_until_complete(handle.drag(first["x"], first["y"], first["x"], below))
+        loop.run_until_complete(handle.js("window.__risks(5)"))
+        time.sleep(0.5)
+        seen = loop.run_until_complete(handle.js("""(() => {
+            const cards = [...document.querySelectorAll('#risk-canvas .rc-card')].map((g) => {
+                const r = g.getBoundingClientRect();
+                return { id: g.getAttribute('data-node'), x: r.left, y: r.top, w: r.width, h: r.height };
+            });
+            const moved = cards.find((c) => c.id === 'urn:r1');
+            const hits = [];
+            cards.forEach((a, i) => cards.slice(i + 1).forEach((b) => {
+                if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) {
+                    hits.push(a.id + ' x ' + b.id);
+                }
+            }));
+            return { cards: cards.length, movedY: Math.round(moved.y + moved.h / 2), hits };
+        })()"""))
+    finally:
+        loop.run_until_complete(handle.js("window.PairAI.RiskCanvas.forgetLayout(); 1"))
+        _back_to_business(loop, handle)
+
+    assert seen["cards"] == 6
+    assert abs(seen["movedY"] - below) <= 2, f"the drag did not move the box: {seen}"
+    assert seen["hits"] == [], f"a box was laid out on top of another: {seen['hits']}"
+
+
+def test_an_event_offers_no_type_its_flows_would_break(scene_restored) -> None:
+    """A start event with a flow going out could be switched to an end event,
+    and the model said the process ends where it begins."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js("""(async () => {
+        const post = async (body) => (await (await fetch("/api/process-edit", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body) })).json());
+        let r = await post({ ttl: "", op: "add-pool", label: "Desk" });
+        const pool = r.newId;
+        r = await post({ ttl: r.ttl, op: "add-event", kind: "startEvent", pool });
+        const start = r.newId;
+        r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool, label: "Answer" });
+        r = await post({ ttl: r.ttl, op: "connect", source: start, target: r.newId });
+        window.PairAI.Editor.setValue(r.ttl);
+        return { start };
+    })()"""))
+    _back_to_business(loop, handle)
+    at = _settle(loop, handle, f"""(() => {{
+        const g = document.querySelector('#process-canvas [data-node="{ids["start"]}"]');
+        if (!g) return null;
+        const r = g.getBoundingClientRect();
+        return {{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }};
+    }})()""", None, tries=40)
+    assert at, "the start event was not drawn"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const select = document.querySelector("#process-detail #pd-kind");
+        if (!select) return null;
+        const end = [...select.options].find((o) => o.value === "endEvent");
+        const why = document.querySelector("#process-detail #pd-kind-why");
+        return { disabled: end.disabled, title: end.title, note: why ? why.textContent : "",
+                 others: [...select.options].filter((o) => o.disabled).length };
+    })()"""))
+    assert seen, "clicking the start event opened no editor"
+    assert seen["disabled"], "an end event is still offered while a flow leaves the start event"
+    assert "no sequence flow may leave it" in seen["title"], "the disabled type says nothing"
+    assert "Remove the outgoing flow" in seen["note"], "the panel does not say how to fix it"
+    assert seen["others"] == 1, "a type the flows allow was disabled too"
+
+
+def test_the_input_contract_is_checked_without_asking(scene_restored) -> None:
+    """The panel stayed empty until Validate was pressed, so a student who never
+    pressed it never saw that nothing they drew could match."""
+    loop, handle = scene_restored
+    bare = chr(10).join([
+        "@prefix beam: <http://w3id.org/beam/core#> .",
+        "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .",
+        "@prefix ex: <http://example.org/unasked#> .",
+        'ex:S a beam:System ; rdfs:label "S" ; beam:hasResource ex:Q .',
+        'ex:Q a beam:Data ; rdfs:label "Customer question" .',
+    ])
+    try:
+        # Opening the panel checks what is there, with no Validate press.
+        loop.run_until_complete(handle.js(
+            'document.querySelector(\'[data-drawer-tab="validation"]\').click(); 1'))
+        opened = _settle(loop, handle,
+                         'document.querySelectorAll("#validation-list .validation-row").length',
+                         0, tries=40)
+        assert opened, "opening the panel checked nothing"
+        loop.run_until_complete(handle.js(
+            "window.PairAI.Editor.setValue(" + json.dumps(bare) + "); 1"))
+        # The rows of the document before it are still listed until this one is checked.
+        checked = _settle(loop, handle,
+                          'document.querySelector("#validation-list").textContent'
+                          '.includes("Customer question")', False, tries=40)
+        seen = loop.run_until_complete(handle.js("""({
+            rows: document.querySelectorAll("#validation-list .validation-row").length,
+            count: document.querySelector("#validation-count").textContent,
+        })"""))
+        assert checked, "nothing was checked until Validate was pressed"
+        assert seen["count"] == str(seen["rows"]), "the tab does not say how many there are"
+    finally:
+        # Left open, the panel would check every document the later tests load.
+        loop.run_until_complete(handle.js(
+            """document.querySelector('[data-drawer-tab="findings"]').click(); 1"""))
+
+
+def _press(loop, handle, key, code, vk, modifiers=0):
+    for kind in ("rawKeyDown", "keyUp"):
+        loop.run_until_complete(handle.send("Input.dispatchKeyEvent", {
+            "type": kind, "key": key, "code": code, "windowsVirtualKeyCode": vk,
+            "modifiers": modifiers}))
+    time.sleep(0.4)
+
+
+def _centre(loop, handle, selector):
+    return loop.run_until_complete(handle.js(f"""(() => {{
+        const b = document.querySelector({json.dumps(selector)});
+        if (!b) return null;
+        const r = b.getBoundingClientRect();
+        return {{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }};
+    }})()"""))
+
+
+def test_the_zoom_buttons_zoom_the_business_process(scene_restored) -> None:
+    """The +, - and fit buttons zoomed the architecture canvas hidden behind the
+    process, so on the business level they seemed to do nothing."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    scale = ("Number((document.querySelector('#process-canvas g').getAttribute('transform')"
+             r" || '').match(/scale\(([^)]+)\)/)[1])")
+    start = loop.run_until_complete(handle.js(scale))
+    at = _centre(loop, handle, "#btn-zoom-in")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    zoomed = loop.run_until_complete(handle.js(scale))
+    at = _centre(loop, handle, "#btn-fit")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    fitted = loop.run_until_complete(handle.js(scale))
+
+    assert zoomed > start * 1.1, f"zoom-in left the process at {zoomed} (was {start})"
+    assert abs(fitted - start) < 0.01, f"fit did not bring the process back: {fitted} vs {start}"
+
+
+def test_delete_and_undo_work_on_the_business_process(scene_restored) -> None:
+    """DEL removed only a picked flow, never the step that was clicked, and
+    Ctrl+Z did nothing at all: writing the editor clears the browser's undo."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    target = loop.run_until_complete(handle.js("""(() => {
+        for (const n of document.querySelectorAll('#process-canvas [data-node]')) {
+            if (!n.querySelector('.pc-box') || n.classList.contains('refined')) continue;
+            const r = n.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            const hit = document.elementFromPoint(x, y);
+            if (hit && hit.closest('[data-node]') === n) return { id: n.getAttribute('data-node'), x, y };
+        }
+        return null;
+    })()"""))
+    assert target, "no plain activity could be clicked"
+    present = f"!!document.querySelector('#process-canvas [data-node=\"{target['id']}\"]')"
+
+    loop.run_until_complete(handle.click(target["x"], target["y"]))
+    _press(loop, handle, "Delete", "Delete", 46)
+    gone = _settle(loop, handle, present, True, tries=30)
+    _press(loop, handle, "z", "KeyZ", 90, modifiers=2)
+    back = _settle(loop, handle, present, False, tries=30)
+    _press(loop, handle, "z", "KeyZ", 90, modifiers=2 | 8)
+    again = _settle(loop, handle, present, True, tries=30)
+
+    assert gone is False, "Delete did not remove the activity whose editor was open"
+    assert back is True, "Ctrl+Z did not bring the activity back"
+    assert again is False, "Ctrl+Shift+Z did not remove it again"
+
+
+def test_back_stays_in_the_workbench(scene_restored) -> None:
+    """The browser's Back left the tool, and the diagram with it."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(1)
+    _back_to_business(loop, handle)
+    loop.run_until_complete(handle.js("history.back(); 1"))
+    time.sleep(1.5)
+    first = loop.run_until_complete(handle.js("({ level: window.PairAI.state.level, url: location.pathname })"))
+    loop.run_until_complete(handle.js("window.PairAI.state.levelTrail = []; history.back(); 1"))
+    time.sleep(1.5)
+    second = loop.run_until_complete(handle.js("({ level: window.PairAI.state.level, url: location.pathname })"))
+
+    assert first["level"] == "architecture", f"Back did not return to the level before: {first}"
+    assert second["url"].endswith("_cdp_probe.html"), f"Back left the workbench: {second}"
+
+
+_KINDS = chr(10).join([
+    "@prefix beam: <http://w3id.org/beam/core#> .",
+    "@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .",
+    "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .",
+    "@prefix ex: <http://example.org/kinds#> .",
+    'ex:S a beam:System ; rdfs:label "S" ; beam:hasResource ex:Q, ex:M ; beam:hasProcess ex:P .',
+    'ex:Q a beam:Data ; rdfs:label "Question" .',
+    'ex:M a beam:StatisticalModel ; rdfs:label "LLM" ; pair:containsDataCategory pair:Information .',
+    'ex:P a beam:Generate ; rdfs:label "Generate" ; beam:use ex:Q, ex:M .',
+])
+
+
+def _open_popup_on(loop, handle, label):
+    """Click an element on the architecture canvas with real input; return its popup."""
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#node-detail").classList.add("hidden"); 1'))
+    at = loop.run_until_complete(handle.js(f"""(() => {{
+        let covered = null;
+        for (const n of document.querySelectorAll('#canvas g.node')) {{
+            if (!n.textContent.startsWith({json.dumps(label)})) continue;
+            const r = n.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            const hit = document.elementFromPoint(x, y);
+            if (hit && hit.closest('g.node') === n) return {{ x, y }};
+            covered = hit ? (hit.getAttribute('class') || hit.tagName) + ' in ' + ((hit.closest('[id]') || {{}}).id || '') : 'nothing';
+        }}
+        return covered ? {{ covered }} : null;
+    }})()"""))
+    assert at and "x" in at, f"{label} cannot be clicked on the canvas: {at}"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    assert loop.run_until_complete(handle.js(
+        'document.querySelector("#nd-label").value')) == label
+
+
+def _open_role_menu(loop, handle):
+    trigger = _centre(loop, handle, "#nd-role-mp .mp-add")
+    loop.run_until_complete(handle.click(trigger["x"], trigger["y"]))
+
+
+def _role_offer(loop, handle):
+    """Open the role menu and walk every submenu, counting the terms it offers."""
+    _open_role_menu(loop, handle)
+    return loop.run_until_complete(handle.js("""(() => {
+        const pop = document.querySelector('#nd-role-mp .mp-pop');
+        const cat = document.querySelector('#nd-cat-mp .mp-add');
+        const offered = new Set();
+        const walk = (panel, depth) => {
+            for (const row of panel.querySelectorAll(':scope > .mp-row')) {
+                if (row.classList.contains('pick')) offered.add(row.dataset.id);
+                const more = row.querySelector('.mp-row-more');
+                if (!more) continue;
+                more.click();
+                walk(document.querySelectorAll('#nd-role-mp .mp-fly')[depth], depth + 1);
+            }
+        };
+        walk(pop.querySelector('.mp-list'), 0);
+        return {
+            open: !pop.classList.contains('hidden'),
+            offered: offered.size,
+            more: !!pop.querySelector('.mp-all'),
+            catDisabled: cat.disabled,
+            catChips: document.querySelectorAll('#nd-cat-mp .mp-chip').length,
+        };
+    })()"""))
+
+
+def test_the_popup_offers_the_terms_that_fit_the_element(scene_restored) -> None:
+    """A model was offered all 66 resource terms, most of them for data, and a
+    step was offered data categories, which only a Data element carries."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.5)
+    expected = loop.run_until_complete(handle.js("""(async () => {
+        const v = await (await fetch('/api/vocabulary')).json();
+        // the roles the categories refine file them and are not offered
+        const tops = new Set(v.roles.filter((r) => r.category).flatMap((r) => r.parents));
+        const fit = (cls) => v.roles.filter((r) => r.applies === 'resource'
+            && !tops.has(r.id)
+            && (r.shelfId === cls || (r.appliesTo || []).includes(cls))).length;
+        return { model: fit('http://w3id.org/beam/core#StatisticalModel'),
+                 data: fit('http://w3id.org/beam/core#Data') };
+    })()"""))
+
+    _open_popup_on(loop, handle, "LLM")
+    model = _role_offer(loop, handle)
+    _open_popup_on(loop, handle, "Question")
+    data = _role_offer(loop, handle)
+    _open_popup_on(loop, handle, "Generate")
+    step = _role_offer(loop, handle)
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#node-detail").classList.add("hidden"); 1'))
+
+    assert model["open"] and model["offered"] == expected["model"], (model, expected)
+    assert model["more"], "the terms for other kinds of element cannot be reached"
+    assert data["offered"] == expected["data"], (data, expected)
+    assert model["catDisabled"] and step["catDisabled"], "a data category is offered off Data"
+    assert model["catChips"] == 1, "a category the model already carries is no longer shown"
+    assert not data["catDisabled"], "a Data element is not offered its data categories"
+
+
+def test_picking_a_role_closes_the_list_so_apply_can_be_pressed(scene_restored) -> None:
+    """The suggestion list stayed open after a pick and covered Apply."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.5)
+    _open_popup_on(loop, handle, "Question")
+    _open_role_menu(loop, handle)
+    # a category's arrow opens it on a click as well as on a hover, so a touch reaches it
+    category = _centre(loop, handle, "#nd-role-mp .mp-list > .mp-row.folder .mp-row-more")
+    assert category, "the role list did not open"
+    loop.run_until_complete(handle.click(category["x"], category["y"]))
+    option = _centre(loop, handle, "#nd-role-mp .mp-fly .mp-row.pick")
+    assert option, "a category opened onto nothing to pick"
+    loop.run_until_complete(handle.click(option["x"], option["y"]))
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const apply = document.querySelector('#nd-apply');
+        const r = apply.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        const box = document.querySelector('#node-detail').getBoundingClientRect();
+        return {
+            listOpen: !document.querySelector('#nd-role-mp .mp-pop').classList.contains('hidden')
+                || !!document.querySelector('#nd-role-mp .mp-fly'),
+            chips: document.querySelectorAll('#nd-role-mp .mp-chip').length,
+            applyOnTop: !!hit && !!hit.closest('#nd-apply'),
+            why: { apply: [Math.round(r.top), Math.round(r.bottom)],
+                   popup: [Math.round(box.top), Math.round(box.bottom)],
+                   viewport: innerHeight,
+                   hit: hit ? hit.tagName + '#' + hit.id + '.' + hit.className : null,
+                   drawerOpen: !document.querySelector('#drawer').classList.contains('collapsed') },
+        };
+    })()"""))
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#node-detail").classList.add("hidden"); 1'))
+
+    assert seen["chips"] == 1, "the pick was not recorded"
+    assert not seen["listOpen"], "the suggestion list stayed open after a pick"
+    assert seen["applyOnTop"], f"Apply is still covered after a pick: {seen['why']}"
+
+
+def _menu_rows(loop, handle):
+    """Each open submenu: its box and its rows with their centres."""
+    return loop.run_until_complete(handle.js("""(() => {
+        const box = (n) => { const r = n.getBoundingClientRect();
+            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
+        return [...document.querySelectorAll('#nd-role-mp .mp-fly')].map((panel) => ({
+            box: box(panel),
+            rows: [...panel.querySelectorAll(':scope > .mp-row')].map((row) => {
+                const r = row.getBoundingClientRect();
+                return { label: row.querySelector('.mp-row-label').textContent,
+                         x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+            }),
+        }));
+    })()"""))
+
+
+def test_the_role_menu_cascades_from_category_to_the_role_that_refines_it(scene_restored) -> None:
+    """The role picker was one flat list, so nothing in it said that Foundation
+    LLM refines Generative Model, which refines Model. It cascades now: the
+    categories that fit the element, then each role under the role it refines,
+    opened by pointing at it the way a context menu opens, and picked by its
+    label at any level, a category included."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.5)
+    _open_popup_on(loop, handle, "LLM")
+    _open_role_menu(loop, handle)
+
+    roots = loop.run_until_complete(handle.js("""[...document.querySelectorAll(
+        '#nd-role-mp .mp-list > .mp-row')].map((r) => r.querySelector('.mp-row-label').textContent)"""))
+    assert roots and roots[0] == "Models", f"the categories for a model do not come first: {roots}"
+
+    trail = ["Models", "Model", "Generative Model", "Foundation LLM"]
+    at = _centre(loop, handle, "#nd-role-mp .mp-list > .mp-row")
+    loop.run_until_complete(handle.hover(at["x"], at["y"]))
+    hints = []
+    for depth, label in enumerate(trail[1:]):
+        menus = _menu_rows(loop, handle)
+        assert len(menus) == depth + 1, f"pointing at {trail[depth]} opened {len(menus)} menus"
+        row = next((r for r in menus[-1]["rows"] if r["label"] == label), None)
+        assert row, f"{label} is not under {trail[depth]}: {[r['label'] for r in menus[-1]['rows']]}"
+        loop.run_until_complete(handle.hover(row["x"], row["y"]))
+        hints.append(loop.run_until_complete(handle.js(
+            "document.querySelector('#nd-role-mp .mp-hint').textContent")))
+
+    menus = _menu_rows(loop, handle)
+    for menu in menus:
+        b = menu["box"]
+        assert b["left"] >= 0 and b["top"] >= 0, f"a submenu is off screen: {b}"
+    first, third = menus[0]["box"], menus[2]["box"]
+    assert first["right"] <= third["left"] + 4 or third["right"] <= first["left"] + 4, (
+        f"the third menu landed back on the first: {first} {third}")
+    assert hints[1].startswith("Generative Model"), f"the hint does not say what it points at: {hints}"
+
+    leaf = next(r for r in menus[-1]["rows"] if r["label"] == "Foundation LLM")
+    loop.run_until_complete(handle.click(leaf["x"], leaf["y"]))
+    seen = loop.run_until_complete(handle.js("""({
+        chips: [...document.querySelectorAll('#nd-role-mp .mp-chip-label')].map((c) => c.textContent),
+        menus: document.querySelectorAll('#nd-role-mp .mp-fly').length,
+    })"""))
+    assert seen["chips"] == ["Foundation LLM"], f"the pick was not recorded: {seen}"
+    assert seen["menus"] == 0, "a submenu stayed open after the pick"
+
+    # and by keyboard: down onto Models, right into it (its own "Use Models" heads the list),
+    # down onto Model, Enter picks Model
+    _open_role_menu(loop, handle)
+    _press(loop, handle, "ArrowDown", "ArrowDown", 40)
+    _press(loop, handle, "ArrowRight", "ArrowRight", 39)
+    _press(loop, handle, "ArrowDown", "ArrowDown", 40)
+    _press(loop, handle, "Enter", "Enter", 13)
+    chips = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#nd-role-mp .mp-chip-label')].map((c) => c.textContent)"))
+    assert chips == ["Foundation LLM", "Model"], f"the keyboard did not walk the menu: {chips}"
+
+    # a category is picked by its label, so an element can be tagged broadly first
+    _open_role_menu(loop, handle)
+    label = _centre(loop, handle, "#nd-role-mp .mp-list > .mp-row .mp-row-label")
+    loop.run_until_complete(handle.click(label["x"], label["y"]))
+    chips = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#nd-role-mp .mp-chip-label')].map((c) => c.textContent)"))
+    loop.run_until_complete(handle.js(
+        'document.querySelector("#node-detail").classList.add("hidden"); 1'))
+    assert chips[-1] == "Models", f"a category cannot be picked: {chips}"
+
+
+def test_matches_on_takes_the_reader_to_the_role_and_back(page) -> None:
+    """A "matches on" chip opened the term, and the only way back was "All
+    terms": the motif the reader came from was gone."""
+    loop, handle = page
+    loop.run_until_complete(handle.js('document.querySelector("#btn-library").click()'))
+    time.sleep(1)
+    try:
+        loop.run_until_complete(handle.js("""(() => {
+            document.querySelector('.library-tab[data-library-tab="motifs"]').click();
+            [...document.querySelectorAll('#library-detail .lib-tile')]
+                .find((t) => /Information Retrieval/.test(t.textContent)).click();
+            return 1;
+        })()"""))
+        time.sleep(0.8)
+        chip = _spot(loop, handle, """(() => {
+            const c = [...document.querySelectorAll('#library-detail .lib-roles .chip')]
+                .find((x) => x.textContent === 'User Input');
+            if (c) c.scrollIntoView({ block: 'center' });
+            return c;
+        })()""")
+        assert chip, "the motif page names no role to follow"
+        loop.run_until_complete(handle.click(chip["x"], chip["y"]))
+        back = _spot(loop, handle, "document.querySelector('#library-detail .lib-back')")
+        term = loop.run_until_complete(handle.js(
+            "document.querySelector('#library-detail .lib-back').textContent"))
+        loop.run_until_complete(handle.click(back["x"], back["y"]))
+        returned = loop.run_until_complete(handle.js(
+            "document.querySelector('#library-detail').textContent"))
+
+        # And the browser's Back takes the same step.
+        chip = _spot(loop, handle, """(() => {
+            const c = [...document.querySelectorAll('#library-detail .lib-roles .chip')]
+                .find((x) => x.textContent === 'User Input');
+            if (c) c.scrollIntoView({ block: 'center' });
+            return c;
+        })()""")
+        loop.run_until_complete(handle.click(chip["x"], chip["y"]))
+        loop.run_until_complete(handle.js("history.back(); 1"))
+        time.sleep(1)
+        after_browser_back = loop.run_until_complete(handle.js("""({
+            open: !document.querySelector('#library').classList.contains('hidden'),
+            text: document.querySelector('#library-detail').textContent,
+        })"""))
+    finally:
+        loop.run_until_complete(handle.js('document.querySelector("#btn-library-close").click(); 1'))
+
+    assert term == "Back to Information Retrieval", f"the term page offers {term!r}"
+    assert "Information Retrieval" in returned and "matches elements with the roles" in returned, (
+        "Back did not return to the motif")
+    assert after_browser_back["open"], "the browser's Back closed the library"
+    assert "matches elements with the roles" in after_browser_back["text"], (
+        "the browser's Back did not return to the motif")
+
+
+def test_a_motif_match_lists_the_annotations_it_rests_on(scene_restored) -> None:
+    """A match row said only which motif matched, never why."""
+    loop, handle = scene_restored
+    ttl = example_path(GRAPH_RAG_NS).read_text(encoding="utf-8")
+    loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(" + json.dumps(ttl) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    time.sleep(1.5)
+    # Waits for this run, not for the rows an earlier test's run left listed.
+    loop.run_until_complete(handle.js(
+        "window.__runBefore = window.PairAI.state.lastAssessment;"
+        " document.querySelector('#btn-assess').click(); 1"))
+    _settle(loop, handle,
+            "(!document.querySelector('#btn-assess').disabled && "
+            "window.PairAI.state.lastAssessment && "
+            "window.PairAI.state.lastAssessment !== window.__runBefore) ? 1 : 0", 0, tries=120)
+    time.sleep(0.5)
+    rows = loop.run_until_complete(handle.js(
+        "document.querySelectorAll('#motifs-list .motif-row').length"))
+    assert rows, "the assessment listed no motif match"
+    loop.run_until_complete(handle.js(
+        """document.querySelector('[data-drawer-tab="motifs"]').click(); 1"""))
+    time.sleep(0.5)
+    at = _spot(loop, handle, "document.querySelector('#motifs-list .motif-row .motif-row-name')")
+    # a match picked by an earlier test stays picked across a run, and a click on it lets go
+    if loop.run_until_complete(handle.js(
+            "document.querySelector('#motifs-list .motif-row').classList.contains('selected')")):
+        loop.run_until_complete(handle.click(at["x"], at["y"]))
+        time.sleep(0.3)
+    under = loop.run_until_complete(handle.js(
+        "(() => { const h = document.elementFromPoint(%d, %d); return h ? (h.className || h.tagName) + ' in ' + ((h.closest('[id]') || {}).id || '') : null; })()"
+        % (at["x"], at["y"])))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const row = document.querySelector('#motifs-list .motif-row.selected');
+        const list = row && row.querySelector('.motif-bindings');
+        return {
+            selected: !!row,
+            hasList: !!list,
+            shown: !!list && list.checkVisibility(),
+            items: list ? [...list.querySelectorAll('li')].map((li) => li.textContent) : [],
+        };
+    })()"""))
+    seen["under"] = under
+    loop.run_until_complete(handle.js(
+        """document.querySelector('[data-drawer-tab="findings"]').click(); 1"""))
+
+    assert seen["shown"], f"picking a match shows nothing about why it matched: {seen}"
+    assert seen["items"] and all(" as " in item for item in seen["items"]), seen["items"]
+
+
+_TWO_POOLS = """(async () => {
+    const post = async (body) => (await (await fetch("/api/process-edit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body) })).json());
+    let r = await post({ ttl: "", op: "add-pool", label: "Customer" });
+    const customer = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-pool", label: "Desk" });
+    const desk = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool: customer, label: "Ask" });
+    const ask = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool: desk, label: "Answer" });
+    const answer = r.newId;
+    window.PairAI.Editor.setValue(r.ttl);
+    return { ask, answer };
+})()"""
+
+
+def _clear_the_business_canvas(loop, handle):
+    """Fold the drawer and the palette, which float over the canvas, then fit."""
+    loop.run_until_complete(handle.js("""(() => {
+        if (!document.querySelector('#drawer').classList.contains('collapsed')) {
+            document.querySelector('#drawer-toggle').click();
+        }
+        const palette = document.querySelector('#process-palette');
+        const fold = palette.querySelector('.pp-fold');
+        if (fold && !palette.classList.contains('folded')) fold.click();
+        return 1;
+    })()"""))
+    time.sleep(0.5)
+    loop.run_until_complete(handle.js("window.PairAI.ProcessCanvas.fit(); 1"))
+    time.sleep(0.5)
+
+
+def test_a_message_flow_starts_from_the_dot_at_the_bottom_of_a_task(scene_restored) -> None:
+    """Dragging from the bottom of a task did nothing; a message flow started only
+    from the right-hand dot, which a modeller reads as the sequence flow's."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_TWO_POOLS))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, f"!!document.querySelector('#process-canvas [data-node=\"{ids['answer']}\"]')",
+            False, tries=40)
+    _clear_the_business_canvas(loop, handle)
+    spots = loop.run_until_complete(handle.js(f"""(() => {{
+        const box = (id) => document.querySelector('#process-canvas [data-node="' + id + '"]');
+        const mid = (r) => ({{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }});
+        return {{
+            ask: mid(box({json.dumps(ids["ask"])}).querySelector('.pc-box').getBoundingClientRect()),
+            mail: mid(box({json.dumps(ids["ask"])}).querySelector('.pc-port-message .pc-port-dot')
+                .getBoundingClientRect()),
+            answer: mid(box({json.dumps(ids["answer"])}).querySelector('.pc-box').getBoundingClientRect()),
+        }};
+    }})()"""))
+    loop.run_until_complete(handle.send("Input.dispatchMouseEvent", {
+        "type": "mouseMoved", "x": spots["ask"]["x"], "y": spots["ask"]["y"]}))
+    time.sleep(0.3)
+    shown = loop.run_until_complete(handle.js(
+        "getComputedStyle(document.querySelector('#process-canvas .pc-port-message .pc-port-dot'))"
+        ".opacity"))
+    loop.run_until_complete(handle.drag(spots["mail"]["x"], spots["mail"]["y"],
+                                        spots["answer"]["x"] + 40, spots["answer"]["y"]))
+    time.sleep(1.5)
+    written = loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.getValue().includes('a bpmn:messageFlow')"))
+
+    assert shown == "1", "hovering a task does not reveal the message handle"
+    assert written, "dragging from the bottom handle to another pool wrote no message flow"
+
+
+_LANED = """(async () => {
+    const post = async (body) => (await (await fetch("/api/process-edit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body) })).json());
+    let r = await post({ ttl: "", op: "add-pool", label: "Customer" });
+    const customer = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-lane", pool: customer, label: "Front office" });
+    const front = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-lane", pool: customer, label: "Back office" });
+    const back = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-pool", label: "Desk" });
+    const desk = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool: customer, lane: front, label: "Ask" });
+    const ask = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool: customer, lane: front, label: "Log" });
+    const log = r.newId;
+    r = await post({ ttl: r.ttl, op: "connect", source: ask, target: log });
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool: desk, label: "Answer" });
+    window.PairAI.Editor.setValue(r.ttl);
+    return { customer, front, back, desk, ask, log };
+})()"""
+
+
+def test_a_step_is_dragged_into_another_lane_and_another_pool(scene_restored) -> None:
+    """Moving a step meant deleting it and drawing it again."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_LANED))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, f"!!document.querySelector('#process-canvas [data-node=\"{ids['log']}\"]')",
+            False, tries=40)
+    _clear_the_business_canvas(loop, handle)
+    # Confirmed without a dialog: a native one would block the headless page.
+    loop.run_until_complete(handle.js("window.__asked = null;"
+                                      " window.confirm = (m) => { window.__asked = m; return true; }; 1"))
+
+    def drag_into(band_id):
+        spots = loop.run_until_complete(handle.js(f"""(() => {{
+            const box = document.querySelector('#process-canvas [data-node="{ids['log']}"] .pc-box')
+                .getBoundingClientRect();
+            const band = document.querySelector('#process-canvas [data-band="' + {json.dumps(band_id)} + '"]')
+                .getBoundingClientRect();
+            return {{ x: Math.round(box.left + box.width / 2), y: Math.round(box.top + box.height / 2),
+                      toX: Math.round(band.left + band.width * 0.75),
+                      toY: Math.round(band.top + band.height / 2) }};
+        }})()"""))
+        loop.run_until_complete(handle.drag(spots["x"], spots["y"], spots["toX"], spots["toY"]))
+        time.sleep(2)
+        return loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+
+    in_back = drag_into(ids["back"])
+    in_desk = drag_into(ids["desk"])
+    asked = loop.run_until_complete(handle.js("window.__asked"))
+
+    from rdflib import Graph, URIRef
+
+    lanes = Graph().parse(data=in_back, format="turtle")
+    joined = (URIRef(ids["back"]), URIRef("https://sBPMN.github.io/2.0/properties#flowNodeRef"),
+              URIRef(ids["log"]))
+    assert joined in lanes, "the step did not join the lane it was dropped in"
+    assert asked and "would cross between participants" in asked, f"the move asked {asked!r}"
+    assert "a bpmn:messageFlow" in in_desk, "the flow left crossing pools was not converted"
+    assert "a bpmn:sequenceFlow" not in in_desk
+
+
+def test_a_store_read_and_written_by_one_step_is_drawn_both_ways(scene_restored) -> None:
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js("""(async () => {
+        const post = async (body) => (await (await fetch("/api/process-edit", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body) })).json());
+        let r = await post({ ttl: "", op: "add-pool", label: "Desk" });
+        const pool = r.newId;
+        r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool, label: "Update ticket" });
+        const task = r.newId;
+        r = await post({ ttl: r.ttl, op: "add-data", shape: "store", label: "Tickets" });
+        const store = r.newId;
+        r = await post({ ttl: r.ttl, op: "connect", source: store, target: task });
+        r = await post({ ttl: r.ttl, op: "connect", source: task, target: store });
+        window.PairAI.Editor.setValue(r.ttl);
+        return 1;
+    })()"""))
+    _back_to_business(loop, handle)
+    titles = _settle(loop, handle, """[...document.querySelectorAll('#process-canvas title')]
+        .map((t) => t.textContent).filter((t) => t.startsWith('Tickets'))""", [], tries=40)
+    # one box with an arrow each way (asked for 2026-10-19), not the same store drawn twice
+    assert len(titles) == 1 and "read and written by Update ticket" in titles[0], titles
+
+
+_XOR = """(async () => {
+    const post = async (body) => (await (await fetch("/api/process-edit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body) })).json());
+    let r = await post({ ttl: "", op: "add-pool", label: "Desk" });
+    const pool = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool, label: "Check request" });
+    const check = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-gateway", kind: "exclusiveGateway", pool, label: "Valid?" });
+    const gw = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool, label: "Answer" });
+    const answer = r.newId;
+    r = await post({ ttl: r.ttl, op: "add-activity", kind: "task", pool, label: "Reject" });
+    const reject = r.newId;
+    r = await post({ ttl: r.ttl, op: "connect", source: check, target: gw });
+    r = await post({ ttl: r.ttl, op: "connect", source: gw, target: answer });
+    r = await post({ ttl: r.ttl, op: "connect", source: gw, target: reject });
+    window.PairAI.Editor.setValue(r.ttl);
+    return { gw };
+})()"""
+
+
+def test_an_xor_gateway_names_its_branches_where_it_decides(scene_restored) -> None:
+    """A branch's condition could only be set by clicking its thin line, was
+    then shown in no caption, and drew the conditional diamond BPMN keeps for a
+    flow out of an activity."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_XOR))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, f"!!document.querySelector('#process-canvas [data-node=\"{ids['gw']}\"]')",
+            False, tries=40)
+    _clear_the_business_canvas(loop, handle)
+    at = _spot(loop, handle,
+               f"document.querySelector('#process-canvas [data-node=\"{ids['gw']}\"] .pc-gate-box')")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    rows = loop.run_until_complete(handle.js("""(() => {
+        const panel = document.querySelector('#process-detail');
+        const names = panel.querySelectorAll('.pd-branch-name');
+        const whens = panel.querySelectorAll('.pd-branch-when');
+        if (names.length !== 2 || whens.length !== 2) return { names: names.length, whens: whens.length };
+        names[0].value = 'yes';
+        names[1].value = 'no';
+        whens[1].value = 'anything is missing';
+        return { names: 2, whens: 2 };
+    })()"""))
+    assert rows == {"names": 2, "whens": 2}, f"the gateway editor lists {rows}"
+    apply = _spot(loop, handle, "document.querySelector('#process-detail #pd-apply')")
+    loop.run_until_complete(handle.click(apply["x"], apply["y"]))
+    seen = _settle(loop, handle, """(() => {
+        const labels = [...document.querySelectorAll('#process-canvas .pc-flow-label')]
+            .map((l) => l.textContent).sort();
+        return labels.length === 2 ? { labels,
+            diamonds: document.querySelectorAll('#process-canvas .pc-flow-diamond').length,
+            stored: window.PairAI.Editor.getValue().includes('anything is missing') } : null;
+    })()""", None, tries=40)
+
+    assert seen, "the branches were not labelled"
+    assert seen["labels"] == ["no", "yes"]
+    assert seen["stored"], "the condition was not written"
+    assert seen["diamonds"] == 0, "a gateway's branch is drawn as a conditional flow out of an activity"
+
+
+def test_the_palette_offers_an_intermediate_timer(page) -> None:
+    """Message catch and throw were the only events offered part-way through."""
+    loop, handle = page
+    _back_to_business(loop, handle)
+    _open_palette(loop, handle)
+    offered = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#process-palette .pp-item')].map((b) => b.textContent.trim())"))
+    assert "Timer catch" in offered, offered
+
+
+def test_the_input_contract_panel_checks_the_bpmn_too(scene_restored) -> None:
+    """Nothing told a modeller that an end event with a flow out of it is not BPMN."""
+    loop, handle = scene_restored
+    broken = chr(10).join([
+        "@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .",
+        "@prefix bp: <https://sBPMN.github.io/2.0/properties#> .",
+        "@prefix ex: <http://example.org/badflow#> .",
+        'ex:A a bpmn:participant ; bp:name "Desk" ; bp:processRef ex:P .',
+        "ex:P a bpmn:process ; bp:contains ex:s, ex:t, ex:e .",
+        'ex:s a bpmn:startEvent ; bp:name "Begin" .',
+        'ex:t a bpmn:task ; bp:name "Answer" .',
+        'ex:e a bpmn:endEvent ; bp:name "Done" .',
+        "ex:f1 a bpmn:sequenceFlow ; bp:sourceRef ex:s ; bp:targetRef ex:t .",
+        "ex:f2 a bpmn:sequenceFlow ; bp:sourceRef ex:t ; bp:targetRef ex:e .",
+        "ex:f3 a bpmn:sequenceFlow ; bp:sourceRef ex:e ; bp:targetRef ex:t .",
+    ])
+    try:
+        loop.run_until_complete(handle.js(
+            """document.querySelector('[data-drawer-tab="validation"]').click(); 1"""))
+        loop.run_until_complete(handle.js(
+            "window.PairAI.Editor.setValue(" + json.dumps(broken) + "); 1"))
+        row = _settle(loop, handle, """(() => {
+            const r = [...document.querySelectorAll('#validation-list .validation-row')]
+                .find((x) => x.textContent.includes('is an end event'));
+            return r ? { text: r.textContent, violation: r.classList.contains('violation') } : null;
+        })()""", None, tries=40)
+    finally:
+        loop.run_until_complete(handle.js(
+            """document.querySelector('[data-drawer-tab="findings"]').click(); 1"""))
+
+    assert row, "the panel says nothing about an end event a flow leaves"
+    assert row["violation"] and "BPMN" in row["text"], row
+
+
+def test_the_motif_tray_starts_folded_and_finds_a_motif_by_what_it_does(page) -> None:
+    """47 motifs open at once, each ending in "Motif", and a tooltip that only
+    repeated the name: nothing helped a reader find the one they needed."""
+    loop, handle = page
+    _descend(loop, handle)
+    assert _on_architecture(loop, handle), "did not reach the architecture level"
+    loop.run_until_complete(handle.js("""(() => {
+        const host = document.querySelector('#motif-palette');
+        if (host.classList.contains('collapsed')) host.querySelector('.tray-head').click();
+        return 1;
+    })()"""))
+    shown = "[...document.querySelectorAll('#motif-palette .motif-item')].filter((c) => c.checkVisibility())"
+    folded = loop.run_until_complete(handle.js(shown + ".length"))
+
+    box = _spot(loop, handle, "document.querySelector('#motif-palette .motif-search')")
+    loop.run_until_complete(handle.click(box["x"], box["y"]))
+    loop.run_until_complete(handle.send("Input.insertText", {"text": "vector store"}))
+    time.sleep(0.5)
+    found = loop.run_until_complete(handle.js(shown + """.map((c) => ({ name: c.textContent }))"""))
+    # A click opens what the motif is, beside the tray, rather than a tooltip.
+    first = _spot(loop, handle, shown + "[0]")
+    before = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue().length"))
+    loop.run_until_complete(handle.click(first["x"], first["y"]))
+    time.sleep(0.6)
+    card = loop.run_until_complete(handle.js("""(() => {
+        const c = document.querySelector('.motif-card');
+        if (!c) return null;
+        const r = c.getBoundingClientRect();
+        return {
+            text: c.textContent, drawn: !!c.querySelector('svg.motif-preview .mp-node, svg.motif-preview rect'),
+            inWindow: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight,
+            add: !!c.querySelector('.btn.primary'),
+        };
+    })()"""))
+    after = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue().length"))
+    loop.run_until_complete(handle.send("Input.dispatchKeyEvent", {"type": "keyDown", "key": "Escape"}))
+    closed = loop.run_until_complete(handle.js("!document.querySelector('.motif-card')"))
+    loop.run_until_complete(handle.js("""(() => {
+        const s = document.querySelector('#motif-palette .motif-search');
+        s.value = ''; s.dispatchEvent(new Event('input'));
+        return 1;
+    })()"""))
+
+    assert folded == 0, f"{folded} motifs are listed before any family is opened"
+    assert found, "searching what a motif does found nothing"
+    assert all(not item["name"].endswith("Motif") for item in found), found
+    assert card, "clicking a motif opened no detail"
+    assert "vector store" in card["text"].lower(), "the detail of a search hit does not say what matched"
+    assert card["drawn"] and card["add"] and card["inWindow"], card
+    assert before == after, "a click to read a motif added it to the canvas"
+    assert closed, "Escape did not close the detail"
+
+
+def test_one_attachment_comes_off_a_risk_and_the_risk_stays(scene_restored) -> None:
+    """A risk attached to two parts of a folded system drew one line to the
+    system, and "remove this connection" unlinked the risk from the system,
+    which it was never attached to: nothing came off, and the only other way
+    was to delete the risk."""
+    loop, handle = scene_restored
+    # The scene itself, not whatever an earlier test left in the editor. Setting
+    # the editor is not opening a document, so an earlier run on another graph
+    # would stay and the risk view would draw that run instead.
+    loop.run_until_complete(handle.js(
+        "window.PairAI.state.lastAssessment = null; window.PairAI.state.lastRun = null; 1"))
+    loop.run_until_complete(handle.js(_scene_js()))
+    _settle(loop, handle, "window.PairAI.Editor.getValue().length", 0, tries=40)
+    time.sleep(2)
+    risk = loop.run_until_complete(handle.js(f"""(async () => {{
+        const we = {json.dumps(WIEN_ENERGIE_NS)};
+        const r = await (await fetch("/api/scope-edit", {{
+            method: "POST", headers: {{ "Content-Type": "application/json" }},
+            body: JSON.stringify({{ ttl: window.PairAI.Editor.getValue(), op: "state-concept",
+                kind: "risk", label: "Leaky answers", attachTo: [we + "Answer", we + "Question"] }}) }})).json();
+        window.PairAI.Editor.setValue(r.ttl);
+        return r.newId;
+    }})()"""))
+    time.sleep(3)
+    loop.run_until_complete(handle.js(
+        'if (!document.querySelector("#drawer").classList.contains("collapsed")) '
+        'document.querySelector("#drawer-toggle").click(); '
+        'document.querySelector("#level-risk").click(); 1'))
+    time.sleep(2)
+    # Every layer on and every architecture shown, whatever an earlier test left.
+    loop.run_until_complete(handle.js("""(() => {
+        document.querySelectorAll('.layer-toggle:not(.on)').forEach((b) => b.click());
+        const focus = document.querySelector('.layer-focus');
+        if (focus && focus.value) { focus.value = ''; focus.dispatchEvent(new Event('change')); }
+        return 1;
+    })()"""))
+    time.sleep(1)
+    drawn = f"!!document.querySelector('#risk-canvas [data-node=\"{risk}\"]')"
+    _settle(loop, handle, drawn, False, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.RiskCanvas.fit(); 1"))
+    time.sleep(0.5)
+    line = loop.run_until_complete(handle.js(f"""(() => {{
+        const hit = [...document.querySelectorAll('#risk-canvas .rc-link-hit')]
+            .find((h) => h.getAttribute('data-from') === {json.dumps(risk)});
+        if (!hit) return null;
+        const p = hit.getPointAtLength(hit.getTotalLength() / 2);
+        const m = hit.getScreenCTM();
+        return {{ x: Math.round(m.a * p.x + m.c * p.y + m.e), y: Math.round(m.b * p.x + m.d * p.y + m.f) }};
+    }})()"""))
+    why = loop.run_until_complete(handle.js("""(() => ({
+        from: [...new Set([...document.querySelectorAll('#risk-canvas .rc-link-hit')]
+            .map((h) => h.getAttribute('data-from')))].slice(0, 8),
+        layers: [...document.querySelectorAll('.layer-toggle')].map((b) => b.textContent + (b.classList.contains('on') ? '+' : '-')),
+        level: document.querySelector('#canvas-wrap').className,
+        drawn: [...document.querySelectorAll('#risk-canvas [data-node]')]
+            .map((n) => n.getAttribute('data-node').split(/[#/]/).pop()),
+        lines: document.querySelectorAll('#risk-canvas .rc-link').length,
+        empty: (document.querySelector('#risk-canvas-empty') || {}).textContent,
+        run: !!(window.PairAI.state.lastAssessment),
+        ttlHasRisk: window.PairAI.Editor.getValue().includes('Leaky answers'),
+    }))()"""))
+    assert line, f"the risk {risk} draws no line to pick: {why}"
+    loop.run_until_complete(handle.click(line["x"], line["y"]))
+    off = _spot(loop, handle, """(() => {
+        const chip = [...document.querySelectorAll('#risk-side .chip.detach')]
+            .find((c) => c.textContent.startsWith('Customer question'));
+        return chip ? chip.querySelector('.detach-x') : null;
+    })()""")
+    assert off, "the line's panel offers no way to take one attachment off"
+    loop.run_until_complete(handle.click(off["x"], off["y"]))
+    time.sleep(2.5)
+
+    from rdflib import Graph, URIRef
+
+    graph = Graph().parse(data=loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()")),
+                          format="turtle")
+    has_risk = URIRef("http://w3id.org/beam/risk#hasRisk")
+    assert (URIRef(WIEN_ENERGIE_NS + "Question"), has_risk, URIRef(risk)) not in graph, (
+        "the attachment was not removed")
+    assert (URIRef(WIEN_ENERGIE_NS + "Answer"), has_risk, URIRef(risk)) in graph, (
+        "the other attachment went too")
+    assert (URIRef(risk), None, None) in graph, "the risk itself was deleted"
+
+
+def test_a_shape_is_dragged_from_the_palette_into_a_lane(scene_restored) -> None:
+    """On the architecture canvas a symbol is dragged where it goes; on the
+    business canvas a shape could only be clicked into the selected lane."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_LANED))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, f"!!document.querySelector('#process-canvas [data-band=\"{ids['back']}\"]')",
+            False, tries=40)
+    loop.run_until_complete(handle.js("""(() => {
+        if (!document.querySelector('#drawer').classList.contains('collapsed')) {
+            document.querySelector('#drawer-toggle').click();
+        }
+        return 1;
+    })()"""))
+    _open_palette(loop, handle)
+    loop.run_until_complete(handle.js("window.PairAI.ProcessCanvas.fit(); 1"))
+    time.sleep(0.5)
+    _open_palette(loop, handle)
+    spots = loop.run_until_complete(handle.js(f"""(() => {{
+        const task = [...document.querySelectorAll('#process-palette .pp-item')]
+            .find((b) => b.textContent.trim() === 'Task');
+        task.scrollIntoView({{ block: 'nearest' }});
+        const t = task.getBoundingClientRect();
+        const band = document.querySelector('#process-canvas [data-band="{ids['back']}"]')
+            .getBoundingClientRect();
+        return {{ x: Math.round(t.left + t.width / 2), y: Math.round(t.top + t.height / 2),
+                  toX: Math.round(band.left + band.width * 0.6),
+                  toY: Math.round(band.top + band.height / 2) }};
+    }})()"""))
+    loop.run_until_complete(handle.drag(spots["x"], spots["y"], spots["toX"], spots["toY"]))
+    time.sleep(2)
+
+    from rdflib import Graph, URIRef
+
+    graph = Graph().parse(data=loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()")),
+                          format="turtle")
+    held = set(graph.objects(URIRef(ids["back"]),
+                             URIRef("https://sBPMN.github.io/2.0/properties#flowNodeRef")))
+    assert len(held) == 1, f"the dropped shape is not in the lane it was dropped on: {held}"
+
+    # A drag released off its button fires no click; the next click must still add.
+    loop.run_until_complete(handle.js("window.__asked = [];"
+                                      " window.prompt = (m) => { window.__asked.push(m); return null; }; 1"))
+    at = loop.run_until_complete(handle.js("""(() => {
+        const store = [...document.querySelectorAll('#process-palette .pp-item')]
+            .find((b) => b.textContent.trim() === 'Data store');
+        store.scrollIntoView({ block: 'nearest' });
+        const r = store.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    asked = loop.run_until_complete(handle.js("window.__asked"))
+    assert asked == ["Name of the data store:"], f"the first click after a drag did nothing: {asked}"
+
+
+SHIFT = 8
+
+
+def test_clear_is_in_the_top_bar_and_works_with_the_editor_folded(scene_restored) -> None:
+    """Clear sat on the editor's own head, which folds away with the editor."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "document.body.classList.contains('editor-hidden')"
+        " || document.querySelector('#btn-editor-toggle').click(); 1"))
+    time.sleep(0.6)
+    loop.run_until_complete(handle.js("window.__asked = null;"
+                                      " window.confirm = (m) => { window.__asked = m; return true; }; 1"))
+    where = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('#btn-clear');
+        const r = b.getBoundingClientRect();
+        const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+        const hit = document.elementFromPoint(x, y);
+        return { inToolbar: !!b.closest('.app-header .toolbar'), x, y,
+                 onTop: !!hit && !!hit.closest('#btn-clear'),
+                 folded: document.body.classList.contains('editor-hidden') };
+    })()"""))
+    assert where["folded"], "the editor did not fold"
+    assert where["inToolbar"], "Clear is not in the top bar"
+    assert where["onTop"], "Clear cannot be pressed while the editor is folded"
+
+    loop.run_until_complete(handle.click(where["x"], where["y"]))
+    time.sleep(1)
+    left = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+    loop.run_until_complete(handle.js(
+        "document.body.classList.contains('editor-hidden')"
+        " && document.querySelector('#editor-rail').click(); 1"))
+    time.sleep(0.6)
+    assert loop.run_until_complete(handle.js("window.__asked")), "Clear did not ask first"
+    assert not left.strip(), f"Clear left the document: {left[:80]!r}"
+
+
+def _node_at(loop, handle, selector, attribute, value):
+    """Where a real click lands on that node, or None when something covers it."""
+    wanted = f'{selector}[{attribute}="{value}"]'
+    return loop.run_until_complete(handle.js(f"""(() => {{
+        const n = document.querySelector({json.dumps(wanted)});
+        if (!n) return null;
+        const r = (n.querySelector('.shape, .pc-box') || n).getBoundingClientRect();
+        const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+        const hit = document.elementFromPoint(x, y);
+        return hit && hit.closest({json.dumps(selector)}) === n ? {{ x, y }} : null;
+    }})()"""))
+
+
+def test_shift_click_picks_several_elements_and_delete_takes_them_all(scene_restored) -> None:
+    """Delete took the one element last clicked; there was no way to pick more."""
+    from rdflib import Graph
+
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js(
+        "document.querySelector('#drawer').classList.contains('collapsed')"
+        " || document.querySelector('#drawer-toggle').click();"
+        " window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.6)
+
+    ex = "http://example.org/kinds#"
+    for name in ("Q", "M"):
+        at = _node_at(loop, handle, "#canvas g.node", "data-id", ex + name)
+        assert at, f"{name} cannot be clicked on the canvas"
+        loop.run_until_complete(handle.click(at["x"], at["y"], modifiers=SHIFT))
+    seen = loop.run_until_complete(handle.js("""(() => ({
+        picked: [...document.querySelectorAll('#canvas g.node.highlight')].map((n) => n.dataset.id),
+        popup: !document.querySelector('#node-detail').classList.contains('hidden'),
+    }))()"""))
+    assert sorted(seen["picked"]) == [ex + "M", ex + "Q"], seen
+    assert not seen["popup"], "a shift-click opened the element's editor"
+
+    _press(loop, handle, "Delete", "Delete", 46)
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 3, tries=40)
+    left = Graph().parse(data=loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()")),
+                         format="turtle")
+    subjects = {str(s).removeprefix(ex) for s in left.subjects()}
+    assert not {"Q", "M"} & subjects, f"a picked element stayed: {subjects}"
+    assert {"S", "P"} <= subjects, f"an element nobody picked went: {subjects}"
+
+    _press(loop, handle, "z", "KeyZ", 90, modifiers=2)
+    back = _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 1, tries=40)
+    assert back == 3, f"one undo brought back {back} of 3 elements"
+
+
+def test_shift_click_picks_several_shapes_on_the_process_and_delete_takes_them(scene_restored) -> None:
+    from rdflib import Graph, URIRef
+
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_LANED))
+    _back_to_business(loop, handle)
+    present = "!!document.querySelector('#process-canvas [data-node=\"{}\"]')"
+    _settle(loop, handle, present.format(ids["log"]), False, tries=40)
+    _clear_the_business_canvas(loop, handle)
+
+    for key in ("ask", "log"):
+        at = _node_at(loop, handle, "#process-canvas [data-node]", "data-node", ids[key])
+        assert at, f"{key} cannot be clicked on the canvas"
+        loop.run_until_complete(handle.click(at["x"], at["y"], modifiers=SHIFT))
+    seen = loop.run_until_complete(handle.js("""(() => ({
+        picked: [...document.querySelectorAll('#process-canvas .pc-picked')]
+            .map((n) => n.getAttribute('data-node')),
+        editor: !document.querySelector('#process-detail').classList.contains('hidden'),
+    }))()"""))
+    assert sorted(seen["picked"]) == sorted([ids["ask"], ids["log"]]), seen
+    assert not seen["editor"], "a shift-click opened the shape's editor"
+
+    _press(loop, handle, "Delete", "Delete", 46)
+    _settle(loop, handle, present.format(ids["ask"]), True, tries=40)
+    left = Graph().parse(data=loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()")),
+                         format="turtle")
+    subjects = {str(s) for s in left.subjects()}
+    assert not {ids["ask"], ids["log"]} & subjects, "a picked shape stayed"
+    assert {ids["customer"], ids["desk"]} <= subjects, "a participant nobody picked went"
+    assert not set(left.subjects(None, URIRef("https://sBPMN.github.io/2.0/classes#sequenceFlow"))), (
+        "the flow between the two deleted steps stayed")
+
+    _press(loop, handle, "z", "KeyZ", 90, modifiers=2)
+    _settle(loop, handle, present.format(ids["ask"]), False, tries=40)
+    restored = loop.run_until_complete(handle.js(
+        "[" + ", ".join(present.format(ids[k]) for k in ("ask", "log")) + "]"))
+    assert restored == [True, True], "one undo did not bring both steps back"
+
+
+def test_the_element_tray_is_named_for_what_it_holds_and_says_what_each_is(scene_restored) -> None:
+    """The tray was called "Symbols" while Symbol is one of its own entries, and
+    each tooltip only repeated the class name."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#palette .palette-item').length", 0, tries=40)
+    tray = loop.run_until_complete(handle.js("""(() => ({
+        title: document.querySelector('#palette .tray-head span').textContent,
+        tips: [...document.querySelectorAll('#palette .palette-item')]
+            .map((chip) => [chip.textContent, chip.title]),
+    }))()"""))
+    assert tray["title"] == "Elements", tray["title"]
+    for label, tip in tray["tips"]:
+        said = tip.split(" (beam:")[0]
+        assert len(said.split()) >= 4, f"{label} has no tooltip saying what it is: {tip!r}"
+        assert "drag onto the canvas" in tip, f"{label}'s tooltip lost how to add it: {tip!r}"
+
+
+def test_the_fit_leaves_no_element_under_a_tray(scene_restored) -> None:
+    """The element tray floats over the canvas, and the fit drew the diagram under it."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.5)
+    seen = loop.run_until_complete(handle.js("""(() => {
+        const trays = ['#palette', '#motif-palette', '#system-badge']
+            .map((s) => document.querySelector(s)).filter((e) => e && e.offsetParent)
+            .map((e) => e.getBoundingClientRect());
+        const under = [...document.querySelectorAll('#canvas g.node')].filter((g) => {
+            const r = g.getBoundingClientRect();
+            return trays.some((t) => r.left < t.right && r.right > t.left
+                                   && r.top < t.bottom && r.bottom > t.top);
+        }).map((g) => g.textContent.slice(0, 30));
+        return { trays: trays.length, under };
+    })()"""))
+    assert seen["trays"] >= 2, "the trays are not on screen to be measured against"
+    assert not seen["under"], f"after a fit these sit under a tray: {seen['under']}"
+
+
+def test_a_pool_and_a_lane_are_resized_by_dragging_their_edges(scene_restored) -> None:
+    """Pools and lanes took whatever size the layout gave them."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_LANED))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, f"!!document.querySelector('#process-canvas [data-band=\"{ids['back']}\"]')",
+            False, tries=40)
+    _clear_the_business_canvas(loop, handle)
+    loop.run_until_complete(handle.js("window.PairAI.ProcessCanvas.zoomBy(0.7); 1"))
+    time.sleep(0.5)
+    before = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+
+    sizes = f"""(() => {{
+        const box = (id) => document.querySelector('#process-canvas [data-band="' + id + '"] > rect');
+        const grip = (sel) => {{
+            const r = document.querySelector(sel).getBoundingClientRect();
+            return {{ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }};
+        }};
+        return {{
+            lane: +box({json.dumps(ids['front'])}).getAttribute('height'),
+            pool: +box({json.dumps(ids['desk'])}).getAttribute('height'),
+            width: +box({json.dumps(ids['desk'])}).getAttribute('width'),
+            laneGrip: grip('#process-canvas .pc-resize-h[data-grip="' + {json.dumps(ids['front'])} + '"]'),
+            poolGrip: grip('#process-canvas [data-band="' + {json.dumps(ids['desk'])} + '"] .pc-resize-h'),
+            widthGrip: grip('#process-canvas [data-band="' + {json.dumps(ids['desk'])} + '"] .pc-resize-w'),
+        }};
+    }})()"""
+    start = loop.run_until_complete(handle.js(sizes))
+    g = start["laneGrip"]
+    loop.run_until_complete(handle.drag(g["x"], g["y"], g["x"], g["y"] + 50))
+    after_lane = loop.run_until_complete(handle.js(sizes))
+    g = after_lane["poolGrip"]
+    loop.run_until_complete(handle.drag(g["x"], g["y"], g["x"], g["y"] + 50))
+    after_pool = loop.run_until_complete(handle.js(sizes))
+    g = after_pool["widthGrip"]
+    loop.run_until_complete(handle.drag(g["x"], g["y"], g["x"] + 40, g["y"]))
+    after_width = loop.run_until_complete(handle.js(sizes))
+    left = loop.run_until_complete(handle.js("window.PairAI.Editor.getValue()"))
+
+    assert after_lane["lane"] > start["lane"] + 30, (start, after_lane)
+    assert after_pool["pool"] > start["pool"] + 30, (after_lane, after_pool)
+    assert after_width["width"] > start["width"] + 20, (after_pool, after_width)
+    assert left == before, "resizing a band wrote to the document"
+
+
+def test_the_renamed_labels_are_the_ones_on_screen(scene_restored) -> None:
+    """The renames the dry run listed, read off the page where each one shows."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    target = loop.run_until_complete(handle.js("""(() => {
+        for (const n of document.querySelectorAll('#process-canvas [data-node]')) {
+            if (!n.querySelector('.pc-box') || n.classList.contains('refined')) continue;
+            const r = n.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            const hit = document.elementFromPoint(x, y);
+            if (hit && hit.closest('[data-node]') === n) return { x, y };
+        }
+        return null;
+    })()"""))
+    assert target, "no plain activity could be clicked"
+    loop.run_until_complete(handle.click(target["x"], target["y"]))
+    carried_by = loop.run_until_complete(handle.js(
+        "(document.querySelector('#pd-refines option[value=\"__new__\"]') || {}).textContent"))
+    loop.run_until_complete(handle.js(
+        "document.querySelector('#process-detail').classList.add('hidden'); 1"))
+
+    store = loop.run_until_complete(handle.js("""(async () => {
+        window.__asked = [];
+        window.__prompt = window.prompt;
+        window.prompt = (message) => { window.__asked.push(message); return null; };
+        const palette = document.querySelector('#process-palette');
+        if (palette.classList.contains('folded')) palette.querySelector('.pp-fold').click();
+        await new Promise((r) => setTimeout(r, 300));
+        const store = [...document.querySelectorAll('#process-palette .pp-item')]
+            .find((b) => /store|database/i.test(b.textContent));
+        if (!store) return null;
+        store.scrollIntoView({ block: 'nearest' });
+        const r = store.getBoundingClientRect();
+        return { label: store.textContent.trim(),
+                 x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    assert store, "the process palette offers no data store"
+    loop.run_until_complete(handle.click(store["x"], store["y"]))
+
+    seen = loop.run_until_complete(handle.js("""(async () => {
+        const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+        const text = (sel) => ((document.querySelector(sel) || {}).textContent || '').trim();
+        const out = {
+            level: text('#level-business'),
+            drawer: text('[data-drawer-tab="motifs"]').replace(/[0-9]+/g, '').trim(),
+            library: text('[data-library-tab="motifs"]').replace(/[0-9]+/g, '').trim(),
+        };
+
+        document.querySelector('#level-architecture').click();
+        await wait(800);
+        out.tray = text('#motif-palette .tray-head span');
+        const add = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === '+ system');
+        if (add) add.click();
+
+        document.querySelector('#level-risk').click();
+        await wait(1500);
+        out.manual = [...document.querySelectorAll('#risk-palette .pp-group')].map((g) => g.textContent);
+        out.layers = [...document.querySelectorAll('.layer-toggle')].map((b) => b.textContent);
+
+        document.querySelector('#btn-library').click();
+        await wait(1200);
+        document.querySelector('.library-tab[data-library-tab="risks"]').click();
+        await wait(300);
+        const row = document.querySelector('#library-list .lib-row');
+        if (row) row.click();
+        await wait(400);
+        out.riskPage = [...document.querySelectorAll('#library-detail h3')].map((h) => h.textContent.trim());
+        document.querySelector('#btn-library-close').click();
+        window.prompt = window.__prompt;
+        out.asked = window.__asked;
+        return out;
+    })()"""))
+    _back_to_business(loop, handle)
+
+    assert seen["level"] == "Process", seen
+    assert seen["drawer"] == seen["library"] == seen["tray"] == "Architectural motifs", seen
+    assert store["label"] == "Data store", store
+    assert "Manual risk modelling" in seen["manual"], seen
+    assert "Process" in seen["layers"] and "Business" not in seen["layers"], seen
+    assert carried_by == "+ system…", carried_by
+    assert any(h.startswith("Related motifs") for h in seen["riskPage"]), seen["riskPage"]
+    assert not any("Structures it applies to" in h for h in seen["riskPage"]), seen["riskPage"]
+    assert seen["asked"] == ["Name of the data store:", "Name of the new system:"], seen["asked"]
+
+
+def test_every_risk_is_listed_on_one_page_under_the_name_the_library_gives_it(page) -> None:
+    """There was no one page or URL listing every risk the tool can raise."""
+    loop, handle = page
+    rail = loop.run_until_complete(handle.js("""(async () => {
+        const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+        document.querySelector('#btn-library').click();
+        await wait(1200);
+        document.querySelector('.library-tab[data-library-tab="risks"]').click();
+        await wait(400);
+        // Back to the landing, whatever page an earlier test left open.
+        for (let i = 0; i < 6 && document.querySelector('#library-detail .lib-back'); i++) {
+            document.querySelector('#library-detail .lib-back').click();
+            await wait(250);
+        }
+        for (const shut of document.querySelectorAll('#library-list .lib-group.shut')) {
+            shut.click();
+            await wait(100);
+        }
+        const names = [...document.querySelectorAll('#library-list .lib-row-name')]
+            .map((n) => n.textContent);
+        const link = document.querySelector('#library-detail a[href="/risks"]');
+        document.querySelector('#btn-library-close').click();
+        return { names, linked: !!link };
+    })()"""))
+    listed = loop.run_until_complete(handle.js("""(async () => {
+        const served = await (await fetch('/api/library')).json();
+        const wanted = served.riskPatterns[served.riskPatterns.length - 1].id;
+        const frame = document.createElement('iframe');
+        frame.style.cssText = 'position:fixed;left:0;top:0;width:900px;height:700px;z-index:9999';
+        frame.src = '/risks#' + wanted;
+        document.body.appendChild(frame);
+        for (let i = 0; i < 60; i++) {
+            await new Promise((r) => setTimeout(r, 200));
+            const doc = frame.contentDocument;
+            if (doc && doc.querySelectorAll('.rl-entry').length) break;
+        }
+        await new Promise((r) => setTimeout(r, 300));
+        const doc = frame.contentDocument;
+        const entries = [...doc.querySelectorAll('.rl-entry')];
+        const at = doc.getElementById(wanted);
+        const out = {
+            served: served.riskPatterns.length,
+            wanted,
+            names: entries.map((s) => s.querySelector('h3').textContent),
+            rows: entries.length ? [...entries[0].querySelectorAll('dt')].map((d) => d.textContent) : [],
+            inView: !!at && at.getBoundingClientRect().top < 700 && at.getBoundingClientRect().bottom > 0,
+            wide: doc.documentElement.scrollWidth > doc.documentElement.clientWidth,
+        };
+        frame.remove();
+        return out;
+    })()"""))
+
+    assert listed["names"], "the page listed nothing"
+    assert len(listed["names"]) == listed["served"], listed
+    assert sorted(listed["names"]) == sorted(rail["names"]), (
+        "the page names a risk differently from the library rail")
+    assert listed["rows"] == ["Risk mechanism", "Raised when", "May lead to",
+                              "Suggested controls", "Related motifs"], listed["rows"]
+    assert listed["inView"], f"/risks#{listed['wanted']} did not open at that risk"
+    assert not listed["wide"], "the page scrolls sideways"
+    assert rail["linked"], "the library does not link to the page"
+
+
+def test_a_second_process_model_is_drawn_on_its_own_and_switched_to(scene_restored) -> None:
+    """The canvas held one process model, so the development process had nowhere to go."""
+    loop, handle = scene_restored
+    ids = loop.run_until_complete(handle.js(_TWO_POOLS))
+    _back_to_business(loop, handle)
+    _settle(loop, handle, "document.querySelectorAll('#process-canvas .pc-pool').length", 0, tries=40)
+    loop.run_until_complete(handle.js(
+        "window.__answers = ['Development process', 'Data team'];"
+        " window.prompt = () => window.__answers.shift() || null; 1"))
+    pools = """[...document.querySelectorAll('#process-canvas .pc-pool')]
+        .map((g) => g.getAttribute('data-band')).sort()"""
+    picked = """(() => { const s = document.querySelector('#process-palette .pp-model');
+        return s ? s.selectedOptions[0].textContent : null; })()"""
+
+    # The palette scrolls; an earlier test may have left it scrolled past its top row.
+    loop.run_until_complete(handle.js(
+        "(document.querySelector('#process-palette .pp-model-add') || {scrollIntoView() {}})"
+        ".scrollIntoView({ block: 'nearest' }); 1"))
+    at = _centre(loop, handle, "#process-palette .pp-model-add")
+    assert at, "there is no way to start another process model"
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    _settle(loop, handle, picked, None, tries=40)
+    opened = loop.run_until_complete(handle.js(picked))
+    empty = loop.run_until_complete(handle.js(pools))
+
+    loop.run_until_complete(handle.js("""(() => {
+        const palette = document.querySelector('#process-palette');
+        if (palette.classList.contains('folded')) palette.querySelector('.pp-fold').click();
+        return 1;
+    })()"""))
+    time.sleep(0.4)
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = [...document.querySelectorAll('#process-palette .pp-item')]
+            .find((item) => item.textContent.trim() === 'Pool');
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    _settle(loop, handle, "document.querySelectorAll('#process-canvas .pc-pool').length", 0, tries=40)
+    in_new = loop.run_until_complete(handle.js(pools))
+
+    loop.run_until_complete(handle.js("""(() => {
+        const s = document.querySelector('#process-palette .pp-model');
+        s.value = [...s.options].find((o) => o.textContent.startsWith('Business process')).value;
+        s.dispatchEvent(new Event('change'));
+        return 1;
+    })()"""))
+    time.sleep(0.8)
+    back = loop.run_until_complete(handle.js(pools))
+
+    assert opened == "Development process (0)", f"the new model was not opened: {opened!r}"
+    assert empty == [], f"the new model drew the other model's pools: {empty}"
+    assert len(in_new) == 1 and in_new[0] not in (ids["ask"], ids["answer"]), in_new
+    assert len(back) == 2 and in_new[0] not in back, (
+        f"switching back drew {back}, the new pool was {in_new}")
+
+
+_BY_CATEGORY = chr(10).join([
+    "@prefix beam: <http://w3id.org/beam/core#> .",
+    "@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .",
+    "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .",
+    "@prefix ex: <http://example.org/possible#> .",
+    'ex:S a beam:System ; rdfs:label "Help desk" ; beam:hasProcess ex:Retrieve, ex:Build, ex:Generate ;'
+    " beam:hasResource ex:Question, ex:Manuals, ex:Passages, ex:Prompt, ex:LLM, ex:Answer .",
+    'ex:Question a beam:Data ; rdfs:label "Question" ; pair:playsRole pair:UserInputRoles .',
+    'ex:Manuals a beam:Data ; rdfs:label "Manuals" ; pair:playsRole pair:KnowledgeContextRoles .',
+    'ex:Retrieve a beam:Process ; rdfs:label "Find passages" ; pair:playsRole pair:RetrievalRoles ;'
+    " beam:use ex:Question, ex:Manuals ; beam:produce ex:Passages .",
+    'ex:Passages a beam:Data ; rdfs:label "Passages" ; pair:playsRole pair:KnowledgeContextRoles .',
+    'ex:Build a beam:Transform ; rdfs:label "Build prompt" ; pair:playsRole pair:GenerationRoles ;'
+    " beam:use ex:Question, ex:Passages ; beam:produce ex:Prompt .",
+    'ex:Prompt a beam:Data ; rdfs:label "Prompt" ; pair:playsRole pair:PromptResponseRoles .',
+    'ex:LLM a beam:StatisticalModel ; rdfs:label "LLM" ; pair:playsRole pair:ModelRoles .',
+    'ex:Generate a beam:Infer ; rdfs:label "Answer" ; pair:playsRole pair:GenerationRoles ;'
+    " beam:use ex:Prompt, ex:LLM ; beam:produce ex:Answer .",
+    'ex:Answer a beam:Data ; rdfs:label "Reply" ; pair:playsRole pair:PromptResponseRoles .',
+])
+
+
+def test_a_possible_risk_is_offered_and_one_click_makes_it_a_finding(scene_restored) -> None:
+    """A RAG tagged only with categories raises nothing, because a category
+    matches nothing. Under the findings it is offered as possible risks, each
+    with the tags it needs, and applying one raises it for real."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "window.PairAI.Editor.setValue(" + json.dumps(_BY_CATEGORY) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("""(() => {
+        if (document.querySelector('#drawer').classList.contains('collapsed'))
+            document.querySelector('#drawer-toggle').click();
+        document.querySelector('[data-drawer-tab="findings"]').click();
+        document.querySelector('#btn-assess').click();
+        return 1;
+    })()"""))
+    cards = _settle(loop, handle, "document.querySelectorAll('#possible-list .possible-place').length", 0, tries=120)
+    assert cards, "no possible risk was offered for a diagram tagged by category"
+    before = loop.run_until_complete(handle.js(
+        "Number(document.querySelector('#findings-count').textContent || 0)"))
+    assert before == 0, "a category raised a finding on its own"
+
+    at = loop.run_until_complete(handle.js("""(() => {
+        const b = document.querySelector('#possible-list .possible-place .btn');
+        b.scrollIntoView({ block: 'center' });
+        const r = b.getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2),
+                 label: b.closest('.possible-card').querySelector('strong').textContent };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    after = _settle(loop, handle, "Number(document.querySelector('#findings-count').textContent || 0)", 0, tries=120)
+    titles = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#findings-list .finding-head strong')].map((s) => s.textContent)"))
+    wanted = at["label"].replace("Possible ", "Candidate ")
+    assert after and wanted in titles, f"applying {at['label']} did not raise it: {titles}"
+
+
+def test_the_starter_scene_names_the_steps_an_activity_is_carried_out_by(scene_restored) -> None:
+    """Starter loads the tutorial's scene; the activity's editor offers the steps of the
+    system it refines, and the chip opens that system with those steps picked out."""
+    loop, handle = scene_restored
+    _editor_open(loop, handle)
+    _back_to_business(loop, handle)
+    at = loop.run_until_complete(handle.js("""(() => {
+        const r = document.querySelector('#btn-starter').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+    })()"""))
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    find = """(() => {
+        const box = [...document.querySelectorAll('#process-canvas .pc-activity')]
+            .find((g) => g.textContent.includes('Answer question'));
+        if (!box) return null;
+        const part = (sel) => { const n = box.querySelector(sel); if (!n) return null;
+            const r = n.getBoundingClientRect();
+            return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; };
+        return { pencil: part('.pc-edit'), chip: part('.pc-open') };
+    })()"""
+    where = _settle(loop, handle, find, None, tries=40)
+    state = loop.run_until_complete(handle.js("""(() => ({
+        level: window.PairAI.state.level, scoped: window.PairAI.state.scopedSystem,
+        starts: window.PairAI.Editor.getValue().slice(0, 80),
+        drawn: [...document.querySelectorAll('#process-canvas .pc-activity')].map((g) => g.textContent.slice(0, 20)),
+        model: [...document.querySelectorAll('select')].map((s) => s.value).join('|') }))()"""))
+    assert where and where["pencil"] and where["chip"], f"Starter did not draw the refined activity: {where} {state}"
+
+    loop.run_until_complete(handle.click(where["pencil"]["x"], where["pencil"]["y"]))
+    time.sleep(1)
+    editor = loop.run_until_complete(handle.js("""(() => {
+        const steps = document.querySelector('#process-detail #pd-steps');
+        return {
+            offered: steps ? steps.options.length : 0,
+            named: steps ? [...steps.selectedOptions].map((o) => o.textContent).sort() : [],
+            carry: !!document.querySelector('#process-detail #pd-carry'),
+        };
+    })()"""))
+    assert editor["named"] == ["Build prompt", "Find passages", "Generate answer"], editor
+    assert editor["offered"] == 3, "offered a step of a system this activity does not refine"
+    assert not editor["carry"], "offered to carry data that already names its element"
+    loop.run_until_complete(handle.js('document.querySelector("#process-detail").classList.add("hidden")'))
+
+    where = loop.run_until_complete(handle.js(find))
+    loop.run_until_complete(handle.click(where["chip"]["x"], where["chip"]["y"]))
+    picked = _settle(loop, handle, """(() => [...document.querySelectorAll('#canvas .node.highlight')]
+        .map((g) => g.textContent.trim()).filter(Boolean).length || null)()""", None, tries=30)
+    assert _on_architecture(loop, handle), "the chip did not open the architecture"
+    labels = loop.run_until_complete(handle.js("""[...document.querySelectorAll('.node.highlight')]
+        .map((g) => g.dataset.id.split('#').pop()).sort()"""))
+    assert labels == ["BuildPrompt", "FindPassages", "GenerateAnswer"], (picked, labels)
+
+
+def test_an_edit_on_the_process_canvas_keeps_the_process_level(scene_restored) -> None:
+    """Adding or deleting on the business canvas rewrites the document, and the
+    rewrite must not carry the reader off to the architecture: not when what is
+    on the page is only a data object or a note, and not when the last pool goes."""
+    loop, handle = scene_restored
+    level = "document.querySelector('#level-business').classList.contains('active')"
+    # a palette entry may ask for a name; a dialog would block a headless page
+    loop.run_until_complete(handle.js("window.prompt = () => 'Probe'; window.confirm = () => true; 1"))
+    loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(''); 1"))
+    time.sleep(1.5)
+    at = _spot(loop, handle, "document.querySelector('#level-business')")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    time.sleep(1)
+    seen = {"start": loop.run_until_complete(handle.js(level))}
+    names = loop.run_until_complete(handle.js("""(() => {
+        const host = document.querySelector('#process-palette');
+        if (!host.querySelector('.pp-item')) host.querySelector('.pp-fold')?.click();
+        return [...host.querySelectorAll('.pp-item')].map((b) => b.textContent.trim());
+    })()"""))
+    artifacts = [n for n in names if n.lower() in ("data object", "data store", "text annotation", "note")]
+    assert artifacts, names
+    for label in artifacts[:2]:
+        _add_from_palette(loop, handle, label)
+        seen["added " + label] = loop.run_until_complete(handle.js(level))
+    pool = next((n for n in names if n.lower() in ("participant", "pool")), None)
+    if pool:
+        _add_from_palette(loop, handle, pool)
+        seen["added " + pool] = loop.run_until_complete(handle.js(level))
+        loop.run_until_complete(handle.js("""(async () => {
+            const ttl = window.PairAI.Editor.getValue();
+            const view = await (await fetch('/api/process', { method: 'POST',
+                headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ttl }) })).json();
+            const id = view.participants[0].id;
+            const out = await (await fetch('/api/process-edit', { method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ttl, op: 'delete', element: id }) })).json();
+            window.PairAI.Editor.setValue(out.ttl);
+            return 1;
+        })()"""))
+        time.sleep(2.5)
+        seen["deleted the last pool"] = loop.run_until_complete(handle.js(level))
+    assert all(seen.values()), f"an edit left the process level: {seen} (palette: {names})"
+
+
+def test_a_box_a_step_reads_and_writes_is_drawn_once_with_two_arrowheads(scene_restored) -> None:
+    """Read and written is one box with an arrow each way, never the same box twice."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    loop.run_until_complete(handle.js("""(async () => {
+      const get = async (name) => (await fetch('/api/examples/' + name)).json();
+      const a = await get('support_chatbot'), p = await get('customer_support');
+      const ttl = a.ttl + String.fromCharCode(10, 10) + p.ttl;
+      const r = await (await fetch('/api/process-edit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ttl, op: 'set-data-direction', reference: 'http://w3id.org/airiskkg/example/customer-support#KnowledgeRef',
+          activity: 'http://w3id.org/airiskkg/example/customer-support#AnswerQuestion', direction: 'both' }) })).json();
+      window.PairAI.Editor.setValue(r.ttl);
+      return 1; })()"""))
+    seen = _settle(loop, handle, """(() => {
+        const boxes = [...document.querySelectorAll('#process-canvas [data-node]')]
+          .filter((g) => g.querySelector('.pc-data-label') && g.textContent.includes('Knowledge base'));
+        if (!boxes.length) return null;
+        const links = boxes.flatMap((g) => [...g.querySelectorAll('.pc-data-link')]);
+        const both = links.filter((l) => l.getAttribute('marker-start')).length;
+        // waited for the edit's redraw, not for the drawing that was there before it
+        return both ? { boxes: boxes.length, both } : null;
+    })()""", None, tries=30)
+    assert seen, "the knowledge base was not drawn"
+    # the store is also written by the agent's step, so it is drawn by that step too: one box per step
+    assert seen["both"] == 1, f"no box carries an arrow each way: {seen}"
+    assert seen["boxes"] == 2, f"one step drew the box twice: {seen}"
+
+
+def test_a_role_with_finer_roles_heads_its_own_submenu(scene_restored) -> None:
+    """An arrow read as "open me, you cannot stop here": the submenu a role opens starts
+    with the role itself, so Generative Model is picked as plainly as Foundation LLM."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.5)
+    _open_popup_on(loop, handle, "LLM")
+    _open_role_menu(loop, handle)
+    at = _centre(loop, handle, "#nd-role-mp .mp-list > .mp-row")
+    loop.run_until_complete(handle.hover(at["x"], at["y"]))
+    for label in ("Model", "Generative Model"):
+        menus = _menu_rows(loop, handle)
+        row = next(r for r in menus[-1]["rows"] if r["label"] == label)
+        loop.run_until_complete(handle.hover(row["x"], row["y"]))
+        time.sleep(0.4)
+    menus = _menu_rows(loop, handle)
+    first = menus[-1]["rows"][0]
+    assert first["label"] == "Use Generative Model", [r["label"] for r in menus[-1]["rows"]]
+    loop.run_until_complete(handle.click(first["x"], first["y"]))
+    time.sleep(0.6)
+    chips = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#nd-role-mp .mp-chip')].map((c) => c.textContent.replace('×', '').trim())"))
+    assert "Generative Model" in chips, chips
+
+
+def test_a_system_moves_as_one_with_its_frame(scene_restored) -> None:
+    """A dragged frame takes every element inside it along; a click still selects it."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas .system-bound').length", 0, tries=40)
+    before = loop.run_until_complete(handle.js("""(() => {
+        const frame = document.querySelector('#canvas .system-bound');
+        const members = new Set([...frame.parentNode.querySelectorAll('.node')].map((n) => n.dataset.id));
+        const box = frame.querySelector('.system-bound-box').getBoundingClientRect();
+        const id = frame.dataset.id;
+        const sys = window.PairAI.state.lastGraph.systems.find((s) => s.id === id);
+        const own = (sys.members || []).filter((m) => document.querySelector(`#canvas .node[data-id="${CSS.escape(m)}"]`));
+        const at = Object.fromEntries(own.map((m) => { const r = document.querySelector(`#canvas .node[data-id="${CSS.escape(m)}"]`).getBoundingClientRect(); return [m, [r.left, r.top]]; }));
+        return { x: Math.round(box.left + 6), y: Math.round(box.top + 6), at, id };
+    })()"""))
+    assert before["at"], "the frame holds nothing drawn"
+    loop.run_until_complete(handle.drag(before["x"], before["y"], before["x"] + 80, before["y"] + 40))
+    time.sleep(0.6)
+    after = loop.run_until_complete(handle.js("""(() => Object.fromEntries(Object.keys(%s).map((m) => {
+        const r = document.querySelector(`#canvas .node[data-id="${CSS.escape(m)}"]`).getBoundingClientRect();
+        return [m, [r.left, r.top]]; })))()""" % json.dumps(before["at"])))
+    shifts = {round(after[m][0] - before["at"][m][0]) for m in after}
+    assert len(shifts) == 1 and next(iter(shifts)) > 20, f"the elements did not move together: {shifts}"
+
+
+def test_a_data_box_joined_to_a_step_still_opens_its_panel(scene_restored) -> None:
+    """The box's connector dot covered most of a small box, so a click started a
+    connection instead: a press that goes nowhere opens the box's panel."""
+    loop, handle = scene_restored
+    # what an earlier test left open must not sit over the box
+    loop.run_until_complete(handle.js(
+        "document.querySelectorAll('.node-detail, #process-detail').forEach((d) => d.classList.add('hidden')); 1"))
+    _editor_open(loop, handle)
+    _back_to_business(loop, handle)
+    at = _spot(loop, handle, "document.querySelector('#btn-starter')")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    box = _settle(loop, handle, """(() => { const g = [...document.querySelectorAll('#process-canvas [data-node]')]
+        .find((n) => n.querySelector('.pc-data-label') && n.textContent.includes('Knowledge base'));
+        if (!g) return null; const r = g.querySelector('path, rect, polygon').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; })()""", None, tries=40)
+    assert box, "the starter scene drew no knowledge base"
+    loop.run_until_complete(handle.click(box["x"], box["y"]))
+    _settle(loop, handle, "document.querySelector('#process-detail').classList.contains('hidden')", True, tries=20)
+    panel = loop.run_until_complete(handle.js("""({ hidden: document.querySelector('#process-detail').classList.contains('hidden'),
+        head: (document.querySelector('#process-detail .nd-head') || {}).textContent,
+        ways: document.querySelectorAll('#process-detail .pd-data-way').length })"""))
+    assert not panel["hidden"] and panel["head"] == "data store", panel
+    assert panel["ways"] >= 1, "the panel does not say which way each step uses it"
+    loop.run_until_complete(handle.js('document.querySelector("#process-detail").classList.add("hidden"); 1'))
+
+
+def test_a_data_box_joined_to_a_step_is_dragged_and_its_arrow_follows(scene_restored) -> None:
+    """A box a step reads sat fixed above the step, over its sequence flow: it is
+    moved like any box, and the association runs to wherever it now stands."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js(
+        "document.querySelectorAll('.node-detail, #process-detail').forEach((d) => d.classList.add('hidden')); 1"))
+    _editor_open(loop, handle)
+    _back_to_business(loop, handle)
+    at = _spot(loop, handle, "document.querySelector('#btn-starter')")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    where = """(() => { const g = [...document.querySelectorAll('#process-canvas [data-node]')]
+        .find((n) => n.querySelector('.pc-data-label') && n.textContent.includes('Knowledge base'));
+        if (!g) return null; const r = g.querySelector('.pc-data-shape').getBoundingClientRect();
+        const l = g.querySelector('.pc-data-link').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2),
+                 left: Math.round(r.left), top: Math.round(r.top),
+                 line: [Math.round(l.left), Math.round(l.top), Math.round(l.right), Math.round(l.bottom)] }; })()"""
+    before = _settle(loop, handle, where, None, tries=40)
+    assert before, "the starter scene drew no knowledge base"
+    under = loop.run_until_complete(handle.js(
+        f"(() => {{ const e = document.elementFromPoint({before['x']}, {before['y']}); "
+        "return e.getAttribute('class') + ' in ' + (e.parentNode.getAttribute('class') || ''); })()"))
+    loop.run_until_complete(handle.drag(before["x"], before["y"], before["x"] + 140, before["y"] + 70))
+    time.sleep(0.8)
+    after = loop.run_until_complete(handle.js(where))
+    moved = (after["left"] - before["left"], after["top"] - before["top"])
+    assert moved[0] > 60 and moved[1] > 30, f"the box moved by {moved}; the press landed on {under}"
+    assert after["line"] != before["line"], "the association stayed where the box was"
+    near = after["line"][0] - 4 <= after["x"] <= after["line"][2] + 4 or after["line"][1] - 4 <= after["y"] <= after["line"][3] + 4
+    assert near, f"the association does not reach the moved box: {after}"
+    opened = loop.run_until_complete(handle.js("!document.querySelector('#process-detail').classList.contains('hidden')"))
+    assert not opened, "a drag also opened the box's panel"
+
+
+def test_descending_after_an_assessment_dims_nothing(scene_restored) -> None:
+    """A finding picked before, or the steps an activity names, left the opened
+    architecture greyed out until a click on blank canvas."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    _settle(loop, handle, 'document.querySelectorAll(".finding-card").length', 0, tries=150)
+    loop.run_until_complete(handle.js("""(() => { const h = document.querySelector('.finding-card .finding-head'); h.click(); return 1; })()"""))
+    time.sleep(1)
+    _back_to_business(loop, handle)
+    _descend(loop, handle)
+    time.sleep(2.5)
+    dim = loop.run_until_complete(handle.js("document.querySelector('#viewport').classList.contains('has-highlight')"))
+    assert not dim, "the opened architecture is greyed out"
+
+
+def test_a_resized_editor_still_folds_away(page) -> None:
+    """Dragging the divider wrote an inline width that beat the folded rule, so the
+    editor folded to its rail and kept all its room."""
+    loop, handle = page
+    _editor_open(loop, handle)
+    width = "Math.round(document.querySelector('#editor-pane').getBoundingClientRect().width)"
+    divider = _spot(loop, handle, "document.querySelector('#divider')")
+    loop.run_until_complete(handle.drag(divider["x"], divider["y"] + 120, divider["x"] + 160, divider["y"] + 120))
+    time.sleep(0.6)
+    dragged = loop.run_until_complete(handle.js(width))
+    toggle = _spot(loop, handle, "document.querySelector('#btn-editor-toggle')")
+    loop.run_until_complete(handle.click(toggle["x"], toggle["y"]))
+    time.sleep(1)
+    folded = loop.run_until_complete(handle.js(width))
+    toggle = _spot(loop, handle, "document.querySelector('#btn-editor-toggle')")
+    loop.run_until_complete(handle.click(toggle["x"], toggle["y"]))
+    time.sleep(1)
+    back = loop.run_until_complete(handle.js(width))
+    assert folded < 80, f"the editor folded to {folded}px after a resize to {dragged}px"
+    assert abs(back - dragged) <= 4, f"unfolded to {back}px, not the {dragged}px it was resized to"
+
+
+_ADD = """(async (op) => {
+    const r = await fetch('/api/graph-edit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ttl: window.PairAI.Editor.getValue() || '@prefix beam: <http://w3id.org/beam/core#> .', ...op }) });
+    const j = await r.json(); if (j.ttl) window.PairAI.Editor.setValue(j.ttl); return j.error || 1; })(%s)"""
+
+_SPOTS = """Object.fromEntries([...document.querySelectorAll('#canvas g.node')].map((n) => {
+    const r = n.querySelector('.shape').getBBox(); return [n.getAttribute('data-id'), [Math.round(r.x), Math.round(r.y)]]; }))"""
+
+
+def test_an_addition_neither_jumps_the_view_nor_inherits_a_deleted_spot(page) -> None:
+    """A new element takes the lowest free id, so a motif added after a delete
+    landed where the deleted, dragged elements had stood; and every addition
+    refitted the view, zooming out from a fit that had blown one element up: the
+    addition is brought into view at the same zoom."""
+    loop, handle = page
+    try:
+        loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(''); 1"))
+        time.sleep(1)
+        loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click(); 1'))
+        motif = json.dumps({"op": "add-motif", "motif": "RetrievalAugmentedGenerationMotif"})
+        assert loop.run_until_complete(handle.js(_ADD % motif)) == 1
+        _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+        time.sleep(1)
+        laid = loop.run_until_complete(handle.js(_SPOTS))
+        # a box a press reaches: a tray an earlier test left open can cover some of them
+        reach = loop.run_until_complete(handle.js("""(() => {
+            for (const n of document.querySelectorAll('#canvas g.node')) {
+                const r = n.querySelector('.shape').getBoundingClientRect();
+                const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+                const hit = document.elementFromPoint(x, y);
+                if (hit && hit.closest('g.node') === n) return { id: n.getAttribute('data-id'), x, y };
+            }
+            return null; })()"""))
+        assert reach, "no element of the motif can be pressed"
+        first, box = reach["id"], reach
+        loop.run_until_complete(handle.drag(box["x"], box["y"], box["x"] + 60, box["y"] + 160))
+        time.sleep(0.5)
+        assert loop.run_until_complete(handle.js(_SPOTS))[first] != laid[first], "the drag moved nothing"
+
+        loop.run_until_complete(handle.js("window.PairAI.Editor.setValue('@prefix beam: <http://w3id.org/beam/core#> .'); 1"))
+        time.sleep(1.5)
+        assert loop.run_until_complete(handle.js(_ADD % motif)) == 1
+        _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+        time.sleep(1)
+        again = loop.run_until_complete(handle.js(_SPOTS))
+        assert again.get(first) == laid[first], (
+            f"{first} came back where the deleted one was dragged to: {again.get(first)} vs {laid[first]}")
+
+        before = loop.run_until_complete(handle.js("document.querySelector('#canvas').getAttribute('viewBox')"))
+        element = json.dumps({"op": "add-element", "classUri": "http://w3id.org/beam/core#Data", "label": "Extra"})
+        assert loop.run_until_complete(handle.js(_ADD % element)) == 1
+        _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 9, tries=40)
+        time.sleep(1)
+        after = loop.run_until_complete(handle.js("document.querySelector('#canvas').getAttribute('viewBox')"))
+        visible = loop.run_until_complete(handle.js("""(() => { const c = document.querySelector('#canvas').getBoundingClientRect();
+            const n = [...document.querySelectorAll('#canvas g.node')].find((g) => g.textContent.startsWith('Extra'));
+            const r = n.getBoundingClientRect(); return r.left >= c.left && r.right <= c.right && r.top >= c.top && r.bottom <= c.bottom; })()"""))
+        assert visible, "the added element is off screen"
+        zoom = lambda box: round(float(box.split()[2]), 1)
+        assert zoom(after) == zoom(before), f"adding one element zoomed the view: {before} -> {after}"
+    finally:
+        loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(''); 1"))

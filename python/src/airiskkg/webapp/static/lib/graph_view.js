@@ -1,11 +1,11 @@
 
-import { MultiPicker } from "./multipicker.js";
+import { MultiPicker, categoryPickerOptions } from "./multipicker.js";
 "use strict";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 // Things that sit over the canvas and do their own scrolling.
-const OVERLAYS = ".palette, .motif-palette, .node-detail, .mp-pop";
+const OVERLAYS = ".palette, .motif-palette, .node-detail, .mp-pop, .mp-fly";
 
 const NODE_H = 44;
 const LAYER_GAP = 110;
@@ -28,6 +28,7 @@ let manualPositions = new Map(); // node id -> {x,y} drag overrides (view-only)
 let lastNodeIds = "";            // to refit only when the element set changes
 let suppressFitOnce = false;     // set by placeNodeAt so a dropped node stays put
 let selectedId = null;           // the element clicked for editing (Del key target)
+let picked = new Set();          // shift-clicked elements, deleted together
 let selectedSystem = null;       // which architecture a new element joins
 let systemExtent = null;         // what the frames occupy, for the fit
 
@@ -61,8 +62,21 @@ function compareIds(a, b) {
 }
 
 
-function connectedComponents(nodes, flowEdges) {
+function ownersOf(systems) {
+  const owner = new Map();
+  for (const system of systems || []) {
+    for (const member of system.members || []) {
+      if (!owner.has(member)) owner.set(member, system.id);
+    }
+  }
+  return owner;
+}
+
+// A flow between two systems never joins their components: laid out as one
+// chain, each frame would be stretched across the other.
+function connectedComponents(nodes, flowEdges, owner = new Map()) {
   const parent = new Map(nodes.map((n) => [n.id, n.id]));
+  const rootOwner = new Map(nodes.map((n) => [n.id, owner.get(n.id) || null]));
   const find = (id) => {
     while (parent.get(id) !== id) {
       parent.set(id, parent.get(parent.get(id)));
@@ -73,7 +87,12 @@ function connectedComponents(nodes, flowEdges) {
   const union = (a, b) => {
     const ra = find(a);
     const rb = find(b);
-    if (ra !== rb) parent.set(ra, rb);
+    if (ra === rb) return;
+    const oa = rootOwner.get(ra);
+    const ob = rootOwner.get(rb);
+    if (oa && ob && oa !== ob) return;
+    parent.set(ra, rb);
+    rootOwner.set(rb, ob || oa);
   };
   for (const e of flowEdges) union(e.source, e.target);
 
@@ -83,26 +102,35 @@ function connectedComponents(nodes, flowEdges) {
     if (!groups.has(root)) groups.set(root, []);
     groups.get(root).push(n);
   }
-  const components = Array.from(groups.values()).map((groupNodes) => {
+  const components = Array.from(groups.entries()).map(([root, groupNodes]) => {
     const memberIds = new Set(groupNodes.map((n) => n.id));
     return {
       nodes: groupNodes,
-      edges: flowEdges.filter((e) => memberIds.has(e.source)),
+      edges: flowEdges.filter((e) => memberIds.has(e.source) && memberIds.has(e.target)),
+      owner: rootOwner.get(root),
       // Oldest element in the component decides where the band sits.
       key: groupNodes.map((n) => n.id).sort(compareIds)[0],
     };
   });
-  components.sort((a, b) => compareIds(a.key, b.key));
+  // A system's components stay together, so its frame encloses only its own.
+  const firstOf = new Map();
+  for (const c of components) {
+    if (c.owner && (!firstOf.has(c.owner) || compareIds(c.key, firstOf.get(c.owner)) < 0)) {
+      firstOf.set(c.owner, c.key);
+    }
+  }
+  const rank = (c) => (c.owner ? firstOf.get(c.owner) : c.key);
+  components.sort((a, b) => compareIds(rank(a), rank(b)) || compareIds(a.key, b.key));
   return components;
 }
 
-function layout(nodes, edges) {
+function layout(nodes, edges, systems = current.systems) {
   const ids = new Set(nodes.map((n) => n.id));
   const flowEdges = edges.filter((e) => ids.has(e.source) && ids.has(e.target));
 
   positions = new Map();
   let offsetY = 0;
-  for (const component of connectedComponents(nodes, flowEdges)) {
+  for (const component of connectedComponents(nodes, flowEdges, ownersOf(systems))) {
     const local = layoutComponent(component.nodes, component.edges);
     let minY = Infinity;
     let maxY = -Infinity;
@@ -265,7 +293,13 @@ function render(data) {
   current = data;
   highlighted = new Set();
   selectedId = null;
+  picked = new Set();
   detailBox.classList.add("hidden");
+  // a new element takes the lowest free id, so a deleted one's dragged spot must not pass to it
+  if (!data.scopedTo) {
+    const here = new Set(data.nodes.map((n) => n.id));
+    for (const id of [...manualPositions.keys()]) if (!here.has(id)) manualPositions.delete(id);
+  }
   if (!data.nodes.length) {
     svg.innerHTML = "";
     emptyBox.classList.remove("hidden");
@@ -277,7 +311,17 @@ function render(data) {
   layout(data.nodes, data.edges);
   draw();
   const ids = data.nodes.map((n) => n.id).sort().join("|");
-  if (ids !== lastNodeIds && !suppressFitOnce) fit();
+  // an addition or a removal that fits where the reader is looking leaves the view alone;
+  // anything else is another drawing and is fitted afresh
+  const was = new Set(lastNodeIds ? lastNodeIds.split("|") : []);
+  const now = new Set(data.nodes.map((n) => n.id));
+  const edited = was.size > 0
+    && ([...was].every((id) => now.has(id)) || [...now].every((id) => was.has(id)));
+  if (ids !== lastNodeIds && !suppressFitOnce && !(edited && fitsInView(contentBox))) {
+    // what was added is brought into view at the same zoom, and only zoomed out to when it cannot fit
+    const added = [...now].filter((id) => !was.has(id)).map((id) => positions.get(id)).filter(Boolean);
+    if (!(edited && added.length && panOnto(boundsOf(added)))) fit();
+  }
   suppressFitOnce = false;
   lastNodeIds = ids;
 }
@@ -367,12 +411,16 @@ function drawSystemBounds(layer) {
       showSystemDetail(system, ev);
     });
 
-    group.style.cursor = "pointer";
-    group.addEventListener("click", (ev) => {
-      // A click inside the frame lands on the element there, not on the frame.
+    group.style.cursor = "move";
+    // A press inside the frame on an element is the element's; on the frame itself,
+    // a drag moves the whole system and a click selects it.
+    group.addEventListener("pointerdown", (ev) => {
       if (ev.target.closest(".node, .system-bound-edit")) return;
       ev.stopPropagation();
-      selectSystem(system.id === selectedSystem ? null : system.id);
+      startFrameDrag(ev, system);
+    });
+    group.addEventListener("click", (ev) => {
+      if (!ev.target.closest(".node, .system-bound-edit")) ev.stopPropagation();
     });
 
     /* Remembered so the fit can see it. The content bounds are the nodes, and a
@@ -502,6 +550,35 @@ function toSvgPoint(clientX, clientY) {
   return pt.matrixTransform(svg.getScreenCTM().inverse());
 }
 
+// Drag a system's frame: every element it holds moves with it (view-only, like a node).
+function startFrameDrag(ev, system) {
+  const startPt = toSvgPoint(ev.clientX, ev.clientY);
+  const members = (system.members || []).filter((id) => positions.has(id));
+  const orig = new Map(members.map((id) => [id, { x: positions.get(id).x, y: positions.get(id).y }]));
+  let moved = false;
+  const move = (mv) => {
+    const pt = toSvgPoint(mv.clientX, mv.clientY);
+    const dx = pt.x - startPt.x;
+    const dy = pt.y - startPt.y;
+    if (!moved && Math.hypot(dx, dy) < 4) return;
+    moved = true;
+    detailBox.classList.add("hidden");
+    for (const [id, from] of orig) {
+      const next = { ...positions.get(id), x: Math.round(from.x + dx), y: Math.round(from.y + dy) };
+      positions.set(id, next);
+      manualPositions.set(id, { x: next.x, y: next.y });
+    }
+    draw();
+  };
+  const up = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    if (!moved) selectSystem(system.id === selectedSystem ? null : system.id);
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up);
+}
+
 // Drag a node to reposition it (view-only; never edits the graph).
 function startDrag(ev, node) {
   const startPt = toSvgPoint(ev.clientX, ev.clientY);
@@ -524,7 +601,9 @@ function startDrag(ev, node) {
   const up = (uv) => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
-    if (!moved) {
+    if (!moved && uv.shiftKey) {
+      togglePicked(node.id);
+    } else if (!moved) {
       setHighlight([node.id]);
       selectedId = node.id;
       showDetail(node, uv);
@@ -601,7 +680,7 @@ function startConnect(ev, sourceNode) {
 function paintHighlight() {
   if (!viewport) return;
   const active = highlighted.size > 0;
-  viewport.classList.toggle("has-highlight", active);
+  viewport.classList.toggle("has-highlight", active && dimming);
   for (const group of viewport.querySelectorAll(".node")) {
     group.classList.toggle("highlight", highlighted.has(group.dataset.id));
   }
@@ -651,6 +730,12 @@ function positionDetail(ev) {
   detailBox.style.bottom = "auto";
 }
 
+/* A pick adds a chip, which on a short canvas pushes Apply below the popup's edge. */
+function showApply() {
+  const apply = detailBox.querySelector("#nd-apply");
+  if (apply) apply.scrollIntoView({ block: "nearest" });
+}
+
 function showDetail(node, ev) {
   const currentClass = node.typeUri || "";
   detailBox.innerHTML = [
@@ -670,10 +755,13 @@ function showDetail(node, ev) {
   ].join("");
   // multi-value pickers: an element may carry several roles / data categories
   const rolePicker = MultiPicker(annotationCfg.vocabulary.roles, node.roleIds || [], {
-    placeholder: "+ add role", grouped: true,
+    placeholder: "+ add role", tree: true,
     filterKind: node.kind === "process" ? "process" : "resource",
+    typeUri: node.typeUri, typeUris: node.typeUris,
+    onPick: showApply,
   });
-  const catPicker = MultiPicker(annotationCfg.vocabulary.dataCategories, node.categoryIds || [], { placeholder: "+ add data category" });
+  const catPicker = MultiPicker(annotationCfg.vocabulary.dataCategories, node.categoryIds || [],
+    { ...categoryPickerOptions(node, "+ add data category"), onPick: showApply });
   detailBox.querySelector("#nd-role-mp").appendChild(rolePicker.element);
   detailBox.querySelector("#nd-cat-mp").appendChild(catPicker.element);
   detailBox.classList.remove("hidden");
@@ -726,6 +814,11 @@ function showSystemDetail(system, ev) {
     });
   });
   detailBox.querySelector("#sd-delete").addEventListener("click", () => {
+    // A system is a container, and deleting it takes what it holds with it.
+    const held = (system.members || []).length;
+    if (held && !window.confirm(
+      `Delete "${system.label}" and the ${held} element(s) in it?`
+      + " Elements another system also holds are kept.")) return;
     detailBox.classList.add("hidden");
     if (annotationCfg.onDelete) annotationCfg.onDelete(system.id);
   });
@@ -748,14 +841,103 @@ function applyView() {
   svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
 }
 
+/* Where on the canvas the trays floating over it leave room, in wrap pixels.
+   The open element tray is a column, so the diagram goes beside it or below
+   it, whichever draws it larger. */
+function freeArea(box, width, height) {
+  const at = wrap.getBoundingClientRect();
+  const edge = (selector) => {
+    const tray = wrap.querySelector(selector);
+    const r = tray && tray.offsetParent ? tray.getBoundingClientRect() : null;
+    return r && r.width && r.height ? { right: r.right - at.left, bottom: r.bottom - at.top } : null;
+  };
+  const gap = 12;
+  const tops = ["#system-badge", "#motif-palette"].map(edge).filter(Boolean);
+  const top = tops.length ? Math.max(...tops.map((e) => e.bottom)) + gap : 0;
+  const palette = edge("#palette");
+  const options = [{ left: 0, top }];
+  if (palette) {
+    options[0] = { left: 0, top: Math.max(top, palette.bottom + gap) };
+    options.push({ left: palette.right + gap, top });
+  }
+  const scale = (o) => Math.min((width - o.left) / box.w, (height - o.top) / box.h);
+  const room = options.filter((o) => scale(o) > 0);
+  return room.length ? room.reduce((a, b) => (scale(b) > scale(a) ? b : a)) : { left: 0, top: 0 };
+}
+
+function viewOnto(box, maxK = Infinity) {
+  const width = Math.max(1, wrap.clientWidth);
+  const height = Math.max(1, wrap.clientHeight);
+  const free = freeArea(box, width, height);
+  const k = Math.min((width - free.left) / box.w, (height - free.top) / box.h, maxK);
+  view = {
+    x: box.x - (free.left + (width - free.left - box.w * k) / 2) / k,
+    y: box.y - (free.top + (height - free.top - box.h * k) / 2) / k,
+    w: width / k, h: height / k,
+  };
+  applyView();
+}
+
+/* Never larger than drawn size: a fit that blew up one element jumped back out on every addition. */
 function fit() {
   if (!contentBox) return;
-  const aspect = wrap.clientWidth / Math.max(1, wrap.clientHeight);
-  let w = contentBox.w;
-  let h = contentBox.h;
-  if (w / h > aspect) h = w / aspect; else w = h * aspect;
-  view = { x: contentBox.x - (w - contentBox.w) / 2, y: contentBox.y - (h - contentBox.h) / 2, w, h };
+  viewOnto(contentBox, 1);
+}
+
+function boundsOf(boxes, pad = 40) {
+  const x = Math.min(...boxes.map((b) => b.x)) - pad;
+  const y = Math.min(...boxes.map((b) => b.y)) - pad;
+  return {
+    x, y,
+    w: Math.max(...boxes.map((b) => b.x + b.w)) + pad - x,
+    h: Math.max(...boxes.map((b) => b.y + b.h)) + pad - y,
+  };
+}
+
+/* Centres `box` in the room the trays leave, keeping the zoom; false when it does not fit at this zoom. */
+function panOnto(box) {
+  if (!wrap.clientWidth) return false;
+  const width = wrap.clientWidth;
+  const height = wrap.clientHeight;
+  const k = width / view.w;
+  const free = freeArea(box, width, height);
+  if (box.w * k > width - free.left || box.h * k > height - free.top) return false;
+  view = {
+    ...view,
+    x: box.x - (free.left + (width - free.left - box.w * k) / 2) / k,
+    y: box.y - (free.top + (height - free.top - box.h * k) / 2) / k,
+  };
   applyView();
+  return true;
+}
+
+/* Whether `box` is on screen now, clear of the trays. */
+function fitsInView(box) {
+  if (!box || !wrap.clientWidth) return false;
+  const width = wrap.clientWidth;
+  const height = wrap.clientHeight;
+  const k = width / view.w;
+  const free = freeArea(box, width, height);
+  const left = view.x + free.left / k;
+  const top = view.y + free.top / k;
+  return box.x >= left && box.y >= top
+    && box.x + box.w <= view.x + view.w && box.y + box.h <= view.y + height / k;
+}
+
+/* Brings these elements into view. In a long chain the whole-graph fit draws
+   them a few pixels high, so a highlight alone could not be seen. */
+function focus(ids) {
+  const boxes = (ids || []).map((id) => positions.get(id)).filter(Boolean);
+  if (!boxes.length || !wrap.clientWidth) return;
+  const pad = 60;
+  const x = Math.min(...boxes.map((b) => b.x)) - pad;
+  const y = Math.min(...boxes.map((b) => b.y)) - pad;
+  const w = Math.max(...boxes.map((b) => b.x + b.w)) - x + pad;
+  const h = Math.max(...boxes.map((b) => b.y + b.h)) - y + pad;
+  // Never closer than 1.5 screen pixels per unit, or one element fills the canvas.
+  const least = wrap.clientWidth / 1.5;
+  const grow = Math.max(0, least - w) / 2;
+  viewOnto({ x: x - grow, y, w: w + grow * 2, h });
 }
 
 function zoom(factor, cx, cy) {
@@ -810,30 +992,48 @@ function initPanZoom() {
     const rect = wrap.getBoundingClientRect();
     zoom(ev.deltaY > 0 ? 1.12 : 1 / 1.12, ev.clientX - rect.left, ev.clientY - rect.top);
   }, { passive: false });
+}
 
-  document.getElementById("btn-zoom-in").addEventListener("click", () => zoom(1 / 1.25, wrap.clientWidth / 2, wrap.clientHeight / 2));
-  document.getElementById("btn-zoom-out").addEventListener("click", () => zoom(1.25, wrap.clientWidth / 2, wrap.clientHeight / 2));
-  document.getElementById("btn-fit").addEventListener("click", fit);
+/* Zoom about the centre; above 1 zooms in. The buttons are wired in app.js,
+   because they act on whichever canvas is on screen. */
+function zoomBy(factor) {
+  zoom(1 / factor, wrap.clientWidth / 2, wrap.clientHeight / 2);
 }
 
 // evidence highlighting 
-function setHighlight(ids) {
+let dimming = true;   // a highlight dims the rest unless it only points something out
+
+function setHighlight(ids, { dim = true } = {}) {
   selectedId = null;
+  picked = new Set();
   highlighted = new Set(ids || []);
+  dimming = dim;
   paintHighlight();
 }
 
-// Delete / Backspace removes the clicked element
+/* Shift-click adds an element to the selection, or takes it out. */
+function togglePicked(id) {
+  const next = new Set(picked.size ? picked : (selectedId ? [selectedId] : []));
+  if (next.has(id)) next.delete(id); else next.add(id);
+  detailBox.classList.add("hidden");
+  setHighlight([...next]);
+  picked = next;
+  if (annotationCfg.onStatus) annotationCfg.onStatus("ok", `${next.size} selected`, "Delete removes them");
+}
+
+// Delete / Backspace removes the clicked element, or every shift-clicked one
 function onKeyDown(ev) {
   if (ev.key !== "Delete" && ev.key !== "Backspace") return;
-  if (!selectedId || !annotationCfg.onDelete) return;
+  if ((!selectedId && !picked.size) || !annotationCfg.onDelete) return;
+  // A node picked before the level changed is not on screen to be deleted.
+  if (svg.classList.contains("hidden")) return;
   const target = ev.target;
   if (target && target.matches && target.matches("input, textarea, select")) return;
   ev.preventDefault();
-  const id = selectedId;
+  const ids = picked.size ? [...picked] : [selectedId];
   detailBox.classList.add("hidden");
   setHighlight([]);
-  annotationCfg.onDelete(id);
+  annotationCfg.onDelete(ids.length > 1 ? ids : ids[0]);
 }
 
 function clear() {
@@ -950,11 +1150,20 @@ function init() {
   initPanZoom();
   applyView();
   window.addEventListener("resize", () => { if (contentBox) fit(); });
+  // The drawer and the editor resize the canvas without resizing the window.
+  let size = "";
+  new ResizeObserver(() => {
+    const now = `${wrap.clientWidth}x${wrap.clientHeight}`;
+    if (now === size) return;
+    size = now;
+    if (!contentBox || !wrap.clientWidth || !wrap.clientHeight) return;
+    if (highlighted.size) focus([...highlighted]); else fit();
+  }).observe(wrap);
   document.addEventListener("keydown", onKeyDown);
 }
 
-function layoutPositions(nodes, edges) {
-  layout(nodes, edges);
+function layoutPositions(nodes, edges, systems) {
+  layout(nodes, edges, systems);
   return new Map(positions);
 }
 
@@ -1062,6 +1271,6 @@ function exportSvg(filename = "architecture.svg") {
 }
 
 export const GraphView = {
-  init, render, clear, setHighlight, fit, layoutPositions, setAnnotation, placeNodeAt,
+  init, render, clear, setHighlight, fit, focus, zoomBy, layoutPositions, setAnnotation, placeNodeAt,
   exportSvg, toSvgDocument, editSystem, getSelectedSystem, selectSystem,
 };

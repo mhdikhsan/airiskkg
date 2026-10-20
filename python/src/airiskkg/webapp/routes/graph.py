@@ -19,6 +19,7 @@ from airiskkg.workbench.process_view import (
     process_view,
     system_context_options,
 )
+from airiskkg.workbench.possible import apply_needs
 from airiskkg.workbench.risk_context import template_in_context
 from airiskkg.workbench.templates import motif_templates
 from airiskkg.workbench.terms import PROCESS_CLASS_NAMES, short
@@ -34,11 +35,46 @@ def _parsed(ttl: str) -> Graph:
     return data
 
 
+def _chosen_elements(payload: dict) -> list[URIRef]:
+    """The one `element`, or every id in `elements` when several are selected."""
+    ids = payload.get("elements") or [payload.get("element")]
+    return [URIRef(i) for i in ids if isinstance(i, str) and i]
+
+
 DRAWN_AS = {
     "use": ((BEAM.use, True), (BEAM.usedBy, False)),
     "produce": ((BEAM.produce, False), (BEAM.producedBy, True)),
     "participatedIn": ((BEAM.participatedIn, False),),
 }
+
+
+def _system_for_new_elements(data: Graph) -> tuple[URIRef, bool]:
+    """The architecture new elements land in, made when the graph has none.
+
+    An element in no system cannot be named by a business activity, and a blank
+    canvas offered no way to draw the container first."""
+    system = next(iter(sorted(data.subjects(RDF.type, BEAM.System), key=str)), None)
+    if system is not None:
+        return system, False
+    system = _fresh(data, "system")
+    data.add((system, RDF.type, BEAM.Element))
+    data.add((system, RDF.type, BEAM.System))
+    data.add((system, RDFS.label, Literal("My system")))
+    return system, True
+
+
+def _system_asked_for(data: Graph, payload: dict) -> tuple[URIRef | None, str | None, object]:
+    """The system the reader selected, else the one new elements land in.
+
+    Returns (system, the IRI of a system made for it or None, an error response or None)."""
+    asked = payload.get("system")
+    if asked:
+        system = URIRef(asked)
+        if (system, RDF.type, BEAM.System) not in data:
+            return None, None, (jsonify({"error": "That AI system is not in this graph."}), 400)
+        return system, None, None
+    system, made = _system_for_new_elements(data)
+    return system, str(system) if made else None, None
 
 
 def _serialized(data: Graph, **extra: object) -> object:
@@ -135,15 +171,16 @@ def graph_edit() -> object:
     payload = request.get_json(silent=True) or {}
     ttl = (payload.get("ttl") or "").strip()
     op = payload.get("op")
-    if not ttl:
-        return jsonify({"error": "Provide a graph to edit."}), 400
+    # Deleting the last element serializes to a bare newline, and an empty
+    # editor is where every drawing starts, so blank is a graph with nothing in it.
     try:
-        data = _parsed(ttl)
-    except Exception as error: 
+        data = _parsed(ttl) if ttl else Graph()
+    except Exception as error:
         return jsonify({"error": f"Could not parse the graph: {error}"}), 400
 
     local = LOCAL
     new_id = None
+    made_system = None
     if op == "add-element":
         class_uri = payload.get("classUri")
         if not class_uri:
@@ -156,16 +193,11 @@ def graph_edit() -> object:
         element = local[f"e{index}"]
         data.add((element, RDF.type, URIRef(class_uri)))
         data.add((element, RDFS.label, Literal(label)))
-        # The architecture the reader is looking at, when they say which.
-        asked = payload.get("system")
-        system = URIRef(asked) if asked else None
-        if system is not None and (system, RDF.type, BEAM.System) not in data:
-            return jsonify({"error": "That AI system is not in this graph."}), 400
-        if system is None:
-            system = next(iter(data.subjects(RDF.type, BEAM.System)), None)
-        if system is not None:
-            predicate = BEAM.hasProcess if payload.get("category") == "process" else BEAM.hasResource
-            data.add((system, predicate, element))
+        system, made_system, refused = _system_asked_for(data, payload)
+        if refused:
+            return refused
+        predicate = BEAM.hasProcess if payload.get("category") == "process" else BEAM.hasResource
+        data.add((system, predicate, element))
         new_id = str(element)
 
     elif op == "add-system":
@@ -294,11 +326,9 @@ def graph_edit() -> object:
             return jsonify({"error": f"Unknown motif template: {motif_id}"}), 400
         if payload.get("riskPattern"):
             template = template_in_context(motif_id, short(payload["riskPattern"]))
-        system = next(iter(data.subjects(RDF.type, BEAM.System)), None)
-        if system is None:
-            system = local["system"]
-            data.add((system, RDF.type, BEAM.System))
-            data.add((system, RDFS.label, Literal("My system")))
+        system, made_system, refused = _system_asked_for(data, payload)
+        if refused:
+            return refused
         existing = {str(s) for s in data.subjects() if str(s).startswith(str(local))}
         counter = [1]
 
@@ -334,21 +364,49 @@ def graph_edit() -> object:
         for src, edge, dst in template["edges"]:
             data.add((key_to_uri[src], BEAM[edge], key_to_uri[dst]))
 
-        return _serialized(data, newIds=new_ids, groupLabel=template["label"])
+        return _serialized(data, newIds=new_ids, groupLabel=template["label"],
+                           newSystem=made_system)
+    elif op == "apply-suggestions":
+        needs = payload.get("needs") or []
+        if not needs:
+            return jsonify({"error": "apply-suggestions needs the suggestions to apply."}), 400
+        existing = {str(s) for s in data.subjects() if str(s).startswith(str(local))}
+        counter = [1]
+
+        def _fresh_suggestion_id() -> URIRef:
+            while str(local[f"e{counter[0]}"]) in existing:
+                counter[0] += 1
+            node = local[f"e{counter[0]}"]
+            existing.add(str(node))
+            return node
+
+        touched = apply_needs(data, needs, _fresh_suggestion_id)
+        return _serialized(data, newIds=touched)
     elif op == "delete-element":
-        element_id = payload.get("element")
-        if not element_id:
+        chosen = _chosen_elements(payload)
+        if not chosen:
             return jsonify({"error": "delete-element needs an element."}), 400
-        element = URIRef(element_id)
-        # remove the element and every edge touching it (as subject or object)
-        for s, p, o in list(data.triples((element, None, None))):
-            data.remove((s, p, o))
-        for s, p, o in list(data.triples((None, None, element))):
-            data.remove((s, p, o))
+        doomed = set(chosen)
+        # A system is a container: deleting it takes what it holds, except what
+        # another system holds as well.
+        for element in chosen:
+            if (element, RDF.type, BEAM.System) not in data:
+                continue
+            kept: set[URIRef] = set()
+            for other in data.subjects(RDF.type, BEAM.System):
+                if other not in chosen and element not in _members_of(data, other):
+                    kept |= _members_of(data, other)
+            doomed |= _members_of(data, element) - kept
+        # remove each and every edge touching it (as subject or object)
+        for gone in doomed:
+            for s, p, o in list(data.triples((gone, None, None))):
+                data.remove((s, p, o))
+            for s, p, o in list(data.triples((None, None, gone))):
+                data.remove((s, p, o))
     else:
         return jsonify({"error": f"Unknown edit op: {op}"}), 400
 
-    return _serialized(data, newId=new_id)
+    return _serialized(data, newId=new_id, newSystem=made_system)
 
 
 # --- authoring the business layer --------------------------------------------
@@ -417,6 +475,97 @@ LOOP_KINDS = {
 
 FLOW_NODE_KINDS = {*ACTIVITY_KINDS, *EVENT_KINDS, *GATEWAY_KINDS}
 
+# Events a sequence flow may not enter, and the one it may not leave. The canvas
+# disables the same choices in process_canvas.js (SEQUENCE_FLOW_RULES).
+NO_INCOMING = {
+    "startEvent": "A start event begins the process, so no sequence flow may lead into it.",
+    "boundaryEvent": "A boundary event sits on an activity's edge, so no sequence flow may lead into it.",
+}
+NO_OUTGOING = {
+    "endEvent": "An end event finishes the process, so no sequence flow may leave it.",
+}
+
+
+def _sequence_flows(data: Graph, node: URIRef, end: URIRef) -> list[URIRef]:
+    """The sequence flows whose `end` (bp:sourceRef or bp:targetRef) is this node."""
+    return [flow for flow in data.subjects(end, node)
+            if (flow, RDF.type, BPMN.sequenceFlow) in data]
+
+
+def _retype_error(data: Graph, node: URIRef, kind: str) -> str | None:
+    """Why retyping this node to `kind` would break a sequence flow already drawn."""
+    if kind in NO_INCOMING and _sequence_flows(data, node, BP.targetRef):
+        return NO_INCOMING[kind] + " Remove the incoming flow first, then change the type."
+    if kind in NO_OUTGOING and _sequence_flows(data, node, BP.sourceRef):
+        return NO_OUTGOING[kind] + " Remove the outgoing flow first, then change the type."
+    return None
+
+
+def _kind_of(data: Graph, node: URIRef) -> str | None:
+    for kind in data.objects(node, RDF.type):
+        name = str(kind).removeprefix(str(BPMN))
+        if name in EVENT_KINDS:
+            return name
+    return None
+
+
+def _flow_kind(data: Graph, node: URIRef) -> str | None:
+    for kind in data.objects(node, RDF.type):
+        name = str(kind).removeprefix(str(BPMN))
+        if name in FLOW_NODE_KINDS:
+            return name
+    return None
+
+
+# What a message flow may not start or end on, read with the rules above.
+CANNOT_SEND = {"startEvent", "intermediateCatchEvent", "boundaryEvent", *GATEWAY_KINDS}
+CANNOT_RECEIVE = {"endEvent", "intermediateThrowEvent", *GATEWAY_KINDS}
+
+
+def _as_message_error(data: Graph, flow: URIRef) -> str | None:
+    """Why this sequence flow cannot become a message flow, or None."""
+    source, target = data.value(flow, BP.sourceRef), data.value(flow, BP.targetRef)
+    if _flow_kind(data, source) in CANNOT_SEND or _flow_kind(data, target) in CANNOT_RECEIVE:
+        return (f'The flow from "{_named(data, source)}" to "{_named(data, target)}" cannot become'
+                " a message flow: a message is sent by a task or a throwing event and received"
+                " by a task or a catching event, never by a gateway.")
+    return None
+
+
+def _as_sequence_error(data: Graph, flow: URIRef) -> str | None:
+    """Why this message flow cannot become a sequence flow, or None."""
+    source, target = data.value(flow, BP.sourceRef), data.value(flow, BP.targetRef)
+    into, out_of = _kind_of(data, target), _kind_of(data, source)
+    if into in NO_INCOMING:
+        return NO_INCOMING[into]
+    if out_of in NO_OUTGOING:
+        return NO_OUTGOING[out_of]
+    return None
+
+
+def _named(data: Graph, node: URIRef | None) -> str:
+    if node is None:
+        return "?"
+    named = data.value(node, BP.name) or data.value(node, RDFS.label)
+    return str(named) if named else str(node).rsplit("#", 1)[-1]
+
+
+def _process_of_lane(data: Graph, lane: URIRef) -> URIRef | None:
+    """The process a lane bands, through its lane set or a parent lane's."""
+    seen: set[URIRef] = set()
+    current: URIRef | None = lane
+    while current is not None and current not in seen:
+        seen.add(current)
+        holder = next(iter(data.subjects(BP.contains, current)), None) \
+            or next(iter(data.subjects(BP.lane, current)), None)
+        if holder is None:
+            return None
+        process = data.value(None, BP.laneSet, holder)
+        if process is not None:
+            return process
+        current = data.value(None, BP.childLaneSet, holder)
+    return None
+
 
 DPV = Namespace("https://w3id.org/dpv#")
 
@@ -427,6 +576,27 @@ DATA_REFS = frozenset({BPMN.dataObjectReference, BPMN.dataStoreReference})
 # throw from catch, so it joins data to an activity only rather than risk
 # writing an association outside the property's domain.
 ACTIVITY_CLASSES = frozenset(BPMN[kind] for kind in ACTIVITY_KINDS)
+
+
+def _appearance_doomed(data: Graph, ref: URIRef, going: set[URIRef]) -> set[URIRef]:
+    """One data box and its associations, and the thing it shows once no other box shows it."""
+    doomed = {ref}
+    doomed.update(data.subjects(BP.sourceRef, ref))
+    doomed.update(data.subjects(BP.targetRef, ref))
+    held = data.value(ref, BP.dataObjectRef) or data.value(ref, BP.dataStoreRef)
+    others = (set(data.subjects(BP.dataObjectRef, held))
+              | set(data.subjects(BP.dataStoreRef, held))) - going
+    if held is not None and not others:
+        doomed.add(held)
+        item = data.value(held, BP.itemSubjectRef)
+        if item is not None:
+            doomed.add(item)
+    return doomed
+
+
+def _already_joined(reading: bool) -> str:
+    return ("That step already reads this data." if reading
+            else "That step already writes this data.")
 
 
 def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str) -> str | None:
@@ -443,15 +613,30 @@ def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str)
     if held is None:
         return None
 
-    used = {
-        data.value(end, BP.dataStoreRef) or data.value(end, BP.dataObjectRef)
-        for prop, side in ((BP.dataInputAssociation, BP.sourceRef),
-                           (BP.dataOutputAssociation, BP.targetRef))
-        for association in data.objects(activity, prop)
-        for end in data.objects(association, side)
-    }
-    if held in used:
+    # A step may read a store and write it too: two associations, one each way, on one box.
+    wanted = ["in", "out"] if direction == "both" else [direction]
+    ends = {"in": (BP.dataInputAssociation, BP.sourceRef), "out": (BP.dataOutputAssociation, BP.targetRef)}
+    missing = []
+    for way in wanted:
+        prop, side = ends[way]
+        used = {
+            data.value(end, BP.dataStoreRef) or data.value(end, BP.dataObjectRef)
+            for association in data.objects(activity, prop)
+            for end in data.objects(association, side)
+        }
+        if held not in used:
+            missing.append(way)
+    if not missing:
         return None
+
+    # drawn the other way onto a box this step already uses: that box, never a copy of it
+    own = next((end for prop, side in ends.values()
+                for association in data.objects(activity, prop)
+                for end in data.objects(association, side)
+                if (data.value(end, BP.dataStoreRef) or data.value(end, BP.dataObjectRef)) == held), None)
+    if own is not None:
+        made = [_associate(data, own, activity, way) for way in missing]
+        return str(made[-1])
 
     if _in_use(data, reference):
         appearance = _fresh(data, "dataref")
@@ -460,8 +645,14 @@ def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str)
         data.add((appearance, BP.dataStoreRef if store else BP.dataObjectRef, held))
         reference = appearance
 
+    made = [_associate(data, reference, activity, way) for way in missing]
+    return str(made[-1])
+
+
+def _associate(data: Graph, reference: URIRef, activity: URIRef, way: str) -> URIRef:
+    """One data association, with both ends, as BPMN models it: `in` reads, `out` writes."""
     association = _fresh(data, "dassoc")
-    if direction == "in":
+    if way == "in":
         data.add((association, RDF.type, BPMN.dataInputAssociation))
         data.add((association, BP.sourceRef, reference))
         data.add((association, BP.targetRef, activity))
@@ -471,7 +662,7 @@ def _join_data(data: Graph, reference: URIRef, activity: URIRef, direction: str)
         data.add((association, BP.sourceRef, activity))
         data.add((association, BP.targetRef, reference))
         data.add((activity, BP.dataOutputAssociation, association))
-    return str(association)
+    return association
 
 
 def _in_use(data: Graph, reference: URIRef) -> bool:
@@ -482,6 +673,73 @@ def _in_use(data: Graph, reference: URIRef) -> bool:
                            (BP.dataOutputAssociation, BP.targetRef))
         for association in data.objects(None, prop)
     )
+
+
+def _carryable(data: Graph, node: URIRef, only: URIRef | None = None) -> dict | None:
+    """What carrying would add for this activity: the system it refines and the data
+    it touches that names no element yet. None when there is nothing to ask about."""
+    systems = list(data.objects(node, PAIR.refinedBy))
+    if len(systems) != 1:
+        return None
+    names = []
+    for held, end in ((BP.dataInputAssociation, BP.sourceRef), (BP.dataOutputAssociation, BP.targetRef)):
+        for association in data.objects(node, held):
+            for reference in data.objects(association, end):
+                if only is not None and reference != only:
+                    continue
+                obj = data.value(reference, BP.dataObjectRef) or data.value(reference, BP.dataStoreRef) or reference
+                if data.value(obj, PAIR.realisedBy) is None:
+                    name = str(data.value(obj, BP.name) or data.value(reference, BP.name) or "Data")
+                    if name not in names:
+                        names.append(name)
+    if not names:
+        return None
+    label = data.value(systems[0], RDFS.label)
+    return {"activity": str(node), "reference": str(only) if only is not None else None,
+            "system": str(label) if label else "the system", "data": names}
+
+
+def _carry_data(data: Graph, node: URIRef, only: URIRef | None = None) -> list[str]:
+    """Give each data object or store an activity touches a beam:Data in the one
+    system it refines, linked by pair:realisedBy, unless it already names one.
+
+    The classification then reaches the element through the bridge and is never
+    copied as a facet. Only when exactly one step is named does that step read
+    or write it, because with several the process does not say which. `only`
+    limits it to one data reference, for data just attached.
+    """
+    systems = list(data.objects(node, PAIR.refinedBy))
+    if len(systems) != 1:
+        return []
+    system = systems[0]
+    steps = list(data.objects(node, PAIR.carriedOutBy))
+    made, carried = [], {}
+    for held, end, flow in ((BP.dataInputAssociation, BP.sourceRef, BEAM.use),
+                            (BP.dataOutputAssociation, BP.targetRef, BEAM.produce)):
+        for association in data.objects(node, held):
+            for reference in data.objects(association, end):
+                if only is not None and reference != only:
+                    continue
+                obj = data.value(reference, BP.dataObjectRef) or data.value(reference, BP.dataStoreRef) or reference
+                element = carried.get(obj)
+                if element is None:
+                    if data.value(obj, PAIR.realisedBy) is not None:
+                        continue
+                    existing = {str(s) for s in data.subjects() if str(s).startswith(str(LOCAL))}
+                    index = 1
+                    while str(LOCAL[f"e{index}"]) in existing:
+                        index += 1
+                    element = LOCAL[f"e{index}"]
+                    name = data.value(obj, BP.name) or data.value(reference, BP.name) or Literal("Data")
+                    data.add((element, RDF.type, BEAM.Data))
+                    data.add((element, RDFS.label, Literal(str(name))))
+                    data.add((system, BEAM.hasResource, element))
+                    data.add((obj, PAIR.realisedBy, element))
+                    carried[obj] = element
+                    made.append(str(element))
+                if len(steps) == 1:
+                    data.add((steps[0], flow, element))
+    return made
 
 
 def _fresh(data: Graph, prefix: str) -> URIRef:
@@ -538,15 +796,44 @@ def _retype(data: Graph, node: URIRef, kind: str) -> None:
     data.add((node, RDF.type, BPMN[kind]))
 
 
-def _set_event_definition(data: Graph, event: URIRef, definition: str) -> None:
+SUB_PROCESS_KINDS = frozenset({"subProcess", "adHocSubProcess", "transaction"})
+MULTIPLE_TRIGGERS = ("multiple", "parallelMultiple")
+CATCH_EVENT_KINDS = frozenset({"startEvent", "intermediateCatchEvent", "boundaryEvent"})
+
+
+def _triggers_asked(kind: str, definition: str, definitions: object) -> list[str] | str:
+    """The triggers an edit asks for, or why it cannot have them.
+
+    BPMN has no Multiple trigger class: Multiple is two or more definitions on
+    one event, and Parallel Multiple adds bp:parallelMultiple, which sBPMN
+    declares on a catch event only."""
+    if definition not in MULTIPLE_TRIGGERS:
+        if definition and definition not in EVENT_DEFINITIONS:
+            return f"Unknown event trigger: {definition}"
+        return [definition] if definition else []
+    chosen = sorted({d for d in (definitions or []) if d in EVENT_DEFINITIONS})
+    if len(chosen) < 2:
+        return "A multiple event needs at least two triggers."
+    if definition == "parallelMultiple" and kind not in CATCH_EVENT_KINDS:
+        return "Only a catching event can wait for all of its triggers."
+    return chosen
+
+
+def _set_event_definition(data: Graph, event: URIRef, definition: str | list[str],
+                          parallel: bool = False) -> None:
     for old in list(data.objects(event, BP.eventDefinition)):
         data.remove((event, BP.eventDefinition, old))
         for triple in list(data.triples((old, None, None))):
             data.remove(triple)
-    if definition in EVENT_DEFINITIONS:
-        node = _fresh(data, "evdef")
-        data.add((node, RDF.type, BPMN[EVENT_DEFINITIONS[definition]]))
-        data.add((event, BP.eventDefinition, node))
+    data.remove((event, BP.parallelMultiple, None))
+    wanted = [definition] if isinstance(definition, str) else definition
+    for name in wanted:
+        if name in EVENT_DEFINITIONS:
+            node = _fresh(data, "evdef")
+            data.add((node, RDF.type, BPMN[EVENT_DEFINITIONS[name]]))
+            data.add((event, BP.eventDefinition, node))
+    if parallel and len(wanted) > 1:
+        data.add((event, BP.parallelMultiple, Literal(True)))
 
 
 @graph_routes.post("/api/process-edit")
@@ -561,6 +848,7 @@ def process_edit() -> object:
         return jsonify({"error": f"Could not parse the graph: {error}"}), 400
 
     new_id = None
+    carryable = None
 
     if op == "add-pool":
         label = (payload.get("label") or "New participant").strip()
@@ -571,10 +859,36 @@ def process_edit() -> object:
         data.add((participant, BP.processRef, process))
         data.add((process, RDF.type, BPMN.process))
         data.add((process, BP.name, Literal(f"{label} process")))
+        model = URIRef(payload["model"]) if payload.get("model") else None
+        if model is not None and (model, RDF.type, BPMN.collaboration) in data:
+            data.add((model, BP.contains, participant))
         new_id = str(participant)
+
+    elif op == "add-model":
+        label = (payload.get("label") or "New process model").strip()
+        collaborations = list(data.subjects(RDF.type, BPMN.collaboration))
+        filed = {p for c in collaborations for p in data.objects(c, BP.contains)}
+        loose = [p for p in data.subjects(RDF.type, BPMN.participant) if p not in filed]
+        # The pools already drawn keep the model they were drawn in, which is
+        # implicit only while there is one.
+        if loose and len(collaborations) <= 1:
+            home = collaborations[0] if collaborations else _fresh(data, "model")
+            if not collaborations:
+                data.add((home, RDF.type, BPMN.collaboration))
+                data.add((home, BP.name, Literal("Business process")))
+            for participant in loose:
+                data.add((home, BP.contains, participant))
+        model = _fresh(data, "model")
+        data.add((model, RDF.type, BPMN.collaboration))
+        data.add((model, BP.name, Literal(label)))
+        new_id = str(model)
 
     elif op == "add-activity":
         kind = payload.get("kind")
+        # An event sub-process is a bpmn:subProcess started by an event, not a class.
+        triggered = kind == "eventSubProcess"
+        if triggered:
+            kind = "subProcess"
         if kind not in ACTIVITY_KINDS:
             return jsonify({"error": f"Unknown activity kind: {kind}"}), 400
         pool = payload.get("pool")
@@ -585,7 +899,10 @@ def process_edit() -> object:
             return jsonify({"error": "That participant has no process."}), 400
         activity = _fresh(data, "act")
         data.add((activity, RDF.type, BPMN[kind]))
-        data.add((activity, BP.name, Literal((payload.get("label") or ACTIVITY_KINDS[kind]).strip())))
+        default_name = "Event sub-process" if triggered else ACTIVITY_KINDS[kind]
+        data.add((activity, BP.name, Literal((payload.get("label") or default_name).strip())))
+        if triggered:
+            data.add((activity, BP.triggeredByEvent, Literal(True)))
         _place(data, process, activity, payload.get("lane"))
         new_id = str(activity)
 
@@ -594,8 +911,9 @@ def process_edit() -> object:
         if kind not in EVENT_KINDS:
             return jsonify({"error": f"Unknown event kind: {kind}"}), 400
         definition = payload.get("definition") or ""
-        if definition and definition not in EVENT_DEFINITIONS:
-            return jsonify({"error": f"Unknown event trigger: {definition}"}), 400
+        triggers = _triggers_asked(kind, definition, payload.get("definitions"))
+        if isinstance(triggers, str):
+            return jsonify({"error": triggers}), 400
         # A boundary event is placed by the activity it watches, not by a pool:
         # it has no position of its own and cannot exist without a host. Every
         # other event is placed by the pool, and sBPMN declares attachedToRef on
@@ -616,7 +934,9 @@ def process_edit() -> object:
         data.add((event, RDF.type, BPMN[kind]))
         if payload.get("label"):
             data.add((event, BP.name, Literal(payload["label"].strip())))
-        _set_event_definition(data, event, definition)
+        _set_event_definition(data, event, triggers, definition == "parallelMultiple")
+        if kind == "startEvent" and payload.get("interrupting") is False:
+            data.add((event, BP.isInterrupting, Literal(False)))
         if host:
             data.add((event, BP.attachedToRef, URIRef(host)))
             data.add((event, BP.cancelActivity, Literal(bool(payload.get("interrupting", True)))))
@@ -677,18 +997,36 @@ def process_edit() -> object:
         if not element or kind not in FLOW_NODE_KINDS:
             return jsonify({"error": f"set-node-type needs an element and a known kind: {kind}"}), 400
         node = URIRef(element)
+        definition = payload.get("definition") or ""
+        triggers = _triggers_asked(kind, definition, payload.get("definitions")) \
+            if kind in EVENT_KINDS else []
+        if isinstance(triggers, str):
+            return jsonify({"error": triggers}), 400
+        broken = _retype_error(data, node, kind)
+        if broken:
+            return jsonify({"error": broken}), 400
         _retype(data, node, kind)
         data.remove((node, BP.name, None))
         if payload.get("label"):
             data.add((node, BP.name, Literal(payload["label"].strip())))
+        if kind not in SUB_PROCESS_KINDS:
+            # declared on bpmn:subProcess only; a retyped event sub-process loses it
+            data.remove((node, BP.triggeredByEvent, None))
         if kind in EVENT_KINDS:
-            _set_event_definition(data, node, payload.get("definition") or "")
+            _set_event_definition(data, node, triggers, definition == "parallelMultiple")
             data.remove((node, BP.cancelActivity, None))
             if kind == "boundaryEvent":
                 data.add((node, BP.cancelActivity,
                           Literal(bool(payload.get("interrupting", True)))))
             else:
                 data.remove((node, BP.attachedToRef, None))
+            # Declared on a start event, and kept when the edit does not say.
+            if kind != "startEvent":
+                data.remove((node, BP.isInterrupting, None))
+            elif "interrupting" in payload:
+                data.remove((node, BP.isInterrupting, None))
+                if payload["interrupting"] is False:
+                    data.add((node, BP.isInterrupting, Literal(False)))
         new_id = element
 
     elif op == "set-loop":
@@ -711,6 +1049,77 @@ def process_edit() -> object:
         elif loop:
             return jsonify({"error": f"Unknown repetition: {loop}"}), 400
         new_id = activity
+
+    elif op == "move-node":
+        """A step dropped in another lane or participant, keeping its id and flows.
+
+        Across participants a sequence flow would cross pools and a message flow
+        could end up inside one, neither of which BPMN allows. Those are refused
+        unless `convert` asks to turn each into the other kind, and a conversion
+        BPMN does not allow either is refused by name."""
+        element, pool, lane = payload.get("element"), payload.get("pool"), payload.get("lane")
+        if not element or not pool:
+            return jsonify({"error": "move-node needs an element and a participant."}), 400
+        node = URIRef(element)
+        target = _process_of_pool(data, pool)
+        if target is None:
+            return jsonify({"error": "That participant has no process to move a step into."}), 400
+        home = next((p for p in data.subjects(BP.contains, node)
+                     if (p, RDF.type, BPMN.process) in data), None)
+        if home is None:
+            return jsonify({"error": "Only a step that sits directly in a participant can be"
+                            " moved; one inside a sub-process moves with it."}), 400
+        if lane and _process_of_lane(data, URIRef(lane)) != target:
+            return jsonify({"error": "That lane is not in the participant it was dropped on."}), 400
+
+        if target != home:
+            moving = {node, *data.subjects(BP.attachedToRef, node)}
+            touching = [f for end in (BP.sourceRef, BP.targetRef)
+                        for m in moving for f in data.subjects(end, m)]
+            crossing = sorted({f for f in touching if (f, RDF.type, BPMN.sequenceFlow) in data
+                               and not ({data.value(f, BP.sourceRef), data.value(f, BP.targetRef)}
+                                        <= moving)}, key=str)
+            joining = sorted({f for f in touching if (f, RDF.type, BPMN.messageFlow) in data
+                              and target in {_process_of(data, data.value(f, BP.sourceRef)),
+                                             _process_of(data, data.value(f, BP.targetRef))}
+                              - {home}}, key=str)
+            if (crossing or joining) and not payload.get("convert"):
+                return jsonify({"error": f'Moving it to "{_named(data, URIRef(pool))}" leaves'
+                                f" {len(crossing) + len(joining)} flow(s) BPMN does not allow:"
+                                " a sequence flow stays inside one participant, and a message"
+                                " flow joins two. Allow converting them, or move it back."}), 400
+            for flow in crossing:
+                wrong = _as_message_error(data, flow)
+                if wrong:
+                    return jsonify({"error": wrong}), 400
+            for flow in joining:
+                wrong = _as_sequence_error(data, flow)
+                if wrong:
+                    return jsonify({"error": wrong}), 400
+            for flow in crossing:
+                data.remove((flow, RDF.type, BPMN.sequenceFlow))
+                data.add((flow, RDF.type, BPMN.messageFlow))
+                # Named as connect names a new message, or the canvas prints its id.
+                if data.value(flow, BP.name) is None:
+                    data.add((flow, BP.name, Literal("sends")))
+                # A condition belongs to a branch, and a message is not one.
+                for condition in list(data.objects(flow, BP.conditionExpression)):
+                    data.remove((flow, BP.conditionExpression, condition))
+                    data.remove((condition, None, None))
+            for flow in joining:
+                data.remove((flow, RDF.type, BPMN.messageFlow))
+                data.add((flow, RDF.type, BPMN.sequenceFlow))
+                data.remove((flow, BP.name, Literal("sends")))
+                # A collaboration lists its message flows; this one is no longer one.
+                data.remove((None, BP.messageFlow, flow))
+            for moved in moving:
+                data.remove((home, BP.contains, moved))
+                data.add((target, BP.contains, moved))
+        for band in list(data.subjects(BP.flowNodeRef, node)):
+            data.remove((band, BP.flowNodeRef, node))
+        if lane:
+            data.add((URIRef(lane), BP.flowNodeRef, node))
+        new_id = element
 
     elif op == "connect":
         source = payload.get("source")
@@ -759,10 +1168,22 @@ def process_edit() -> object:
                 ), 400
             made = _join_data(data, reference, step, "in" if reading else "out")
             if made is None:
-                return jsonify({"error": "That step already uses this data."}), 400
-            return _serialized(data, newId=made)
+                return jsonify({"error": _already_joined(reading)}), 400
+            return _serialized(data, newId=made, carryable=_carryable(data, step, only=reference))
 
-        same_process = _process_of(data, source_ref) == _process_of(data, target_ref)
+        # Two black-box pools have no process at all, and are still two pools.
+        home = _process_of(data, source_ref)
+        same_process = home is not None and home == _process_of(data, target_ref)
+        if payload.get("kind") == "message" and same_process:
+            return jsonify({"error": "A message flow joins two different participants."
+                            " Drop it on a step in another pool, or use the dot on the"
+                            " right for a sequence flow."}), 400
+        if same_process:
+            into, out_of = _kind_of(data, target_ref), _kind_of(data, source_ref)
+            if into in NO_INCOMING:
+                return jsonify({"error": NO_INCOMING[into]}), 400
+            if out_of in NO_OUTGOING:
+                return jsonify({"error": NO_OUTGOING[out_of]}), 400
         flow = _fresh(data, "sflow" if same_process else "mflow")
         data.add((flow, RDF.type, BPMN.sequenceFlow if same_process else BPMN.messageFlow))
         data.add((flow, BP.sourceRef, source_ref))
@@ -799,14 +1220,54 @@ def process_edit() -> object:
         data.remove((URIRef(activity), PAIR.refinedBy, None))
         if system:
             data.add((URIRef(activity), PAIR.refinedBy, URIRef(system)))
+        # a step of the system it no longer refines does not carry it out
+        kept = _members_of(data, URIRef(system)) if system else set()
+        for step in list(data.objects(URIRef(activity), PAIR.carriedOutBy)):
+            if step not in kept:
+                data.remove((URIRef(activity), PAIR.carriedOutBy, step))
         new_id = activity
+        carryable = _carryable(data, URIRef(activity))
+
+    elif op == "set-steps":
+        activity = payload.get("activity")
+        steps = payload.get("steps")
+        if not activity or not isinstance(steps, list):
+            return jsonify({"error": "set-steps needs an activity and a list of steps."}), 400
+        node = URIRef(activity)
+        offered = {
+            step for system in data.objects(node, PAIR.refinedBy)
+            for step in data.objects(system, BEAM.hasProcess)
+        }
+        chosen = [URIRef(s) for s in steps if s]
+        if any(step not in offered for step in chosen):
+            return jsonify({"error": "That step is not in the system this activity refines."}), 400
+        data.remove((node, PAIR.carriedOutBy, None))
+        for step in chosen:
+            data.add((node, PAIR.carriedOutBy, step))
+        new_id = activity
+
+    elif op == "carry-data":
+        """Each data object or store the activity reads or writes becomes a Data
+        element of the system it refines, unless it already names one."""
+        activity = payload.get("activity")
+        if not activity:
+            return jsonify({"error": "carry-data needs an activity."}), 400
+        if len(list(data.objects(URIRef(activity), PAIR.refinedBy))) != 1:
+            return jsonify({"error": "Only an activity that refines a system can carry its data there."}), 400
+        only = URIRef(payload["reference"]) if payload.get("reference") else None
+        made = _carry_data(data, URIRef(activity), only=only)
+        if not made:
+            return jsonify({"error": "Everything this activity reads or writes already names its element."}), 400
+        data.bind("bpmn", BPMN)
+        data.bind("bp", BP)
+        return _serialized(data, newId=made[0], newIds=made)
 
     elif op == "add-data":
         # Free-standing when no activity is named: a store is a thing in its own
         # right, and one drawn per reader reads as several different stores.
         activity = payload.get("activity")
         direction = payload.get("direction")
-        if activity and direction not in ("in", "out"):
+        if activity and direction not in ("in", "out", "both"):
             return jsonify({"error": "add-data needs a direction when it names an activity."}), 400
         classification = payload.get("classification") or ""
         if classification and classification not in data_class_names():
@@ -848,18 +1309,10 @@ def process_edit() -> object:
         if node is None:
             new_id = str(reference)
             return _serialized(data, newId=new_id)
-        association = _fresh(data, "dassoc")
-        if direction == "in":
-            data.add((association, RDF.type, BPMN.dataInputAssociation))
-            data.add((association, BP.sourceRef, reference))
-            data.add((association, BP.targetRef, node))
-            data.add((node, BP.dataInputAssociation, association))
-        else:
-            data.add((association, RDF.type, BPMN.dataOutputAssociation))
-            data.add((association, BP.sourceRef, node))
-            data.add((association, BP.targetRef, reference))
-            data.add((node, BP.dataOutputAssociation, association))
+        for way in (["in", "out"] if direction == "both" else [direction]):
+            _associate(data, reference, node, way)
         new_id = str(reference)
+        carryable = _carryable(data, node, only=reference)
 
     elif op == "connect-data":
         """One data node, joined to another activity.
@@ -871,12 +1324,14 @@ def process_edit() -> object:
         reference = payload.get("data")
         activity = payload.get("activity")
         direction = payload.get("direction")
-        if not reference or not activity or direction not in ("in", "out"):
+        if not reference or not activity or direction not in ("in", "out", "both"):
             return jsonify({"error": "connect-data needs data, an activity and a direction."}), 400
         made = _join_data(data, URIRef(reference), URIRef(activity), direction)
         if made is None:
-            return jsonify({"error": "That activity already uses this data."}), 400
+            return jsonify({"error": "That step already reads and writes this data." if direction == "both"
+                            else _already_joined(direction == "in")}), 400
         new_id = made
+        carryable = _carryable(data, URIRef(activity), only=URIRef(reference))
 
     elif op == "set-condition":
         """The words on a branch out of a gateway.
@@ -923,28 +1378,7 @@ def process_edit() -> object:
         kinds = set(data.objects(ref, RDF.type))
         if not kinds & DATA_REFS:
             return jsonify({"error": "That is not a data object or a data store."}), 400
-        held = data.value(ref, BP.dataObjectRef) or data.value(ref, BP.dataStoreRef)
-
-        doomed = {ref}
-        for prop, side in ((BP.dataInputAssociation, BP.sourceRef),
-                           (BP.dataOutputAssociation, BP.targetRef)):
-            for association in list(data.subjects(side, ref)):
-                doomed.add(association)
-        for association in list(data.subjects(BP.targetRef, ref)):
-            doomed.add(association)
-
-        others = {
-            appearance
-            for appearance in set(data.subjects(BP.dataObjectRef, held))
-            | set(data.subjects(BP.dataStoreRef, held))
-            if appearance != ref
-        }
-        if held is not None and not others:
-            doomed.add(held)
-            item = data.value(held, BP.itemSubjectRef)
-            if item is not None:
-                doomed.add(item)
-
+        doomed = _appearance_doomed(data, ref, {ref})
         for victim in doomed:
             for triple in list(data.triples((victim, None, None))):
                 data.remove(triple)
@@ -1136,6 +1570,31 @@ def process_edit() -> object:
             data.add((target, RDF.type, BPMN.dataObject))
         new_id = str(ref)
 
+    elif op == "set-data-direction":
+        """Whether a step reads this data, writes it, or both: its associations are
+        rewritten on the same box, so a store a step updates stays one box."""
+        reference = payload.get("reference")
+        activity = payload.get("activity")
+        direction = payload.get("direction")
+        if not (reference and activity) or direction not in ("in", "out", "both"):
+            return jsonify({"error": "set-data-direction needs a reference, an activity and a direction."}), 400
+        ref, node = URIRef(reference), URIRef(activity)
+        found = False
+        for prop in (BP.dataInputAssociation, BP.dataOutputAssociation):
+            for association in list(data.objects(node, prop)):
+                ends = set(data.objects(association, BP.sourceRef)) | set(data.objects(association, BP.targetRef))
+                if ref not in ends:
+                    continue
+                found = True
+                data.remove((node, prop, association))
+                for triple in list(data.triples((association, None, None))):
+                    data.remove(triple)
+        if not found:
+            return jsonify({"error": "That step does not read or write this data."}), 400
+        for way in (["in", "out"] if direction == "both" else [direction]):
+            _associate(data, ref, node, way)
+        new_id = reference
+
     elif op == "detach-data":
         reference = payload.get("reference")
         activity = payload.get("activity")
@@ -1202,15 +1661,19 @@ def process_edit() -> object:
             data.add((node, BP.name, Literal(payload["label"].strip())))
 
     elif op == "delete":
-        element = payload.get("element")
-        if not element:
+        chosen = _chosen_elements(payload)
+        if not chosen:
             return jsonify({"error": "delete needs an element."}), 400
-        node = URIRef(element)
+        appearances = [node for node in chosen if set(data.objects(node, RDF.type)) & DATA_REFS]
+        doomed = set(chosen) - set(appearances)
+        for node in appearances:
+            doomed |= _appearance_doomed(data, node, set(appearances))
         # A participant owns its process; deleting the pool without it would
         # leave a process nothing runs and activities nobody performs.
-        doomed = {node}
-        process = data.value(node, BP.processRef)
-        if process is not None:
+        for node in list(doomed):
+            process = data.value(node, BP.processRef)
+            if process is None:
+                continue
             doomed.add(process)
             doomed.update(data.objects(process, BP.contains))
             for lane_set in data.objects(process, BP.laneSet):
@@ -1242,4 +1705,4 @@ def process_edit() -> object:
 
     data.bind("bpmn", BPMN)
     data.bind("bp", BP)
-    return _serialized(data, newId=new_id)
+    return _serialized(data, newId=new_id, carryable=carryable)

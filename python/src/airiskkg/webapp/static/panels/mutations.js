@@ -27,16 +27,18 @@ export function applyEdit(elementId, edit) {
   });
 }
 
-// Delete an element and every edge touching it.
+// Delete an element, or several, and every edge touching them.
 export function applyDelete(elementId) {
+  const several = Array.isArray(elementId);
   return runMutation(async () => {
     try {
       const { ttl } = await postJson("/api/graph-edit", {
-        ttl: Editor.getValue(), op: "delete-element", element: elementId,
+        ttl: Editor.getValue(), op: "delete-element",
+        ...(several ? { elements: elementId } : { element: elementId }),
       });
-      noteChange("deleted an element");
+      noteChange(several ? `deleted ${elementId.length} elements` : "deleted an element");
       Editor.setValue(ttl);
-      setStatus("ok", "Element deleted");
+      setStatus("ok", several ? `${elementId.length} elements deleted` : "Element deleted");
     } catch (error) {
       setStatus("error", "Could not delete: " + error.message.split("\n")[0]);
     }

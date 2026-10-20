@@ -144,7 +144,9 @@ def reload_knowledge_base() -> None:
         data_classifications,
         system_context_options,
     )
+    from airiskkg.workbench import possible
     from airiskkg.workbench.templates import motif_templates
+    from airiskkg.workbench.terms import _role_labels
     from airiskkg.workbench.vocabulary import vocabulary
 
     library_catalogue.cache_clear()
@@ -153,6 +155,8 @@ def reload_knowledge_base() -> None:
     _data_classes.cache_clear()
     motif_templates.cache_clear()
     vocabulary.cache_clear()
+    _role_labels.cache_clear()
+    possible.reset_cache()
 
 
 def load_base_graph() -> Graph:

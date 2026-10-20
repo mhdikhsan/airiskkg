@@ -56,6 +56,7 @@ export function startDrawing(level) {
     setStatus("ok", "Risk", "state what must not happen, then see what to look for");
     return;
   }
+  refreshSystemBar();
   setStatus("ok", "AI architecture", "drag a symbol onto the canvas, or load an example");
 }
 
@@ -63,7 +64,8 @@ function architectureHasContent() {
   return Boolean(state.lastGraph && state.lastGraph.nodes && state.lastGraph.nodes.length);
 }
 
-export function setLevel(next, activity) {
+export function setLevel(next, activity, { back = false } = {}) {
+  if (!back && next !== state.level) state.levelTrail = [...state.levelTrail, state.level].slice(-20);
   state.level = next;
   state.openedFrom = next === "architecture" ? activity || state.openedFrom : null;
   $("#canvas").classList.toggle("hidden", next !== "architecture");
@@ -156,11 +158,14 @@ async function refreshProcess(ttl) {
   ProcessCanvas.render(data);
   mapSource([...data.participants, ...data.activities, ...(data.events || []),
     ...(data.gateways || []), ...(data.lanes || [])], "business");
-  const hasProcess = data.stats.activities > 0 || (data.participants || []).length > 0;
+  // any BPMN on the page is a process being drawn, even a data object or a note before the first pool
+  const hasProcess = data.stats.activities > 0 || ["participants", "dataNodes", "artifacts", "events", "gateways"]
+    .some((key) => (data[key] || []).length > 0);
   $("#level-switch").classList.toggle("hidden", awaitingChoice && !hasProcess);
   setTabVisible("process", hasProcess);
 
-  if (!hasProcess && state.level === "business") setLevel("architecture");
+  // never away from a level the reader picked: an edit that empties the process is still theirs
+  if (!hasProcess && state.level === "business" && !state.levelChosenByHand) setLevel("architecture");
   else if (hasProcess && !hadProcess && !state.levelChosenByHand) setLevel("business");
   hadProcess = hasProcess;
 
@@ -211,8 +216,9 @@ function processRow(activity, depth) {
     row.classList.add("refined");
     row.addEventListener("click", () => {
       setLevel("architecture", activity);
-      GraphView.setHighlight(activity.refines);
-      revealInSource(activity.refines);
+      const own = (activity.steps || []).length ? activity.steps : activity.refines;
+      GraphView.setHighlight(own, { dim: false });
+      revealInSource(own);
     });
     row.title = "Open the AI architecture this activity is carried out by";
   }
@@ -311,13 +317,14 @@ function renderProcessList(list, data) {
 }
 
 export function refreshSystemBar() {
-  if (state.lastGraph) renderSystemBar(state.lastGraph);
+  renderSystemBar(state.lastGraph || { systems: [], nodes: [], unclaimed: [] });
 }
 
 function renderSystemBar(data) {
   const badge = $("#system-badge");
   const unclaimed = (data.unclaimed || []).length;
-  if (data.systems.length || data.nodes.length) {
+  // Shown on an empty canvas too: "+ system" is how a container is drawn first.
+  {
 
     const shown = data.scopedTo
       ? data.systems.filter((s) => s.id === data.scopedTo)
@@ -359,8 +366,6 @@ function renderSystemBar(data) {
     add.addEventListener("click", () => createSystem(unclaimed, data.systems.length));
     badge.appendChild(add);
     badge.classList.remove("hidden");
-  } else {
-    badge.classList.add("hidden");
   }
 }
 
@@ -393,19 +398,29 @@ export async function refreshPreview(ttl) {
   if (!ttl.trim()) {
     GraphView.clear();
     resetProcess();
-    $("#system-badge").classList.add("hidden");
+    // A cleared editor has no architecture, so nothing may redraw the last one.
+    state.lastGraph = null;
+    refreshSystemBar();
     setStatus("ok", "Ready");
     return;
   }
   scheduleStaleCheck(ttl);
   try {
-    const data = await postJson("/api/graph", { ttl, scope: state.scopedSystem });
+    let data = await postJson("/api/graph", { ttl, scope: state.scopedSystem });
     if (seq !== previewSeq) return;
+    // a scope naming a system the drawing no longer holds would draw nothing at all
+    if (state.scopedSystem && !(data.systems || []).some((system) => system.id === state.scopedSystem)) {
+      resetScope();
+      data = await postJson("/api/graph", { ttl, scope: null });
+      if (seq !== previewSeq) return;
+    }
     state.lastGraph = data;
     GraphView.render(data);
     /* After the architecture is known, so the level decision has something to
      * go on rather than always believing the canvas is empty. */
     refreshProcess(ttl);
+    // the risk view reads the document too: a change made in the Turtle reaches it while it is on screen
+    if (state.level === "risk") refreshRegister().then(renderRisk);
     mapSource([...data.nodes, ...data.systems]);
     Editor.markErrorLine(null);
     renderSystemBar(data);

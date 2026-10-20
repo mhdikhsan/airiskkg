@@ -91,7 +91,7 @@ def _example_ttl() -> str:
 def test_agentic_example_matches_both_agentic_motifs() -> None:
     motifs = _motifs(_summary(_example_ttl()))
     assert "Tool-Using Agent Motif" in motifs
-    assert "Agent Memory Loop Motif" in motifs
+    assert "Agent Memory Motif" in motifs
 
 
 def test_agentic_example_produces_both_agentic_findings() -> None:
@@ -122,7 +122,7 @@ def test_memory_loop_needs_the_same_store_written_and_read() -> None:
         "    beam:use local:otherStore ;\n    beam:produce local:recalledContext .\n"
         "local:otherStore a beam:Data ; rdfs:label \"Other Store\" ; pair:playsRole pair:AgentMemory .",
     )
-    assert "Agent Memory Loop Motif" not in _motifs(_summary(ttl))
+    assert "Agent Memory Motif" not in _motifs(_summary(ttl))
 
 
 def test_agentic_findings_are_candidates() -> None:

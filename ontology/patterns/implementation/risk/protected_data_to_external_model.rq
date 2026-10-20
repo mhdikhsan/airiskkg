@@ -39,7 +39,7 @@ WHERE {
         }
         UNION
         {
-            ?binding pair:bindsPatternNode pat:SyncPred_PredictionStepNode ;
+            ?binding pair:bindsPatternNode pat:Serving_PredictionStepNode ;
                      pair:matchedElement ?modelStep .
         }
 

@@ -48,18 +48,21 @@ aic:ResourceLeafTypeShape
     sh:severity sh:Warning ;
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "Resource should be typed to a leaf class (a subtype of beam:Data, beam:Symbol, or beam:Model), not only to a top-level resource class." ;
+        sh:message "A model should be typed as beam:StatisticalModel or beam:SemanticModel, not only as a general beam:Model." ;
         sh:prefixes <http://w3id.org/airiskkg/shacl/architecture-input-contract> ;
+        # Only a bare Model: the match queries read beam:StatisticalModel, so it
+        # matches none of them. Plain Data, Symbol and Resource are what the
+        # queries read (External Dependency is a Resource on purpose).
         sh:select """
             PREFIX beam: <http://w3id.org/beam/core#>
             PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             SELECT $this
             WHERE {
+                $this rdf:type beam:Model .
                 FILTER NOT EXISTS {
-                    $this rdf:type ?leaf .
-                    ?leaf rdfs:subClassOf+ ?top .
-                    FILTER(?top IN (beam:Data, beam:Symbol, beam:Model))
+                    $this rdf:type ?model .
+                    ?model rdfs:subClassOf+ beam:Model .
                 }
             }
         """ ;

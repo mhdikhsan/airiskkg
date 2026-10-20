@@ -66,6 +66,7 @@ export function createRiskCanvas() {
   let view = { x: 0, y: 0, k: 1 };
   let manualPositions = new Map();
   let selected = null;
+  let context = new Set();  // the neighbours of what is picked, outlined on demand
   let pickedLink = null;
   let lastDraw = null;
 
@@ -227,15 +228,18 @@ export function createRiskCanvas() {
       if (!owner || !drawn.has(owner)) continue;
       const key = `${link.source}|${owner}|${link.kind}`;
       if (!rolled.has(key)) {
-        rolled.set(key, { link: { ...link, target: owner, rolledUp: true }, of: [] });
+        rolled.set(key, { link: { ...link, target: owner, rolledUp: true }, of: [], ids: [] });
       }
       rolled.get(key).of.push(nameOf.get(link.target) || link.target);
+      rolled.get(key).ids.push(link.target);
     }
-    for (const { link, of } of rolled.values()) {
+    for (const { link, of, ids } of rolled.values()) {
       const names = [...new Set(of)].sort();
       keep({
         ...link,
         rolledUpOf: names,
+        // The elements it stands for: removing the line removes these attachments.
+        rolledUpIds: [...new Set(ids)],
         label: names.length > 2 ? `${names.length} elements` : names.join(", "),
       });
     }
@@ -283,6 +287,30 @@ export function createRiskCanvas() {
   }
 
   const SHARED_GROUP = "\u0000shared";
+
+  /* A dragged box keeps its place while the layout around it moves, so a box
+     laid out later can land on it. Each laid-out box slides right along its
+     row until it is clear of the dragged ones and of those already placed. */
+  function clearOfMoved(positions) {
+    if (!manualPositions.size) return;
+    const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w
+      && a.y < b.y + b.h && b.y < a.y + a.h;
+    const taken = [...positions.entries()]
+      .filter(([id]) => manualPositions.has(id)).map(([, at]) => at);
+    const free = [...positions.entries()]
+      .filter(([id]) => !manualPositions.has(id))
+      .sort(([, a], [, b]) => a.y - b.y || a.x - b.x);
+    for (const [id, at] of free) {
+      const box = { ...at };
+      for (let tries = 0; tries < positions.size; tries += 1) {
+        const hit = taken.find((other) => overlaps(box, other));
+        if (!hit) break;
+        box.x = hit.x + hit.w + CARD_GAP_X;
+      }
+      if (box.x !== at.x) positions.set(id, box);
+      taken.push(box);
+    }
+  }
 
   function layoutDiagram(diagram, architecture) {
     const flow = layoutFlow(architecture.nodes || [], architecture.edges || []);
@@ -413,6 +441,7 @@ export function createRiskCanvas() {
       const current = positions.get(id);
       if (current) positions.set(id, { ...current, x: at.x, y: at.y });
     }
+    clearOfMoved(positions);
 
     const frames = [];
     columns.forEach((column) => {
@@ -644,7 +673,7 @@ export function createRiskCanvas() {
   function drawFlowNode(entry, layer, highlighted, positions) {
     const style = FLOW_STYLE[entry.node.kind] || FLOW_STYLE.other;
     const group = make("g", {
-      class: "rc-flow" + (highlighted ? " hit" : ""),
+      class: "rc-flow" + (highlighted ? " hit" : "") + (!highlighted && context.has(entry.id) ? " ctx" : ""),
       "data-node": entry.id,
       transform: `translate(${entry.x},${entry.y})`,
     });
@@ -681,13 +710,25 @@ export function createRiskCanvas() {
  
   let pendingFrame = 0;
 
-  function redraw() {
-    if (pendingFrame || !lastDraw) return;
+  function repaint() {
+    if (lastDraw.mode === "lens") canvas.renderLens(lastDraw.lens, { keepView: true });
+    else canvas.render(lastDraw.diagram, lastDraw.architecture,
+      { ...(lastDraw.options || {}), keepView: true });
+  }
+
+  /* A drag repaints once a frame; a pick or an outline is a single change and repaints at once. */
+  function redraw(now = false) {
+    if (!lastDraw) return;
+    if (now) {
+      if (pendingFrame) cancelAnimationFrame(pendingFrame);
+      pendingFrame = 0;
+      repaint();
+      return;
+    }
+    if (pendingFrame) return;
     pendingFrame = requestAnimationFrame(() => {
       pendingFrame = 0;
-      if (lastDraw.mode === "lens") canvas.renderLens(lastDraw.lens, { keepView: true });
-      else canvas.render(lastDraw.diagram, lastDraw.architecture,
-        { ...(lastDraw.options || {}), keepView: true });
+      repaint();
     });
   }
 
@@ -729,8 +770,9 @@ export function createRiskCanvas() {
       if (moved) return; // a move is a move, never also a selection
       selected = selected === id ? null : id;
       pickedLink = null;
-      redraw();
+      // the rail says what surrounds the pick first, so one paint carries both
       if (onSelect) onSelect(selected);
+      redraw(true);
     };
 
     window.addEventListener("pointermove", move);
@@ -777,8 +819,8 @@ export function createRiskCanvas() {
         if (selected !== null || pickedLink !== null) {
           selected = null;
           pickedLink = null;
-          redraw();
           if (onSelect) onSelect(null);
+          redraw(true);
         }
       });
 
@@ -822,7 +864,19 @@ export function createRiskCanvas() {
     select(id) {
       selected = id || null;
       pickedLink = null;
+      redraw(true);
+    },
+
+    /* Outline these elements as the context of what is picked; [] clears it. */
+    setContext(ids) {
+      const next = new Set(ids || []);
+      if (next.size === context.size && [...next].every((id) => context.has(id))) return;
+      context = next;
       redraw();
+    },
+
+    context() {
+      return [...context];
     },
 
     render(diagram, architecture, options = {}) {
@@ -895,9 +949,12 @@ export function createRiskCanvas() {
         hit.addEventListener("pointerdown", (event) => {
           event.stopPropagation();
           selected = null;
-          pickedLink = { from: link.source, to: link.target, label: link.label || link.kind };
+          pickedLink = {
+            from: link.source, to: link.target, label: link.label || link.kind,
+            standsFor: link.rolledUpIds || null,
+          };
           if (onSelect) onSelect(null);
-          redraw();
+          redraw(true);
         });
         edgeLayer.appendChild(hit);
       }

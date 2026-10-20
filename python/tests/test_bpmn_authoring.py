@@ -152,6 +152,256 @@ def test_retyping_a_node_keeps_everything_else_it_carries(client, process_ttl) -
     assert len(still) == len(joined), "the retype dropped the flows the node was on"
 
 
+def _start_to_task(client) -> tuple[str, dict]:
+    pool = client.post("/api/process-edit", json={"ttl": "", "op": "add-pool", "label": "Desk"})
+    ttl, ids = pool.get_json()["ttl"], {"pool": pool.get_json()["newId"]}
+    for key, op, extra in (("start", "add-event", {"kind": "startEvent"}),
+                           ("end", "add-event", {"kind": "endEvent"}),
+                           ("task", "add-activity", {"kind": "task", "label": "Answer"})):
+        made = client.post("/api/process-edit", json={"ttl": ttl, "op": op, "pool": ids["pool"],
+                                                      **extra}).get_json()
+        ttl, ids[key] = made["ttl"], made["newId"]
+    ttl = edit(client, ttl, "connect", source=ids["start"], target=ids["task"])
+    ttl = edit(client, ttl, "connect", source=ids["task"], target=ids["end"])
+    return ttl, ids
+
+
+@pytest.mark.parametrize("node, kind, says", [
+    ("start", "endEvent", "no sequence flow may leave it"),
+    ("end", "startEvent", "no sequence flow may lead into it"),
+    ("end", "boundaryEvent", "no sequence flow may lead into it"),
+])
+def test_an_event_cannot_be_retyped_against_its_flows(client, node, kind, says) -> None:
+    """A start event with a flow going out was retyped to an end event, and the
+    model said the process ends where it begins."""
+    ttl, ids = _start_to_task(client)
+    response = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "set-node-type", "element": ids[node], "kind": kind})
+    assert response.status_code == 400
+    assert says in response.get_json()["error"]
+    assert "Remove the" in response.get_json()["error"], "the refusal does not say how to fix it"
+
+
+def test_an_event_can_still_be_retyped_where_its_flows_allow(client) -> None:
+    ttl, ids = _start_to_task(client)
+    after = view(client, edit(client, ttl, "set-node-type", element=ids["start"],
+                              kind="intermediateCatchEvent"))
+    assert any(e["id"] == ids["start"] and e["kind"] == "intermediateCatchEvent"
+               for e in after["events"])
+
+
+def test_a_sequence_flow_cannot_enter_a_start_or_leave_an_end(client) -> None:
+    ttl, ids = _start_to_task(client)
+    for source, target in ((ids["task"], ids["start"]), (ids["end"], ids["task"])):
+        response = client.post("/api/process-edit", json={
+            "ttl": ttl, "op": "connect", "source": source, "target": target})
+        assert response.status_code == 400, f"{source} -> {target} was drawn"
+
+
+def test_two_black_box_pools_are_joined_by_a_message_flow(client) -> None:
+    """Neither has a process, so "the same process" held for None == None and
+    the line between two pools was written as a sequence flow."""
+    ttl = ""
+    pools = []
+    for label in ("Customer", "Bank"):
+        made = client.post("/api/process-edit", json={"ttl": ttl, "op": "add-pool",
+                                                      "label": label}).get_json()
+        ttl, pool = made["ttl"], URIRef(made["newId"])
+        graph = Graph().parse(data=ttl, format="turtle")
+        graph.remove((pool, URIRef(PROPS + "processRef"), None))
+        ttl = graph.serialize(format="turtle")
+        pools.append(str(pool))
+    joined = Graph().parse(data=edit(client, ttl, "connect", source=pools[0], target=pools[1]),
+                           format="turtle")
+    assert set(joined.subjects(RDF.type, URIRef(CLASSES + "messageFlow")))
+    assert not set(joined.subjects(RDF.type, URIRef(CLASSES + "sequenceFlow")))
+
+
+def _two_pools(client) -> tuple[str, dict]:
+    ttl, ids = "", {}
+    for key, op, extra in (("customer", "add-pool", {"label": "Customer"}),
+                           ("desk", "add-pool", {"label": "Desk"})):
+        made = client.post("/api/process-edit", json={"ttl": ttl, "op": op, **extra}).get_json()
+        ttl, ids[key] = made["ttl"], made["newId"]
+    for key, pool, label in (("ask", "customer", "Ask question"), ("read", "customer", "Read answer"),
+                             ("answer", "desk", "Answer question")):
+        made = client.post("/api/process-edit", json={
+            "ttl": ttl, "op": "add-activity", "kind": "task", "pool": ids[pool],
+            "label": label}).get_json()
+        ttl, ids[key] = made["ttl"], made["newId"]
+    return ttl, ids
+
+
+def test_the_message_handle_joins_two_participants(client) -> None:
+    ttl, ids = _two_pools(client)
+    joined = Graph().parse(data=edit(client, ttl, "connect", source=ids["ask"],
+                                     target=ids["answer"], kind="message"), format="turtle")
+    assert set(joined.subjects(RDF.type, URIRef(CLASSES + "messageFlow")))
+
+
+def test_the_message_handle_refuses_a_step_in_the_same_participant(client) -> None:
+    """BPMN draws a message only between pools; inside one it is a sequence flow,
+    which the right-hand handle draws."""
+    ttl, ids = _two_pools(client)
+    response = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "connect", "source": ids["ask"], "target": ids["read"],
+        "kind": "message"})
+    assert response.status_code == 400
+    assert "two different participants" in response.get_json()["error"]
+
+
+def _laned(client) -> tuple[str, dict]:
+    """Customer with two lanes and a flow inside its front office; a Desk pool."""
+    ttl, ids = "", {}
+    steps = [
+        ("customer", "add-pool", {"label": "Customer"}),
+        ("front", "add-lane", {"pool": "customer", "label": "Front office"}),
+        ("back", "add-lane", {"pool": "customer", "label": "Back office"}),
+        ("desk", "add-pool", {"label": "Desk"}),
+        ("start", "add-event", {"pool": "customer", "lane": "front", "kind": "startEvent"}),
+        ("ask", "add-activity", {"pool": "customer", "lane": "front", "kind": "task", "label": "Ask"}),
+        ("log", "add-activity", {"pool": "customer", "lane": "front", "kind": "task", "label": "Log"}),
+        ("answer", "add-activity", {"pool": "desk", "kind": "task", "label": "Answer"}),
+    ]
+    for key, op, extra in steps:
+        extra = {k: ids.get(v, v) if k in ("pool", "lane") else v for k, v in extra.items()}
+        made = client.post("/api/process-edit", json={"ttl": ttl, "op": op, **extra}).get_json()
+        ttl, ids[key] = made["ttl"], made["newId"]
+    ttl = edit(client, ttl, "connect", source=ids["start"], target=ids["ask"])
+    ttl = edit(client, ttl, "connect", source=ids["ask"], target=ids["log"])
+    return ttl, ids
+
+
+def _graph(ttl: str) -> Graph:
+    return Graph().parse(data=ttl, format="turtle")
+
+
+def test_a_step_moved_to_another_lane_keeps_its_id_and_flows(client) -> None:
+    """Moving a step meant deleting it and drawing it again."""
+    ttl, ids = _laned(client)
+    moved = _graph(edit(client, ttl, "move-node", element=ids["log"], pool=ids["customer"],
+                        lane=ids["back"]))
+    ref = URIRef(PROPS + "flowNodeRef")
+    assert (URIRef(ids["back"]), ref, URIRef(ids["log"])) in moved
+    assert (URIRef(ids["front"]), ref, URIRef(ids["log"])) not in moved
+    assert len(set(moved.subjects(RDF.type, URIRef(CLASSES + "sequenceFlow")))) == 2
+
+
+def test_a_move_that_would_break_a_flow_is_refused_unless_converted(client) -> None:
+    ttl, ids = _laned(client)
+    response = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "move-node", "element": ids["log"], "pool": ids["desk"]})
+    assert response.status_code == 400
+    assert "does not allow" in response.get_json()["error"]
+
+    moved = _graph(edit(client, ttl, "move-node", element=ids["log"], pool=ids["desk"],
+                        convert=True))
+    contains = URIRef(PROPS + "contains")
+    desk_process = moved.value(URIRef(ids["desk"]), URIRef(PROPS + "processRef"))
+    assert (desk_process, contains, URIRef(ids["log"])) in moved
+    messages = set(moved.subjects(RDF.type, URIRef(CLASSES + "messageFlow")))
+    assert len(messages) == 1, "the crossing sequence flow did not become a message flow"
+    assert moved.value(next(iter(messages)), URIRef(PROPS + "name")) is not None
+
+
+def test_a_message_flow_brought_inside_one_pool_becomes_a_sequence_flow(client) -> None:
+    ttl, ids = _laned(client)
+    ttl = edit(client, ttl, "connect", source=ids["log"], target=ids["answer"])
+    moved = _graph(edit(client, ttl, "move-node", element=ids["answer"], pool=ids["customer"],
+                        lane=ids["back"], convert=True))
+    assert not set(moved.subjects(RDF.type, URIRef(CLASSES + "messageFlow")))
+    assert len(set(moved.subjects(RDF.type, URIRef(CLASSES + "sequenceFlow")))) == 3
+
+
+def test_a_conversion_bpmn_does_not_allow_is_refused_by_name(client) -> None:
+    """A start event cannot send a message, so its flow cannot follow it out."""
+    ttl, ids = _laned(client)
+    response = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "move-node", "element": ids["ask"], "pool": ids["desk"],
+        "convert": True})
+    assert response.status_code == 400
+    assert "cannot become a message flow" in response.get_json()["error"]
+
+
+def test_a_boundary_event_moves_with_its_task(client) -> None:
+    ttl, ids = _laned(client)
+    made = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "add-event", "kind": "boundaryEvent", "attachedTo": ids["answer"],
+        "definition": "timer"}).get_json()
+    moved = _graph(edit(client, made["ttl"], "move-node", element=ids["answer"],
+                        pool=ids["customer"], lane=ids["back"]))
+    customer = moved.value(URIRef(ids["customer"]), URIRef(PROPS + "processRef"))
+    assert (customer, URIRef(PROPS + "contains"), URIRef(made["newId"])) in moved
+
+
+def test_a_move_writes_only_terms_sbpmn_declares(client) -> None:
+    ttl, ids = _laned(client)
+    ttl = edit(client, ttl, "move-node", element=ids["log"], pool=ids["desk"], convert=True)
+    ttl = edit(client, ttl, "move-node", element=ids["log"], pool=ids["customer"],
+               lane=ids["back"], convert=True)
+    assert not sbpmn_violations(_graph(ttl))
+
+
+def _models(client, ttl: str) -> dict:
+    view = client.post("/api/process", json={"ttl": ttl}).get_json()
+    return {model["label"]: model["participants"] for model in view["models"]}
+
+
+def test_a_second_process_model_keeps_the_first_ones_pools(client) -> None:
+    """A document held one process model; the development process had nowhere to go."""
+    ttl, ids = _two_pools(client)
+    assert _models(client, ttl) == {}, "a model was reported where none is declared"
+
+    made = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "add-model", "label": "Development process"}).get_json()
+    models = _models(client, made["ttl"])
+    assert set(models) == {"Business process", "Development process"}, models
+    assert sorted(models["Business process"]) == sorted([ids["customer"], ids["desk"]]), models
+    assert models["Development process"] == []
+
+    joined = client.post("/api/process-edit", json={
+        "ttl": made["ttl"], "op": "add-pool", "label": "Data team", "model": made["newId"]}).get_json()
+    models = _models(client, joined["ttl"])
+    assert models["Development process"] == [joined["newId"]], models
+    assert joined["newId"] not in models["Business process"], models
+    assert not sbpmn_violations(_graph(joined["ttl"]))
+
+
+def test_a_lone_collaboration_draws_every_pool(client) -> None:
+    """A collaboration that names no participant still holds the only process there is."""
+    ttl, ids = _two_pools(client)
+    lone = ttl + f"""
+<http://example.org/m#Desk> a <{CLASSES}collaboration> ; <{PROPS}name> "IT service desk" .
+"""
+    models = _models(client, lone)
+    assert sorted(models["IT service desk"]) == sorted([ids["customer"], ids["desk"]]), models
+
+    made = client.post("/api/process-edit", json={
+        "ttl": lone, "op": "add-model", "label": "Development process"}).get_json()
+    graph = _graph(made["ttl"])
+    filed = set(graph.objects(URIRef("http://example.org/m#Desk"), URIRef(PROPS + "contains")))
+    assert filed == {URIRef(ids["customer"]), URIRef(ids["desk"])}, (
+        "the pools it drew did not stay with it once a second model came")
+
+
+def test_an_intermediate_timer_waits_part_way_through(client, process_ttl) -> None:
+    """The palette's Timer catch: a catching intermediate event with a timer."""
+    before = view(client, process_ttl)["events"]
+    ttl = edit(client, process_ttl, "add-event", pool=CHATBOT_POOL,
+               kind="intermediateCatchEvent", definition="timer")
+    event = added(before, view(client, ttl)["events"])
+    assert (event["kind"], event["definition"]) == ("intermediateCatchEvent", "timer")
+    assert not sbpmn_violations(_graph(ttl))
+
+
+def test_a_lane_of_another_participant_is_refused(client) -> None:
+    ttl, ids = _laned(client)
+    response = client.post("/api/process-edit", json={
+        "ttl": ttl, "op": "move-node", "element": ids["answer"], "pool": ids["desk"],
+        "lane": ids["back"]})
+    assert response.status_code == 400
+
+
 def test_a_repetition_marker_survives_the_round_trip(client, process_ttl) -> None:
     after = view(client, edit(client, process_ttl, "set-loop",
                               activity=EC + "DocumentRetrieval", loop="multiParallel"))
@@ -408,42 +658,25 @@ def test_a_new_system_can_take_in_the_elements_that_belong_to_nowhere(client) ->
 
 # --- and it must still be sBPMN ----------------------------------------------
 
-def test_every_edit_writes_only_terms_sbpmn_declares(client, process_ttl) -> None:
-    """The bundled examples are checked for this in test_business_context.py."""
+def sbpmn_violations(written: Graph) -> list[str]:
+    """Every class, property and domain in `written` that sBPMN does not declare.
+
+    Declared is not enough: bp:cancelActivity is real and means nothing on a
+    start event, and bp:default is refused on a parallel gateway."""
     onto = Graph()
     for path in sorted(SBPMN_DIR.glob("*.ttl")):
         onto.parse(path, format="turtle")
-
-    ttl = process_ttl
-    for op, payload in [
-        ("add-lane", {"pool": CHATBOT_POOL, "label": "Escalation"}),
-        ("add-event", {"pool": CHATBOT_POOL, "kind": "endEvent", "definition": "terminate"}),
-        ("add-event", {"kind": "boundaryEvent", "definition": "timer", "attachedTo": SEND_ANSWER}),
-        ("add-gateway", {"pool": CHATBOT_POOL, "kind": "eventBasedGateway"}),
-        ("add-annotation", {"pool": CHATBOT_POOL, "text": "A note", "attachedTo": SEND_ANSWER}),
-        ("add-data", {"activity": DOCUMENT_RETRIEVAL, "direction": "in",
-                      "label": "Archive", "shape": "store", "classification": "PersonalData"}),
-        ("set-loop", {"activity": EC + "DocumentRetrieval", "loop": "multiSequential"}),
-    ]:
-        ttl = edit(client, ttl, op, **payload)
-
-    written = Graph().parse(data=ttl, format="turtle")
-    undeclared = sorted({
-        str(o) for _s, _p, o in written.triples((None, RDF.type, None))
-        if str(o).startswith(CLASSES) and (o, RDF.type, URIRef(
-            "http://www.w3.org/2002/07/owl#Class")) not in onto
-    })
-    assert not undeclared, f"classes sBPMN does not define: {undeclared}"
-
-    unknown = sorted({
-        str(p) for _s, p, _o in written
+    owl_class = URIRef("http://www.w3.org/2002/07/owl#Class")
+    found = [
+        f"class sBPMN does not define: {o}"
+        for o in sorted({o for _s, _p, o in written.triples((None, RDF.type, None))})
+        if str(o).startswith(CLASSES) and (o, RDF.type, owl_class) not in onto
+    ]
+    found += [
+        f"property sBPMN does not declare: {p}"
+        for p in sorted({p for _s, p, _o in written})
         if str(p).startswith(PROPS) and (URIRef(str(p)), RDF.type, None) not in onto
-    })
-    assert not unknown, f"properties sBPMN does not declare: {unknown}"
-
-    # Declared is not enough: bp:cancelActivity is real and means nothing on a
-    # start event, and bp:default is refused on a parallel gateway.
-    from rdflib import RDFS
+    ]
 
     def ancestors(cls):
         seen, frontier = {cls}, [cls]
@@ -454,17 +687,38 @@ def test_every_edit_writes_only_terms_sbpmn_declares(client, process_ttl) -> Non
                     frontier.append(parent)
         return seen
 
-    violations = []
-    for predicate in {p for _s, p, _o in written if str(p).startswith(PROPS)}:
+    for predicate in sorted({p for _s, p, _o in written if str(p).startswith(PROPS)}):
         domains = list(onto.objects(predicate, RDFS.domain))
         if not domains:
             continue
         for subject, _p, _o in written.triples((None, predicate, None)):
             types = set(written.objects(subject, RDF.type))
             if types and not any(any(d in ancestors(t) for d in domains) for t in types):
-                violations.append(f"{predicate} on {subject}")
-    assert not violations, "written outside the domain sBPMN declares: " + "; ".join(
-        sorted(violations))
+                found.append(f"{predicate} outside its domain, on {subject}")
+    return found
+
+
+def test_every_edit_writes_only_terms_sbpmn_declares(client, process_ttl) -> None:
+    """The bundled examples are checked for this in test_business_context.py."""
+    ttl = process_ttl
+    for op, payload in [
+        ("add-lane", {"pool": CHATBOT_POOL, "label": "Escalation"}),
+        ("add-event", {"pool": CHATBOT_POOL, "kind": "endEvent", "definition": "terminate"}),
+        ("add-event", {"kind": "boundaryEvent", "definition": "timer", "attachedTo": SEND_ANSWER}),
+        ("add-gateway", {"pool": CHATBOT_POOL, "kind": "eventBasedGateway"}),
+        ("add-annotation", {"pool": CHATBOT_POOL, "text": "A note", "attachedTo": SEND_ANSWER}),
+        ("add-data", {"activity": DOCUMENT_RETRIEVAL, "direction": "in",
+                      "label": "Archive", "shape": "store", "classification": "PersonalData"}),
+        ("set-loop", {"activity": EC + "DocumentRetrieval", "loop": "multiSequential"}),
+        ("add-event", {"pool": CHATBOT_POOL, "kind": "startEvent", "definition": "parallelMultiple",
+                       "definitions": ["message", "timer"], "interrupting": False}),
+        ("add-event", {"pool": CHATBOT_POOL, "kind": "endEvent", "definition": "multiple",
+                       "definitions": ["message", "signal"]}),
+        ("add-activity", {"pool": CHATBOT_POOL, "kind": "eventSubProcess"}),
+    ]:
+        ttl = edit(client, ttl, op, **payload)
+
+    assert not sbpmn_violations(Graph().parse(data=ttl, format="turtle"))
 
 
 def test_a_pool_can_be_dropped_lower_in_the_stack(client, process_ttl) -> None:

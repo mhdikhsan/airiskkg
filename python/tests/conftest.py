@@ -22,6 +22,7 @@ TARIFF_NS = "http://w3id.org/airiskkg/example/wien-energie-tariff#"
 AGENT_NS = "http://w3id.org/airiskkg/example/it-support#"
 PROMPT_INJECTION_NS = "http://w3id.org/airiskkg/example/prompt-injection#"
 CREDIT_SCORING_NS = "http://w3id.org/airiskkg/example/credit-scoring#"
+SUPPORT_CHATBOT_NS = "http://w3id.org/airiskkg/example/support-chatbot#"
 
 
 def _declaring(directory: Path, namespace: str) -> list[Path]:

@@ -135,9 +135,21 @@ def role_shelf(graph: Graph) -> dict[URIRef, URIRef]:
                 return candidate
         return sorted(candidates, key=str)[0]
 
+    categories = set(graph.subjects(RDF.type, PAIR.RoleCategory))
+
     def resolve(role: URIRef, seen: frozenset) -> URIRef | None:
         if role in classes:
             return most_general(classes[role])
+        # A category goes where the roles it groups go, never where its parent does:
+        # through Resource Role, "Models" would be offered on Data. A role reached
+        # through a category keeps the route it had before categories existed.
+        if role in categories and not seen:
+            found = {
+                shelf for child in children.get(role, ())
+                if child not in seen
+                for shelf in [resolve(child, seen | {role})] if shelf is not None
+            }
+            return most_general(found) if found else None
         for parent in parents.get(role, ()):
             if parent not in seen:
                 found = resolve(parent, seen | {role})
@@ -254,6 +266,9 @@ def role_vocab_terms(graph: Graph) -> list[dict]:
             "id": str(subject),
             "label": display_label(label(graph, subject)),
             "definition": _definition(graph, subject),
+            # what the picker cascades from: categories first, then each role under its parent
+            "parents": sorted(str(p) for p in graph.objects(subject, PAIR.subRoleOf)),
+            "category": (subject, RDF.type, PAIR.RoleCategory) in graph,
         }
         if top is not None:
             term["group"] = display_label(label(graph, top))

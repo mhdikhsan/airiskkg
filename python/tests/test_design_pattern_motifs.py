@@ -91,18 +91,6 @@ ex:Train a beam:Train ; pair:playsRole pair:TrainingStep ;
 ex:Retriever a beam:StatisticalModel ; pair:playsRole pair:RetrieverModel .
 """
 
-PROMPT_RESPONSE_OPTIMISER = """
-ex:Input a beam:Data ; pair:playsRole pair:UserInput .
-ex:Template a beam:Data ; pair:playsRole pair:PromptTemplate .
-ex:Optimise a beam:Transform ; pair:playsRole pair:PromptOptimisationStep ;
-    beam:use ex:Input , ex:Template , ex:Result ; beam:produce ex:Prompt , ex:Reply .
-ex:Prompt a beam:Data ; pair:playsRole pair:PromptTemplate .
-ex:Generate a beam:Infer ; pair:playsRole pair:GenerationStep ;
-    beam:use ex:Prompt ; beam:produce ex:Result .
-ex:Result a beam:Data ; pair:playsRole pair:LLMResponse .
-ex:Reply a beam:Data .
-"""
-
 GOAL_CREATION = """
 ex:Prompt a beam:Data ; pair:playsRole pair:PublicUserInput .
 ex:Memory a beam:Data ; pair:playsRole pair:AgentMemory .
@@ -116,8 +104,7 @@ ex:Goal a beam:Data ; pair:playsRole pair:AgentGoal .
 PROACTIVE_GOAL_CREATION = """
 ex:Prompt a beam:Data ; pair:playsRole pair:UserInput .
 ex:Memory a beam:Data ; pair:playsRole pair:AgentMemory .
-ex:Detect a beam:Process ; pair:playsRole pair:ContextDetectionStep ;
-    beam:produce ex:Screen .
+ex:Detect a beam:Process ; beam:produce ex:Screen .
 ex:Screen a beam:Data ; pair:playsRole pair:EnvironmentContext .
 ex:Create a beam:Process ; pair:playsRole pair:GoalCreationStep ;
     beam:use ex:Prompt , ex:Memory , ex:Screen ; beam:produce ex:Goal .
@@ -148,25 +135,28 @@ ex:Critique a beam:Data ; pair:playsRole pair:ReflectionFeedback .
 """
 
 VOTING = """
-ex:VoterA a beam:Process ; beam:produce ex:VoteA .
-ex:VoterB a beam:Process ; beam:produce ex:VoteB .
+ex:VoterA a beam:Process ; pair:playsRole pair:VotingStep ; beam:produce ex:VoteA .
+ex:VoterB a beam:Process ; pair:playsRole pair:VotingStep ; beam:produce ex:VoteB .
 ex:VoteA a beam:Data ; pair:playsRole pair:AgentMessage .
 ex:VoteB a beam:Data ; pair:playsRole pair:AgentMessage .
 ex:Tally a beam:Process ; pair:playsRole pair:VoteAggregationStep ;
     beam:use ex:VoteA , ex:VoteB ; beam:produce ex:Outcome .
-ex:Outcome a beam:Data .
+ex:Outcome a beam:Data ; pair:playsRole pair:CollectiveDecision .
 """
 
+# A debate is a delegation hop answered back, so it is drawn with the delegation roles.
 DEBATE = """
-ex:Proponent a beam:Process ; beam:produce ex:Claim ; beam:use ex:Rebuttal .
-ex:Opponent a beam:Process ; beam:produce ex:Rebuttal ; beam:use ex:Claim .
+ex:Proponent a beam:Process ; pair:playsRole pair:PlanningStep ;
+    beam:produce ex:Claim ; beam:use ex:Rebuttal .
+ex:Opponent a beam:Process ; pair:playsRole pair:AgentHandoffStep ;
+    beam:produce ex:Rebuttal ; beam:use ex:Claim .
 ex:Claim a beam:Data ; pair:playsRole pair:DebateArgument .
 ex:Rebuttal a beam:Data ; pair:playsRole pair:DebateArgument .
 """
 
 TOOL_AGENT_REGISTRY = """
 ex:Ticket a beam:Data ; pair:playsRole pair:PublicUserInput .
-ex:Catalogue a beam:Data ; pair:playsRole pair:ToolRegistry .
+ex:Catalogue a beam:Data .
 ex:Coordinate a beam:Process ; pair:playsRole pair:PlanningStep ;
     beam:use ex:Catalogue , ex:Ticket ; beam:produce ex:Assignment .
 ex:Assignment a beam:Data .
@@ -201,7 +191,7 @@ CASES = [
         "MisinformationFromWeakGroundingRiskPattern",
         "UnboundedConsumptionRiskPattern",
     }),
-    ("RecursiveRAGMotif", RECURSIVE_RAG, {
+    ("IterativeRAGMotif", RECURSIVE_RAG, {
         "PromptInjectionRiskPattern",
         "MisinformationFromWeakGroundingRiskPattern",
         "UnboundedConsumptionRiskPattern",
@@ -217,21 +207,17 @@ CASES = [
     ("RetrievalDataAugmentationMotif", RETRIEVAL_DATA_AUGMENTATION, {
         "DataAndModelPoisoningRiskPattern",
     }),
-    ("PromptResponseOptimiserMotif", PROMPT_RESPONSE_OPTIMISER, set()),
     ("GoalCreationMotif", GOAL_CREATION, {"GoalHijackRiskPattern"}),
-    ("ProactiveGoalCreationMotif", PROACTIVE_GOAL_CREATION, {"GoalHijackRiskPattern"}),
+    # Merged into their base motif (B-4): the base recognises the variant's drawing.
+    ("GoalCreationMotif", PROACTIVE_GOAL_CREATION, {"GoalHijackRiskPattern"}),
     ("ModelQueryingMotif", MODEL_QUERYING, {"GoalHijackRiskPattern"}),
-    ("IncrementalModelQueryingMotif", INCREMENTAL_MODEL_QUERYING, {"GoalHijackRiskPattern"}),
+    ("ModelQueryingMotif", INCREMENTAL_MODEL_QUERYING, {"GoalHijackRiskPattern"}),
     ("PlanReflectionMotif", PLAN_REFLECTION, {
         "GoalHijackRiskPattern",
         "UnboundedConsumptionRiskPattern",
     }),
     ("VotingBasedCooperationMotif", VOTING, {"InsecureAgentCommunicationRiskPattern"}),
-    ("DebateBasedCooperationMotif", DEBATE, {
-        "InsecureAgentCommunicationRiskPattern",
-        "UnboundedConsumptionRiskPattern",
-    }),
-    ("ToolAgentRegistryMotif", TOOL_AGENT_REGISTRY + TOOL_AGENT_REGISTRY_CONDITIONS, {
+    ("ToolUsingAgentMotif", TOOL_AGENT_REGISTRY + TOOL_AGENT_REGISTRY_CONDITIONS, {
         "ToolMisuseRiskPattern",
         "GoalHijackRiskPattern",
         "AgenticSupplyChainRiskPattern",
@@ -240,6 +226,10 @@ CASES = [
         "UntraceableAgentActionsRiskPattern",
     }),
 ]
+
+
+_IDS = [case[0] if [c[0] for c in CASES].count(case[0]) == 1 else f"{case[0]}-{at}"
+        for at, case in enumerate(CASES)]
 
 
 def _local(term) -> str:
@@ -273,12 +263,12 @@ def _evidence(result, pattern: str) -> set[str]:
     }
 
 
-@pytest.mark.parametrize("motif, graph, carried", CASES, ids=[case[0] for case in CASES])
+@pytest.mark.parametrize("motif, graph, carried", CASES, ids=_IDS)
 def test_the_motif_matches_its_design_pattern_drawn_as_an_architecture(motif, graph, carried) -> None:
     assert motif in _matched(_assess(graph))
 
 
-@pytest.mark.parametrize("motif, graph, carried", CASES, ids=[case[0] for case in CASES])
+@pytest.mark.parametrize("motif, graph, carried", CASES, ids=_IDS)
 def test_every_risk_pattern_the_motif_carries_fires_through_its_own_match(motif, graph, carried) -> None:
     from airiskkg.assessment_runner import load_base_graph
 
@@ -306,20 +296,18 @@ ex:Verdict a beam:Data ; pair:playsRole pair:GuardrailDecision .
 ex:Create beam:use ex:Verdict .
 """
     result = _assess(screened)
-    assert "ProactiveGoalCreationMotif" in _matched(result)
+    assert "GoalCreationMotif" in _matched(result)
     assert not _evidence(result, "GoalHijackRiskPattern")
 
 
-def test_a_reply_between_two_agents_is_not_a_debate() -> None:
-    """Request and reply is also a two-way exchange between agents. The argument
-    role is what tells a debate apart, so plain messages do not match it."""
-    result = _assess("""
-ex:Asker a beam:Process ; beam:produce ex:Request ; beam:use ex:Reply .
-ex:Helper a beam:Process ; beam:use ex:Request ; beam:produce ex:Reply .
-ex:Request a beam:Data ; pair:playsRole pair:AgentMessage .
-ex:Reply a beam:Data ; pair:playsRole pair:AgentMessage .
-""")
-    assert "DebateBasedCooperationMotif" not in _matched(result)
+def test_a_debate_is_a_delegation_answered_back() -> None:
+    """Debate-based cooperation was merged into Agent delegation (B-4): a debate
+    is the hop answered back, so it still raises the two risks the debate motif
+    carried, the exchange left unmediated and the loop left unbounded."""
+    result = _assess(DEBATE)
+    assert "AgentDelegationMotif" in _matched(result)
+    raised = {pattern for pattern, motif in _raised(result) if motif == "AgentDelegationMotif"}
+    assert {"InsecureAgentCommunicationRiskPattern", "UnboundedConsumptionRiskPattern"} <= raised, raised
 
 
 # ---- the control structures ----
@@ -366,7 +354,7 @@ ex:Plan a beam:Process ; pair:playsRole pair:PlanningStep ; beam:produce ex:Step
 ex:Steps a beam:Data .
 ex:CallTool a beam:Process ; pair:playsRole pair:ToolInvocationStep ;
     beam:use ex:Steps ; beam:produce ex:ToolOutput .
-ex:ToolOutput a beam:Data .
+ex:ToolOutput a beam:Data ; pair:playsRole pair:ActionResult .
 """
     before = run_assessment_from_text(architecture)
     finding = next(before.risk_findings.subjects(

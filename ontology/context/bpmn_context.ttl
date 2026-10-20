@@ -33,6 +33,13 @@ in the process diagram, expanded into an architecture graph."""@en ;
     rdfs:range beam:System ;
     rdfs:seeAlso bp:calledElement .
 
+pair:carriedOutBy a owl:ObjectProperty ;
+    rdfs:label "carried out by"@en ;
+    rdfs:comment """The steps of the refined system that do this activity's work. A link, never
+a subsumption: the activity stays a business activity, and no query reads it."""@en ;
+    rdfs:domain bpmn:activity ;
+    rdfs:range beam:Process .
+
 pair:realisedBy a owl:ObjectProperty ;
     rdfs:label "realised by"@en ;
     rdfs:domain [

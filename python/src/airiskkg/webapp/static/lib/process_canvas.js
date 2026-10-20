@@ -15,10 +15,15 @@ const COLLAPSED_H = 46;  // a black-box pool: the band and its name, nothing ins
 const LINE_H = 14;
 const DATA_W = 30;
 const DATA_H = 36;
+const TAP_SLOP = 5;   // a press that moves less than this is a click, not a drag
 const DATA_BAND = 92;
 const NOTE_W = 150;
-const RISK_ROW_H = 17;
+const RISK_LINE_H = 14;
 const CHILD_H = 30;
+const BAND_H = 20;       // a participant band on a choreography activity
+const ENV_PAD = 28;      // room above and below a choreography task for its messages
+const CONV_R = 20;       // a conversation hexagon
+const CONV_ROW = 110;    // the strip conversations sit in, between the pools
 
 let svg = null;
 let root = null;
@@ -38,8 +43,12 @@ let contextOptions = [];
 let dataClasses = [];
 let selectedPool = null;
 let selectedLane = null;      // where a new node lands inside a banded pool
+let selectedModel = null;     // which bpmn:collaboration is drawn
+let wantedModel = null;       // one just made, opened once it arrives
 let connecting = null;
 let swallowNextClick = false;
+let picked = new Set();       // shift-clicked nodes, deleted together
+let onPick = null;
 let findingsByActivity = new Map();
 let openRisks = new Set();
 let view = { x: 0, y: 0, k: 1 };
@@ -48,6 +57,8 @@ let paletteTouched = false;       // once the reader chooses, the choice sticks
 let collapsedPools = new Set();   // BPMN black-box pools: banded, not opened
 
 let manualPositions = new Map();
+let bandHeights = new Map();      // dragged band heights, view-only like a dragged box
+let poolWidth = 0;
 let lastFitIds = null;
 let pendingFrame = 0;
 
@@ -103,14 +114,33 @@ export function humanKind(kind) {
 
 function dataOf(activity) {
   if (!activity.reads) return [];
-  return [
-    ...activity.reads.map((d) => ({ ...d, direction: "in" })),
-    ...activity.writes.map((d) => ({ ...d, direction: "out" })),
-  ];
+  const seen = new Map();
+  [...activity.reads.map((d) => ({ ...d, direction: "in" })),
+    ...activity.writes.map((d) => ({ ...d, direction: "out" }))].forEach((d) => {
+    const had = seen.get(d.id);
+    // a step that reads and writes one box draws it once, with an arrow each way
+    seen.set(d.id, had ? { ...had, direction: "both" } : d);
+  });
+  return [...seen.values()];
 }
+
+const DIRECTION_WORDS = { in: "reads", out: "writes", both: "reads and writes" };
 
 function riskOf(item) {
   return findingsByActivity.get(item.id) || null;
+}
+
+/* The candidate risks an activity carries, each named once and wrapped rather than cut. */
+function riskLines(risk) {
+  const counts = new Map();
+  risk.items.forEach((entry) => {
+    const name = String(entry.label).replace(/^Candidate\s+/i, "");
+    counts.set(name, (counts.get(name) || 0) + 1);
+  });
+  return [...counts.entries()].map(([name, n]) => {
+    const text = name.charAt(0).toUpperCase() + name.slice(1) + (n > 1 ? ` (×${n})` : "");
+    return wrap(text, 30, 2);
+  });
 }
 
 /** Every flow node of the model in one table, tagged with how it is drawn. */
@@ -119,6 +149,7 @@ function buildIndex(model) {
   (model.activities || []).forEach((a) => table.set(a.id, { ...a, shape: "activity" }));
   (model.events || []).forEach((e) => table.set(e.id, { ...e, shape: "event" }));
   (model.gateways || []).forEach((g) => table.set(g.id, { ...g, shape: "gateway" }));
+  (model.choreographyActivities || []).forEach((c) => table.set(c.id, { ...c, shape: "choreography" }));
   return table;
 }
 
@@ -134,7 +165,7 @@ function headHeight(activity) {
 
 function footprintOf(item) {
   const { w } = sizeOf(item);
-  if (item.shape === "activity" || !item.label) return w;
+  if (item.shape === "activity" || item.shape === "choreography" || !item.label) return w;
   const longest = Math.max(...wrap(item.label, 18, 2).map((line) => line.length));
   return Math.max(w, longest * 5.6);
 }
@@ -142,12 +173,16 @@ function footprintOf(item) {
 function sizeOf(item) {
   if (item.shape === "event") return { w: EVENT_R * 2, h: EVENT_R * 2 };
   if (item.shape === "gateway") return { w: GATE_R * 2, h: GATE_R * 2 };
+  if (item.shape === "choreography") {
+    const messages = item.bands.some((band) => band.message) ? ENV_PAD * 2 : 0;
+    return { w: BOX_W, h: BOX_H + Math.max(2, item.bands.length) * BAND_H + messages };
+  }
   let h = headHeight(item);
   if (expanded.has(item.id) && item.children.length) {
     h += item.children.length * CHILD_H + 10;
   }
   const risk = riskOf(item);
-  if (risk && openRisks.has(item.id)) h += risk.items.length * RISK_ROW_H + 12;
+  if (risk && openRisks.has(item.id)) h += riskLines(risk).flat().length * RISK_LINE_H + 16;
   return { w: BOX_W, h };
 }
 
@@ -229,7 +264,26 @@ function layout() {
   const flows = data.sequenceFlows || [];
   let poolY = POOL_PAD;
 
-  data.participants.forEach((participant) => {
+  /* A choreography is laid out like a process, inside a frame instead of a
+   * pool; a participant it names only on its bands gets no pool of its own. */
+  const frames = [
+    ...(data.participants || []).filter((participant) => !participant.bandOnly
+      && inModel(participant.id)),
+    ...(data.choreographies || []).map((chor) => ({
+      id: chor.id, label: chor.label, process: chor.id, multiple: false, choreography: true,
+    })),
+  ];
+  const conversations = data.conversations || [];
+  let conversationY = null;
+  const reserveConversations = () => {
+    if (!conversations.length || conversationY !== null) return;
+    conversationY = poolY;
+    poolY += CONV_ROW;
+  };
+
+  frames.forEach((participant, seat) => {
+    // Between the first pool and the rest, so its links reach both ways.
+    if (seat === 1) reserveConversations();
     const members = [...index.values()].filter(
       (item) => !item.parent && !item.attachedTo && item.process
         && item.process === participant.process
@@ -368,7 +422,8 @@ function layout() {
           head: item.shape === "activity" ? headHeight(item) : h,
         });
       });
-      laneH = Math.max(laneH, laneBottom - laneY);
+      const key = band.id || participant.id;
+      laneH = Math.max(laneH, laneBottom - laneY, bandHeights.get(key) || 0);
       attached.forEach(([noteId, anchor], seat) => {
         const host = placed.get(anchor);
         notes.push({
@@ -378,7 +433,7 @@ function layout() {
         });
       });
 
-      drawnBands.push({ ...band, x: POOL_LABEL_W, y: laneY, w: poolW - POOL_LABEL_W, h: laneH });
+      drawnBands.push({ ...band, key, x: POOL_LABEL_W, y: laneY, w: poolW - POOL_LABEL_W, h: laneH });
       laneY += laneH;
     });
 
@@ -408,10 +463,25 @@ function layout() {
     poolY += poolH + POOL_GAP;
   });
 
-  const widest = Math.max(0, ...pools.map((pool) => pool.w));
+  reserveConversations();
+  const widest = Math.max(POOL_LABEL_W + BOX_W, poolWidth, ...pools.map((pool) => pool.w));
   pools.forEach((pool) => {
     pool.w = widest;
     pool.lanes.forEach((lane) => { lane.w = widest - POOL_LABEL_W; });
+  });
+
+  // Spread along the strip, centred, each at its own place on the row.
+  const step = CONV_R * 2 + 90;
+  const startX = Math.max(POOL_LABEL_W + 20,
+    POOL_LABEL_W + (widest - POOL_LABEL_W - step * (conversations.length - 1)) / 2 - CONV_R);
+  conversations.forEach((item, seat) => {
+    const hand = manualPositions.get(item.id);
+    const x = hand ? hand.x : startX + seat * step;
+    const y = hand ? hand.y : conversationY + CONV_ROW / 2 - CONV_R - 8;
+    placed.set(item.id, {
+      x, y, w: CONV_R * 2, h: CONV_R * 2, item: { ...item, shape: "conversation" },
+      band: 0, head: CONV_R * 2,
+    });
   });
 
   return { pools, placed, notes, height: poolY };
@@ -445,14 +515,22 @@ function definitionGlyph(parent, kind, throwing) {
     node("circle", { cx: 0, cy: 0, r: 7, class: "pc-ev-mark filled" }, g);
   } else if (kind === "link") {
     node("path", { d: "M -7 -2.5 h 7 v -3 l 7 5.5 l -7 5.5 v -3 h -7 z", class: "pc-ev-mark" }, g);
+  } else if (kind === "multiple") {
+    node("path", { d: "M 0 -7.5 L 7.1 -2.3 L 4.4 6.1 H -4.4 L -7.1 -2.3 Z", class: "pc-ev-mark" }, g);
+  } else if (kind === "parallelMultiple") {
+    node("path", {
+      d: "M -2 -7 H 2 V -2 H 7 V 2 H 2 V 7 H -2 V 2 H -7 V -2 H -2 Z", class: "pc-ev-mark",
+    }, g);
   }
   return g;
 }
 
 /* A start event is a thin ring, an intermediate one a double ring, an end
- * event a thick one, and a non-interrupting boundary event dashes both. */
+ * event a thick one. A non-interrupting boundary event dashes both rings, and
+ * a non-interrupting start event (of an event sub-process) dashes its one. */
 function eventShape(parent, cx, cy, item, radius = EVENT_R) {
-  const dashed = item.kind === "boundaryEvent" && !item.interrupting;
+  const dashed = (item.kind === "boundaryEvent" || item.kind === "startEvent")
+    && item.interrupting === false;
   const cls = (extra) => `pc-ev-ring ${extra}${dashed ? " open" : ""}`;
   if (item.kind === "endEvent") {
     node("circle", { cx, cy, r: radius, class: cls("end") }, parent);
@@ -480,9 +558,13 @@ function drawEvent(parent, slot) {
     });
   }
   const hint = node("title", {}, group);
+  const triggers = (item.definitions || []).length > 1
+    ? ` (${item.definitions.map(humanKind).join(item.definition === "parallelMultiple"
+      ? " and " : " or ")})` : "";
   hint.textContent = `${item.label || humanKind(item.kind)}\n${humanKind(item.kind)}`
-    + (item.definition ? ` — ${humanKind(item.definition)}` : "")
-    + (item.definitionLabel ? `: ${item.definitionLabel}` : "");
+    + (item.definition ? ` — ${humanKind(item.definition)}${triggers}` : "")
+    + (item.definitionLabel ? `: ${item.definitionLabel}` : "")
+    + (item.kind === "startEvent" && item.interrupting === false ? "\nNon-interrupting" : "");
   return group;
 }
 
@@ -701,9 +783,11 @@ function sequenceArrow(parent, from, to, flow) {
     "marker-end": "url(#pc-arrow)",
   }, group);
   wireConnector(group, orthPath(points), flow.id, picked, points);
-  // A default flow carries a tick through its tail; a conditional one a diamond.
+  // A default flow carries a tick through its tail; a conditional one a diamond,
+  // but only out of an activity: a gateway's branches carry their condition plain.
   const start = points[0];
   const after = points[1];
+  const fromGateway = (index.get(flow.source) || {}).shape === "gateway";
   if (flow.default) {
     const dx = Math.sign(after.x - start.x) || 0;
     const dy = Math.sign(after.y - start.y) || 0;
@@ -712,7 +796,7 @@ function sequenceArrow(parent, from, to, flow) {
         + `L ${start.x + dx * 12 + 4 - dy * 4} ${start.y + dy * 12 + 4 + dx * 4}`,
       class: "pc-flow-tick",
     }, group);
-  } else if (flow.condition) {
+  } else if (flow.condition && !fromGateway) {
     const dx = Math.sign(after.x - start.x) || 0;
     const dy = Math.sign(after.y - start.y) || 0;
     const cx = start.x + dx * 7;
@@ -723,8 +807,8 @@ function sequenceArrow(parent, from, to, flow) {
       class: "pc-flow-diamond",
     }, group);
   }
-  /* On the longest segment of the route. */
-  const caption = flow.label;
+  /* On the longest segment of the route; a branch with no name shows its condition. */
+  const caption = flow.label || flow.condition;
   if (caption) {
     let best = null;
     for (let i = 1; i < points.length; i += 1) {
@@ -756,7 +840,14 @@ function onPoolEdge(pool, other) {
 }
 
 /** A message crosses a boundary: leave the source downward, enter the target. */
-function messageArrow(parent, from, to, label, id) {
+function envelope(parent, cx, cy, shaded) {
+  const g = node("g", { class: `pc-env${shaded ? " shaded" : ""}` }, parent);
+  node("rect", { x: cx - 9, y: cy - 6, width: 18, height: 12, rx: 1, class: "pc-env-box" }, g);
+  node("path", { d: `M ${cx - 9} ${cy - 6} L ${cx} ${cy + 1} L ${cx + 9} ${cy - 6}`, class: "pc-env-fold" }, g);
+  return g;
+}
+
+function messageArrow(parent, from, to, label, id, message) {
   const downward = to.y > from.y;
   const a = port(from, downward ? "bottom" : "top");
   const b = port(to, downward ? "top" : "bottom");
@@ -770,8 +861,15 @@ function messageArrow(parent, from, to, label, id) {
     "marker-end": "url(#pc-arrow-msg)",
   }, group);
   node("circle", { cx: a.x, cy: a.y, r: 3.5, class: "pc-msg-start" }, group);
-  if (label) centred(group, (a.x + b.x) / 2, midY - 5, truncate(label, 26), "pc-flow-label");
+  // A message the flow names is drawn as BPMN draws it: an envelope on the line.
+  const midX = (a.x + b.x) / 2;
   wireConnector(group, orthPath(points), id, picked, points);
+  if (message) {
+    envelope(group, midX, midY, false);
+    text(group, midX + 13, midY + 4, truncate(label, 24), "pc-flow-label");
+  } else if (label) {
+    centred(group, midX, midY - 5, truncate(label, 26), "pc-flow-label");
+  }
 }
 
 
@@ -856,30 +954,57 @@ function dataGlyph(parent, x, y, item) {
 }
 
 
-function dataAssociation(parent, x1, y1, x2, y2) {
+function dataAssociation(parent, x1, y1, x2, y2, both = false) {
   node("path", {
     d: `M ${x1} ${y1} L ${x2} ${y2}`,
     class: "pc-data-link",
     "marker-end": "url(#pc-arrow-data)",
+    ...(both ? { "marker-start": "url(#pc-arrow-data)" } : {}),
   }, parent);
 }
 
-function drawData(parent, slot) {
+/* Where a line from the centre of `r` towards `toward` leaves `r`. */
+function rimPoint(r, toward, gap = 3) {
+  const cx = r.x + r.w / 2;
+  const cy = r.y + r.h / 2;
+  const dx = toward.x - cx;
+  const dy = toward.y - cy;
+  const length = Math.hypot(dx, dy);
+  if (!length) return { x: cx, y: cy };
+  const s = Math.min(dx ? (r.w / 2) / Math.abs(dx) : Infinity, dy ? (r.h / 2) / Math.abs(dy) : Infinity);
+  return { x: cx + dx * s + (dx / length) * gap, y: cy + dy * s + (dy / length) * gap };
+}
+
+function drawData(parent, slot, placed) {
   const items = dataOf(slot.item);
   if (!items.length || !slot.band) return;
   const spread = Math.min(slot.w / items.length, 92);
   items.forEach((item, seat) => {
-    const cx = slot.x + spread * (seat + 0.5) + (slot.w - spread * items.length) / 2;
-    const top = slot.y - slot.band + 6;
+    const hand = manualPositions.get(item.id);
+    const cx = hand ? hand.x + DATA_W / 2 : slot.x + spread * (seat + 0.5) + (slot.w - spread * items.length) / 2;
+    const top = hand ? hand.y : slot.y - slot.band + 6;
     const g = dataGlyph(parent, cx - DATA_W / 2, top, item);
     // The same box, the same editor, whether it was placed or born in a step.
     g.setAttribute("data-node", item.id);
+    g.setAttribute("data-at", `${cx - DATA_W / 2},${top}`);
     wireDataNode(g, { ...item, links: item.links || [{ direction: item.direction }] },
       { x: cx - DATA_W / 2, y: top });
-    if (item.direction === "in") {
-      dataAssociation(g, cx, top + DATA_H + 2, cx, slot.y - 4);
+    placed.set(item.id, {
+      x: cx - DATA_W / 2, y: top, w: DATA_W, h: DATA_H,
+      item: { id: item.id, label: item.label, shape: "data" },
+    });
+    let [boxEnd, stepEnd] = [{ x: cx, y: top + DATA_H + 2 }, { x: cx, y: slot.y - 4 }];
+    if (hand) {
+      // moved by hand: the line runs between the two boxes, whichever side they face
+      const box = { x: cx - DATA_W / 2, y: top, w: DATA_W, h: DATA_H };
+      const step = { x: slot.x, y: slot.y, w: slot.w, h: slot.h };
+      boxEnd = rimPoint(box, { x: step.x + step.w / 2, y: step.y + step.h / 2 });
+      stepEnd = rimPoint(step, { x: cx, y: top + DATA_H / 2 });
+    }
+    if (item.direction === "out") {
+      dataAssociation(g, stepEnd.x, stepEnd.y, boxEnd.x, boxEnd.y);
     } else {
-      dataAssociation(g, cx, slot.y - 4, cx, top + DATA_H + 2);
+      dataAssociation(g, boxEnd.x, boxEnd.y, stepEnd.x, stepEnd.y, item.direction === "both");
     }
     wrap(item.label, 16, 2).forEach((line, row) => {
       centred(g, cx, top + DATA_H + 13 + row * 11, line, "pc-data-label");
@@ -889,7 +1014,7 @@ function drawData(parent, slot) {
       centred(g, cx, top - 4, item.kinds.map(humanKind).join(", "), "pc-data-kind");
     }
     const title = node("title", {}, g);
-    title.textContent = `${item.label} — ${item.direction === "in" ? "read by" : "written by"} `
+    title.textContent = `${item.label} — ${{ in: "read by", out: "written by", both: "read and written by" }[item.direction]} `
       + `${slot.item.label}`
       + (item.kinds.length
         ? `\nClassified: ${item.kinds.join(", ")}`
@@ -950,8 +1075,14 @@ function drawActivity(parent, slot) {
       node("rect", {
         x: slot.x + 12, y: cy, width: slot.w - 24, height: CHILD_H - 6, rx: 4, class: "pc-child",
       }, group);
-      const glyph = child.shape === "gateway" ? "◇ " : (child.shape === "event" ? "○ " : "");
-      text(group, slot.x + 22, cy + 18, glyph + truncate(child.label, 26), "pc-child-label");
+      // An event inside is drawn as itself, so its trigger and ring still read.
+      if (child.shape === "event") {
+        eventShape(group, slot.x + 29, cy + 12, child, 9);
+        text(group, slot.x + 44, cy + 16, truncate(child.label, 24), "pc-child-label");
+      } else {
+        const glyph = child.shape === "gateway" ? "◇ " : "";
+        text(group, slot.x + 22, cy + 18, glyph + truncate(child.label, 26), "pc-child-label");
+      }
     });
   }
 
@@ -978,10 +1109,13 @@ function drawActivity(parent, slot) {
       : "Show the candidate risks found here";
 
     if (open) {
-      let rowY = slot.y + slot.h - risk.items.length * RISK_ROW_H - 6;
-      risk.items.forEach((entry) => {
-        text(group, slot.x + 26, rowY + 11, `• ${truncate(entry.label, 34)}`, "pc-risk-item");
-        rowY += RISK_ROW_H;
+      const rows = riskLines(risk);
+      let rowY = slot.y + slot.h - rows.flat().length * RISK_LINE_H - 8;
+      rows.forEach((lines) => {
+        lines.forEach((line, at) => {
+          text(group, slot.x + 18, rowY + 11, `${at ? "  " : "• "}${line}`, "pc-risk-item");
+          rowY += RISK_LINE_H;
+        });
       });
     }
   }
@@ -1012,6 +1146,22 @@ function drawActivity(parent, slot) {
       startConnect(ev, item, slot);
     });
     node("title", {}, dot).textContent = "Drag onto another activity to connect";
+
+    // A message leaves from the bottom, the way BPMN draws it between pools.
+    // Off the centre, where message flows already drawn attach and would cover it.
+    const mail = node("g", { class: "pc-port pc-port-message", cursor: "crosshair" }, group);
+    node("circle", {
+      cx: slot.x + slot.w / 4, cy: slot.y + slot.head, r: PORT_SCREEN_R, class: "pc-port-dot",
+    }, mail);
+    mail.addEventListener("pointerdown", (ev) => {
+      ev.stopPropagation();
+      startConnect(ev, item, slot, "message");
+    });
+    node("title", {}, mail).textContent =
+      "Drag onto a step in another participant to send it a message";
+    // a dot sized in screen pixels grows over the chip when zoomed out: the chip stays on top
+    const chipNode = group.querySelector(":scope > .pc-open");
+    if (chipNode) group.appendChild(chipNode);
 
     /* Clicking the box selects it and reveals the line that declares it. */
     group.addEventListener("click", (ev) => {
@@ -1064,10 +1214,173 @@ function drawBoundary(parent, slot) {
   return group;
 }
 
+/* The marker row BPMN shares between activities and choreography activities. */
+function loopMarker(parent, loop, x, y) {
+  const g = node("g", { class: "pc-mk", transform: `translate(${x} ${y})` }, parent);
+  if (loop === "standard") node("path", { d: "M 12 4 a 5 5 0 1 0 1 5 M 12 1 v 3.5 h -3.5" }, g);
+  if (loop === "multiParallel") node("path", { d: "M 3 2 v 11 M 7 2 v 11 M 11 2 v 11" }, g);
+  if (loop === "multiSequential") node("path", { d: "M 2 4 h 11 M 2 7.5 h 11 M 2 11 h 11" }, g);
+  return g;
+}
+
+/* A band is the strip of the box a participant takes, rounded with the box
+ * where it is the top or the bottom edge. */
+function bandPath(x, y, w, upper, rounded) {
+  const r = rounded ? 10 : 0;
+  if (upper) {
+    return `M ${x} ${y + BAND_H} V ${y + r} Q ${x} ${y} ${x + r} ${y} H ${x + w - r} `
+      + `Q ${x + w} ${y} ${x + w} ${y + r} V ${y + BAND_H} Z`;
+  }
+  return `M ${x} ${y} H ${x + w} V ${y + BAND_H - r} Q ${x + w} ${y + BAND_H} ${x + w - r} `
+    + `${y + BAND_H} H ${x + r} Q ${x} ${y + BAND_H} ${x} ${y + BAND_H - r} Z`;
+}
+
+/* A choreography activity: the exchange in the middle, the initiating
+ * participant's band on top and the others below, each band's message in an
+ * envelope beyond it - open when the initiator sends it, shaded when it is the
+ * reply. Which band goes on top is BPMNDI, which sBPMN does not carry. */
+function drawChoreography(parent, slot) {
+  const { item } = slot;
+  const group = node("g", { class: `pc-chor ${item.kind}` }, parent);
+  const pad = item.bands.some((band) => band.message) ? ENV_PAD : 0;
+  const x = slot.x;
+  const w = slot.w;
+  const y = slot.y + pad;
+  const h = slot.h - pad * 2;
+  node("rect", {
+    x, y, width: w, height: h, rx: 10,
+    class: `pc-chor-box${item.kind === "callChoreography" ? " call" : ""}`,
+  }, group);
+
+  const lower = item.bands.slice(1);
+  const rows = [
+    { band: item.bands[0] || null, y, upper: true, rounded: true },
+    ...(lower.length ? lower : [null]).map((band, seat, all) => ({
+      band,
+      y: y + h - (all.length - seat) * BAND_H,
+      upper: false,
+      rounded: seat === all.length - 1,
+    })),
+  ];
+  rows.forEach((row) => {
+    const shaded = !row.band || !row.band.initiating;
+    node("path", {
+      d: bandPath(x, row.y, w, row.upper, row.rounded),
+      class: `pc-chor-band${shaded ? " shaded" : ""}`,
+    }, group);
+    if (!row.band) return;
+    centred(group, x + w / 2, row.y + 14, truncate(row.band.label, 30), "pc-chor-band-label");
+    if (row.band.multiple) {
+      const cx = x + w - 16;
+      node("path", {
+        d: `M ${cx - 4} ${row.y + 5} v 10 M ${cx} ${row.y + 5} v 10 M ${cx + 4} ${row.y + 5} v 10`,
+        class: "pc-multi",
+      }, group);
+    }
+  });
+
+  const middleTop = y + BAND_H;
+  const middleBottom = y + h - Math.max(1, lower.length) * BAND_H;
+  const lines = wrap(item.label, 30, 2);
+  const firstLine = (middleTop + middleBottom) / 2 - ((lines.length - 1) * LINE_H) / 2 + 2;
+  lines.forEach((line, seat) => {
+    centred(group, x + w / 2, firstLine + seat * LINE_H, line, "pc-label");
+  });
+
+  const marks = [];
+  if (item.kind === "subChoreography") marks.push("sub");
+  if (item.loop) marks.push(item.loop);
+  marks.forEach((mark, seat) => {
+    const mx = x + w / 2 - (marks.length * 20 - 6) / 2 + seat * 20;
+    const my = middleBottom - 17;
+    if (mark === "sub") {
+      const g = node("g", { class: "pc-mk", transform: `translate(${mx} ${my})` }, group);
+      node("rect", { x: 0, y: 0, width: 14, height: 14, class: "pc-mk-box" }, g);
+      node("path", { d: "M 7 3 V 11 M 3 7 H 11" }, g);
+    } else {
+      loopMarker(group, mark, mx, my);
+    }
+  });
+
+  // Only the outer two bands have room beyond them for an envelope.
+  const outer = [
+    { band: rows[0].band, edge: y, envY: slot.y + 9, label: slot.y + 13 },
+    { band: rows[rows.length - 1].band, edge: y + h, envY: slot.y + slot.h - 9, label: slot.y + slot.h - 5 },
+  ];
+  outer.forEach(({ band, edge, envY, label }) => {
+    if (!band || !band.message) return;
+    const cx = x + w / 2;
+    node("path", { d: `M ${cx} ${edge} L ${cx} ${envY + (envY < edge ? 6 : -6)}`, class: "pc-env-link" }, group);
+    envelope(group, cx, envY, !band.initiating);
+    text(group, cx + 14, label, truncate(band.message, 24), "pc-flow-label");
+  });
+
+  node("title", {}, group).textContent = `${item.label}\n${humanKind(item.kind)}\n`
+    + item.bands.map((band) => `${band.label}${band.initiating ? " (initiates)" : ""}`
+      + (band.message ? ` sends ${band.message}` : "")).join("\n");
+  return group;
+}
+
+/* A conversation is a hexagon - thick for a call, with + for a sub-conversation. */
+function drawConversation(parent, slot) {
+  const { item } = slot;
+  const cx = slot.x + slot.w / 2;
+  const cy = slot.y + slot.h / 2;
+  const group = node("g", { class: `pc-conv ${item.kind}` }, parent);
+  const corners = [0, 1, 2, 3, 4, 5].map((seat) => {
+    const angle = (Math.PI / 3) * seat;
+    return `${cx + CONV_R * Math.cos(angle)} ${cy + CONV_R * Math.sin(angle)}`;
+  });
+  node("path", {
+    d: `M ${corners.join(" L ")} Z`,
+    class: `pc-conv-box${item.kind === "callConversation" ? " call" : ""}`,
+  }, group);
+  if (item.kind === "subConversation") {
+    const g = node("g", { class: "pc-mk", transform: `translate(${cx - 5} ${cy + 4})` }, group);
+    node("rect", { x: 0, y: 0, width: 10, height: 10, class: "pc-mk-box" }, g);
+    node("path", { d: "M 5 2 V 8 M 2 5 H 8" }, g);
+  }
+  // Beside the hexagon: its links leave from the top and the bottom.
+  const lines = wrap(item.label, 14, 2);
+  lines.forEach((line, row) => {
+    text(group, cx + CONV_R + 5, cy + 4 + (row - (lines.length - 1) / 2) * 11, line, "pc-ev-label");
+  });
+  node("title", {}, group).textContent = `${item.label}\n${humanKind(item.kind)}`;
+  return group;
+}
+
+/* A conversation link is a double line from the hexagon to the pool's edge. */
+function conversationLink(parent, slot, pool, id) {
+  const cx = slot.x + slot.w / 2;
+  const cy = slot.y + slot.h / 2;
+  const above = pool.y + pool.h <= cy;
+  const ey = above ? pool.y + pool.h : pool.y;
+  const ex = Math.min(Math.max(cx, pool.x + POOL_LABEL_W + 12), pool.x + pool.w - 12);
+  const sy = cy + (above ? -1 : 1) * CONV_R * 0.87;
+  const midY = (sy + ey) / 2;
+  const d = orthPath([{ x: cx, y: sy }, { x: cx, y: midY }, { x: ex, y: midY }, { x: ex, y: ey }]);
+  const group = node("g", { class: "pc-conv-link" }, parent);
+  if (id) group.setAttribute("data-flow", id);
+  node("path", { d, class: "pc-conv-line" }, group);
+  node("path", { d, class: "pc-conv-gap" }, group);
+  return group;
+}
+
 function drawFlowNode(parent, slot) {
   if (slot.item.shape === "event") return drawEvent(parent, slot);
   if (slot.item.shape === "gateway") return drawGateway(parent, slot);
+  if (slot.item.shape === "choreography") return drawChoreography(parent, slot);
   return drawActivity(parent, slot);
+}
+
+/* What the editor cannot yet change is still selectable, which reveals the
+ * line that declares it. */
+function wireSelectOnly(group, item) {
+  group.setAttribute("cursor", "pointer");
+  group.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (onSelect) onSelect(item.id);
+  });
 }
 
 /* An event or a gateway is clicked like an activity, but there is no
@@ -1149,7 +1462,8 @@ function showBandDrop(bands, id, index) {
 function currentPlacement(id) {
   const slot = lastPlaced.get(id);
   return slot && slot.item
-    && ["activity", "event", "gateway", "data"].includes(slot.item.shape)
+    && ["activity", "event", "gateway", "data", "choreography", "conversation"]
+      .includes(slot.item.shape)
     ? slot : null;
 }
 
@@ -1158,9 +1472,13 @@ function svgPoint(clientX, clientY) {
   return { x: (clientX - rect.left - view.x) / view.k, y: (clientY - rect.top - view.y) / view.k };
 }
 
-function startConnect(ev, item, slot) {
-  const line = node("path", { class: "pc-flow pending" }, root);
-  connecting = { from: item, slot, line, id: ev.pointerId };
+/* `kind` is "message" from the bottom port; otherwise the pools decide. */
+function startConnect(ev, item, slot, kind = null, onTap = null) {
+  const line = node("path", { class: "pc-flow pending" + (kind ? ` ${kind}` : "") }, root);
+  const from = kind === "message"
+    ? { x: slot.x + slot.w / 4, y: slot.y + (slot.head || slot.h) }
+    : { x: slot.x + slot.w, y: slot.y + (slot.head || slot.h) / 2 };
+  connecting = { from: item, slot, line, id: ev.pointerId, kind, anchor: from, onTap, at: [ev.clientX, ev.clientY] };
   // Held for the length of the drag so it survives leaving the port, and
   // released in endConnect - a capture left standing swallows every later
   // click on the canvas.
@@ -1170,25 +1488,28 @@ function startConnect(ev, item, slot) {
 function moveConnect(ev) {
   if (!connecting) return;
   const to = svgPoint(ev.clientX, ev.clientY);
-  const x1 = connecting.slot.x + connecting.slot.w;
-  const y1 = connecting.slot.y + (connecting.slot.head || connecting.slot.h) / 2;
-  connecting.line.setAttribute("d", `M ${x1} ${y1} L ${to.x} ${to.y}`);
+  const { x, y } = connecting.anchor;
+  connecting.line.setAttribute("d", `M ${x} ${y} L ${to.x} ${to.y}`);
 }
 
 async function endConnect(ev) {
   if (!connecting) return;
-  const { from, line, id } = connecting;
+  const { from, line, id, kind, onTap, at } = connecting;
   connecting = null;
   line.remove();
   try { svg.releasePointerCapture(id); } catch (error) { /* already gone */ }
   swallowNextClick = true;
+  if (onTap && Math.hypot(ev.clientX - at[0], ev.clientY - at[1]) < TAP_SLOP) {
+    onTap(ev);
+    return;
+  }
   const dropped = document.elementFromPoint(ev.clientX, ev.clientY);
   // The id travels on the element, so a drop lands on the node under the
   // pointer rather than on whatever was drawn in that position.
   const group = dropped && dropped.closest("[data-node]");
   const targetId = group && group.getAttribute("data-node");
   if (!targetId || targetId === from.id) return;
-  await onEdit("connect", { source: from.id, target: targetId });
+  await onEdit("connect", { source: from.id, target: targetId, ...(kind ? { kind } : {}) });
 }
 
 function closeDetail() {
@@ -1253,6 +1574,12 @@ const EVENT_DEFINITIONS = [
   ["link", "Link"],
 ];
 
+// Multiple is not a trigger of its own: it is two or more on one event.
+const MULTIPLE_DEFINITIONS = [
+  ["multiple", "Multiple (any one of them)"],
+  ["parallelMultiple", "Multiple (all of them)"],
+];
+
 const GATEWAY_KINDS = [
   ["exclusiveGateway", "Exclusive (XOR)"],
   ["parallelGateway", "Parallel (AND)"],
@@ -1262,6 +1589,32 @@ const GATEWAY_KINDS = [
   ["complexGateway", "Complex"],
 ];
 
+// The gateways whose branches are chosen by a condition.
+const CONDITIONAL_GATEWAYS = new Set(["exclusiveGateway", "inclusiveGateway", "complexGateway"]);
+
+/* Mirrors NO_INCOMING / NO_OUTGOING in routes/graph.py, which refuses the same. */
+const SEQUENCE_FLOW_RULES = [
+  { kind: "startEvent", end: "target",
+    why: "A start event begins the process, so no sequence flow may lead into it."
+      + " Remove the incoming flow first." },
+  { kind: "boundaryEvent", end: "target",
+    why: "A boundary event sits on an activity's edge, so no sequence flow may lead into it."
+      + " Remove the incoming flow first." },
+  { kind: "endEvent", end: "source",
+    why: "An end event finishes the process, so no sequence flow may leave it."
+      + " Remove the outgoing flow first." },
+];
+
+/* The event types this event cannot take while its sequence flows are drawn. */
+function blockedKinds(id) {
+  const flows = (data && data.sequenceFlows) || [];
+  const blocked = new Map();
+  for (const rule of SEQUENCE_FLOW_RULES) {
+    if (flows.some((flow) => flow[rule.end] === id)) blocked.set(rule.kind, rule.why);
+  }
+  return blocked;
+}
+
 /* Events and gateways get their own editor: they carry a type and, for an
  * event, a trigger - and changing either is what turns a placeholder circle
  * into the thing the process actually waits for. */
@@ -1270,33 +1623,95 @@ function showNodeDetail(item, ev) {
   if (!panel) return;
   const isEvent = item.shape === "event";
   const kinds = isEvent ? EVENT_KINDS : GATEWAY_KINDS;
+  const multiple = MULTIPLE_DEFINITIONS.some(([value]) => value === item.definition);
+  const chosen = new Set(item.definitions || []);
+  const host = item.parent ? index.get(item.parent) : null;
+  // Interrupting is read on a boundary event, and on the start of an event sub-process.
+  const interruptLabel = !isEvent ? null
+    : item.kind === "boundaryEvent" ? "Interrupts the activity"
+      : (item.kind === "startEvent" && host && host.markers && host.markers.eventSubProcess)
+        ? "Interrupts the process it starts in" : null;
+  const blocked = isEvent ? blockedKinds(item.id) : new Map();
+  const kindOptions = kinds.map(([value, label]) => {
+    const why = value === item.kind ? null : blocked.get(value);
+    return `<option value="${escapeHtml(value)}"${value === item.kind ? " selected" : ""}`
+      + `${why ? ` disabled title="${escapeHtml(why)}"` : ""}>`
+      + `${escapeHtml(label)}${why ? " (not while connected)" : ""}</option>`;
+  }).join("");
+  const blockedNote = [...new Set([...blocked].filter(([value]) => value !== item.kind)
+    .map(([, why]) => why))].join(" ");
+  // A gateway's branches are named where the decision is, not only on each line.
+  const branches = isEvent ? [] : (data.sequenceFlows || []).filter((f) => f.source === item.id);
+  const decides = CONDITIONAL_GATEWAYS.has(item.kind);
+  const branchRows = branches.map((f) => {
+    const to = index.get(f.target);
+    return `<div class="nd-row nd-branch">
+      <span title="${escapeHtml(to ? to.label : "")}">→ ${escapeHtml(truncate(to ? to.label || humanKind(to.kind) : "?", 14))}</span>
+      <input type="text" class="pd-branch-name" data-flow="${escapeHtml(f.id)}"
+             placeholder="yes, no" value="${escapeHtml(f.label || "")}" />
+      ${decides ? `<input type="text" class="pd-branch-when" data-flow="${escapeHtml(f.id)}"
+             placeholder="when, in words" value="${escapeHtml(f.condition || "")}" />` : ""}
+    </div>`;
+  }).join("");
   panel.innerHTML = `
     <div class="nd-head">${escapeHtml(isEvent ? "event" : "gateway")}</div>
     <label class="nd-row"><span>Name</span>
       <input type="text" id="pd-name" value="${escapeHtml(item.label)}" /></label>
     <label class="nd-row"><span>Type</span>
-      <select id="pd-kind">${options(kinds, item.kind)}</select></label>
+      <select id="pd-kind"${blockedNote ? ` title="${escapeHtml(blockedNote)}"` : ""}>${kindOptions}</select></label>
+    ${blockedNote ? `<p class="nd-note" id="pd-kind-why">${escapeHtml(blockedNote)}</p>` : ""}
     ${isEvent ? `<label class="nd-row"><span>Trigger</span>
-      <select id="pd-def">${options(EVENT_DEFINITIONS, item.definition || "")}</select></label>` : ""}
-    ${isEvent && item.kind === "boundaryEvent" ? `<label class="nd-row nd-check">
-      <span>Interrupts the activity</span>
-      <input type="checkbox" id="pd-interrupt"${item.interrupting ? " checked" : ""} /></label>` : ""}
+      <select id="pd-def">${options([...EVENT_DEFINITIONS, ...MULTIPLE_DEFINITIONS],
+        item.definition || "")}</select></label>
+      <div class="nd-row nd-triggers${multiple ? "" : " hidden"}" id="pd-defs">
+        ${EVENT_DEFINITIONS.filter(([value]) => value).map(([value, name]) => `<label class="nd-check">
+          <input type="checkbox" value="${value}"${chosen.has(value) ? " checked" : ""} />
+          <span>${escapeHtml(name)}</span></label>`).join("")}
+      </div>` : ""}
+    ${interruptLabel ? `<label class="nd-row nd-check">
+      <span>${interruptLabel}</span>
+      <input type="checkbox" id="pd-interrupt"${item.interrupting !== false ? " checked" : ""} /></label>` : ""}
+    ${branches.length ? `<p class="nd-note">Branches: name each one${decides
+      ? ", and say when it is taken" : ""}</p>${branchRows}` : ""}
     <div class="nd-actions">
       <button type="button" class="btn small primary" id="pd-apply">Apply</button>
       <button type="button" class="btn small" id="pd-delete">Delete</button>
     </div>`;
-  placePanel(panel, ev, 220);
+  placePanel(panel, ev, 220 + branches.length * 34);
+
+  const select = panel.querySelector("#pd-def");
+  if (select) {
+    select.addEventListener("change", () => {
+      const several = MULTIPLE_DEFINITIONS.some(([value]) => value === select.value);
+      panel.querySelector("#pd-defs").classList.toggle("hidden", !several);
+    });
+  }
 
   panel.querySelector("#pd-apply").addEventListener("click", async () => {
     const label = panel.querySelector("#pd-name").value.trim();
     const kind = panel.querySelector("#pd-kind").value;
-    const definition = isEvent ? panel.querySelector("#pd-def").value : "";
+    const definition = isEvent ? select.value : "";
+    const definitions = isEvent
+      ? [...panel.querySelectorAll("#pd-defs input:checked")].map((box) => box.value) : [];
     const interrupting = panel.querySelector("#pd-interrupt");
+    const named = [...panel.querySelectorAll(".pd-branch-name")]
+      .map((input) => [input.dataset.flow, input.value.trim()]);
+    const when = [...panel.querySelectorAll(".pd-branch-when")]
+      .map((input) => [input.dataset.flow, input.value.trim()]);
     closeDetail();
     await onEdit("set-node-type", {
-      element: item.id, kind, definition, label,
-      interrupting: interrupting ? interrupting.checked : true,
+      element: item.id, kind, definition, definitions, label,
+      // Left out when the panel did not ask, so the server keeps what is there.
+      interrupting: interrupting ? interrupting.checked : undefined,
     });
+    for (const [flow, text] of named) {
+      const was = branches.find((f) => f.id === flow);
+      if (text !== ((was && was.label) || "")) await onEdit("rename", { element: flow, label: text });
+    }
+    for (const [flow, text] of when) {
+      const was = branches.find((f) => f.id === flow);
+      if (text !== ((was && was.condition) || "")) await onEdit("set-condition", { flow, text });
+    }
   });
   panel.querySelector("#pd-delete").addEventListener("click", async () => {
     closeDetail();
@@ -1348,10 +1763,22 @@ function dpvIriFor(name) {
   return (row && row.iri) || name;
 }
 
-function showDataDetail(entry, ev) {
+function showDataDetail(shown, ev) {
   const panel = document.querySelector("#process-detail");
   if (!panel) return;
-  const options = classOptions(entry.kinds[0] || "");
+  // a box drawn in a step carries that one link; the model's entry has them all
+  const entry = (data.dataNodes || []).find((n) => n.id === shown.id) || shown;
+  const ways = new Map();
+  (entry.links || []).forEach((link) => {
+    if (!link.activity) return;
+    const had = ways.get(link.activity);
+    ways.set(link.activity, had && had !== link.direction ? "both" : link.direction);
+  });
+  const usedBy = [...ways.entries()].map(([id, way]) => ({ id, way, activity: index.get(id) }))
+    .filter((row) => row.activity);
+  const carryTo = usedBy.find((row) => (row.activity.refines || []).length === 1);
+  const systemName = carryTo ? ((systems || []).find((s) => s.id === carryTo.activity.refines[0]) || {}).label : null;
+  const holds = classOptions(entry.kinds[0] || "");
   panel.innerHTML = `
     <div class="nd-head">${entry.store ? "data store" : "data object"}</div>
     <label class="nd-row"><span>Name</span>
@@ -1362,7 +1789,7 @@ function showDataDetail(entry, ev) {
         <option value="store"${entry.store ? " selected" : ""}>Data store</option>
       </select></label>
     <label class="nd-row"><span>Holds</span>
-      <select id="pd-data-class">${options}</select></label>
+      <select id="pd-data-class">${holds}</select></label>
     <div class="nd-source">${entry.kinds.length
       ? escapeHtml(dpvIriFor(entry.kinds[0]))
       : "classified with DPV terms"}</div>
@@ -1377,17 +1804,35 @@ function showDataDetail(entry, ev) {
       ? "named, so the classification lands here and nowhere else"
       : "not named, so the classification lands wherever content enters the system"}</div>`
     : ""}
-    <div class="nd-note">${entry.links.length
-      ? `read or written by ${entry.links.length} step${entry.links.length === 1 ? "" : "s"}`
-      : "nothing reads it yet - drag from its handle to a step"}</div>
+    ${usedBy.length ? usedBy.map((row) => `
+    <label class="nd-row"><span>${escapeHtml(truncate(row.activity.label, 18))}</span>
+      <select class="pd-data-way" data-activity="${escapeHtml(row.id)}" data-was="${row.way}"
+        >${options(Object.entries(DIRECTION_WORDS), row.way)}</select></label>`).join("")
+      : `<div class="nd-note">nothing reads it yet - drag from its handle to a step</div>`}
+    ${carryTo && !(entry.realisedBy || []).length ? `
+    <div class="pd-add">
+      <button type="button" class="btn small" id="pd-data-carry"
+        title="A Data element of that system, named after this one and linked to it">
+        Add to the ${escapeHtml(systemName || "system")} architecture</button>
+    </div>` : ""}
     <div class="nd-actions">
       <button type="button" class="btn small primary" id="pd-data-apply">Apply</button>
       <button type="button" class="btn small" id="pd-data-delete">Delete</button>
     </div>`;
   placePanel(panel, ev, 210);
 
+  const carry = panel.querySelector("#pd-data-carry");
+  if (carry) {
+    carry.addEventListener("click", async () => {
+      closeDetail();
+      await onEdit("carry-data", { activity: carryTo.id, reference: entry.id });
+    });
+  }
+
   panel.querySelector("#pd-data-apply").addEventListener("click", async () => {
     const name = panel.querySelector("#pd-data-name").value.trim();
+    const turns = [...panel.querySelectorAll(".pd-data-way")]
+      .filter((select) => select.value !== select.dataset.was);
     const shape = panel.querySelector("#pd-data-shape").value;
     const classification = panel.querySelector("#pd-data-class").value;
     const realises = panel.querySelector("#pd-data-realises");
@@ -1405,6 +1850,11 @@ function showDataDetail(entry, ev) {
     }
     if (classification !== (entry.kinds[0] || "")) {
       await onEdit("classify-data", { reference: entry.id, classification });
+    }
+    for (const select of turns) {
+      await onEdit("set-data-direction", {
+        reference: entry.id, activity: select.dataset.activity, direction: select.value,
+      });
     }
   });
   panel.querySelector("#pd-data-delete").addEventListener("click", async () => {
@@ -1461,13 +1911,17 @@ function wireDataNode(group, entry, at) {
   if (!onEdit) return;
   const dot = node("g", { class: "pc-port", cursor: "crosshair" }, group);
   node("circle", {
-    cx: at.x + DATA_W, cy: at.y + DATA_H / 2, r: PORT_SCREEN_R, class: "pc-port-dot",
+    cx: at.x + DATA_W + 4, cy: at.y + DATA_H / 2, r: PORT_SCREEN_R, class: "pc-port-dot",
   }, dot);
   node("title", {}, dot).textContent = "Drag onto a step: out of here is a read, into here a write";
+  // behind the box: zoomed out the dot outgrows it, and a press on the box itself moves the box
+  group.insertBefore(dot, group.firstChild);
   dot.addEventListener("pointerdown", (ev) => {
     ev.stopPropagation();
+    // the dot covers much of a small box: a press that goes nowhere is a click on the box
     startConnect(ev, { id: entry.id, label: entry.label },
-      { x: at.x, y: at.y, w: DATA_W, h: DATA_H, head: DATA_H });
+      { x: at.x, y: at.y, w: DATA_W, h: DATA_H, head: DATA_H }, null,
+      (up) => { if (onSelect) onSelect(entry.id); showDataDetail(entry, up); });
   });
   group.setAttribute("cursor", "pointer");
   group.addEventListener("click", (ev) => {
@@ -1502,23 +1956,6 @@ function showLaneDetail(lane, ev) {
   });
 }
 
-
-const DATA_SHAPES = [["object", "Document"], ["store", "Data store"]];
-
-function dataRows(activity) {
-  const items = dataOf(activity);
-  if (!items.length) return '<div class="pd-empty">No data attached yet.</div>';
-  return items.map((item) => `
-    <div class="pd-data" data-ref="${escapeHtml(item.id)}">
-      <span class="pd-dir">${item.direction === "in" ? "reads" : "writes"}</span>
-      <span class="pd-name" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</span>
-      <select class="pd-shape" title="A document is a folded page, a data store a cylinder"
-        >${options(DATA_SHAPES, item.store ? "store" : "object")}</select>
-      <select class="pd-class">${classOptions(item.kinds[0] || "")}</select>
-      <button type="button" class="pd-drop" title="Detach this data from the activity">×</button>
-    </div>`).join("");
-}
-
 const LOOP_KINDS = [
   ["", "— runs once —"],
   ["standard", "Loop"],
@@ -1547,6 +1984,32 @@ function contextRows(activity) {
 }
 
 
+/* The steps of the refined system that do this activity's work, and the way
+   to bring the data it reads and writes into that system. */
+function stepRows(activity) {
+  const options = activity.stepOptions || [];
+  if (!activity.refines.length) return "";
+  const picker = options.length ? `
+    <label class="nd-row"><span>Steps</span>
+      <select id="pd-steps" multiple size="${Math.min(4, options.length)}">
+        ${options.map((o) => `<option value="${escapeHtml(o.id)}"${
+          (activity.steps || []).includes(o.id) ? " selected" : ""}>${escapeHtml(o.label)}</option>`).join("")}
+      </select></label>
+    <div class="nd-note">${(activity.steps || []).length
+      ? "its risks are the ones these steps and its data meet"
+      : "no step named, so every risk of the system is listed under it"}</div>`
+    : `<div class="nd-note">the system has no steps yet</div>`;
+  const loose = [...activity.reads, ...activity.writes].filter((d) => !(d.realisedBy || []).length);
+  const carry = loose.length ? `
+    <div class="pd-add">
+      <button type="button" class="btn small" id="pd-carry"
+        title="Each becomes a Data element of the system, named after it and linked to it">
+        Carry ${loose.length} data item${loose.length === 1 ? "" : "s"} into the architecture</button>
+    </div>` : "";
+  return picker + carry;
+}
+
+
 function showDetail(activity, ev) {
   const panel = document.querySelector("#process-detail");
   if (!panel) return;
@@ -1555,7 +2018,7 @@ function showDetail(activity, ev) {
     .concat(systems.map((s) =>
       `<option value="${s.id}"${activity.refines.includes(s.id) ? " selected" : ""}>`
       + `${escapeHtml(s.label)}</option>`))
-    .concat(['<option value="__new__">+ new AI system…</option>'])
+    .concat(['<option value="__new__">+ system…</option>'])
     .join("");
   panel.innerHTML = `
     <div class="nd-head">${escapeHtml(activity.kind)}</div>
@@ -1563,18 +2026,11 @@ function showDetail(activity, ev) {
       <input type="text" id="pd-name" value="${escapeHtml(activity.label)}" /></label>
     <label class="nd-row"><span>Carried out by</span>
       <select id="pd-refines">${systemOptions}</select></label>
+    ${stepRows(activity)}
     ${contextRows(activity)}
     <label class="nd-row"><span>Repetition</span>
       <select id="pd-loop">${options(LOOP_KINDS, activity.markers.loop || "")}</select></label>
-    <div class="pd-section">Data</div>
-    ${dataRows(activity)}
-    <div class="pd-add">
-      <select id="pd-dir"><option value="in">reads</option><option value="out">writes</option></select>
-      <input type="text" id="pd-data-name" placeholder="name of the data" />
-      <select id="pd-data-shape">${options(DATA_SHAPES, "object")}</select>
-      <select id="pd-data-class">${classOptions("")}</select>
-      <button type="button" class="btn small" id="pd-data-add">Add</button>
-    </div>
+    <div class="nd-note">Data is drawn with the palette and joined by an arrow; click a data box for what it holds and which way it goes.</div>
     <div class="pd-add">
       <select id="pd-boundary">${options(EVENT_DEFINITIONS, "error")}</select>
       <button type="button" class="btn small" id="pd-boundary-add">Attach boundary event</button>
@@ -1585,30 +2041,24 @@ function showDetail(activity, ev) {
     </div>`;
   placePanel(panel, ev, 340);
 
-  panel.querySelectorAll(".pd-data").forEach((row) => {
-    const reference = row.dataset.ref;
-    row.querySelector(".pd-class").addEventListener("change", async (event) => {
+  const carry = panel.querySelector("#pd-carry");
+  if (carry) {
+    carry.addEventListener("click", async () => {
       closeDetail();
-      await onEdit("classify-data", { reference, classification: event.target.value });
+      await onEdit("carry-data", { activity: activity.id });
     });
-    row.querySelector(".pd-shape").addEventListener("change", async (event) => {
-      closeDetail();
-      await onEdit("set-data-shape", { reference, shape: event.target.value });
-    });
-    row.querySelector(".pd-drop").addEventListener("click", async () => {
-      closeDetail();
-      await onEdit("detach-data", { reference, activity: activity.id });
-    });
-  });
+  }
 
-  panel.querySelector("#pd-data-add").addEventListener("click", async () => {
-    const label = panel.querySelector("#pd-data-name").value.trim();
-    if (!label) return;
-    const direction = panel.querySelector("#pd-dir").value;
-    const classification = panel.querySelector("#pd-data-class").value;
-    const shape = panel.querySelector("#pd-data-shape").value;
+  panel.querySelector("#pd-refines").addEventListener("change", async (event) => {
+    const system = event.target.value;
     closeDetail();
-    await onEdit("add-data", { activity: activity.id, direction, label, classification, shape });
+    if (system === "__new__") {
+      const label = panel.querySelector("#pd-name").value.trim() || activity.label;
+      const suggested = window.prompt("Name of the system that carries out this activity:", `${label} system`);
+      if (suggested) await onEdit("add-system", { activity: activity.id, label: suggested });
+      return;
+    }
+    await onEdit("set-refines", { activity: activity.id, system });
   });
 
   panel.querySelector("#pd-boundary-add").addEventListener("click", async () => {
@@ -1621,9 +2071,9 @@ function showDetail(activity, ev) {
 
   panel.querySelector("#pd-apply").addEventListener("click", async () => {
     const name = panel.querySelector("#pd-name").value.trim();
-    const system = panel.querySelector("#pd-refines").value;
     const loop = panel.querySelector("#pd-loop").value;
-    const label = name || activity.label;
+    const stepPicker = panel.querySelector("#pd-steps");
+    const steps = stepPicker ? [...stepPicker.selectedOptions].map((o) => o.value) : null;
     const context = [...panel.querySelectorAll(".pd-context")]
       .filter((select) => select.value !== select.dataset.held)
       .map((select) => ({
@@ -1635,15 +2085,10 @@ function showDetail(activity, ev) {
     if (loop !== (activity.markers.loop || "")) {
       await onEdit("set-loop", { activity: activity.id, loop });
     }
-    if (system === "__new__") {
-      // Named after the activity it carries out, which is the only thing known
-      // about it yet; the chip then opens it so the shape can be drawn.
-      const suggested = window.prompt("Name of the AI system that carries out this activity:",
-        `${label} system`);
-      if (suggested) await onEdit("add-system", { activity: activity.id, label: suggested });
-      return;
+    const had = activity.steps || [];
+    if (steps && (steps.length !== had.length || steps.some((id) => !had.includes(id)))) {
+      await onEdit("set-steps", { activity: activity.id, steps });
     }
-    await onEdit("set-refines", { activity: activity.id, system });
   });
   panel.querySelector("#pd-delete").addEventListener("click", async () => {
     closeDetail();
@@ -1712,78 +2157,93 @@ function draw() {
   lastPools = pools;
 
   drawGroups(root, placed);
+  // Under the pools, so a link to a pool further away passes behind the pools
+  // between rather than reading as theirs.
+  const conversationLinks = node("g", { class: "pc-conv-links" }, root);
 
   pools.forEach((pool) => {
     const group = node("g", { class: "pc-pool", "data-band": pool.participant.id }, root);
-    node("rect", {
-      x: pool.x, y: pool.y, width: pool.w, height: pool.h, rx: 6, class: "pc-pool-box",
-    }, group);
-    node("rect", {
-      x: pool.x, y: pool.y, width: POOL_LABEL_W, height: pool.h, rx: 6, class: "pc-pool-strip",
-    }, group);
-    if (pool.participant.id === selectedPool) group.classList.add("selected");
-    group.addEventListener("click", (ev) => {
-      if (ev.target.closest("[data-node], .pc-pool-edit, .pc-pool-fold, .pc-lane-strip, .pc-lane-label")) return;
-      selectedPool = pool.participant.id;
-      selectedLane = null;
-      if (onSelect) onSelect(pool.participant.id);
-      draw();
-      renderPalette();
-    });
-
-    if (!pool.blackBox) {
-      const fold = node("g", { class: "pc-pool-fold pc-marker", cursor: "pointer" }, group);
+    // A choreography has no pool: it is framed and named, and holds no lanes.
+    const framed = Boolean(pool.participant.choreography);
+    if (framed) {
+      group.setAttribute("class", "pc-chor-frame");
       node("rect", {
-        x: pool.x + pool.w - 48, y: pool.y + 6, width: 18, height: 18, rx: 3,
-        class: "pc-marker-box",
-      }, fold);
-      centred(fold, pool.x + pool.w - 39, pool.y + 19, pool.collapsed ? "+" : "−", "pc-marker-sign");
-      node("title", {}, fold).textContent = pool.collapsed
-        ? "Open this participant"
-        : "Collapse this participant to a band";
-      fold.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        if (collapsedPools.has(pool.participant.id)) collapsedPools.delete(pool.participant.id);
-        else collapsedPools.add(pool.participant.id);
-        draw();
-      });
-    }
-
-    if (onEdit) {
-      const edit = node("g", { class: "pc-pool-edit", cursor: "pointer" }, group);
-      node("rect", {
-        x: pool.x + pool.w - 26, y: pool.y + 6, width: 18, height: 18, rx: 3,
-        class: "pc-marker-box",
-      }, edit);
-      // The far corner: the near one carries the rotated pool name.
-      centred(edit, pool.x + pool.w - 17, pool.y + 19, "⋯", "pc-marker-sign");
-      node("title", {}, edit).textContent = "Rename this participant, add a lane, or delete it";
-      edit.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        showPoolDetail(pool.participant, ev);
-      });
-    }
-    // Three bars at the foot of the pool: BPMN's way of saying there are many
-    // of this participant, not one.
-    if (pool.participant.multiple) {
-      const cx = pool.x + pool.w / 2;
-      node("path", {
-        d: `M ${cx - 5} ${pool.y + pool.h - 13} v 10 M ${cx} ${pool.y + pool.h - 13} v 10 `
-          + `M ${cx + 5} ${pool.y + pool.h - 13} v 10`,
-        class: "pc-multi",
+        x: pool.x, y: pool.y, width: pool.w, height: pool.h, rx: 6, class: "pc-chor-frame-box",
       }, group);
-      node("title", {}, group).textContent = `${pool.participant.label} (many)`;
-    }
-    
-    if (pool.collapsed) {
-      text(group, pool.x + POOL_LABEL_W + 12, pool.y + pool.h / 2 + 4,
-        truncate(pool.participant.label, 44), "pc-pool-label");
+      const name = centred(group, 0, 0, truncate(pool.participant.label, 24), "pc-chor-frame-label");
+      name.setAttribute(
+        "transform", `translate(${pool.x + POOL_LABEL_W / 2}, ${pool.y + pool.h / 2}) rotate(-90)`);
     } else {
-      const label = centred(group, 0, 0, truncate(pool.participant.label, 24), "pc-pool-label");
-      label.setAttribute(
-        "transform",
-        `translate(${pool.x + POOL_LABEL_W / 2}, ${pool.y + pool.h / 2}) rotate(-90)`
-      );
+      node("rect", {
+        x: pool.x, y: pool.y, width: pool.w, height: pool.h, rx: 6, class: "pc-pool-box",
+      }, group);
+      node("rect", {
+        x: pool.x, y: pool.y, width: POOL_LABEL_W, height: pool.h, rx: 6, class: "pc-pool-strip",
+      }, group);
+      if (pool.participant.id === selectedPool) group.classList.add("selected");
+      group.addEventListener("click", (ev) => {
+        if (ev.target.closest("[data-node], .pc-pool-edit, .pc-pool-fold, .pc-lane-strip, .pc-lane-label")) return;
+        selectedPool = pool.participant.id;
+        selectedLane = null;
+        if (onSelect) onSelect(pool.participant.id);
+        draw();
+        renderPalette();
+      });
+
+      if (!pool.blackBox) {
+        const fold = node("g", { class: "pc-pool-fold pc-marker", cursor: "pointer" }, group);
+        node("rect", {
+          x: pool.x + pool.w - 48, y: pool.y + 6, width: 18, height: 18, rx: 3,
+          class: "pc-marker-box",
+        }, fold);
+        centred(fold, pool.x + pool.w - 39, pool.y + 19, pool.collapsed ? "+" : "−", "pc-marker-sign");
+        node("title", {}, fold).textContent = pool.collapsed
+          ? "Open this participant"
+          : "Collapse this participant to a band";
+        fold.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          if (collapsedPools.has(pool.participant.id)) collapsedPools.delete(pool.participant.id);
+          else collapsedPools.add(pool.participant.id);
+          draw();
+        });
+      }
+
+      if (onEdit) {
+        const edit = node("g", { class: "pc-pool-edit", cursor: "pointer" }, group);
+        node("rect", {
+          x: pool.x + pool.w - 26, y: pool.y + 6, width: 18, height: 18, rx: 3,
+          class: "pc-marker-box",
+        }, edit);
+        // The far corner: the near one carries the rotated pool name.
+        centred(edit, pool.x + pool.w - 17, pool.y + 19, "⋯", "pc-marker-sign");
+        node("title", {}, edit).textContent = "Rename this participant, add a lane, or delete it";
+        edit.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          showPoolDetail(pool.participant, ev);
+        });
+      }
+      // Three bars at the foot of the pool: BPMN's way of saying there are many
+      // of this participant, not one.
+      if (pool.participant.multiple) {
+        const cx = pool.x + pool.w / 2;
+        node("path", {
+          d: `M ${cx - 5} ${pool.y + pool.h - 13} v 10 M ${cx} ${pool.y + pool.h - 13} v 10 `
+            + `M ${cx + 5} ${pool.y + pool.h - 13} v 10`,
+          class: "pc-multi",
+        }, group);
+        node("title", {}, group).textContent = `${pool.participant.label} (many)`;
+      }
+      
+      if (pool.collapsed) {
+        text(group, pool.x + POOL_LABEL_W + 12, pool.y + pool.h / 2 + 4,
+          truncate(pool.participant.label, 44), "pc-pool-label");
+      } else {
+        const label = centred(group, 0, 0, truncate(pool.participant.label, 24), "pc-pool-label");
+        label.setAttribute(
+          "transform",
+          `translate(${pool.x + POOL_LABEL_W / 2}, ${pool.y + pool.h / 2}) rotate(-90)`
+        );
+      }
     }
 
     if (pool.collapsed) return;
@@ -1845,6 +2305,8 @@ function draw() {
       });
     }
 
+    if (!framed) drawResizeGrips(group, pool);
+
     // Sequence flow, from the model. Drawn under the nodes so a connector
     // never sits on top of a box it only passes.
     const edges = node("g", { class: "pc-edges" }, group);
@@ -1864,10 +2326,11 @@ function draw() {
     inFront.forEach((item) => {
       const slot = placed.get(item.id);
       if (!slot) return;
-      if (item.shape === "activity") drawData(group, slot);
+      if (item.shape === "activity") drawData(group, slot, placed);
       const drawn = drawFlowNode(group, slot);
       drawn.setAttribute("data-node", item.id);
-      if (item.shape !== "activity") wireSimpleNode(drawn, slot);
+      if (item.shape === "event" || item.shape === "gateway") wireSimpleNode(drawn, slot);
+      if (item.shape === "choreography") wireSelectOnly(drawn, item);
       (item.boundary || []).forEach((id) => {
         const attached = placed.get(id);
         if (attached) drawBoundary(group, attached).setAttribute("data-node", id);
@@ -1889,8 +2352,10 @@ function draw() {
 
   const loose = (data.dataNodes || []).filter((entry) => !(entry.links || []).length);
   if (loose.length) {
+    // Below the pools as well as their boxes: an empty pool places no box.
     const bottom = Math.max(
-      0, ...[...placed.values()].map((slot) => slot.y + (slot.h || 0))) + 56;
+      0, ...[...placed.values()].map((slot) => slot.y + (slot.h || 0)),
+      ...pools.map((pool) => pool.y + pool.h)) + 56;
     loose.forEach((entry, seat) => {
       const at = manualPositions.get(entry.id)
         || { x: 40 + seat * (DATA_W + 46), y: bottom };
@@ -1934,20 +2399,188 @@ function draw() {
 
   // message flow: what crosses a boundary between actors
   const poolOf = new Map(pools.map((pool) => [pool.participant.id, pool]));
+
+  (data.conversations || []).forEach((item) => {
+    const slot = placed.get(item.id);
+    if (!slot) return;
+    (data.conversationLinks || []).forEach((link) => {
+      const other = link.source === item.id ? link.target : (link.target === item.id ? link.source : null);
+      const pool = other && poolOf.get(other);
+      if (pool) conversationLink(conversationLinks, slot, pool, link.id);
+    });
+    const drawn = drawConversation(root, slot);
+    drawn.setAttribute("data-node", item.id);
+    wireSelectOnly(drawn, item);
+  });
   (data.messageFlows || []).forEach((flow) => {
     const from = placed.get(flow.source);
     const to = placed.get(flow.target);
     const a = from || onPoolEdge(poolOf.get(flow.source), to);
     const b = to || onPoolEdge(poolOf.get(flow.target), from);
-    if (a && b) messageArrow(root, a, b, flow.message || flow.label, flow.id);
+    if (a && b) {
+      messageArrow(root, a, b, flow.message || flow.label, flow.id, Boolean(flow.message));
+    }
   });
 
   drawPickedBadge(topLayer || root);
+  paintPicked();
   if (topLayer) root.appendChild(topLayer);
   if (structureKey() !== lastFitIds && fit()) return;
   applyView();
 }
 
+
+function paintPicked() {
+  svg.querySelectorAll("[data-node]").forEach((group) => {
+    group.classList.toggle("pc-picked", picked.has(group.getAttribute("data-node")));
+  });
+}
+
+/* Shift-click adds a node to the selection, or takes it out; a plain click
+ * empties it. Read in the capture phase, before the node opens its editor. */
+function pickOnShift(ev) {
+  if (!ev.shiftKey) {
+    if (picked.size) { picked = new Set(); paintPicked(); }
+    return;
+  }
+  const hit = ev.target.closest("[data-node]");
+  if (!hit || ev.target.closest(".pc-open, .pc-marker, .pc-port, .pc-edit, .pc-risk")) return;
+  ev.stopPropagation();
+  ev.preventDefault();
+  closeDetail();
+  const id = hit.getAttribute("data-node");
+  if (picked.has(id)) picked.delete(id); else picked.add(id);
+  paintPicked();
+  if (onPick) onPick([...picked]);
+}
+
+/* Grips on a pool's right edge and on each band's lower edge; the last band's
+ * is the pool's own. Drawn before the nodes, so a box on an edge stays on top. */
+function drawResizeGrips(group, pool) {
+  const right = node("rect", {
+    x: pool.x + pool.w - 4, y: pool.y + 30, width: 8, height: Math.max(pool.h - 40, 8),
+    class: "pc-resize pc-resize-w",
+  }, group);
+  node("title", {}, right).textContent = "Drag to make the participants wider or narrower";
+  right.addEventListener("pointerdown", (ev) => startResize(ev, "w", null, pool.w));
+  pool.lanes.forEach((lane, at) => {
+    const last = at === pool.lanes.length - 1;
+    const grip = node("rect", {
+      x: pool.x + POOL_LABEL_W, y: (last ? pool.y + pool.h : lane.y + lane.h) - 4,
+      width: pool.w - POOL_LABEL_W - 10, height: 8, class: "pc-resize pc-resize-h",
+      "data-grip": lane.key,
+    }, group);
+    node("title", {}, grip).textContent = last || !lane.label
+      ? "Drag to make this participant taller or shorter"
+      : `Drag to make the lane "${lane.label}" taller or shorter`;
+    grip.addEventListener("pointerdown", (ev) => startResize(ev, "h", lane.key, lane.h));
+  });
+}
+
+/* Never smaller than what the band holds: the layout keeps the larger of the two. */
+function startResize(ev, axis, key, base) {
+  if (ev.button !== 0) return;
+  ev.stopPropagation();
+  ev.preventDefault();
+  const from = axis === "w" ? ev.clientX : ev.clientY;
+  let moved = false;
+  svg.setPointerCapture(ev.pointerId);
+  const move = (mv) => {
+    const shift = (axis === "w" ? mv.clientX : mv.clientY) - from;
+    if (!moved && Math.abs(shift) < 3) return;
+    moved = true;
+    const size = Math.max(0, Math.round(base + shift / view.k));
+    if (axis === "w") poolWidth = size; else bandHeights.set(key, size);
+    redraw();
+  };
+  const up = () => {
+    svg.removeEventListener("pointermove", move);
+    svg.removeEventListener("pointerup", up);
+    svg.removeEventListener("pointercancel", up);
+    try { svg.releasePointerCapture(ev.pointerId); } catch (error) { /* already gone */ }
+    if (moved) swallowNextClick = true;
+  };
+  svg.addEventListener("pointermove", move);
+  svg.addEventListener("pointerup", up);
+  svg.addEventListener("pointercancel", up);
+}
+
+/* The model on the canvas: the one picked, else the first with pools in it. */
+function currentModel() {
+  const models = (data && data.models) || [];
+  return models.find((m) => m.id === selectedModel)
+    || models.find((m) => m.participants.length) || models[0] || null;
+}
+
+function inModel(id) {
+  const model = currentModel();
+  return !model || model.participants.includes(id);
+}
+
+function showModel(id) {
+  selectedModel = id;
+  const shown = data.participants.filter((p) => inModel(p.id));
+  selectedPool = shown.length ? shown[0].id : null;
+  selectedLane = null;
+  closeDetail();
+  draw();
+  renderPalette();
+  fit();
+}
+
+/* Which process model is drawn, and the way to start another. */
+function modelControl() {
+  const box = document.createElement("span");
+  box.className = "pp-models";
+  const models = (data && data.models) || [];
+  const current = currentModel();
+  if (models.length) {
+    const pick = document.createElement("select");
+    pick.className = "pp-model";
+    pick.title = "The process model on the canvas";
+    models.forEach((model) => {
+      const option = document.createElement("option");
+      option.value = model.id;
+      option.textContent = `${model.label} (${model.participants.length})`;
+      option.selected = Boolean(current) && model.id === current.id;
+      pick.appendChild(option);
+    });
+    pick.addEventListener("change", () => showModel(pick.value));
+    box.appendChild(pick);
+    if (current && current.id) {
+      const rename = document.createElement("button");
+      rename.type = "button";
+      rename.className = "pp-model-rename";
+      rename.textContent = "Rename";
+      rename.title = "Rename this process model";
+      rename.addEventListener("click", async () => {
+        const label = window.prompt("Name of the process model:", current.label);
+        if (label && label.trim() !== current.label) {
+          await onEdit("rename", { element: current.id, label: label.trim() });
+        }
+      });
+      box.appendChild(rename);
+    }
+  }
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "pp-model-add";
+  add.textContent = "+ process model";
+  add.title = "Start another process model, such as the development process beside the business process";
+  add.addEventListener("click", async () => {
+    const label = window.prompt("Name of the process model:", "Development process");
+    if (!label || !label.trim()) return;
+    const made = await onEdit("add-model", { label: label.trim() });
+    if (!made || !made.newId) return;
+    wantedModel = made.newId;
+    if ((data.models || []).some((m) => m.id === wantedModel)) {
+      wantedModel = null;
+      showModel(made.newId);
+    }
+  });
+  box.appendChild(add);
+  return box;
+}
 
 function redraw() {
   if (pendingFrame) return;
@@ -2008,20 +2641,111 @@ function fit() {
   return true;
 }
 
+function poolOf(id) {
+  const pool = lastPools.find((p) => (p.members || [])
+    .some((m) => m.id === id || (m.boundary || []).includes(id)));
+  return pool ? pool.participant.id : null;
+}
+
+/* What a move to `target` would leave that BPMN does not allow, in words, or "". */
+function brokenByMove(id, target) {
+  const moving = new Set([id, ...((index.get(id) || {}).boundary || [])]);
+  const other = (f) => (moving.has(f.source) ? f.target : f.source);
+  const touches = (f) => moving.has(f.source) || moving.has(f.target);
+  const crossing = (data.sequenceFlows || []).filter((f) => touches(f) && !moving.has(other(f))).length;
+  const joining = (data.messageFlows || []).filter((f) => touches(f) && poolOf(other(f)) === target).length;
+  const parts = [];
+  if (crossing) parts.push(`${crossing} sequence flow${crossing > 1 ? "s" : ""} would cross between participants`);
+  if (joining) parts.push(`${joining} message flow${joining > 1 ? "s" : ""} would stay inside one participant`);
+  return parts.join(" and ");
+}
+
+/* A step dropped in another lane or participant is moved there, keeping its id
+   and its flows; dropped in its own lane, the drag stays a nudge of the drawing. */
+function bandGeometry() {
+  return lastPools.map((p) => ({
+    participant: p.participant, collapsed: p.collapsed, x: p.x, y: p.y, w: p.w, h: p.h,
+    lanes: (p.lanes || []).map((l) => ({ id: l.id, implicit: l.implicit, y: l.y, h: l.h })),
+  }));
+}
+
+async function moveToBandAt(id, ev, pools = bandGeometry()) {
+  const item = index.get(id);
+  if (!item || !onEdit || item.parent || item.kind === "boundaryEvent") return;
+  if (!["activity", "event", "gateway"].includes(item.shape)) return;
+  const at = svgPoint(ev.clientX, ev.clientY);
+  const pool = pools.find((p) => !p.collapsed
+    && at.x >= p.x && at.x <= p.x + p.w && at.y >= p.y && at.y <= p.y + p.h);
+  const from = poolOf(id);
+  if (!pool || !from) return;
+  const band = (pool.lanes || []).find((b) => !b.implicit && at.y >= b.y && at.y <= b.y + b.h);
+  const laneNow = (data.lanes || []).find((lane) => (lane.members || []).includes(id));
+  const lane = band ? band.id : null;
+  if (pool.participant.id === from && (!band || lane === (laneNow ? laneNow.id : null))) return;
+
+  let convert = false;
+  if (pool.participant.id !== from) {
+    const broken = brokenByMove(id, pool.participant.id);
+    if (broken && !window.confirm(`Moving "${item.label || "this step"}" to "${pool.participant.label}":`
+      + ` ${broken}, which BPMN does not allow.\n\nTurn them into the other kind`
+      + " (sequence flow ⇄ message flow) and move it?")) {
+      manualPositions.delete(id);
+      redraw();
+      return;
+    }
+    convert = Boolean(broken);
+  }
+  // Laid out afresh in its new band, not left where the pointer let go of it.
+  manualPositions.delete(id);
+  await onEdit("move-node", {
+    element: id, pool: pool.participant.id, lane, ...(convert ? { convert: true } : {}),
+  });
+}
+
+/* Zoom about the centre; above 1 zooms in. Clamped like the wheel. */
+function zoomBy(factor) {
+  if (!svg) return;
+  const rect = svg.getBoundingClientRect();
+  const next = Math.min(3, Math.max(0.15, view.k * factor));
+  const ratio = next / view.k;
+  view.x = rect.width / 2 - (rect.width / 2 - view.x) * ratio;
+  view.y = rect.height / 2 - (rect.height / 2 - view.y) * ratio;
+  view.k = next;
+  applyView();
+}
+
 function initPanZoom() {
- 
+
   const DRAG_THRESHOLD = 4;
   let pan = null;
 
   window.addEventListener("keydown", async (ev) => {
     if (ev.key !== "Delete" && ev.key !== "Backspace") return;
-    if (!pickedFlow) return;
+    if (svg.classList.contains("hidden")) return;
     const on = document.activeElement;
     if (on && on.closest && on.closest("input, textarea, select, [contenteditable]")) return;
-    ev.preventDefault();
-    const id = pickedFlow;
-    pickedFlow = null;
-    if (onEdit) await onEdit("disconnect", { flow: id });
+    if (pickedFlow) {
+      ev.preventDefault();
+      const id = pickedFlow;
+      pickedFlow = null;
+      if (onEdit) await onEdit("disconnect", { flow: id });
+      return;
+    }
+    if (picked.size && onEdit) {
+      ev.preventDefault();
+      const ids = [...picked];
+      picked = new Set();
+      await onEdit("delete", { elements: ids });
+      return;
+    }
+    // The element whose editor is open is the one that was clicked, and its
+    // own Delete button already knows how to remove that kind of thing.
+    const remove = document.querySelector(
+      "#process-detail:not(.hidden) .nd-actions button[id^='pd-'][id$='delete']");
+    if (remove) {
+      ev.preventDefault();
+      remove.click();
+    }
   });
   svg.addEventListener("pointerdown", (ev) => {
     // Clear here: a flag left armed eats the next real click.
@@ -2036,7 +2760,10 @@ function initPanZoom() {
 
     const hit = ev.target.closest("[data-node]");
     const box = hit && hit.getAttribute("data-node");
-    const drawnAt = box ? currentPlacement(box) : null;
+    // a data box drawn by each step that uses it moves from the copy that was grabbed
+    const own = hit && hit.getAttribute("data-at");
+    const drawnAt = !box ? null
+      : own ? (([x, y]) => ({ x, y }))(own.split(",").map(Number)) : currentPlacement(box);
     const strip = ev.target.closest(
       ".pc-pool-strip, .pc-lane-strip, .pc-pool-label, .pc-lane-label");
     const bandId = strip ? strip.closest("[data-band]")?.getAttribute("data-band") : null;
@@ -2048,6 +2775,8 @@ function initPanZoom() {
       node: drawnAt ? box : null,
       nodeFrom: drawnAt ? svgPoint(ev.clientX, ev.clientY) : null,
       nodeOrigin: drawnAt ? { x: drawnAt.x, y: drawnAt.y } : null,
+      // Where the lanes stood before the drag: a lane grows to hold a box dragged in it.
+      layoutAtStart: drawnAt ? bandGeometry() : null,
       band: bands && bands.length > 1 ? { id: bandId, bands, index: null } : null,
       moved: false,
     };
@@ -2088,6 +2817,8 @@ function initPanZoom() {
   const release = (ev) => {
     if (connecting) endConnect(ev);
     const dropped = pan && pan.moved && pan.band ? pan.band : null;
+    const movedNode = pan && pan.moved && pan.node ? pan.node : null;
+    if (movedNode && ev.type === "pointerup") moveToBandAt(movedNode, ev, pan.layoutAtStart);
     if (pan && pan.moved) {
       svg.querySelectorAll(".pc-band-drop").forEach((mark) => mark.remove());
       svg.classList.remove("panning", "dragging-node", "dragging-band");
@@ -2105,7 +2836,7 @@ function initPanZoom() {
   };
   // Consumed in the capture phase, so the flag cannot outlive one gesture.
   svg.addEventListener("click", (ev) => {
-    if (!swallowNextClick) return;
+    if (!swallowNextClick) { pickOnShift(ev); return; }
     swallowNextClick = false;
     ev.stopPropagation();
     ev.preventDefault();
@@ -2139,11 +2870,11 @@ function initPanZoom() {
   }, { passive: false });
 }
 
-/* Grouped the way a BPMN palette is: what starts and ends a process, what
- * splits it, what does the work, and what says something about it. */
+/* Grouped by BPMN's own categories: participants (pools and lanes), events,
+ * gateways, activities, data, and artifacts, which say something about a step. */
 const PALETTE = [
-  { group: "Pool", op: "add-pool", label: "Participant", hint: "A pool: an actor with a boundary" },
-  { group: "Pool", op: "add-lane", label: "Lane", hint: "A band inside a pool: who does the work" },
+  { group: "Participants", op: "add-pool", label: "Pool", hint: "A participant: an actor with a boundary" },
+  { group: "Participants", op: "add-lane", label: "Lane", hint: "A band inside a pool: who does the work" },
 
   { group: "Events", op: "add-event", kind: "startEvent", label: "Start",
     hint: "Where the process begins" },
@@ -2155,6 +2886,8 @@ const PALETTE = [
     label: "Message catch", hint: "Waits for a message part-way through" },
   { group: "Events", op: "add-event", kind: "intermediateThrowEvent", definition: "message",
     label: "Message throw", hint: "Sends a message part-way through" },
+  { group: "Events", op: "add-event", kind: "intermediateCatchEvent", definition: "timer",
+    label: "Timer catch", hint: "Waits for a time or a delay part-way through" },
   { group: "Events", op: "add-event", kind: "endEvent", label: "End",
     hint: "Where this path of the process finishes" },
   { group: "Events", op: "add-event", kind: "endEvent", definition: "error",
@@ -2180,18 +2913,20 @@ const PALETTE = [
   { group: "Activities", kind: "receiveTask", label: "Receive", hint: "Waits for a message" },
   { group: "Activities", kind: "subProcess", label: "Sub-process",
     hint: "Has a flow of its own, and may name an architecture" },
+  { group: "Activities", kind: "eventSubProcess", label: "Event sub-process",
+    hint: "Started by an event rather than by the flow" },
   { group: "Activities", kind: "callActivity", label: "Call",
     hint: "Calls a process defined elsewhere" },
   { group: "Activities", kind: "transaction", label: "Transaction",
     hint: "Completes as a whole or compensates" },
 
-  { group: "Artifacts", op: "add-annotation", label: "Note",
-    hint: "A text annotation: says something about a step without being one" },
-  
-  { group: "Artifacts", op: "add-data", shape: "object", label: "Document",
-    hint: "A data object: what a step reads or writes" },
-  { group: "Artifacts", op: "add-data", shape: "store", label: "Database",
-    hint: "A data store: outlives any one run of the process" },
+  { group: "Data", op: "add-data", shape: "object", label: "Data object",
+    hint: "What a step reads or writes" },
+  { group: "Data", op: "add-data", shape: "store", label: "Data store",
+    hint: "Outlives any one run of the process" },
+
+  { group: "Artifacts", op: "add-annotation", label: "Text annotation",
+    hint: "Says something about a step without being one" },
 ];
 
 /* The palette draws the shape it inserts, at the size it can be recognised at. */
@@ -2238,7 +2973,8 @@ function paletteIcon(item) {
   } else {
     node("rect", {
       x: 2, y: 4, width: 26, height: 16, rx: 3,
-      class: `pc-box${item.kind === "callActivity" ? " call" : ""}`,
+      class: `pc-box${item.kind === "callActivity" ? " call" : ""}`
+        + `${item.kind === "eventSubProcess" ? " event-sub" : ""}`,
     }, icon);
     if (item.kind === "transaction") {
       node("rect", { x: 4, y: 6, width: 22, height: 12, rx: 2, class: "pc-box inner" }, icon);
@@ -2290,6 +3026,7 @@ function buildPalette(host) {
     fit();
   });
   host.appendChild(fold);
+  host.appendChild(modelControl());
   if (paletteFolded) return;
 
   const sections = new Map();
@@ -2312,37 +3049,18 @@ function buildPalette(host) {
     button.className = "pp-item";
     button.appendChild(paletteIcon(item));
     button.appendChild(document.createTextNode(item.label));
-    button.title = needsPool && !pool ? `${item.hint} — click a participant first` : item.hint;
-    button.disabled = needsPool && !pool;
-    button.addEventListener("click", async () => {
-      if (item.op === "add-pool") {
-        const label = window.prompt("Name of the participant (an organisation, a customer, a team):");
-        if (label) await onEdit("add-pool", { label });
-        return;
-      }
-      if (item.op === "add-lane") {
-        const label = window.prompt("Name of the lane (a role, a team, a system):");
-        if (label) await onEdit("add-lane", { pool: selectedPool, label });
-        return;
-      }
-      const where = { pool: selectedPool, lane: selectedLane };
-      if (item.op === "add-event") {
-        await onEdit("add-event", {
-          ...where, kind: item.kind, definition: item.definition || "", label: "",
-        });
-      } else if (item.op === "add-gateway") {
-        await onEdit("add-gateway", { ...where, kind: item.kind, label: "" });
-      } else if (item.op === "add-annotation") {
-        const body = window.prompt("What should the note say?");
-        if (body) await onEdit("add-annotation", { ...where, text: body });
-      } else if (item.op === "add-data") {
-        const label = window.prompt(
-          item.shape === "store" ? "Name of the database:" : "Name of the document:");
-        // No activity: it stands on its own until something is joined to it.
-        if (label) await onEdit("add-data", { shape: item.shape, label });
-      } else {
-        await onEdit("add-activity", { ...where, kind: item.kind, label: item.label });
-      }
+    // Not disabled while no participant is picked: it can still be dragged onto one.
+    const waiting = needsPool && !pool;
+    button.title = waiting
+      ? `${item.hint} — drag it onto a participant, or click one first` : `${item.hint} — click or drag`;
+    button.classList.toggle("waiting", waiting);
+    button.setAttribute("aria-disabled", waiting ? "true" : "false");
+    button.addEventListener("pointerdown", (ev) => startPaletteDrag(ev, button, item));
+    button.addEventListener("click", () => {
+      if (swallowPaletteClick) { swallowPaletteClick = false; return; }
+      if (!waiting) { insertFromPalette(item, { pool: selectedPool, lane: selectedLane }); return; }
+      note.textContent = "drag it onto a participant, or click a participant first";
+      note.classList.add("pp-note-nudge");
     });
     section.appendChild(button);
   });
@@ -2351,9 +3069,89 @@ function buildPalette(host) {
   const lane = data && (data.lanes || []).find((l) => l.id === selectedLane);
   note.textContent = pool
     ? `adding to: ${pool.label}${lane ? ` › ${lane.label}` : ""}`
-    : "click a participant to add steps to it";
+    : "click a participant to add steps to it, or drag a shape onto one";
   host.appendChild(note);
   // Visibility belongs to the level switch, not to render.
+}
+
+let swallowPaletteClick = false;
+
+/* What a palette shape adds, into `where` (a participant and maybe a lane). */
+async function insertFromPalette(item, where) {
+  if (item.op === "add-pool") {
+    const label = window.prompt("Name of the participant (an organisation, a customer, a team):");
+    const model = currentModel();
+    if (label) await onEdit("add-pool", { label, ...(model && model.id ? { model: model.id } : {}) });
+    return;
+  }
+  if (item.op === "add-lane") {
+    const label = window.prompt("Name of the lane (a role, a team, a system):");
+    if (label) await onEdit("add-lane", { pool: where.pool, label });
+    return;
+  }
+  if (item.op === "add-event") {
+    await onEdit("add-event", {
+      ...where, kind: item.kind, definition: item.definition || "", label: "",
+    });
+  } else if (item.op === "add-gateway") {
+    await onEdit("add-gateway", { ...where, kind: item.kind, label: "" });
+  } else if (item.op === "add-annotation") {
+    const body = window.prompt("What should the note say?");
+    if (body) await onEdit("add-annotation", { ...where, text: body });
+  } else if (item.op === "add-data") {
+    const label = window.prompt(
+      item.shape === "store" ? "Name of the data store:" : "Name of the document:");
+    // No activity: it stands on its own until something is joined to it.
+    if (label) await onEdit("add-data", { shape: item.shape, label });
+  } else {
+    await onEdit("add-activity", { ...where, kind: item.kind, label: item.label });
+  }
+}
+
+/* Drag a shape out of the palette and drop it on a participant or a lane, as an
+   element is dropped on the architecture canvas. Below the threshold it stays a click. */
+function startPaletteDrag(ev, button, item) {
+  if (ev.button !== 0) return;
+  // A drag released off its button fires no click, so a flag left armed would eat this one.
+  swallowPaletteClick = false;
+  const from = { x: ev.clientX, y: ev.clientY };
+  let ghost = null;
+  const move = (mv) => {
+    if (!ghost) {
+      if (Math.hypot(mv.clientX - from.x, mv.clientY - from.y) < 6) return;
+      ghost = button.cloneNode(true);
+      ghost.classList.add("palette-ghost");
+      document.body.appendChild(ghost);
+    }
+    ghost.style.left = mv.clientX + 10 + "px";
+    ghost.style.top = mv.clientY + 10 + "px";
+  };
+  const up = (uv) => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    if (!ghost) return;
+    ghost.remove();
+    swallowPaletteClick = true;
+    const box = svg.getBoundingClientRect();
+    const onCanvas = uv.clientX >= box.left && uv.clientX <= box.right
+      && uv.clientY >= box.top && uv.clientY <= box.bottom
+      && !(uv.target && uv.target.closest && uv.target.closest("#process-palette"));
+    if (!onCanvas) return;
+    const at = svgPoint(uv.clientX, uv.clientY);
+    const pool = bandGeometry().find((p) => !p.collapsed
+      && at.x >= p.x && at.x <= p.x + p.w && at.y >= p.y && at.y <= p.y + p.h);
+    const needsPool = !["add-pool", "add-data"].includes(item.op);
+    if (needsPool && !pool) return;
+    const band = pool && (pool.lanes || []).find((b) => !b.implicit && at.y >= b.y && at.y <= b.y + b.h);
+    if (pool) {
+      // The participant it landed in is now the one the palette adds to.
+      selectedPool = pool.participant.id;
+      selectedLane = band ? band.id : null;
+    }
+    insertFromPalette(item, { pool: pool ? pool.participant.id : null, lane: band ? band.id : null });
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up);
 }
 
 function init(options) {
@@ -2361,6 +3159,7 @@ function init(options) {
   onOpenArchitecture = options.onOpenArchitecture || null;
   onEdit = options.onEdit || null;
   onSelect = options.onSelect || null;
+  onPick = options.onPick || null;
   if (svg) initPanZoom();
   /* A window that changes size changes how much room the diagram has, and the
    * fit is computed from that room. Without this the canvas kept the scale it
@@ -2395,10 +3194,16 @@ function setFindings(rows) {
 function render(next) {
   data = next;
   index = buildIndex(next);
+  picked = new Set();
+  if (wantedModel !== null && (next.models || []).some((m) => m.id === wantedModel)) {
+    selectedModel = wantedModel;
+    wantedModel = null;
+  }
   // Keep an activity open across a re-render, but forget one that is gone.
   expanded = new Set([...expanded].filter((id) => index.has(id)));
   const pools = new Set(next.participants.map((p) => p.id));
-  if (!pools.has(selectedPool)) selectedPool = next.participants.length ? next.participants[0].id : null;
+  const shown = next.participants.filter((p) => inModel(p.id));
+  if (!pools.has(selectedPool) || !inModel(selectedPool)) selectedPool = shown.length ? shown[0].id : null;
   const lanes = new Set((next.lanes || []).map((l) => l.id));
   if (!lanes.has(selectedLane)) selectedLane = null;
   collapsedPools = new Set([...collapsedPools].filter((id) => pools.has(id)));
@@ -2412,11 +3217,13 @@ function hasProcess() {
 
 function forgetLayout() {
   manualPositions = new Map();
+  bandHeights = new Map();
+  poolWidth = 0;
   lastFitIds = null;
 }
 
 export const ProcessCanvas = {
-  init, render, fit, hasProcess, setSystems, setSystemContext, setDataClasses,
+  init, render, fit, zoomBy, hasProcess, setSystems, setSystemContext, setDataClasses,
   setFindings, forgetLayout,
   svgRoot: () => svg,
 };

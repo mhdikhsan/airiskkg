@@ -29,10 +29,34 @@ ag:StepRoleNeedsAProcessTypeShape
                 $this pair:playsRole ?role .
                 { ?role pair:subRoleOf* pair:ProcessingStep }
                 UNION
-                { ?role pair:subRoleOf* pair:ControlStep }
+                { ?role pair:subRoleOf* pair:ControlRoles }
                 FILTER NOT EXISTS {
                     $this a ?processClass .
                     FILTER(?processClass IN (beam:Process, beam:Infer, beam:Transform, beam:Train, beam:Generate))
+                }
+            }
+        """ ;
+    ] .
+
+ag:CategoryOnlyShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf pair:playsRole ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Tagged with the category {?category} only, so no motif can match it yet. Click it on the canvas and choose a role under {?category}." ;
+        sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
+        sh:select """
+            PREFIX pair: <http://w3id.org/airiskkg/pair-ai#>
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            SELECT $this ?category
+            WHERE {
+                $this pair:playsRole ?role .
+                ?role a pair:RoleCategory ;
+                      skos:prefLabel ?category .
+                FILTER NOT EXISTS {
+                    $this pair:playsRole ?detailed .
+                    FILTER NOT EXISTS { ?detailed a pair:RoleCategory }
                 }
             }
         """ ;

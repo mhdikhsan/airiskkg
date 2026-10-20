@@ -227,11 +227,6 @@ pat:IterativeRAGMotif
         pat:MisinformationFromWeakGroundingRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
 
-pat:RecursiveRAGMotif
-    pair:hasRiskPattern
-        pat:PromptInjectionRiskPattern ,
-        pat:MisinformationFromWeakGroundingRiskPattern ,
-        pat:UnboundedConsumptionRiskPattern .
 
 pat:AdaptiveRAGMotif
     pair:hasRiskPattern
@@ -250,32 +245,20 @@ pat:RetrievalDataAugmentationMotif
 pat:GoalCreationMotif
     pair:hasRiskPattern pat:GoalHijackRiskPattern .
 
-pat:ProactiveGoalCreationMotif
-    pair:hasRiskPattern pat:GoalHijackRiskPattern .
 
 pat:ModelQueryingMotif
     pair:hasRiskPattern pat:GoalHijackRiskPattern .
 
-pat:IncrementalModelQueryingMotif
-    pair:hasRiskPattern pat:GoalHijackRiskPattern .
 
 pat:PlanReflectionMotif
     pair:hasRiskPattern
         pat:GoalHijackRiskPattern ,
         pat:UnboundedConsumptionRiskPattern .
 
-pat:ToolAgentRegistryMotif
-    pair:hasRiskPattern
-        pat:ToolMisuseRiskPattern ,
-        pat:GoalHijackRiskPattern .
 
 pat:VotingBasedCooperationMotif
     pair:hasRiskPattern pat:InsecureAgentCommunicationRiskPattern .
 
-pat:DebateBasedCooperationMotif
-    pair:hasRiskPattern
-        pat:InsecureAgentCommunicationRiskPattern ,
-        pat:UnboundedConsumptionRiskPattern .
 
 pat:EmbeddingsMotif
     pair:hasRiskPattern
@@ -295,8 +278,6 @@ pat:FineTuningMotif
         pat:SupplyChainCompromiseRiskPattern ,
         pat:DataAndModelPoisoningRiskPattern .
 
-pat:ModelLoadMotif
-    pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
 
 pat:ExternalDependencyMotif
     pair:hasRiskPattern pat:SupplyChainCompromiseRiskPattern .
@@ -317,7 +298,6 @@ pat:PromptInjectionRiskPattern
     pair:hasMotif pat:DirectPromptingMotif ,
         pat:RetrievalAugmentedGenerationMotif ,
         pat:IterativeRAGMotif ,
-        pat:RecursiveRAGMotif ,
         pat:AdaptiveRAGMotif ,
         pat:LLMBasedInformationRetrievalMotif ,
         pat:QueryRewritingMotif ;
@@ -343,8 +323,7 @@ pat:SupplyChainCompromiseRiskPattern
     dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Supply chain compromise risk pattern"@en ;
     pair:hasMotif pat:ExternalDependencyMotif ,
-        pat:FineTuningMotif ,
-        pat:ModelLoadMotif ;
+        pat:FineTuningMotif ;
     pair:hasMechanism owasp:mechanism-supply-chain-compromise ;
     pair:hasApplicabilityCondition pat:SupplyChain_ExternalDependencyCondition ;
     pair:mayIndicateRisk
@@ -511,7 +490,6 @@ pat:MisinformationFromWeakGroundingRiskPattern
     rdfs:label "Misinformation from weak grounding risk pattern"@en ;
     pair:hasMotif pat:RetrievalAugmentedGenerationMotif ,
         pat:IterativeRAGMotif ,
-        pat:RecursiveRAGMotif ,
         pat:AdaptiveRAGMotif ,
         pat:LLMBasedInformationRetrievalMotif ;
     pair:hasMechanism owasp:mechanism-unsupported-generation ;
@@ -543,10 +521,9 @@ pat:UnboundedConsumptionRiskPattern
     pair:hasMotif pat:DirectPromptingMotif ,
         pat:RetrievalAugmentedGenerationMotif ,
         pat:IterativeRAGMotif ,
-        pat:RecursiveRAGMotif ,
         pat:QueryRewritingMotif ,
         pat:PlanReflectionMotif ,
-        pat:DebateBasedCooperationMotif ;
+        pat:AgentDelegationMotif ;
     pair:hasMechanism owasp:mechanism-unbounded-resource-consumption ;
     pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ,
         pat:UnboundedConsumption_RepeatablePathCondition ;
@@ -737,47 +714,15 @@ pat:MisinformationFromWeakGroundingOQP
     pair:implementationPath "ontology/patterns/implementation/risk/misinformation_weak_grounding.rq" ;
     pair:producesOutputType pair:RiskFinding .
 
-pat:SyncPred_MatchingOQP
+pat:Serving_MatchingOQP
     a pair:PatternImplementation ;
-    rdfs:label "Synchronous Prediction Motif matching OQP"@en ;
-    pair:implementsMotif pat:SynchronousPredictionMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/synchronous_prediction.rq" ;
+    rdfs:label "Prediction Serving Motif matching OQP"@en ;
+    pair:implementsMotif pat:PredictionServingMotif ;
+    pair:implementationPath "ontology/patterns/implementation/match/prediction_serving.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:AsyncPred_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Asynchronous Prediction Motif matching OQP"@en ;
-    pair:implementsMotif pat:AsynchronousPredictionMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/asynchronous_prediction.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
-pat:BatchPred_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Batch Prediction Motif matching OQP"@en ;
-    pair:implementsMotif pat:BatchPredictionMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/batch_prediction.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
-pat:PrepPred_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Preprocess-Prediction Motif matching OQP"@en ;
-    pair:implementsMotif pat:PreprocessPredictionMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/preprocess_prediction.rq" ;
-    pair:producesOutputType pair:MotifMatch .
-
-pat:MultiStage_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Multi-stage Prediction Motif matching OQP"@en ;
-    pair:implementsMotif pat:MultiStagePredictionMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/multi_stage_prediction.rq" ;
-    pair:producesOutputType pair:MotifMatch .
-
-pat:BatchTrain_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Batch Training Motif matching OQP"@en ;
-    pair:implementsMotif pat:BatchTrainingMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/batch_training.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:PipeTrain_MatchingOQP
     a pair:PatternImplementation ;
@@ -814,19 +759,7 @@ pat:PredMon_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/prediction_monitoring.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:ModelLoad_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Model Load Motif matching OQP"@en ;
-    pair:implementsMotif pat:ModelLoadMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/model_load.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
-pat:ModelImage_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Model-in-Image Motif matching OQP"@en ;
-    pair:implementsMotif pat:ModelInImageMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/model_in_image.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:FineTune_MatchingOQP
     a pair:PatternImplementation ;
@@ -884,12 +817,6 @@ pat:RetrAug_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/retrieval_data_augmentation.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:PromptOpt_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Prompt/response optimiser motif matching OQP"@en ;
-    pair:implementsMotif pat:PromptResponseOptimiserMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/prompt_response_optimiser.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:IterRAG_MatchingOQP
     a pair:PatternImplementation ;
@@ -898,12 +825,6 @@ pat:IterRAG_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/iterative_rag.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:RecRAG_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Recursive RAG motif matching OQP"@en ;
-    pair:implementsMotif pat:RecursiveRAGMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/recursive_rag.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:AdaRAG_MatchingOQP
     a pair:PatternImplementation ;
@@ -947,8 +868,7 @@ pat:ToolMisuseRiskPattern
     represented policy enforcement, human approval, or rate/budget control in
     between.
     """@en ;
-    pair:hasMotif pat:ToolUsingAgentMotif ,
-        pat:ToolAgentRegistryMotif ;
+    pair:hasMotif pat:ToolUsingAgentMotif ;
     pair:hasMechanism asi:mechanism-unconstrained-tool-execution ;
     pair:hasApplicabilityCondition pat:ToolMisuse_UnmediatedActionCondition ;
     pair:mayIndicateRisk
@@ -1041,11 +961,8 @@ pat:GoalHijackRiskPattern
     pair:hasMotif pat:ToolUsingAgentMotif ,
         pat:AgentDelegationMotif ,
         pat:GoalCreationMotif ,
-        pat:ProactiveGoalCreationMotif ,
         pat:ModelQueryingMotif ,
-        pat:IncrementalModelQueryingMotif ,
-        pat:PlanReflectionMotif ,
-        pat:ToolAgentRegistryMotif ;
+        pat:PlanReflectionMotif ;
     pair:hasMechanism asi:mechanism-goal-redirection-through-consumed-content ;
     pair:hasApplicabilityCondition pat:GoalHijack_UntrustedPlanningInputCondition ;
     pair:mayIndicateRisk
@@ -1072,8 +989,7 @@ pat:InsecureAgentCommunicationRiskPattern
     to the channel.
     """@en ;
     pair:hasMotif pat:AgentDelegationMotif ,
-        pat:VotingBasedCooperationMotif ,
-        pat:DebateBasedCooperationMotif ;
+        pat:VotingBasedCooperationMotif ;
     pair:hasMechanism asi:mechanism-unauthenticated-agent-handoff ;
     pair:hasApplicabilityCondition pat:InsecureAgentCommunication_UnvalidatedHandoffCondition ;
     pair:mayIndicateRisk
@@ -1115,12 +1031,6 @@ pat:GoalCreation_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/goal_creation.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:ProactiveGoal_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Proactive Goal Creation Motif matching OQP"@en ;
-    pair:implementsMotif pat:ProactiveGoalCreationMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/proactive_goal_creation.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:ModelQuery_MatchingOQP
     a pair:PatternImplementation ;
@@ -1129,12 +1039,6 @@ pat:ModelQuery_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/model_querying.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:IncrQuery_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Incremental Model Querying Motif matching OQP"@en ;
-    pair:implementsMotif pat:IncrementalModelQueryingMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/incremental_model_querying.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:PlanReflection_MatchingOQP
     a pair:PatternImplementation ;
@@ -1150,19 +1054,6 @@ pat:Voting_MatchingOQP
     pair:implementationPath "ontology/patterns/implementation/match/voting_based_cooperation.rq" ;
     pair:producesOutputType pair:MotifMatch .
 
-pat:Debate_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Debate-based Cooperation Motif matching OQP"@en ;
-    pair:implementsMotif pat:DebateBasedCooperationMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/debate_based_cooperation.rq" ;
-    pair:producesOutputType pair:MotifMatch .
-
-pat:Registry_MatchingOQP
-    a pair:PatternImplementation ;
-    rdfs:label "Tool/Agent Registry Motif matching OQP"@en ;
-    pair:implementsMotif pat:ToolAgentRegistryMotif ;
-    pair:implementationPath "ontology/patterns/implementation/match/tool_agent_registry.rq" ;
-    pair:producesOutputType pair:MotifMatch .
 
 pat:GoalHijackOQP
     a pair:PatternImplementation ;
@@ -1404,7 +1295,7 @@ pat:HumanAgentTrust_AgentOnlyEvidenceCondition
 
 # Motif side of the binding (pair:hasRiskPattern mirrors pair:hasMotif)
 
-pat:SynchronousPredictionMotif
+pat:PredictionServingMotif
     pair:hasRiskPattern
         pat:DatasetShiftRiskPattern ,
         pat:OutOfDomainInputRiskPattern ,
@@ -1413,69 +1304,21 @@ pat:SynchronousPredictionMotif
         pat:UnqualifiedPredictionRiskPattern ,
         pat:TrainingDataMembershipInferenceRiskPattern .
 
-pat:AsynchronousPredictionMotif
-    pair:hasRiskPattern
-        pat:DatasetShiftRiskPattern ,
-        pat:OutOfDomainInputRiskPattern ,
-        pat:AdversarialEvasionRiskPattern ,
-        pat:UnevaluatedModelRiskPattern ,
-        pat:UnqualifiedPredictionRiskPattern ,
-        pat:TrainingDataMembershipInferenceRiskPattern .
 
-pat:BatchPredictionMotif
-    pair:hasRiskPattern
-        pat:DatasetShiftRiskPattern ,
-        pat:OutOfDomainInputRiskPattern ,
-        pat:AdversarialEvasionRiskPattern ,
-        pat:UnevaluatedModelRiskPattern ,
-        pat:UnqualifiedPredictionRiskPattern ,
-        pat:TrainingDataMembershipInferenceRiskPattern .
 
-pat:PreprocessPredictionMotif
-    pair:hasRiskPattern
-        pat:DatasetShiftRiskPattern ,
-        pat:OutOfDomainInputRiskPattern ,
-        pat:AdversarialEvasionRiskPattern ,
-        pat:UnevaluatedModelRiskPattern ,
-        pat:UnqualifiedPredictionRiskPattern ,
-        pat:TrainingDataMembershipInferenceRiskPattern .
-
-pat:MultiStagePredictionMotif
-    pair:hasRiskPattern
-        pat:DatasetShiftRiskPattern ,
-        pat:OutOfDomainInputRiskPattern ,
-        pat:AdversarialEvasionRiskPattern ,
-        pat:UnevaluatedModelRiskPattern ,
-        pat:UnqualifiedPredictionRiskPattern ,
-        pat:TrainingDataMembershipInferenceRiskPattern .
 
 pat:TrainThenServeMotif
     pair:hasRiskPattern
-        pat:DatasetShiftRiskPattern ,
-        pat:OutOfDomainInputRiskPattern ,
-        pat:AdversarialEvasionRiskPattern ,
-        pat:UnqualifiedPredictionRiskPattern ,
-        pat:TrainingDataMembershipInferenceRiskPattern ,
         pat:ModelBiasRiskPattern ,
         pat:ImproperRetrainingRiskPattern ,
         pat:EvaluationDataContaminationRiskPattern .
 
 pat:TrainingToServingMotif
     pair:hasRiskPattern
-        pat:DatasetShiftRiskPattern ,
-        pat:OutOfDomainInputRiskPattern ,
-        pat:AdversarialEvasionRiskPattern ,
         pat:UnevaluatedModelRiskPattern ,
-        pat:UnqualifiedPredictionRiskPattern ,
-        pat:TrainingDataMembershipInferenceRiskPattern ,
         pat:ModelBiasRiskPattern ,
         pat:ImproperRetrainingRiskPattern .
 
-pat:BatchTrainingMotif
-    pair:hasRiskPattern
-        pat:ModelBiasRiskPattern ,
-        pat:ImproperRetrainingRiskPattern ,
-        pat:EvaluationDataContaminationRiskPattern .
 
 pat:PipelineTrainingMotif
     pair:hasRiskPattern
@@ -1494,17 +1337,13 @@ pat:ToolUsingAgentMotif
         pat:UnexpectedCodeExecutionRiskPattern ,
         pat:HumanAgentTrustExploitationRiskPattern .
 
-pat:ToolAgentRegistryMotif
-    pair:hasRiskPattern
-        pat:AgenticSupplyChainRiskPattern ,
-        pat:UnexpectedCodeExecutionRiskPattern ,
-        pat:HumanAgentTrustExploitationRiskPattern .
 
 pat:AgentDelegationMotif
     pair:hasRiskPattern
         pat:IdentityPrivilegeAbuseRiskPattern ,
         pat:AgenticSupplyChainRiskPattern ,
-        pat:CascadingFailuresRiskPattern .
+        pat:CascadingFailuresRiskPattern ,
+        pat:UnboundedConsumptionRiskPattern .
 
 pat:AgentMemoryLoopMotif
     pair:hasRiskPattern pat:IdentityPrivilegeAbuseRiskPattern .
@@ -1520,13 +1359,7 @@ pat:DatasetShiftRiskPattern
     Applies where a deployed model serves incoming requests and no represented
     monitoring step compares what it serves against a baseline from training.
     """@en ;
-    pair:hasMotif pat:SynchronousPredictionMotif ,
-        pat:AsynchronousPredictionMotif ,
-        pat:BatchPredictionMotif ,
-        pat:PreprocessPredictionMotif ,
-        pat:MultiStagePredictionMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+    pair:hasMotif pat:PredictionServingMotif ;
     pair:hasMechanism mlr:mechanism-unobserved-distribution-shift ;
     pair:hasApplicabilityCondition pat:DatasetShift_UnmonitoredServingCondition ;
     pair:mayIndicateRisk
@@ -1549,13 +1382,7 @@ pat:OutOfDomainInputRiskPattern
     Applies where an input reaches a prediction step with no represented step
     that checks it lies within the domain the model was built for.
     """@en ;
-    pair:hasMotif pat:SynchronousPredictionMotif ,
-        pat:AsynchronousPredictionMotif ,
-        pat:BatchPredictionMotif ,
-        pat:PreprocessPredictionMotif ,
-        pat:MultiStagePredictionMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+    pair:hasMotif pat:PredictionServingMotif ;
     pair:hasMechanism mlr:mechanism-unchecked-input-domain ;
     pair:hasApplicabilityCondition pat:OutOfDomainInput_UncheckedInputCondition ;
     pair:mayIndicateRisk
@@ -1577,13 +1404,7 @@ pat:AdversarialEvasionRiskPattern
     Applies where content an outsider can shape reaches a prediction step with no
     represented input screening on the way.
     """@en ;
-    pair:hasMotif pat:SynchronousPredictionMotif ,
-        pat:AsynchronousPredictionMotif ,
-        pat:BatchPredictionMotif ,
-        pat:PreprocessPredictionMotif ,
-        pat:MultiStagePredictionMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+    pair:hasMotif pat:PredictionServingMotif ;
     pair:hasMechanism mlr:mechanism-unscreened-adversarial-input ;
     pair:hasApplicabilityCondition pat:AdversarialEvasion_UntrustedInputCondition ;
     pair:mayIndicateRisk
@@ -1606,8 +1427,7 @@ pat:ModelBiasRiskPattern
     classification and no represented fairness evaluation reads the trained model
     or anything it produces.
     """@en ;
-    pair:hasMotif pat:BatchTrainingMotif ,
-        pat:PipelineTrainingMotif ,
+    pair:hasMotif pat:PipelineTrainingMotif ,
         pat:TrainThenServeMotif ,
         pat:TrainingToServingMotif ;
     pair:hasMechanism mlr:mechanism-unexamined-learned-bias ;
@@ -1634,11 +1454,7 @@ pat:UnevaluatedModelRiskPattern
     Applies where a model produced by a training step reaches a prediction step
     and no represented evaluation step reads the model on the way.
     """@en ;
-    pair:hasMotif pat:SynchronousPredictionMotif ,
-        pat:AsynchronousPredictionMotif ,
-        pat:BatchPredictionMotif ,
-        pat:PreprocessPredictionMotif ,
-        pat:MultiStagePredictionMotif ,
+    pair:hasMotif pat:PredictionServingMotif ,
         pat:TrainingToServingMotif ;
     pair:hasMechanism mlr:mechanism-unvalidated-model-fit ;
     pair:hasApplicabilityCondition pat:UnevaluatedModel_NoEvaluationCondition ;
@@ -1662,13 +1478,7 @@ pat:UnqualifiedPredictionRiskPattern
     neither an uncertainty estimate from the prediction step nor a represented
     human review reaches the same place.
     """@en ;
-    pair:hasMotif pat:SynchronousPredictionMotif ,
-        pat:AsynchronousPredictionMotif ,
-        pat:BatchPredictionMotif ,
-        pat:PreprocessPredictionMotif ,
-        pat:MultiStagePredictionMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+    pair:hasMotif pat:PredictionServingMotif ;
     pair:hasMechanism mlr:mechanism-unreported-prediction-uncertainty ;
     pair:hasApplicabilityCondition pat:UnqualifiedPrediction_ActedOnCondition ;
     pair:mayIndicateRisk
@@ -1694,8 +1504,7 @@ pat:ImproperRetrainingRiskPattern
     back into that step's training input, closing a loop, with no represented
     data validation, output validation or human approval on it.
     """@en ;
-    pair:hasMotif pat:BatchTrainingMotif ,
-        pat:PipelineTrainingMotif ,
+    pair:hasMotif pat:PipelineTrainingMotif ,
         pat:TrainThenServeMotif ,
         pat:TrainingToServingMotif ,
         pat:FineTuningMotif ;
@@ -1722,13 +1531,7 @@ pat:TrainingDataMembershipInferenceRiskPattern
     escape: what reduces it is how the model is trained, which the architecture
     does not show, so a finding is settled by triage.
     """@en ;
-    pair:hasMotif pat:SynchronousPredictionMotif ,
-        pat:AsynchronousPredictionMotif ,
-        pat:BatchPredictionMotif ,
-        pat:PreprocessPredictionMotif ,
-        pat:MultiStagePredictionMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+    pair:hasMotif pat:PredictionServingMotif ;
     pair:hasMechanism atlas:mechanism-training-membership-exposed-by-queries ;
     pair:hasApplicabilityCondition pat:MembershipInference_PublicQueryCondition ;
     pair:mayIndicateRisk
@@ -1751,8 +1554,7 @@ pat:EvaluationDataContaminationRiskPattern
     training input was taken from: the training data itself, or a set it was
     drawn from.
     """@en ;
-    pair:hasMotif pat:BatchTrainingMotif ,
-        pat:PipelineTrainingMotif ,
+    pair:hasMotif pat:PipelineTrainingMotif ,
         pat:TrainThenServeMotif ,
         pat:FineTuningMotif ;
     pair:hasMechanism atlas:mechanism-evaluation-on-training-data ;
@@ -1805,7 +1607,6 @@ pat:AgenticSupplyChainRiskPattern
     represented verification step producing it or screening the planning step.
     """@en ;
     pair:hasMotif pat:ToolUsingAgentMotif ,
-        pat:ToolAgentRegistryMotif ,
         pat:AgentDelegationMotif ;
     pair:hasMechanism asi:mechanism-external-component-steers-agent ;
     pair:hasApplicabilityCondition pat:AgenticSupplyChain_ExternalComponentCondition ;
@@ -1828,8 +1629,7 @@ pat:UnexpectedCodeExecutionRiskPattern
     executes code, where no represented policy enforcement, output validation or
     human approval feeds that step.
     """@en ;
-    pair:hasMotif pat:ToolUsingAgentMotif ,
-        pat:ToolAgentRegistryMotif ;
+    pair:hasMotif pat:ToolUsingAgentMotif ;
     pair:hasMechanism asi:mechanism-agent-output-run-as-code ;
     pair:hasApplicabilityCondition pat:UnexpectedCodeExecution_UngatedExecutionCondition ;
     pair:mayIndicateRisk
@@ -1877,8 +1677,7 @@ pat:HumanAgentTrustExploitationRiskPattern
     an approval is represented, so it can follow a tool misuse finding cleared by
     human oversight.
     """@en ;
-    pair:hasMotif pat:ToolUsingAgentMotif ,
-        pat:ToolAgentRegistryMotif ;
+    pair:hasMotif pat:ToolUsingAgentMotif ;
     pair:hasMechanism asi:mechanism-approval-on-the-agents-account ;
     pair:hasApplicabilityCondition pat:HumanAgentTrust_AgentOnlyEvidenceCondition ;
     pair:mayIndicateRisk
@@ -2058,8 +1857,7 @@ pat:UntraceableAgentActionsRiskPattern
     represented logging step reads the plan or assignment the action step acts
     on, or the result it produces.
     """@en ;
-    pair:hasMotif pat:ToolUsingAgentMotif ,
-        pat:ToolAgentRegistryMotif ;
+    pair:hasMotif pat:ToolUsingAgentMotif ;
     pair:hasMechanism etm:mechanism-agent-acts-without-a-record ;
     pair:hasApplicabilityCondition pat:UntraceableAgentActions_NoRecordCondition ;
     pair:mayIndicateRisk
@@ -2084,7 +1882,7 @@ pat:ProtectedDataToExternalModelRiskPattern
     """@en ;
     pair:hasMotif pat:DirectPromptingMotif ,
         pat:RetrievalAugmentedGenerationMotif ,
-        pat:SynchronousPredictionMotif ;
+        pat:PredictionServingMotif ;
     pair:hasMechanism atlas:mechanism-protected-content-leaves-for-a-provider ;
     pair:hasApplicabilityCondition pat:ProtectedDataToExternalModel_ProtectedInputCondition ;
     pair:mayIndicateRisk
@@ -2128,12 +1926,7 @@ pat:ModelExtractionRiskPattern
     originate from public user input, and no represented rate limit step feeds
     the prediction step or sits upstream of the request.
     """@en ;
-    pair:hasMotif pat:SynchronousPredictionMotif ,
-        pat:AsynchronousPredictionMotif ,
-        pat:PreprocessPredictionMotif ,
-        pat:MultiStagePredictionMotif ,
-        pat:TrainThenServeMotif ,
-        pat:TrainingToServingMotif ;
+    pair:hasMotif pat:PredictionServingMotif ;
     pair:hasMechanism atlas:mechanism-model-copied-through-open-queries ;
     pair:hasApplicabilityCondition pat:ModelExtraction_OpenQueriesCondition ;
     pair:mayIndicateRisk
@@ -2145,18 +1938,14 @@ pat:ModelExtractionRiskPattern
     pair:implementedBy pat:ModelExtractionOQP .
 
 pat:ToolUsingAgentMotif pair:hasRiskPattern pat:UntraceableAgentActionsRiskPattern .
-pat:ToolAgentRegistryMotif pair:hasRiskPattern pat:UntraceableAgentActionsRiskPattern .
+
 pat:DirectPromptingMotif pair:hasRiskPattern pat:ProtectedDataToExternalModelRiskPattern .
 pat:RetrievalAugmentedGenerationMotif pair:hasRiskPattern pat:ProtectedDataToExternalModelRiskPattern .
-pat:SynchronousPredictionMotif pair:hasRiskPattern pat:ProtectedDataToExternalModelRiskPattern ,
+pat:PredictionServingMotif pair:hasRiskPattern pat:ProtectedDataToExternalModelRiskPattern ,
     pat:ModelExtractionRiskPattern .
 pat:PredictionLoggingMotif pair:hasRiskPattern pat:PersonalDataRetainedRiskPattern .
 pat:AgentMemoryLoopMotif pair:hasRiskPattern pat:PersonalDataRetainedRiskPattern .
-pat:AsynchronousPredictionMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
-pat:PreprocessPredictionMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
-pat:MultiStagePredictionMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
-pat:TrainThenServeMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
-pat:TrainingToServingMotif pair:hasRiskPattern pat:ModelExtractionRiskPattern .
+
 
 pat:UntraceableAgentActionsOQP
     a pair:PatternImplementation ;

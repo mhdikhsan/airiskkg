@@ -71,10 +71,14 @@ def motif_gaps(ttl: str) -> list[dict]:
         if total == 0 or satisfied == total:
             continue  # nothing to explain, or it matched
 
-        label_of = {node["key"]: node["label"] for node in template["nodes"]}
+        # a part by its name in the motif, and the role a drawing has to tag where that differs
+        label_of = {node["key"]: node["label"] + (f" ({node['roleLabel']})"
+                                                  if node.get("roleLabel") not in (None, node["label"]) else "")
+                    for node in template["nodes"]}
+        role_of = {node["key"]: node.get("roleLabel") or node["label"] for node in template["nodes"]}
         missing_nodes = [
             {
-                "role": label_of[key],
+                "role": role_of[key],
                 "candidates": [
                     {"id": str(e), "label": element_label(e)} for e in near_misses.get(key, [])
                 ],

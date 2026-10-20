@@ -242,6 +242,9 @@ def graph_view(ttl_text: str, scope: str | None = None) -> dict:
             "kind": kind,
             "typeLabel": type_label,
             "typeUri": type_uri,
+            # Every BEAM class it is typed with: the queries read `a beam:Data`
+            # exactly, so an element typed Data and Text still fits a Data term.
+            "typeUris": sorted(str(t) for t in node_types if str(t).startswith(str(BEAM))),
             "roles": [_label(graph, ontology, URIRef(r)) for r in role_ids],
             "roleIds": role_ids,
             "categories": [_label(graph, ontology, URIRef(c)) for c in category_ids],

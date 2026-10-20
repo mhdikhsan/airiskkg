@@ -34,11 +34,6 @@ WHERE {
         }
         UNION
         {
-            ?binding pair:bindsPatternNode pat:Registry_CoordinatorNode ;
-                     pair:matchedElement ?planningStep .
-        }
-        UNION
-        {
             ?binding pair:bindsPatternNode pat:AgentDelegation_DelegatingStepNode ;
                      pair:matchedElement ?planningStep .
         }

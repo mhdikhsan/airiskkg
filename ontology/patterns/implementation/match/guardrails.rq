@@ -34,7 +34,7 @@ WHERE {
     ?inputGuardrailStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:InputGuardrailStep .
     ?llm a beam:StatisticalModel ;
-           pair:playsRole/pair:subRoleOf* pair:FoundationLLM .
+           pair:playsRole/pair:subRoleOf* pair:GenerativeModel .
     ?outputGuardrailStep a/rdfs:subClassOf* beam:Process ;
            pair:playsRole/pair:subRoleOf* pair:OutputGuardrailStep .
     ?rawResponse a beam:Data ;

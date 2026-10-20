@@ -1,0 +1,249 @@
+@prefix bpmn: <https://sBPMN.github.io/2.0/classes#> .
+@prefix bp:   <https://sBPMN.github.io/2.0/properties#> .
+@prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix csp:  <http://w3id.org/airiskkg/example/customer-support#> .
+@prefix csa:  <http://w3id.org/airiskkg/example/support-chatbot#> .
+
+### The collaboration
+
+csp:Collaboration a bpmn:collaboration ;
+    bp:name "Customer support" ;
+    bp:contains csp:CustomerPool, csp:SupportPool .
+
+csp:CustomerPool a bpmn:participant ;
+    bp:name "Customer" ;
+    bp:processRef csp:CustomerProcess .
+
+csp:SupportPool a bpmn:participant ;
+    bp:name "Shop support" ;
+    bp:processRef csp:SupportProcess .
+
+### Customer
+
+csp:CustomerProcess a bpmn:process ;
+    bp:name "Get help" ;
+    bp:isExecutable false ;
+    bp:contains csp:HelpNeeded, csp:SendQuestion, csp:ReceiveAnswer, csp:HelpReceived .
+
+csp:HelpNeeded a bpmn:startEvent ;
+    bp:name "Help needed" ;
+    bp:outgoing csp:C1 .
+
+csp:SendQuestion a bpmn:sendTask ;
+    bp:name "Send question" ;
+    bp:incoming csp:C1 ;
+    bp:outgoing csp:C2 .
+
+csp:ReceiveAnswer a bpmn:receiveTask ;
+    bp:name "Receive answer" ;
+    bp:incoming csp:C2 ;
+    bp:outgoing csp:C3 .
+
+csp:HelpReceived a bpmn:endEvent ;
+    bp:name "Help received" ;
+    bp:incoming csp:C3 .
+
+csp:C1 a bpmn:sequenceFlow ; bp:sourceRef csp:HelpNeeded ; bp:targetRef csp:SendQuestion .
+csp:C2 a bpmn:sequenceFlow ; bp:sourceRef csp:SendQuestion ; bp:targetRef csp:ReceiveAnswer .
+csp:C3 a bpmn:sequenceFlow ; bp:sourceRef csp:ReceiveAnswer ; bp:targetRef csp:HelpReceived .
+
+### Shop support
+
+csp:SupportProcess a bpmn:process ;
+    bp:name "Handle support request" ;
+    bp:isExecutable false ;
+    bp:laneSet csp:SupportLanes ;
+    bp:contains csp:QuestionReceived, csp:AnswerQuestion, csp:Confident, csp:SendAnswer,
+                csp:EscalateToAgent, csp:ReviewReply, csp:UpdateKnowledgeBase, csp:SendReply,
+                csp:ReplySent, csp:LogConversation, csp:RequestClosed .
+
+csp:SupportLanes a bpmn:laneSet ;
+    bp:contains csp:ChatbotLane, csp:AgentLane .
+
+csp:ChatbotLane a bpmn:lane ;
+    bp:name "Chatbot" ;
+    bp:flowNodeRef csp:QuestionReceived, csp:AnswerQuestion, csp:Confident, csp:SendAnswer,
+                   csp:EscalateToAgent, csp:ReplySent, csp:LogConversation, csp:RequestClosed .
+
+csp:AgentLane a bpmn:lane ;
+    bp:name "Support agent" ;
+    bp:flowNodeRef csp:ReviewReply, csp:UpdateKnowledgeBase, csp:SendReply .
+
+csp:QuestionReceived a bpmn:startEvent ;
+    bp:name "Question received" ;
+    bp:eventDefinition csp:QuestionTrigger ;
+    bp:outgoing csp:S1 .
+
+csp:QuestionTrigger a bpmn:messageEventDefinition ;
+    bp:messageRef csp:QuestionMessage .
+
+csp:AnswerQuestion a bpmn:serviceTask ;
+    bp:name "Answer question" ;
+    pair:refinedBy csa:SupportChatbot ;
+    pair:carriedOutBy csa:FindPassages, csa:BuildPrompt, csa:GenerateAnswer ;
+    bp:dataInputAssociation csp:QuestionIn, csp:KnowledgeIn ;
+    bp:dataOutputAssociation csp:DraftOut ;
+    bp:incoming csp:S1 ;
+    bp:outgoing csp:S2 .
+
+csp:Confident a bpmn:exclusiveGateway ;
+    bp:name "Answer confident?" ;
+    bp:gatewayDirection "Diverging" ;
+    bp:incoming csp:S2 ;
+    bp:outgoing csp:S3, csp:S4 .
+
+csp:SendAnswer a bpmn:sendTask ;
+    bp:name "Send answer" ;
+    bp:dataInputAssociation csp:DraftToSend ;
+    bp:incoming csp:S3 ;
+    bp:outgoing csp:S5 .
+
+csp:EscalateToAgent a bpmn:task ;
+    bp:name "Escalate to agent" ;
+    bp:incoming csp:S4 ;
+    bp:outgoing csp:S6 .
+
+csp:ReviewReply a bpmn:userTask ;
+    bp:name "Review reply" ;
+    bp:resourceRole csp:Agent ;
+    bp:dataInputAssociation csp:DraftToReview, csp:RecordsIn ;
+    bp:dataOutputAssociation csp:ReplyOut ;
+    bp:incoming csp:S6 ;
+    bp:outgoing csp:S7 .
+
+csp:Agent a bpmn:humanPerformer ;
+    bp:name "Support agent" .
+
+csp:UpdateKnowledgeBase a bpmn:userTask ;
+    bp:name "Update knowledge base" ;
+    bp:resourceRole csp:Agent ;
+    bp:dataOutputAssociation csp:KnowledgeOut ;
+    bp:incoming csp:S7 ;
+    bp:outgoing csp:S8 .
+
+csp:SendReply a bpmn:sendTask ;
+    bp:name "Send reply" ;
+    bp:dataInputAssociation csp:ReplyToSend ;
+    bp:incoming csp:S8 ;
+    bp:outgoing csp:S9 .
+
+csp:ReplySent a bpmn:exclusiveGateway ;
+    bp:gatewayDirection "Converging" ;
+    bp:incoming csp:S5, csp:S9 ;
+    bp:outgoing csp:S10 .
+
+csp:LogConversation a bpmn:serviceTask ;
+    bp:name "Log conversation" ;
+    bp:dataOutputAssociation csp:RecordsOut ;
+    bp:incoming csp:S10 ;
+    bp:outgoing csp:S11 .
+
+csp:RequestClosed a bpmn:endEvent ;
+    bp:name "Request closed" ;
+    bp:incoming csp:S11 .
+
+csp:S1 a bpmn:sequenceFlow ; bp:sourceRef csp:QuestionReceived ; bp:targetRef csp:AnswerQuestion .
+csp:S2 a bpmn:sequenceFlow ; bp:sourceRef csp:AnswerQuestion ; bp:targetRef csp:Confident .
+csp:S3 a bpmn:sequenceFlow ; bp:name "yes" ; bp:conditionExpression csp:IsConfident ;
+    bp:sourceRef csp:Confident ; bp:targetRef csp:SendAnswer .
+csp:S4 a bpmn:sequenceFlow ; bp:name "no" ; bp:conditionExpression csp:NotConfident ;
+    bp:sourceRef csp:Confident ; bp:targetRef csp:EscalateToAgent .
+csp:S5 a bpmn:sequenceFlow ; bp:sourceRef csp:SendAnswer ; bp:targetRef csp:ReplySent .
+csp:S6 a bpmn:sequenceFlow ; bp:sourceRef csp:EscalateToAgent ; bp:targetRef csp:ReviewReply .
+csp:S7 a bpmn:sequenceFlow ; bp:sourceRef csp:ReviewReply ; bp:targetRef csp:UpdateKnowledgeBase .
+csp:S8 a bpmn:sequenceFlow ; bp:sourceRef csp:UpdateKnowledgeBase ; bp:targetRef csp:SendReply .
+csp:S9 a bpmn:sequenceFlow ; bp:sourceRef csp:SendReply ; bp:targetRef csp:ReplySent .
+csp:S10 a bpmn:sequenceFlow ; bp:sourceRef csp:ReplySent ; bp:targetRef csp:LogConversation .
+csp:S11 a bpmn:sequenceFlow ; bp:sourceRef csp:LogConversation ; bp:targetRef csp:RequestClosed .
+
+csp:IsConfident a bpmn:formalExpression ;
+    rdfs:label "the chatbot found passages that answer the question" .
+
+csp:NotConfident a bpmn:formalExpression ;
+    rdfs:label "the chatbot found nothing that answers the question" .
+
+### Messages
+
+csp:QuestionMessage a bpmn:message ; bp:name "question" .
+csp:AnswerMessage a bpmn:message ; bp:name "answer" .
+
+csp:M1 a bpmn:messageFlow ;
+    bp:name "asks" ;
+    bp:sourceRef csp:SendQuestion ; bp:targetRef csp:QuestionReceived ;
+    bp:messageRef csp:QuestionMessage .
+
+csp:M2 a bpmn:messageFlow ;
+    bp:name "answers" ;
+    bp:sourceRef csp:SendAnswer ; bp:targetRef csp:ReceiveAnswer ;
+    bp:messageRef csp:AnswerMessage .
+
+csp:M3 a bpmn:messageFlow ;
+    bp:name "replies" ;
+    bp:sourceRef csp:SendReply ; bp:targetRef csp:ReceiveAnswer ;
+    bp:messageRef csp:AnswerMessage .
+
+### Data
+
+csp:Question a bpmn:dataObject ;
+    bp:name "Question" ;
+    bp:itemSubjectRef csp:QuestionItem ;
+    pair:realisedBy csa:Question .
+
+csp:QuestionItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:PersonalData .
+
+csp:QuestionRef a bpmn:dataObjectReference ;
+    bp:dataObjectRef csp:Question .
+
+csp:CustomerRecords a bpmn:dataStore ;
+    bp:name "Customer records" ;
+    bp:itemSubjectRef csp:RecordsItem .
+
+csp:RecordsItem a bpmn:itemDefinition ;
+    bp:structureRef dpv:PersonalData .
+
+csp:RecordsRef a bpmn:dataStoreReference ;
+    bp:dataStoreRef csp:CustomerRecords .
+
+csp:KnowledgeBase a bpmn:dataStore ;
+    bp:name "Knowledge base" ;
+    pair:realisedBy csa:KnowledgeBase .
+
+csp:KnowledgeRef a bpmn:dataStoreReference ;
+    bp:dataStoreRef csp:KnowledgeBase .
+
+csp:DraftAnswer a bpmn:dataObject ;
+    bp:name "Draft answer" ;
+    pair:realisedBy csa:Answer .
+
+csp:DraftRef a bpmn:dataObjectReference ;
+    bp:dataObjectRef csp:DraftAnswer .
+
+csp:Reply a bpmn:dataObject ;
+    bp:name "Reply" .
+
+csp:ReplyRef a bpmn:dataObjectReference ;
+    bp:dataObjectRef csp:Reply .
+
+csp:QuestionIn a bpmn:dataInputAssociation ;
+    bp:sourceRef csp:QuestionRef ; bp:targetRef csp:AnswerQuestion .
+csp:RecordsIn a bpmn:dataInputAssociation ;
+    bp:sourceRef csp:RecordsRef ; bp:targetRef csp:ReviewReply .
+csp:KnowledgeIn a bpmn:dataInputAssociation ;
+    bp:sourceRef csp:KnowledgeRef ; bp:targetRef csp:AnswerQuestion .
+csp:DraftOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef csp:AnswerQuestion ; bp:targetRef csp:DraftRef .
+csp:DraftToSend a bpmn:dataInputAssociation ;
+    bp:sourceRef csp:DraftRef ; bp:targetRef csp:SendAnswer .
+csp:DraftToReview a bpmn:dataInputAssociation ;
+    bp:sourceRef csp:DraftRef ; bp:targetRef csp:ReviewReply .
+csp:ReplyOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef csp:ReviewReply ; bp:targetRef csp:ReplyRef .
+csp:ReplyToSend a bpmn:dataInputAssociation ;
+    bp:sourceRef csp:ReplyRef ; bp:targetRef csp:SendReply .
+csp:KnowledgeOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef csp:UpdateKnowledgeBase ; bp:targetRef csp:KnowledgeRef .
+csp:RecordsOut a bpmn:dataOutputAssociation ;
+    bp:sourceRef csp:LogConversation ; bp:targetRef csp:RecordsRef .

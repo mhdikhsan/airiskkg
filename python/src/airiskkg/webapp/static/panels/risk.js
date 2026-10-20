@@ -219,7 +219,7 @@ function renderPalette(show, view) {
   host.classList.toggle("hidden", !show);
   if (!show) return;
   host.innerHTML = "";
-  host.appendChild(el("span", { class: "pp-group" }, "Assess by hand"));
+  host.appendChild(el("span", { class: "pp-group" }, "Manual risk modelling"));
   Object.keys(HAND_LABEL).forEach((kind) => {
     const item = el("button", {
       type: "button", class: `pp-item band-${kind}`, "data-kind": kind,
@@ -272,6 +272,7 @@ function concernDetail(group, view) {
 
   body.push(foldRow("where", `${group.evidence.length} element${group.evidence.length > 1 ? "s" : ""}`,
     group.evidence.map((e) => e.label).join(" → ")));
+  body.push(flowStrip(evidenceIds, "its elements"));
 
   if (group.statedRisks.length) {
     body.push(detailRow("also stated", group.statedRisks.map((r) => el("span", {
@@ -466,7 +467,7 @@ function unfold(system, open) {
 }
 
 const LAYER_LABEL = {
-  business: "Business", architecture: "Architecture", risk: "Risk",
+  business: "Process", architecture: "Architecture", risk: "Risk",
 };
 
 function renderLayerBar(show) {
@@ -521,6 +522,7 @@ function renderRail() {
   const side = $("#risk-side");
   if (!side) return;
   side.innerHTML = "";
+  RiskCanvas.setContext([]);  // a pick that has context sets it again below
   const view = drawable();
   const picked = RiskCanvas.selected();
   const line = RiskCanvas.link();
@@ -593,6 +595,43 @@ function statedOnly(diagram) {
 }
 
 
+/* What flows into and out of a set of elements, read off the architecture's own edges. */
+function neighbourhood(ids) {
+  const inside = new Set(ids);
+  const from = new Set();
+  const to = new Set();
+  ((state.lastGraph || {}).edges || []).forEach((edge) => {
+    if (edge.kind !== "use" && edge.kind !== "produce") return;
+    if (inside.has(edge.target) && !inside.has(edge.source)) from.add(edge.source);
+    if (inside.has(edge.source) && !inside.has(edge.target)) to.add(edge.target);
+  });
+  return { from: [...from], to: [...to] };
+}
+
+/* The context of a pick, on demand: a strip of its neighbours, outlined on the canvas too. */
+function flowStrip(ids, here) {
+  const { from, to } = neighbourhood(ids);
+  RiskCanvas.setContext([...from, ...to]);
+  const nodes = new Map(((state.lastGraph || {}).nodes || []).map((node) => [node.id, node]));
+  const chips = (list) => list.length
+    ? list.map((id) => {
+      const chip = el("button", {
+        type: "button", class: "chip clickable flow-neighbour",
+        title: `Pick ${(nodes.get(id) || {}).label || id}`,
+      }, (nodes.get(id) || {}).label || id.split(/[#/]/).pop());
+      chip.addEventListener("click", () => { RiskCanvas.select(id); renderRail(); });
+      return chip;
+    })
+    : [el("span", { class: "dim" }, "nothing")];
+  return detailRow("flow", el("div", { class: "flow-strip" }, [
+    el("span", { class: "flow-side" }, chips(from)),
+    el("span", { class: "flow-arrow", "aria-hidden": "true" }, "→"),
+    el("span", { class: "flow-here" }, here),
+    el("span", { class: "flow-arrow", "aria-hidden": "true" }, "→"),
+    el("span", { class: "flow-side" }, chips(to)),
+  ]));
+}
+
 function elementDetail(id, view) {
   const graph = state.lastGraph || {};
   const element = (graph.nodes || []).find((node) => node.id === id);
@@ -612,6 +651,7 @@ function elementDetail(id, view) {
   if (element.categories && element.categories.length) {
     box.appendChild(detailRow("carries", element.categories.join(" · ")));
   }
+  box.appendChild(flowStrip([id], "this"));
   box.appendChild(detailRow(
     here.length ? `${here.length} concern${here.length > 1 ? "s" : ""}` : "concerns",
     here.length
@@ -627,8 +667,12 @@ function elementDetail(id, view) {
 function frameDetail(node, view) {
   const mine = node.isSystem ? [node.id] : (node.refines || []);
   const groups = new Map((view.groups || []).map((group) => [group.key, group]));
+  const carried = new Set(((view.diagram || {}).links || [])
+    .filter((link) => link.target === node.id && link.label === "hasRisk")
+    .map((link) => link.source));
   const here = ((view.diagram || {}).nodes || []).filter(
-    (entry) => entry.band === "risk" && mine.some((s) => (entry.systems || []).includes(s)));
+    (entry) => entry.band === "risk"
+      && (carried.has(entry.id) || mine.some((s) => (entry.systems || []).includes(s))));
 
   const box = el("div", { class: "rail-detail" }, [
     el("h3", {}, node.isSystem ? "System" : "Activity"),
@@ -687,9 +731,14 @@ function nodeDetail(node, view) {
     reaching.forEach((g) => box.appendChild(el("div", { class: "ov-row" }, g.label)));
   }
   const joins = ((view.diagram || {}).links || [])
-    .filter((link) => link.source === node.id && link.editable)
-    .map((link) => nameOf(link.target, view));
-  if (joins.length) box.appendChild(detailRow("attached to", joins.join(" · ")));
+    .filter((link) => link.source === node.id && link.editable);
+  if (joins.length) {
+    // Written by hand, each one comes off on its own and the risk stays.
+    const handWritten = node.origin === "stated" && HAND_BANDS.has(node.band);
+    box.appendChild(detailRow("attached to", handWritten
+      ? el("span", { class: "detach-list" }, joins.map((link) => detachChip(node.id, link.target, view)))
+      : joins.map((link) => nameOf(link.target, view)).join(" · ")));
+  }
 
   if (node.origin === "stated" && node.band === "risk") {
     box.appendChild(verdictRow(node, view));
@@ -757,7 +806,35 @@ function nameOf(id, view) {
 }
 
 
+/* One attachment, named, with its own way off: the concept stays. */
+function detachChip(from, to, view) {
+  const name = nameOf(to, view);
+  const chip = el("span", { class: "chip detach" }, [
+    el("span", {}, name),
+    el("button", {
+      type: "button", class: "detach-x", title: `Detach from ${name}; the risk itself stays`,
+      "aria-label": `Detach from ${name}`,
+    }, "×"),
+  ]);
+  chip.querySelector(".detach-x").addEventListener("click", () => {
+    RiskCanvas.clearSelection();
+    edit("unlink-concept", { from, to }, `detached from ${name}`);
+  });
+  return chip;
+}
+
 function connectionDetail(line, view) {
+  // A line into a folded system stands for attachments to the parts inside it,
+  // so the parts are what come off; the system itself was never attached.
+  if ((line.standsFor || []).length) {
+    return el("div", { class: "rail-detail" }, [
+      el("h3", {}, "Connection"),
+      el("div", { class: "concern-head" }, [el("strong", {}, nameOf(line.from, view))]),
+      detailRow("joins", nameOf(line.to, view)),
+      detailRow("attached to", el("span", { class: "detach-list" },
+        line.standsFor.map((id) => detachChip(line.from, id, view)))),
+    ]);
+  }
   const box = el("div", { class: "rail-detail" }, [
     el("h3", {}, "Connection"),
     el("div", { class: "concern-head" }, [el("strong", {}, nameOf(line.from, view))]),

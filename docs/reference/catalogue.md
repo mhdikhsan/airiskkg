@@ -1,8 +1,8 @@
 # PAIR-AI Catalogue — Motifs, Risk Patterns & Annotation Roles
 
 The inventory of what PAIR-AI can recognise and flag. Counted off the loaded
-ontology on 2026-10-09: **47 motifs**, **33 risk patterns**, **123 annotation
-roles**, and **7 data categories**. Terminology follows
+ontology on 2026-10-09: **47 motifs** (34 after B-4, 2026-10-18/19: merges and two removals), **33 risk patterns**, **123 annotation
+roles** (137 after B-3/B-4: 17 role categories, 3 evaluation roles and Prediction input added; Document chunk, Embedding vector, Context detection step, Job scheduler, Tool registry, Image build step and Model load step removed; 141 on 2026-10-19, with Voting, Collective decision, Action result and Approval for the parts that had no role), and **7 data categories**. Step roles are named as verbs since 2026-10-19 (Retrieve, Generate, Construct prompt; labels only, the IRIs keep "Step"), and LLM Response is called Response. Terminology follows
 [PAIR-AI_glossary_v1_3.md](PAIR-AI_glossary_v1_3.md). This file is maintained by
 hand — if the library changes and this page does not, this page is wrong.
 
@@ -98,7 +98,7 @@ matches several families at once.
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
 | **GuardrailsMotif** | Input/output guardrail steps screen or sanitize prompts and responses around the LLM. Flow-agnostic: anchored on the guardrail decision the generation reads, so it matches whether generation consumes the user prompt directly or a constructed prompt. | LLM05, LLM07 |
-| **EvalsMotif** | Model input, output, expected output, and optional context are scored/judged into evaluation results. | — |
+| **EvalsMotif** | A scoring step rates a model's output against an expected output, reading the evaluation input, the retrieved context and a judge model, and produces a score. Its nodes play the evaluation roles (Evaluation Input, Evaluated Output, Evaluation Context), not the running system's. | — |
 
 > **A control motif is not a safe motif.** Guardrails and Evals are what
 > absence-of-control conditions look for, so their presence suppresses findings
@@ -122,39 +122,32 @@ matches several families at once.
 | --- | --- | --- |
 | **ToolUsingAgentMotif** | A planning step decides on an action and produces that plan; a step reads it to invoke an external tool or change external state, producing a result the system consumes. Risk-neutral: acting through tools is what makes an agent useful. | ASI01, ASI02, ASI04, ASI05, ASI09 |
 | **AgentMemoryLoopMotif** | A step writes content to an agent memory store and a later step reads that same store back into a working context — the loop through a store is the distinguishing shape, and why one bad write outlives the turn that produced it. | ASI03, ASI06 |
-| **AgentDelegationMotif** | One agent's planning step produces a message that another agent's handoff step consumes and acts on, so work crosses an agent boundary. The named message is what makes the crossing assessable. | ASI01, ASI03, ASI04, ASI07, ASI08 |
+| **AgentDelegationMotif** | One agent's planning step produces a message that another agent's handoff step consumes and acts on, so work crosses an agent boundary. The named message is what makes the crossing assessable. A debate is this hop answered back (Debate-based cooperation was merged into it), and in a loop it also raises unbounded consumption. | ASI01, ASI03, ASI04, ASI07, ASI08, LLM10 |
 | **HumanOversightMotif** | A human approval step produces an approval the acting step reads before it produces the action's result. A **control** motif: matching it *suppresses* the tool-misuse finding on the mediated path rather than raising anything. | — (suppresses ASI02) |
 
 ### Prediction / serving (classic ML)
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **SynchronousPredictionMotif** | A prediction step runs inline with a request and returns before the workflow proceeds. | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference |
-| **AsynchronousPredictionMotif** | Prediction requests decoupled from execution via a queue/cache. | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference |
-| **BatchPredictionMotif** | A scheduled job runs prediction over a batch dataset and stores results. | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference |
-| **PreprocessPredictionMotif** | Preprocessing and prediction as separate steps connected by preprocessed data. | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference |
-| **MultiStagePredictionMotif** | One path returns a quick result while another produces a slower/richer result. | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference |
+| **PredictionServingMotif** | A prediction step applies a model to a request, a queued request, a batch or preprocessed data, and produces a prediction result; the input node names `PredictionInput` (merged 2026-10-18 from the synchronous, asynchronous, batch, prep-pred and multi-stage serving motifs). | Dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference, model extraction, protected data to external model |
 
 ### Training
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **BatchTrainingMotif** | A scheduled job prepares data, trains a model, evaluates it, records artifact + evaluation. | Model bias, improper retraining, evaluation contamination |
 | **PipelineTrainingMotif** | Training decomposed into independently executable pipeline jobs with intermediate data. | Model bias, improper retraining, evaluation contamination |
 
 ### Lifecycle (train → serve)
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **TrainThenServeMotif** | Training and serving separated by evaluation, approval, and a release step. Also what realizes pre-release evaluation. | Dataset shift, out-of-domain input, adversarial evasion, unqualified prediction, membership inference, model bias, improper retraining, evaluation contamination |
-| **TrainingToServingMotif** | A training pipeline automatically produces an artifact built/deployed into serving. | LLM04, dataset shift, out-of-domain input, adversarial evasion, unevaluated model, unqualified prediction, membership inference, model bias, improper retraining |
+| **TrainThenServeMotif** | Training and serving separated by evaluation, approval, and a release step. Also what realizes pre-release evaluation. | Model bias, improper retraining, evaluation contamination (its serving risks come from Prediction Serving since B-4) |
+| **TrainingToServingMotif** | A training pipeline produces a model artifact that a deployment step serves to a prediction step. | LLM04, unevaluated model, model bias, improper retraining (its serving risks belong to Prediction Serving since 2026-10-18) |
 
 ### Operational
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **ModelLoadMotif** | Server image and model artifact managed separately; model loaded before prediction. | LLM03 |
-| **ModelInImageMotif** | A trained artifact packaged into a serving image, deployed as the model the prediction step serves from. | — (it trains its own artifact, so nothing enters from outside) |
 | **PredictionLoggingMotif** | Prediction inputs/results/latency collected into logs. | — |
 | **PredictionMonitoringMotif** | Logs/result trends monitored against expected behavior; may raise alerts. | — |
 
@@ -162,7 +155,7 @@ matches several families at once.
 
 | Motif | Recognises | Feeds |
 | --- | --- | --- |
-| **ExternalDependencyMotif** | An external dependency, pre-trained model, artifact, or serving image is used by a step. Risk-neutral by itself. | LLM03 |
+| **ExternalDependencyMotif** | An external dependency, pre-trained model, artifact, or serving image is used by a step. Risk-neutral by itself. Model load was merged into it: a load step reading an artifact or a serving image is this shape. | LLM03 |
 
 ---
 
@@ -186,7 +179,7 @@ shows which, and inserting a motif from there adds the context.
 | --- | --- | --- | --- | --- |
 | **LLM01** | Prompt injection | Untrusted content (from retrieval/tools, tainted by public input) reaches generation → user output, with no input/output control. | Direct Prompting, RAG, Query Rewriting | Guardrails; input validation & prompt isolation; logging/monitoring/evals |
 | **LLM02** | Sensitive data retrieval exposure | The store **and** the retrieved result carry `SensitiveInformation` → generation → user output, no disclosure control. | Vector-IR | Data minimization & redaction; guardrails; output validation & sanitization; retrieval access control |
-| **LLM03** | Supply chain compromise | A resource marked external, or an artifact nothing in the graph produces, is used. A model the system trains itself is not raised. | External Dependency, Fine Tuning, Model Load | Model & dependency provenance; logging/monitoring/evals |
+| **LLM03** | Supply chain compromise | A resource marked external, or an artifact nothing in the graph produces, is used. A model the system trains itself is not raised. | External Dependency, Fine Tuning | Model & dependency provenance; logging/monitoring/evals |
 | **LLM04** | Data & model poisoning | A bound source tagged `UntrustedContent` enters embeddings / fine-tuning / training-to-serving. | Embeddings, Fine Tuning, Training-to-Serving | Trusted training & indexing data; model & dependency provenance; logging/monitoring/evals |
 | **LLM05** | Improper output handling | Generation → user output with no `OutputValidationStep` / `OutputGuardrailStep`. | Direct Prompting, Guardrails | Output validation & sanitization; guardrails |
 | **LLM06** | Excessive agency | What the generation step produces reaches a `ToolInvocationStep` / `StateChangingStep` along a chain of resources, with no control on it. | *none — deliberately role-anchored, applies to any match binding the generation step* | Tool permission boundaries; rate/budget/loop control; logging/monitoring/evals |
@@ -218,29 +211,29 @@ risk pattern of their own.
 
 | Anchor | Risk pattern | Fires when | Declared motif | Suggested controls |
 | --- | --- | --- | --- | --- |
-| **Dataset shift** | Dataset shift | A prediction step uses a model and no `MonitoringStep` reads both a `MonitoringBaseline` and something downstream of the step's inputs. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Distribution shift monitoring; logging/monitoring/evals |
-| **Out-of-domain data** | Out-of-domain input | A request, batch dataset, preprocessed input or user input reaches a prediction step with no `InputDomainCheckStep` upstream of it or feeding the step. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Input domain validation; distribution shift monitoring |
-| **Adversarial attack** | Adversarial evasion | An input carrying `UntrustedContent` reaches a prediction step. A `GuardrailStep` on the way stops the taint, so it clears this. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Adversarial robustness; guardrails |
-| **Model bias** | Model bias | A training step uses data carrying `SensitiveInformation` (from a DPV personal-data annotation) and no `FairnessEvaluationStep` reads the model or anything downstream of it. | Batch Training, Pipeline Training, Train-Then-Serve, Training-to-Serving | Fairness evaluation; trusted training & indexing data |
+| **Dataset shift** | Dataset shift | A prediction step uses a model and no `MonitoringStep` reads both a `MonitoringBaseline` and something downstream of the step's inputs. | Prediction Serving | Distribution shift monitoring; logging/monitoring/evals |
+| **Out-of-domain data** | Out-of-domain input | A request, batch dataset, preprocessed input or user input reaches a prediction step with no `InputDomainCheckStep` upstream of it or feeding the step. | Prediction Serving | Input domain validation; distribution shift monitoring |
+| **Adversarial attack** | Adversarial evasion | An input carrying `UntrustedContent` reaches a prediction step. A `GuardrailStep` on the way stops the taint, so it clears this. | Prediction Serving | Adversarial robustness; guardrails |
+| **Model bias** | Model bias | A training step uses data carrying `SensitiveInformation` (from a DPV personal-data annotation) and no `FairnessEvaluationStep` reads the model or anything downstream of it. | Pipeline Training, Train-Then-Serve, Training-to-Serving | Fairness evaluation; trusted training & indexing data |
 | **Model misspecification** | Unevaluated model | A model a training step produced reaches a prediction step and no `EvaluationStep` reads it or a model deployed from it. | All prediction motifs, Training-to-Serving | Pre-release model evaluation; logging/monitoring/evals |
-| **Model uncertainty** | Unqualified prediction | A prediction reaches a tool or state-changing step, or a user-facing output, and neither an `UncertaintyEstimate` from the prediction step nor a `HumanApprovalStep` reaches the same place. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Uncertainty reporting and review; tool permission boundaries |
+| **Model uncertainty** | Unqualified prediction | A prediction reaches a tool or state-changing step, or a user-facing output, and neither an `UncertaintyEstimate` from the prediction step nor a `HumanApprovalStep` reaches the same place. | Prediction Serving | Uncertainty reporting and review; tool permission boundaries |
 
 ### From IBM AI Risk Atlas entries with a shape of their own
 
 | Anchor | Risk pattern | Fires when | Declared motif | Suggested controls |
 | --- | --- | --- | --- | --- |
-| **Improper retraining** | Improper retraining | Data downstream of a model is read back by the step that trains it, with no `DataValidationStep`, `OutputValidationStep` or `HumanApprovalStep` on the loop. | Batch Training, Pipeline Training, Train-Then-Serve, Training-to-Serving, Fine Tuning | Retraining data validation; trusted training & indexing data |
-| **Membership inference attack** | Training data membership inference | A model trained on `SensitiveInformation` serves requests derived from `PublicUserInput`. **No structural escape**: what reduces it is how the model is trained, so a finding is settled by triage. | All prediction motifs, Train-Then-Serve, Training-to-Serving | Training data privacy; rate/budget/loop control |
-| **Data contamination** | Evaluation data contamination | An evaluation step reads the training data, or a set the training data was drawn from. | Batch Training, Pipeline Training, Train-Then-Serve, Fine Tuning | Held-out evaluation data; pre-release model evaluation |
+| **Improper retraining** | Improper retraining | Data downstream of a model is read back by the step that trains it, with no `DataValidationStep`, `OutputValidationStep` or `HumanApprovalStep` on the loop. | Pipeline Training, Train-Then-Serve, Training-to-Serving, Fine Tuning | Retraining data validation; trusted training & indexing data |
+| **Membership inference attack** | Training data membership inference | A model trained on `SensitiveInformation` serves requests derived from `PublicUserInput`. **No structural escape**: what reduces it is how the model is trained, so a finding is settled by triage. | Prediction Serving | Training data privacy; rate/budget/loop control |
+| **Data contamination** | Evaluation data contamination | An evaluation step reads the training data, or a set the training data was drawn from. | Pipeline Training, Train-Then-Serve, Fine Tuning | Held-out evaluation data; pre-release model evaluation |
 
 ### Structures no other pattern covered (added 2026-10-09)
 
 | Anchor | Risk pattern | Fires when | Declared motif | Suggested controls |
 | --- | --- | --- | --- | --- |
 | **Eticas: untraceable agent actions** | Untraceable agent actions | No `LoggingStep` reads what an agent's tool or state-changing step acts on or produces. | Tool-Using Agent, Tool/Agent Registry | Agent action audit log; logging/monitoring/evals |
-| **IBM: personal information in prompt** | Protected data to external model | A generation or prediction step uses a model playing `ExternalModel` and reads content carrying `SensitiveInformation` or `ConfidentialInformation`, other than the provider's own credential. A redaction step upstream clears it. | Direct Prompting, RAG, Synchronous Prediction | Data minimization & redaction; external provider data agreement |
+| **IBM: personal information in prompt** | Protected data to external model | A generation or prediction step uses a model playing `ExternalModel` and reads content carrying `SensitiveInformation` or `ConfidentialInformation`, other than the provider's own credential. A redaction step upstream clears it. | Direct Prompting, RAG, Prediction Serving | Data minimization & redaction; external provider data agreement |
 | **Eticas: weak data controls** | Personal data retained | A prediction log or an agent memory carries `SensitiveInformation`. A writer that also redacts clears it. | Prediction Logging, Agent Memory Loop | Data minimization & redaction; retention limits |
-| **IBM: extraction attack** | Model extraction | A model trained in the represented system serves requests derived from `PublicUserInput`, with no `RateLimitControlStep` feeding the step or upstream of the request. | Prediction motifs, Train-Then-Serve, Training-to-Serving | Model access hardening; rate/budget/loop control |
+| **IBM: extraction attack** | Model extraction | A model trained in the represented system serves requests derived from `PublicUserInput`, with no `RateLimitControlStep` feeding the step or upstream of the request. | Prediction Serving | Model access hardening; rate/budget/loop control |
 
 The other IBM risks the `data/mappings/` cross-walk names are cited by the risk
 pattern whose anchor upstream maps them to — jailbreaking and prompt priming by
@@ -263,8 +256,11 @@ failures. Missing findings usually mean a missing role, not a safe system.*
 
 Assign with `pair:playsRole`. Roles are organised into sub-role hierarchies
 (shown by the groups below); a motif that asks for a parent role also matches its
-sub-roles (`pair:subRoleOf*`). The four top-level roles are `ResourceRole`,
-`ProcessingStep`, `ControlStep`, and `UserInput`.
+sub-roles (`pair:subRoleOf*`). Since 2026-10-18 the four top-level terms are
+`ResourceRole`, `ProcessingStep`, `ControlRoles` and `UserInputRoles`, and every role
+that used to hang directly under a top is filed under one of 17 `pair:RoleCategory`
+categories (Retrieval, Generation, Agent steps, Knowledge and context, Models, …).
+No query names a category, so the groups below still describe what matches.
 
 The groups below are the sub-role hierarchy, which is the ontology's own
 organisation. The workbench shelves the same 97 roles differently — by the BEAM
@@ -326,8 +322,6 @@ class each is annotated on — because the four top-level roles hold 50, 32, 12 
 | `RetrievedCandidateSet` | A set of retrieved candidate fragments prior to reranking. |
 | `RerankedContext` | Reranked, selected context fragments for generation (a `RetrievedContext`). |
 | `SourceDocument` | A source document ingested into a knowledge base. |
-| `DocumentChunk` | A chunk of a source document used for embedding/retrieval. |
-| `EmbeddingVector` | A stored embedding vector. |
 
 ### Prompts & generation resources
 *(typical BEAM type: `beam:Data`)*
@@ -353,6 +347,7 @@ class each is annotated on — because the four top-level roles hold 50, 32, 12 
 
 | Role | Definition |
 | --- | --- |
+| `PredictionInput` | What a prediction step reads: a request, a queue of requests, a batch, or preprocessed data. The four roles below sit under it, so the serving motif names it. |
 | `PredictionRequest` | An incoming request for a prediction. |
 | `PredictionResult` | The result of a prediction step. |
 | `PredictionQueue` | A queue holding prediction requests. |
@@ -410,11 +405,8 @@ class each is annotated on — because the four top-level roles hold 50, 32, 12 
 | `TrainingPipeline` | Orchestrates model training. |
 | `FineTuningStep` | Fine-tunes a pre-trained model. |
 | `DeploymentStep` | Deploys a model to serving. |
-| `ModelLoadStep` | Loads a model into a runtime. |
-| `ImageBuildStep` | Builds a serving image. |
 | `LoggingStep` | Logs predictions or events. |
 | `MonitoringStep` | Monitors a deployed model. |
-| `JobScheduler` | Schedules jobs in a workflow. |
 | `ToolInvocationStep` | Invokes an external tool/plugin/API (agentic tool use). |
 | `CodeExecutionStep` | A `ToolInvocationStep` that runs what it receives as code: an interpreter, shell, eval, template engine, deserializer. Read by ASI05. |
 | `StateChangingStep` | Changes external state (writes, transactions, side effects). |

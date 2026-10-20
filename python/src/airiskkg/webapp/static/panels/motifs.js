@@ -7,11 +7,14 @@ import { setStatus } from "../core/status.js";
 import { Editor } from "../lib/editor.js";
 import { GraphView } from "../lib/graph_view.js";
 import { runMutation } from "./mutations.js";
-import { buildTray, startTrayDrag } from "./palette.js";
+import { buildTray, madeSystemNote, startTrayDrag } from "./palette.js";
+import { motifPreview } from "../lib/motif_preview.js";
 import { noteChange } from "./run.js";
+import { state } from "../state.js";
 
 // ---- matches and gaps ----
 let selectedMotifRow = null;
+let selectedMotifLabel = null;   // survives the redraw the hint check causes
 let annotationHints = new Map();
 
 function blockingHint(id) {
@@ -103,9 +106,31 @@ function renderMotifGaps(gaps) {
   });
 }
 
-async function loadAnnotationHints(ttl, gaps) {
+/* One check at a time, of the latest document: each waits for the server's lock, and
+ * a pile of them takes every connection the browser allows, so nothing else loads. */
+let hintsFor = null;
+let hintsRunning = false;
+let hintsWanted = null;
+
+async function loadAnnotationHints(ttl) {
+  if (ttl === hintsFor) return;
+  if (hintsRunning) { hintsWanted = ttl; return; }
+  hintsRunning = true;
+  try {
+    await checkAnnotations(ttl);
+  } finally {
+    hintsRunning = false;
+    const next = hintsWanted;
+    hintsWanted = null;
+    if (next) loadAnnotationHints(next);
+  }
+}
+
+async function checkAnnotations(ttl) {
   try {
     const report = await postJson("/api/validate", { ttl });
+    if (Editor.getValue().trim() !== ttl) return;
+    hintsFor = ttl;
     const next = new Map();
     const add = (items, severity) => (items || []).forEach((item) => {
       if (!item.focusNode || !item.guidance) return;
@@ -124,12 +149,14 @@ async function loadAnnotationHints(ttl, gaps) {
 
 export function clearMotifs() {
   annotationHints = new Map();
+  hintsFor = null;
   lastMatches = null;
   lastGaps = null;
   $("#motifs-list").innerHTML = "";
   $("#motifs-count").textContent = "";
   $("#motifs-empty").classList.remove("hidden");
   selectedMotifRow = null;
+  selectedMotifLabel = null;
 }
 
 let lastMatches = null;
@@ -146,14 +173,37 @@ function motifRows(matches) {
   const byName = new Map();
   (matches || []).forEach((m) => {
     const label = (m.label || (m.motif && m.motif.label) || "Motif").replace(/\s+Motif$/, "");
-    const g = byName.get(label) || { label, ids: new Set(), count: 0 };
+    const g = byName.get(label) || { label, ids: new Set(), count: 0, bindings: new Map() };
     (m.nodeIds || []).forEach((id) => g.ids.add(id));
+    (m.boundElements || []).forEach((b) => {
+      const key = `${b.elementId}|${b.role}`;
+      if (!g.bindings.has(key)) g.bindings.set(key, b);
+    });
     g.count += 1;
     byName.set(label, g);
   });
   return [...byName.values()]
-    .map((g) => ({ label: g.label, nodeIds: [...g.ids], count: g.count }))
+    .map((g) => ({ label: g.label, nodeIds: [...g.ids], count: g.count, bindings: [...g.bindings.values()] }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
+/* Which of the reader's annotations made the motif match: each element, the
+   role its pattern node asks for, and the element's own role when that is a
+   refinement of it. */
+function bindingList(bindings) {
+  const rows = [...bindings]
+    .sort((a, b) => (a.element || "").localeCompare(b.element || ""))
+    .map((b) => el("li", {}, [
+      el("strong", {}, b.element),
+      el("span", { class: "motif-binding-role" }, b.role ? ` as ${b.role}` : ""),
+      b.via && b.via !== b.role
+        ? el("span", { class: "motif-binding-via" }, ` (its role ${b.via} refines it)`)
+        : null,
+    ]));
+  return el("div", { class: "motif-bindings" }, [
+    el("div", { class: "motif-bindings-lead" }, "Matched on these annotations:"),
+    el("ul", {}, rows),
+  ]);
 }
 
 export function renderMotifs(matches, gaps, options = {}) {
@@ -161,7 +211,7 @@ export function renderMotifs(matches, gaps, options = {}) {
   lastGaps = gaps;
   if (options.refetchHints !== false) {
     const ttl = Editor.getValue().trim();
-    if (ttl) loadAnnotationHints(ttl, gaps);
+    if (ttl) loadAnnotationHints(ttl);
   }
   const shown = onScreen(matches || [], (m) => m.nodeIds || []);
   const groups = groupBySystem(shown, (m) => m.nodeIds || []);
@@ -171,6 +221,9 @@ export function renderMotifs(matches, gaps, options = {}) {
   const empty = $("#motifs-empty");
   list.innerHTML = "";
   selectedMotifRow = null;
+  // Redrawn for the hints alone, the reader's pick is still the same match.
+  const keep = options.refetchHints === false ? selectedMotifLabel : null;
+  if (!keep) selectedMotifLabel = null;
   if (!rows.length) {
     empty.textContent = "No motifs matched. Add roles so motifs can bind, then Run assessment.";
     empty.classList.remove("hidden");
@@ -186,12 +239,23 @@ export function renderMotifs(matches, gaps, options = {}) {
     }, [
       el("span", { class: "motif-row-name" }, r.label),
       el("span", { class: "motif-row-count" }, r.count > 1 ? `×${r.count}` : "1"),
+      r.bindings.length ? bindingList(r.bindings) : null,
     ]);
+    if (keep === r.label && !selectedMotifRow) {
+      selectedMotifRow = row;
+      row.classList.add("selected");
+    }
     row.addEventListener("click", () => {
       const wasSelected = selectedMotifRow === row;
       $$(".motif-row.selected").forEach((x) => x.classList.remove("selected"));
-      if (wasSelected) { selectedMotifRow = null; GraphView.setHighlight([]); return; }
+      if (wasSelected) {
+        selectedMotifRow = null;
+        selectedMotifLabel = null;
+        GraphView.setHighlight([]);
+        return;
+      }
       selectedMotifRow = row;
+      selectedMotifLabel = r.label;
       row.classList.add("selected");
       GraphView.setHighlight(r.nodeIds);
       revealInSource(r.nodeIds);
@@ -218,14 +282,17 @@ export function renderMotifs(matches, gaps, options = {}) {
 export function addMotif(item) {
   return runMutation(async () => {
     try {
-      const { ttl } = await postJson("/api/graph-edit", {
+      const { ttl, newSystem } = await postJson("/api/graph-edit", {
         ttl: Editor.getValue() || "@prefix beam: <http://w3id.org/beam/core#> .\n",
         op: "add-motif", motif: item.id,
         ...(item.riskPattern ? { riskPattern: item.riskPattern } : {}),
+        /* Where the system bar says "adding to", exactly as a palette symbol does. */
+        system: GraphView.getSelectedSystem() || state.scopedSystem || null,
       });
       noteChange(`added motif: ${item.label}`);
       Editor.setValue(ttl);
-      setStatus("ok", `Added "${item.label}" — already annotated; Run assessment for findings`);
+      setStatus("ok", `Added "${item.label}"${madeSystemNote(newSystem)}`
+        + " — already annotated; Run assessment for findings");
       return true;
     } catch (error) {
       setStatus("error", "Could not add motif: " + error.message.split("\n")[0]);
@@ -247,32 +314,152 @@ function binBy(items, key, fallback) {
   return [...bins.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
+let motifCard = null;
+const motifById = new Map();
+const shortName = (item) => item.label.replace(/\s*Motif$/, "");
+
+function closeMotifCard() {
+  if (motifCard) motifCard.remove();
+  motifCard = null;
+}
+
+/* What a motif is, beside the tray: its drawing, its words and the risks it carries.
+   The reading the risk canvas gives a picked box, instead of a tooltip. */
+function openMotifCard(item, chip) {
+  const levels = (ids) => ids.map((id) => motifById.get(id)).filter(Boolean).map((other) => {
+    const link = el("button", { type: "button", class: "chip clickable" }, shortName(other));
+    link.addEventListener("click", () => openMotifCard(other, chip));
+    return link;
+  });
+  const same = motifCard && motifCard.dataset.motif === item.id;
+  closeMotifCard();
+  if (same) return;
+  const add = el("button", { type: "button", class: "btn small primary" }, "Add to canvas");
+  const close = el("button", { type: "button", class: "btn small" }, "Close");
+  const risks = item.risks || [];
+  motifCard = el("div", {
+    class: "motif-card", "data-motif": item.id, role: "dialog", "aria-label": item.label,
+  }, [
+    el("div", { class: "motif-card-kind" }, `Motif · ${item.family}`),
+    el("strong", { class: "motif-card-title" }, item.label.replace(/\s*Motif$/, "")),
+    item.description ? el("p", { class: "motif-card-desc" }, item.description) : null,
+    el("div", { class: "motif-card-preview" }, motifPreview(item)),
+    el("div", { class: "motif-card-row" }, [
+      el("span", { class: "motif-card-key" }, "carries"),
+      risks.length
+        ? el("span", { class: "motif-card-risks" }, risks.map((r) => el("span", { class: "chip" }, r)))
+        : el("span", { class: "dim" }, "no risk pattern of its own"),
+    ]),
+    (item.refines || []).length ? el("div", { class: "motif-card-row" }, [
+      el("span", { class: "motif-card-key" }, "detailed form of"),
+      el("span", { class: "motif-card-risks" }, levels(item.refines)),
+    ]) : null,
+    (item.refinedBy || []).length ? el("div", { class: "motif-card-row" }, [
+      el("span", { class: "motif-card-key" }, "detailed forms"),
+      el("span", { class: "motif-card-risks" }, levels(item.refinedBy)),
+    ]) : null,
+    el("p", { class: "motif-card-note" },
+      "Structure only: a risk is raised when its conditions hold over the match."),
+    el("div", { class: "motif-card-actions" }, [add, close]),
+  ]);
+  add.addEventListener("click", () => { closeMotifCard(); addMotif(item); });
+  close.addEventListener("click", closeMotifCard);
+  document.body.appendChild(motifCard);
+  // beside the tray, on whichever side has room, and inside the window
+  const tray = chip.closest(".motif-palette").getBoundingClientRect();
+  const row = chip.getBoundingClientRect();
+  const card = motifCard.getBoundingClientRect();
+  const left = tray.left - card.width - 8 >= 8
+    ? tray.left - card.width - 8
+    : Math.min(tray.right + 8, innerWidth - card.width - 8);
+  motifCard.style.left = `${Math.max(8, left)}px`;
+  motifCard.style.top = `${Math.max(8, Math.min(row.top, innerHeight - card.height - 8))}px`;
+}
+
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") closeMotifCard(); });
+document.addEventListener("pointerdown", (ev) => {
+  if (motifCard && !ev.target.closest(".motif-card, .motif-item")) closeMotifCard();
+});
+
 export function initMotifPalette(templates) {
   const panel = $("#motif-palette");
   if (!panel) return;
   if (!templates || !templates.length) { panel.style.display = "none"; return; }
+  templates.forEach((item) => motifById.set(item.id, item));
   const wrap = $("#canvas-wrap");
-  const body = el("div", { class: "tray-body" });
+  const search = el("input", {
+    type: "search", class: "motif-search", placeholder: "Search motifs",
+    "aria-label": "Search motifs by name or description",
+  });
+  const none = el("p", { class: "motif-none hidden" }, "No motif matches that.");
+  const body = el("div", { class: "tray-body" }, [search]);
+  /* Families start folded and open on a click; a search opens every family it
+     finds something in, or a match inside a folded one would read as no match. */
+  const opened = new Set();
+  const shelves = [];
 
   binBy(templates, "family", "Unshelved").forEach(([family, items]) => {
-    body.appendChild(el("div", { class: "motif-family" }, [
-      el("span", {}, family),
-      el("span", { class: "motif-family-count" }, String(items.length)),
-    ]));
+    const count = el("span", { class: "motif-family-count" }, String(items.length));
+    const head = el("button", { type: "button", class: "motif-family", "aria-expanded": "false" },
+      [el("span", {}, family), count]);
+    const shelf = el("div", { class: "motif-shelf" });
+    const chips = [];
     const groups = binBy(items, "group", "Other");
     groups.forEach(([group, members]) => {
       // A family filed as one group says nothing more under a second heading.
-      if (groups.length > 1) body.appendChild(el("div", { class: "motif-group" }, group));
-      members.forEach((item) => {
+      const heading = groups.length > 1 ? el("div", { class: "motif-group" }, group) : null;
+      if (heading) shelf.appendChild(heading);
+      // a sub-motif sits under the general motif it refines, where that one is on this shelf
+      const here = new Set(members.map((m) => m.id));
+      const parentOf = (m) => (m.refines || []).find((id) => here.has(id));
+      const ordered = [];
+      const place = (m, depth) => {
+        ordered.push([m, depth]);
+        members.filter((c) => parentOf(c) === m.id).forEach((c) => place(c, depth + 1));
+      };
+      members.filter((m) => !parentOf(m)).forEach((m) => place(m, 0));
+      ordered.forEach(([item, depth]) => {
         const chip = el("div", {
-          class: "motif-item",
-          title: `Add ${item.label} — click or drag onto the canvas`,
-        }, item.label);
-        chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap, () => addMotif(item)));
-        body.appendChild(chip);
+          class: "motif-item" + (depth ? ` motif-sub depth-${Math.min(depth, 2)}` : ""),
+          title: "Click for what it is; drag onto the canvas to add it.",
+        }, shortName(item));
+        chip.addEventListener("pointerdown", (ev) => startTrayDrag(ev, chip, wrap,
+          () => { closeMotifCard(); addMotif(item); }, () => openMotifCard(item, chip)));
+        shelf.appendChild(chip);
+        chips.push({ chip, heading, text: [item.label, item.description, group, family]
+          .filter(Boolean).join(" ").toLowerCase() });
       });
     });
+    head.addEventListener("click", () => {
+      if (opened.has(family)) opened.delete(family); else opened.add(family);
+      show();
+    });
+    body.appendChild(head);
+    body.appendChild(shelf);
+    shelves.push({ family, head, shelf, chips, count, total: items.length });
   });
+  body.appendChild(none);
 
-  buildTray(panel, "Motifs", body, true);
+  const show = () => {
+    const query = search.value.trim().toLowerCase();
+    let found = 0;
+    shelves.forEach(({ family, head, shelf, chips, count, total }) => {
+      const hits = chips.filter(({ text }) => !query || text.includes(query));
+      chips.forEach(({ chip }) => chip.classList.toggle("hidden", !hits.some((h) => h.chip === chip)));
+      new Set(chips.map(({ heading }) => heading).filter(Boolean)).forEach((heading) =>
+        heading.classList.toggle("hidden", !hits.some((h) => h.heading === heading)));
+      const open = query ? hits.length > 0 : opened.has(family);
+      head.classList.toggle("hidden", Boolean(query) && !hits.length);
+      head.classList.toggle("open", open);
+      head.setAttribute("aria-expanded", String(open));
+      shelf.classList.toggle("hidden", !open);
+      count.textContent = String(query ? hits.length : total);
+      found += hits.length;
+    });
+    none.classList.toggle("hidden", found > 0);
+  };
+  search.addEventListener("input", show);
+  show();
+
+  buildTray(panel, "Architectural motifs", body, true);
 }

@@ -247,10 +247,10 @@ def test_the_notation_can_be_read_one_layer_and_one_architecture_at_a_time(serve
       log("risksAll=" + (chips().Risk || 0));
       log("activities=" + (chips().Activity || 0));
       log("systemsAll=" + (chips().System || 0));
-      toggle("Business");
+      toggle("Process");
       setTimeout(() => {
         log("activitiesOff=" + (chips().Activity || 0));
-        toggle("Business");
+        toggle("Process");
         toggle("Architecture");
         setTimeout(() => {
           log("systemsOff=" + (chips().System || 0));
@@ -605,23 +605,11 @@ def test_the_detail_opens_folded_and_the_reader_chooses_what_to_read(served) -> 
     """
     report = _drive(served, _scene("""
       // The canvas picks a box on pointerdown then pointerup, never on click.
-      // A hand-written risk, because its panel is where the three tiers meet:
-      // Apply is a primary button, Connect a plain one, remove this a chip.
-      fetch("/api/scope-edit", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ttl: window.PairAI.Editor.getValue(), op: "state-concept",
-          kind: "risk", label: "Sizing probe",
-        }),
-      }).then((r) => r.json()).then((made) => {
-        window.PairAI.Editor.setValue(made.ttl);
-        setTimeout(() => {
-          const card = [...document.querySelectorAll("#risk-canvas .rc-card")]
-            .find((c) => c.querySelector(".rc-title")?.textContent === "Sizing probe");
-          log("probeDrawn=" + !!card);
-          card.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-          window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
-          setTimeout(() => {
+      const card = pickRisk();
+      log("probeDrawn=" + !!card);
+      card.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+      setTimeout(() => {
         const folds = [...document.querySelectorAll(".rail-detail .concern-fold")];
         log("folds=" + folds.length);
         log("openAtFirst=" + folds.filter((f) => f.open).length);
@@ -642,8 +630,6 @@ def test_the_detail_opens_folded_and_the_reader_chooses_what_to_read(served) -> 
           log("whyShownAfterClick=" + (why ? shown(why) : "none"));
         }, 300);
       }, 900);
-        }, 2600);
-      });
     """))
 
     fields = _fields(report)
@@ -736,3 +722,50 @@ def test_a_disclosure_marker_is_drawn_rather_than_typed(served) -> None:
         f"the marker is not the drawn triangle: {fields['widths']!r}"
     )
     assert fields["overflows"] == "false", "the detail scrolls sideways"
+
+
+def _starter_scene(body: str) -> str:
+    """The tutorial's starter: one architecture under the customer support process."""
+    return _scene(body).replace(
+        "/api/examples/" + ARCH, "/api/examples/support_chatbot",
+    ).replace(
+        "/api/examples/" + PROC, "/api/examples/customer_support",
+    )
+
+
+def test_picking_shows_what_feeds_it_and_what_it_feeds(served) -> None:
+    """Context on demand: nothing extra is drawn until a box is picked, then its
+    neighbours are named in the detail and outlined on the canvas."""
+    report = _drive(served, _starter_scene("""
+      document.querySelector(".rc-unfold").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      setTimeout(() => {
+        log("outlinedBefore=" + document.querySelectorAll(".rc-flow.ctx").length);
+        const passages = [...document.querySelectorAll(".rc-flow")]
+          .find((g) => g.querySelector(".rc-flow-label")?.textContent === "Passages");
+        log("found=" + !!passages);
+        passages.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+        window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+        setTimeout(() => {
+          const sides = [...document.querySelectorAll(".rail-detail .flow-strip .flow-side")];
+          log("from=" + (sides[0] ? [...sides[0].querySelectorAll(".flow-neighbour")].map((c) => c.textContent).join("/") : "none"));
+          log("to=" + (sides[1] ? [...sides[1].querySelectorAll(".flow-neighbour")].map((c) => c.textContent).join("/") : "none"));
+          log("outlined=" + [...document.querySelectorAll(".rc-flow.ctx .rc-flow-label")].map((t) => t.textContent).sort().join("/"));
+          const risk = pickRisk();
+          risk.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+          window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+          setTimeout(() => {
+            log("concernStrip=" + !!document.querySelector(".rail-detail .flow-strip"));
+            log("concernOutlined=" + document.querySelectorAll(".rc-flow.ctx").length);
+          }, 900);
+        }, 900);
+      }, 900);
+    """))
+
+    fields = _fields(report)
+    assert fields["found"] == "true", fields
+    assert fields["outlinedBefore"] == "0", "context was drawn before anything was picked"
+    assert fields["from"] == "Find passages", fields
+    assert fields["to"] == "Build prompt", fields
+    assert fields["outlined"] == "Build prompt/Find passages", "the neighbours named are not the ones outlined"
+    assert fields["concernStrip"] == "true", "a picked concern does not say what surrounds its elements"
+    assert int(fields["concernOutlined"]) > 0, fields

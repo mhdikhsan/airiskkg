@@ -36,14 +36,6 @@ WHERE {
             ?actionBinding   pair:bindsPatternNode pat:ToolAgent_ActionStepNode ;
                              pair:matchedElement ?actionStep .
         }
-        UNION
-        {
-            ?match pair:hasNodeBinding ?planningBinding , ?actionBinding .
-            ?planningBinding pair:bindsPatternNode pat:Registry_CoordinatorNode ;
-                             pair:matchedElement ?planningStep .
-            ?actionBinding   pair:bindsPatternNode pat:Registry_ToolStepNode ;
-                             pair:matchedElement ?actionStep .
-        }
 
         ?planningStep beam:produce/^beam:use ?actionStep .
         ?actionStep beam:produce ?actionResult .

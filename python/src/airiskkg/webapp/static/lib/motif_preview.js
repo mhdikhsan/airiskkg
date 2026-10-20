@@ -204,10 +204,9 @@ export function motifPreview(template, options = {}) {
       }, text);
       span.textContent = line;
     });
+    // the part's name in this motif, and the role it matches on
     svgEl("title", {}, group).textContent = `${node.label} — ${node.cls}`
-      + (node.roles && node.roles.length ? ` · plays ${node.roles.join(", ")}` : "")
-      // What the declaration calls this node, when the role says something else.
-      + (node.note ? ` · declared as ${node.note}` : "");
+      + (node.roleLabel ? ` · tagged ${node.roleLabel}` : " · any role");
   });
   return svg;
 }

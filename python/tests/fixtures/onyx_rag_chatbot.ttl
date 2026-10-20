@@ -84,7 +84,6 @@ onyx:ConnectedSourceDocuments
 onyx:DocumentChunks
     a beam:Data ;
     rdfs:label "Document chunks"@en ;
-    pair:playsRole pair:DocumentChunk ;
     pair:containsDataCategory onyx:ConnectedWorkspaceContent ;
     pair:containsDataCategory onyx:ConnectedSensitiveWorkspaceContent ;
     pair:containsDataCategory pair:UntrustedContent ;
@@ -94,7 +93,6 @@ onyx:DocumentChunks
 onyx:ChunkEmbeddings
     a beam:Data ;
     rdfs:label "Chunk embeddings"@en ;
-    pair:playsRole pair:EmbeddingVector ;
     pair:containsDataCategory onyx:ConnectedWorkspaceContent ;
     beam:usedBy onyx:IndexInVespa .
 
@@ -142,7 +140,6 @@ onyx:RephrasedQuery
 onyx:QueryEmbedding
     a beam:Data ;
     rdfs:label "Query embedding"@en ;
-    pair:playsRole pair:EmbeddingVector ;
     pair:containsDataCategory pair:ExternalUserContent ;
     beam:usedBy onyx:HybridSearch .
 
