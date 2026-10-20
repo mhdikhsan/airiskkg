@@ -35,8 +35,9 @@ function initDivider() {
   const divider = $("#divider");
   const editorPane = $("#editor-pane");
   let dragging = false;
+  let width = "";   // the width the reader dragged to, kept while the editor is folded
   divider.addEventListener("pointerdown", (ev) => {
-    if (ev.target.closest("button")) return;
+    if (ev.target.closest("button") || document.body.classList.contains("editor-hidden")) return;
     dragging = true;
     try { divider.setPointerCapture(ev.pointerId); } catch (error) { /* already gone */ }
     document.body.classList.add("resizing");
@@ -46,7 +47,8 @@ function initDivider() {
     const main = $(".workbench");
     const rect = main.getBoundingClientRect();
     const ratio = Math.min(0.75, Math.max(0.2, (ev.clientX - rect.left) / rect.width));
-    editorPane.style.flex = `0 0 ${ratio * 100}%`;
+    width = `0 0 ${ratio * 100}%`;
+    editorPane.style.flex = width;
     GraphView.fit();
   });
   divider.addEventListener("pointerup", () => {
@@ -60,6 +62,8 @@ function initDivider() {
   const toggle = $("#btn-editor-toggle");
   const setEditorFolded = (folded) => {
     document.body.classList.toggle("editor-hidden", folded);
+    // an inline width beats the folded rule, so it is set aside while folded and put back after
+    editorPane.style.flex = folded ? "" : width;
     toggle.innerHTML = folded ? "&#8250;" : "&#8249;";
     toggle.title = folded ? "Show the editor" : "Hide the editor";
     // Both canvases size to their container, and the container just changed.

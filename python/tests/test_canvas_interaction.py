@@ -4686,3 +4686,24 @@ def test_descending_after_an_assessment_dims_nothing(scene_restored) -> None:
     time.sleep(2.5)
     dim = loop.run_until_complete(handle.js("document.querySelector('#viewport').classList.contains('has-highlight')"))
     assert not dim, "the opened architecture is greyed out"
+
+
+def test_a_resized_editor_still_folds_away(page) -> None:
+    """Dragging the divider wrote an inline width that beat the folded rule, so the
+    editor folded to its rail and kept all its room."""
+    loop, handle = page
+    width = "Math.round(document.querySelector('#editor-pane').getBoundingClientRect().width)"
+    divider = _spot(loop, handle, "document.querySelector('#divider')")
+    loop.run_until_complete(handle.drag(divider["x"], divider["y"] + 120, divider["x"] + 160, divider["y"] + 120))
+    time.sleep(0.6)
+    dragged = loop.run_until_complete(handle.js(width))
+    toggle = _spot(loop, handle, "document.querySelector('#btn-editor-toggle')")
+    loop.run_until_complete(handle.click(toggle["x"], toggle["y"]))
+    time.sleep(1)
+    folded = loop.run_until_complete(handle.js(width))
+    toggle = _spot(loop, handle, "document.querySelector('#btn-editor-toggle')")
+    loop.run_until_complete(handle.click(toggle["x"], toggle["y"]))
+    time.sleep(1)
+    back = loop.run_until_complete(handle.js(width))
+    assert folded < 80, f"the editor folded to {folded}px after a resize to {dragged}px"
+    assert abs(back - dragged) <= 4, f"unfolded to {back}px, not the {dragged}px it was resized to"
