@@ -710,13 +710,25 @@ export function createRiskCanvas() {
  
   let pendingFrame = 0;
 
-  function redraw() {
-    if (pendingFrame || !lastDraw) return;
+  function repaint() {
+    if (lastDraw.mode === "lens") canvas.renderLens(lastDraw.lens, { keepView: true });
+    else canvas.render(lastDraw.diagram, lastDraw.architecture,
+      { ...(lastDraw.options || {}), keepView: true });
+  }
+
+  /* A drag repaints once a frame; a pick or an outline is a single change and repaints at once. */
+  function redraw(now = false) {
+    if (!lastDraw) return;
+    if (now) {
+      if (pendingFrame) cancelAnimationFrame(pendingFrame);
+      pendingFrame = 0;
+      repaint();
+      return;
+    }
+    if (pendingFrame) return;
     pendingFrame = requestAnimationFrame(() => {
       pendingFrame = 0;
-      if (lastDraw.mode === "lens") canvas.renderLens(lastDraw.lens, { keepView: true });
-      else canvas.render(lastDraw.diagram, lastDraw.architecture,
-        { ...(lastDraw.options || {}), keepView: true });
+      repaint();
     });
   }
 
@@ -758,8 +770,9 @@ export function createRiskCanvas() {
       if (moved) return; // a move is a move, never also a selection
       selected = selected === id ? null : id;
       pickedLink = null;
-      redraw();
+      // the rail says what surrounds the pick first, so one paint carries both
       if (onSelect) onSelect(selected);
+      redraw(true);
     };
 
     window.addEventListener("pointermove", move);
@@ -806,8 +819,8 @@ export function createRiskCanvas() {
         if (selected !== null || pickedLink !== null) {
           selected = null;
           pickedLink = null;
-          redraw();
           if (onSelect) onSelect(null);
+          redraw(true);
         }
       });
 
@@ -851,7 +864,7 @@ export function createRiskCanvas() {
     select(id) {
       selected = id || null;
       pickedLink = null;
-      redraw();
+      redraw(true);
     },
 
     /* Outline these elements as the context of what is picked; [] clears it. */
@@ -941,7 +954,7 @@ export function createRiskCanvas() {
             standsFor: link.rolledUpIds || null,
           };
           if (onSelect) onSelect(null);
-          redraw();
+          redraw(true);
         });
         edgeLayer.appendChild(hit);
       }

@@ -419,6 +419,8 @@ export async function refreshPreview(ttl) {
     /* After the architecture is known, so the level decision has something to
      * go on rather than always believing the canvas is empty. */
     refreshProcess(ttl);
+    // the risk view reads the document too: a change made in the Turtle reaches it while it is on screen
+    if (state.level === "risk") refreshRegister().then(renderRisk);
     mapSource([...data.nodes, ...data.systems]);
     Editor.markErrorLine(null);
     renderSystemBar(data);

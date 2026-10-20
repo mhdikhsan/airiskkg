@@ -592,6 +592,9 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   impact still chains off the consequence. The live register has no run to say which concern
   holds a finding, so its line names the finding and `findingEnd` says which end; `mergeStated`
   in `risk.js` resolves it. No query reads either relation.
+- **The risk view follows the document while it is on screen** (2026-10-20). It re-read the
+  register only on a run, a risk edit or a level switch, so a stated risk pasted into the Turtle
+  never appeared. A pick and an outline repaint at once; only a drag waits for a frame.
 - **An element's flow is shown on demand, not drawn** (A-P1 decision 2, 2026-10-19). Picking an
   element or a concern adds a *flow* row to its detail (what feeds it, what it feeds, read off the
   architecture's own use/produce edges) and outlines those neighbours dashed on the canvas.
@@ -795,7 +798,10 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   screen pixels, so zoomed out one grows over a small data box or an activity's chip: a press on
   a data box's dot that goes nowhere opens the box's panel, and the chip is drawn above the dots.
   The data panel had also thrown on every linked box, because a local `options` shadowed the
-  helper of that name.
+  helper of that name. **A data box's dot is drawn behind the box** and only what sticks out of it
+  starts a connector, so a press on the box moves it: **a box a step uses is dragged like any
+  box** (2026-10-20, asked for), kept in `manualPositions`, and its association then runs between
+  the two boxes' rims. Drawn by every step that uses it, it moves from the copy grabbed.
 - **An activity's risk list names each risk once and wraps it**, without "Candidate" and with
   "×2" where a pattern recurs, in 11.5px; truncated at 34 characters it could not be read.
 
@@ -1198,7 +1204,9 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   `dispatchEvent(new MouseEvent(...))` lands on whatever element you name it at, so it proves
   nothing when pointer capture is retargeting real clicks. `test_canvas_interaction.py` drives
   the DevTools protocol; `test_canvas_renders.py` loads the page in a headless browser.
-  **Assert on what is painted.**
+  **Assert on what is painted.** `test_canvas_renders.py` and `test_risk_canvas.py` run Chrome with
+  `--dump-dom` under a virtual time budget, where **`requestAnimationFrame` never fires**: a
+  change painted only on a frame is invisible there, which is why a pick repaints at once.
 
 ---
 
@@ -1473,6 +1481,11 @@ nothing regenerates it.
   graph — callers parse an architecture into it — so **never return the cached instance**.
   Editing a `.ttl` in a live server needs `reload_knowledge_base()`; Flask's reloader watches
   Python only.
+- **A browser opens six connections to one host, and a request waiting on `SPARQL_LOCK` holds
+  one.** `loadAnnotationHints` sent `/api/validate` on every motif render, unthrottled; behind a
+  31 s assessment five of them queued and the sixth connection was the assessment, so loading an
+  example hung with nothing on the server to show for it. Anything the page sends on a redraw
+  keeps one request in flight and skips a document it already checked.
 - **`load_base_graph()` copies ~7 800 triples, so never call it inside a loop.** Resolve what
   you need from it once and cache that. `_is_data` asked it per resource and took
   `/api/process` from 0.02 s to **4.24 s**, which slowed the browser suites enough that ten of
@@ -1605,15 +1618,11 @@ building an approval inline.
 
 ### Test suite
 
-**566 of 704 tests** in ~13 min by default, and 138 browser tests in ~18 min (counted
-2026-10-19). Two browser tests fail on this branch before and after B-3/B-4:
-`test_the_detail_opens_folded_and_the_reader_chooses_what_to_read` (`KeyError: 'folds'`) and
-`test_one_attachment_comes_off_a_risk_and_the_risk_stays`, which passes on its own and fails in
-module order. **Open since 2026-10-19:** the scope and level tests in `test_canvas_interaction.py`
-fail in some full runs and not others (from 2 to 10 failures over the same code). Three causes
-were found and fixed: a possible-risk search left running for a page that had moved on, a scope
-naming a system the drawing no longer held, and `test_dragging_the_canvas_is_not_a_click`
-starting its pan on whatever box the fit put there. What is left starts with
-`test_the_risk_badge_folds_the_findings_it_counts` sometimes waiting longer than its 30 s for an
-assessment. **Do not run browser suites side by side**: under that load six scope tests fail
-on timing and the run took 55 min.
+**569 of 714 tests** by default, and 145 browser tests in ~30 min; all pass (counted
+2026-10-20, the first fully green run on this branch). The browser failures that came and went
+were each a test inheriting state an earlier one left: a canvas panned until the chip sat under
+the header, another level on screen, a motif match still picked, a concern raised in six places
+measured as if it were one, and one that clicked a stated risk where it meant a concern. And one
+was real: queued hint checks took every browser connection (see the six-connection trap above).
+**Do not run browser suites side by side**: under that load six scope tests fail on timing and
+the run took 55 min.

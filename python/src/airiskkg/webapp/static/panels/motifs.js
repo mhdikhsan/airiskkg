@@ -106,9 +106,31 @@ function renderMotifGaps(gaps) {
   });
 }
 
-async function loadAnnotationHints(ttl, gaps) {
+/* One check at a time, of the latest document: each waits for the server's lock, and
+ * a pile of them takes every connection the browser allows, so nothing else loads. */
+let hintsFor = null;
+let hintsRunning = false;
+let hintsWanted = null;
+
+async function loadAnnotationHints(ttl) {
+  if (ttl === hintsFor) return;
+  if (hintsRunning) { hintsWanted = ttl; return; }
+  hintsRunning = true;
+  try {
+    await checkAnnotations(ttl);
+  } finally {
+    hintsRunning = false;
+    const next = hintsWanted;
+    hintsWanted = null;
+    if (next) loadAnnotationHints(next);
+  }
+}
+
+async function checkAnnotations(ttl) {
   try {
     const report = await postJson("/api/validate", { ttl });
+    if (Editor.getValue().trim() !== ttl) return;
+    hintsFor = ttl;
     const next = new Map();
     const add = (items, severity) => (items || []).forEach((item) => {
       if (!item.focusNode || !item.guidance) return;
@@ -127,6 +149,7 @@ async function loadAnnotationHints(ttl, gaps) {
 
 export function clearMotifs() {
   annotationHints = new Map();
+  hintsFor = null;
   lastMatches = null;
   lastGaps = null;
   $("#motifs-list").innerHTML = "";
@@ -188,7 +211,7 @@ export function renderMotifs(matches, gaps, options = {}) {
   lastGaps = gaps;
   if (options.refetchHints !== false) {
     const ttl = Editor.getValue().trim();
-    if (ttl) loadAnnotationHints(ttl, gaps);
+    if (ttl) loadAnnotationHints(ttl);
   }
   const shown = onScreen(matches || [], (m) => m.nodeIds || []);
   const groups = groupBySystem(shown, (m) => m.nodeIds || []);

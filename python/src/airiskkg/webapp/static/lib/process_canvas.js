@@ -963,24 +963,48 @@ function dataAssociation(parent, x1, y1, x2, y2, both = false) {
   }, parent);
 }
 
-function drawData(parent, slot) {
+/* Where a line from the centre of `r` towards `toward` leaves `r`. */
+function rimPoint(r, toward, gap = 3) {
+  const cx = r.x + r.w / 2;
+  const cy = r.y + r.h / 2;
+  const dx = toward.x - cx;
+  const dy = toward.y - cy;
+  const length = Math.hypot(dx, dy);
+  if (!length) return { x: cx, y: cy };
+  const s = Math.min(dx ? (r.w / 2) / Math.abs(dx) : Infinity, dy ? (r.h / 2) / Math.abs(dy) : Infinity);
+  return { x: cx + dx * s + (dx / length) * gap, y: cy + dy * s + (dy / length) * gap };
+}
+
+function drawData(parent, slot, placed) {
   const items = dataOf(slot.item);
   if (!items.length || !slot.band) return;
   const spread = Math.min(slot.w / items.length, 92);
   items.forEach((item, seat) => {
-    const cx = slot.x + spread * (seat + 0.5) + (slot.w - spread * items.length) / 2;
-    const top = slot.y - slot.band + 6;
+    const hand = manualPositions.get(item.id);
+    const cx = hand ? hand.x + DATA_W / 2 : slot.x + spread * (seat + 0.5) + (slot.w - spread * items.length) / 2;
+    const top = hand ? hand.y : slot.y - slot.band + 6;
     const g = dataGlyph(parent, cx - DATA_W / 2, top, item);
     // The same box, the same editor, whether it was placed or born in a step.
     g.setAttribute("data-node", item.id);
+    g.setAttribute("data-at", `${cx - DATA_W / 2},${top}`);
     wireDataNode(g, { ...item, links: item.links || [{ direction: item.direction }] },
       { x: cx - DATA_W / 2, y: top });
-    if (item.direction === "both") {
-      dataAssociation(g, cx, top + DATA_H + 2, cx, slot.y - 4, true);
-    } else if (item.direction === "in") {
-      dataAssociation(g, cx, top + DATA_H + 2, cx, slot.y - 4);
+    placed.set(item.id, {
+      x: cx - DATA_W / 2, y: top, w: DATA_W, h: DATA_H,
+      item: { id: item.id, label: item.label, shape: "data" },
+    });
+    let [boxEnd, stepEnd] = [{ x: cx, y: top + DATA_H + 2 }, { x: cx, y: slot.y - 4 }];
+    if (hand) {
+      // moved by hand: the line runs between the two boxes, whichever side they face
+      const box = { x: cx - DATA_W / 2, y: top, w: DATA_W, h: DATA_H };
+      const step = { x: slot.x, y: slot.y, w: slot.w, h: slot.h };
+      boxEnd = rimPoint(box, { x: step.x + step.w / 2, y: step.y + step.h / 2 });
+      stepEnd = rimPoint(step, { x: cx, y: top + DATA_H / 2 });
+    }
+    if (item.direction === "out") {
+      dataAssociation(g, stepEnd.x, stepEnd.y, boxEnd.x, boxEnd.y);
     } else {
-      dataAssociation(g, cx, slot.y - 4, cx, top + DATA_H + 2);
+      dataAssociation(g, boxEnd.x, boxEnd.y, stepEnd.x, stepEnd.y, item.direction === "both");
     }
     wrap(item.label, 16, 2).forEach((line, row) => {
       centred(g, cx, top + DATA_H + 13 + row * 11, line, "pc-data-label");
@@ -1890,6 +1914,8 @@ function wireDataNode(group, entry, at) {
     cx: at.x + DATA_W + 4, cy: at.y + DATA_H / 2, r: PORT_SCREEN_R, class: "pc-port-dot",
   }, dot);
   node("title", {}, dot).textContent = "Drag onto a step: out of here is a read, into here a write";
+  // behind the box: zoomed out the dot outgrows it, and a press on the box itself moves the box
+  group.insertBefore(dot, group.firstChild);
   dot.addEventListener("pointerdown", (ev) => {
     ev.stopPropagation();
     // the dot covers much of a small box: a press that goes nowhere is a click on the box
@@ -2300,7 +2326,7 @@ function draw() {
     inFront.forEach((item) => {
       const slot = placed.get(item.id);
       if (!slot) return;
-      if (item.shape === "activity") drawData(group, slot);
+      if (item.shape === "activity") drawData(group, slot, placed);
       const drawn = drawFlowNode(group, slot);
       drawn.setAttribute("data-node", item.id);
       if (item.shape === "event" || item.shape === "gateway") wireSimpleNode(drawn, slot);
@@ -2734,7 +2760,10 @@ function initPanZoom() {
 
     const hit = ev.target.closest("[data-node]");
     const box = hit && hit.getAttribute("data-node");
-    const drawnAt = box ? currentPlacement(box) : null;
+    // a data box drawn by each step that uses it moves from the copy that was grabbed
+    const own = hit && hit.getAttribute("data-at");
+    const drawnAt = !box ? null
+      : own ? (([x, y]) => ({ x, y }))(own.split(",").map(Number)) : currentPlacement(box);
     const strip = ev.target.closest(
       ".pc-pool-strip, .pc-lane-strip, .pc-pool-label, .pc-lane-label");
     const bandId = strip ? strip.closest("[data-band]")?.getAttribute("data-band") : null;
@@ -2841,11 +2870,11 @@ function initPanZoom() {
   }, { passive: false });
 }
 
-/* Grouped the way a BPMN palette is: what starts and ends a process, what
- * splits it, what does the work, and what says something about it. */
+/* Grouped by BPMN's own categories: participants (pools and lanes), events,
+ * gateways, activities, data, and artifacts, which say something about a step. */
 const PALETTE = [
-  { group: "Pool", op: "add-pool", label: "Participant", hint: "A pool: an actor with a boundary" },
-  { group: "Pool", op: "add-lane", label: "Lane", hint: "A band inside a pool: who does the work" },
+  { group: "Participants", op: "add-pool", label: "Pool", hint: "A participant: an actor with a boundary" },
+  { group: "Participants", op: "add-lane", label: "Lane", hint: "A band inside a pool: who does the work" },
 
   { group: "Events", op: "add-event", kind: "startEvent", label: "Start",
     hint: "Where the process begins" },
@@ -2891,13 +2920,13 @@ const PALETTE = [
   { group: "Activities", kind: "transaction", label: "Transaction",
     hint: "Completes as a whole or compensates" },
 
-  { group: "Artifacts", op: "add-annotation", label: "Note",
-    hint: "A text annotation: says something about a step without being one" },
-  
-  { group: "Artifacts", op: "add-data", shape: "object", label: "Document",
-    hint: "A data object: what a step reads or writes" },
-  { group: "Artifacts", op: "add-data", shape: "store", label: "Data store",
-    hint: "A data store: outlives any one run of the process" },
+  { group: "Data", op: "add-data", shape: "object", label: "Data object",
+    hint: "What a step reads or writes" },
+  { group: "Data", op: "add-data", shape: "store", label: "Data store",
+    hint: "Outlives any one run of the process" },
+
+  { group: "Artifacts", op: "add-annotation", label: "Text annotation",
+    hint: "Says something about a step without being one" },
 ];
 
 /* The palette draws the shape it inserts, at the size it can be recognised at. */

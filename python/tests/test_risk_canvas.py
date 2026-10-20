@@ -605,23 +605,11 @@ def test_the_detail_opens_folded_and_the_reader_chooses_what_to_read(served) -> 
     """
     report = _drive(served, _scene("""
       // The canvas picks a box on pointerdown then pointerup, never on click.
-      // A hand-written risk, because its panel is where the three tiers meet:
-      // Apply is a primary button, Connect a plain one, remove this a chip.
-      fetch("/api/scope-edit", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ttl: window.PairAI.Editor.getValue(), op: "state-concept",
-          kind: "risk", label: "Sizing probe",
-        }),
-      }).then((r) => r.json()).then((made) => {
-        window.PairAI.Editor.setValue(made.ttl);
-        setTimeout(() => {
-          const card = [...document.querySelectorAll("#risk-canvas .rc-card")]
-            .find((c) => c.querySelector(".rc-title")?.textContent === "Sizing probe");
-          log("probeDrawn=" + !!card);
-          card.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-          window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
-          setTimeout(() => {
+      const card = pickRisk();
+      log("probeDrawn=" + !!card);
+      card.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+      setTimeout(() => {
         const folds = [...document.querySelectorAll(".rail-detail .concern-fold")];
         log("folds=" + folds.length);
         log("openAtFirst=" + folds.filter((f) => f.open).length);
@@ -642,8 +630,6 @@ def test_the_detail_opens_folded_and_the_reader_chooses_what_to_read(served) -> 
           log("whyShownAfterClick=" + (why ? shown(why) : "none"));
         }, 300);
       }, 900);
-        }, 2600);
-      });
     """))
 
     fields = _fields(report)
