@@ -396,12 +396,16 @@ function drawSystemBounds(layer) {
       showSystemDetail(system, ev);
     });
 
-    group.style.cursor = "pointer";
-    group.addEventListener("click", (ev) => {
-      // A click inside the frame lands on the element there, not on the frame.
+    group.style.cursor = "move";
+    // A press inside the frame on an element is the element's; on the frame itself,
+    // a drag moves the whole system and a click selects it.
+    group.addEventListener("pointerdown", (ev) => {
       if (ev.target.closest(".node, .system-bound-edit")) return;
       ev.stopPropagation();
-      selectSystem(system.id === selectedSystem ? null : system.id);
+      startFrameDrag(ev, system);
+    });
+    group.addEventListener("click", (ev) => {
+      if (!ev.target.closest(".node, .system-bound-edit")) ev.stopPropagation();
     });
 
     /* Remembered so the fit can see it. The content bounds are the nodes, and a
@@ -531,6 +535,35 @@ function toSvgPoint(clientX, clientY) {
   return pt.matrixTransform(svg.getScreenCTM().inverse());
 }
 
+// Drag a system's frame: every element it holds moves with it (view-only, like a node).
+function startFrameDrag(ev, system) {
+  const startPt = toSvgPoint(ev.clientX, ev.clientY);
+  const members = (system.members || []).filter((id) => positions.has(id));
+  const orig = new Map(members.map((id) => [id, { x: positions.get(id).x, y: positions.get(id).y }]));
+  let moved = false;
+  const move = (mv) => {
+    const pt = toSvgPoint(mv.clientX, mv.clientY);
+    const dx = pt.x - startPt.x;
+    const dy = pt.y - startPt.y;
+    if (!moved && Math.hypot(dx, dy) < 4) return;
+    moved = true;
+    detailBox.classList.add("hidden");
+    for (const [id, from] of orig) {
+      const next = { ...positions.get(id), x: Math.round(from.x + dx), y: Math.round(from.y + dy) };
+      positions.set(id, next);
+      manualPositions.set(id, { x: next.x, y: next.y });
+    }
+    draw();
+  };
+  const up = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    if (!moved) selectSystem(system.id === selectedSystem ? null : system.id);
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up);
+}
+
 // Drag a node to reposition it (view-only; never edits the graph).
 function startDrag(ev, node) {
   const startPt = toSvgPoint(ev.clientX, ev.clientY);
@@ -632,7 +665,7 @@ function startConnect(ev, sourceNode) {
 function paintHighlight() {
   if (!viewport) return;
   const active = highlighted.size > 0;
-  viewport.classList.toggle("has-highlight", active);
+  viewport.classList.toggle("has-highlight", active && dimming);
   for (const group of viewport.querySelectorAll(".node")) {
     group.classList.toggle("highlight", highlighted.has(group.dataset.id));
   }
@@ -912,10 +945,13 @@ function zoomBy(factor) {
 }
 
 // evidence highlighting 
-function setHighlight(ids) {
+let dimming = true;   // a highlight dims the rest unless it only points something out
+
+function setHighlight(ids, { dim = true } = {}) {
   selectedId = null;
   picked = new Set();
   highlighted = new Set(ids || []);
+  dimming = dim;
   paintHighlight();
 }
 

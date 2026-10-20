@@ -345,12 +345,12 @@ export const MultiPicker = function (items, selectedIds, opts) {
   function fill(level) {
     const { rows, panel } = levels[level];
     rows.forEach((it, at) => {
-      const below = under(it);
+      const below = it.self ? [] : under(it);
       const chosen = selected.has(it.id);
       const off = level === 0 ? rankOf(it) > 1 : !fits(it, opts);
       const kind = level === 0 && it.id !== OTHER_ID ? shelfKind(it) : null;
       panel.appendChild(el("div", {
-        class: "mp-row" + (it.category ? " folder" : "") + (off ? " off" : "")
+        class: "mp-row" + (it.self ? " self" : "") + (it.category ? " folder" : "") + (off ? " off" : "")
           + (chosen ? " chosen" : "") + (canPick(it) ? " pick" : ""),
         role: "menuitem",
         "aria-haspopup": below.length ? "menu" : null,
@@ -360,7 +360,7 @@ export const MultiPicker = function (items, selectedIds, opts) {
         onclick: (e) => { e.stopPropagation(); choose(level, at); },
       }, [
         kind ? el("span", { class: "lib-swatch " + kind }) : null,
-        el("span", { class: "mp-row-label" }, it.label),
+        el("span", { class: "mp-row-label" }, it.self ? `Use ${it.label}` : it.label),
         chosen ? el("span", { class: "mp-row-note" }, "added") : null,
         off && level === 0 ? el("span", { class: "mp-row-note" }, "not this element") : null,
         below.length ? el("span", {
@@ -389,7 +389,7 @@ export const MultiPicker = function (items, selectedIds, opts) {
     hint.innerHTML = "";
     if (!it) {
       hint.appendChild(el("span", { class: "mp-hint-empty" },
-        "Point at a term to read what it means. A row with an arrow opens what refines it."));
+        "Point at a term to read what it means. A row with an arrow can be picked too; its list opens with the role itself at the top."));
       return;
     }
     hint.appendChild(el("span", { class: "mp-hint-label" }, it.label));
@@ -421,8 +421,10 @@ export const MultiPicker = function (items, selectedIds, opts) {
     const next = levels[level + 1];
     if (next && next.parent === it.id) return;
     closeFrom(level + 1);
-    const rows = under(it);
-    if (!rows.length) { markTree(); return; }
+    const children = under(it);
+    if (!children.length) { markTree(); return; }
+    // a role that has more specific ones is still a role: it heads its own submenu, ready to pick
+    const rows = canPick(it) ? [{ ...it, self: true }, ...children] : children;
     const panel = el("div", {
       class: "mp-fly mp-list", role: "menu",
       onmouseenter: () => clearTimeout(timer),
@@ -447,7 +449,7 @@ export const MultiPicker = function (items, selectedIds, opts) {
     const wait = levels.length > level + 1 ? 160 : 40;
     timer = setTimeout(() => {
       if (!levels[level] || levels[level].rows[at] !== it) return;
-      if (under(it).length) expand(level, at);
+      if (!it.self && under(it).length) expand(level, at);
       else { closeFrom(level + 1); markTree(); }
     }, wait);
   }

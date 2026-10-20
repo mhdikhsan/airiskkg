@@ -12,7 +12,7 @@ import {
   askAgain, refreshPreview, refreshSystemBar, resetScope, setLevel, settleChoice, startDrawing,
 } from "./panels/canvas.js";
 import { clearDerivedCategories, renderDerivedCategories } from "./panels/dataflow.js";
-import { clearFindings, reReadFindings, renderFindings } from "./panels/findings.js";
+import { clearFindings, forgetPickedFinding, reReadFindings, renderFindings } from "./panels/findings.js";
 import { renderHistory } from "./panels/history.js";
 import { closeLibrary, initLibrary, isFrontDoor, isLibraryOpen, libraryBack, openLibrary } from "./panels/library.js";
 import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
@@ -154,7 +154,8 @@ async function init() {
       Annotate.refresh();
       // last, because redrawing the canvas clears any highlight
       if (state.highlightOnScope) {
-        GraphView.setHighlight(state.highlightOnScope);
+        // pointed out, not singled out: the rest of the architecture stays readable
+        GraphView.setHighlight(state.highlightOnScope, { dim: false });
         state.highlightOnScope = null;
       }
     });
@@ -231,6 +232,7 @@ async function init() {
       setLevel("architecture", activity);
       // the steps it names, when it names them: that is where its work is drawn
       state.highlightOnScope = (activity.steps || []).length ? activity.steps : null;
+      forgetPickedFinding();
       emit("scope:changed");
       GraphView.setHighlight([]);
       revealInSource((activity.steps || []).length ? activity.steps : activity.refines);

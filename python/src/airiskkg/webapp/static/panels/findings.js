@@ -230,6 +230,12 @@ export function clearFindings() {
   ProcessCanvas.setFindings([]);
 }
 
+/* A reader who opens another activity asks a new question: the finding they had picked is let go. */
+export function forgetPickedFinding() {
+  selectedIds = null;
+  selectedFinding = null;
+}
+
 export function reReadFindings() {
   // Nothing is re-run: the findings are the same, the question is narrower.
   if (!state.lastAssessment) return;

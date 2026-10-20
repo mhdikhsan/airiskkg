@@ -697,6 +697,14 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   newline, which the client's `getValue() || prefix` fallback does not catch — so every add
   after that failed with "Provide a graph to edit" until a reload. Reported by a partner
   tester as a show stopper. `test_architecture_editing.py` holds it.
+- **A system moves with its frame** (2026-10-20, asked for). A press on a frame's own area
+  drags every element it holds (view state, like a dragged element); a press that does not move
+  selects the system as before. This is how a reader separates systems that overlap after
+  their parts were arranged in a narrower view.
+- **A highlight that points something out does not dim the rest.** `setHighlight(ids, { dim:
+  false })` outlines the steps an activity names when the chip opens its architecture, and
+  opening another activity lets go of the finding picked before, which otherwise came back on
+  the redraw and greyed the architecture until a click on blank canvas.
 - **An element always lands in a system.** With none in the graph, `add-element` makes
   "My system" exactly as `add-motif` always did (`_system_for_new_elements`), because an
   element in no system cannot be named by a business activity. The system bar, with its
@@ -783,6 +791,11 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   never overrides a level chosen by hand. `test_an_edit_on_the_process_canvas_keeps_the_process_level`
   fails on the old code. **A scope naming a system the drawing no longer holds is dropped**: it
   drew an empty canvas under a badge naming the system that was left (reported 2026-10-19).
+- **A connector dot never takes a click from what it sits on** (2026-10-20). Dots are sized in
+  screen pixels, so zoomed out one grows over a small data box or an activity's chip: a press on
+  a data box's dot that goes nowhere opens the box's panel, and the chip is drawn above the dots.
+  The data panel had also thrown on every linked box, because a local `options` shadowed the
+  helper of that name.
 - **An activity's risk list names each risk once and wraps it**, without "Candidate" and with
   "×2" where a pattern recurs, in 11.5px; truncated at 34 characters it could not be read.
 
@@ -1010,7 +1023,9 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   that nothing can match it yet). The two roles above the categories (Processing Step, Resource
   Role) are not offered. A role that does not fit the element but
   leads to one that does is drawn dimmed as the way there and opens rather than picks until
-  *Show more*. Typing turns the menu back into one list, shelved by category, with definitions;
+  *Show more*. **A role that has finer roles heads its own submenu** as "Use <role>" (2026-10-20):
+  an arrow read as "cannot stop here", so Generative Model looked unpickable beside Foundation
+  LLM. Typing turns the menu back into one list, shelved by category, with definitions;
   while pointing, the hint strip carries the definition. **A submenu keeps the side its cascade
   started on**, or the third menu lands back on the first. Data categories stay a flat list.
   `test_the_role_menu_cascades_from_category_to_the_role_that_refines_it` drives it with real

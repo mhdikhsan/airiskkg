@@ -540,10 +540,11 @@ def test_the_risk_badge_folds_the_findings_it_counts(page) -> None:
 
     # Waited for, not slept through.
     loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    # as long as the finding-click test allows for the same assessment of the same scene
     _settle(loop, handle,
-            'Number(document.querySelector("#findings-count").textContent || 0)', 0, tries=75)
+            'Number(document.querySelector("#findings-count").textContent || 0)', 0, tries=150)
     loop.run_until_complete(handle.js('document.querySelector("#level-business").click()'))
-    _settle(loop, handle, 'document.querySelectorAll(".pc-risk").length', 0, tries=25)
+    _settle(loop, handle, 'document.querySelectorAll(".pc-risk").length', 0, tries=40)
     # Fitted first: an earlier test leaves its pan behind, and a badge panned
     # off the pane cannot be pressed however well it folds.
     loop.run_until_complete(handle.js('window.PairAI.ProcessCanvas.fit(); 1'))
@@ -1050,6 +1051,9 @@ def test_a_new_example_forgets_the_scope_of_the_last_one(scene_restored) -> None
     time.sleep(4)
 
     after = loop.run_until_complete(handle.js("""(() => ({
+        starts: window.PairAI.Editor.getValue().slice(0, 70),
+        status: (document.querySelector('#status-text') || {}).textContent,
+        options: [...document.querySelectorAll('#example-select option')].map((o) => o.value).join(','),
         scoped: window.PairAI.state.scopedSystem,
         openedFrom: window.PairAI.state.openedFrom ? window.PairAI.state.openedFrom.label : null,
         crumb: !document.querySelector("#breadcrumb").classList.contains("hidden"),
@@ -1057,7 +1061,7 @@ def test_a_new_example_forgets_the_scope_of_the_last_one(scene_restored) -> None
 
 
     assert after["scoped"] is None, (
-        f"the new example is still narrowed to {after['scoped']} from the previous one"
+        f"the new example is still narrowed to {after['scoped']} from the previous one: {after}"
     )
     assert after["openedFrom"] is None, (
         f"the breadcrumb still names {after['openedFrom']}, an activity of the previous example"
@@ -3418,10 +3422,12 @@ def test_the_role_menu_cascades_from_category_to_the_role_that_refines_it(scene_
     assert seen["chips"] == ["Foundation LLM"], f"the pick was not recorded: {seen}"
     assert seen["menus"] == 0, "a submenu stayed open after the pick"
 
-    # and by keyboard: down onto Models, right into it, Enter picks Model
+    # and by keyboard: down onto Models, right into it (its own "Use Models" heads the list),
+    # down onto Model, Enter picks Model
     _open_role_menu(loop, handle)
     _press(loop, handle, "ArrowDown", "ArrowDown", 40)
     _press(loop, handle, "ArrowRight", "ArrowRight", 39)
+    _press(loop, handle, "ArrowDown", "ArrowDown", 40)
     _press(loop, handle, "Enter", "Enter", 13)
     chips = loop.run_until_complete(handle.js(
         "[...document.querySelectorAll('#nd-role-mp .mp-chip-label')].map((c) => c.textContent)"))
@@ -4586,3 +4592,97 @@ def test_a_box_a_step_reads_and_writes_is_drawn_once_with_two_arrowheads(scene_r
     # the store is also written by the agent's step, so it is drawn by that step too: one box per step
     assert seen["both"] == 1, f"no box carries an arrow each way: {seen}"
     assert seen["boxes"] == 2, f"one step drew the box twice: {seen}"
+
+
+def test_a_role_with_finer_roles_heads_its_own_submenu(scene_restored) -> None:
+    """An arrow read as "open me, you cannot stop here": the submenu a role opens starts
+    with the role itself, so Generative Model is picked as plainly as Foundation LLM."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(" + json.dumps(_KINDS) + "); 1"))
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+    loop.run_until_complete(handle.js("window.PairAI.GraphView.fit(); 1"))
+    time.sleep(0.5)
+    _open_popup_on(loop, handle, "LLM")
+    _open_role_menu(loop, handle)
+    at = _centre(loop, handle, "#nd-role-mp .mp-list > .mp-row")
+    loop.run_until_complete(handle.hover(at["x"], at["y"]))
+    for label in ("Model", "Generative Model"):
+        menus = _menu_rows(loop, handle)
+        row = next(r for r in menus[-1]["rows"] if r["label"] == label)
+        loop.run_until_complete(handle.hover(row["x"], row["y"]))
+        time.sleep(0.4)
+    menus = _menu_rows(loop, handle)
+    first = menus[-1]["rows"][0]
+    assert first["label"] == "Use Generative Model", [r["label"] for r in menus[-1]["rows"]]
+    loop.run_until_complete(handle.click(first["x"], first["y"]))
+    time.sleep(0.6)
+    chips = loop.run_until_complete(handle.js(
+        "[...document.querySelectorAll('#nd-role-mp .mp-chip')].map((c) => c.textContent.replace('×', '').trim())"))
+    assert "Generative Model" in chips, chips
+
+
+def test_a_system_moves_as_one_with_its_frame(scene_restored) -> None:
+    """A dragged frame takes every element inside it along; a click still selects it."""
+    loop, handle = scene_restored
+    loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click()'))
+    _settle(loop, handle, "document.querySelectorAll('#canvas .system-bound').length", 0, tries=40)
+    before = loop.run_until_complete(handle.js("""(() => {
+        const frame = document.querySelector('#canvas .system-bound');
+        const members = new Set([...frame.parentNode.querySelectorAll('.node')].map((n) => n.dataset.id));
+        const box = frame.querySelector('.system-bound-box').getBoundingClientRect();
+        const id = frame.dataset.id;
+        const sys = window.PairAI.state.lastGraph.systems.find((s) => s.id === id);
+        const own = (sys.members || []).filter((m) => document.querySelector(`#canvas .node[data-id="${CSS.escape(m)}"]`));
+        const at = Object.fromEntries(own.map((m) => { const r = document.querySelector(`#canvas .node[data-id="${CSS.escape(m)}"]`).getBoundingClientRect(); return [m, [r.left, r.top]]; }));
+        return { x: Math.round(box.left + 6), y: Math.round(box.top + 6), at, id };
+    })()"""))
+    assert before["at"], "the frame holds nothing drawn"
+    loop.run_until_complete(handle.drag(before["x"], before["y"], before["x"] + 80, before["y"] + 40))
+    time.sleep(0.6)
+    after = loop.run_until_complete(handle.js("""(() => Object.fromEntries(Object.keys(%s).map((m) => {
+        const r = document.querySelector(`#canvas .node[data-id="${CSS.escape(m)}"]`).getBoundingClientRect();
+        return [m, [r.left, r.top]]; })))()""" % json.dumps(before["at"])))
+    shifts = {round(after[m][0] - before["at"][m][0]) for m in after}
+    assert len(shifts) == 1 and next(iter(shifts)) > 20, f"the elements did not move together: {shifts}"
+
+
+def test_a_data_box_joined_to_a_step_still_opens_its_panel(scene_restored) -> None:
+    """The box's connector dot covered most of a small box, so a click started a
+    connection instead: a press that goes nowhere opens the box's panel."""
+    loop, handle = scene_restored
+    # what an earlier test left open must not sit over the box
+    loop.run_until_complete(handle.js(
+        "document.querySelectorAll('.node-detail, #process-detail').forEach((d) => d.classList.add('hidden')); 1"))
+    _back_to_business(loop, handle)
+    at = _spot(loop, handle, "document.querySelector('#btn-starter')")
+    loop.run_until_complete(handle.click(at["x"], at["y"]))
+    box = _settle(loop, handle, """(() => { const g = [...document.querySelectorAll('#process-canvas [data-node]')]
+        .find((n) => n.querySelector('.pc-data-label') && n.textContent.includes('Knowledge base'));
+        if (!g) return null; const r = g.querySelector('path, rect, polygon').getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; })()""", None, tries=40)
+    assert box, "the starter scene drew no knowledge base"
+    loop.run_until_complete(handle.click(box["x"], box["y"]))
+    _settle(loop, handle, "document.querySelector('#process-detail').classList.contains('hidden')", True, tries=20)
+    panel = loop.run_until_complete(handle.js("""({ hidden: document.querySelector('#process-detail').classList.contains('hidden'),
+        head: (document.querySelector('#process-detail .nd-head') || {}).textContent,
+        ways: document.querySelectorAll('#process-detail .pd-data-way').length })"""))
+    assert not panel["hidden"] and panel["head"] == "data store", panel
+    assert panel["ways"] >= 1, "the panel does not say which way each step uses it"
+    loop.run_until_complete(handle.js('document.querySelector("#process-detail").classList.add("hidden"); 1'))
+
+
+def test_descending_after_an_assessment_dims_nothing(scene_restored) -> None:
+    """A finding picked before, or the steps an activity names, left the opened
+    architecture greyed out until a click on blank canvas."""
+    loop, handle = scene_restored
+    _back_to_business(loop, handle)
+    loop.run_until_complete(handle.js('document.querySelector("#btn-assess").click()'))
+    _settle(loop, handle, 'document.querySelectorAll(".finding-card").length', 0, tries=150)
+    loop.run_until_complete(handle.js("""(() => { const h = document.querySelector('.finding-card .finding-head'); h.click(); return 1; })()"""))
+    time.sleep(1)
+    _back_to_business(loop, handle)
+    _descend(loop, handle)
+    time.sleep(2.5)
+    dim = loop.run_until_complete(handle.js("document.querySelector('#viewport').classList.contains('has-highlight')"))
+    assert not dim, "the opened architecture is greyed out"

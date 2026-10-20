@@ -217,7 +217,7 @@ function processRow(activity, depth) {
     row.addEventListener("click", () => {
       setLevel("architecture", activity);
       const own = (activity.steps || []).length ? activity.steps : activity.refines;
-      GraphView.setHighlight(own);
+      GraphView.setHighlight(own, { dim: false });
       revealInSource(own);
     });
     row.title = "Open the AI architecture this activity is carried out by";

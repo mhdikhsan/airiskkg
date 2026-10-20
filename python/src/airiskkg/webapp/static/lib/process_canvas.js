@@ -15,6 +15,7 @@ const COLLAPSED_H = 46;  // a black-box pool: the band and its name, nothing ins
 const LINE_H = 14;
 const DATA_W = 30;
 const DATA_H = 36;
+const TAP_SLOP = 5;   // a press that moves less than this is a click, not a drag
 const DATA_BAND = 92;
 const NOTE_W = 150;
 const RISK_LINE_H = 14;
@@ -1134,6 +1135,9 @@ function drawActivity(parent, slot) {
     });
     node("title", {}, mail).textContent =
       "Drag onto a step in another participant to send it a message";
+    // a dot sized in screen pixels grows over the chip when zoomed out: the chip stays on top
+    const chipNode = group.querySelector(":scope > .pc-open");
+    if (chipNode) group.appendChild(chipNode);
 
     /* Clicking the box selects it and reveals the line that declares it. */
     group.addEventListener("click", (ev) => {
@@ -1445,12 +1449,12 @@ function svgPoint(clientX, clientY) {
 }
 
 /* `kind` is "message" from the bottom port; otherwise the pools decide. */
-function startConnect(ev, item, slot, kind = null) {
+function startConnect(ev, item, slot, kind = null, onTap = null) {
   const line = node("path", { class: "pc-flow pending" + (kind ? ` ${kind}` : "") }, root);
   const from = kind === "message"
     ? { x: slot.x + slot.w / 4, y: slot.y + (slot.head || slot.h) }
     : { x: slot.x + slot.w, y: slot.y + (slot.head || slot.h) / 2 };
-  connecting = { from: item, slot, line, id: ev.pointerId, kind, anchor: from };
+  connecting = { from: item, slot, line, id: ev.pointerId, kind, anchor: from, onTap, at: [ev.clientX, ev.clientY] };
   // Held for the length of the drag so it survives leaving the port, and
   // released in endConnect - a capture left standing swallows every later
   // click on the canvas.
@@ -1466,11 +1470,15 @@ function moveConnect(ev) {
 
 async function endConnect(ev) {
   if (!connecting) return;
-  const { from, line, id, kind } = connecting;
+  const { from, line, id, kind, onTap, at } = connecting;
   connecting = null;
   line.remove();
   try { svg.releasePointerCapture(id); } catch (error) { /* already gone */ }
   swallowNextClick = true;
+  if (onTap && Math.hypot(ev.clientX - at[0], ev.clientY - at[1]) < TAP_SLOP) {
+    onTap(ev);
+    return;
+  }
   const dropped = document.elementFromPoint(ev.clientX, ev.clientY);
   // The id travels on the element, so a drop lands on the node under the
   // pointer rather than on whatever was drawn in that position.
@@ -1746,7 +1754,7 @@ function showDataDetail(shown, ev) {
     .filter((row) => row.activity);
   const carryTo = usedBy.find((row) => (row.activity.refines || []).length === 1);
   const systemName = carryTo ? ((systems || []).find((s) => s.id === carryTo.activity.refines[0]) || {}).label : null;
-  const options = classOptions(entry.kinds[0] || "");
+  const holds = classOptions(entry.kinds[0] || "");
   panel.innerHTML = `
     <div class="nd-head">${entry.store ? "data store" : "data object"}</div>
     <label class="nd-row"><span>Name</span>
@@ -1757,7 +1765,7 @@ function showDataDetail(shown, ev) {
         <option value="store"${entry.store ? " selected" : ""}>Data store</option>
       </select></label>
     <label class="nd-row"><span>Holds</span>
-      <select id="pd-data-class">${options}</select></label>
+      <select id="pd-data-class">${holds}</select></label>
     <div class="nd-source">${entry.kinds.length
       ? escapeHtml(dpvIriFor(entry.kinds[0]))
       : "classified with DPV terms"}</div>
@@ -1879,13 +1887,15 @@ function wireDataNode(group, entry, at) {
   if (!onEdit) return;
   const dot = node("g", { class: "pc-port", cursor: "crosshair" }, group);
   node("circle", {
-    cx: at.x + DATA_W, cy: at.y + DATA_H / 2, r: PORT_SCREEN_R, class: "pc-port-dot",
+    cx: at.x + DATA_W + 4, cy: at.y + DATA_H / 2, r: PORT_SCREEN_R, class: "pc-port-dot",
   }, dot);
   node("title", {}, dot).textContent = "Drag onto a step: out of here is a read, into here a write";
   dot.addEventListener("pointerdown", (ev) => {
     ev.stopPropagation();
+    // the dot covers much of a small box: a press that goes nowhere is a click on the box
     startConnect(ev, { id: entry.id, label: entry.label },
-      { x: at.x, y: at.y, w: DATA_W, h: DATA_H, head: DATA_H });
+      { x: at.x, y: at.y, w: DATA_W, h: DATA_H, head: DATA_H }, null,
+      (up) => { if (onSelect) onSelect(entry.id); showDataDetail(entry, up); });
   });
   group.setAttribute("cursor", "pointer");
   group.addEventListener("click", (ev) => {
