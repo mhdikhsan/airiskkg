@@ -704,6 +704,13 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   drags every element it holds (view state, like a dragged element); a press that does not move
   selects the system as before. This is how a reader separates systems that overlap after
   their parts were arranged in a narrower view.
+- **An addition keeps the reader's view, and a dragged spot dies with its element** (2026-10-20,
+  reported). A new element takes the lowest free id (`local:e0`, `e1`, ...), so a motif added
+  after a delete stood where the deleted, dragged elements had: a frame drag pins every member.
+  `render()` drops a manual position whose element is gone (unless scoped), `fit()` never
+  draws larger than drawn size, and an addition (or removal) that fits on screen does not refit:
+  one that does not is panned into view at the same zoom, zoomed out to only when it cannot fit.
+  Anything that is not a pure addition or removal is another drawing and is fitted afresh.
 - **A highlight that points something out does not dim the rest.** `setHighlight(ids, { dim:
   false })` outlines the steps an activity names when the chip opens its architecture, and
   opening another activity lets go of the finding picked before, which otherwise came back on

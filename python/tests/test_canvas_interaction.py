@@ -4783,3 +4783,67 @@ def test_a_resized_editor_still_folds_away(page) -> None:
     back = loop.run_until_complete(handle.js(width))
     assert folded < 80, f"the editor folded to {folded}px after a resize to {dragged}px"
     assert abs(back - dragged) <= 4, f"unfolded to {back}px, not the {dragged}px it was resized to"
+
+
+_ADD = """(async (op) => {
+    const r = await fetch('/api/graph-edit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ttl: window.PairAI.Editor.getValue() || '@prefix beam: <http://w3id.org/beam/core#> .', ...op }) });
+    const j = await r.json(); if (j.ttl) window.PairAI.Editor.setValue(j.ttl); return j.error || 1; })(%s)"""
+
+_SPOTS = """Object.fromEntries([...document.querySelectorAll('#canvas g.node')].map((n) => {
+    const r = n.querySelector('.shape').getBBox(); return [n.getAttribute('data-id'), [Math.round(r.x), Math.round(r.y)]]; }))"""
+
+
+def test_an_addition_neither_jumps_the_view_nor_inherits_a_deleted_spot(page) -> None:
+    """A new element takes the lowest free id, so a motif added after a delete
+    landed where the deleted, dragged elements had stood; and every addition
+    refitted the view, zooming out from a fit that had blown one element up: the
+    addition is brought into view at the same zoom."""
+    loop, handle = page
+    try:
+        loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(''); 1"))
+        time.sleep(1)
+        loop.run_until_complete(handle.js('document.querySelector("#level-architecture").click(); 1'))
+        motif = json.dumps({"op": "add-motif", "motif": "RetrievalAugmentedGenerationMotif"})
+        assert loop.run_until_complete(handle.js(_ADD % motif)) == 1
+        _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+        time.sleep(1)
+        laid = loop.run_until_complete(handle.js(_SPOTS))
+        # a box a press reaches: a tray an earlier test left open can cover some of them
+        reach = loop.run_until_complete(handle.js("""(() => {
+            for (const n of document.querySelectorAll('#canvas g.node')) {
+                const r = n.querySelector('.shape').getBoundingClientRect();
+                const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+                const hit = document.elementFromPoint(x, y);
+                if (hit && hit.closest('g.node') === n) return { id: n.getAttribute('data-id'), x, y };
+            }
+            return null; })()"""))
+        assert reach, "no element of the motif can be pressed"
+        first, box = reach["id"], reach
+        loop.run_until_complete(handle.drag(box["x"], box["y"], box["x"] + 60, box["y"] + 160))
+        time.sleep(0.5)
+        assert loop.run_until_complete(handle.js(_SPOTS))[first] != laid[first], "the drag moved nothing"
+
+        loop.run_until_complete(handle.js("window.PairAI.Editor.setValue('@prefix beam: <http://w3id.org/beam/core#> .'); 1"))
+        time.sleep(1.5)
+        assert loop.run_until_complete(handle.js(_ADD % motif)) == 1
+        _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 0, tries=40)
+        time.sleep(1)
+        again = loop.run_until_complete(handle.js(_SPOTS))
+        assert again.get(first) == laid[first], (
+            f"{first} came back where the deleted one was dragged to: {again.get(first)} vs {laid[first]}")
+
+        before = loop.run_until_complete(handle.js("document.querySelector('#canvas').getAttribute('viewBox')"))
+        element = json.dumps({"op": "add-element", "classUri": "http://w3id.org/beam/core#Data", "label": "Extra"})
+        assert loop.run_until_complete(handle.js(_ADD % element)) == 1
+        _settle(loop, handle, "document.querySelectorAll('#canvas g.node').length", 9, tries=40)
+        time.sleep(1)
+        after = loop.run_until_complete(handle.js("document.querySelector('#canvas').getAttribute('viewBox')"))
+        visible = loop.run_until_complete(handle.js("""(() => { const c = document.querySelector('#canvas').getBoundingClientRect();
+            const n = [...document.querySelectorAll('#canvas g.node')].find((g) => g.textContent.startsWith('Extra'));
+            const r = n.getBoundingClientRect(); return r.left >= c.left && r.right <= c.right && r.top >= c.top && r.bottom <= c.bottom; })()"""))
+        assert visible, "the added element is off screen"
+        zoom = lambda box: round(float(box.split()[2]), 1)
+        assert zoom(after) == zoom(before), f"adding one element zoomed the view: {before} -> {after}"
+    finally:
+        loop.run_until_complete(handle.js("window.PairAI.Editor.setValue(''); 1"))

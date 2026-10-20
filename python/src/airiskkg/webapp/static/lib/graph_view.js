@@ -295,6 +295,11 @@ function render(data) {
   selectedId = null;
   picked = new Set();
   detailBox.classList.add("hidden");
+  // a new element takes the lowest free id, so a deleted one's dragged spot must not pass to it
+  if (!data.scopedTo) {
+    const here = new Set(data.nodes.map((n) => n.id));
+    for (const id of [...manualPositions.keys()]) if (!here.has(id)) manualPositions.delete(id);
+  }
   if (!data.nodes.length) {
     svg.innerHTML = "";
     emptyBox.classList.remove("hidden");
@@ -306,7 +311,17 @@ function render(data) {
   layout(data.nodes, data.edges);
   draw();
   const ids = data.nodes.map((n) => n.id).sort().join("|");
-  if (ids !== lastNodeIds && !suppressFitOnce) fit();
+  // an addition or a removal that fits where the reader is looking leaves the view alone;
+  // anything else is another drawing and is fitted afresh
+  const was = new Set(lastNodeIds ? lastNodeIds.split("|") : []);
+  const now = new Set(data.nodes.map((n) => n.id));
+  const edited = was.size > 0
+    && ([...was].every((id) => now.has(id)) || [...now].every((id) => was.has(id)));
+  if (ids !== lastNodeIds && !suppressFitOnce && !(edited && fitsInView(contentBox))) {
+    // what was added is brought into view at the same zoom, and only zoomed out to when it cannot fit
+    const added = [...now].filter((id) => !was.has(id)).map((id) => positions.get(id)).filter(Boolean);
+    if (!(edited && added.length && panOnto(boundsOf(added)))) fit();
+  }
   suppressFitOnce = false;
   lastNodeIds = ids;
 }
@@ -850,11 +865,11 @@ function freeArea(box, width, height) {
   return room.length ? room.reduce((a, b) => (scale(b) > scale(a) ? b : a)) : { left: 0, top: 0 };
 }
 
-function viewOnto(box) {
+function viewOnto(box, maxK = Infinity) {
   const width = Math.max(1, wrap.clientWidth);
   const height = Math.max(1, wrap.clientHeight);
   const free = freeArea(box, width, height);
-  const k = Math.min((width - free.left) / box.w, (height - free.top) / box.h);
+  const k = Math.min((width - free.left) / box.w, (height - free.top) / box.h, maxK);
   view = {
     x: box.x - (free.left + (width - free.left - box.w * k) / 2) / k,
     y: box.y - (free.top + (height - free.top - box.h * k) / 2) / k,
@@ -863,9 +878,50 @@ function viewOnto(box) {
   applyView();
 }
 
+/* Never larger than drawn size: a fit that blew up one element jumped back out on every addition. */
 function fit() {
   if (!contentBox) return;
-  viewOnto(contentBox);
+  viewOnto(contentBox, 1);
+}
+
+function boundsOf(boxes, pad = 40) {
+  const x = Math.min(...boxes.map((b) => b.x)) - pad;
+  const y = Math.min(...boxes.map((b) => b.y)) - pad;
+  return {
+    x, y,
+    w: Math.max(...boxes.map((b) => b.x + b.w)) + pad - x,
+    h: Math.max(...boxes.map((b) => b.y + b.h)) + pad - y,
+  };
+}
+
+/* Centres `box` in the room the trays leave, keeping the zoom; false when it does not fit at this zoom. */
+function panOnto(box) {
+  if (!wrap.clientWidth) return false;
+  const width = wrap.clientWidth;
+  const height = wrap.clientHeight;
+  const k = width / view.w;
+  const free = freeArea(box, width, height);
+  if (box.w * k > width - free.left || box.h * k > height - free.top) return false;
+  view = {
+    ...view,
+    x: box.x - (free.left + (width - free.left - box.w * k) / 2) / k,
+    y: box.y - (free.top + (height - free.top - box.h * k) / 2) / k,
+  };
+  applyView();
+  return true;
+}
+
+/* Whether `box` is on screen now, clear of the trays. */
+function fitsInView(box) {
+  if (!box || !wrap.clientWidth) return false;
+  const width = wrap.clientWidth;
+  const height = wrap.clientHeight;
+  const k = width / view.w;
+  const free = freeArea(box, width, height);
+  const left = view.x + free.left / k;
+  const top = view.y + free.top / k;
+  return box.x >= left && box.y >= top
+    && box.x + box.w <= view.x + view.w && box.y + box.h <= view.y + height / k;
 }
 
 /* Brings these elements into view. In a long chain the whole-graph fit draws
