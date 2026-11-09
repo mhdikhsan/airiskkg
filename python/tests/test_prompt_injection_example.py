@@ -85,8 +85,8 @@ def test_a_and_d_are_the_same_structure(scene) -> None:
         for bound in match["boundElements"]:
             holder = _system_of(graph, bound["elementId"])
             per_system.setdefault(holder, set()).add(match["motif"]["label"])
-    assert per_system[DIRECT] == {"Direct Prompting Motif"}
-    assert per_system[INTERNAL] == {"Direct Prompting Motif"}
+    assert per_system[DIRECT] == {"Prompted Generation Motif"}
+    assert per_system[INTERNAL] == {"Prompted Generation Motif"}
 
 
 def test_the_data_category_alone_decides_prompt_injection(scene) -> None:
@@ -97,7 +97,7 @@ def test_the_data_category_alone_decides_prompt_injection(scene) -> None:
 
 
 def test_the_same_motif_still_raises_the_risk_that_is_about_its_shape(scene) -> None:
-    """A motif is risk-neutral, but Direct Prompting without grounding is about
+    """A motif is structure only, but Direct Prompting without grounding is about
     the structure rather than the content, so it is raised on both."""
     assert UNGROUNDED in _raised(scene, DIRECT)
     assert UNGROUNDED in _raised(scene, INTERNAL)
@@ -126,7 +126,7 @@ def test_the_category_travels_to_the_prompt_it_was_never_annotated_on(scene) -> 
 
 
 def test_one_risk_pattern_is_reached_through_two_different_motifs(scene) -> None:
-    """The direct kind arrives over Direct Prompting, the indirect kind over
+    """The direct kind arrives over Prompted Generation, the indirect kind over
     retrieval. Same pattern, same mechanism, same OWASP entry."""
     graph = scene["graph"]
     by_system: dict[str, set[str]] = {}
@@ -137,7 +137,7 @@ def test_one_risk_pattern_is_reached_through_two_different_motifs(scene) -> None
             holder = _system_of(graph, element["id"])
             if holder != "?":
                 by_system.setdefault(holder, set()).add(finding["motif"]["label"])
-    assert by_system[DIRECT] == {"Direct Prompting Motif"}
+    assert by_system[DIRECT] == {"Prompted Generation Motif"}
     assert "Retrieval Augmented Generation (RAG) Motif" in by_system[GROUNDED]
 
 

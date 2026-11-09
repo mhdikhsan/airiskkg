@@ -132,7 +132,7 @@ def main() -> int:
     add("")
     add("| Layer | Count | What it is |")
     add("|---|---|---|")
-    add(f"| **Motif library** | **{len(motifs)}** | Risk-neutral architectural shapes (`pair:GraphMotif`) |")
+    add(f"| **Motif library** | **{len(motifs)}** | Architectural shapes, structure only (`pair:GraphMotif`) |")
     add(f"| **Risk patterns** | **{len(risk_patterns)}** | Motif + applicability condition -> candidate finding |")
     add(f"| **Suggested controls** | **{len(controls)}** | `pat:Control_*`, the only vocabulary in `pair:suggestedControl` |")
     add("| | | |")
@@ -181,7 +181,7 @@ def main() -> int:
     add("")
     add("| Hop | Evidence | Strength |")
     add("|---|---|---|")
-    add("| motif -> risk pattern | Published catalogues (Fowler, Mercari) + OWASP/ASI anchors | Strong, externally sourced |")
+    add("| motif -> risk pattern | Published papers and catalogues (DOI handles, Mercari) + OWASP/ASI anchors | Strong, externally sourced |")
     add("| risk pattern -> taxonomy | Explicit triples, every non-anchor SKOS-mapped to the anchor | Strong, test-enforced |")
     add("| risk pattern -> control | Project curation | **Weakest hop, nothing upstream to adopt** |")
     add("| control -> MIT family | `skos:relatedMatch`, declared *indicative, not audited* | Weak but explicit |")
@@ -268,7 +268,7 @@ def main() -> int:
         "The tool can advise them but cannot verify from the graph that they were applied.")
     silent = [m for m in motifs if not list(g.subjects(PAIR.hasMotif, m))]
     add(f"2. **{len(silent)} of {len(motifs)} motifs reach no control** - by design for the "
-        "risk-neutral ML-serving shapes.")
+        "ML-serving shapes that carry no risk pattern.")
     orphan = [rp for rp in risk_patterns if not list(g.objects(rp, PAIR.hasMotif))]
     # These fire. A risk query evaluates its conditions over any pair:MotifMatch whose
     # bindings carry the required roles, not only over matches of a declared motif, so a
@@ -294,7 +294,7 @@ def main() -> int:
     add("")
     add(f"## 7. Motif library - all {len(motifs)}, by source catalogue")
     add("")
-    add("Motifs are risk-neutral: they describe a shape, not a problem. The grouping below")
+    add("Motifs are structure only: they describe a shape, and the AI risk patterns that read them carry the risk. The grouping below")
     add("is the *published catalogue each was derived from* (`pair:derivedFrom`), because")
     add("that is the only classification the data actually carries. The relation is m:n,")
     add("so a motif derived from several catalogues is listed under each of them.")
@@ -325,8 +325,6 @@ def main() -> int:
                 url = next(u for u in urls if "mercari" in u)
                 section = url.split("ml-system-design-pattern/")[-1].split("/")[0]
                 found.add(("Mercari ML System Design Patterns", section.replace("-patterns", "")))
-            elif any("martinfowler" in u for u in urls):
-                found.add(("Fowler - Patterns of Generative AI", pattern))
             elif any("owasp-asi" in u for u in urls):
                 found.add(("OWASP Agentic Top 10 (ASI)", "agentic"))
             elif any("owasp" in u for u in urls):
@@ -352,7 +350,7 @@ def main() -> int:
                 )
                 add(
                     f"| `{local(motif)}` | {section} | "
-                    f"{', '.join(feeds) if feeds else '*(risk-neutral - none)*'} |"
+                    f"{', '.join(feeds) if feeds else '*(none)*'} |"
                 )
         add("")
 
@@ -484,7 +482,7 @@ def main() -> int:
     add("")
     add("| Claim | Basis |")
     add("|---|---|")
-    add("| Motif shapes | Fowler GenAI patterns, Mercari ML system design patterns, OWASP |")
+    add("| Motif shapes | Peer-reviewed papers by DOI, Mercari ML system design patterns, OWASP |")
     add("| Risk pattern anchors | OWASP LLM Top 10 / OWASP ASI, explicit triples |")
     add("| Cross-taxonomy mappings | IBM AI Atlas Nexus SSSOM, adopted verbatim where available |")
     add("| Risk -> MIT family | Embedding cosine top-3, unvalidated, reproducible from the CSV |")
@@ -520,7 +518,7 @@ def main() -> int:
         ("ontology/taxonomy/mit_mitigation_action.ttl",
          f"**{len(actions)} MIT mitigation actions** (generated)"),
         ("ontology/taxonomy/taxonomy_mapping.ttl", "cross-taxonomy mappings + risk-to-control grounding"),
-        ("ontology/taxonomy/owasp_llm.ttl, owasp_asi.ttl, ibm_risk_atlas.ttl, mit_ai_risk.ttl, nist_genai.ttl",
+        ("ontology/taxonomy/owasp_llm.ttl, owasp_asi.ttl, ibm_risk_atlas.ttl, mit_ai_risk_repo.ttl, nist_genai.ttl, ml_risk.ttl, eticas_risk.ttl",
          "the risk taxonomies"),
         ("ontology/facets/", "OECD/DPV characterization facets"),
         ("ontology/patterns/implementation/", "the executable SPARQL: `match/`, `risk/`, `propagation/`"),
@@ -560,10 +558,10 @@ def main() -> int:
     add("")
     add("| File | Why |")
     add("|---|---|")
-    add("| `docs/reference/PAIR-AI_glossary_v1_3.md` | terminology and the modelling "
+    add("| `docs/reference/PAIR-AI_glossary_v1_4.md` | terminology and the modelling "
         "rules (R1-R10). Read Section C before changing anything |")
     add("| `docs/reference/PAIR-AI_method_and_construction.md` | how the knowledge base was built |")
-    add("| `docs/reference/catalogue.md` | the motif catalogue in prose |")
+    add("| `docs/reference/catalogue.md` | every motif, AI risk pattern, role and data category (generated) |")
     add("| `docs/claude/CLAUDE.md` | locked decisions, including licence posture per source |")
     add("")
 

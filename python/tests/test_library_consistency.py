@@ -680,7 +680,7 @@ def test_every_motif_and_risk_pattern_states_its_source(libraries) -> None:
 
 def test_derived_from_points_at_an_entity_never_at_a_document(libraries, aligned) -> None:
     """Pointed at a URL it repeats dct:source, and "which motifs came from this
-    design pattern?" stops being answerable - what 23 references to one Fowler
+    design pattern?" stops being answerable - what 23 references to one
     article URL cost. Eticas mints its own concept IRIs, so a typed concept from
     another namespace is an entity too."""
     offenders = [

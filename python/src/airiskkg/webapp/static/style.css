@@ -501,7 +501,7 @@ button.motif-family:hover { color: #4a5262; }
 .edge-hit { stroke: transparent; stroke-width: 14; fill: none; cursor: help; pointer-events: stroke; }
 .mode-hidden { display: none !important; }
 
-/* Hover tooltip explaining what a flow edge (use / produce / inform) means. */
+/* Hover tooltip explaining what a flow edge (use / produce) means. */
 .edge-tip {
   position: fixed; z-index: 120; pointer-events: none;
   max-width: 240px; padding: 7px 10px; border-radius: 8px;
@@ -618,11 +618,9 @@ button.motif-family:hover { color: #4a5262; }
 .edge { stroke-width: 1.6; }
 .edge.use { stroke: #7c8698; }
 .edge.produce { stroke: #4a72c4; }
-.edge.inform { stroke: #9aa1af; stroke-dasharray: 6 4; }
 .edge.participatedIn { stroke: #9c5fc4; stroke-dasharray: 2 4; }
 .arrow.use { fill: #7c8698; }
 .arrow.produce { fill: #4a72c4; }
-.arrow.inform { fill: #9aa1af; }
 .arrow.participatedIn { fill: #9c5fc4; }
 
 .node { cursor: grab; }

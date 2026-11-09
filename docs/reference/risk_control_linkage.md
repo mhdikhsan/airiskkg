@@ -12,7 +12,7 @@ Supersedes `motif_control_linkage.md` and `control_catalogue_table.md`.
 
 | Layer | Count | What it is |
 |---|---|---|
-| **Motif library** | **34** | Risk-neutral architectural shapes (`pair:GraphMotif`) |
+| **Motif library** | **34** | Architectural shapes, structure only (`pair:GraphMotif`) |
 | **Risk patterns** | **33** | Motif + applicability condition -> candidate finding |
 | **Suggested controls** | **30** | `pat:Control_*`, the only vocabulary in `pair:suggestedControl` |
 | | | |
@@ -55,7 +55,7 @@ reached the graph. The action level is now modelled, so nothing is collapsed awa
 
 | Hop | Evidence | Strength |
 |---|---|---|
-| motif -> risk pattern | Published catalogues (Fowler, Mercari) + OWASP/ASI anchors | Strong, externally sourced |
+| motif -> risk pattern | Published papers and catalogues (DOI handles, Mercari) + OWASP/ASI anchors | Strong, externally sourced |
 | risk pattern -> taxonomy | Explicit triples, every non-anchor SKOS-mapped to the anchor | Strong, test-enforced |
 | risk pattern -> control | Project curation | **Weakest hop, nothing upstream to adopt** |
 | control -> MIT family | `skos:relatedMatch`, declared *indicative, not audited* | Weak but explicit |
@@ -155,7 +155,7 @@ Families with no action beneath them (6): `governance-oversight-controls`, `mode
 ## 6. Gaps
 
 1. **19 of 30 controls have no realizing motif.** The tool can advise them but cannot verify from the graph that they were applied.
-2. **10 of 34 motifs reach no control** - by design for the risk-neutral ML-serving shapes.
+2. **10 of 34 motifs reach no control** - by design for the ML-serving shapes that carry no risk pattern.
 3. **2 risk patterns declare no motif** (`ExcessiveAgencyRiskPattern`, `SensitiveInformationDisclosureRiskPattern`) - deliberately role-anchored, so nothing appears in the Exposing-motif column even though they fire on the bundled examples.
 4. **4 circular suggestions** - the motif that triggers the finding is also the motif that would realize the suggested fix.
 5. **Coverage is bounded by the cross-walk.** LLM07, LLM08 and LLM10 have no action-level evidence at all; their control links remain prior curation.
@@ -164,7 +164,7 @@ Families with no action beneath them (6): `governance-oversight-controls`, `mode
 
 ## 7. Motif library - all 34, by source catalogue
 
-Motifs are risk-neutral: they describe a shape, not a problem. The grouping below
+Motifs are structure only: they describe a shape, and the AI risk patterns that read them carry the risk. The grouping below
 is the *published catalogue each was derived from* (`pair:derivedFrom`), because
 that is the only classification the data actually carries. The relation is m:n,
 so a motif derived from several catalogues is listed under each of them.
@@ -174,24 +174,24 @@ so a motif derived from several catalogues is listed under each of them.
 | Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
 | `ToolUsingAgentMotif` | Agent adapter | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
-| `EvalsMotif` | Agent evaluator | *(risk-neutral - none)* |
+| `EvalsMotif` | Agent evaluator | *(none)* |
 | `PlanReflectionMotif` | Cross-reflection | GoalHijack, UnboundedConsumption |
 | `AgentDelegationMotif` | Debate-based cooperation | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication, UnboundedConsumption |
-| `HumanOversightMotif` | Human reflection | *(risk-neutral - none)* |
+| `HumanOversightMotif` | Human reflection | *(none)* |
 | `PlanReflectionMotif` | Human reflection | GoalHijack, UnboundedConsumption |
 | `ModelQueryingMotif` | Incremental model querying | GoalHijack |
 | `AgentDelegationMotif` | Multi-path plan generator | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication, UnboundedConsumption |
 | `ToolUsingAgentMotif` | Multi-path plan generator | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
-| `ExecutionScreeningMotif` | Multimodal guardrails | *(risk-neutral - none)* |
-| `GuardrailsMotif` | Multimodal guardrails | *(risk-neutral - none)* |
-| `InputScreeningMotif` | Multimodal guardrails | *(risk-neutral - none)* |
-| `OutputScreeningMotif` | Multimodal guardrails | *(risk-neutral - none)* |
-| `RetrievalScreeningMotif` | Multimodal guardrails | *(risk-neutral - none)* |
+| `ExecutionScreeningMotif` | Multimodal guardrails | *(none)* |
+| `GuardrailsMotif` | Multimodal guardrails | *(none)* |
+| `InputScreeningMotif` | Multimodal guardrails | *(none)* |
+| `OutputScreeningMotif` | Multimodal guardrails | *(none)* |
+| `RetrievalScreeningMotif` | Multimodal guardrails | *(none)* |
 | `ModelQueryingMotif` | One-shot model querying | GoalHijack |
 | `GoalCreationMotif` | Passive goal creator | GoalHijack |
 | `GoalCreationMotif` | Proactive goal creator | GoalHijack |
 | `EmbeddingsMotif` | Retrieval augmented generation | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
-| `InformationRetrievalMotif` | Retrieval augmented generation | *(risk-neutral - none)* |
+| `InformationRetrievalMotif` | Retrieval augmented generation | *(none)* |
 | `RerankerMotif` | Retrieval augmented generation | VectorAndEmbeddingWeakness |
 | `RetrievalAugmentedGenerationMotif` | Retrieval augmented generation | MisinformationFromWeakGrounding, PromptInjection, ProtectedDataToExternalModel, UnboundedConsumption |
 | `VectorBasedInformationRetrievalMotif` | Retrieval augmented generation | VectorAndEmbeddingWeakness |
@@ -202,33 +202,15 @@ so a motif derived from several catalogues is listed under each of them.
 | `ToolUsingAgentMotif` | Tool/agent registry | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
 | `VotingBasedCooperationMotif` | Voting-based cooperation | InsecureAgentCommunication |
 
-### Fowler - Patterns of Generative AI (13)
-
-| Motif | Pattern or section cited | Risk patterns it feeds |
-|---|---|---|
-| `DirectPromptingMotif` | Direct Prompting | DirectPromptingWithoutGrounding, ImproperOutputHandling, PromptInjection, ProtectedDataToExternalModel, SystemPromptLeakage, UnboundedConsumption |
-| `EmbeddingsMotif` | Embeddings | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
-| `EvalsMotif` | Evals | *(risk-neutral - none)* |
-| `FineTuningMotif` | Fine Tuning | DataAndModelPoisoning, EvaluationDataContamination, ImproperRetraining, SupplyChainCompromise |
-| `GuardrailsMotif` | Guardrails | *(risk-neutral - none)* |
-| `InputScreeningMotif` | Guardrails | *(risk-neutral - none)* |
-| `OutputScreeningMotif` | Guardrails | *(risk-neutral - none)* |
-| `HybridRetrieverMotif` | Hybrid Retriever | *(risk-neutral - none)* |
-| `QueryRewritingMotif` | Query Rewriting | PromptInjection, UnboundedConsumption |
-| `RerankerMotif` | Reranker | VectorAndEmbeddingWeakness |
-| `InformationRetrievalMotif` | Retrieval Augmented Generation (RAG) | *(risk-neutral - none)* |
-| `RetrievalAugmentedGenerationMotif` | Retrieval Augmented Generation (RAG) | MisinformationFromWeakGrounding, PromptInjection, ProtectedDataToExternalModel, UnboundedConsumption |
-| `VectorBasedInformationRetrievalMotif` | Retrieval Augmented Generation (RAG) | VectorAndEmbeddingWeakness |
-
 ### Gao et al. (2023) - Retrieval-augmented generation for large language models: A survey (9)
 
 | Motif | Pattern or section cited | Risk patterns it feeds |
 |---|---|---|
 | `AdaptiveRAGMotif` | Adaptive retrieval | MisinformationFromWeakGrounding, PromptInjection |
 | `IterativeRAGMotif` | Iterative retrieval | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
-| `HybridRetrieverMotif` | Mix/hybrid retrieval | *(risk-neutral - none)* |
+| `HybridRetrieverMotif` | Mix/hybrid retrieval | *(none)* |
 | `EmbeddingsMotif` | Naive RAG | DataAndModelPoisoning, VectorAndEmbeddingWeakness |
-| `InformationRetrievalMotif` | Naive RAG | *(risk-neutral - none)* |
+| `InformationRetrievalMotif` | Naive RAG | *(none)* |
 | `RetrievalAugmentedGenerationMotif` | Naive RAG | MisinformationFromWeakGrounding, PromptInjection, ProtectedDataToExternalModel, UnboundedConsumption |
 | `VectorBasedInformationRetrievalMotif` | Naive RAG | VectorAndEmbeddingWeakness |
 | `IterativeRAGMotif` | Recursive retrieval | MisinformationFromWeakGrounding, PromptInjection, UnboundedConsumption |
@@ -242,7 +224,7 @@ so a motif derived from several catalogues is listed under each of them.
 | `TrainingToServingMotif` | Lifecycle | DataAndModelPoisoning, ImproperRetraining, ModelBias, UnevaluatedModel |
 | `ExternalDependencyMotif` | Operation | SupplyChainCompromise |
 | `PredictionLoggingMotif` | Operation | PersonalDataRetained |
-| `PredictionMonitoringMotif` | Operation | *(risk-neutral - none)* |
+| `PredictionMonitoringMotif` | Operation | *(none)* |
 | `PredictionServingMotif` | Serving | AdversarialEvasion, DatasetShift, ModelExtraction, OutOfDomainInput, ProtectedDataToExternalModel, TrainingDataMembershipInference, UnevaluatedModel, UnqualifiedPrediction |
 | `PipelineTrainingMotif` | Training | EvaluationDataContamination, ImproperRetraining, ModelBias |
 
@@ -252,7 +234,7 @@ so a motif derived from several catalogues is listed under each of them.
 |---|---|---|
 | `AgentDelegationMotif` | agentic | AgenticSupplyChain, CascadingFailures, GoalHijack, IdentityPrivilegeAbuse, InsecureAgentCommunication, UnboundedConsumption |
 | `AgentMemoryLoopMotif` | agentic | IdentityPrivilegeAbuse, MemoryPoisoning, PersonalDataRetained |
-| `HumanOversightMotif` | agentic | *(risk-neutral - none)* |
+| `HumanOversightMotif` | agentic | *(none)* |
 | `ToolUsingAgentMotif` | agentic | AgenticSupplyChain, GoalHijack, HumanAgentTrustExploitation, ToolMisuse, UnexpectedCodeExecution, UntraceableAgentActions |
 
 ### Breuer et al. (2025) - Large language models for information retrieval: Challenges and chances (3)
@@ -456,7 +438,7 @@ parenting its own controls under two families, not from MIT.
 
 | Claim | Basis |
 |---|---|
-| Motif shapes | Fowler GenAI patterns, Mercari ML system design patterns, OWASP |
+| Motif shapes | Peer-reviewed papers by DOI, Mercari ML system design patterns, OWASP |
 | Risk pattern anchors | OWASP LLM Top 10 / OWASP ASI, explicit triples |
 | Cross-taxonomy mappings | IBM AI Atlas Nexus SSSOM, adopted verbatim where available |
 | Risk -> MIT family | Embedding cosine top-3, unvalidated, reproducible from the CSV |
@@ -485,7 +467,7 @@ document is generated from them.
 | `ontology/taxonomy/mit_air_risk_control.ttl` | 20 MIT families (verbatim) + 16 PAIR-AI concrete controls |
 | `ontology/taxonomy/mit_mitigation_action.ttl` | **52 MIT mitigation actions** (generated) |
 | `ontology/taxonomy/taxonomy_mapping.ttl` | cross-taxonomy mappings + risk-to-control grounding |
-| `ontology/taxonomy/owasp_llm.ttl, owasp_asi.ttl, ibm_risk_atlas.ttl, mit_ai_risk.ttl, nist_genai.ttl` | the risk taxonomies |
+| `ontology/taxonomy/owasp_llm.ttl, owasp_asi.ttl, ibm_risk_atlas.ttl, mit_ai_risk_repo.ttl, nist_genai.ttl, ml_risk.ttl, eticas_risk.ttl` | the risk taxonomies |
 | `ontology/facets/` | OECD/DPV characterization facets |
 | `ontology/patterns/implementation/` | the executable SPARQL: `match/`, `risk/`, `propagation/` |
 
@@ -517,8 +499,8 @@ python python/scripts/generate_risk_control_linkage.py    # this document
 
 | File | Why |
 |---|---|
-| `docs/reference/PAIR-AI_glossary_v1_3.md` | terminology and the modelling rules (R1-R10). Read Section C before changing anything |
+| `docs/reference/PAIR-AI_glossary_v1_4.md` | terminology and the modelling rules (R1-R10). Read Section C before changing anything |
 | `docs/reference/PAIR-AI_method_and_construction.md` | how the knowledge base was built |
-| `docs/reference/catalogue.md` | the motif catalogue in prose |
+| `docs/reference/catalogue.md` | every motif, AI risk pattern, role and data category (generated) |
 | `docs/claude/CLAUDE.md` | locked decisions, including licence posture per source |
 

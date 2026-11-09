@@ -5,8 +5,7 @@ What changed in the assessment loop, and how the two derived views work: the
 rewrite**, which inserts a control into an existing graph so a re-assessment
 answers differently.
 
-Counts in this document were read off the loaded ontology on 2026-08-17.
-Re-count rather than trust them; `docs/reference/catalogue.md` records how.
+Counts in this document describe the library on 2026-08-17. Current counts are at the head of `docs/reference/catalogue.md`.
 
 ---
 
@@ -76,7 +75,7 @@ is a kind of `dpv:PersonalData`, so sensitivity must survive it.
 
 The **gap report** answers "why didn't this match?", because an empty result set
 is otherwise indistinguishable from a safe system. It is computed by
-`_motif_gaps()` in `python/src/airiskkg/webapp/app.py` and returned on
+`motif_gaps()` in `python/src/airiskkg/workbench/` and returned on
 `/api/assess` as `motifGaps`.
 
 ### Where the expected shape comes from
@@ -122,7 +121,7 @@ On `simple_graph_rag`:
 ```
 Query Rewriting Motif: 8/9
    missing edge: no Query Reformulation Step uses a Generative Model
-Direct Prompting Motif: 6/7
+Prompted Generation Motif: 6/7
    missing edge: no Generation Step uses a User Input
 ```
 
@@ -187,9 +186,14 @@ CONSTRUCT {
     ?screeningStep a beam:Process ;
         rdfs:label "Input screening"@en ;
         pair:playsRole pair:InputGuardrailStep ;
-        beam:use    ?untrustedContent ;
-        beam:inform ?generationStep .
-    ?system beam:hasProcess ?screeningStep .
+        beam:use     ?untrustedContent ;
+        beam:produce ?decision .
+    ?decision a beam:Data ;
+        rdfs:label "Input screening decision"@en ;
+        pair:playsRole pair:GuardrailDecision .
+    ?generationStep beam:use ?decision .
+    ?system beam:hasProcess ?screeningStep ;
+        beam:hasResource ?decision .
 }
 WHERE {
     ?finding a pair:RiskFinding ;
@@ -216,22 +220,31 @@ constructed exactly where one is missing and nowhere else.
 
 ### The triples, and where they land
 
-Applying input screening to a bare direct-prompting graph produces six:
+Applying input screening to a bare prompted-generation graph produces eleven:
 
 ```turtle
 <…/mitigation/input-screening/…prompt/…gen>
     a beam:Process ;
     rdfs:label "Input screening"@en ;
     pair:playsRole pair:InputGuardrailStep ;
-    beam:use    ex:prompt ;
-    beam:inform ex:gen .
+    beam:use     ex:prompt ;
+    beam:produce <…/decision> .
 
-ex:sys beam:hasProcess <…/mitigation/input-screening/…prompt/…gen> .
+<…/decision>
+    a beam:Data ;
+    rdfs:label "Input screening decision"@en ;
+    pair:playsRole pair:GuardrailDecision .
+
+ex:gen beam:use <…/decision> .
+
+ex:sys beam:hasProcess <…/mitigation/input-screening/…prompt/…gen> ;
+    beam:hasResource <…/decision> .
 ```
 
 Every subject or object other than the new step is an element **already in the
-graph**, which is what makes this an edit rather than an island: one new node,
-wired to the prompt it screens and the generation it informs.
+graph**, which is what makes this an edit rather than an island: one new step and
+the decision it produces, wired to the prompt it screens and the generation that
+reads the decision.
 
 `POST /api/apply-control` runs the assessment (the rewrite reads a finding, which
 does not exist in a bare architecture), calls `apply_control()`, merges the

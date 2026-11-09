@@ -23,6 +23,7 @@ TARGET = REPO_ROOT / "docs" / "reference" / "risk_control_linkage.md"
 # what earns a place in python/scripts/ rather than python/scripts/local/.
 GENERATED = {
     "generate_risk_control_linkage.py": TARGET,
+    "generate_catalogue.py": REPO_ROOT / "docs" / "reference" / "catalogue.md",
     "generate_mit_action_layer.py": REPO_ROOT / "ontology" / "taxonomy" / "mit_mitigation_action.ttl",
     "generate_eticas_layer.py": REPO_ROOT / "ontology" / "taxonomy" / "eticas_risk.ttl",
 }
@@ -56,5 +57,18 @@ def test_the_grouping_reads_the_catalogue_each_motif_came_from() -> None:
         "pair:derivedFrom as a URL again instead of following it to the "
         "citation's own dct:source"
     )
-    for catalogue in ("Fowler", "Mercari", "OWASP"):
+    for catalogue in ("Gao et al.", "Mercari", "OWASP"):
         assert catalogue in text, f"no motif grouped under {catalogue}"
+
+
+def test_the_catalogue_lists_every_motif_risk_pattern_and_role() -> None:
+    """A section that falls through to empty still produces a document."""
+    from airiskkg.assessment_runner import PAIR, load_base_graph
+    from rdflib import RDF
+
+    graph = load_base_graph()
+    text = (REPO_ROOT / "docs" / "reference" / "catalogue.md").read_text(encoding="utf-8")
+    for kind in (PAIR.GraphMotif, PAIR.RiskPattern, PAIR.PatternRole, PAIR.DataCategory):
+        missing = [t for t in graph.subjects(RDF.type, kind) if str(t).split("#")[-1] not in text]
+        roles_filed_as_headings = [t for t in missing if (t, RDF.type, PAIR.RoleCategory) in graph]
+        assert len(missing) == len(roles_filed_as_headings), f"not in the catalogue: {missing}"

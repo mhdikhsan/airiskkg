@@ -516,6 +516,7 @@ function riskDetail(entry) {
     layout(
       [
         panel("Related motifs", {
+          tip: "The structures the library curates for this risk. A few risk queries read roles on any motif match, so a run may name a motif not listed here.",
           count: motifs.length,
           hint: motifs.length ? " " : null,
           body: motifs.length

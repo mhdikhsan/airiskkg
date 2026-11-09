@@ -7,7 +7,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 CONSTRUCT {
     ?match
         a pair:MotifMatch ;
-        rdfs:label "Direct Prompting motif match"@en ;
+        rdfs:label "Prompted Generation motif match"@en ;
         pair:matchesMotif pat:DirectPromptingMotif ;
         pair:hasNodeBinding ?queryBinding , ?stepBinding , ?modelBinding , ?answerBinding .
 

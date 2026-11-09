@@ -1,156 +1,249 @@
-# PAIR-AI Workbench — User Guide
+# PAIR-AI Workbench: User Guide
 
-A hands-on guide to the PAIR-AI Architecture Workbench: what it is, how to use
-it, a complete reference of the motifs, risk patterns, and roles it knows, and a
-worked example of annotating an architecture graph so the assessment can match
+A hands-on guide to the PAIR-AI workbench: what it is, how to use each level of it,
+and a worked example of annotating an architecture graph so the assessment can match
 it.
 
-> This is a living document — edit freely. Screenshots are intentionally left
-> out so it stays easy to update as the UI evolves.
+> This is a living document, so edit freely. Screenshots are left out on purpose so
+> it stays easy to update as the UI evolves.
 
 ---
 
 ## 1. What this application is
 
 **PAIR-AI is pattern-based risk assessment for AI systems.** Instead of running the
-system, you describe it — its architecture as a graph, and optionally the business
-process that runs it — and PAIR-AI tells you which risks the *structure*
-predisposes it to. That works before the system is built and as an audit of one
-already running: either way you are assessing a description, never a live system.
-It works with two core concepts.
+system, you describe it: its architecture as a graph, and optionally the business
+process that runs it. PAIR-AI tells you which risks the *structure* predisposes it
+to. That works before the system is built and as an audit of one already running.
+Either way you are assessing a description, never a live system. It works with two
+core concepts.
 
 ### Motif
 
-A **motif** is a *reusable, type-level configuration of pattern roles connected by
-flow relations* — a small graph capturing a recurring arrangement in AI system
-architectures. For example: *"a retrieval step that uses a vector store and
-produces retrieved context"*, or *"a user query handled by a generative model
-that produces user-facing output"*.
+A **motif** is *the recurring solution structure of a design, stated as a small typed graph of pattern roles joined by flow relations*, in the same vocabulary your architecture is modelled in. For example: *"a retrieval step that uses a knowledge source and
+produces retrieved context"*, or *"a generation step that puts the user's input to a
+generative model and produces output the user sees"*.
 
-**A motif is not an architecture design pattern.** A design pattern is
-prescriptive — something you apply while designing. A motif is descriptive —
-something recognised in a design afterwards, and it sits *below* design-pattern level:
-one design pattern (RAG, say) induces several motifs, and one motif (vector
-retrieval) turns up in several design patterns. Architecture design patterns are
-**not modelled** in the ontology; motifs and AI risk patterns are.
+**A motif is not an architecture design pattern.** A design pattern is prescriptive,
+something you apply while designing. A motif is descriptive, something recognised in
+a design afterwards, and it sits *below* design-pattern level: one design pattern
+(RAG, say) induces several motifs, and one motif (vector retrieval) turns up in
+several design patterns. Architecture design patterns are **not modelled** in the
+ontology; motifs and AI risk patterns are.
 
 Three properties carry the definition:
 
-- **A configuration, not an element.** A motif constrains several elements
-  *together with the relations between them*. One annotated element is never a
-  motif — risk attaches to the interaction, not the part.
+- **A configuration, not an element.** A motif constrains several elements *together
+  with the relations between them*. One annotated element is never a motif, because
+  risk attaches to the interaction, not the part.
 - **Over roles, not implementations.** A motif's nodes are constrained by pattern
-  roles and BEAM classes, never by implementation-specific labels. That is what
-  lets one motif match systems that look nothing alike.
-- **Structure only, hence risk-neutral.** A motif reads roles and flow relations
-  and **no facet**. A motif matching your graph just means your system has that
-  shape.
+  roles and BEAM classes, never by implementation-specific labels. That is what lets
+  one motif match systems that look nothing alike.
+- **Structure only.** A motif reads roles and flow relations and
+  **no facet**. A motif matching your graph just means your system has that shape.
 
-**Type and instance:** the motif is the type; a **motif match** is its
-instantiation, mapping the motif's abstract nodes onto concrete elements of your
-graph. "Reusable" is exact in that sense — one motif, many matches, across
-systems. The current library has 31 (see the [Reference](#4-reference)).
+**Type and instance:** the motif is the type; a **motif match** is its instantiation,
+mapping the motif's abstract nodes onto concrete elements of your graph. The
+[Library](#23-the-library) lists every motif in the current knowledge base.
 
 ### Candidate risk finding
 
-When a motif match *also* satisfies the **applicability conditions** of a **risk
-pattern** — the right context, data categories, or the *absence* of a control —
-PAIR-AI emits a **candidate risk finding**. Each finding carries:
+When a motif match *also* satisfies the **applicability conditions** of an **AI risk
+pattern** (the right context, data categories, or the *absence* of a control), PAIR-AI
+emits a **candidate risk finding**. Each finding carries:
 
 - the **risk mechanism** (why the structure enables the risk),
 - the **evidence** elements from your graph,
-- **taxonomy** links (IBM AI Risk Atlas / OWASP LLM Top 10 / MIT AI Risk
-  Repository), and
+- **taxonomy** links (OWASP LLM and Agentic Top 10, IBM AI Risk Atlas, MIT AI Risk
+  Repository, NIST AI 600-1, the ML risks of Zhang et al. (2022), the Eticas AI Risk
+  Taxonomy), and
 - **suggested controls**.
 
-**Every output is a *candidate* risk — a structural disposition, never a
-confirmed failure.** A finding means *"this shape is known to enable this risk
-unless something outside the graph prevents it."* It is a prompt for review, not
-a verdict. (Formally: PAIR-AI reasons under the Open World Assumption; a "no
-control found" check is closed-world over *the graph you submitted only*.)
+**Every output is a *candidate* risk: a structural disposition, never a confirmed
+failure.** A finding means *"this shape is known to enable this risk unless something
+outside the graph prevents it."* It is a prompt for review, not a verdict. Formally,
+PAIR-AI reasons under the Open World Assumption, and a "no control found" check is
+closed-world over *the graph you submitted only*.
 
 ### How it works, end to end
 
-1. **You describe the architecture** as a graph of BEAM elements —
-   *resources* (`beam:Data`, `beam:StatisticalModel`, `beam:SemanticModel`,
-   `beam:Symbol`) and *processes* (`beam:Transform`, `beam:Infer`, `beam:Train`,
-   `beam:Generate`, `beam:Process`) wired together with flow edges (`beam:use`,
-   `beam:produce`, `beam:inform`).
+1. **You describe the architecture** as a graph of BEAM elements: *resources*
+   (`beam:Data`, `beam:StatisticalModel`, `beam:SemanticModel`, `beam:Symbol`) and
+   *processes* (`beam:Transform`, `beam:Infer`, `beam:Train`, `beam:Generate`,
+   `beam:Process`), joined by `beam:use` and `beam:produce`. The graph is bipartite:
+   a step reaches another step only through a resource one produces and the other
+   uses.
 2. **You annotate** each element with **one or more roles** (e.g. `FoundationLLM`,
    `RetrievedContext`, `GuardrailStep`) and, where relevant, **data categories**.
-   Structure alone says *what shape* the system is; roles say *what each part
-   means*. An element can play several roles at once — e.g. a store that is both a
-   `VectorStore` and a `VectorIndex`.
-3. **Motifs match the structure** — the roles and flow.
-4. **Risk patterns interpret the matches** and emit candidate risk findings when
+   Structure says *what shape* the system is; roles say *what each part means*.
+3. **Motifs match the structure:** the roles and the flow.
+4. **AI risk patterns interpret the matches** and emit candidate risk findings when
    their applicability conditions hold.
 
 ---
 
 ## 2. Using the application
 
-The workbench is deployed as a web app — just open the URL your team provides in
-a browser. Nothing is written to disk from the UI: every assessment runs
-in-memory and returns JSON.
+The workbench is a web app. Open the URL your team provides, or run it locally
+(see the [README](../README.md#quick-start)). The server writes nothing to disk from
+the UI: every assessment runs in memory, and the History tab lives in your browser.
 
 ### 2.1 The layout
 
-The workbench is a single page with three regions:
-
 ```text
-┌───────────────────────── header toolbar ─────────────────────────┐
-│  Load example ▾  Open .ttl  Starter  Clear │ Validate  Run assess │
-├───────────────────────────┬───────────────────────────────────────┤
-│                           │                                       │
-│   LEFT: Turtle editor     │   RIGHT: live diagram (canvas)        │
-│   (edit the code)         │   drag · connect · click-to-edit      │
-│                           │   Symbols palette + Motifs catalogue  │
-│                           ├───────────────────────────────────────┤
-│                           │   bottom drawer:                      │
-│                           │  Findings·Motifs·Annotate·Contract    │
-└───────────────────────────┴───────────────────────────────────────┘
+┌────────────────────────────── header toolbar ─────────────────────────────┐
+│ PAIR-AI  Library │ Load example  Open  Clear │ Validate  Run assessment │… │
+├──────────────────────────┬─────────────────────────────────────────────────┤
+│                          │  Process · Architecture · Risk                  │
+│  LEFT: Turtle editor     │  the canvas for the level you picked            │
+│  (folds away)            ├─────────────────────────────────────────────────┤
+│                          │  bottom drawer: Findings, Architectural motifs, │
+│                          │  Data flow, Annotate, Input contract, Process,  │
+│                          │  History                                        │
+└──────────────────────────┴─────────────────────────────────────────────────┘
 ```
 
-The editor (left) and the diagram (right) are **two views of the same graph and
-stay in sync both ways**:
+The editor and the canvas are **two views of the same Turtle document and stay in
+sync both ways**. Type Turtle and the diagram redraws; draw, connect or rename on the
+canvas and the Turtle updates.
 
-- Type Turtle on the left → the diagram redraws.
-- Edit on the right (drag, add, connect, rename, delete) → the Turtle updates.
+The workbench opens on the [Library](#23-the-library). On an empty canvas it asks
+what you are describing, a business process or an AI architecture, and starts you on
+that level. Once there is content, the **Process / Architecture / Risk** switch above
+the canvas moves between levels, and an edit never moves you off the level you chose.
 
 ### 2.2 Header toolbar
 
-| Button | What it does |
+| Control | What it does |
 | --- | --- |
-| **Load example ▾** | Load a graph. Under **Bundled**: `customer_support` (the starter scenario: a business process with the chatbot it runs), `support_chatbot` (that chatbot alone) and `simple_graph_rag` (a small, fully annotated graph RAG). Under **Local**: anything you dropped in `ontology/example_local/`; see [Your own graphs](#26-your-own-graphs). |
-| **Open .ttl** | Upload your own Turtle file. |
-| **Starter** | Replace the editor with the [starter scenario](#27-the-starter-scenario): the business process with the chatbot it runs, from any level. |
-| **Clear** | Empty both the code and the diagram (asks to confirm). |
-| **Validate** | Check the graph against the SHACL *input contract* — reports in the **Input contract** drawer tab. |
-| **Run assessment** | Run the full motif-matching + risk-interpretation pipeline; results land in the **Findings** and **Motifs** tabs. |
+| **PAIR-AI** | Start over. |
+| **Library** | Browse the AI risk patterns, motifs and terms the knowledge base holds. |
+| **Load example** | Load a graph. Bundled: `customer_support` (the starter scene), `support_chatbot` (that chatbot alone) and `simple_graph_rag` (a small, fully annotated graph RAG). Local graphs are listed under their own heading; see [Your own graphs](#29-your-own-graphs). |
+| **Open** | Upload a `.ttl` or `.nt` file. A Tool4Boxology export is recognised by its content and normalised to BEAM on load. |
+| **Clear** | Empty both the code and the diagram, after asking. |
+| **Validate** | Check the graph against the SHACL input contracts and the annotation guidance. Results land in the **Input contract** tab. |
+| **Run assessment** | Match the motifs, propagate derived facts and raise candidate findings. |
+| **Overview** | A one-page view of the business context and what was found in it, for people who are not editing the graph. |
+| **Export** | Download the assessment as an RDF knowledge graph (Turtle, JSON-LD or N-Triples) with a PROV record of the run. |
 
-### 2.6 Your own graphs
+**Starter** sits at the top of the editor pane and loads the
+[starter scene](#28-the-starter-scene) from any level.
 
-`ontology/example_local/` is yours. Drop any `.ttl` in it and the workbench
-offers it in **Load example ▾** under a **Local** heading, so you can always
-tell your graphs from the two the project ships.
+### 2.3 The Library
 
-Nothing there can be published by accident:
+The Library is the front door. It is generated from the loaded knowledge base, so it
+always shows what the assessment can actually do. It has three tabs:
 
-| | |
+- **Risks** lists every AI risk pattern, shelved by the kind of system it applies to.
+  A risk page gives the mechanism and the conditions that raise it, what it may lead
+  to, suggested controls, and the motifs curated for it.
+- **Architectural motifs** draws each motif from its own declaration and shows the
+  risks it carries.
+- **Terms** lists every role and data category with its definition and the structures
+  that read it.
+
+You can work backwards from a risk: open it, press **Add to canvas** on one of its
+motifs, and the motif arrives with the context the risk needs. Run the assessment and
+the risk is raised on what you added.
+
+The motifs listed on a risk page are the structures the library curates for it. A few
+risk queries read roles on any motif match, so a run can name a motif that is not
+listed there. The [catalogue](reference/catalogue.md) says which queries do.
+
+### 2.4 The Process level
+
+A BPMN canvas for the business process. The palette above it draws pools and lanes,
+activities, events, gateways, data objects and stores, and text annotations. Dragging
+a connector from one shape to another picks the right kind of flow from what it joins.
+
+- **Name the AI system.** An activity can refine one system. The blue **AI system**
+  chip on the box opens that architecture and outlines the steps the activity names.
+  The pencil opens the activity's editor.
+- **Say what the data is.** Click a data box to set its name, its shape (document or
+  store), its classification, and whether each step reads it, writes it or both. What
+  the analyst states here reaches the architecture through a bridge and is never
+  copied as a facet.
+- **Carry data across.** A data box can be added to the architecture from its panel
+  ("Add to the … architecture"), and the page offers this when data joins an activity
+  that refines a system.
+
+One document can hold several process models, picked beside the palette.
+
+### 2.5 The Architecture level
+
+A Boxology canvas for the AI system, with two trays that fold from their headers:
+
+- **Elements** holds Data, Symbol, Model, Transform, Infer, Train and Generate. Drag
+  one onto the canvas, or click it to drop it in the centre.
+- **Architectural motifs** holds the motif catalogue, shelved by family and
+  searchable. Clicking a motif opens a card with its drawing and the risks it
+  carries, and **Add to canvas** adds its elements already wired and annotated.
+  Dragging it adds it directly.
+
+The system bar above the canvas shows the systems in the document, and **+ system**
+adds one. An element always belongs to a system, and a frame can be dragged to move
+everything it holds.
+
+- **Connect** by dragging from a node's **▸** port onto another node. The kind of edge
+  follows from its ends: **uses** when a step reads a resource, **produces** when a
+  step writes one. A step-to-step or data-to-data connection is refused, because the
+  graph is bipartite.
+- **Edit or delete** by clicking a node. Its popup holds **Label**, **Name (id)**,
+  **Type**, **Roles** and **Data categories**, then **Apply** or **Delete**. The
+  **Delete** or **Backspace** key removes the selected node too.
+- **Roles** are picked from a menu that opens on role categories and fits the element
+  first, with the rest one click away. The menu shows each role's workbench name, such
+  as *Retrieve* for `RetrievalStep`.
+- **Zoom and fit** with the controls at the corner of the canvas.
+
+### 2.6 The Risk level
+
+The run on one diagram, in the notation of risk storming: each concern sits above the
+elements it concerns, **stated risks are solid and derived ones dashed**. Findings are
+grouped into concerns, so the same weakness reached by nested motifs appears once.
+
+Here a team states its own risks and attaches them to elements or activities, records
+consequences, impacts, controls and priorities, and triages each candidate (for
+example **Confirmed**, **Mitigated** or **Accepted**, with the reason and who decided).
+Severity is never computed; it is a judgement recorded with who made it.
+
+**Hide the run** keeps machine findings off the diagram while the team states risks
+first, because seeing them early anchors the room. A scope narrows what the review
+looks at and never changes what is detected.
+
+### 2.7 Reading the results
+
+**Run assessment** fills the drawer.
+
+| Tab | What it shows |
 | --- | --- |
-| **git** | Every file in the folder is gitignored, so `git add .` cannot stage one. Only the folder's `README.md` is tracked. |
-| **Docker image** | `.dockerignore` is an allow-list, and it excludes the folder explicitly. A built image contains the two bundled graphs and nothing else. |
-| **Deployed server** | A WSGI server (gunicorn, the Docker image) never lists or serves the folder, whatever is on its disk. Only `cli serve` offers it, because that is by definition a local run — pass `--no-local-examples` to turn it off there too. |
+| **Findings** | Each candidate concern. Selecting one highlights its evidence on the canvas. |
+| **Architectural motifs** | The motifs that matched. Repeated matches collapse to one row with a **×N** count. A match alone is not a finding. |
+| **Data flow** | Data categories the engine derived by following the flow, and the route each one took. |
+| **Annotate** | Every element with its role and data category pickers. **Apply annotations** writes them into the Turtle. |
+| **Input contract** | Violations and warnings from the SHACL shapes, including annotations that cannot match anything. |
+| **Process** | The business activities in the submitted process. |
+| **History** | Past assessments in this browser, and what moved between them. |
 
-`python/tests/test_private_examples.py` enforces all four of those, so a change
-that would start leaking fails the suite rather than a review.
+Where a control has a registered rewrite for a finding, **Apply to this finding**
+inserts the step it suggests, bound to the elements the finding cites, and assesses
+again. Adding a control's motif is another route. Either way, the amended design is
+assessed afresh, because a control can bring risks of its own.
 
-### 2.7 The starter scenario
+**Possible risks** sit dashed below the findings. They help a drawing that says less
+than a motif does: an element tagged with a coarser role, left untagged, or missing.
+Each one lists what the diagram would have to say to raise it. **Apply** it only if
+that is true of your system. Possible risks never change what is detected.
 
-**Starter** loads a customer support scene, the same one the tutorial uses. A
-customer sends a question; the shop's chatbot answers it; when it is not confident,
-it escalates to a support agent, who reviews the draft, checks the customer records,
-updates the knowledge base and sends the reply. Every conversation is logged.
+Findings are candidates. An empty result does not mean "safe". It means nothing
+matched, which often signals that the graph still needs **roles** (see §3).
+
+### 2.8 The starter scene
+
+**Starter** loads a customer support scene, the same one the tutorial uses. A customer
+sends a question; the shop's chatbot answers it; when it is not confident, it escalates
+to a support agent, who reviews the draft, checks the customer records, updates the
+knowledge base and sends the reply. Every conversation is logged.
 
 | Part | What is in it |
 | --- | --- |
@@ -158,8 +251,8 @@ updates the knowledge base and sends the reply. Every conversation is logged.
 | Join | *Answer question* is refined by the *Support chatbot* system and names the three steps that carry it out. *Question*, *Knowledge base* and *Draft answer* name the architecture elements they are. |
 | Architecture (`support_chatbot`) | A RAG chatbot: *Find passages* retrieves from the knowledge base, *Build prompt* combines the question, the passages and the answering instructions, and *Generate answer* calls a hosted LLM. |
 
-Running the assessment on the whole scene raises six candidate concerns. Each
-one is a structural candidate for the team to discuss, not a confirmed defect.
+Running the assessment on the whole scene raises six candidate concerns. Each one is a
+structural candidate for the team to discuss, not a confirmed defect.
 
 | Concern | Why it is raised |
 | --- | --- |
@@ -172,160 +265,99 @@ one is a structural candidate for the team to discuss, not a confirmed defect.
 
 Two things to notice in the tutorial:
 
-- **The architecture alone raises a different set.** Without the process,
-  nothing says the question is personal, so the two personal-data concerns are
-  not raised, and *Improper output handling* is.
-- **The agent's review clears *Improper output handling*,** because a human
-  task after *Answer question* reads the draft answer. It clears it for the
-  whole activity, although confident answers take the *yes* branch and skip the
-  review. The library reads "a review follows on some path", not "on every
-  path". That makes it a good thing to discuss when triaging.
+- **The architecture alone raises a different set.** Without the process, nothing says
+  the question is personal, so the two personal-data concerns are not raised, and
+  *Improper output handling* is.
+- **The agent's review clears *Improper output handling*,** because a human task after
+  *Answer question* reads the draft answer. It clears it for the whole activity,
+  although confident answers take the *yes* branch and skip the review. The library
+  reads "a review follows on some path", not "on every path". That makes it a good
+  thing to discuss when triaging.
 
-### 2.3 Editing the diagram (right pane)
+### 2.9 Your own graphs
 
-The canvas carries **two collapsible trays** on the right — click a tray's header
-(**▸ / ▾**) to show or hide it:
+`ontology/example_local/` is yours. Drop any `.ttl` in it and the workbench offers it in
+**Load example** under its own heading, so you can always tell your graphs from the ones
+the project ships.
 
-- **Symbols** — the BEAM element palette (shown by default).
-- **Motifs** — the motif catalogue (starts collapsed); see
-  [§2.5](#25-building-from-the-motif-catalogue).
+Nothing there can be published by accident:
 
-- **Add an element** — drag a symbol from the **Symbols** tray onto the canvas, or
-  click a symbol to drop it in the centre. The element types are the four BEAM
-  resources — **Data**, **Statistical Model**, **Semantic Model**, **Symbol** —
-  and the process types **Transform**, **Infer**, **Train**, **Generate**,
-  **Process**.
-- **Move** — drag a node.
-- **Connect** — drag from a node's **▸ port** onto another node. The edge kind is
-  inferred from the endpoints. **Hover any edge** for a tooltip that explains it:
-  - **uses** (process → resource) — the process reads this resource as input.
-  - **produces** (process → resource) — the process writes this resource as output.
-  - **informs** (process → process) — one step hands off to the next.
-- **Edit / delete** — click a node to open its detail popup. There you can change
-  its **Label**, **Name** (renames the URI), **Type** (BEAM class), its **Roles**,
-  and its **Data categories**, then **Apply**; or **Delete** it. **Roles** and
-  **Data categories** are multi-value pickers — current values show as removable
-  chips with a **+ add** dropdown, so an element can carry **several roles** at
-  once. The **Delete** / **Backspace** key deletes the selected node too (except
-  while you're typing in a field).
-- **Zoom / fit** — the `+`, `−`, and fit (`⬒`) controls sit at the corner of the
-  canvas.
+| | |
+| --- | --- |
+| **git** | Every file in the folder is gitignored, so `git add .` cannot stage one. Only the folder's `README.md` is tracked. |
+| **Docker image** | `.dockerignore` is an allow-list, and it excludes the folder explicitly. |
+| **Deployed server** | A WSGI server (gunicorn, the Docker image) never lists or serves the folder, whatever is on its disk. Only `cli serve` offers it, because that is by definition a local run. Pass `--no-local-examples` to turn it off there too. |
 
-### 2.4 Reading the results
-
-**Run assessment** fills two drawer tabs at once — **Findings** and **Motifs**.
-
-**Findings** lists each candidate risk finding. Selecting a finding highlights its
-**evidence** elements in the diagram (click it again to clear). Each finding shows:
-
-- the **risk mechanism** (why the structure enables it),
-- **taxonomy** chips (IBM Atlas / OWASP / MIT), and
-- an expandable **Suggested controls · evidence** section with the suggested
-  mitigations and the evidence elements.
-
-Some mitigations carry a **"suggested mitigation:"** motif chip. Those chips are
-**clickable** — clicking one drops that motif's (already-annotated) elements onto
-the canvas so you can scaffold the missing control and re-assess (see §2.5).
-
-**Motifs** lists the motifs that matched your graph. Repeated matches of the same
-motif collapse into one row with a **×N** count — so a graph with seven external
-dependencies shows a single *External Dependency ×7* row, not seven. Click a row
-to highlight all of that motif's elements; click again to clear. A motif matching
-is **risk-neutral** — it only becomes a finding when a risk pattern's
-applicability condition also holds.
-
-Remember: findings are candidates. An empty result doesn't mean "safe" — it means
-no motif matched, often a signal that the graph still needs **roles** (see §3).
-
-### 2.5 Building from the motif catalogue
-
-The **Motifs** tray (right of the canvas) lists all 31 motifs. Click a motif — or
-drag it onto the canvas — to instantiate it: the workbench adds that motif's
-elements **already wired and annotated** with the roles it expects, and the editor
-Turtle updates to match. Then **Run assessment** to see what the new shape
-produces.
-
-This is the fastest way to scaffold a system from recognised building blocks, or
-to add a control a finding suggested — the clickable mitigation chips in the
-Findings tab use exactly this mechanism.
+`python/tests/test_private_examples.py` enforces these, so a change that would start
+leaking fails the suite rather than a review.
 
 ---
 
 ## 3. Annotation guide (worked example)
 
-**Why annotation matters:** motifs match on *roles*, not on BEAM types alone. A
-graph that has the right shape but no roles will produce **zero findings**. This
-is exactly the situation for graphs imported from Tool4Boxology / the private
-*t4b-beam* tool: they carry structure (types + flow edges) but **no pattern
-roles**. Annotation is the step that makes such a graph assessable.
+**Why annotation matters:** motifs match on *roles*, not on BEAM types alone. A graph
+with the right shape but no roles produces **zero findings**. Graphs imported from
+Tool4Boxology are exactly that: they carry structure (types and flow edges) and **no
+pattern roles**. Annotation is the step that makes such a graph assessable.
 
-The graph is a t4b-beam export of a GraphRAG event-information chatbot.
+The graph here is a GraphRAG event-information chatbot.
 
-> **The finished result of this walkthrough** — that graph with every role and
-> facet filled in — is bundled as **`ontology/example/simple_graph_rag.ttl`**, so
-> you can compare your annotation against it. The unannotated export it started
-> from is no longer bundled: only the finished graph is, because the example menu
-> offers graphs that assess. To follow along from a blank slate, load
-> `simple_graph_rag` and delete its `pair:playsRole` and
-> `pair:containsDataCategory` lines in the editor — or import
-> `external/tool4boxology/sample_export.nt`, a real Tool4Boxology export that
-> arrives with structure and no roles at all.
+> **The finished result** of this walkthrough, with every role filled in, is bundled
+> as **`ontology/example/simple_graph_rag.ttl`**, so you can compare your annotation
+> against it. To follow along from a blank slate, load `simple_graph_rag` and delete
+> its `pair:playsRole` and `pair:containsDataCategory` lines in the editor, or open
+> `external/tool4boxology/sample_export.nt`, a real Tool4Boxology export that arrives
+> with structure and no roles at all.
 
-### Step 1 — Load it and look
+### Step 1: load it and look
 
-Toolbar → **Load example ▾ → simple_graph_rag**, then strip the role triples as
-above.
+**Load example → simple_graph_rag**, then strip the role triples as above.
 
-You'll see a BEAM-native RAG pipeline: `beam:System`, `beam:Data` /
-`beam:StatisticalModel` / `beam:SemanticModel` / `beam:Symbol` resources, and
-`beam:Infer` / `beam:Transform` / `beam:Generate` processes, wired with
-`beam:use` / `beam:produce`. Structurally sound — but if you **Run assessment**
-now you get **nothing**, because **no element has a role**.
+You will see a RAG pipeline: a `beam:System`, resources and processes wired with
+`beam:use` and `beam:produce`. It is structurally sound, but **Run assessment** now
+finds **nothing**, because no element has a role.
 
-### Step 2 — Open the Annotate tab
+### Step 2: open the Annotate tab
 
-Bottom drawer → **Annotate**. Every element is listed with a **Roles** picker and
-a **Data categories** picker — both multi-value: pick as many as apply and each
-shows up as a removable chip. The count badge on the tab shows how many elements
-are still untagged. Selecting a row highlights that element in the diagram, so you
-can see what you're tagging. (You can also tag an element straight from its popup
-on the canvas — click the node and use the same **Roles** / **Data categories**
-pickers there.)
+Bottom drawer → **Annotate**. Every element is listed with a **Roles** picker and a
+**Data categories** picker. Both take several values. The count on the tab shows how
+many elements are still untagged, and selecting a row highlights that element in the
+diagram. You can also tag an element from its popup on the canvas.
 
-### Step 3 — Assign roles
+### Step 3: assign roles
 
-Pick one or more roles per element from the vocabulary — some elements genuinely
-play several (e.g. a store that is both `VectorStore` and `VectorIndex`, or an LLM
-that is both `FoundationLLM` and `GenerativeModel`). Roles fall into three
-families — **resource / data roles**, **process-step roles**, and **control
-roles**. The
-complete vocabulary (all 97 roles, with definitions) is in
-[§4.3 Roles](#43-roles-full-vocabulary). The handful you'll reach for most on a
-RAG / LLM graph:
+Pick one or more roles per element. Some elements genuinely play several, such as an
+LLM that is both `FoundationLLM` and `GenerativeModel`. The picker shows each role's
+workbench name, given in brackets below where it differs from the identifier. The
+[Library](#23-the-library)'s **Terms** tab and the
+[catalogue](reference/catalogue.md) define all of them.
 
 | Need | Roles |
 | --- | --- |
 | User-facing I/O | `UserInput`, `PublicUserInput`, `UserFacingOutput`, `PublicUserFacingOutput` |
-| Knowledge / retrieval | `KnowledgeSource`, `VectorStore`, `RetrievedContext`, `RetrievedResult`, `SourceDocument` |
+| Knowledge and retrieval | `KnowledgeSource`, `VectorStore`, `RetrievedContext`, `RetrievedResult`, `SourceDocument` |
 | Models | `FoundationLLM`, `GenerativeModel`, `EmbeddingModel`, `JudgeModel` |
-| Steps | `RetrievalStep`, `PromptConstructionStep`, `GenerationStep`, `EmbeddingStep` |
-| Controls | `GuardrailStep`, `InputGuardrailStep`, `OutputGuardrailStep`, `OutputValidationStep`, `RateLimitControlStep` |
+| Steps | `RetrievalStep` (Retrieve), `PromptConstructionStep` (Construct prompt), `GenerationStep` (Generate), `EmbeddingStep` (Embed) |
+| Controls | `GuardrailStep` (Apply guardrail), `InputGuardrailStep` (Screen input), `OutputGuardrailStep` (Screen output), `OutputValidationStep` (Validate output), `RateLimitControlStep` (Limit rate) |
 
-For this GraphRAG export the reachable findings are **prompt injection** (LLM01),
-**sensitive information disclosure** (LLM02), and **vector & embedding weakness**
-(LLM08) — all via the retrieval motif. Assign, at minimum: the question →
-`PublicUserInput`; the Event ID → `UserInput`; the retrieval step →
-`RetrievalStep`; the Event KG → `VectorStore` + data category `Sensitive
-Information`; the retrieved subgraph → `RetrievedResult` + `Sensitive
-Information`; the LLM → `GenerativeModel`; the generation step → `GenerationStep`;
-the summary → `UserFacingOutput`. (Full table with the "why" for each row is in
-the dedicated walkthrough.)
+For a first result, assign at minimum:
 
-### Step 4 — Apply
+| Element | Role | Data category |
+| --- | --- | --- |
+| Natural Language Question | `PublicUserInput` | |
+| Event ID | `UserInput` | |
+| KG Querying (Retrieval) | `RetrievalStep` | |
+| Event KG | `KnowledgeSource` | Sensitive Information |
+| Event KG Subgraph on Event ID | `RetrievedResult` | Sensitive Information |
+| LLM | `GenerativeModel` | |
+| LLM Prompting (Generation) | `GenerationStep` | |
+| Event Summary | `UserFacingOutput` | |
 
-Click **Apply annotations**. This writes `pair:playsRole` (and
-`pair:containsDataCategory` where set) triples into the editor graph. You'll see
-the Turtle on the left grow the new triples, e.g.:
+### Step 4: apply
+
+Click **Apply annotations**. This writes `pair:playsRole` and
+`pair:containsDataCategory` triples into the editor graph, and the Turtle on the left
+grows, e.g.:
 
 ```turtle
 <…/Component/kg_subgraph>
@@ -335,20 +367,22 @@ the Turtle on the left grow the new triples, e.g.:
     pair:containsDataCategory pair:SensitiveInformation .
 ```
 
-Re-applying is idempotent — it replaces an element's existing roles with exactly
-what's selected, so you can iterate freely.
+Re-applying replaces an element's existing roles with exactly what is selected, so you
+can iterate freely.
 
-### Step 5 — Assess again
+### Step 5: assess again
 
-Click **Run assessment**. With roles in place the retrieval motif matches and the
-**Findings** tab shows **3 candidate findings** (prompt injection, sensitive data
-retrieval, vector & embedding weakness), each with evidence, taxonomy links, and
-suggested mitigations. Select a finding to highlight its evidence in the diagram.
+Click **Run assessment**. With those roles the *Information Retrieval* motif matches and
+**Findings** shows **2 candidate findings**: prompt injection and sensitive information
+disclosure, each with evidence, taxonomy links and suggested controls.
+
+The finished `simple_graph_rag` graph tags every element and raises 7 findings, because
+more roles let more motifs match. Comparing the two is a good way to see what each
+annotation buys.
 
 ### Annotating by hand (alternative)
 
-You don't have to use the drawer — roles are just triples. In the editor you can
-write them directly:
+Roles are just triples, so you can write them directly in the editor:
 
 ```turtle
 @prefix pair: <http://w3id.org/airiskkg/pair-ai#> .
@@ -356,7 +390,7 @@ write them directly:
 ex:MyLLM        a beam:StatisticalModel ; pair:playsRole pair:FoundationLLM .
 ex:GenerateStep a beam:Generate ;         pair:playsRole pair:GenerationStep .
 ex:Context      a beam:Data ;             pair:playsRole pair:RetrievedContext ;
-                                          pair:containsDataCategory ex:UntrustedContent .
+                                          pair:containsDataCategory pair:UntrustedContent .
 ```
 
 The diagram and the Annotate tab pick these up immediately.
@@ -365,260 +399,17 @@ The diagram and the Annotate tab pick these up immediately.
 
 ## 4. Reference
 
-The complete vocabulary the assessment knows: every motif, every risk pattern,
-and every role. This is what the workbench matches against.
+The vocabulary the assessment knows changes with the library, so this guide does not
+copy it. Two places always match the loaded knowledge base:
 
-### 4.1 Motifs (24)
+- **The [Library](#23-the-library) in the workbench**, for reading and for adding a
+  structure to the canvas.
+- **[catalogue.md](reference/catalogue.md)**, generated from the graph: every motif,
+  AI risk pattern, role, data category and annotation guidance shape.
 
-Motifs are risk-neutral architectural patterns. Ones marked **→ risk** currently
-feed one or more risk patterns (see §4.2); the rest are detected for completeness
-and workbench reporting.
-
-#### GenAI / LLM motifs
-
-| Motif | What it captures | |
-| --- | --- | --- |
-| Direct Prompting | A user query is handled directly by a generative model that produces user-facing output, with no retrieval or grounding step. | → risk |
-| Retrieval Augmented Generation (RAG) | A user query **drives** retrieval of relevant context from a **vector store**, which is combined with the query into a prompt and sent to an LLM to produce an answer. Because retrieval is query-driven over a vector store, a RAG graph also matches **Vector-based Information Retrieval**. | → risk |
-| Vector-based Information Retrieval | A retrieval process uses a vector store / knowledge source and produces a retrieved result or context (the retrieval stage of RAG, factored out on its own). | → risk |
-| Embeddings | Source documents or data blocks are chunked and transformed into vectors stored in a vector index. | → risk |
-| Hybrid Retriever | Vector search and keyword / structured search are combined and aggregated to produce a candidate context set. | |
-| Query Rewriting | An LLM reformulates a user query into alternative queries that are then used for retrieval. | → risk |
-| Reranker | A candidate set of retrieved fragments is reranked by a model so the most useful context is passed on for generation. | → risk |
-| Guardrails | Input and output guardrail steps screen or sanitize user prompts and generated responses around the primary LLM generation step. | → risk |
-| Fine Tuning | A pre-trained LLM is further trained with a task- or domain-specific dataset to produce a fine-tuned model. | → risk |
-| Evals | Model input, generated output, expected output, and optional retrieval context are scored or judged to produce evaluation results. | |
-
-#### Supply-chain & serving-image motifs
-
-| Motif | What it captures | |
-| --- | --- | --- |
-| External Dependency | A supply-chain-relevant resource (external dependency, pre-trained model, model artifact, or serving image) is used by a process step. | → risk |
-| Model Load | A prediction-server image and model artifact are managed separately, and the model is loaded by the server before prediction. | → risk |
-| Model-in-Image | A trained model artifact is packaged into a serving image that is deployed as the prediction service runtime. | → risk |
-
-#### ML serving motifs
-
-| Motif | What it captures |
-| --- | --- |
-| Synchronous Prediction | A prediction step runs inline with a request workflow and produces a result before the workflow proceeds. |
-| Asynchronous Prediction | Prediction requests are decoupled from execution through a queue, cache, or similar intermediary. |
-| Batch Prediction | A scheduled job runs prediction over a batch dataset and stores batch results. |
-| Prep-Pred / Preprocess-Prediction | Preprocessing and prediction are represented as separate steps connected by preprocessed data. |
-| Multi-stage Prediction | One prediction path returns a quick result while another produces a slower or richer result. |
-
-#### ML training, lifecycle & operations motifs
-
-| Motif | What it captures | |
-| --- | --- | --- |
-| Batch Training | A scheduled training job prepares data, trains a model, evaluates it, and records the artifact and evaluation result. | |
-| Pipeline Training | Training is decomposed into independently executable pipeline jobs connected by intermediate data and workflow dependencies. | |
-| Train-Then-Serve | Training and serving are separated by evaluation, approval, and a release step before the model is used for production prediction. | |
-| Training-to-Serving | A training pipeline automatically produces a model artifact that is built or deployed into a serving prediction path. | → risk |
-| Prediction Logging | Prediction inputs, results, latency, or related events are collected into prediction logs. | |
-| Prediction Monitoring | Prediction logs or result trends are monitored against expected behavior and may produce alerts. | |
-
-### 4.2 Risk patterns (11)
-
-Each risk pattern anchors to an OWASP LLM Top 10 (2025) entry and fires only when
-a motif match *also* satisfies its applicability condition.
-
-| Risk pattern | OWASP anchor | Fires when… | On motifs |
-| --- | --- | --- | --- |
-| Prompt injection | LLM01 | Untrusted user, retrieved, or tool-supplied content can enter a prompt or generation context. | Direct Prompting, RAG, Query Rewriting |
-| Sensitive data retrieval exposure | LLM02 | Vector-store retrieval carrying sensitive information reaches generation and can surface in user-facing output. | Vector-based Information Retrieval |
-| Supply chain compromise | LLM03 | An external model, data, dependency, provider, or artifact is used. | External Dependency, Fine Tuning, Model Load, Model-in-Image, Training-to-Serving |
-| Data and model poisoning | LLM04 | Untrusted data enters training, fine-tuning, evaluation, or indexing. | Embeddings, Fine Tuning, Training-to-Serving |
-| Improper output handling | LLM05 | Generated output reaches a user or downstream component without a represented validation, sanitization, or guardrail step. | Direct Prompting, Guardrails |
-| Excessive agency | LLM06 | The LLM can trigger tools, permissions, transactions, or state changes (a generation step informing a tool-invocation / state-changing step). | Role-anchored (any match) |
-| System prompt leakage | LLM07 | Hidden instructions or system configuration in the prompt context can be exposed through output. | Guardrails |
-| Vector and embedding weakness | LLM08 | Vector retrieval or an embedding index feeds the generation context. | RAG, Embeddings, Reranker |
-| Direct Prompting without grounding | LLM09 | A Direct Prompting motif produces a user-facing answer with no knowledge source, retrieved context, or verification step. | Direct Prompting |
-| Misinformation from weak grounding | LLM09 | A RAG pipeline's retrieved context reaches generation without a represented verification / evaluation / scoring step. | RAG |
-| Unbounded consumption | LLM10 | Model calls, retrieval breadth, prompt expansion, tool use, or loops are not bounded by represented rate / budget / loop controls. | Direct Prompting, RAG, Query Rewriting |
-
-Each risk pattern also carries suggested controls drawn from PAIR-AI's
-12-entry control catalogue (input validation & prompt isolation, output
-validation & sanitization, data minimization & redaction, retrieval access
-control, model & dependency provenance, trusted training & indexing data, tool
-permission boundaries, system-prompt secrecy, grounding & verification, rate /
-budget / loop control, logging / monitoring / evals, and input & output
-filtering).
-
-### 4.3 Roles (full vocabulary)
-
-The 97 pattern roles you assign to elements, grouped by family. Assign the most
-specific role that fits.
-
-#### Top-level role abstractions
-
-| Role | Meaning |
-| --- | --- |
-| `ProcessingStep` | Any workflow step (preprocessing, training, inference, post-processing). |
-| `ControlStep` | A step implementing a risk control (screening, validation, rate limiting). |
-| `ResourceRole` | Any non-process resource: data, models, stores, or artifacts. |
-
-#### User-facing I/O
-
-| Role | Meaning |
-| --- | --- |
-| `UserInput` | Information provided directly by a user (UI or API input). |
-| `PublicUserInput` | User input from an open / public population — treated as untrusted by taint propagation. |
-| `UserFacingOutput` | Data exposed to a user or downstream consumer (a sink). |
-| `PublicUserFacingOutput` | User-facing output exposed to the public (e.g. a chatbot response). |
-
-#### Knowledge & retrieval resources
-
-| Role | Meaning |
-| --- | --- |
-| `KnowledgeSource` | A source of information an AI system can access (DB, knowledge graph, external API). |
-| `VectorStore` | A vector database serving as a retrieval knowledge source. |
-| `VectorIndex` | An index over embedding vectors. |
-| `KeywordIndex` | A keyword / text index used for lexical search. |
-| `SourceDocument` | A source document ingested into a knowledge base. |
-| `DocumentChunk` | A chunk of a source document used for embedding / retrieval. |
-| `EmbeddingVector` | A stored embedding vector. |
-
-#### Retrieval outputs & context
-
-| Role | Meaning |
-| --- | --- |
-| `RetrievedContext` | Content returned by a retrieval step for use as context. |
-| `RetrievedResult` | A result item returned by a retrieval step, used as retrieved context. |
-| `RetrievedCandidateSet` | A set of retrieved candidate fragments prior to reranking. |
-| `RerankedContext` | Reranked, selected context fragments for generation. |
-| `RewrittenQuery` | A reformulated query produced by a query-rewriting step. |
-
-#### Models
-
-| Role | Meaning |
-| --- | --- |
-| `Model` | A machine-learning or statistical model resource. |
-| `GenerativeModel` | A model that generates content (e.g. an LLM) at inference time. |
-| `PretrainedModel` | A pre-trained model obtained before / without task-specific adaptation. |
-| `FoundationLLM` | A foundation large language model used directly for generation. |
-| `FineTunedModel` | A model produced by fine-tuning a pre-trained model on task-specific data. |
-| `EmbeddingModel` | A model that transforms data into vector embeddings. |
-| `JudgeModel` | A model used to score / evaluate another model's output (LLM-as-judge). |
-| `RerankerModel` | A model (typically a cross-encoder) that scores candidate relevance for reranking. |
-| `LoadedModel` | A model instance loaded into a serving runtime. |
-| `ModelArtifact` | A persisted model artifact (weights / checkpoint). |
-
-#### Prompts
-
-| Role | Meaning |
-| --- | --- |
-| `PromptTemplate` | A prompt template combining instructions and inputs. |
-| `SystemPrompt` | A hidden system prompt / instruction template steering model behavior, not authored by the end user. |
-
-#### Generation & guardrail outputs
-
-| Role | Meaning |
-| --- | --- |
-| `LLMResponse` | A response produced by a generative model prior to output screening. |
-| `GuardrailDecision` | A decision (allow / block) produced by a guardrail step. |
-| `SanitizedOutput` | Output that has passed an output guardrail / sanitization step. |
-
-#### Evaluation data
-
-| Role | Meaning |
-| --- | --- |
-| `ExpectedOutput` | A reference / expected output used in evaluation. |
-| `EvaluationResult` | The result produced by an evaluation step. |
-| `EvaluationScore` | A numeric score produced by an evaluation step. |
-
-#### Prediction & serving data
-
-| Role | Meaning |
-| --- | --- |
-| `PredictionRequest` | An incoming request for a prediction. |
-| `PredictionResult` | The result of a prediction step. |
-| `PredictionQueue` | A queue holding prediction requests. |
-| `PredictionLog` | A log of predictions for monitoring / audit. |
-
-#### Datasets & training data
-
-| Role | Meaning |
-| --- | --- |
-| `TrainingDataset` | A dataset used to train a model. |
-| `FineTuningDataset` | A dataset used to fine-tune a model. |
-| `BatchDataset` | A dataset processed in batch. |
-| `PreprocessedData` | Data produced by a preprocessing step. |
-
-#### Monitoring & operations data
-
-| Role | Meaning |
-| --- | --- |
-| `MonitoringBaseline` | A baseline used by a monitoring step. |
-| `Alert` | An alert raised by a monitoring step. |
-| `ServingImage` | A container image used to serve a model. |
-| `ReleaseApproval` | An approval artifact gating a release. |
-
-#### External / supply chain
-
-| Role | Meaning |
-| --- | --- |
-| `ExternalDependency` | A resource sourced from outside the org's control whose provenance / integrity the graph can't vouch for. |
-| `ExternalModel` | A model obtained from an external provider or model hub. |
-| `ThirdPartyPackage` | A third-party software package, library, or plugin the system depends on. |
-| `ExternalProviderCredential` | A credential (API key, token) granting access to an external provider. |
-
-#### Generation, retrieval & prompt steps
-
-| Role | Meaning |
-| --- | --- |
-| `GenerationStep` | Runs a generative model to produce output. |
-| `PromptConstructionStep` | Assembles a prompt from inputs and context. |
-| `QueryReformulationStep` | Reformulates a query. |
-| `RetrievalStep` | Retrieves fragments from a knowledge source. |
-| `VectorSearchStep` | Performs vector similarity search. |
-| `KeywordSearchStep` | Performs keyword / lexical search. |
-| `AggregationStep` | Aggregates results from multiple searches. |
-| `RerankingStep` | Reranks retrieved candidates. |
-| `EmbeddingStep` | Produces embeddings from data. |
-| `ChunkingStep` | Splits documents into chunks. |
-
-#### Prediction & preprocessing steps
-
-| Role | Meaning |
-| --- | --- |
-| `PredictionStep` | Runs model inference to produce a prediction. |
-| `PreprocessingStep` | Preprocesses input data. |
-| `FastPredictionStep` | A low-latency prediction step. |
-| `SlowPredictionStep` | A higher-latency prediction step. |
-
-#### Training, lifecycle & scheduling steps
-
-| Role | Meaning |
-| --- | --- |
-| `TrainingStep` | Trains a model. |
-| `TrainingPipeline` | Orchestrates model training. |
-| `FineTuningStep` | Fine-tunes a pre-trained model. |
-| `DeploymentStep` | Deploys a model to serving. |
-| `ModelLoadStep` | Loads a model into a runtime. |
-| `ImageBuildStep` | Builds a serving image. |
-| `JobScheduler` | Schedules jobs in a workflow. |
-
-#### Evaluation, ops & agentic steps
-
-| Role | Meaning |
-| --- | --- |
-| `ScoringStep` | Scores a model output during evaluation. |
-| `EvaluationStep` | Evaluates model behavior. |
-| `LoggingStep` | Logs predictions or events. |
-| `MonitoringStep` | Monitors a deployed model. |
-| `ToolInvocationStep` | Invokes an external tool, plugin, or API on behalf of the system (agentic tool use). |
-| `StateChangingStep` | Changes external state: writes, transactions, or actions with side effects outside the system boundary. |
-
-#### Control steps
-
-| Role | Meaning |
-| --- | --- |
-| `GuardrailStep` | Screens input or output. |
-| `InputGuardrailStep` | Screens user input before generation. |
-| `OutputGuardrailStep` | Screens model output before release. |
-| `OutputValidationStep` | Validates, encodes, or sanitizes model output before use. |
-| `RateLimitControlStep` | Enforces rate, budget, quota, or loop bounds on model calls, retrieval breadth, or tool use. |
+How AI risk patterns reach controls is in
+[risk_control_linkage.md](reference/risk_control_linkage.md), and the terminology and
+modelling rules are in the [glossary](reference/PAIR-AI_glossary_v1_4.md).
 
 ---
 
@@ -626,12 +417,15 @@ specific role that fits.
 
 | I want to… | Do this |
 | --- | --- |
-| Try it fast | **Load example ▾ → simple_graph_rag**, then **Run assessment** |
-| Import a structure-only graph | **Open .ttl**, or **Import t4b** for a Tool4Boxology export, then annotate |
+| Try it fast | **Load example → simple_graph_rag**, then **Run assessment** |
+| See what the library holds | **Library** in the header |
+| Start from a risk | **Library** → open a risk → **Add to canvas** on a motif → **Run assessment** |
+| Import a structure-only graph | **Open** a `.ttl`, or a Tool4Boxology export, then annotate |
 | Make a graph matchable | **Annotate** tab → assign roles → **Apply annotations** |
-| Check my graph is well-formed | **Validate** → read the **Input contract** tab |
-| See why a finding fired | Select it in **Findings** → evidence highlights in the diagram |
-| See which motifs matched | **Run assessment** → **Motifs** tab → click a motif to highlight its elements |
-| Scaffold a motif fast | Open the **Motifs** tray (right of the canvas) → click a motif to drop its annotated elements |
+| Check my graph is well formed | **Validate** → read the **Input contract** tab |
+| See why a finding was raised | Select it in **Findings** to highlight its evidence |
+| See which motifs matched | **Run assessment** → **Architectural motifs** tab |
+| Scaffold a motif fast | **Architectural motifs** tray → click a motif → **Add to canvas** |
+| Run a risk workshop | **Risk** level → **Hide the run** while the team states risks |
 | Start from scratch | **Starter**, or **Clear** and build with the palette |
-| Keep a graph off GitHub | Put it in `ontology/example_local/` — gitignored, and never in a built image |
+| Keep a graph off GitHub | Put it in `ontology/example_local/`, which is gitignored and never in a built image |

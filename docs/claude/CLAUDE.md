@@ -29,50 +29,36 @@ Rules are stated first and justified in one clause. The incidents behind them ar
   | Instance | **motif match** | bindings from pattern nodes to elements | `pair:MotifMatch` |
 
   The differentia is **what gets dropped**: a design pattern documents *why* the solution works;
-  a motif keeps only the structure, which is what makes it matchable and risk-neutral. An **AI
+  a motif keeps only the structure, which is what makes it matchable. An **AI
   risk pattern** re-attaches conditions, consequences and controls — so calling *that* a pattern
-  is correct. Relationship to design patterns is **m:n**. **A motif is never called a pattern**
-  — not "reusable architectural pattern", not "graph pattern", not "structural pattern" — and
-  **motif is never used for an occurrence**; that is a motif match. Compounds are fine
+  is correct. Relationship to design patterns is **m:n**. **A motif is the recurring solution structure of a design, stated as a small typed graph** of
+  pattern roles joined by flow relations, in the vocabulary an architecture is modelled in
+  (Guéhéneuc & Antoniol, 2008; Valverde & Solé, 2005; glossary term 4). Its occurrence in a submitted
+  graph is a **motif match**. Compounds are fine
   (`pattern role`, `pattern node`, Risk Pattern Library); see the glossary Section B naming
   exception for why `pair:Pattern*` term names keep the word.
 
-- **A shared name is not a shared thing.** Fowler documents a gen-AI design pattern called
-  Direct Prompting, and the library declares `pat:DirectPromptingMotif`. These are different
-  kinds of entity, not two names for one:
+- **How structure becomes a motif.** A design pattern's four sections land in three places:
+  **structure** becomes the motif, **intent and applicability** are dropped, and **consequences** are
+  re-attached by the AI risk pattern. The first step is modelling, after DeMIMA: each participant the
+  source draws becomes a pattern node with an expected role and class, each interaction a `use` or
+  `produce` edge, and a step handing to a step gets the resource between them declared, because the
+  graph is bipartite. Glossary term 4 walks through it.
+- **`pat:DirectPromptingMotif` is labelled Prompted Generation** since 2026-11-09, because R9 forbids
+  *direct* in a motif label. The IRI keeps its name: an IRI is identity, as with Agent memory.
+  `pat:DirectPromptingWithoutGroundingRiskPattern` may carry the negative a motif name may not.
 
-  | | Fowler's *Direct Prompting* | `pat:DirectPromptingMotif` |
-  | --- | --- | --- |
-  | In the graph? | No. Only a citation handle | Yes: 4 pattern nodes, 3 pattern edges |
-  | Read when? | While designing, to decide what to build | Afterwards, matched against what was built |
-  | Says anything about risk? | Yes, its *consequences* warn it is ungrounded | No. Risk-neutral by construction (R2) |
-
-  A design pattern's four sections land in three places, which is the shortest statement of
-  the method: **structure** becomes the motif, **intent and applicability** are dropped, and
-  **consequences** are re-attached by the AI risk pattern. That is why
-  `pat:DirectPromptingWithoutGroundingRiskPattern` exists and carries the negative a motif name
-  may not (R9).
-
-  The collision is a coincidence of this one case. The relation is m:n, so RAG induces three
-  motifs while Direct Prompting happens to induce one, which is what makes it misleading. In
-  identifiers the `Motif` suffix disambiguates. In prose, never let "Direct Prompting" stand
-  alone: name the level.
-
-- **`pair:derivedFrom` names an entity; `dct:source` names a document.** All 31 motifs and 15
-  risk patterns now derive from an entity, held by
+- **`pair:derivedFrom` names an entity; `dct:source` names a document.** Every motif and risk pattern derives from an entity, held by
   `test_derived_from_points_at_an_entity_never_at_a_document`. Pointed at a URL, `derivedFrom`
   only repeats `dct:source`, and *"which motifs came from this design pattern?"* stops being
-  answerable. That is what 23 motif references to one Fowler article URL cost.
-- **A design pattern is identified by a `pair:DesignPatternCitation`, never modelled.** The 52
-  handles at the top of `motif.ttl` carry a label and a `dct:source` (a DOI handle adds an APA
+  answerable. That is what 23 motif references to one article URL cost.
+- **A design pattern is identified by a `pair:DesignPatternCitation`, never modelled.** The 43 handles at the top of `motif.ttl` carry a label and a `dct:source` (a DOI handle adds an APA
   `dct:bibliographicCitation`, which the linkage generator reads), and nothing else.
   `test_a_design_pattern_citation_stays_a_citation` fails on any other predicate, because a
   `dct:description` there would start modelling the intent and consequences the method drops.
-  The handles are what turn the m:n relation into a traversal: `Cite_Guardrails` is reached by
-  Guardrails, Input Screening and Output Screening.
+  The handles are what turn the m:n relation into a traversal: `Cite_MultimodalGuardrails` is reached by Guardrails and by Input, Output, Retrieval and Execution Screening.
 - **A handle is minted in `pat:` but stands for someone else's catalogue.** So `library.py`
-  reads its origin off its own `dct:source`. Reading it off the IRI would credit Fowler's
-  patterns to PAIR-AI.
+  reads its origin off its own `dct:source`. Reading it off the IRI would credit Mercari's patterns to PAIR-AI.
 - **The library names a paper by its DOI, and nothing else.** A DOI handle's chip reads
   `doi:10.48550/arXiv.2312.10997 · Naive RAG`: the label is the design pattern, the DOI is the
   paper. The venue (`dct:isPartOf`) and the paper's name in the label ("(RAG survey)") were
@@ -85,15 +71,13 @@ Rules are stated first and justified in one clause. The incidents behind them ar
   `owasp:llm03-supply-chain` for the same reason, and its one handle (Mercari's *Model load*)
   arrived only when Model load was merged into it in B-4. Keep that visible; it
   is a weaker derivation and must be described as one.
-- **No motif rests on a blog alone (2026-10-07).** Four motifs cited only Fowler's article:
-  Direct Prompting, Fine Tuning, Hybrid Retriever and Query Rewriting. Each now also cites a
-  DOI: Wei et al. (2021) for prompting and pretrain–finetune (the paradigms its Figure 2
-  draws), Gao et al.'s RAG survey (2023) for Naive RAG, mix/hybrid retrieval and reranking,
-  and Ma et al. (2023) for rewrite-retrieve-read. Handles by host: **doi.org 12, Mercari 13,
-  Fowler 9**. **Link a source only where it draws the motif's own structure**: `derivedFrom`
-  claims the shape was read off that design pattern, so a source that is merely *about* the
-  topic does not qualify. Every tracked graph's finding set was triple-identical after the
-  change, because no query reads `derivedFrom`.
+- **Motifs cite scientific sources where they exist (2026-11-09).** Fowler's article is removed:
+  every motif that cited it also cited a DOI. Wei et al. (2021) draw prompting and pretrain–finetune,
+  Gao et al.'s RAG survey (2023) Naive RAG, hybrid retrieval and reranking, and Ma et al. (2023)
+  rewrite-retrieve-read. Handles by host: **doi.org 31, Mercari 12**, so seven motifs still rest on
+  Mercari's catalogue, which is not peer-reviewed. **Link a source only where it draws the motif's own
+  structure**: `derivedFrom` claims the shape was read off that design pattern, so a source merely
+  *about* the topic does not qualify. No query reads `derivedFrom`.
 - **What the 2026-10-07 reference set did not become, and why.** *Lost in the Middle* (Liu et
   al., 2024) is an empirical finding about long contexts, not a structure: evidence for a risk
   pattern's mechanism if anywhere, never a motif's derivation. Breuer et al. (2025) is an
@@ -105,9 +89,6 @@ Rules are stated first and justified in one clause. The incidents behind them ar
   prompt/response optimiser; one-shot and incremental model querying; plan generators; voting-
   and debate-based cooperation; tool/agent registry — **got no handle**, because a handle no
   motif derives from is declared-but-unused. Mint it with the motif that reads it.
-- **The Fowler handles cite the article, not a section.** The article has per-pattern anchors,
-  and using them is a one-line change per handle once they are verified against the live page.
-  Identity does not wait on that: it is the handle's IRI and label. Do not invent anchors.
 - **Ask before any change that alters the semantics of existing motif SPARQL queries.**
 
 ---
@@ -153,8 +134,7 @@ framing.
 It matches **architectural motifs** — reusable, type-level configurations of **pattern
 roles** connected by flow relations — against those graphs. A motif is not itself executed:
 each one is detected by a registered SPARQL CONSTRUCT, its **motif matcher** (the OQP to the
-motif's ODP). A motif is **risk-neutral**: it states what structure is present, never whether
-that structure is dangerous. Risk enters only when an **AI risk pattern** evaluates its
+motif's ODP). A motif is **structure only**: it makes no risk claim, and the AI risk patterns that read it do. Risk enters only when an **AI risk pattern** evaluates its
 **applicability conditions** over a motif match. Satisfaction emits a **candidate risk
 finding** carrying evidence, a curated risk mechanism, taxonomy links (IBM AI Risk Atlas /
 OWASP LLM Top 10 / OWASP Agentic Top 10 / MIT AI Risk Repository / NIST AI 600-1), and
@@ -172,7 +152,7 @@ Where the static-analysis analogy is used, get it the right way round:
 
 | Static analysis | PAIR-AI |
 | --- | --- |
-| The code shape a rule matches | **Motif** — structural, and risk-neutral on its own |
+| The code shape a rule matches | **Motif** — structure only |
 | The lint rule: shape + guard + message + category + suggested fix | **Risk pattern** — which is the constituent equation, term for term |
 | The diagnostic it emits | **Candidate risk finding** — requires triage, never a confirmed defect |
 
@@ -205,10 +185,10 @@ Read before non-trivial changes.
 
 | Document | What it is |
 | --- | --- |
-| `docs/reference/PAIR-AI_glossary_v1_3.md` | Terminology and modeling rules. **v1.3** supersedes v1.2 (deleted). Sections: **A** core terms, **B** internal terms, **C** rules **R1–R10**, **D** grounding references. A reference to `PAIR-AI_glossary_v1.2.md` is a broken link to fix; v1.2's Sections E/F are gone — do not cite them. **Stale on one point as of 2026-10-04:** lines 26, 122 and 135–137 still list `inform` as a flow relation and still say flow relations are not data flow. The implementation removed it; **this file wins** until the glossary is reissued. |
-| `docs/reference/PAIR-AI_method_and_construction.md` | How the knowledge base was built and how an assessment runs. **Stale on one point as of 2026-10-04:** lines 459, 546 and 695 still name `beam:inform`. `docs/reference/mitigation_and_gap_mechanics.md` likewise, at lines 191, 227 and 234. |
-| `docs/reference/catalogue.md` | Inventory of every motif, risk pattern, role, and data category. **Hand-written, so it goes stale silently** — re-check its counts whenever the library changes. |
-| `docs/reference/risk_control_linkage.md` | How risk patterns reach controls, including the MIT evidence layer. **Generated** — regenerate, never hand-edit. Its motif section lists every catalogue a motif derives from (m:n) and reads DOI handles off their APA citation; until 2026-10-07 it kept the first Mercari/Fowler/OWASP hit, so the agent catalogue's six handles never appeared in it. `test_generated_documents.py` re-runs the generator and diffs it against what is checked in, because nothing did: when `pair:derivedFrom` moved from naming a URL to naming a `pair:DesignPatternCitation`, the generator kept producing a document while every motif silently fell into *"unrecorded"*. **A generated artifact nothing re-generates is not reproducible, it is just checked in.** |
+| `docs/reference/PAIR-AI_glossary_v1_4.md` | Terminology and modeling rules. **v1.4** supersedes v1.3 (deleted). Sections: **A** core terms, **B** internal terms, **C** rules **R1–R10**, **D** grounding references. A reference to an earlier file name is a broken link to fix. It states no library counts; the catalogue carries them. |
+| `docs/reference/PAIR-AI_method_and_construction.md` | How the knowledge base was built and how an assessment runs. |
+| `docs/reference/catalogue.md` | Inventory of every motif, risk pattern, role, and data category. **Generated** by `generate_catalogue.py`, regenerate and never hand-edit. It was hand-written until 2026-11-09 and had 24 of 34 motifs. |
+| `docs/reference/risk_control_linkage.md` | How risk patterns reach controls, including the MIT evidence layer. **Generated** — regenerate, never hand-edit. Its motif section lists every catalogue a motif derives from (m:n) and reads DOI handles off their APA citation; until 2026-10-07 it kept the first catalogue hit, so the agent catalogue's six handles never appeared in it. `test_generated_documents.py` re-runs the generator and diffs it against what is checked in, because nothing did: when `pair:derivedFrom` moved from naming a URL to naming a `pair:DesignPatternCitation`, the generator kept producing a document while every motif silently fell into *"unrecorded"*. **A generated artifact nothing re-generates is not reproducible, it is just checked in.** |
 | `NOTICE.md` | Third-party attributions and the licence posture of each ingested source. |
 
 **Local-only (gitignored — absent from a fresh clone):**
@@ -301,6 +281,10 @@ Read before non-trivial changes.
   reasoning runs in the pipeline** — `owl:inverseOf` is documentation only, so a one-sided
   assertion is invisible to a consumer reading the other side. Write both directions;
   `test_library_consistency.py` enforces it.
+- **A declared motif is curation, not a gate.** Six risk queries leave the motif open and bind
+  no pattern node, so a finding can name a motif its risk pattern does not declare: 23 of 89
+  findings across the eight tracked architectures (2026-11-09). The README, the catalogue and
+  the library say so. Restricting those queries would change findings and is undecided.
 - **Mechanisms are curated, never computed.** A `pair:RiskMechanism` takes no part in
   detection — never evaluated, never filtered on. Findings carry it by reference
   (`pair:hasDerivedMechanism`) so the same explanation reproduces unchanged across systems and
@@ -816,7 +800,7 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 
 - **The workbench opens on the library, not an empty canvas.** `GET /api/library` serves the
   risk pattern library and the motif library **counted off the loaded graph** by
-  `workbench/library.py` — never a hand-written list, for the reason `catalogue.md` records.
+  `workbench/library.py` — never a hand-written list, which is how the catalogue once fell behind.
   Under each risk pattern it lists the motifs it applies to, drawn from their declared
   `pair:hasPatternNode` / `pair:hasPatternEdge` by `lib/motif_preview.js` and insertable with
   the existing `add-motif` edit — so a reader can work backwards: pick the risk, add the
@@ -868,8 +852,10 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   scheme's. Every link is the upstream Nexus data's or one the repository already cited: IBM
   entries carry their per-entry page, ASI entries the Agentic Top 10 page that upstream gives
   each of them, and MIT, NIST and the Zhang scheme link the catalogue, since none publishes a
-  page per entry. **A link is never minted from a URL pattern**: `data-usage-restrictions` has
-  no upstream URL and falls back to the Atlas page. `test_every_source_on_a_risk_page_can_be_opened`
+  page per entry. **A link is never minted from a URL pattern**: an entry with no upstream URL
+  falls back to its catalogue's page. (`atlas:data-usage` looked like such an entry until
+  2026-11-07, when it turned out to be misnamed `data-usage-restrictions`; under its upstream
+  id it has a page.) `test_every_source_on_a_risk_page_can_be_opened`
   holds all 200 chips. In `derivedFrom`, an entry in this project's own namespace still ranks
   after a paper or a design catalogue, link or not.
 - **Two risk patterns name no motif and must keep saying so** rather than showing an empty heading:
@@ -1083,7 +1069,7 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **Sub-motifs are shown, not matched (decision 3B; C after the tutorial).** `pair:refinesMotif`
   names the general motif a motif is a more detailed form of (Hybrid retriever, Reranker,
   Query rewriting and RAG under Information retrieval; Iterative and Adaptive RAG under RAG;
-  Guardrails under Input and Output screening; 16 links). In the tray a sub-motif follows its
+  Guardrails under Input and Output screening; 18 links). In the tray a sub-motif follows its
   general motif on the same shelf in a box of the same width, its text set in with an accent
   inside the box (an L connector and an "of X" note were tried and removed as untidy); the
   motif's card links both levels. **No match query reads it** (the family guard covers it), and it is not yet a
@@ -1228,14 +1214,11 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   (`data_model_poisoning.rq`, `supply_chain.rq`, `vector_embedding_weakness.rq`) rest on
   provenance and vetting — non-technical controls with no runtime shape — and
   `TrainingDataMembershipInference` rests on how the model is trained. No structural
-  escape exists to write. Those four and `evaluation_data_contamination.rq` are the 5 of 29
-  risk queries carrying no `FILTER NOT EXISTS`; contamination is still clearable, because its
-  condition *is* the shared data, and giving the evaluation its own removes it. The answer is **finding-level triage**, not a query escape:
+  escape exists to write. Five of the 33 risk queries carry no `FILTER NOT EXISTS`: data poisoning, vector weakness, membership inference, `evaluation_data_contamination.rq` and `personal_data_retained.rq`. The last two are still clearable, by giving the evaluation its own data and by a redaction step before the store. `supply_chain.rq` carries two, but they are guards on what counts as external, never a control escape. The answer is **finding-level triage**, not a query escape:
   `pair:findingStatus` is the extension point, finding IRIs are deterministic so a judgement
   survives re-runs, and "accepted, handled by process" is a human act recorded against the
   finding rather than a fabricated structural fact. Never conflate the two.
-- **Carrying a `FILTER NOT EXISTS` is not the same as being clearable.** 24 of 29 risk queries
-  carry at least one; several test only the structural half while the annotation half stays
+- **Carrying a `FILTER NOT EXISTS` is not the same as being clearable.** 28 of 33 risk queries carry at least one; several test only the structural half while the annotation half stays
   unclearable. **Audit a specific finding before telling anyone it is actionable.**
 - **Applying a control is a registered SPARQL rewrite, not code.** A `pair:MitigationApplication`
   restates the vulnerable shape its `pair:mitigatesRiskPattern` found and CONSTRUCTs the step
@@ -1283,9 +1266,8 @@ nowhere in the ontology.**
 | `pair:RiskFinding` | Carries taxonomy entries on `pair:hasCandidateRiskTaxonomyEntry` and status on `pair:findingStatus`. **The assessed system is not asserted on the finding** — derive it by traversing from an evidence element to the containing `beam:System`. |
 | `pair:controlNature` | technical / non-technical. |
 | `pair:suggestedControl` | Only project-authored `pat:Control_*` concepts appear here; MIT `mitctrl:*` families are reached as an evidence layer through taxonomy links. |
-| `pair:identifiesCandidateRisk` | **Declared but not emitted.** No finding links to a `beamr:Risk`, and no alignment exists between `nexus:Risk` and `beamr:Risk`. Open item — do not write docs implying it works. |
 
-Two curated collections: **Motif Library** (risk-neutral) and **Risk Pattern Library**.
+Two curated collections: **Motif Library** (structure only) and **Risk Pattern Library**.
 
 If code or TTL still uses old names, that is migration debt — fix toward the new names, never
 toward the old ones.
@@ -1369,6 +1351,7 @@ because an annotation can be attached to a data object and needs a plain `bpmn:a
 (`validate_graphs.py`, `normalize_t4b.py`, `generate_mapping_provenance.py`), or it rewrites a tracked file
 (`generate_mit_action_layer.py` writes `ontology/taxonomy/mit_mitigation_action.ttl`,
 `generate_eticas_layer.py` writes `ontology/taxonomy/eticas_risk.ttl`,
+`generate_catalogue.py` writes `docs/reference/catalogue.md`,
 `generate_risk_control_linkage.py` writes `docs/reference/risk_control_linkage.md`; it refuses to
 run when a control is missing from its `CONTROL_ORDER`, which section 3 walks).
 `export_ontology.py`, `pattern_provenance_worklist.py` and `role_provenance_export.py` met none
@@ -1466,8 +1449,8 @@ nested motifs co-match by design, so the number is structural coverage.
 `test_agentic_assessment.py` covers the agentic layer with an inline graph;
 `it_support_agent.ttl` covers it as a fixture.
 
-When library counts change, **update `docs/reference/catalogue.md` in the same commit** —
-nothing regenerates it.
+When the library changes, **regenerate `docs/reference/catalogue.md`** with
+`python python/scripts/generate_catalogue.py`; `test_generated_documents.py` fails otherwise.
 
 ### Performance and correctness traps
 
@@ -1553,10 +1536,6 @@ deleted, as `pair:maturity` was.
   the situational layer remain inert.
 - **The direct-read facet route.** Of the two sanctioned routes, only the bridge is live. No
   applicability condition reads a facet directly.
-- **`pair:identifiesCandidateRisk`.** Declared, never emitted. No finding links to a
-  `beamr:Risk`, and no alignment exists between `nexus:Risk` and `beamr:Risk`. The stated-risk
-  layer deliberately does not close this, because reconciliation is computed from shared
-  evidence rather than asserted.
 - **R6's own-SSSOM export.** Never generated. The project consumes upstream sets, so say that
   rather than implying the export exists.
 
@@ -1585,7 +1564,7 @@ len(set(load_base_graph().subjects(RDF.type, PAIR.GraphMotif)))   # and its sibl
 | Applicability conditions | **34**, carried on 38 attachments |
 | Controls | **30** `pat:Control_*` |
 | Taxonomy entries (`nexus:Risk`) | OWASP LLM 10, OWASP ASI 10 (ASI10 catalogued only), IBM Atlas 40, MIT subdomains 18, NIST AI 600-1 10, ML risks (Zhang) 12, Eticas 67 (plus 30 Eticas groups) |
-| Triples | **11 066** |
+| Triples | **11 089** (re-counted 2026-11-09) |
 | Motif–risk links | **68** — 20 carried by the motif alone, 48 with a named context (19 annotate the motif's own elements, 29 add the surrounding elements the risk needs) |
 
 **84 registered implementations** over 83 `.rq` files: 34 match, 33 risk, 6 propagation, 9
@@ -1625,8 +1604,7 @@ building an approval inline.
 
 ### Test suite
 
-**569 of 714 tests** by default, and 145 browser tests in ~30 min; all pass (counted
-2026-10-20, the first fully green run on this branch). The browser failures that came and went
+**571 of 717 tests** by default, and 146 browser tests in 30 to 45 min; all pass (counted 2026-11-09). The browser failures that came and went
 were each a test inheriting state an earlier one left: a canvas panned until the chip sat under
 the header, another level on screen, a motif match still picked, a concern raised in six places
 measured as if it were one, and one that clicked a stated risk where it meant a concern. And one

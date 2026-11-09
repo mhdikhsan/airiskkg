@@ -8,7 +8,7 @@ CONSTRUCT {
     ?riskFinding
         a pair:RiskFinding ;
         rdfs:label "Candidate Direct Prompting without grounding"@en ;
-        dct:description "A Direct Prompting step produces a user-facing answer without an explicit knowledge source or retrieved grounding context represented in the architecture graph."@en ;
+        dct:description "A prompted generation step produces a user-facing answer without an explicit knowledge source or retrieved grounding context represented in the architecture graph."@en ;
         pair:generatedFromMatch ?match ;
         pair:generatedByMotif pat:DirectPromptingMotif ;
         pair:hasDerivedMechanism ?mechanism ;

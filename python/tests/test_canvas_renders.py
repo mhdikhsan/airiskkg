@@ -1064,7 +1064,7 @@ def test_the_term_picker_searches_and_shows_what_each_term_means(served) -> None
 
 
 def test_the_library_shelves_the_annotation_vocabulary_by_what_it_goes_on(served) -> None:
-    """The library counted 97 roles in its stats and offered no way to read one.
+    """The library counted its roles in its stats and offered no way to read one.
     The Terms tab shelves them by the BEAM class they are annotated on, because
     the role hierarchy's four top-level terms cannot: 50 sit under one."""
     browser = _browser()

@@ -22,7 +22,7 @@ The knowledge base pairs two curated libraries:
 - **Motif library**: architectural motifs, reusable structures of pattern roles and
   flow relations, each derived from an architecture design pattern (RAG, guardrails,
   agentic tool use, prediction serving, ...) or from a risk catalogue entry. A motif
-  is risk-neutral: it says what structure is present, never whether it is dangerous.
+  is structure only: it makes no risk claim, and the AI risk patterns that read it do.
 - **Risk Pattern Library**: AI risk patterns, each one a motif plus applicability
   conditions, a curated risk mechanism, links into external risk taxonomies, and
   suggested controls.
@@ -39,6 +39,10 @@ An assessment runs in four steps:
 Every finding is a **candidate**: a structural disposition in the submitted graph,
 never a confirmed failure. An absence check ranges over what the graph represents,
 so a finding says *no control is represented here*, not *this system has no control*.
+
+The motifs declared on an AI risk pattern are the structures the library curates for
+it. A few risk queries read roles on any motif match, so a finding can name a motif
+that is not declared there; the catalogue lists those queries.
 
 The library currently holds **34 motifs** and **33 AI risk patterns** (GenAI,
 agentic, ML serving and training, supply chain), **30 controls**, and **124 pattern
@@ -70,7 +74,7 @@ support chatbot it runs on.
 
 The editor and the canvas are two views of one Turtle document and stay in sync both
 ways: type Turtle and the diagram redraws; draw, connect or rename on the canvas and
-the Turtle updates. Three levels share the canvas.
+the Turtle updates. It opens on the library, and three levels share the canvas.
 
 - **Library.** The workbench opens on the libraries: every AI risk pattern with its
   mechanism, what it may lead to and its suggested controls, and every motif drawn
@@ -190,7 +194,7 @@ can actually be clicked.
 | Document | What it covers |
 | --- | --- |
 | [User guide](docs/user_guide.md) | Using the workbench, and the annotation vocabulary |
-| [Glossary](docs/reference/PAIR-AI_glossary_v1_3.md) | Terminology and the modelling rules R1 to R10 |
+| [Glossary](docs/reference/PAIR-AI_glossary_v1_4.md) | Terminology and the modelling rules R1 to R10 |
 | [Method and construction](docs/reference/PAIR-AI_method_and_construction.md) | How the knowledge base was built and how an assessment runs |
 | [Catalogue](docs/reference/catalogue.md) | Every motif, AI risk pattern, role and data category |
 | [Risk and control linkage](docs/reference/risk_control_linkage.md) | How AI risk patterns reach controls (generated) |

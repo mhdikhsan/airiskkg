@@ -1,8 +1,12 @@
-# PAIR-AI Glossary and Modeling Rules (v1.3)
+# PAIR-AI Glossary and Modeling Rules (v1.4)
 
 **Status:** Single source of truth for terminology in the paper, slides, ontology comments, and
 code. Any change to a definition here requires a version bump and a check of all downstream
 artifacts.
+
+**Changes in v1.4.** Term 4 is redefined from [D17] and [D29], and a motif is called *structure only*. Term 8 cites [D30]. `inform` is removed from the flow relations, as it was from BEAM. Library counts are no longer stated
+here: [catalogue.md](catalogue.md) is generated from the graph and carries them. `pair:identifiesCandidateRisk` is recorded as
+removed. R9 now says what it governs.
 
 **Notation.** This document uses the prefix `pair:` for the pattern module, matching every
 ontology file, SPARQL query, and Python module. The namespace is
@@ -23,7 +27,7 @@ running system.
 
 An RDF instance graph (ABox) representing one concrete AI system under assessment, expressed in
 the Boxology Notation (BEAM) vocabulary: typed elements (System, Resource, Model, Process, Agent) connected by flow
-relations (`use`, `produce`, `inform`, `participatedIn`, `contain`). Its schema (TBox) is the
+relations (`use`, `produce`, `participatedIn`, `contain`). Its schema (TBox) is the
 Architecture module: BEAM plus vocabulary alignments plus the SHACL input contract. It may be
 stored as a named graph alongside the AI-RKG, but it is per-system *input*, not part of the
 reusable knowledge resource.
@@ -81,11 +85,11 @@ values. Facets characterize elements; they are never nodes that motifs traverse.
 
 ### 4. Architectural Motif (`pair:GraphMotif`)
 
-> A **reusable, type-level configuration of pattern roles connected by flow relations**, capturing
-> a recurring arrangement in AI system architectures (e.g., vector-based retrieval,
-> retrieval-augmented generation, human-in-the-loop decision support). A motif is *descriptive*
-> and **risk-neutral by itself**: it states what structure is present, never whether that
-> structure is dangerous.
+> The **recurring solution structure of a design, stated as a small typed graph**: pattern roles
+> as nodes and flow relations as edges, in the same vocabulary an architecture graph is modelled in
+> (e.g., vector-based retrieval, retrieval-augmented generation, human oversight). A motif is
+> *descriptive*: it states what structure is present, and the AI risk patterns that read it state
+> what that structure may lead to.
 
 **Three levels, and the differentia between them.** "Pattern" and "motif" name different levels
 and must not be used interchangeably:
@@ -98,8 +102,18 @@ and must not be used interchangeably:
 
 The differentia is **what gets dropped**. A design pattern is a problem–solution pair in a context
 and documents *why* the solution works. A motif keeps only the *structure*. That subtraction is
-exactly what makes a motif matchable and risk-neutral: rationale cannot be matched against a graph,
-structure can.
+exactly what makes a motif matchable: rationale cannot be matched against a graph, structure can.
+
+**How structure becomes a motif.** The derivation follows the first step of [D17], which builds a
+model of a motif "with the formalism used to describe" the system it will be matched against. Here:
+(1) read the structure the source draws; (2) each participant becomes a pattern node, with a
+`pair:expectedRole` and a `pair:expectedClass`; (3) each interaction becomes a `use` or `produce`
+edge, and where the source draws one step handing to another, what is handed over is declared as a
+resource, because the graph is bipartite; (4) intent, applicability and consequences are left out;
+(5) a registered CONSTRUCT is written for the declaration, and a test builds each motif's template
+and asserts the motif matches it. Naive RAG in the RAG survey becomes: a retrieval step using a query
+and a knowledge source and producing context, a prompt step using both and producing a prompt, and a
+generation step using that prompt and a model and producing the answer.
 
 An **AI risk pattern** (`pair:RiskPattern`, term 7) is a pattern in the full sense. It re-attaches
 to a motif the applicability conditions, consequences (mechanism, taxonomy links) and mitigations
@@ -118,8 +132,8 @@ Three properties carry the definition, and the rest of the method depends on eac
 - **Over roles, not implementations.** A motif's nodes are constrained by **pattern roles**
   (term 2) and BEAM classes, never by implementation-specific labels. This is what lets one motif
   match heterogeneous systems.
-- **Structure only, hence risk-neutral.** A motif ranges over roles and **flow relations**
-  (`use`, `produce`, `inform`) and reads **no characterization facet** (R2). Risk enters only
+- **Structure only.** A motif ranges over roles and **flow relations**
+  (`use`, `produce`) and reads **no characterization facet** (R2). Risk enters only
   when a risk pattern (term 7) evaluates its applicability conditions over a motif match.
 
 **Motifs cannot express absence.** Motif matching is monotone: if a motif matches an architecture
@@ -132,25 +146,35 @@ accordingly (R9).
 subgraph of a larger one, and a nested motif always co-matches with its container. Match counts
 are therefore a measure of structural coverage, not of distinct architectural features.
 
-**Flow relations are not the same as data flow.** `inform` is process-to-process ordering with no
-resource transfer, and it is load-bearing in the library (e.g., the Guardrails motif is
-constituted by a guardrail step *informing* a generation step). Defining a motif over "data flow"
-alone would exclude it.
+**Flow relations join a process and a resource.** `use` and `produce` always cross between the two
+sides of the graph, so a process reaches another process only through a resource one produces and
+the other uses. A flow relation states that a step uses or produces a kind of resource. It describes
+a design, and no value is claimed to have moved.
 
 **Type and instance.** The motif is the type; a **motif match** (§B) is its instantiation — a
 mapping from the motif's abstract pattern nodes to concrete architecture elements. "Reusable" is
 exact in this sense: one motif, many matches, across systems.
 
-**Terminology grounding.** "Motif" is established terminology in design-pattern detection, where
-a *design motif* is the structural solution core of a design pattern, described by roles and
-relations and matched against concrete systems, as distinct both from the full design pattern
-and from its occurrences [D17, D15]. The granularity claim follows the notion of **architectural primitives**:
-abstractions below the level of an architecture design pattern that recur across the
-realizations of several design patterns [D18, D19]. Annotating an architecture with such abstractions and then proposing catalogued
-patterns from the annotations is an established method shape [D20]; PAIR-AI applies it over RDF
-and adds risk semantics. The graph-theoretic sense of a small recurring subgraph matched against
-a host graph [D1] is the secondary reading. In ontology-engineering terms the declarative motif is
-a content-level **Ontology Design Pattern** [D14, D24] over the BEAM and role vocabulary.
+**Terminology grounding.** The term comes from design-pattern detection, where design patterns
+"offer design motifs, elegant solutions to recurrent design problems", and detection identifies
+"micro-architectures that are similar to design motifs" in a system [D17]. PAIR-AI takes three things
+from that account: a motif is the solution part of a design pattern; it is modelled in the same
+formalism as the system it is matched against; and its occurrences are a separate thing, which [D17]
+calls micro-architectures and PAIR-AI calls motif matches.
+
+The graph-theoretic sense supplies the rest. Network motifs are small subgraphs "which appear much
+more often than expected from pure chance", measured against randomized graphs [D29, D1]. PAIR-AI
+keeps the small recurring subgraph and drops the statistical test: recurrence is established by the
+published designs a motif is read from, and nothing is counted over a corpus. [D29] also reports that
+in software class graphs several frequent motifs "appear to be a consequence of network heterogeneity
+and size", which is one reason a structural match is read as a candidate and nothing more.
+
+The granularity claim follows the notion of **architectural primitives**: abstractions below the level
+of an architecture design pattern that recur across the realizations of several design patterns
+[D18, D19]. Annotating an architecture with such abstractions and then proposing catalogued patterns
+from the annotations is an established method shape [D20]; PAIR-AI applies it over RDF and adds risk
+semantics. In ontology-engineering terms the declarative motif is a content-level **Ontology Design
+Pattern** [D14, D24] over the BEAM and role vocabulary.
 
 **Relationship to architecture design patterns is m:n.** One architecture design pattern (e.g.,
 RAG) induces several motifs; one motif (e.g., vector retrieval) occurs in several design patterns
@@ -174,16 +198,15 @@ architecture. *Not:* a risk, and *not* a single role.
 A **registered executable SPARQL CONSTRUCT query**. Every one carries a
 `pair:implementationPath` (a literal string naming its `.rq` file) and a
 `pair:producesOutputType` (what it emits); those two are the invariant, and are what
-`test_library_consistency.py` checks. Five kinds are registered — counts measured off the loaded
-graph on 2026-09-08, 63 in total:
+`test_library_consistency.py` checks. Five kinds are registered:
 
-| Kind | Count | Bound to its subject by | Emits |
-| --- | --- | --- | --- |
-| Motif matcher | 31 | `pair:implementsMotif` | `pair:MotifMatch` |
-| Risk query | 15 | `pair:implementsRiskPattern` | `pair:RiskFinding` |
-| Mitigation rewrite | 9 | `pair:implementsControl` + `pair:mitigatesRiskPattern` | the control structure it inserts |
-| Propagation rule | 6 | — | derived facts (e.g. `pair:containsDataCategory`) |
-| Business-context derivation | 2 | — | `pair:businessFollows`, derived data categories |
+| Kind | Bound to its subject by | Emits |
+| --- | --- | --- |
+| Motif matcher | `pair:implementsMotif` | `pair:MotifMatch` |
+| Risk query | `pair:implementsRiskPattern` | `pair:RiskFinding` |
+| Mitigation rewrite | `pair:implementsControl` + `pair:mitigatesRiskPattern` | the control structure it inserts |
+| Propagation rule | — | derived facts (e.g. `pair:containsDataCategory`) |
+| Business-context derivation | — | `pair:businessFollows`, derived data categories |
 
 **A motif matcher implements the *motif*, not the risk pattern** that uses it —
 `pair:implementsMotif` and `pair:implementsRiskPattern` are separate properties for exactly that
@@ -195,10 +218,10 @@ current library is 1:1.
 The last two kinds implement no pattern at all: they are **derivation rules**, identified only by
 what they produce.
 
-**Naming.** The class is called `pair:PatternImplementation` although 8 of its 63 members
+**Naming.** The class is called `pair:PatternImplementation` although some of its members
 implement neither a motif nor a risk pattern, so the name is a generalization that does not hold
 literally. It is **retained deliberately**: it is a published w3id IRI, an IRI is identity, and
-renaming it would rewrite 83 occurrences across `.ttl`, `.rq` and Python for no change in
+renaming it would rewrite every occurrence across `.ttl`, `.rq` and Python for no change in
 behaviour. In prose, write **"registered implementation"** for the class as a whole, and name the
 kind — motif matcher, risk query, mitigation rewrite, propagation rule, business-context
 derivation — when you mean one of them. See the `pair:Pattern*` naming exception in Section B.
@@ -304,7 +327,9 @@ the mechanism text plus evidence labels; it is not stored in the graph.
 the organised entities and activities, the applicability conditions supply the set-up conditions,
 and the mechanism names the productive continuity between them and the outcome. The causal claim
 is not entailed by the architecture graph, which is why it is curated rather than derived —
-computing it at assessment time would assert more than the structure supports.
+computing it at assessment time would assert more than the structure supports. The term is also
+established in AI risk research, where Weidinger et al. discuss, for each risk already observed in
+language models, "the causal mechanism leading to harm" [D30].
 
 ### 9. Candidate Risk Finding (`pair:RiskFinding`)
 
@@ -326,11 +351,10 @@ A candidate risk is a structural disposition toward harm. It is not a confirmed 
  the formal basis is R4.
 
 
-**Open item.** `pair:identifiesCandidateRisk` is declared but not yet emitted; no finding
-currently links to a `beamr:Risk` individual, and no alignment exists between `nexus:Risk`
-(taxonomy entries) and `beamr:Risk`. The intended target is that each finding maps onto a minted
-`beamr:Risk` per finding, keeping taxonomy *categories* distinct from this system's *risk
-instance*.
+**A finding names no `beamr:Risk`.** `pair:identifiesCandidateRisk` was removed because nothing wrote
+or read it, and no alignment exists between `nexus:Risk` (taxonomy entries) and `beamr:Risk`. A
+stated risk and a finding stay different types, and the risk view reconciles them from shared
+evidence elements without asserting that they are the same thing.
 
 ---
 
@@ -345,8 +369,7 @@ used in its **graph-pattern** sense — the abstract nodes and edges a query mat
 standard in RDF and SPARQL, and predates the motif/pattern distinction being tightened.
 
 These names are **retained deliberately**. They are load-bearing across the knowledge base and
-the pipeline (1 278 occurrences across 68 files as of 2026-09-08, of which 1 006 in five `.ttl`
-files and 210 across 47 `.rq` files), and renaming them would rewrite every match query and
+the pipeline, and renaming them would rewrite every match query and
 several Python modules for no semantic gain. **The prose rule still holds**: in running text,
 never write bare "pattern" for one of these — write "pattern node", "pattern edge", or name the
 term outright.
@@ -375,7 +398,7 @@ calls this the Candidate Risk Graph. Not a defined vocabulary term.
 modules. Not stored permanently: per-system architecture graphs and findings.
 
 **Motif Library** and **Risk Pattern Library** — two separate curated collections: the Motif
-Library holds risk-neutral motifs; the Risk Pattern Library holds risk patterns (conditions,
+Library holds motifs, which are structure only; the Risk Pattern Library holds risk patterns (conditions,
 mechanisms, links, controls). Both carry per-entry derivation provenance (`pair:derivedFrom` /
 `dct:source`): (i) deductive from Boxology elementary patterns, (ii) interpretive from taxonomy
 entries (e.g., OWASP), (iii) LLM-assisted with human validation. Firing-coverage denominators for
@@ -447,7 +470,8 @@ A motif label may not contain a term implying absence, exclusivity, or sufficien
 *only*, *pure*, *without*, *unmediated*, *standalone*). Because motif matching is monotone
 (term 4), a motif cannot assert absence, so a name that implies it will misreport. Absence is
 expressible solely in applicability conditions (R2, R4), and a risk pattern name may carry it. The
-library is swept against this rule at each version.
+library is swept against this rule at each version. R9 governs labels. An IRI is identity and keeps
+its name: `pat:DirectPromptingMotif` is labelled *Prompted Generation*.
 
 **R10 — Facet conditions are positive; control conditions may be negative.**
 An applicability condition may test for the presence of a facet value on a bound element, 
@@ -543,3 +567,11 @@ not a pattern genre.
   of ontology patterns. *ICEIS 2005*, pp. 413–416. — Semantic-pattern classification underlying
   
 - **[D28]** Pedraza-García, G., Noël, R., Matalonga, S., Astudillo, H., & Fernandez, E. B. (2016). Mitigating security threats using tactics and patterns: A controlled experiment. ECSAW '16, Copenhagen, ACM. DOI 10.1145/2993412.3007552. — Controlled-experiment design for pattern-based threat mitigation: expert-defined ground truth fixed in advance, binary per-decision scoring, nonparametric median comparison, training used as blocking. Also reports concrete structured pattern advice outperforming abstract tactics for novice subjects (3.0 vs 1.9, p = 0.027), with the authors' caveat that this runs contrary to earlier results with professionals. Confirm article number and page range.
+- **[D29]** Valverde, S., & Solé, R. V. (2005). Network motifs in computational graphs: A case study in
+  software architecture. *Physical Review E, 72*(2), 026107. https://doi.org/10.1103/PhysRevE.72.026107
+  — Motifs as over-represented subgraphs of software graphs, and the limits of reading function from them.
+- **[D30]** Weidinger, L., Uesato, J., Rauh, M., Griffin, C., Huang, P.-S., Mellor, J., Glaese, A., Cheng, M., Balle, B.,
+  Kasirzadeh, A., Biles, C., Brown, S., Kenton, Z., Hawkins, W., Stepleton, T., Birhane, A., Hendricks, L. A., Rimell, L.,
+  Isaac, W., . . . Gabriel, I. (2022). Taxonomy of risks posed by language models. *2022 ACM Conference on Fairness,
+  Accountability, and Transparency*, 214–229. https://doi.org/10.1145/3531146.3533088 — The causal mechanism of a risk
+  treated as a named part of its account.

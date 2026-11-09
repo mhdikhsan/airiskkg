@@ -2879,7 +2879,7 @@ def test_the_term_picker_is_not_clipped_by_the_popup_it_opens_in(page) -> None:
 
 
 def test_the_motif_tray_is_shelved_by_the_kind_of_system_each_is_a_shape_of(page) -> None:
-    """31 motifs in one alphabetical column said nothing about what each one is
+    """Every motif in one alphabetical column said nothing about what each one is
     for. The tray shelves them the way the library does, by `pair:motifFamily`,
     which is a filing decision about this library and is read by no match query.
     """
@@ -3841,7 +3841,7 @@ def test_the_input_contract_panel_checks_the_bpmn_too(scene_restored) -> None:
 
 
 def test_the_motif_tray_starts_folded_and_finds_a_motif_by_what_it_does(page) -> None:
-    """47 motifs open at once, each ending in "Motif", and a tooltip that only
+    """Every motif open at once, each ending in "Motif", and a tooltip that only
     repeated the name: nothing helped a reader find the one they needed."""
     loop, handle = page
     _descend(loop, handle)

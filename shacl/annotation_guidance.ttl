@@ -113,7 +113,7 @@ ag:GenerationStepUsesAModelShape
     sh:severity sh:Info ;
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "This generation step uses no element playing pair:GenerativeModel. Direct Prompting, RAG, and Guardrails all bind the model explicitly, so none of them will match and no generation-side finding can be raised." ;
+        sh:message "This generation step uses no element playing pair:GenerativeModel. Prompted Generation, RAG, and Guardrails all bind the model explicitly, so none of them will match and no generation-side finding can be raised." ;
         sh:prefixes <http://w3id.org/airiskkg/shacl/annotation-guidance> ;
         sh:select """
             PREFIX beam: <http://w3id.org/beam/core#>

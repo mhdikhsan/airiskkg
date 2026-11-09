@@ -45,7 +45,7 @@ pair:DataCategory a owl:Class ;
 
 pair:GraphMotif a owl:Class ;
     rdfs:label "Graph Motif"@en ;
-    rdfs:comment "A reusable, descriptive graph pattern over pattern roles and flow relations that captures a recurring system configuration."@en .
+    rdfs:comment "The recurring solution structure of a design, stated as a small typed graph of pattern roles joined by flow relations, in the vocabulary an architecture is modelled in."@en .
 
 pair:DesignPatternCitation a owl:Class ;
     rdfs:label "Design Pattern Citation"@en ;
@@ -1251,23 +1251,16 @@ pair:UntrustedContent a pair:DataCategory ;
 pair:AgentGoal dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:AgentMemory dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
 pair:AgentPlan dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
-pair:AggregationStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:Alert dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
 pair:BatchDataset dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Batch-pattern/design_en.html> .   
 pair:DebateArgument dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:EnvironmentContext dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:EvaluationResult dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> .   
-pair:EvaluationScore dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:ExecutionGuardrailStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
-pair:ExpectedOutput dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:ExternalDependency dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .
 pair:FastPredictionStep dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> .   
 pair:GoalCreationStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
-pair:GuardrailDecision dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:HumanApprovalStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   
-pair:InputGuardrailStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
-pair:JudgeModel dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
-pair:LLMResponse dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .  
 pair:LoadedModel dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Model-load-pattern/design_en.html> .   
 pair:LoggingStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-log-pattern/design_en.html> .   
 pair:MemoryReadStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
@@ -1275,7 +1268,6 @@ pair:MemoryValidationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-as
 pair:MemoryWriteStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
 pair:MonitoringBaseline dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
 pair:MonitoringStep dct:source <https://mercari.github.io/ml-system-design-pattern/Operation-patterns/Prediction-monitoring-pattern/design_en.html> .   
-pair:OutputGuardrailStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:OutputValidationStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-llm#llm05-improper-output-handling> .   
 pair:PlanReflectionStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:PlanningStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .  
@@ -1286,22 +1278,16 @@ pair:PredictionRequest dct:source <https://mercari.github.io/ml-system-design-pa
 pair:PredictionResult dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Asynchronous-pattern/design_en.html> .   
 pair:PreprocessedData dct:source <https://mercari.github.io/ml-system-design-pattern/Training-patterns/Batch-training-pattern/design_en.html> .   
 pair:PromptOptimisationStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
-pair:PromptTemplate dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:RateLimitControlStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .  
 pair:ReflectionFeedback dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:ReleaseApproval dct:source <https://mercari.github.io/ml-system-design-pattern/Lifecycle-patterns/Train-then-serve-pattern/design_en.html> .  
-pair:RerankingStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .  
 pair:RetrievalDecision dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
 pair:RetrievalGuardrailStep dct:source <https://doi.org/10.1016/j.jss.2024.112278> .
 pair:RetrievalJudgeStep dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
-pair:RetrievedCandidateSet dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:RetrievedContext dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi06-memory-and-context-poisoning> .   
 pair:RetrieverModel dct:source <https://doi.org/10.1145/3748304> .
-pair:SanitizedOutput dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
-pair:ScoringStep dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .   
 pair:ServingImage dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> .   
 pair:SlowPredictionStep dct:source <https://mercari.github.io/ml-system-design-pattern/Serving-patterns/Multiple-stage-prediction-pattern/design_en.html> .  
-pair:SourceDocument dct:source <https://martinfowler.com/articles/gen-ai-patterns/> .  
 pair:StateChangingStep dct:source <http://w3id.org/airiskkg/taxonomy/owasp-asi#asi02-tool-misuse> .   
 pair:SubQuery dct:source <https://doi.org/10.48550/arXiv.2312.10997> .
 pair:SyntheticDataGenerationStep dct:source <https://doi.org/10.1145/3748304> .

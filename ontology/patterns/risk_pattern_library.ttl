@@ -462,7 +462,7 @@ pat:DirectPromptingWithoutGroundingRiskPattern
     rdfs:label "Direct Prompting without grounding risk pattern"@en ;
     skos:altLabel "Direct LLM answering without grounding risk pattern"@en ;
     dct:description """
-    Applies when a Direct Prompting motif produces a user-facing answer without
+    Applies when a Prompted Generation motif produces a user-facing answer without
     an explicit knowledge source, retrieved context, or represented verification
     step in the architecture graph.
     """@en ;
@@ -556,8 +556,8 @@ pat:VectorIR_MatchingOQP
 
 pat:DirectPrompting_MatchingOQP
     a pair:PatternImplementation ;
-    rdfs:label "Direct Prompting motif matching OQP"@en ;
-    skos:altLabel "Direct LLM answering motif matching OQP"@en ;
+    rdfs:label "Prompted Generation motif matching OQP"@en ;
+    skos:altLabel "LLM answering motif matching OQP"@en ;
     pair:implementsMotif pat:DirectPromptingMotif ;
     pair:implementationPath "ontology/patterns/implementation/match/direct_prompting.rq" ;
     pair:producesOutputType pair:MotifMatch .

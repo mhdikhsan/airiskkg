@@ -1,7 +1,7 @@
 # PAIR-AI — Method and Knowledge-Base Construction
 
 Status: current as of **2026-08-30**, branch `feature/bpmn-business-context`.
-Authority on terminology and modeling rules: `docs/reference/PAIR-AI_glossary_v1_3.md`
+Authority on terminology and modeling rules: `docs/reference/PAIR-AI_glossary_v1_4.md`
 (rules R1–R10). Where this document and the glossary disagree, the glossary wins.
 
 **What this document is.** One place that explains how the PAIR-AI knowledge base was
@@ -19,8 +19,7 @@ inventory (see `docs/reference/catalogue.md`), not a change record (see
 **Supersedes** (removed in the same commit): `docs/notes/pattern_and_role_derivation.md`,
 `docs/notes/pattern_library_derivation.md`, `docs/notes/pipeline_process.md`,
 `docs/notes/assessment_guidelines.txt`, `docs/notes/pattern_examples.md`,
-`docs/notes/pattern_examples.en.md`, `docs/notes/v2_update_and_workbench_guide.md`,
-`docs/reference/pair_ai_semantic_web_guide.html`.
+`docs/notes/pattern_examples.en.md`, `docs/notes/v2_update_and_workbench_guide.md`.
 
 ---
 
@@ -47,7 +46,7 @@ Formally the method is a function over one architecture graph:
 
 > **Assessment(G) → Findings**, evaluated against two frozen, curated libraries.
 
-- **Motif Library** — risk-neutral structural configurations ("query-driven retrieval over a
+- **Motif Library** — structural configurations ("query-driven retrieval over a
   vector store", "a user query answered directly by an LLM").
 - **Risk Pattern Library** — risk knowledge, each entry being
   **Risk Pattern = Motif + Applicability Conditions + Mechanism + Taxonomy Links + Controls**,
@@ -61,32 +60,10 @@ only**.
 
 ### Current size of the knowledge base
 
-Counted off the loaded graph on 2026-08-30. Re-count rather than edit by hand — every
-figure but the motif count had drifted before anyone noticed.
+The counts are at the head of [catalogue.md](catalogue.md), which is generated from the graph.
 
-| Artifact | Count | File |
-| --- | --- | --- |
-| Architectural motifs (ODPs) | 31 | `ontology/patterns/motif.ttl` |
-| AI risk patterns | 15 | `ontology/patterns/risk_pattern_library.ttl` |
-| Applicability conditions | 16 (on 20 attachments) | `ontology/patterns/risk_pattern_library.ttl` |
-| Risk mechanisms | 14 | `ontology/taxonomy/owasp_llm.ttl`, `owasp_asi.ttl` |
-| Pattern roles | 97 | `ontology/core/pair_ai_pattern.ttl` |
-| Data categories | 7 | `ontology/core/pair_ai_pattern.ttl` |
-| Actionable controls (`pat:Control_*`) | 12 | `ontology/patterns/control_mitigation_layer.ttl` |
-| Facet concepts (project namespaces) | 35 | `ontology/facets/*.ttl` |
-| Registered SPARQL implementations | 63 | `ontology/patterns/implementation/`, `ontology/context/implementation/` |
-| — of which motif matchers (the OQPs) | 31 | `match/*.rq` |
-| — of which risk-finding queries | 15 | `risk/*.rq` |
-| — of which data-category derivations | 7 | `propagation/*.rq` (6) + `business_data_bridge.rq` |
-| — of which business-flow derivations | 1 | `business_flow.rq` |
-| — of which mitigation rewrites | 9 registrations over 8 files | `mitigation/*.rq` |
-| Loaded triples | 7 529 | — |
-
-Taxonomy entries loaded: IBM Atlas 30 · MIT domains 19 · MIT control families 88 ·
-NIST AI 600-1 9 · OWASP LLM 10 · OWASP ASI 4.
-
-Note the ratio: **every motif has an executable matcher**, but only **15 of 31 motifs
-carry at least one risk pattern** (§6.7).
+Note the ratio: **every motif has an executable matcher**, but not every motif carries a risk
+pattern (§6.7).
 
 ---
 
@@ -205,10 +182,7 @@ Each risk pattern has exactly one OQP. Structurally, every one of the 15 queries
    `pair:hasCandidateRiskTaxonomyEntry`, `pair:hasSuggestedControl`,
    `pair:generatedByRiskPattern`, and `pair:findingStatus "candidate"`.
 
-The **three queries with no control-absence check at all** — data and model poisoning,
-supply chain compromise, vector and embedding weakness — are unclearable by design, and
-correctly so: they rest on provenance and vetting, which are non-technical controls with no
-runtime shape, so no structural escape exists to write. The answer there is finding-level
+**Four risk patterns have no structural control escape**: data and model poisoning, supply chain compromise, vector and embedding weakness, and training data membership inference. They are unclearable by design, and correctly so: they rest on provenance, vetting or how a model is trained, which have no structural shape, so no escape exists to write. The answer there is finding-level
 triage through `pair:findingStatus`, not a query escape. Never conflate the two.
 
 **Clause order is load-bearing.** rdflib has no query optimizer: it evaluates a BGP in
@@ -225,7 +199,7 @@ shape, so rewrites are keyed on (control, risk pattern) — see §1.6.
 
 Conditions are **reusable constituents** and are shared across risk patterns where the
 structural gate is genuinely the same. Example, documented in the file itself:
-`pat:SensitiveDataRetrievalExposureRiskPattern` (anchored to LLM02) reuses
+`pat:SensitiveInformationDisclosureRiskPattern` (anchored to LLM02) reuses
 `pat:VectorEmbeddingWeakness_RetrievalCondition` (defined for LLM08), because the
 retrieval-specific route to sensitive-information disclosure is exactly that gate. This is
 a deliberate, commented exception, not drift.
@@ -331,8 +305,7 @@ source material and extracting the distinctions they implied:
   distinctions a risk statement actually depends on. `pair:RetrievalStep` exists as a
   distinct role from `pair:ProcessingStep` because LLM08 talks specifically about
   retrieval and embedding weaknesses;
-- **the architecture design pattern catalogues** (Martin Fowler's GenAI patterns; Mercari's
-  ML System Design Patterns) — read to enumerate the components each design pattern is built
+- **the architecture design pattern catalogues** (the papers cited by DOI; Mercari's ML System Design Patterns) — read to enumerate the components each design pattern is built
   from:
   a query-rewriting step, a vector store, a reranker model, a serving image, a prediction
   queue.
@@ -346,18 +319,16 @@ introduced.
 ### 2.3 The retro-fitted provenance, and what it does not mean
 
 **Every role traces to an origin, in one of three ways** (R6, enforced by
-`test_every_pattern_role_states_its_provenance`). Measured 2026-08-30 over 97 roles:
+`test_every_pattern_role_states_its_provenance`). Measured 2026-11-09 over 141 roles, categories included:
 
 | How the role is grounded | Roles |
 | --- | --- |
-| States its own `dct:source` | 50 |
-| Carries a SKOS mapping into an external vocabulary (DPV, DPV-AI, AIRO, Tool4Boxology) | 35 |
-| Neither — inherits through `pair:subRoleOf` from a parent that has one | 12 |
+| States its own `dct:source` | 57 |
+| Carries a SKOS mapping into an external vocabulary (DPV, DPV-AI, AIRO, Tool4Boxology) | 36 |
+| Neither — inherits through `pair:subRoleOf` from a parent that has one | 48 |
 | **Roles with no traceable origin** | **0** |
 
-The 50 own-source roles anchor to Martin Fowler's gen-AI patterns (14 directly), the Mercari
-ML System Design Pattern pages, the OWASP LLM Top 10, and — for the agentic additions — the
-OWASP ASI entries (13 roles across ASI02, ASI06 and ASI07).
+The 57 own-source roles anchor to the papers behind the motif library, the Mercari ML System Design Pattern pages, the OWASP LLM Top 10, and the OWASP ASI entries.
 
 The third row is deliberate rather than an omission: a role introduced to *refine* another
 states no source because its grounding is the role it specializes, and `pair:subRoleOf`
@@ -402,12 +373,12 @@ Read this carefully, because it is easy to over-claim:
 ### 2.5 What would actually fix this
 
 Declare a proper `skos:ConceptScheme` for roles with `skos:broader` alongside (or instead
-of) `pair:subRoleOf`; extend the SKOS mappings past the 35 roles that now carry one, to
+of) `pair:subRoleOf`; extend the SKOS mappings past the 36 roles that now carry one, to
 every role with a genuine external counterpart; and run an empirical study — annotate unseen
 architectures with independent annotators and measure both agreement and whether the role
 set is sufficient without extension.
 
-The mapping half is **partly done**: 35 roles are now aligned to DPV, DPV-AI, AIRO and
+The mapping half is **partly done**: 36 roles are now aligned to DPV, DPV-AI, AIRO and
 Tool4Boxology, where §2.3 previously recorded none at all. The scheme and the study are not.
 
 ---
@@ -416,24 +387,17 @@ Tool4Boxology, where §2.3 previously recorded none at all. The scheme and the s
 
 ### 3.1 Sources
 
-31 motifs. **Every one carries `pair:derivedFrom`** (R6); 27 also carry a `dct:source`.
-Measured 2026-08-30:
+**Every motif carries `pair:derivedFrom`** (R6), and what it derives from divides the library
+(measured 2026-11-09):
 
-- **13 GenAI motifs** derived from Martin Fowler, *Emerging patterns for generative AI
-  systems*: Direct Prompting, RAG, Embeddings, Hybrid Retriever, Query Rewriting, Reranker,
-  Guardrails, Evals, Fine-Tuning, plus four refinements introduced later — Information
-  Retrieval, Vector-based Information Retrieval, Input Screening, Output Screening. Those
-  four state `pair:derivedFrom` alone, because they refine a shape the catalogue already
-  describes rather than adding one it does not.
-- **13 classic ML/MLOps motifs** from the Mercari ML System Design Pattern catalog, each
-  sourced to the specific pattern page: serving (Synchronous, Asynchronous, Batch,
-  Prep-pred, Multi-stage), training (Batch training, Pipeline training), lifecycle
-  (Train-then-serve, Training-to-serving), operation (Prediction log, Prediction
-  monitoring, Model load, Model-in-image).
-- **4 agentic motifs** sourced to the OWASP Agentic (ASI) entries whose structural signature
-  they express: Tool-Using Agent, Agent Memory Loop, Agent Delegation, Human Oversight.
-- **1 project-curated motif**: `pat:ExternalDependencyMotif`, sourced as expert curation
-  scoped by OWASP LLM03 (supply chain) — no external catalog defines it.
+- **26 motifs cite a paper by DOI.** The GenAI and most agentic motifs read their structure off
+  the agent design pattern catalogue (Liu et al., 2025), the RAG survey (Gao et al., 2023), the
+  LLM-for-IR surveys, Wei et al. (2021) and Ma et al. (2023).
+- **7 motifs rest on the Mercari ML System Design Pattern catalogue**: Prediction Serving,
+  Pipeline Training, Train-then-serve, Training-to-serving, Prediction Logging, Prediction
+  Monitoring and External Dependency, the last of which also names OWASP LLM03.
+- **1 motif, Agent memory, derives only from an OWASP ASI entry** whose structural signature it
+  expresses, which is a weaker derivation and is described as one.
 
 Two properties of the set shape how to read any count over it:
 
@@ -455,8 +419,8 @@ Every motif exists twice, on purpose:
 1. **Declarative shape (ODP)** in `motif.ttl`: a `pair:GraphMotif` composed of
    `pair:PatternNode` instances (each with `pair:expectedClass`, a BEAM class, and
    `pair:expectedRole`, a pattern role) wired by `pair:PatternEdge` instances (each with
-   `pair:sourcePatternNode`, `pair:targetPatternNode`, `pair:patternPredicate` — typically
-   `beam:use` / `beam:produce` / `beam:inform`).
+   `pair:sourcePatternNode`, `pair:targetPatternNode`, `pair:patternPredicate`, which is
+   `beam:use` or `beam:produce`).
 2. **Executable matcher (OQP)** in `implementation/match_*.rq`: a SPARQL `CONSTRUCT` that
    finds the same shape in an architecture graph and materializes a `pair:MotifMatch` with
    one `pair:NodeBinding` per pattern node.
@@ -491,7 +455,7 @@ Two recent, concrete corrections illustrate the curation standard:
   (`RAG_QueryEmbeddingStepNode` → `RAG_QueryVectorNode`) and had retrieval read a vector
   *index*, with the result that retrieval was structurally **disconnected from the user
   query** and the embedding output dead-ended. It matched almost nothing real. The motif
-  now follows Fowler faithfully: retrieval is **driven by** the user query
+  now follows the published RAG structure: retrieval is **driven by** the user query
   (`?retrievalStep beam:use ?query`) and reads a vector store *or* index; offline document
   embedding/indexing is modelled separately by the Embeddings motif. Retrieved context may
   pass through intermediate steps (reranking, aggregation) before prompt construction —
@@ -513,7 +477,7 @@ explained.
 A motif matches **roles + flow relations**, never facets. This is verified mechanically,
 not merely asserted: no query in `implementation/match/` references
 `pair:containsDataCategory` or any `facet:` property — re-checked 2026-08-30, still zero. (An earlier R2 leak in `match_embeddings.rq`, which filtered on a data
-category, has been removed.) Keeping motifs facet-blind is what keeps them risk-neutral
+category, has been removed.) Keeping motifs facet-blind is what keeps them structure only
 and reusable: retrieval over public data and retrieval over sensitive data are the *same*
 structure, and only the risk stage is allowed to care about the difference.
 
@@ -543,7 +507,7 @@ all, since that genuinely cannot bind.
 
 | Module | Files | Content |
 | --- | --- | --- |
-| **Architecture** | `ontology/core/beam_core.ttl`, `ontology/alignments/*` | BEAM: `beam:System`, `beam:Process` (+ `Transform`/`Infer`/`Train`/`Generate`), `beam:Resource` (+ `Data`/`Symbol`/`Model`), `beam:Agent`, `beam:Task`; flow predicates `beam:use`, `beam:produce`, `beam:inform` |
+| **Architecture** | `ontology/core/beam_core.ttl`, `ontology/alignments/*` | BEAM: `beam:System`, `beam:Process` (+ `Transform`/`Infer`/`Train`/`Generate`), `beam:Resource` (+ `Data`/`Symbol`/`Model`), `beam:Agent`, `beam:Task`; flow predicates `beam:use`, `beam:produce` |
 | **Risk** | `ontology/core/beam_core_risk.ttl`, `ontology/taxonomy/*` | BEAM Risk (built on AIRO) + OWASP/IBM/MIT taxonomies + cross-mappings |
 | **Pattern** | `ontology/core/pair_ai_pattern.ttl`, `ontology/patterns/*` | Roles, data categories, motif/risk-pattern/finding vocabulary, the two libraries, the control layer |
 | **Facets** | `ontology/facets/*` | SKOS characterization schemes + their attachment properties |
@@ -692,8 +656,8 @@ contract in the webapp and in `validate_graphs.py`.
 **Stage 1 — Input and role annotation.** The architecture is expressed as `G = (V, E)`:
 nodes are Resources (something that *is*) and Processes (something that *happens*),
 gathered under a `beam:System`; edges are `beam:use` (process consumes resource),
-`beam:produce` (process creates resource), and `beam:inform` (process → process ordering,
-no resource transfer). Each element then receives one or more **pattern roles**, and
+and `beam:produce` (process creates resource), so a process reaches another process only
+through a resource one produces and the other uses. Each element then receives one or more **pattern roles**, and
 optionally **characterization facets**. Until roles are attached the graph is just a data-flow
 diagram — the roles are what makes it matchable.
 
@@ -831,7 +795,7 @@ without a number would otherwise leave it unwatched.
 | IT service desk scene: the agent + its business process | 4 | 9 |
 
 The RAG chatbot is the broadest graph in the repository: 14 matches over **8 distinct
-motifs** (Direct Prompting, Embeddings, External Dependency, Information Retrieval, Query
+motifs** (Prompted Generation, Embeddings, External Dependency, Information Retrieval, Query
 Rewriting, Reranker, RAG, Vector-based IR). Matches are `pair:MotifMatch` instances, not
 distinct motifs — nested motifs co-match by design, so the number is structural coverage.
 
@@ -904,18 +868,15 @@ gone. What remains is the **process/resource split** (a resource typed as a proc
 bind a step node, and vice versa) and, above all, **role choice**, including which parent a
 role sits under.
 
-**6.7 Risk coverage is OWASP-shaped.** 15 risk patterns anchored to the OWASP LLM Top 10 and
-the ASI entries cover **15 of 31 motifs**. The 16 uncovered motifs are almost entirely the
-classic ML/MLOps set — Synchronous/Asynchronous/Batch/Multi-stage/Prep-pred prediction,
-Batch and Pipeline training, Train-then-serve, Prediction logging and monitoring — plus
-Evals, Hybrid Retriever, Information Retrieval, and the three control motifs, which exist to
-be *found* rather than flagged. IBM Atlas, MIT and NIST entries are used as *link targets*,
-never as sources of new risk patterns, so risks that OWASP does not name (fairness, environmental
-cost, labour impact, most MIT domains) cannot currently be found even though they are
-present in the loaded taxonomies.
+**6.7 Risk coverage.** The library's risk patterns cover 24 of its 34 motifs (measured
+2026-11-09). The 10 others are Evals, Execution Screening, Guardrails, Human Oversight, Hybrid
+Retriever, Information Retrieval, Input Screening, Output Screening, Prediction Monitoring and
+Retrieval Screening, most of which are controls that exist to be *found* rather than flagged.
+Beyond OWASP, risk patterns now derive from the ML risks of Zhang et al. (2022), IBM Atlas entries
+and Eticas. Environmental cost, labour impact and most MIT domains still have no risk pattern,
+so those risks cannot be found even though they are present in the loaded taxonomies.
 
-The agentic gap has narrowed but is deliberately partial: only the four ASI entries with a
-design-time structural signature are modelled (§1.1).
+The agentic gap has narrowed but is deliberately partial: nine of the ten ASI entries have a risk pattern, and ASI10 has none because it is defined by behaviour after deployment.
 
 **6.8 The control layer is a curated first pass.** `pair:realizedByMotif` covers 5 of 12
 controls and encodes an *assumed* structural mitigation, not evidence that inserting the
@@ -1137,7 +1098,7 @@ not a preference.
 
 | Document | Role |
 | --- | --- |
-| `docs/reference/PAIR-AI_glossary_v1_3.md` | **Authoritative.** Definitions, rules R1–R10, grounding references |
+| `docs/reference/PAIR-AI_glossary_v1_4.md` | **Authoritative.** Definitions, rules R1–R10, grounding references |
 | `docs/reference/catalogue.md` | Full inventory of motifs, risk patterns, roles, data categories |
 | `docs/reference/risk_control_linkage.md` | Risk to control linkage, including the MIT evidence layer |
 | `docs/reference/mitigation_and_gap_mechanics.md` | How a control is applied and how the gap report is built |

@@ -1,6 +1,6 @@
 """Assessing by hand, in the same vocabulary a run emits.
 
-The library covers 15 risk patterns over 31 motifs. That is a fraction of what
+The library covers a fixed set of risk patterns and motifs. That is a fraction of what
 an assessor will want to record, and everything outside it would otherwise be
 lost - so a person can write a risk, a risk source, a consequence, an impact
 and a risk control directly onto the graph, with no query matching anything.

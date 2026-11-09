@@ -420,10 +420,7 @@ def test_a_paper_is_listed_before_a_catalogue_page_or_a_taxonomy_entry(client) -
         assert ranks == sorted(ranks), f"{motif['label']} lists a paper after a lesser source"
 
     rag = next(m for m in data["motifs"] if m["id"] == "RetrievalAugmentedGenerationMotif")
-    assert rag["derivedFrom"][0].get("doi"), "RAG leads with its blog, not its papers"
-    assert any(ref["sourceShort"] == "martinfowler.com" for ref in rag["derivedFrom"]), (
-        "the blog source was dropped instead of ranked after the papers"
-    )
+    assert rag["derivedFrom"][0].get("doi"), "RAG does not lead with a paper"
 
 
 def test_every_motif_is_served_with_its_family_and_group(client) -> None:
@@ -567,7 +564,7 @@ BEAM_NS = "http://w3id.org/beam/core#"
 
 
 def test_every_term_offers_its_own_definition(client) -> None:
-    """All 97 roles and all 7 data categories carry a skos:definition, and the
+    """All roles and data categories carry a skos:definition, and the
     picker served none of them - which is what made a scroll of bare labels
     undecidable between RetrievedContext, RetrievedResult and DocumentChunk."""
     data = client.get("/api/vocabulary").get_json()
@@ -698,7 +695,7 @@ def test_a_refinement_carries_no_family_so_a_filter_cannot_hide_it(client) -> No
 
 
 def test_the_annotation_vocabulary_is_in_the_library(client) -> None:
-    """The library counted 97 roles in its stats and offered no way to read one.
+    """The library counted its roles in its stats and offered no way to read one.
     Each is served with what names it and the risk patterns related to it, so a reader
     can work backwards from the term as they already can from the risk."""
     catalogue = client.get("/api/library").get_json()

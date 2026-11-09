@@ -112,6 +112,11 @@ pat:Classification_AnonymisedData a pair:DataClassificationOption ;
     pair:classifiesAs dpv:AnonymisedData ;
     pair:meansPersonalData false .
 
+pat:Classification_NonPersonalData a pair:DataClassificationOption ;
+    rdfs:label "Not personal"@en ;
+    pair:classifiesAs dpv:NonPersonalData ;
+    pair:meansPersonalData false .
+
 pair:SystemContextOption a owl:Class ;
     rdfs:label "System context option"@en ;
     rdfs:comment "One entry the editor offers for a system's domain or purpose."@en .
