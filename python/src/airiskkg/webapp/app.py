@@ -3,9 +3,13 @@ Reading the graph
     ``GET  /``                       Single-page UI.
     ``GET  /risks``                  Every risk pattern on one page, under the
                                      library's labels; ``#<id>`` opens at one.
+    ``GET  /guide``                  The user guide and the read-only library
+                                     browser, hash-routed inside the page.
     ``GET  /api/library``            The risk pattern library and the motif
                                      library: what the knowledge base can
                                      recognise, before a graph is submitted.
+    ``GET  /api/kb-version``         Version, fingerprint and load date of the
+                                     library, for a page that has run nothing.
     ``GET  /api/vocabulary``         Pattern roles, data categories, BEAM
                                      element classes, edge kinds, motif templates.
     ``GET  /api/examples``           Names of the example graphs on offer.
@@ -53,6 +57,7 @@ Reading the graph
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 from flask import Flask, send_from_directory
@@ -70,6 +75,7 @@ def create_app(
         local_examples_default() if local_examples is None else local_examples
     )
     app.config["EXTRA_EXAMPLE_DIRS"] = [Path(d) for d in (extra_example_dirs or [])]
+    app.config["LIBRARY_LOADED_ON"] = date.today().isoformat()
     start_warmup()
 
     @app.get("/")
@@ -79,6 +85,10 @@ def create_app(
     @app.get("/risks")
     def risk_list() -> object:
         return send_from_directory(app.static_folder, "risks.html")
+
+    @app.get("/guide")
+    def guide() -> object:
+        return send_from_directory(app.static_folder, "guide.html")
 
     for blueprint in BLUEPRINTS:
         app.register_blueprint(blueprint)

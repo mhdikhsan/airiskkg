@@ -1173,6 +1173,8 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **Native ES modules, and the shape is enforced.** `webapp/static/` is `app.js` (entry: wiring
   only) + `state.js` + `core/` (plumbing that knows nothing about the workbench) + `lib/`
   (self-contained renderers and widgets) + `panels/` (one file per thing on screen).
+  `guide.html` + `guide.js` are the user guide at `/guide`, whose prose is data in `guide_content.js` and whose counts
+  are always read off the API; its wording is held by `test_guide_pages.py`.
   `risks.html` + `risks.js` are a second page, `/risks`, listing every risk pattern; it names
   them through `lib/library_text.js`, which the library uses too, so the two cannot disagree.
   `test_webapp_module_layout.py` holds three rules: **no import cycles**, **every imported name
@@ -1352,6 +1354,7 @@ because an annotation can be attached to a data object and needs a plain `bpmn:a
 (`generate_mit_action_layer.py` writes `ontology/taxonomy/mit_mitigation_action.ttl`,
 `generate_eticas_layer.py` writes `ontology/taxonomy/eticas_risk.ttl`,
 `generate_catalogue.py` writes `docs/reference/catalogue.md`,
+`guide_starter_findings.py` writes the starter scene's candidate risks into `guide_content.js`,
 `generate_risk_control_linkage.py` writes `docs/reference/risk_control_linkage.md`; it refuses to
 run when a control is missing from its `CONTROL_ORDER`, which section 3 walks).
 `export_ontology.py`, `pattern_provenance_worklist.py` and `role_provenance_export.py` met none
@@ -1604,7 +1607,7 @@ building an approval inline.
 
 ### Test suite
 
-**571 of 717 tests** by default, and 146 browser tests in 30 to 45 min; all pass (counted 2026-11-09). The browser failures that came and went
+**587 of 740 tests** by default, and 153 browser tests in about 45 min (counted 2026-11-09). `test_motifs_and_data_flow_narrow_to_the_architecture_on_screen` can time out on a loaded machine. The browser failures that came and went
 were each a test inheriting state an earlier one left: a canvas panned until the chip sat under
 the header, another level on screen, a motif match still picked, a concern raised in six places
 measured as if it were one, and one that clicked a stated risk where it meant a concern. And one

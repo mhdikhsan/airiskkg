@@ -24,6 +24,7 @@ TARGET = REPO_ROOT / "docs" / "reference" / "risk_control_linkage.md"
 GENERATED = {
     "generate_risk_control_linkage.py": TARGET,
     "generate_catalogue.py": REPO_ROOT / "docs" / "reference" / "catalogue.md",
+    "guide_starter_findings.py": REPO_ROOT / "python" / "src" / "airiskkg" / "webapp" / "static" / "guide_content.js",
     "generate_mit_action_layer.py": REPO_ROOT / "ontology" / "taxonomy" / "mit_mitigation_action.ttl",
     "generate_eticas_layer.py": REPO_ROOT / "ontology" / "taxonomy" / "eticas_risk.ttl",
 }

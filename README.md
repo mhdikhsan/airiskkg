@@ -194,6 +194,7 @@ can actually be clicked.
 | Document | What it covers |
 | --- | --- |
 | [User guide](docs/user_guide.md) | Using the workbench, and the annotation vocabulary |
+| User guide pages | Served by the workbench at `/guide`: tour, walkthrough and a read-only library browser |
 | [Glossary](docs/reference/PAIR-AI_glossary_v1_4.md) | Terminology and the modelling rules R1 to R10 |
 | [Method and construction](docs/reference/PAIR-AI_method_and_construction.md) | How the knowledge base was built and how an assessment runs |
 | [Catalogue](docs/reference/catalogue.md) | Every motif, AI risk pattern, role and data category |

@@ -26,7 +26,10 @@ def test_every_element_id_the_app_wires_exists_in_the_page() -> None:
     """A `$("#id")` with no matching element throws at startup and silently
     kills every listener registered after it."""
     page_ids = set(re.findall(r'id="([\w-]+)"', _read("index.html")))
-    referenced = set(re.findall(r'\$\("#([\w-]+)"\)', _all_modules()))
+    modules = "\n".join(
+        p.read_text(encoding="utf-8") for p in sorted(STATIC.rglob("*.js")) if p.name != "guide.js"
+    )
+    referenced = set(re.findall(r'\$\("#([\w-]+)"\)', modules))
     missing = sorted(referenced - page_ids)
     assert not missing, "the front end wires ids that index.html does not define: " + ", ".join(missing)
 

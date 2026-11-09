@@ -1531,6 +1531,19 @@ export async function openLibrary(
   renderDetail();
 }
 
+const LINKED_TAB = { risk: "risks", motif: "motifs", role: "terms" };
+
+/* Opens on what a link from the guide names: `kind:id`, or `kind` for its tab. */
+export async function openLibraryOn(target, opening) {
+  await openLibrary({ opening });
+  if (!catalogue) return;
+  const [kind, id] = target.split(":");
+  const linked = LINKED_TAB[kind];
+  if (!linked) return;
+  if (id && byId[linked].has(id)) start(linked, id);
+  else showTab(linked);
+}
+
 export function initLibrary() {
   on(
     "choice:settled",

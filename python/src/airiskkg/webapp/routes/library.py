@@ -1,6 +1,8 @@
 from __future__ import annotations
 from pathlib import Path
 from flask import Blueprint, current_app, jsonify
+from airiskkg import __version__
+from airiskkg.assessment_runner import knowledge_base_fingerprint
 from airiskkg.paths import CONTEXT_EXAMPLE_DIR, EXAMPLE_DIR, EXAMPLE_LOCAL_DIR
 from airiskkg.workbench.library import library_catalogue
 from airiskkg.workbench.scenes import scene_for
@@ -29,6 +31,18 @@ def example_dirs() -> list[tuple[Path, bool, str]]:
 def get_library() -> object:
     """What the knowledge base can recognise, before any graph is submitted."""
     return jsonify(library_catalogue())
+
+
+@library_routes.get("/api/kb-version")
+def get_kb_version() -> object:
+    """The identity of the loaded library, for a page that has run no assessment."""
+    version = knowledge_base_fingerprint()
+    return jsonify({
+        "version": __version__,
+        "fingerprint": version.short,
+        "dirty": version.dirty,
+        "loadedOn": current_app.config["LIBRARY_LOADED_ON"],
+    })
 
 
 @library_routes.get("/api/vocabulary")

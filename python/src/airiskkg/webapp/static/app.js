@@ -14,7 +14,7 @@ import {
 import { clearDerivedCategories, renderDerivedCategories } from "./panels/dataflow.js";
 import { clearFindings, forgetPickedFinding, reReadFindings, renderFindings } from "./panels/findings.js";
 import { renderHistory } from "./panels/history.js";
-import { closeLibrary, initLibrary, isFrontDoor, isLibraryOpen, libraryBack, openLibrary } from "./panels/library.js";
+import { closeLibrary, initLibrary, isFrontDoor, isLibraryOpen, libraryBack, openLibrary, openLibraryOn } from "./panels/library.js";
 import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
 import { applyConnect, applyDisconnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
 import { openOverview } from "./panels/overview.js";
@@ -81,7 +81,9 @@ async function init() {
   /* The front door first. */
   initLibrary();
   const opensOnLibrary = !$("#ttl-source").value.trim();
-  if (opensOnLibrary) openLibrary({ opening: true });
+  const linkedEntry = new URLSearchParams(location.search).get("library");
+  if (linkedEntry) openLibraryOn(linkedEntry, opensOnLibrary);
+  else if (opensOnLibrary) openLibrary({ opening: true });
   else closeLibrary();
 
   GraphView.init();
