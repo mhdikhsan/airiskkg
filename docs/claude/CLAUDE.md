@@ -798,7 +798,10 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 
 ### The front door
 
-- **The workbench opens on the library, not an empty canvas.** `GET /api/library` serves the
+- **The tool's address opens on the documentation; the workbench is at `/workbench`** (2026-11-09,
+  asked for). `/` serves `guide.html`, and **Open workbench** leads to the editor and canvas. The Library opens only
+  from its button there, and no URL query opens it. Links between them are relative, because the staging deployment sits under
+  a path prefix and rewrites only `/static` and `/api`. `GET /api/library` serves the
   risk pattern library and the motif library **counted off the loaded graph** by
   `workbench/library.py` — never a hand-written list, which is how the catalogue once fell behind.
   Under each risk pattern it lists the motifs it applies to, drawn from their declared
@@ -907,10 +910,6 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   point at a hidden row.
 - **There is no "Start from a risk" button.** The risk level is not an entry point in the
   current build, so the front door offers the two layers that are.
-- **The front door steps aside on content, and only the front door.** `settleChoice()` emits
-  `choice:settled`; the library closes on it *only* when it was opened as the opening screen.
-  Adding a motif leaves opening mode first, so the library stays put — picking one risk usually
-  means adding more than one motif.
 - **A risk pattern with no `dct:description` borrows the definition of the entry it was derived
   from, attributed.** The taxonomy entry names the risk; the risk pattern says when the library
   raises it. The two must not be presented as one sentence.
@@ -1173,17 +1172,17 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
 - **Native ES modules, and the shape is enforced.** `webapp/static/` is `app.js` (entry: wiring
   only) + `state.js` + `core/` (plumbing that knows nothing about the workbench) + `lib/`
   (self-contained renderers and widgets) + `panels/` (one file per thing on screen).
-  `guide.html` + `guide.js` are the user guide at `/guide`, whose prose is data in `guide_content.js` and whose counts
+  `guide.html` + `guide.js` are the documentation at `/`, one scrolling page with a sidebar, whose prose is data in `guide_content.js` and whose counts
   are always read off the API; its wording is held by `test_guide_pages.py`.
   `risks.html` + `risks.js` are a second page, `/risks`, listing every risk pattern; it names
   them through `lib/library_text.js`, which the library uses too, so the two cannot disagree.
   `test_webapp_module_layout.py` holds three rules: **no import cycles**, **every imported name
   is actually exported**, and **exactly one browser global** (`window.PairAI`).
-- **`core/bus.js` carries four events, and each one earns its place.** A panel emits rather
+- **`core/bus.js` carries three events, and each one earns its place.** A panel emits rather
   than calling across only when the thing it changes is drawn by a panel it must not import.
-  Counted 2026-09-14: `scope:changed` (canvas and findings both redraw), `choice:settled`,
+  Counted 2026-11-09: `scope:changed` (canvas and findings both redraw),
   `document:replaced`, and `assessment:rendered` (the risk level reads a run it does not
-  draw). **Adding a fifth means naming which two panels must not import each other.** A bus
+  draw). **Adding a fourth means naming which two panels must not import each other.** A bus
   that grows without that justification is calling across with extra steps.
 - **`state.js` is one mutated object, not exported variables.** An imported binding is
   read-only for the importer, so `scopedSystem = null` in a panel would not reach the canvas
@@ -1486,6 +1485,10 @@ When the library changes, **regenerate `docs/reference/catalogue.md`** with
   not like a performance bug. **Anything `@lru_cache`d off the knowledge base must also be
   cleared in `reload_knowledge_base()`**, beside `data_classifications` and the rest, or a
   `.ttl` edit in a live server is invisible to it.
+- **A click must not wait on a whole-library operation** (measured 2026-11-09). Navigation paints in under
+  100 ms; what a reader feels is a request. `scope_report` reads through `read_only_with` rather than a
+  copy, `shacl_report` keeps the last 16 documents (cleared in `reload_knowledge_base()`), and gunicorn runs
+  threaded so a validation or an assessment does not hold up other requests.
 - **Motif templates and the gap report are generated from the declared
   `pair:hasPatternNode` / `pair:hasPatternEdge` structure**, so declaration and match query must
   stay in sync — a motif whose declaration drifts from its `.rq` produces a template that cannot
@@ -1607,7 +1610,7 @@ building an approval inline.
 
 ### Test suite
 
-**587 of 740 tests** by default, and 153 browser tests in about 45 min (counted 2026-11-09). `test_motifs_and_data_flow_narrow_to_the_architecture_on_screen` can time out on a loaded machine. The browser failures that came and went
+**594 of 748 tests** by default, and 154 browser tests; the full run takes about 50 min (counted 2026-11-09). `test_motifs_and_data_flow_narrow_to_the_architecture_on_screen` can time out on a loaded machine. The browser failures that came and went
 were each a test inheriting state an earlier one left: a canvas panned until the chip sat under
 the header, another level on screen, a motif match still picked, a concern raised in six places
 measured as if it were one, and one that clicked a stated risk where it meant a concern. And one

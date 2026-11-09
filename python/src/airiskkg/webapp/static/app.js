@@ -14,7 +14,7 @@ import {
 import { clearDerivedCategories, renderDerivedCategories } from "./panels/dataflow.js";
 import { clearFindings, forgetPickedFinding, reReadFindings, renderFindings } from "./panels/findings.js";
 import { renderHistory } from "./panels/history.js";
-import { closeLibrary, initLibrary, isFrontDoor, isLibraryOpen, libraryBack, openLibrary, openLibraryOn } from "./panels/library.js";
+import { closeLibrary, initLibrary, isLibraryOpen, libraryBack } from "./panels/library.js";
 import { clearMotifs, initMotifPalette, renderMotifs } from "./panels/motifs.js";
 import { applyConnect, applyDisconnect, applyDelete, applyEdit, runMutation } from "./panels/mutations.js";
 import { openOverview } from "./panels/overview.js";
@@ -80,11 +80,6 @@ function initDivider() {
 async function init() {
   /* The front door first. */
   initLibrary();
-  const opensOnLibrary = !$("#ttl-source").value.trim();
-  const linkedEntry = new URLSearchParams(location.search).get("library");
-  if (linkedEntry) openLibraryOn(linkedEntry, opensOnLibrary);
-  else if (opensOnLibrary) openLibrary({ opening: true });
-  else closeLibrary();
 
   GraphView.init();
   Editor.init({ onChange: (ttl) => { stopPossible(); refreshPreview(ttl); scheduleValidation(); } });
@@ -313,7 +308,7 @@ async function init() {
   const stepBack = () => {
     if (!$("#overview").classList.contains("hidden")) { $("#overview").classList.add("hidden"); return true; }
     if (libraryBack()) return true;
-    if (isLibraryOpen() && !isFrontDoor()) { closeLibrary(); return true; }
+    if (isLibraryOpen()) { closeLibrary(); return true; }
     const previous = state.levelTrail.pop();
     if (!previous) return false;
     const widening = state.scopedSystem !== null;
@@ -415,8 +410,6 @@ async function init() {
     if (hasContent) Editor.setValue("");
     askAgain();
     setLevel("architecture");
-    // Back to the front door, which is where the workbench opens.
-    openLibrary({ opening: true });
     setStatus("ok", "Start over", "choose what you are describing");
   });
 

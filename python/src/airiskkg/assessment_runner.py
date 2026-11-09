@@ -9,6 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from rdflib import DCTERMS, RDF, RDFS, SKOS, Graph, Namespace, URIRef
+from rdflib.graph import ReadOnlyGraphAggregate
 from rdflib.plugins.sparql import prepareQuery
 
 from airiskkg.knowledge_base import (
@@ -149,6 +150,9 @@ def reload_knowledge_base() -> None:
     from airiskkg.workbench.terms import _role_labels
     from airiskkg.workbench.vocabulary import vocabulary
 
+    from airiskkg.workbench.validation import clear_reports
+
+    clear_reports()
     library_catalogue.cache_clear()
     data_classifications.cache_clear()
     system_context_options.cache_clear()
@@ -180,6 +184,11 @@ _PARSE_LOCK = threading.Lock()
 def _prepared_query(query_path_str: str):
     with _PARSE_LOCK:
         return prepareQuery(Path(query_path_str).read_text(encoding="utf-8"))
+
+
+def read_only_with(document: Graph) -> ReadOnlyGraphAggregate:
+    """The knowledge base and a parsed document, readable together without a copy."""
+    return ReadOnlyGraphAggregate([_base_knowledge(), document])
 
 
 def run_construct_query(graph: Graph, query_path: Path, **bindings: URIRef) -> Graph:

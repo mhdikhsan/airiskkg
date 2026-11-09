@@ -1,7 +1,6 @@
 /* The library */
 
 import { api } from "../core/api.js";
-import { on } from "../core/bus.js";
 import { $, $$, el } from "../core/dom.js";
 import { kindOf, motifPreview } from "../lib/motif_preview.js";
 import {
@@ -18,9 +17,6 @@ let addedCount = 0;
 
 
 const opened = { risks: new Set(), motifs: new Set(), terms: new Set() };
-
-// Open as the front door, rather than opened deliberately from the toolbar.
-let openingMode = false;
 
 const byId = { risks: new Map(), motifs: new Map(), terms: new Map() };
 
@@ -1351,8 +1347,6 @@ async function insertMotif(motif, risk) {
 
   addedCount += 1;
 
-  leaveOpeningMode();
-
   startDrawing("architecture");
 
   note(
@@ -1483,23 +1477,9 @@ async function load() {
   return true;
 }
 
-function leaveOpeningMode() {
-  openingMode = false;
-
-  $("#library-lead")
-    .classList.add("hidden");
-}
-
 export function closeLibrary() {
-  openingMode = false;
-
   $("#library")
     .classList.add("hidden");
-}
-
-/* The library shown as the opening screen, which Back leaves rather than closes. */
-export function isFrontDoor() {
-  return openingMode && isLibraryOpen();
 }
 
 export function isLibraryOpen() {
@@ -1507,21 +1487,8 @@ export function isLibraryOpen() {
     .classList.contains("hidden");
 }
 
-export async function openLibrary(
-  options = {}
-) {
-  $("#library")
-    .classList.remove("hidden");
-
-  openingMode =
-    Boolean(options.opening);
-
-  // The lead is the opening frame, not a permanent banner over the catalogue.
-  $("#library-lead")
-    .classList.toggle(
-      "hidden",
-      !openingMode
-    );
+export async function openLibrary() {
+  $("#library").classList.remove("hidden");
 
   if (!(await load())) {
     return;
@@ -1531,29 +1498,7 @@ export async function openLibrary(
   renderDetail();
 }
 
-const LINKED_TAB = { risk: "risks", motif: "motifs", role: "terms" };
-
-/* Opens on what a link from the guide names: `kind:id`, or `kind` for its tab. */
-export async function openLibraryOn(target, opening) {
-  await openLibrary({ opening });
-  if (!catalogue) return;
-  const [kind, id] = target.split(":");
-  const linked = LINKED_TAB[kind];
-  if (!linked) return;
-  if (id && byId[linked].has(id)) start(linked, id);
-  else showTab(linked);
-}
-
 export function initLibrary() {
-  on(
-    "choice:settled",
-    () => {
-      if (openingMode) {
-        closeLibrary();
-      }
-    }
-  );
-
   $("#btn-library")
     .addEventListener(
       "click",
@@ -1596,24 +1541,6 @@ export function initLibrary() {
         if (!selected[tab]) {
           renderDetail();
         }
-      }
-    );
-
-  $("#library-start-business")
-    .addEventListener(
-      "click",
-      () => {
-        startDrawing("business");
-        closeLibrary();
-      }
-    );
-
-  $("#library-start-architecture")
-    .addEventListener(
-      "click",
-      () => {
-        startDrawing("architecture");
-        closeLibrary();
       }
     );
 }

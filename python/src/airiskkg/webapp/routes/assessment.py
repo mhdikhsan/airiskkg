@@ -18,7 +18,7 @@ from airiskkg.webapp.runtime import SPARQL_LOCK
 from airiskkg.workbench.gaps import motif_gaps
 from airiskkg.workbench.possible import possible_risks
 from airiskkg.workbench.risk_view import risk_view
-from airiskkg.workbench.validation import shacl_report
+from airiskkg.workbench.validation import known_report, shacl_report
 
 assessment_routes = Blueprint("assessment", __name__)
 
@@ -30,8 +30,10 @@ def validate_contract() -> object:
     if not ttl:
         return jsonify({"error": "Provide an architecture graph (Turtle) to validate."}), 400
     try:
-        with SPARQL_LOCK:
-            report = shacl_report(ttl)
+        report = known_report(ttl)
+        if report is None:
+            with SPARQL_LOCK:
+                report = shacl_report(ttl)
     except Exception as error: 
         return jsonify({"error": f"Could not validate: {error}"}), 400
     return jsonify(report)

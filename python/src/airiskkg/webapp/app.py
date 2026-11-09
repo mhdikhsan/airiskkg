@@ -1,10 +1,10 @@
 """Flask application serving the PAIR-AI risk assessment UI.
 Reading the graph
-    ``GET  /``                       Single-page UI.
+    ``GET  /``                       The documentation and the read-only library
+                                     browser, hash-routed inside the page.
+    ``GET  /workbench``              The editor and canvas.
     ``GET  /risks``                  Every risk pattern on one page, under the
                                      library's labels; ``#<id>`` opens at one.
-    ``GET  /guide``                  The user guide and the read-only library
-                                     browser, hash-routed inside the page.
     ``GET  /api/library``            The risk pattern library and the motif
                                      library: what the knowledge base can
                                      recognise, before a graph is submitted.
@@ -79,16 +79,16 @@ def create_app(
     start_warmup()
 
     @app.get("/")
-    def index() -> object:
+    def documentation() -> object:
+        return send_from_directory(app.static_folder, "guide.html")
+
+    @app.get("/workbench")
+    def workbench() -> object:
         return send_from_directory(app.static_folder, "index.html")
 
     @app.get("/risks")
     def risk_list() -> object:
         return send_from_directory(app.static_folder, "risks.html")
-
-    @app.get("/guide")
-    def guide() -> object:
-        return send_from_directory(app.static_folder, "guide.html")
 
     for blueprint in BLUEPRINTS:
         app.register_blueprint(blueprint)

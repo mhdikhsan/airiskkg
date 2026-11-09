@@ -36,7 +36,6 @@ export function settleChoice() {
   $("#canvas-wrap").classList.remove("unstarted");
   $("#canvas-wrap").classList.add("started");
   $("#level-switch").classList.remove("hidden");
-  emit("choice:settled");
 }
 
 export function startDrawing(level) {

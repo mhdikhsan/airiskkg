@@ -907,7 +907,7 @@ def empty_workbench(served):
         target = next(tab for tab in tabs if tab["type"] == "page")
         connection = await websockets.connect(target["webSocketDebuggerUrl"], max_size=None)
         handle = _Page(connection)
-        await handle.send("Page.navigate", {"url": f"http://127.0.0.1:{served}/"})
+        await handle.send("Page.navigate", {"url": f"http://127.0.0.1:{served}/workbench"})
         await asyncio.sleep(6)
         return connection, handle
 
@@ -925,7 +925,6 @@ def empty_workbench(served):
 def _library_state(loop, handle):
     return loop.run_until_complete(handle.js("""(() => ({
         open: !document.querySelector('#library').classList.contains('hidden'),
-        lead: !document.querySelector('#library-lead').classList.contains('hidden'),
         risks: document.querySelectorAll('#library-list .lib-row').length,
         tiles: document.querySelectorAll('#library-detail .lib-tile').length,
         motifCards: document.querySelectorAll('#library-detail .lib-card').length,
@@ -944,13 +943,19 @@ def _spot(loop, handle, expression):
     }})()"""))
 
 
-def test_the_library_is_what_the_workbench_opens_on(empty_workbench) -> None:
-    """An empty canvas says nothing about what would be found on it."""
+def test_the_workbench_opens_on_the_editor_and_canvas_and_the_library_on_request(empty_workbench) -> None:
+    """The documentation is the front door; Open workbench leads to the editor and canvas."""
     loop, handle = empty_workbench
 
+    assert not _library_state(loop, handle)["open"], "the workbench opened on the library"
+    assert loop.run_until_complete(handle.js(
+        "document.querySelector('#start-business').offsetParent !== null")), "no canvas to start on"
+
+    button = _spot(loop, handle, "document.querySelector('#btn-library')")
+    loop.run_until_complete(handle.click(button["x"], button["y"]))
+    time.sleep(1)
     opened = _library_state(loop, handle)
-    assert opened["open"], "the workbench did not open on the library"
-    assert opened["lead"], "the opening frame that explains motif and risk pattern is missing"
+    assert opened["open"], "the Library button did not open the library"
     assert opened["risks"] > 10, (
         f"the risk list has {opened['risks']} entries; the library holds 29 risk patterns"
     )
@@ -978,8 +983,9 @@ def test_the_opening_choice_answers_a_real_click(empty_workbench) -> None:
     loop, handle = empty_workbench
 
     dismissed = _spot(loop, handle, "document.querySelector('#btn-library-close')")
-    assert dismissed, "the library has no way out of it"
-    loop.run_until_complete(handle.click(dismissed["x"], dismissed["y"]))
+    if dismissed:
+        loop.run_until_complete(handle.click(dismissed["x"], dismissed["y"]))
+
 
     at = loop.run_until_complete(handle.js("""(() => {
         const card = document.querySelector('#start-business');

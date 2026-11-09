@@ -92,6 +92,7 @@ body.resizing { -webkit-user-select: none; user-select: none; cursor: col-resize
   padding: 6px 12px;
   cursor: pointer;
 }
+a.btn { text-decoration: none; color: var(--text); }
 .btn:hover, .toolbar select:hover { border-color: #3d4452; }
 .btn.primary { background: var(--accent-dim); border-color: var(--accent); }
 .btn.primary:hover { background: #33599f; }
@@ -1860,53 +1861,17 @@ button.motif-family:hover { color: #4a5262; }
 /* smaller screens */
 .drawer-tabs {
   overflow-x: auto;
-  scrollbar-width: thin;
   flex: 1 1 auto;
   min-width: 0;
 }
 
-/* WebKit reached `scrollbar-width` only in Safari 18.2, and macOS hides overlay
-   scrollbars while they are idle - so on Safari a strip that scrolls sideways
-   showed nothing at all to say it had more in it. These give the scrollable
-   panels a visible bar there without changing anything on Chromium, which
-   honours the standard property above. */
-.drawer-tabs::-webkit-scrollbar,
-.drawer-body::-webkit-scrollbar,
-.process-palette::-webkit-scrollbar,
-.library-list::-webkit-scrollbar,
-.library-detail::-webkit-scrollbar,
-.editor-pane::-webkit-scrollbar,
-pre::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-.drawer-tabs::-webkit-scrollbar-track,
-.drawer-body::-webkit-scrollbar-track,
-.process-palette::-webkit-scrollbar-track,
-.library-list::-webkit-scrollbar-track,
-.library-detail::-webkit-scrollbar-track,
-.editor-pane::-webkit-scrollbar-track,
-pre::-webkit-scrollbar-track {
-  background: transparent;
-}
-.drawer-tabs::-webkit-scrollbar-thumb,
-.drawer-body::-webkit-scrollbar-thumb,
-.process-palette::-webkit-scrollbar-thumb,
-.library-list::-webkit-scrollbar-thumb,
-.library-detail::-webkit-scrollbar-thumb,
-.editor-pane::-webkit-scrollbar-thumb,
-pre::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 5px;
-}
-.drawer-tabs::-webkit-scrollbar-thumb:hover,
-.drawer-body::-webkit-scrollbar-thumb:hover,
-.process-palette::-webkit-scrollbar-thumb:hover,
-.library-list::-webkit-scrollbar-thumb:hover,
-.library-detail::-webkit-scrollbar-thumb:hover,
-.editor-pane::-webkit-scrollbar-thumb:hover,
-pre::-webkit-scrollbar-thumb:hover {
-  background: var(--text-dim);
+/* One scrollbar across the tool and the documentation. Firefox has no pseudo-elements for it. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 }
 .drawer-tab { white-space: nowrap; flex: 0 0 auto; }
 
@@ -2189,27 +2154,6 @@ body.editor-hidden .pane-head { display: none; }
 .library-search:focus { outline: none; border-color: var(--accent); }
 .library-search::-webkit-search-decoration,
 .library-search::-webkit-search-cancel-button { -webkit-appearance: none; }
-
-.library-lead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 12px 22px;
-  background: rgba(79, 140, 255, 0.07);
-  border-bottom: 1px solid var(--border);
-  flex: 0 0 auto;
-}
-.library-lead.hidden { display: none; }
-.library-lead-text {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--text-dim);
-  max-width: 900px;
-}
-.library-lead-text strong { color: var(--text); font-weight: 600; }
-.library-lead-actions { display: flex; gap: 8px; flex: 0 0 auto; }
 
 .library-body {
   flex: 1 1 auto;
@@ -2715,7 +2659,6 @@ body.editor-hidden .pane-head { display: none; }
 @media (max-width: 900px) {
   .library-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: 34% minmax(0, 1fr); }
   .library-rail { border-right: none; border-bottom: 1px solid var(--border); }
-  .library-lead { flex-direction: column; align-items: flex-start; }
   .library-search { width: 150px; }
 }
 
@@ -2817,8 +2760,6 @@ body.editor-hidden .pane-head { display: none; }
   .library-sub { font-size: 11.5px; line-height: 1.5; }
   .library-head-actions { flex: 1 1 auto; }
   .library-search { flex: 1 1 auto; width: auto; min-width: 0; }
-  .library-lead { padding: 10px 14px; }
-  .library-lead-actions { flex-wrap: wrap; }
   .library-body { grid-template-rows: minmax(0, 42%) minmax(0, 1fr); }
   .library-detail { padding: 16px 14px 32px; }
   .overview-head { flex-wrap: wrap; gap: 8px; }

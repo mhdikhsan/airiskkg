@@ -1563,7 +1563,7 @@ def test_a_blank_architecture_canvas_can_be_drawn_on(served) -> None:
   };
   window.addEventListener("load", () => setTimeout(() => {
     log("frontDoor=" + shown("#system-badge .system-badge-add"));
-    document.querySelector("#library-start-architecture").click();
+    document.querySelector("#start-architecture").click();
     setTimeout(() => {
       log("started=" + shown("#system-badge .system-badge-add"));
       const chip = [...document.querySelectorAll("#palette .palette-item")]

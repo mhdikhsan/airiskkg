@@ -1,15 +1,19 @@
-/* Entry for the user guide page: hash routing and rendering. The prose is in guide_content.js. */
+/* Entry for the documentation page: hash routing and rendering. The prose is in guide_content.js. */
 
 import { api } from "./core/api.js";
 import { $, $$, el } from "./core/dom.js";
 import { MOTIF_SUFFIX, RISK_SUFFIX, describe, shortName } from "./lib/library_text.js";
 import { motifPreview } from "./lib/motif_preview.js";
 import {
-  CONCEPTS, CONTACT, FOOTER, GLOSSARY, GUIDE_VERSION, HOME, KNOWLEDGE_GRAPHS, LIBRARY_PAGE, LIMITS, READING,
+  CONCEPTS, DISPLAY_NAMES, FOOTER, GLOSSARY, GUIDE_VERSION, HOME, KNOWLEDGE_GRAPHS, LIBRARY_PAGE, LIMITS, READING,
   RISK_REASONS, SECTIONS, STARTER_FINDINGS, STEPPER, TOUR, WALKTHROUGH, WORKBENCH,
 } from "./guide_content.js";
 
+const SVG_NS = "http://www.w3.org/2000/svg";
 let data = null;
+let documentation = null;
+let libraryPanel = null;
+let libraryKind = "risk";
 const libraryState = { query: "", facets: {} };
 
 const ICONS = {
@@ -22,11 +26,11 @@ const ICONS = {
 };
 
 function icon(name) {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("viewBox", "0 0 20 20");
   svg.setAttribute("class", "g-icon");
   svg.setAttribute("aria-hidden", "true");
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  const path = document.createElementNS(SVG_NS, "path");
   path.setAttribute("d", ICONS[name]);
   svg.appendChild(path);
   return svg;
@@ -51,12 +55,9 @@ function rich(text) {
 
 const para = (text, cls) => el("p", cls ? { class: cls } : {}, rich(text));
 const localName = (iri) => String(iri).split(/[#/]/).pop();
+const displayName = (name) => DISPLAY_NAMES[name] || name;
 
-function page(title, children) {
-  return el("article", { class: "g-page" }, [el("h2", { class: "g-title" }, title), ...children]);
-}
-
-function section(heading, children) {
+function subsection(heading, children) {
   return el("section", { class: "g-section" }, [el("h3", {}, heading), ...children]);
 }
 
@@ -101,6 +102,40 @@ function countOf(key) {
   }[key]();
 }
 
+// ---- the system model diagram ----
+
+function applyView(svg, view) {
+  svg.classList.toggle("show-roles", view.roles);
+  svg.querySelectorAll(".n").forEach((n) => {
+    n.classList.toggle("hi", view.hi.includes(n.dataset.k));
+    n.classList.toggle("flag", view.flag.includes(n.dataset.k));
+  });
+  svg.querySelectorAll(".e").forEach((e) => {
+    e.classList.toggle("hi", view.e.includes(e.dataset.k));
+    e.classList.toggle("flag", view.e2.includes(e.dataset.k));
+  });
+  const note = svg.querySelector(".note");
+  note.replaceChildren(...view.note.map((line, i) => {
+    const span = document.createElementNS(SVG_NS, "tspan");
+    span.setAttribute("x", "20");
+    span.setAttribute("dy", i ? "18" : "0");
+    if (!i) span.setAttribute("class", "note-head");
+    span.textContent = line;
+    return span;
+  }));
+}
+
+function modelDiagram(view) {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 800 400");
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", STEPPER.aria);
+  svg.setAttribute("class", "g-diagram");
+  svg.innerHTML = STEPPER.svg;
+  applyView(svg, view);
+  return svg;
+}
+
 // ---- landing ----
 
 function searchIndex() {
@@ -131,10 +166,6 @@ function searchBox() {
   return el("div", { class: "g-search" }, [input, el("kbd", {}, "/"), results]);
 }
 
-function readerMinutes(ids) {
-  return SECTIONS.filter((s) => ids.includes(s.id)).reduce((sum, s) => sum + s.minutes, 0);
-}
-
 function home() {
   const flow = HOME.flow.map((step, i) => el("li", {}, el("a", { href: `#/walkthrough/${step.step}`, class: "g-chevron" }, [
     el("span", { class: "g-chevron-no" }, String(i + 1).padStart(2, "0")),
@@ -154,17 +185,16 @@ function home() {
       searchBox(),
     ]),
     el("ul", { class: "g-strip" }, HOME.strip.map((s) => el("li", {}, [el("strong", {}, s.head), el("span", {}, s.text)]))),
-    section(HOME.readersHead, [el("div", { class: "g-grid" }, HOME.readers.map((reader) => el("div", { class: "g-card" }, [
+    subsection(HOME.readersHead, [el("div", { class: "g-grid" }, HOME.readers.map((reader) => el("div", { class: "g-card" }, [
       el("h4", {}, reader.name),
       para(reader.text),
       el("ol", { class: "g-route" }, reader.sections.map((id) => {
         const s = SECTIONS.find((x) => x.id === id);
         return el("li", {}, el("a", { href: "#/" + id }, s.nav));
       })),
-      el("p", { class: "g-muted" }, `${readerMinutes(reader.sections)} minutes of reading`),
     ])))]),
-    section(HOME.flowHead, [el("ol", { class: "g-flow" }, flow)]),
-    section(HOME.browseHead, [el("div", { class: "g-browse" }, HOME.tiles.map((tile) => el("a", { class: "g-tile", href: tile.href }, [
+    subsection(HOME.flowHead, [el("ol", { class: "g-flow" }, flow)]),
+    subsection(HOME.browseHead, [el("div", { class: "g-browse" }, HOME.tiles.map((tile) => el("a", { class: "g-tile", href: tile.href }, [
       icon(tile.icon),
       el("span", {}, [
         el("strong", {}, tile.question),
@@ -172,22 +202,16 @@ function home() {
       ]),
     ])))]),
     el("section", { class: "g-band" }, [
-      el("div", {}, [el("h3", {}, HOME.band.head), para(HOME.band.text), el("a", { class: "btn primary", href: "/" }, HOME.band.action)]),
+      el("div", {}, [el("h3", {}, HOME.band.head), para(HOME.band.text), el("a", { class: "btn primary", href: "workbench" }, HOME.band.action)]),
       el("ol", { class: "g-band-path" }, HOME.band.steps.map((s) => el("li", {}, rich(s)))),
     ]),
   ]);
 }
 
-// ---- tour ----
+// ---- documentation sections ----
 
 function stepper() {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", "0 0 720 300");
-  svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", STEPPER.aria);
-  svg.setAttribute("class", "g-diagram");
-  svg.innerHTML = STEPPER.svg;
-
+  const svg = modelDiagram(STEPPER.steps[0]);
   const caption = el("div", { class: "g-caption", "aria-live": "polite" });
   const prev = el("button", { type: "button", class: "btn small", onclick: () => show(current - 1) }, "Previous");
   const next = el("button", { type: "button", class: "btn small", onclick: () => show(current + 1) }, "Next");
@@ -198,17 +222,8 @@ function stepper() {
 
   function show(i) {
     current = i;
-    const step = STEPPER.steps[i];
-    svg.classList.toggle("show-roles", step.roles);
-    svg.querySelectorAll(".n").forEach((n) => {
-      n.classList.toggle("hi", step.hi.includes(n.dataset.k));
-      n.classList.toggle("flag", step.flag.includes(n.dataset.k));
-    });
-    svg.querySelectorAll(".e").forEach((e) => {
-      e.classList.toggle("hi", step.e.includes(e.dataset.k));
-      e.classList.toggle("flag", step.e2.includes(e.dataset.k));
-    });
-    caption.replaceChildren(...rich(step.text));
+    applyView(svg, STEPPER.steps[i]);
+    caption.replaceChildren(...rich(STEPPER.steps[i].text));
     tabs.forEach((tab, j) => tab.setAttribute("aria-selected", j === i ? "true" : "false"));
     prev.disabled = i === 0;
     next.disabled = i === STEPPER.steps.length - 1;
@@ -237,7 +252,7 @@ function starterTable() {
     buttons.forEach((b) => b.setAttribute("aria-pressed", b.dataset.scope === id ? "true" : "false"));
     body.replaceChildren(table(TOUR.columns, STARTER_FINDINGS
       .filter((row) => row.scopes.includes(id))
-      .map((row) => [row.label, reasonFor(row), row.evidence.join(", ")])));
+      .map((row) => [row.label, reasonFor(row), row.evidence.map(displayName).join(", ")])));
     body.firstChild.dataset.scope = id;
   }
   show("full");
@@ -245,30 +260,38 @@ function starterTable() {
 }
 
 function tour() {
-  return page(SECTIONS[0].title, [
+  return [
     ...TOUR.intro.map((p) => para(p)),
-    section(TOUR.conceptsHead, [grid(TOUR.concepts.map((c) => card(c.head, c.text)))]),
+    subsection(TOUR.conceptsHead, [grid(TOUR.concepts.map((c) => card(c.head, c.text)))]),
     para(TOUR.quick, "g-note"),
-    section(TOUR.exampleHead, [para(TOUR.example), stepper()]),
-    section(TOUR.resultHead, [para(TOUR.result), starterTable()]),
-    section(TOUR.triageHead, [para(TOUR.triage)]),
-  ]);
+    subsection(TOUR.exampleHead, [para(TOUR.example), stepper()]),
+    subsection(TOUR.resultHead, [para(TOUR.result), starterTable()]),
+    subsection(TOUR.triageHead, [
+      para(TOUR.triage),
+      table(TOUR.decisionColumns, TOUR.decisions.map(([name, meaning]) => [el("strong", {}, name), meaning])),
+      para(TOUR.triageExample, "g-note"),
+    ]),
+  ];
 }
 
 function concepts() {
-  return page(SECTIONS[1].title, [
+  return [
     para(CONCEPTS.intro),
     el("div", { class: "g-layers" }, CONCEPTS.levels.map((level) => el("div", { class: "g-layer " + level.kind }, [
       el("strong", {}, level.head), el("span", {}, rich(level.text)),
     ]))),
-    section(CONCEPTS.howHead, [para(CONCEPTS.how)]),
+    subsection(CONCEPTS.howHead, [para(CONCEPTS.how)]),
     para(CONCEPTS.absence, "g-note"),
-  ]);
+  ];
 }
 
 function viewPanel(view) {
   if (view.rows) return table(null, view.rows.map(([name, text]) => [el("strong", {}, name), el("span", {}, rich(text))]));
-  return el("div", {}, view.paragraphs.map((p) => para(p)));
+  return el("div", {}, [
+    ...view.paragraphs.map((p) => para(p)),
+    el("figure", { class: "g-figure" }, el("a", { href: view.image.src, target: "_blank", rel: "noopener" },
+      el("img", { src: view.image.src, alt: view.image.alt, loading: "lazy" }))),
+  ]);
 }
 
 function workbench() {
@@ -281,44 +304,64 @@ function workbench() {
     panel.replaceChildren(viewPanel(view));
   }
   show(WORKBENCH.views[0]);
-  return page(SECTIONS[2].title, [para(WORKBENCH.intro), el("div", { class: "g-tabs", role: "tablist" }, tabs), panel]);
+  return [para(WORKBENCH.intro), el("div", { class: "g-tabs", role: "tablist" }, tabs), panel];
 }
 
-function walkthrough(rest) {
-  const wanted = Number(rest[0]) || 1;
-  return page(SECTIONS[3].title, [
+function procedure(item) {
+  return [
+    el("ol", {}, item.actions.map((a) => el("li", {}, rich(a)))),
+    el("p", {}, [el("strong", {}, WALKTHROUGH.starterLabel + ". "), ...rich(item.starter)]),
+    el("details", { class: "g-reflect" }, [
+      el("summary", {}, [WALKTHROUGH.checkLabel + ": ", ...rich(item.question)]),
+      para(item.answer),
+    ]),
+  ];
+}
+
+function choiceBody(step) {
+  const body = el("div", {});
+  const tabs = step.choices.map((choice) => el("button", {
+    type: "button", class: "g-tab", role: "tab", onclick: () => show(choice),
+  }, choice.label));
+  function show(choice) {
+    tabs.forEach((tab, i) => tab.setAttribute("aria-selected", step.choices[i] === choice ? "true" : "false"));
+    body.replaceChildren(...procedure(choice));
+  }
+  show(step.choices[0]);
+  return [para(step.lead), el("div", { class: "g-tabs", role: "tablist" }, tabs), body];
+}
+
+function walkthrough() {
+  return [
     para(WALKTHROUGH.intro),
-    ...WALKTHROUGH.steps.map((step, i) => el("details", { class: "g-step", id: `step-${i + 1}`, ...(i + 1 === wanted ? { open: "" } : {}) }, [
+    ...WALKTHROUGH.steps.map((step, i) => el("details", { class: "g-step", id: `step-${i + 1}`, ...(i === 0 ? { open: "" } : {}) }, [
       el("summary", {}, [
         el("span", { class: "g-step-no" }, String(i + 1).padStart(2, "0")),
         el("strong", {}, step.title),
         el("span", { class: "g-muted g-step-view" }, step.view),
       ]),
-      el("div", { class: "g-step-body" }, [
-        el("ol", {}, step.actions.map((a) => el("li", {}, rich(a)))),
-        el("p", {}, [el("strong", {}, WALKTHROUGH.starterLabel + ". "), ...rich(step.starter)]),
-        el("details", { class: "g-reflect" }, [
-          el("summary", {}, [WALKTHROUGH.checkLabel + ": ", ...rich(step.question)]),
-          para(step.answer),
-        ]),
-      ]),
+      el("div", { class: "g-step-body" }, step.choices ? choiceBody(step) : procedure(step)),
     ])),
-  ]);
+  ];
 }
 
 function reading() {
   const risk = data.library.riskPatterns.find((r) => r.id === READING.riskPattern);
   const finding = STARTER_FINDINGS.find((row) => row.label === READING.evidenceLabel);
   const line = (label, value) => el("p", {}, [el("strong", {}, label + ": "), value]);
-  return page(SECTIONS[4].title, [section(READING.exampleHead, [el("div", { class: "g-finding" }, [
-    el("div", { class: "g-finding-title" }, "Candidate " + shortName(risk.label, RISK_SUFFIX).toLowerCase()),
-    el("span", { class: "chip" }, "candidate"),
-    line(READING.labels.condition, risk.conditions.map((c) => c.label).join("; ")),
-    line(READING.labels.mechanism, `${risk.mechanism.label}. ${risk.mechanism.definition || ""}`),
-    line(READING.labels.evidence, finding.evidence.join(", ")),
-    line(READING.labels.controls, risk.controls.map((c) => c.label).join(", ")),
-    line(READING.labels.taxonomy, risk.taxonomy.slice(0, 6).map((t) => t.label).join(", ")),
-  ])])]);
+  return [subsection(READING.exampleHead, [
+    para(READING.intro),
+    el("div", { class: "g-canvas" }, modelDiagram(READING.view)),
+    el("div", { class: "g-finding" }, [
+      el("div", { class: "g-finding-title" }, "Candidate " + shortName(risk.label, RISK_SUFFIX).toLowerCase()),
+      el("span", { class: "chip" }, "candidate"),
+      line(READING.labels.condition, risk.conditions.map((c) => c.label).join("; ")),
+      line(READING.labels.mechanism, `${risk.mechanism.label}. ${risk.mechanism.definition || ""}`),
+      line(READING.labels.evidence, finding.evidence.map(displayName).join(", ")),
+      line(READING.labels.controls, risk.controls.map((c) => c.label).join(", ")),
+      line(READING.labels.taxonomy, risk.taxonomy.slice(0, 6).map((t) => t.label).join(", ")),
+    ]),
+  ])];
 }
 
 function linkedEntries(key) {
@@ -327,17 +370,17 @@ function linkedEntries(key) {
 
 function underTheHood() {
   const kg = KNOWLEDGE_GRAPHS;
-  return page(SECTIONS[5].title, [
+  return [
     para(kg.intro),
     el("div", { class: "g-pipe" }, kg.pipeline.map((step, i) => el("div", { class: "g-card" }, [
       el("h4", {}, `${i + 1} ${step.head}`), para(step.text),
     ]))),
-    ...kg.blocks.map((block) => section(block.head, [para(block.text), el("pre", { class: "g-code" }, block.code)])),
+    ...kg.blocks.map((block) => subsection(block.head, [para(block.text), el("pre", { class: "g-code" }, block.code)])),
     grid(kg.properties.map((c) => card(c.head, c.text))),
-    section(kg.componentsHead, [para(kg.components), table(["Component", "Count", "Notes"], kg.componentRows.map((row) => [
+    subsection(kg.componentsHead, [para(kg.components), table(["Component", "Count", "Notes"], kg.componentRows.map((row) => [
       row.label, el("span", { class: "g-count", "data-count": row.count }, String(countOf(row.count))), row.note,
     ]))]),
-    section(kg.taxonomiesHead, kg.taxonomies.map((t) => {
+    subsection(kg.taxonomiesHead, kg.taxonomies.map((t) => {
       const entries = new Map(linkedEntries(t.key).map((e) => [e.id, e]));
       return el("details", { class: "g-accordion" }, [
         el("summary", {}, t.name),
@@ -350,10 +393,10 @@ function underTheHood() {
         ]),
       ]);
     })),
-    section(kg.sourcesHead, [table(null, kg.sources.map((s) => [
+    subsection(kg.sourcesHead, [table(null, kg.sources.map((s) => [
       el("a", { href: s.url, target: "_blank", rel: "noopener noreferrer" }, s.name), s.text,
     ]))]),
-  ]);
+  ];
 }
 
 // ---- library browser ----
@@ -413,7 +456,8 @@ function versionLine() {
     `${LIBRARY_PAGE.versionLabel} ${v.version}, fingerprint ${v.fingerprint}${v.dirty ? "+" : ""}, loaded ${v.loadedOn}`);
 }
 
-function libraryBrowser(kind) {
+function drawLibrary(kind) {
+  libraryKind = kind;
   const list = el("div", { class: "g-list" });
   const facetBox = el("div", { class: "g-facets" });
   const entries = entriesOf(kind);
@@ -430,8 +474,7 @@ function libraryBrowser(kind) {
       : [el("p", { class: "g-muted" }, LIBRARY_PAGE.empty)]));
   }
 
-  const names = [...new Set(entries.flatMap((e) => Object.keys(e.facets)))];
-  names.forEach((facet) => {
+  [...new Set(entries.flatMap((e) => Object.keys(e.facets)))].forEach((facet) => {
     const values = [...new Set(entries.flatMap((e) => e.facets[facet]))].sort();
     if (values.length < 2) return;
     facetBox.appendChild(el("div", { class: "g-facet" }, [
@@ -452,8 +495,7 @@ function libraryBrowser(kind) {
   });
   draw();
 
-  return page(SECTIONS[6].title, [
-    para(LIBRARY_PAGE.intro),
+  libraryPanel.replaceChildren(
     el("div", { class: "g-tabs", role: "tablist" }, LIBRARY_PAGE.tabs.map((tab) => el("a", {
       class: "g-tab", role: "tab", href: `#/library/${tab.kind}`, "aria-selected": tab.kind === kind ? "true" : "false",
     }, [tab.label + " ", el("span", { class: "g-count", "data-tab": tab.kind }, String(entriesOf(tab.kind).length))]))),
@@ -465,7 +507,13 @@ function libraryBrowser(kind) {
     }),
     facetBox,
     list,
-  ]);
+  );
+}
+
+function library() {
+  libraryPanel = el("div", {});
+  drawLibrary(libraryKind);
+  return [para(LIBRARY_PAGE.intro), libraryPanel];
 }
 
 const entryLink = (kind, id, label) => el("a", { class: "g-link-chip", href: `#/library/${kind}/${id}` }, label);
@@ -474,16 +522,19 @@ const outLink = (ref) => (ref.url
   ? el("a", { class: "g-link-chip", href: ref.url, target: "_blank", rel: "noopener noreferrer" }, ref.doi ? `${ref.label} (doi:${ref.doi})` : ref.label)
   : el("span", { class: "g-link-chip" }, ref.label));
 
-function detailShell(name, kindLabel, target, panels) {
+function detailShell(kind, name, kindLabel, panels) {
   const parts = LIBRARY_PAGE.headings;
+  const tab = LIBRARY_PAGE.tabs.find((t) => t.kind === kind);
   return el("article", { class: "g-page" }, [
     el("p", { class: "g-kicker" }, kindLabel),
     el("div", { class: "g-detail-head" }, [
       el("h2", { class: "g-title" }, name),
-      el("a", { class: "btn primary", id: "guide-open-entry", href: "/?library=" + encodeURIComponent(target) }, LIBRARY_PAGE.openInWorkbench),
+      el("div", { class: "g-actions" }, [
+        el("a", { class: "btn", id: "guide-back", href: `#/library/${kind}` }, tab.back),
+      ]),
     ]),
     versionLine(),
-    ...panels.filter(Boolean).map(([heading, body]) => section(parts[heading], [].concat(body))),
+    ...panels.filter(Boolean).map(([heading, body]) => subsection(parts[heading], [].concat(body))),
   ]);
 }
 
@@ -494,7 +545,7 @@ const riskLink = (id) => { const r = riskById(id); return r ? entryLink("risk", 
 
 function riskPage(r) {
   const text = describe(r);
-  return detailShell(shortName(r.label, RISK_SUFFIX), "AI risk pattern", `risk:${r.id}`, [
+  return detailShell("risk", shortName(r.label, RISK_SUFFIX), "AI risk pattern", [
     text.text ? ["description", para(text.text)] : null,
     r.mechanism ? ["mechanism", [el("p", {}, el("strong", {}, r.mechanism.label)), para(r.mechanism.definition || "")]] : null,
     ["conditions", el("ul", {}, r.conditions.map((c) => el("li", {}, c.label)))],
@@ -506,7 +557,7 @@ function riskPage(r) {
 }
 
 function motifPage(m) {
-  return detailShell(shortName(m.label, MOTIF_SUFFIX), "Motif", `motif:${m.id}`, [
+  return detailShell("motif", shortName(m.label, MOTIF_SUFFIX), "Motif", [
     m.description ? ["description", para(m.description)] : null,
     ["structure", el("div", { class: "lib-preview large" }, motifPreview(m))],
     ["roles", links(m.roles.map((r) => entryLink("role", r.id, r.label)))],
@@ -517,7 +568,7 @@ function motifPage(m) {
 
 function rolePage(r) {
   const children = data.library.vocabulary.roles.filter((c) => (c.refines || []).some((p) => p.id === r.id));
-  return detailShell(r.label, "Role", `role:${r.id}`, [
+  return detailShell("role", r.label, "Role", [
     ["definition", para(r.definition || "")],
     ["parents", links((r.refines || []).map((p) => entryLink("role", p.id, p.label)))],
     ["children", links(children.map((c) => entryLink("role", c.id, c.label)))],
@@ -526,14 +577,14 @@ function rolePage(r) {
 }
 
 function categoryPage(c) {
-  return detailShell(c.label, "Data category", "role", [
+  return detailShell("category", c.label, "Data category", [
     ["definition", para(c.definition || "")],
     ["origin", para(c.derived ? LIBRARY_PAGE.derived.yes : LIBRARY_PAGE.derived.no)],
   ]);
 }
 
 function controlPage(c) {
-  return detailShell(c.label, "Control", `risk:${c.suggestedBy[0]}`, [
+  return detailShell("control", c.label, "Control", [
     ["definition", para(c.definition || "")],
     c.nature ? ["nature", para(c.nature)] : null,
     ["suggestedBy", links(c.suggestedBy.map(riskLink).filter(Boolean))],
@@ -542,22 +593,17 @@ function controlPage(c) {
 }
 
 function libraryDetail(kind, id) {
-  const { library } = data;
+  const { library: lib } = data;
   if (kind === "risk") { const r = riskById(id); return r ? riskPage(r) : null; }
   if (kind === "motif") { const m = motifById(id); return m ? motifPage(m) : null; }
-  if (kind === "role") { const r = library.vocabulary.roles.find((x) => x.id === id); return r ? rolePage(r) : null; }
-  if (kind === "category") { const c = library.vocabulary.dataCategories.find((x) => x.id === id); return c ? categoryPage(c) : null; }
+  if (kind === "role") { const r = lib.vocabulary.roles.find((x) => x.id === id); return r ? rolePage(r) : null; }
+  if (kind === "category") { const c = lib.vocabulary.dataCategories.find((x) => x.id === id); return c ? categoryPage(c) : null; }
   if (kind === "control") { const c = uniqueControls().find((x) => x.id === id); return c ? controlPage(c) : null; }
   return null;
 }
 
-function library(rest) {
-  const kind = LIBRARY_PAGE.tabs.some((t) => t.kind === rest[0]) ? rest[0] : "risk";
-  return (rest[1] && libraryDetail(kind, rest[1])) || libraryBrowser(kind);
-}
-
 function limits() {
-  return page(SECTIONS[7].title, [grid(LIMITS.cards.map((c) => card(c.head, c.text)))]);
+  return [grid(LIMITS.cards.map((c) => card(c.head, c.text)))];
 }
 
 function glossary() {
@@ -576,36 +622,78 @@ function glossary() {
       none.classList.toggle("hidden", shown > 0);
     },
   });
-  return page(SECTIONS[8].title, [input, el("dl", { class: "g-gloss" }, rows), none]);
+  return [input, el("dl", { class: "g-gloss" }, rows), none];
 }
 
-// ---- routing ----
+// ---- the one scrolling page, and routing ----
 
-const PAGES = {
-  home, tour, concepts, workbench, walkthrough, reading, "under-the-hood": underTheHood, library, limits, glossary,
+const RENDERERS = {
+  tour, concepts, workbench, walkthrough, reading, "under-the-hood": underTheHood, library, limits, glossary,
 };
+
+function buildDocumentation() {
+  return el("article", { class: "g-page g-doc" }, SECTIONS.map((s) => el("section", { class: "g-doc-section", id: `sec-${s.id}` }, [
+    el("h2", { class: "g-title" }, s.title),
+    ...RENDERERS[s.id](),
+  ])));
+}
+
+function mark(id) {
+  $$("#guide-nav a").forEach((a) => a.classList.toggle("on", a.dataset.section === id));
+}
+
+function spy() {
+  if ($("#guide-main").firstChild !== documentation) return;
+  let current = SECTIONS[0].id;
+  SECTIONS.forEach((s) => {
+    if (document.getElementById(`sec-${s.id}`).getBoundingClientRect().top <= 120) current = s.id;
+  });
+  mark(current);
+}
 
 function route() {
   const [head, ...rest] = location.hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
-  if (!PAGES[head]) {
+  const main = $("#guide-main");
+  if (head === "home") {
+    main.replaceChildren(home());
+    mark("home");
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (!RENDERERS[head]) {
     location.replace("#/home");
     return;
   }
-  $("#guide-main").replaceChildren(PAGES[head](rest));
-  $$("#guide-nav a").forEach((a) => a.classList.toggle("on", a.dataset.section === head));
-  const section_ = SECTIONS.find((s) => s.id === head);
-  document.title = section_ ? `${section_.nav}, PAIR-AI user guide` : "PAIR-AI user guide";
-  window.scrollTo(0, 0);
+  if (head === "library" && rest[1]) {
+    const detail = libraryDetail(rest[0], rest[1]);
+    if (detail) {
+      main.replaceChildren(detail);
+      mark("library");
+      window.scrollTo(0, 0);
+      return;
+    }
+  }
+  if (main.firstChild !== documentation) main.replaceChildren(documentation);
+  if (head === "library") {
+    const kind = LIBRARY_PAGE.tabs.some((t) => t.kind === rest[0]) ? rest[0] : "risk";
+    if (kind !== libraryKind) drawLibrary(kind);
+  }
+  if (head === "walkthrough" && rest[0]) {
+    const step = document.getElementById(`step-${Number(rest[0])}`);
+    if (step) { step.open = true; step.scrollIntoView(); mark(head); return; }
+  }
+  document.getElementById(`sec-${head}`).scrollIntoView();
+  mark(head);
 }
 
 function chrome() {
-  $("#guide-nav").replaceChildren(...SECTIONS.map((s) => {
+  const links_ = [{ id: "home", nav: HOME.nav }, ...SECTIONS];
+  $("#guide-nav").replaceChildren(...links_.map((s) => {
     const link = el("a", { href: "#/" + s.id }, s.nav);
     link.dataset.section = s.id;
     return link;
   }));
-  $("#guide-contact").replaceChildren("Contact: ", el("a", { href: CONTACT.url, target: "_blank", rel: "noopener noreferrer" }, CONTACT.label));
-  $("#guide-footer").textContent = `${FOOTER} Guide version ${GUIDE_VERSION}.`;
+  $("#guide-footer").textContent = `${FOOTER} Documentation version ${GUIDE_VERSION}.`;
 }
 
 document.addEventListener("keydown", (ev) => {
@@ -616,13 +704,15 @@ document.addEventListener("keydown", (ev) => {
 
 async function boot() {
   chrome();
-  const [lib, vocabulary, version] = await Promise.all([api("/api/library"), api("/api/vocabulary"), api("/api/kb-version")]);
+  const [lib, vocabulary, version] = await Promise.all([api("api/library"), api("api/vocabulary"), api("api/kb-version")]);
   data = { library: lib, vocabulary, version };
   data.roleCategories = roleCategories();
+  documentation = buildDocumentation();
   window.addEventListener("hashchange", route);
+  window.addEventListener("scroll", spy, { passive: true });
   route();
 }
 
 boot().catch((error) => {
-  $("#guide-main").textContent = "The guide could not read the library: " + error.message;
+  $("#guide-main").textContent = "The documentation could not read the library: " + error.message;
 });

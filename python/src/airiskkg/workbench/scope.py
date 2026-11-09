@@ -145,10 +145,9 @@ def stated_notes(graph: Graph) -> list[dict]:
 def scope_report(ttl: str) -> dict:
     """The register as it stands in the editor, without running anything.
     """
-    from airiskkg.assessment_runner import load_base_graph
+    from airiskkg.assessment_runner import read_only_with
 
-    graph = load_base_graph()
-    graph.parse(data=ttl, format="turtle")
+    graph = read_only_with(Graph().parse(data=ttl, format="turtle"))
     return {
         "scope": read_scope(graph),
         "statedRisks": stated_risks(graph),

@@ -74,9 +74,10 @@ support chatbot it runs on.
 
 The editor and the canvas are two views of one Turtle document and stay in sync both
 ways: type Turtle and the diagram redraws; draw, connect or rename on the canvas and
-the Turtle updates. It opens on the library, and three levels share the canvas.
+the Turtle updates. The address of the tool opens on the documentation, and **Open workbench**
+leads to the editor and canvas at `/workbench`, where three levels share the canvas.
 
-- **Library.** The workbench opens on the libraries: every AI risk pattern with its
+- **Library.** The Library button opens the libraries: every AI risk pattern with its
   mechanism, what it may lead to and its suggested controls, and every motif drawn
   from its own declaration. From a risk you can add the motif that raises it, with
   the context it needs, and run the assessment.
@@ -194,7 +195,7 @@ can actually be clicked.
 | Document | What it covers |
 | --- | --- |
 | [User guide](docs/user_guide.md) | Using the workbench, and the annotation vocabulary |
-| User guide pages | Served by the workbench at `/guide`: tour, walkthrough and a read-only library browser |
+| Documentation pages | Served at `/`: tour, procedure and a read-only library browser |
 | [Glossary](docs/reference/PAIR-AI_glossary_v1_4.md) | Terminology and the modelling rules R1 to R10 |
 | [Method and construction](docs/reference/PAIR-AI_method_and_construction.md) | How the knowledge base was built and how an assessment runs |
 | [Catalogue](docs/reference/catalogue.md) | Every motif, AI risk pattern, role and data category |

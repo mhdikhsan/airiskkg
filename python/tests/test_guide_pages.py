@@ -1,4 +1,4 @@
-"""The user guide at /guide: what it may say, and that it renders what the library holds."""
+"""The documentation at /: what it may say, and that it renders what the library holds."""
 
 from __future__ import annotations
 
@@ -33,12 +33,18 @@ def client():
 
 
 @pytest.mark.ui
-def test_the_guide_is_served_and_the_workbench_links_to_it(client) -> None:
-    response = client.get("/guide")
-    assert response.status_code == 200
-    assert b"guide.js" in response.data
-    response.close()
-    assert 'href="/guide"' in _text("index.html")
+def test_the_documentation_is_the_front_door_and_the_workbench_has_its_own_address(client) -> None:
+    for path, marker in (("/", b"guide.js"), ("/workbench", b"app.js")):
+        response = client.get(path)
+        assert response.status_code == 200 and marker in response.data, path
+        response.close()
+    assert 'id="btn-docs"' in _text("index.html") and 'href="workbench"' in _text("guide.html")
+
+
+@pytest.mark.ui
+def test_every_canvas_snapshot_exists() -> None:
+    for name in re.findall(r'src: "(static/guide/[\w-]+\.png)"', _text("guide_content.js")):
+        assert (STATIC.parent / name).is_file(), name
 
 
 @pytest.mark.ui
@@ -76,7 +82,7 @@ def test_a_finding_is_never_called_confirmed() -> None:
 
 
 @pytest.mark.ui
-@pytest.mark.parametrize("phrase", ["concern", "risk-neutral", "applicability condition", "drawing", "Zhang", "Ikhsan", "\u00b7", "&middot;"])
+@pytest.mark.parametrize("phrase", ["concern", "risk-neutral", "applicability condition", "drawing", "Zhang", "Ikhsan", "\u00b7", "&middot;", "candidate risk finding", "candidate finding", "minutes of reading"])
 def test_the_prose_keeps_the_reviewed_wording(phrase) -> None:
     assert phrase.lower() not in PROSE.read_text(encoding="utf-8").lower()
 
@@ -168,7 +174,7 @@ class TestGuideInABrowser:
         return json.load(urllib.request.urlopen(context[2] + path))
 
     def test_every_tile_shows_what_the_api_returns(self, browser) -> None:
-        self._open(browser, "/guide#/home", "document.querySelector('.g-tile .g-count')")
+        self._open(browser, "/#/home", "document.querySelector('.g-tile .g-count')")
         loop, handle, _ = browser
         shown = json.loads(loop.run_until_complete(handle.js(
             "JSON.stringify(Object.fromEntries([...document.querySelectorAll('.g-tile .g-count')].map(e=>[e.dataset.count,+e.textContent])))")))
@@ -183,15 +189,17 @@ class TestGuideInABrowser:
     def test_every_route_renders_and_history_works(self, browser) -> None:
         loop, handle, _ = browser
         for route in ROUTES:
-            self._open(browser, f"/guide#/{route}", "document.querySelector('#guide-main article')")
+            self._open(browser, f"/#/{route}", "document.querySelector('#guide-main article')")
             assert loop.run_until_complete(handle.js("__errors.join(';')")) == "", route
-        self._open(browser, "/guide#/nowhere", "location.hash === '#/home' && document.querySelector('.g-hero')")
-        self._open(browser, "/guide#/tour", "document.querySelector('.g-stepper')")
+        self._open(browser, "/#/nowhere", "location.hash === '#/home' && document.querySelector('.g-hero')")
+        self._open(browser, "/#/home", "document.querySelector('.g-hero')")
         loop.run_until_complete(handle.js("location.hash = '#/glossary'; 1"))
-        time.sleep(0.5)
+        time.sleep(0.8)
+        assert loop.run_until_complete(handle.js("!!document.querySelector('#sec-glossary')"))
+        assert loop.run_until_complete(handle.js("document.querySelector('#guide-nav a.on').dataset.section")) == "glossary"
         loop.run_until_complete(handle.js("history.back(); 1"))
         time.sleep(0.8)
-        assert loop.run_until_complete(handle.js("!!document.querySelector('.g-stepper')"))
+        assert loop.run_until_complete(handle.js("!!document.querySelector('.g-hero')"))
         loop.run_until_complete(handle.js("history.forward(); 1"))
         time.sleep(0.8)
         assert loop.run_until_complete(handle.js("!!document.querySelector('#guide-glossary-filter')"))
@@ -199,7 +207,7 @@ class TestGuideInABrowser:
     def test_the_library_tabs_count_the_loaded_library(self, browser) -> None:
         from airiskkg.assessment_runner import knowledge_base_fingerprint
 
-        self._open(browser, "/guide#/library", "document.querySelector('[data-tab=control]')")
+        self._open(browser, "/#/library", "document.querySelector('[data-tab=control]')")
         loop, handle, _ = browser
         tabs = json.loads(loop.run_until_complete(handle.js(
             "JSON.stringify(Object.fromEntries([...document.querySelectorAll('[data-tab]')].map(e=>[e.dataset.tab,+e.textContent])))")))
@@ -211,16 +219,21 @@ class TestGuideInABrowser:
         }
         assert loop.run_until_complete(handle.js("/^Library version \\d/.test(document.querySelector('#guide-library-version').textContent)"))
 
-    @pytest.mark.parametrize("kind, entry, tab, title", [
-        ("motif", "RetrievalAugmentedGenerationMotif", "motifs", "Retrieval Augmented Generation"),
-        ("risk", "PromptInjectionRiskPattern", "risks", "Prompt injection"),
+    @pytest.mark.parametrize("kind, entry", [
+        ("motif", "RetrievalAugmentedGenerationMotif"),
+        ("risk", "PromptInjectionRiskPattern"),
     ])
-    def test_open_in_workbench_lands_on_the_entry(self, browser, kind, entry, tab, title) -> None:
+    def test_a_library_entry_goes_back_to_its_list(self, browser, kind, entry) -> None:
         loop, handle, _ = browser
-        self._open(browser, f"/guide#/library/{kind}/{entry}", "document.querySelector('#guide-open-entry')")
-        target = loop.run_until_complete(handle.js("document.querySelector('#guide-open-entry').getAttribute('href')"))
-        self._open(browser, target, f"document.querySelector('#library-detail, .library-detail').textContent.includes('{title}')")
-        assert loop.run_until_complete(handle.js("document.querySelector('.library-tab.active').dataset.libraryTab")) == tab
+        self._open(browser, f"/#/library/{kind}/{entry}", "document.querySelector('#guide-back')")
+        loop.run_until_complete(handle.js("document.querySelector('#guide-back').click(); 1"))
+        time.sleep(0.8)
+        assert loop.run_until_complete(handle.js("!!document.querySelector('#sec-library .g-row')"))
+
+    def test_the_workbench_address_carries_no_query(self, browser) -> None:
+        loop, handle, _ = browser
+        self._open(browser, "/#/home", "document.querySelector('.guide-open')")
+        assert loop.run_until_complete(handle.js("document.querySelector('.guide-open').getAttribute('href')")) == "workbench"
 
     @pytest.mark.parametrize("route", ["home", "under-the-hood"])
     def test_a_narrow_window_does_not_scroll_sideways(self, browser, route) -> None:
@@ -228,7 +241,7 @@ class TestGuideInABrowser:
         loop.run_until_complete(handle.send("Emulation.setDeviceMetricsOverride", {
             "width": 400, "height": 800, "deviceScaleFactor": 1, "mobile": False}))
         try:
-            self._open(browser, f"/guide#/{route}", "document.querySelector('#guide-main article')")
+            self._open(browser, f"/#/{route}", "document.querySelector('#guide-main article')")
             time.sleep(0.5)
             over = loop.run_until_complete(handle.js("document.documentElement.scrollWidth - window.innerWidth"))
             assert over <= 0, f"{route} overflows by {over}px"

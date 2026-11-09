@@ -107,7 +107,7 @@ The editor and the canvas are **two views of the same Turtle document and stay i
 sync both ways**. Type Turtle and the diagram redraws; draw, connect or rename on the
 canvas and the Turtle updates.
 
-The workbench opens on the [Library](#23-the-library). On an empty canvas it asks
+The tool's address opens on the documentation, and **Open workbench** leads to the editor and canvas. On an empty canvas the workbench asks
 what you are describing, a business process or an AI architecture, and starts you on
 that level. Once there is content, the **Process / Architecture / Risk** switch above
 the canvas moves between levels, and an edit never moves you off the level you chose.
@@ -131,7 +131,7 @@ the canvas moves between levels, and an edit never moves you off the level you c
 
 ### 2.3 The Library
 
-The Library is the front door. It is generated from the loaded knowledge base, so it
+The **Library** button opens the Library. It is generated from the loaded knowledge base, so it
 always shows what the assessment can actually do. It has three tabs:
 
 - **Risks** lists every AI risk pattern, shelved by the kind of system it applies to.

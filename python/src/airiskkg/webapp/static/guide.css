@@ -1,23 +1,25 @@
-/* The user guide: layout only; colours and controls come from style.css. */
+/* The documentation: layout only; colours and controls come from style.css. */
 
 body.guide-page { display: block; height: auto; min-height: 100%; overflow: auto; }
-.guide-header { position: sticky; top: 0; z-index: 20; flex-wrap: wrap; height: auto; gap: 8px 18px; background: var(--bg-panel); }
+.guide-shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 100vh; }
+.guide-sidebar { position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 18px 14px; background: var(--bg-panel); border-right: 1px solid var(--border); }
 .guide-brand { color: inherit; text-decoration: none; }
-.guide-nav { display: flex; flex-wrap: wrap; gap: 2px; flex: 1 1 320px; min-width: 0; }
-.guide-nav a { color: var(--text-dim); font-size: 13px; padding: 5px 8px; border-radius: 5px; text-decoration: none; }
+.guide-brand h1 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
+.guide-nav { display: flex; flex-direction: column; gap: 1px; flex: 1 1 auto; }
+.guide-nav a { color: var(--text-dim); font-size: 13.5px; padding: 6px 9px; border-radius: 5px; text-decoration: none; }
 .guide-nav a:hover { color: var(--text); }
 .guide-nav a.on { color: var(--text); background: var(--bg); }
-.guide-header-end { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; }
-.guide-header a.btn { text-decoration: none; color: var(--text); }
-.guide-contact { color: var(--text-dim); font-size: 12.5px; }
-.guide-contact a { color: inherit; }
-.guide-main { max-width: 1040px; margin: 0 auto; padding: 26px 20px 40px; font-size: 15px; line-height: 1.6; }
+.guide-open { justify-content: center; text-decoration: none; color: var(--text); }
+.guide-content { min-width: 0; }
+.guide-main { max-width: 1000px; margin: 0 auto; padding: 26px 26px 40px; font-size: 15px; line-height: 1.6; }
 .guide-main a:not(.btn):not(.g-tile):not(.g-row):not(.g-tab):not(.g-chevron):not(.g-link-chip) { color: var(--accent); }
 .guide-main .btn { text-decoration: none; color: var(--text); }
-.guide-footer { max-width: 1040px; margin: 0 auto; padding: 14px 20px 30px; color: var(--text-dim); font-size: 12.5px; border-top: 1px solid var(--border); }
+.guide-footer { max-width: 1000px; margin: 0 auto; padding: 14px 26px 30px; color: var(--text-dim); font-size: 12.5px; border-top: 1px solid var(--border); }
 .guide-loading { color: var(--text-dim); }
 
 .g-title { font-size: 25px; font-weight: 600; margin: 0 0 10px; line-height: 1.25; }
+.g-doc-section { padding: 8px 0 34px; border-bottom: 1px solid var(--border); margin-bottom: 26px; }
+.g-doc-section:last-child { border-bottom: none; }
 .g-section { margin-top: 28px; }
 .g-section h3 { font-size: 18px; font-weight: 600; margin: 0 0 10px; }
 .g-muted { color: var(--text-dim); font-size: 13.5px; }
@@ -39,6 +41,8 @@ body.guide-page { display: block; height: auto; min-height: 100%; overflow: auto
 .g-tab .g-count { color: var(--text-dim); margin-left: 2px; }
 .g-tab[aria-selected="true"] .g-count { color: inherit; }
 .g-panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+.g-figure { margin: 12px 0 4px; }
+.g-figure img { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; }
 .g-code { background: var(--bg-editor); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font: 13px/1.55 var(--mono); }
 .guide-main code { font-family: var(--mono); font-size: 0.88em; background: var(--bg-editor); padding: 1px 4px; border-radius: 3px; }
 
@@ -54,7 +58,7 @@ body.guide-page { display: block; height: auto; min-height: 100%; overflow: auto
 .g-strip { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 22px; padding: 14px 16px; margin: 18px 0 0; background: var(--bg-panel); border-radius: 10px; font-size: 14px; line-height: 1.45; }
 .g-strip strong { display: block; margin-bottom: 2px; }
 .g-route { margin: 8px 0; padding-left: 20px; }
-.g-flow { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 0; margin: 0; }
+.g-flow { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 0; margin: 0; }
 .g-chevron { display: flex; flex-direction: column; gap: 4px; height: 100%; padding: 12px 22px 12px 14px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px; color: var(--text); text-decoration: none; font-size: 13.5px; line-height: 1.4; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%); }
 .g-chevron:hover { background: var(--bg-editor); }
 .g-chevron-no { color: var(--accent); font-family: var(--mono); font-size: 12px; }
@@ -69,21 +73,24 @@ body.guide-page { display: block; height: auto; min-height: 100%; overflow: auto
 .g-band-path { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; margin: 0; padding-left: 20px; }
 
 .g-stepper { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
-.g-canvas { background: var(--canvas-bg); border-radius: 8px; padding: 8px; overflow-x: auto; }
-.g-diagram { display: block; width: 100%; min-width: 520px; height: auto; }
+.g-canvas { background: var(--canvas-bg); border-radius: 8px; padding: 8px; overflow-x: auto; margin: 10px 0; }
+.g-diagram { display: block; width: 100%; min-width: 620px; height: auto; }
+.g-diagram .band { fill: #e9ecf2; }
 .g-diagram .n rect { stroke-width: 1.5; }
 .g-diagram .res rect { fill: var(--node-data); stroke: var(--node-data-border); }
 .g-diagram .proc rect { fill: var(--node-process); stroke: var(--node-process-border); }
 .g-diagram .model rect { fill: var(--node-model); stroke: var(--node-model-border); }
 .g-diagram .n text { fill: #2a2f38; font: 11px "Segoe UI", system-ui, sans-serif; }
-.g-diagram .n .role { font: 10.5px var(--mono); fill: #4a72c4; opacity: 0; }
+.g-diagram .n .role { font: 10px var(--mono); fill: #4a72c4; opacity: 0; }
 .g-diagram.show-roles .n .role { opacity: 1; }
 .g-diagram .n.hi rect { stroke: #2b4d8f; stroke-width: 3; }
 .g-diagram .n.flag rect { stroke: #b4552d; stroke-width: 3; }
 .g-diagram .e { stroke: #7c8698; stroke-width: 1.4; fill: none; marker-end: url(#g-arrow); }
 .g-diagram .e.hi { stroke: #2b4d8f; stroke-width: 2.2; }
 .g-diagram .e.flag { stroke: #b4552d; stroke-width: 2.2; }
-.g-diagram .legend { fill: #6a7383; font: 11px "Segoe UI", system-ui, sans-serif; }
+.g-diagram .legend { fill: #6a7383; font: 12px "Segoe UI", system-ui, sans-serif; }
+.g-diagram .note { fill: #2a2f38; font: 12.5px "Segoe UI", system-ui, sans-serif; }
+.g-diagram .note-head { font-weight: 600; }
 .g-caption { min-height: 76px; padding: 10px 2px 0; }
 .g-stepper-nav { display: flex; justify-content: space-between; }
 
@@ -102,7 +109,7 @@ body.guide-page { display: block; height: auto; min-height: 100%; overflow: auto
 .g-finding { border: 1px solid var(--warn); border-left-width: 4px; border-radius: 6px; padding: 14px 16px; background: var(--bg-panel); }
 .g-finding-title { font-weight: 600; font-size: 16px; margin-bottom: 6px; }
 .g-finding p { margin: 8px 0 0; }
-.g-pipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 14px 0; }
+.g-pipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 14px 0; }
 .g-accordion { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; margin: 8px 0; padding: 9px 14px; }
 .g-accordion summary { cursor: pointer; font-weight: 500; }
 .g-accordion p { margin: 8px 0; }
@@ -113,11 +120,12 @@ body.guide-page { display: block; height: auto; min-height: 100%; overflow: auto
 .g-facet { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .g-chip { background: var(--bg-panel); color: var(--text-dim); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; font: inherit; font-size: 12.5px; cursor: pointer; }
 .g-chip[aria-pressed="true"] { background: var(--accent-dim); color: var(--text); border-color: var(--accent); }
-.g-list { display: grid; gap: 6px; margin-top: 12px; }
+.g-list { display: grid; gap: 6px; margin-top: 12px; max-height: 560px; overflow-y: auto; padding-right: 4px; }
 .g-row { display: grid; grid-template-columns: minmax(180px, 2fr) minmax(0, 5fr); gap: 14px; padding: 9px 12px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px; color: var(--text); text-decoration: none; }
 .g-row:hover { border-color: var(--accent); }
 .g-row .g-muted { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .g-detail-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+.g-detail-head .g-actions { margin-bottom: 0; }
 .g-link-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .g-link-chip { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; font-size: 13px; color: var(--text); text-decoration: none; }
 a.g-link-chip:hover { border-color: var(--accent); }
@@ -125,7 +133,10 @@ a.g-link-chip:hover { border-color: var(--accent); }
 .g-gloss dt { font-weight: 600; }
 .g-gloss dd { margin: 2px 0 0; }
 
-@media (max-width: 860px) {
+@media (max-width: 900px) {
+  .guide-shell { grid-template-columns: minmax(0, 1fr); }
+  .guide-sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .guide-nav { flex-direction: row; flex-wrap: wrap; }
   .g-strip, .g-browse { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .g-flow { grid-template-columns: 1fr; }
   .g-chevron { clip-path: none; padding-right: 14px; }
@@ -134,10 +145,10 @@ a.g-link-chip:hover { border-color: var(--accent); }
 }
 
 @media (max-width: 520px) {
+  .guide-main { padding: 18px 14px 30px; }
   .g-strip, .g-browse, .g-band-path { grid-template-columns: 1fr; }
   .g-hero h2 { font-size: 25px; }
   .g-row { grid-template-columns: 1fr; gap: 2px; }
   .g-step-view { display: none; }
-  .guide-nav { order: 3; flex-basis: 100%; }
   .g-entry-list { columns: 1; }
 }

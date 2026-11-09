@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections import OrderedDict
+from copy import deepcopy
 from functools import lru_cache
 
 from rdflib import RDFS, Graph, URIRef
@@ -73,8 +75,24 @@ def _leaf_type_advice(data: Graph, ontology: Graph, node: URIRef) -> tuple[str, 
     )
 
 
+_REPORTS: OrderedDict[str, dict] = OrderedDict()
+
+
+def known_report(ttl: str) -> dict | None:
+    """The report for a document already checked, so a repeat waits on nothing."""
+    report = _REPORTS.get(ttl)
+    return deepcopy(report) if report is not None else None
+
+
+def clear_reports() -> None:
+    _REPORTS.clear()
+
+
 def shacl_report(ttl: str) -> dict:
     """Validate Turtle against the architecture input contract (Rule R4)."""
+    known = known_report(ttl)
+    if known is not None:
+        return known
     from pyshacl import validate as shacl_validate
 
     data = Graph()
@@ -115,9 +133,13 @@ def shacl_report(ttl: str) -> dict:
     violations = collect(_sh("Violation"))
     warnings = collect(_sh("Warning"))
     hints = collect(_sh("Info"))
-    return {
+    report = {
         "conforms": not violations,
         "violations": violations,
         "warnings": warnings,
         "hints": hints,
     }
+    _REPORTS[ttl] = deepcopy(report)
+    while len(_REPORTS) > 16:
+        _REPORTS.popitem(last=False)
+    return report
