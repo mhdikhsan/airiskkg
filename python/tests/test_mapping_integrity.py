@@ -233,10 +233,8 @@ def test_every_mapping_has_exactly_one_provenance_record(
         for o in [provenance.value(record, SSSOM.object_id)]
     }
     actual = {(s, p, o) for s, p, o in _mappings(taxonomy)}
-    actual |= {
-        (s, HAS_RELATED_CONTROL, o)
-        for s, _, o in taxonomy.triples((None, HAS_RELATED_CONTROL, None))
-    }
+    for predicate in (HAS_RELATED_CONTROL, NO_MATCH):
+        actual |= {(s, predicate, o) for s, _, o in taxonomy.triples((None, predicate, None))}
     missing = actual - recorded
     assert not missing, "mappings with no provenance record:\n" + "\n".join(
         f"  {_name(s)} {_name(p)} {_name(o)}" for s, p, o in sorted(missing, key=str)
@@ -294,6 +292,9 @@ def test_chain_corroboration_flags_match_the_upstream_edges() -> None:
         obj = graph.value(mapping, SSSOM.object_id)
         source_set = graph.value(mapping, PROV.wasDerivedFrom)
         if subject is None or obj is None or source_set == PAIRM["pair-ai-curation"]:
+            continue
+        # A recorded non-correspondence corroborates nothing.
+        if graph.value(mapping, SSSOM.predicate_id) == NO_MATCH:
             continue
         ends = {str(subject), str(obj)}
         if not any(e.startswith(_ATLAS_NS) for e in ends):

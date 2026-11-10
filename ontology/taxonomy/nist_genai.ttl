@@ -48,6 +48,7 @@ nist:confabulation a nexus:Risk ;
     skos:prefLabel "Confabulation" ;
     skos:definition "The system states fabricated or erroneous content with the fluency and assurance of fact, so a reader has little signal that it is unfounded." ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    skos:topConceptOf nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-confabulation" .
 
@@ -55,6 +56,7 @@ nist:dangerous-violent-or-hateful-content a nexus:Risk ;
     skos:prefLabel "Dangerous, Violent, or Hateful Content" ;
     skos:definition "The system produces or makes easier to obtain content that incites violence, promotes hatred, or helps someone cause serious harm." ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    skos:topConceptOf nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-dangerous-violent-or-hateful-content" .
 
@@ -62,6 +64,7 @@ nist:data-privacy a nexus:Risk ;
     skos:prefLabel "Data Privacy" ;
     skos:definition "Personal data is exposed, inferred, or re-identified through the system's training data, its context, or its outputs." ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    skos:topConceptOf nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-data-privacy" .
 
@@ -69,6 +72,7 @@ nist:environmental-impacts a nexus:Risk ;
     skos:prefLabel "Environmental Impacts" ;
     skos:definition "The energy, water, and hardware footprint of training and operating generative models at scale." ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    skos:topConceptOf nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-environmental-impacts" .
 
@@ -76,6 +80,7 @@ nist:harmful-bias-and-homogenization a nexus:Risk ;
     skos:prefLabel "Harmful Bias and Homogenization" ;
     skos:definition "The system amplifies skewed patterns in its data, or narrows the range of outputs so that the same perspectives recur across many users and uses." ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    skos:topConceptOf nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-harmful-bias-and-homogenization" .
 
@@ -83,6 +88,7 @@ nist:human-ai-configuration a nexus:Risk ;
     skos:prefLabel "Human-AI Configuration" ;
     skos:definition "How people and the system are arranged around each other creates the risk: unclear responsibility, or reliance calibrated too high or too low for what the system can actually do." ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    skos:topConceptOf nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-human-ai-configuration" .
 
@@ -90,6 +96,7 @@ nist:information-integrity a nexus:Risk ;
     skos:prefLabel "Information Integrity" ;
     skos:definition "Generated content degrades the wider information environment, by making misleading material cheap to produce and hard to distinguish from reliable material." ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    skos:topConceptOf nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-information-integrity" .
 
@@ -97,6 +104,7 @@ nist:information-security a nexus:Risk ;
     skos:prefLabel "Information Security" ;
     skos:definition "The system widens the attack surface: its inputs, context, weights, or outputs can be manipulated, extracted, or used to reach systems behind it." ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    skos:topConceptOf nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-information-security" .
 
@@ -104,6 +112,7 @@ nist:intellectual-property a nexus:Risk ;
     skos:prefLabel "Intellectual Property" ;
     skos:definition "Protected or proprietary material is reproduced, absorbed into the system, or disclosed through its outputs." ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    skos:topConceptOf nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-intellectual-property" .
 
@@ -111,5 +120,6 @@ nist:value-chain-and-component-integration a nexus:Risk ;
     skos:prefLabel "Value Chain and Component Integration" ;
     skos:definition "Third-party data, models, and components are assembled into the system without visibility of their provenance, quality, or the terms they carry." ;
     skos:inScheme nist:NIST_AI_600_1_GenAI_Profile ;
+    skos:topConceptOf nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:isDefinedByTaxonomy nist:NIST_AI_600_1_GenAI_Profile ;
     nexus:tag "nist-value-chain-and-component-integration" .

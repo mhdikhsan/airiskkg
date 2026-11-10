@@ -202,6 +202,8 @@ ROW_CONFIDENCE = {
 }
 
 HAS_RELATED_CONTROL = URIRef("http://w3id.org/airiskkg/taxonomy/nexus#hasRelatedControl")
+# An upstream "Not" row: checked, and no correspondence. Recorded, never corroborating.
+NO_MATCH = URIRef(str(SKOS) + "noMatch")
 
 MAPPING_PREDICATES = (
     SKOS.exactMatch,
@@ -210,6 +212,7 @@ MAPPING_PREDICATES = (
     SKOS.narrowMatch,
     SKOS.relatedMatch,
     HAS_RELATED_CONTROL,
+    NO_MATCH,
 )
 
 
@@ -257,7 +260,9 @@ def _chain_corroboration(records) -> dict:
     atlas_to_mit: dict = {}
     curated_pairs = []
 
-    for subject, _predicate, obj, block, _confidence in records:
+    for subject, predicate, obj, block, _confidence in records:
+        if predicate == NO_MATCH:
+            continue
         subject_str, object_str = str(subject), str(obj)
         ends = {subject_str, object_str}
         upstream = block["set"] != "pair-ai-curation"

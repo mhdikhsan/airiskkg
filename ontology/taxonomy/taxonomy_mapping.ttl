@@ -139,6 +139,19 @@ atlas:spreading-disinformation
 atlas:harmful-code-generation
     skos:relatedMatch owasp:llm09-misinformation .
 
+# Rows upstream marks predicate_modifier "Not": checked, and not related.
+# Recorded so that a later mapping between the same pair fails a test.
+atlas:unrepresentative-data          skos:noMatch owasp:llm04-data-and-model-poisoning .
+atlas:decision-bias                  skos:noMatch owasp:llm04-data-and-model-poisoning .
+atlas:evasion-attack                 skos:noMatch owasp:llm04-data-and-model-poisoning .
+atlas:legal-accountability           skos:noMatch owasp:llm03-supply-chain .
+atlas:data-bias                      skos:noMatch owasp:llm03-supply-chain .
+atlas:extraction-attack              skos:noMatch owasp:llm05-improper-output-handling .
+atlas:poor-model-accuracy            skos:noMatch owasp:llm05-improper-output-handling .
+atlas:attribute-inference-attack     skos:noMatch owasp:llm01-prompt-injection .
+atlas:over-or-under-reliance         skos:noMatch owasp:llm09-misinformation ,
+        owasp:llm08-vector-and-embedding-weaknesses .
+
 ## Atlas <-> MIT AI Risk Repository domain taxonomy
 ## (source: mit-ai-risk-repository_ibm-risk-atlas.tsv; upstream uses
 ## skos:relatedMatch uniformly, one subdomain per risk)
@@ -155,7 +168,7 @@ atlas:data-poisoning                 skos:relatedMatch mit:subdomain-2-2 .
 atlas:poor-model-accuracy            skos:relatedMatch mit:subdomain-7-3 .
 atlas:data-curation                  skos:relatedMatch mit:subdomain-7-3 .
 atlas:incomplete-advice              skos:relatedMatch mit:subdomain-7-3 .
-atlas:data-usage-restrictions        skos:relatedMatch mit:subdomain-7-3 .
+atlas:data-usage                     skos:relatedMatch mit:subdomain-7-3 .
 atlas:hallucination                  skos:relatedMatch mit:subdomain-3-1 .
 atlas:decision-bias                  skos:relatedMatch mit:subdomain-1-1 .
 atlas:impact-on-the-environment      skos:relatedMatch mit:subdomain-6-6 .
@@ -175,6 +188,7 @@ atlas:inaccessible-training-data       skos:relatedMatch mit:subdomain-7-4 .
 atlas:untraceable-attribution          skos:relatedMatch mit:subdomain-7-4 .
 atlas:data-provenance                  skos:relatedMatch mit:subdomain-6-5 .
 atlas:lack-of-data-transparency        skos:relatedMatch mit:subdomain-6-5 .
+atlas:legal-accountability             skos:relatedMatch mit:subdomain-6-5 .
 atlas:over-or-under-reliance           skos:relatedMatch mit:subdomain-5-1 .
 atlas:spreading-disinformation         skos:relatedMatch mit:subdomain-4-1 .
 atlas:data-bias                        skos:relatedMatch mit:subdomain-1-1 .
@@ -238,7 +252,7 @@ asi:asi10-rogue-agents
 ## (source: ibm2nistgenai.tsv, mapping_date 2025-01-29, every row
 ## semapv:ManualMappingCuration at confidence 0.95). Predicates and directions
 ## reproduced exactly as curated upstream, NOT re-derived. Two modelled Atlas
-## concepts have no row upstream - data-usage-restrictions and the agentic
+## concepts have no row upstream - data-usage and the agentic
 ## redundant-actions-agentic - and are deliberately left unmapped rather than
 ## curated here.
 atlas:hallucination
@@ -399,9 +413,10 @@ owasp:llm10-unbounded-consumption
 ## OWASP <-> MIT domain taxonomy (no upstream OWASP<->MIT mapping set exists;
 ## corroboration via shared Atlas concepts noted where available)
 
-# corroborated: atlas:prompt-injection maps to both llm01 and subdomain-2-2
+# Entailed upstream: atlas:prompt-injection exactMatch llm01 and relatedMatch
+# subdomain-2-2. A broadMatch here contradicted that (SKOS keeps the two disjoint).
 owasp:llm01-prompt-injection
-    skos:broadMatch mit:subdomain-2-2 .
+    skos:relatedMatch mit:subdomain-2-2 .
 
 # corroborated: the llm02-mapped Atlas privacy risks all map to subdomain-2-1
 owasp:llm02-sensitive-information-disclosure
@@ -507,6 +522,8 @@ asi:asi05-unexpected-code-execution
 asi:asi08-cascading-failures
     skos:relatedMatch mit:subdomain-7-6 .
 
+# Upstream owasp_asi2ibm_risk_atlas.tsv gives closeMatch to over-or-under-reliance,
+# but by LLM-based matching, so it is not adopted over this curation.
 # Trust exploitation works through over-reliance (5-1); corroborated by
 # atlas:over-or-under-reliance, which upstream maps to 5-1 and relates to the
 # LLM05 and LLM06 entries ASI09 is related to upstream.
@@ -557,9 +574,10 @@ mlr:model-uncertainty
         mit:subdomain-7-3 .
 
 ## Eticas AI Risk Taxonomy <-> the anchors risk patterns derive from.
-## Eticas publishes no links to OWASP (one bundled ASI handle aside), to
-## Zhang et al., or to the Atlas entries these anchors are, so the bridge is
-## curation; Eticas's own published links are in eticas_risk.ttl.
+## Eticas publishes no links to OWASP (one bundled ASI handle aside) or to
+## Zhang et al., so the bridge is curation. Eticas's links to Atlas, MIT and
+## NIST are in eticas_risk.ttl (data/eticas.ttl) and in its Nexus set
+## eticas2atlas_nexus_full.tsv; where that set covers a pair, its predicate wins.
 
 # Same phenomenon, definitions agree.
 owasp:llm01-prompt-injection
@@ -568,8 +586,10 @@ owasp:llm01-prompt-injection
 owasp:llm03-supply-chain
     skos:closeMatch eticas:supply-chain-vulnerabilities .
 
-owasp:llm04-data-and-model-poisoning
-    skos:closeMatch eticas:data-poisoning .
+# Eticas states data-poisoning exactMatch atlas:data-poisoning, which upstream
+# puts under LLM04 (broadMatch); a closeMatch here contradicted that.
+eticas:data-poisoning
+    skos:broadMatch owasp:llm04-data-and-model-poisoning .
 
 owasp:llm06-excessive-agency
     skos:closeMatch eticas:excessive-agency .
@@ -633,12 +653,12 @@ atlas:improper-retraining
 atlas:membership-inference-attack
     skos:relatedMatch eticas:sensitive-information-leakage .
 
-# Actions nobody can reconstruct are a transparency and auditability failure
-# (7-4). OWASP ASI08 names repudiation and untraceability as what lets a fault
-# spread across agents unnoticed.
+# Eticas's own Nexus set (eticas2atlas_nexus_full.tsv, ManualMappingCuration)
+# gives closeMatch 7-4. OWASP ASI08 names repudiation and untraceability as
+# what lets a fault spread across agents unnoticed.
 eticas:untraceable-agent-actions
-    skos:relatedMatch mit:subdomain-7-4 ,
-        asi:asi08-cascading-failures .
+    skos:closeMatch mit:subdomain-7-4 ;
+    skos:relatedMatch asi:asi08-cascading-failures .
 
 # Data kept beyond its need, or open to more people than need it, is data that
 # can be obtained or leaked (2-1).
@@ -746,7 +766,7 @@ atlas:data-poisoning
         mitctrl:model-infrastructure-security ,
         mitctrl:testing-auditing .
 
-atlas:data-usage-restrictions
+atlas:data-usage
     nexus:hasRelatedControl mitctrl:data-governance ,
         mitctrl:risk-disclosure ,
         mitctrl:system-documentation .
@@ -922,7 +942,7 @@ mitctrl:data-governance
     nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation ;
     nexus:mitigatesRiskTaxonomyEntry atlas:data-curation ;
     nexus:mitigatesRiskTaxonomyEntry atlas:data-poisoning ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:data-usage-restrictions ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-usage ;
     nexus:mitigatesRiskTaxonomyEntry atlas:decision-bias ;
     nexus:mitigatesRiskTaxonomyEntry atlas:exposing-personal-information ;
     nexus:mitigatesRiskTaxonomyEntry atlas:personal-information-in-data ;
@@ -1034,7 +1054,7 @@ mitctrl:risk-disclosure
     nexus:mitigatesRiskTaxonomyEntry owasp:llm02-sensitive-information-disclosure ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm09-misinformation ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:data-usage-restrictions ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-usage ;
     nexus:mitigatesRiskTaxonomyEntry atlas:impact-on-the-environment ;
     nexus:mitigatesRiskTaxonomyEntry atlas:legal-accountability ;
     nexus:mitigatesRiskTaxonomyEntry mit:subdomain-5-1 ;
@@ -1070,7 +1090,7 @@ mitctrl:system-documentation
     nexus:mitigatesRiskTaxonomyEntry owasp:llm03-supply-chain ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm05-improper-output-handling ;
     nexus:mitigatesRiskTaxonomyEntry owasp:llm06-excessive-agency ;
-    nexus:mitigatesRiskTaxonomyEntry atlas:data-usage-restrictions ;
+    nexus:mitigatesRiskTaxonomyEntry atlas:data-usage ;
     nexus:mitigatesRiskTaxonomyEntry atlas:incomplete-advice ;
     nexus:mitigatesRiskTaxonomyEntry atlas:legal-accountability ;
     nexus:mitigatesRiskTaxonomyEntry mit:subdomain-5-1 ;

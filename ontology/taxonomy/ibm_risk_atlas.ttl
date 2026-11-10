@@ -77,14 +77,14 @@ atlas:robustness a nexus:RiskGroup ;
 
 atlas:robustness-prompt-attacks a nexus:RiskGroup ;
     skos:prefLabel "Robustness: prompt attacks" ;
-    skos:broader atlas:robustness ;
     skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
     nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
 
 atlas:robustness-model-behavior-manipulation a nexus:RiskGroup ;
     skos:prefLabel "Robustness: model behavior manipulation" ;
-    skos:broader atlas:robustness ;
     skos:inScheme atlas:IBM_AI_Risk_Atlas ;
+    skos:topConceptOf atlas:IBM_AI_Risk_Atlas ;
     nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas .
 
 atlas:societal-impact a nexus:RiskGroup ;
@@ -279,24 +279,25 @@ atlas:data-poisoning a nexus:Risk ;
     nexus:riskType "training-data" ;
     rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/data-poisoning.html> .
 
-atlas:data-usage-restrictions a nexus:Risk ;
+atlas:data-usage a nexus:Risk ;
     skos:prefLabel "Data usage restrictions" ;
     skos:definition "Legal or policy restrictions may limit whether certain data can be used for an AI use case." ;
     skos:broader atlas:data-laws ;
     skos:inScheme atlas:IBM_AI_Risk_Atlas ;
     nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
     nexus:isPartOf atlas:data-laws ;
-    nexus:tag "data-usage-restrictions" ;
+    nexus:tag "data-usage" ;
     nexus:riskType "training-data" ;
-    nexus:descriptor "traditional risk of AI" .
+    nexus:descriptor "traditional risk of AI" ;
+    rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/data-usage.html> .
 
 atlas:legal-accountability a nexus:Risk ;
     skos:prefLabel "Legal accountability" ;
     skos:definition "Weak documentation or governance may make responsibility for AI system outcomes unclear." ;
-    skos:broader atlas:governance ;
+    skos:broader atlas:legal-compliance ;
     skos:inScheme atlas:IBM_AI_Risk_Atlas ;
     nexus:isDefinedByTaxonomy atlas:IBM_AI_Risk_Atlas ;
-    nexus:isPartOf atlas:governance ;
+    nexus:isPartOf atlas:legal-compliance ;
     nexus:tag "legal-accountability" ;
     nexus:riskType "non-technical" ;
     rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/legal-accountability.html> .
