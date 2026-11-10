@@ -70,7 +70,7 @@ export const TOUR = {
   ],
   conceptsHead: "Main concepts",
   concepts: [
-    { head: "Role", text: "A term that states what an element of the model represents, for example `PublicUserInput`, `RetrievalStep` or `FoundationLLM`. Matching reads roles and ignores the names given to elements." },
+    { head: "Role", text: "A term that states what an element of the model represents, for example `PublicUserInput`, `RetrievalStep` or `GenerativeModel`. Matching reads roles and ignores the names given to elements." },
     { head: "Motif", text: "The recurring solution structure of a design, stated as a small graph of roles and flow relations, for example a retrieval step that uses a user query and a knowledge source and produces retrieved context. A motif is structure only." },
     { head: "Candidate risk", text: "Raised when a motif match satisfies the conditions of an AI risk pattern, for example that the input is public or that no screening step is represented." },
   ],
@@ -120,7 +120,7 @@ export const STEPPER = {
     <g class="n res" data-k="in"><rect x="350" y="160" width="160" height="44" rx="14"/><text x="362" y="178">Answering instructions</text><text class="role" x="362" y="194">SystemPrompt</text></g>
     <g class="n proc" data-k="bp"><rect x="560" y="130" width="170" height="44"/><text x="572" y="148">Build prompt</text><text class="role" x="572" y="164">PromptConstructionStep</text></g>
     <g class="n res" data-k="pr"><rect x="585" y="205" width="130" height="44" rx="14"/><text x="597" y="223">Prompt</text><text class="role" x="597" y="239">PromptTemplate</text></g>
-    <g class="n model" data-k="llm"><rect x="10" y="250" width="130" height="44" rx="14"/><text x="22" y="268">Hosted LLM</text><text class="role" x="22" y="284">FoundationLLM</text></g>
+    <g class="n model" data-k="llm"><rect x="10" y="250" width="130" height="44" rx="14"/><text x="22" y="268">Hosted LLM</text><text class="role" x="22" y="284">GenerativeModel</text></g>
     <g class="n proc" data-k="ga"><rect x="200" y="250" width="140" height="44"/><text x="212" y="268">Generate answer</text><text class="role" x="212" y="284">GenerationStep</text></g>
     <g class="n res" data-k="an"><rect x="400" y="255" width="130" height="44" rx="14"/><text x="412" y="273">Answer</text><text class="role" x="412" y="289">UserFacingOutput</text></g>
     </g>`,
@@ -310,7 +310,7 @@ export const WALKTHROUGH = {
     {
       title: "Annotate the elements", view: "Roles and data categories",
       actions: ["Open **Annotate** in the drawer, or select an element on the canvas.", "Assign the most specific role that fits. An element can hold several roles.", "Mark personal or sensitive data with a data category.", "Select **Apply annotations** and confirm that the count of untagged elements reaches zero."],
-      starter: "*Customer question* is a `PublicUserInput`, and *Hosted LLM* carries both `FoundationLLM` and `ExternalModel`.",
+      starter: "*Customer question* is a `PublicUserInput`, and *Hosted LLM* carries both `GenerativeModel` and `ExternalModel`.",
       question: "A role is under consideration because it would produce a candidate risk. How should the role be chosen?",
       answer: "The role should describe the element. Selecting roles to obtain a result makes the assessment reproduce the expectations of the analyst. A concept without a suitable role is useful feedback on the role vocabulary.",
     },
@@ -486,7 +486,7 @@ export const GLOSSARY = {
     { term: "Motif", text: "The recurring solution structure of a design, stated as a small graph of roles and flow relations. A motif is structure only and makes no risk claim." },
     { term: "Motif match", text: "One place in a model where the nodes of a motif bind to concrete elements." },
     { term: "Process model", text: "The BPMN model of the business process in which the AI system operates." },
-    { term: "Role", text: "A term stating what an element represents, for example RetrievalStep or FoundationLLM. Matching reads roles." },
+    { term: "Role", text: "A term stating what an element represents, for example RetrievalStep or GenerativeModel. Matching reads roles." },
     { term: "sBPMN", text: "An OWL formalization of BPMN 2.0, the vocabulary of the process model." },
     { term: "SHACL", text: "The W3C constraint language used for the input contracts and the annotation guidance." },
     { term: "System model", text: "The BEAM graph of an AI system: its processes, its resources and the relations between them. The workbench presents it at the Architecture level." },
@@ -494,4 +494,4 @@ export const GLOSSARY = {
   ],
 };
 
-export const FOOTER = "PAIR-AI is developed at WU Wien. Candidate risks require human review.";
+export const FOOTER = "PAIR-AI is developed at WU Wien.";

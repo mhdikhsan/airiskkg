@@ -29,7 +29,7 @@ csa:Instructions a beam:Data ;
 
 csa:HostedLLM a beam:StatisticalModel ;
     rdfs:label "Hosted LLM" ;
-    pair:playsRole pair:FoundationLLM, pair:ExternalModel .
+    pair:playsRole pair:GenerativeModel, pair:ExternalModel .
 
 ### Retrieval
 
