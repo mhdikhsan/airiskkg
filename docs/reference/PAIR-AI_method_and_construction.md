@@ -109,11 +109,14 @@ generators of new risk patterns.
 OWASP publishes prose per category ("user or external inputs may alter LLM behavior in
 unintended ways"). Prose is not machine-checkable. Two layers were therefore authored:
 
-1. **Mechanism + risk conditions in `owasp_llm.ttl`.** For each OWASP entry, one
-   `pair:RiskMechanism` (e.g. `owasp:mechanism-instruction-override`) and one or more
-   `nexus:RiskCondition` (e.g. `owasp:condition-untrusted-input-enters-prompt-context`)
-   were written by interpreting the OWASP description into a graph-level cause and its
-   preconditions.
+1. **Mechanism + risk conditions in `ontology/patterns/risk_mechanisms.ttl`.** For each
+   entry a risk pattern derives from, one `pair:RiskMechanism`
+   (e.g. `pat:Mechanism_InstructionOverride`) and one or more `pair:RiskCondition`
+   (e.g. `pat:RiskCondition_UntrustedInputEntersPromptContext`) were written by
+   interpreting the entry's description into a graph-level cause and its preconditions,
+   and attached to the entry by `pair:hasRiskMechanism` and `pair:hasRiskCondition`.
+   They are minted in `pat:` rather than in the catalogue's namespace because they are
+   PAIR-AI's text, not the catalogue's (moved there 2026-11-10).
 
 2. **Risk patterns + applicability conditions in `risk_pattern_library.ttl`.** For each
    pattern, the `pair:ApplicabilityCondition` instances and the SPARQL logic in the
@@ -137,7 +140,7 @@ pat:PromptInjectionRiskPattern
     pair:hasMotif pat:DirectPromptingMotif ,
                   pat:RetrievalAugmentedGenerationMotif ,
                   pat:QueryRewritingMotif ;
-    pair:hasMechanism owasp:mechanism-instruction-override ;
+    pair:hasMechanism pat:Mechanism_InstructionOverride ;
     pair:hasApplicabilityCondition pat:PromptInjection_UntrustedPromptContextCondition ;
     pair:mayIndicateRisk owasp:llm01-prompt-injection , atlas:prompt-injection ,
                          mit:subdomain-2-2 ;
@@ -151,7 +154,7 @@ Provenance is tiered per field:
 
 | Field | Example value | Provenance |
 | --- | --- | --- |
-| `pair:hasMechanism` | `owasp:mechanism-instruction-override` | Authored by interpreting OWASP prose (§1.2) |
+| `pair:hasMechanism` | `pat:Mechanism_InstructionOverride` | Authored by interpreting OWASP prose (§1.2) |
 | `pair:hasApplicabilityCondition` | `pat:PromptInjection_UntrustedPromptContextCondition` | Authored for this project — no external source |
 | `pair:mayIndicateRisk` | `owasp:llm01…`, `atlas:prompt-injection`, `mit:subdomain-2-2` | External URIs; cross-taxonomy links partly upstream-verified, partly project curation (§1.5) |
 | `pair:suggestedControl` | `pat:Control_Guardrails` | Project-authored control catalogue (§1.6) |

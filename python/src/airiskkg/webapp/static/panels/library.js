@@ -397,7 +397,7 @@ function lede(entry) {
   ]);
 }
 
-// OWASP is a source beside the name, never a category.
+// A motif names the design patterns its structure was read off.
 function sourceMeta(entry) {
   const refs = entry.derivedFrom || [];
   return refs.length
@@ -501,7 +501,6 @@ function riskDetail(entry) {
     hero({
       eyebrow: "Risk pattern",
       title: shortName(entry.label, RISK_SUFFIX),
-      meta: sourceMeta(entry),
       lede: lede(entry),
       stats: [
         [motifs.length || "any", motifs.length > 1 ? "structures" : "structure"],
@@ -519,6 +518,7 @@ function riskDetail(entry) {
             ? motifs.map((motif) => motifCard(motif, entry))
             : emptyLine("Names no motif of its own: evaluated over any motif match whose conditions hold."),
         }),
+        referencesPanel(entry),
       ],
       [harmPanel(entry), controlsPanel(entry)],
       mechanismPanel(entry),
@@ -535,7 +535,7 @@ function mechanismPanel(entry) {
   return panel("Risk mechanism", {
     tip: "Curated and carried by reference, so the same explanation reproduces on every system.",
     body: [
-      mechanism ? el("div", { class: "lib-chips" }, [refChip(mechanism, "mech")]) : null,
+      mechanism ? el("p", { class: "lib-mech-name" }, mechanism.label) : null,
       mechanism && mechanism.definition
         ? el("p", { class: "lib-mech-text" }, mechanism.definition)
         : null,
@@ -552,16 +552,12 @@ function mechanismPanel(entry) {
 
 /* Grouped by the domain each entry rolls up to, so a reader sees which link
  * produced which domain. An entry rolling up to nothing is a citation, not an
- * outcome, and is listed apart. */
+ * outcome, and is listed under References. */
 function harmPanel(entry) {
   const byDomain = new Map();
-  const alsoCalled = [];
 
   entry.taxonomy.forEach((ref) => {
-    if (!ref.domain) {
-      alsoCalled.push(ref);
-      return;
-    }
+    if (!ref.domain) return;
     if (!byDomain.has(ref.domain)) byDomain.set(ref.domain, []);
     byDomain.get(ref.domain).push(ref);
   });
@@ -570,12 +566,10 @@ function harmPanel(entry) {
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([domain, refs]) => {
       const known = (entry.riskDomains || []).find((row) => row.label === domain) || {};
-      const chip = known.url
-        ? el("a", {
-          class: "chip domain", href: known.url, target: "_blank",
-          rel: "noopener noreferrer", title: known.definition || domain,
-        }, domain)
-        : el("span", { class: "chip domain" }, domain);
+      const chip = refChip({
+        id: known.id || domain, label: domain, url: known.url, definition: known.definition,
+        source: "MIT AI Risk Repository", sourceShort: "MIT",
+      }, "domain");
       return el("div", { class: "lib-domain" }, [
         chip,
         el("div", { class: "lib-chips" }, refs.map((ref) => refChip(ref, "tax"))),
@@ -589,16 +583,33 @@ function harmPanel(entry) {
     }, "no risk domain linked"));
   }
 
-  if (alsoCalled.length) {
-    body.push(el("div", { class: "lib-domain also" }, [
-      el("span", { class: "lib-meta-lead" }, "also catalogued as"),
-      el("div", { class: "lib-chips" }, alsoCalled.map((ref) => refChip(ref, "tax"))),
-    ]));
-  }
-
   return panel("May lead to", {
-    hint: "Possible harm, never an observed outcome.",
+    tip: "Possible harm, never an observed outcome.",
     body: el("div", { class: "lib-harm" }, body),
+  });
+}
+
+/* The catalogues this pattern points at, cited and never reproduced: the entry
+ * it operationalizes, and the names other catalogues give the same risk. */
+function referencesPanel(entry) {
+  const anchors = entry.derivedFrom || [];
+  const alsoCalled = entry.taxonomy.filter((ref) =>
+    !ref.domain && !anchors.some((anchor) => anchor.id === ref.id));
+  const row = (lead, refs, tip) => el("div", { class: "lib-domain", title: tip }, [
+    el("span", { class: "lib-meta-lead" }, lead),
+    el("div", { class: "lib-chips" }, refs.map((ref) => refChip(ref, "tax"))),
+  ]);
+
+  return panel("References", {
+    tip: "Cited, not reproduced. The pattern, its mechanism and its conditions are written for PAIR-AI.",
+    body: el("div", { class: "lib-harm" }, [
+      anchors.length
+        ? row("Primary reference", anchors, "The catalogue entry this risk pattern operationalizes.")
+        : null,
+      alsoCalled.length
+        ? row("Related risks", alsoCalled, "Entries in other catalogues for the same risk that roll up to no domain of harm.")
+        : null,
+    ]),
   });
 }
 
@@ -624,7 +635,7 @@ function controlItem(control) {
 function controlsPanel(entry) {
   return panel("Suggested controls", {
     count: entry.controls.length,
-    hint: "Candidates, not proof the risk is removed.",
+    tip: "Candidates, not proof the risk is removed.",
     body: entry.controls.length
       ? el("div", { class: "lib-controls" }, entry.controls.map(controlItem))
       : emptyLine("None suggested."),

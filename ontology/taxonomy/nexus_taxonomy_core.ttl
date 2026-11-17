@@ -13,7 +13,7 @@
     # licence; its section 4 duties (retain notices, state changes, propagate NOTICE)
     # are met here and in /NOTICE.md.
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
-    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Derived from IBM AI Atlas Nexus, licensed Apache License 2.0 - see https://www.apache.org/licenses/LICENSE-2.0. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary."@en ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Contains material derived from IBM AI Atlas Nexus (https://github.com/IBM/ai-atlas-nexus), Copyright IBM Corporation and the AI Atlas Nexus contributors, licensed under the Apache License, Version 2.0; that material remains under Apache 2.0, and a copy of the licence is in LICENSES/Apache-2.0.txt. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary."@en ;
     rdfs:label "AI Risk KG Taxonomy Core" ;
     dct:title "AI Risk KG Taxonomy Core" ;
     dct:description """
@@ -59,15 +59,6 @@ nexus:Risk a owl:Class ;
     rdfs:label "Risk" ;
     rdfs:comment "A taxonomy-level AI risk entry adapted from AI Atlas Nexus." .
 
-nexus:RiskCondition a owl:Class ;
-    rdfs:subClassOf skos:Concept ;
-    rdfs:label "Risk Condition" ;
-    rdfs:comment """
-    A condition under which a risk taxonomy entry may become relevant. This is
-    used for source-taxonomy knowledge bases such as OWASP LLM, where a risk
-    category is grounded by mechanisms and observable or queryable conditions.
-    """ .
-
 nexus:RiskControlGroup a owl:Class ;
     rdfs:subClassOf skos:Concept, beamr:RiskControl ;
     rdfs:label "Risk Control Group" ;
@@ -111,33 +102,6 @@ nexus:hasRelatedRisk a owl:ObjectProperty ;
     rdfs:domain skos:Concept ;
     rdfs:range nexus:RiskTaxonomyEntry ;
     rdfs:comment "Links a control, action, or concept to a related risk taxonomy entry." .
-
-nexus:hasRiskMechanism a owl:ObjectProperty ;
-    rdfs:label "has risk mechanism" ;
-    rdfs:domain nexus:RiskTaxonomyEntry ;
-    rdfs:range rdfs:Resource ;
-    rdfs:comment """
-    Links a risk taxonomy entry to a mechanism explaining how the risk can
-    arise. The mechanism may be represented using the risk-pattern ontology.
-    """ .
-
-nexus:mechanismForRisk a owl:ObjectProperty ;
-    rdfs:label "mechanism for risk" ;
-    rdfs:domain rdfs:Resource ;
-    rdfs:range nexus:RiskTaxonomyEntry ;
-    rdfs:comment "Reverse link from a risk mechanism to the taxonomy entry it explains." .
-
-nexus:hasRiskCondition a owl:ObjectProperty ;
-    rdfs:label "has risk condition" ;
-    rdfs:domain nexus:RiskTaxonomyEntry ;
-    rdfs:range nexus:RiskCondition ;
-    rdfs:comment "Links a risk taxonomy entry to a condition that can make the risk applicable." .
-
-nexus:conditionForRisk a owl:ObjectProperty ;
-    rdfs:label "condition for risk" ;
-    rdfs:domain nexus:RiskCondition ;
-    rdfs:range nexus:RiskTaxonomyEntry ;
-    rdfs:comment "Reverse link from a risk condition to the taxonomy entry it supports." .
 
 nexus:hasRelatedControl a owl:ObjectProperty ;
     rdfs:label "has related control" ;

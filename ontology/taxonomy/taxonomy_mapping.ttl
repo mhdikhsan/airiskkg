@@ -19,7 +19,7 @@
     # licence; its section 4 duties (retain notices, state changes, propagate NOTICE)
     # are met here and in /NOTICE.md.
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
-    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Derived from IBM AI Atlas Nexus, licensed Apache License 2.0 - see https://www.apache.org/licenses/LICENSE-2.0. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary. Section 1 mappings come from the Nexus SSSOM sets; Section 2 mappings are PAIR-AI curation."@en ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Contains material derived from IBM AI Atlas Nexus (https://github.com/IBM/ai-atlas-nexus), Copyright IBM Corporation and the AI Atlas Nexus contributors, licensed under the Apache License, Version 2.0; that material remains under Apache 2.0, and a copy of the licence is in LICENSES/Apache-2.0.txt. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary. Section 1 mappings come from the Nexus SSSOM sets; Section 2 mappings are PAIR-AI curation."@en ;
     rdfs:label "AI Risk KG Taxonomy Mappings" ;
     dct:title "AI Risk KG Taxonomy Mappings" ;
     dct:description """

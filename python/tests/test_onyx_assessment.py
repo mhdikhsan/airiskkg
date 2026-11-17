@@ -47,7 +47,7 @@ def test_onyx_produces_supply_chain_finding() -> None:
     supply_chain_findings = set(
         result.risk_findings.subjects(
             PAIR.hasDerivedMechanism,
-            OWASP["mechanism-supply-chain-compromise"],
+            PAT.Mechanism_SupplyChainCompromise,
         )
     )
     assert supply_chain_findings
@@ -56,9 +56,9 @@ def test_onyx_produces_supply_chain_finding() -> None:
 def test_onyx_produces_prompt_injection_and_sensitive_findings() -> None:
     result = _result()
     mechanisms = set(result.risk_findings.objects(None, PAIR.hasDerivedMechanism))
-    assert OWASP["mechanism-instruction-override"] in mechanisms
-    assert OWASP["mechanism-sensitive-data-propagation"] in mechanisms
-    assert OWASP["mechanism-vector-embedding-retrieval-weakness"] in mechanisms
+    assert PAT.Mechanism_InstructionOverride in mechanisms
+    assert PAT.Mechanism_SensitiveDataPropagation in mechanisms
+    assert PAT.Mechanism_VectorEmbeddingRetrievalWeakness in mechanisms
 
 
 def test_onyx_all_findings_are_candidates() -> None:
@@ -89,7 +89,7 @@ def test_sensitive_data_finding_includes_cross_taxonomy_alignment() -> None:
     finding = next(
         candidate
         for candidate in result.risk_findings.subjects(
-            PAIR.hasDerivedMechanism, OWASP["mechanism-sensitive-data-propagation"]
+            PAIR.hasDerivedMechanism, PAT.Mechanism_SensitiveDataPropagation
         )
         if PAT["Control_RetrievalAccessControl"]
         in set(result.risk_findings.objects(candidate, PAIR.hasSuggestedControl))

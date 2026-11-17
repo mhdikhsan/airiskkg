@@ -10,6 +10,7 @@
 
 <http://w3id.org/airiskkg/shacl/architecture-input-contract>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Architecture Graph Input Contract"@en .
 
 aic:GraphHasSystemShape

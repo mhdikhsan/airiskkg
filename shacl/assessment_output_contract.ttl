@@ -7,6 +7,7 @@
 
 <http://w3id.org/airiskkg/shacl/assessment-output-contract>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Assessment Output Contract"@en ;
     dct:description """
     SHACL shapes over the graph an assessment run PRODUCES, as opposed to the

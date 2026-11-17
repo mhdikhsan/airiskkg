@@ -1,0 +1,553 @@
+@prefix pat:    <http://w3id.org/airiskkg/patterns#> .
+@prefix pair:   <http://w3id.org/airiskkg/pair-ai#> .
+@prefix owasp:  <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
+@prefix asi:    <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
+@prefix mlr:    <http://w3id.org/airiskkg/taxonomy/ml-risk#> .
+@prefix atlas:  <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#> .
+@prefix eticas: <https://taxonomy.eticas.ai/risk/> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://w3id.org/airiskkg/patterns/risk-mechanisms#>
+    a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:title "Risk mechanisms and risk conditions"@en ;
+    dct:description """
+    The causal account (pair:RiskMechanism) and the risk conditions
+    (pair:RiskCondition) PAIR-AI attaches to the taxonomy entries its risk
+    patterns derive from. Written for this knowledge base, never taken from the
+    catalogue an entry belongs to, so they are minted here rather than in that
+    catalogue's namespace.
+    """@en .
+
+#################################################################
+# OWASP Top 10 for LLM Applications 2025 (owasp:)
+#################################################################
+
+owasp:llm01-prompt-injection
+    pair:hasRiskMechanism pat:Mechanism_InstructionOverride ;
+    pair:hasRiskCondition pat:RiskCondition_UntrustedInputEntersPromptContext ,
+        pat:RiskCondition_RetrievedContentEntersGenerationContext .
+
+owasp:llm02-sensitive-information-disclosure
+    pair:hasRiskMechanism pat:Mechanism_SensitiveDataPropagation ;
+    pair:hasRiskCondition pat:RiskCondition_SensitiveDataInContext ,
+        pat:RiskCondition_GeneratedOutputExposedToUser .
+
+owasp:llm03-supply-chain
+    pair:hasRiskMechanism pat:Mechanism_SupplyChainCompromise ;
+    pair:hasRiskCondition pat:RiskCondition_ExternallySourcedModelDataOrDependency .
+
+owasp:llm04-data-and-model-poisoning
+    pair:hasRiskMechanism pat:Mechanism_DataOrModelPoisoning ;
+    pair:hasRiskCondition pat:RiskCondition_UntrustedDataEntersTrainingFinetuningOrIndexing .
+
+owasp:llm05-improper-output-handling
+    pair:hasRiskMechanism pat:Mechanism_UnsafeOutputPropagation ;
+    pair:hasRiskCondition pat:RiskCondition_LLMOutputUsedWithoutValidation .
+
+owasp:llm06-excessive-agency
+    pair:hasRiskMechanism pat:Mechanism_ExcessiveAgencyActionExecution ;
+    pair:hasRiskCondition pat:RiskCondition_LLMCanTriggerToolsOrStateChanges .
+
+owasp:llm07-system-prompt-leakage
+    pair:hasRiskMechanism pat:Mechanism_SystemPromptExposure ;
+    pair:hasRiskCondition pat:RiskCondition_HiddenInstructionsInPromptContext ,
+        pat:RiskCondition_GeneratedOutputExposedToUser .
+
+owasp:llm08-vector-and-embedding-weaknesses
+    pair:hasRiskMechanism pat:Mechanism_VectorEmbeddingRetrievalWeakness ;
+    pair:hasRiskCondition pat:RiskCondition_VectorStoreUsedForRetrieval ,
+        pat:RiskCondition_RetrievedContentEntersGenerationContext ,
+        pat:RiskCondition_RetrievalFilteringOrRankingIsRiskRelevant .
+
+owasp:llm09-misinformation
+    pair:hasRiskMechanism pat:Mechanism_UnsupportedGeneration ;
+    pair:hasRiskCondition pat:RiskCondition_GenerationWithoutGroundingOrVerification ,
+        pat:RiskCondition_GeneratedOutputExposedToUser .
+
+owasp:llm10-unbounded-consumption
+    pair:hasRiskMechanism pat:Mechanism_UnboundedResourceConsumption ;
+    pair:hasRiskCondition pat:RiskCondition_UnboundedPromptRetrievalToolOrModelUse .
+
+pat:Mechanism_InstructionOverride
+    a pair:RiskMechanism ;
+    rdfs:label "Instruction override by untrusted context"@en ;
+    dct:description "Untrusted user, retrieved, or tool-supplied content changes model behavior by overriding or conflicting with intended instructions."@en ;
+    pair:mechanismForRisk owasp:llm01-prompt-injection .
+
+pat:Mechanism_SensitiveDataPropagation
+    a pair:RiskMechanism ;
+    rdfs:label "Sensitive data propagation through LLM context"@en ;
+    dct:description "Sensitive information enters prompt, retrieval context, model output, logs, or downstream application flows where it may be disclosed."@en ;
+    pair:mechanismForRisk owasp:llm02-sensitive-information-disclosure .
+
+pat:Mechanism_SupplyChainCompromise
+    a pair:RiskMechanism ;
+    rdfs:label "Compromised LLM supply chain dependency"@en ;
+    dct:description "A model, dataset, dependency, plugin, provider, or deployment artifact is compromised, unverifiable, or insufficiently governed."@en ;
+    pair:mechanismForRisk owasp:llm03-supply-chain .
+
+pat:Mechanism_DataOrModelPoisoning
+    a pair:RiskMechanism ;
+    rdfs:label "Data or model poisoning"@en ;
+    dct:description "Data a model learns from, is checked against, or retrieves when it answers comes from a source nobody vetted. Whatever that source carries is absorbed into the model's behaviour or into the context it answers from, and the architecture shows no point where it could be caught."@en ;
+    pair:mechanismForRisk owasp:llm04-data-and-model-poisoning .
+
+pat:Mechanism_UnsafeOutputPropagation
+    a pair:RiskMechanism ;
+    rdfs:label "Unsafe generated output propagation"@en ;
+    dct:description "LLM output is treated as trusted content or executable instruction without adequate validation, escaping, review, or constraint."@en ;
+    pair:mechanismForRisk owasp:llm05-improper-output-handling .
+
+pat:Mechanism_ExcessiveAgencyActionExecution
+    a pair:RiskMechanism ;
+    rdfs:label "Excessive agency action execution"@en ;
+    dct:description "An LLM-driven component can invoke tools, alter state, access resources, or trigger external actions beyond intended limits or oversight."@en ;
+    pair:mechanismForRisk owasp:llm06-excessive-agency .
+
+pat:Mechanism_SystemPromptExposure
+    a pair:RiskMechanism ;
+    rdfs:label "System prompt exposure"@en ;
+    dct:description "Hidden instructions, policies, tool schemas, or operational configuration become visible through output, context, logs, or adversarial interaction."@en ;
+    pair:mechanismForRisk owasp:llm07-system-prompt-leakage .
+
+pat:Mechanism_VectorEmbeddingRetrievalWeakness
+    a pair:RiskMechanism ;
+    rdfs:label "Vector and embedding retrieval weakness"@en ;
+    dct:description "Embedding, indexing, chunking, similarity search, source filtering, or ranking causes irrelevant, malicious, stale, or unauthorized context to enter generation."@en ;
+    pair:mechanismForRisk owasp:llm08-vector-and-embedding-weaknesses .
+
+pat:Mechanism_UnsupportedGeneration
+    a pair:RiskMechanism ;
+    rdfs:label "Unsupported or ungrounded generation"@en ;
+    dct:description "The LLM produces plausible but unsupported or misleading content because grounding, verification, source quality, or task boundaries are insufficient."@en ;
+    pair:mechanismForRisk owasp:llm09-misinformation .
+
+pat:Mechanism_UnboundedResourceConsumption
+    a pair:RiskMechanism ;
+    rdfs:label "Unbounded resource consumption"@en ;
+    dct:description "Prompt size, retrieval breadth, tool loops, model calls, or user traffic exceed intended cost, latency, rate, or availability limits."@en ;
+    pair:mechanismForRisk owasp:llm10-unbounded-consumption .
+
+pat:RiskCondition_UntrustedInputEntersPromptContext
+    a pair:RiskCondition ;
+    skos:prefLabel "Untrusted input enters prompt context"@en ;
+    pair:conditionForRisk owasp:llm01-prompt-injection .
+
+pat:RiskCondition_RetrievedContentEntersGenerationContext
+    a pair:RiskCondition ;
+    skos:prefLabel "Retrieved content enters generation context"@en ;
+    pair:conditionForRisk owasp:llm01-prompt-injection ,
+        owasp:llm08-vector-and-embedding-weaknesses .
+
+pat:RiskCondition_SensitiveDataInContext
+    a pair:RiskCondition ;
+    skos:prefLabel "Sensitive data is present in prompt or retrieval context"@en ;
+    pair:conditionForRisk owasp:llm02-sensitive-information-disclosure .
+
+pat:RiskCondition_GeneratedOutputExposedToUser
+    a pair:RiskCondition ;
+    skos:prefLabel "Generated output is exposed to a user or downstream system"@en ;
+    pair:conditionForRisk owasp:llm02-sensitive-information-disclosure ,
+        owasp:llm07-system-prompt-leakage ,
+        owasp:llm09-misinformation .
+
+pat:RiskCondition_ExternallySourcedModelDataOrDependency
+    a pair:RiskCondition ;
+    skos:prefLabel "Externally sourced model, data, component, or provider is used"@en ;
+    pair:conditionForRisk owasp:llm03-supply-chain .
+
+pat:RiskCondition_UntrustedDataEntersTrainingFinetuningOrIndexing
+    a pair:RiskCondition ;
+    skos:prefLabel "Untrusted data enters training, fine-tuning, evaluation, or indexing"@en ;
+    pair:conditionForRisk owasp:llm04-data-and-model-poisoning .
+
+pat:RiskCondition_LLMOutputUsedWithoutValidation
+    a pair:RiskCondition ;
+    skos:prefLabel "LLM output is used without validation or sanitization"@en ;
+    pair:conditionForRisk owasp:llm05-improper-output-handling .
+
+pat:RiskCondition_LLMCanTriggerToolsOrStateChanges
+    a pair:RiskCondition ;
+    skos:prefLabel "LLM can trigger tools, permissions, transactions, or state changes"@en ;
+    pair:conditionForRisk owasp:llm06-excessive-agency .
+
+pat:RiskCondition_HiddenInstructionsInPromptContext
+    a pair:RiskCondition ;
+    skos:prefLabel "Hidden instructions or system configuration are present in prompt context"@en ;
+    pair:conditionForRisk owasp:llm07-system-prompt-leakage .
+
+pat:RiskCondition_VectorStoreUsedForRetrieval
+    a pair:RiskCondition ;
+    skos:prefLabel "Vector store or embedding index is used for retrieval"@en ;
+    pair:conditionForRisk owasp:llm08-vector-and-embedding-weaknesses .
+
+pat:RiskCondition_RetrievalFilteringOrRankingIsRiskRelevant
+    a pair:RiskCondition ;
+    skos:prefLabel "Retrieval filtering, ranking, chunking, or source selection is risk-relevant"@en ;
+    pair:conditionForRisk owasp:llm08-vector-and-embedding-weaknesses .
+
+pat:RiskCondition_GenerationWithoutGroundingOrVerification
+    a pair:RiskCondition ;
+    skos:prefLabel "Generation occurs without sufficient grounding, source attribution, or verification"@en ;
+    pair:conditionForRisk owasp:llm09-misinformation .
+
+pat:RiskCondition_UnboundedPromptRetrievalToolOrModelUse
+    a pair:RiskCondition ;
+    skos:prefLabel "Prompt, retrieval, tool, or model use is not bounded by cost, rate, or loop controls"@en ;
+    pair:conditionForRisk owasp:llm10-unbounded-consumption .
+
+#################################################################
+# OWASP Top 10 for Agentic Applications 2026 (asi:)
+#################################################################
+
+asi:asi02-tool-misuse
+    pair:hasRiskMechanism pat:Mechanism_UnconstrainedToolExecution ;
+    pair:hasRiskCondition pat:RiskCondition_ToolInvocationWithoutMediation .
+
+asi:asi06-memory-and-context-poisoning
+    pair:hasRiskMechanism pat:Mechanism_PersistedContextCorruption ;
+    pair:hasRiskCondition pat:RiskCondition_UntrustedContentWrittenToAgentMemory ,
+        pat:RiskCondition_AgentMemoryRereadIntoGeneration .
+
+asi:asi01-agent-goal-hijack
+    pair:hasRiskMechanism pat:Mechanism_GoalRedirectionThroughConsumedContent ;
+    pair:hasRiskCondition pat:RiskCondition_UntrustedContentReachesPlanning .
+
+asi:asi07-insecure-inter-agent-communication
+    pair:hasRiskMechanism pat:Mechanism_UnauthenticatedAgentHandoff ;
+    pair:hasRiskCondition pat:RiskCondition_AgentHandoffWithoutValidation .
+
+asi:asi03-identity-and-privilege-abuse
+    pair:hasRiskMechanism pat:Mechanism_AuthorityInheritedAcrossHandoff ;
+    pair:hasRiskCondition pat:RiskCondition_CredentialCrossesAgentBoundary .
+
+asi:asi04-agentic-supply-chain
+    pair:hasRiskMechanism pat:Mechanism_ExternalComponentSteersAgent ;
+    pair:hasRiskCondition pat:RiskCondition_ExternalComponentReachesPlanning .
+
+asi:asi05-unexpected-code-execution
+    pair:hasRiskMechanism pat:Mechanism_AgentOutputRunAsCode ;
+    pair:hasRiskCondition pat:RiskCondition_AgentPlanExecutedAsCode .
+
+asi:asi08-cascading-failures
+    pair:hasRiskMechanism pat:Mechanism_FaultPropagationAcrossAgents ;
+    pair:hasRiskCondition pat:RiskCondition_AgentDecisionPropagatesWithoutCheckpoint .
+
+asi:asi09-human-agent-trust-exploitation
+    pair:hasRiskMechanism pat:Mechanism_ApprovalOnTheAgentsAccount ;
+    pair:hasRiskCondition pat:RiskCondition_ApprovalSeesOnlyAgentOutput .
+
+pat:Mechanism_UnconstrainedToolExecution
+    a pair:RiskMechanism ;
+    rdfs:label "Unconstrained tool execution from model decisions"@en ;
+    dct:description "A model decision is carried into an external action with nothing in between that can narrow, price, pause, or refuse it, so an incorrect or manipulated decision becomes an effect on other systems."@en ;
+    pair:mechanismForRisk asi:asi02-tool-misuse .
+
+pat:Mechanism_PersistedContextCorruption
+    a pair:RiskMechanism ;
+    rdfs:label "Corruption of persisted agent context"@en ;
+    dct:description "Because retained content is read back into later generation, anything unchecked that reaches the store outlives the turn that produced it and shapes reasoning the architecture no longer traces to its origin."@en ;
+    pair:mechanismForRisk asi:asi06-memory-and-context-poisoning .
+
+pat:RiskCondition_ToolInvocationWithoutMediation
+    a pair:RiskCondition ;
+    skos:prefLabel "A model-driven step reaches a tool or state change with no mediating control"@en ;
+    pair:conditionForRisk asi:asi02-tool-misuse .
+
+pat:RiskCondition_UntrustedContentWrittenToAgentMemory
+    a pair:RiskCondition ;
+    skos:prefLabel "Content of untrusted or generated provenance is written to agent memory"@en ;
+    pair:conditionForRisk asi:asi06-memory-and-context-poisoning .
+
+pat:RiskCondition_AgentMemoryRereadIntoGeneration
+    a pair:RiskCondition ;
+    skos:prefLabel "Agent memory is read back into a later generation context"@en ;
+    pair:conditionForRisk asi:asi06-memory-and-context-poisoning .
+
+pat:Mechanism_GoalRedirectionThroughConsumedContent
+    a pair:RiskMechanism ;
+    rdfs:label "Goal redirection through consumed content"@en ;
+    dct:description "The step that decides what to do next reads the same channel as ordinary content, so instructions arriving as data are weighed alongside the principal's objective. Nothing downstream can distinguish a hijacked plan from a legitimate one: the agent's later steps are correct execution of an objective it should never have adopted, which is what separates this from output-level manipulation."@en ;
+    pair:mechanismForRisk asi:asi01-agent-goal-hijack .
+
+pat:Mechanism_UnauthenticatedAgentHandoff
+    a pair:RiskMechanism ;
+    rdfs:label "Unauthenticated handoff between agents"@en ;
+    dct:description "Work crosses from one agent to another as a message with no represented step that establishes where it came from or whether it is well formed. The receiving agent's own permissions are then applied to instructions it did not verify, so trust granted to the sending agent is effectively extended to whoever could write to the channel."@en ;
+    pair:mechanismForRisk asi:asi07-insecure-inter-agent-communication .
+
+pat:RiskCondition_UntrustedContentReachesPlanning
+    a pair:RiskCondition ;
+    skos:prefLabel "Content of untrusted provenance reaches the step that decides the agent's next action"@en ;
+    pair:conditionForRisk asi:asi01-agent-goal-hijack .
+
+pat:RiskCondition_AgentHandoffWithoutValidation
+    a pair:RiskCondition ;
+    skos:prefLabel "A message passes between agents with no represented validation or policy step"@en ;
+    pair:conditionForRisk asi:asi07-insecure-inter-agent-communication .
+
+pat:Mechanism_AuthorityInheritedAcrossHandoff
+    a pair:RiskMechanism ;
+    rdfs:label "Authority inherited across a hand-off"@en ;
+    dct:description "A credential that authorises one agent also authorises the agent it hands work to, or is kept where later work can reach it. The receiving step then acts with access sized for a different task, and anything able to steer that step can use it: a narrow request carries broad authority, and nothing in between checks it again."@en ;
+    pair:mechanismForRisk asi:asi03-identity-and-privilege-abuse .
+
+pat:Mechanism_ExternalComponentSteersAgent
+    a pair:RiskMechanism ;
+    rdfs:label "Externally supplied component steering agent decisions"@en ;
+    dct:description "The step that decides what an agent does reads a component supplied from outside, such as a tool catalogue, a prompt template, a package or a peer's description of itself, and treats it as part of the agent's own configuration. A component altered upstream then redirects the agent without any input from its users, and the architecture shows no point at which the component is checked before it is trusted."@en ;
+    pair:mechanismForRisk asi:asi04-agentic-supply-chain .
+
+pat:Mechanism_AgentOutputRunAsCode
+    a pair:RiskMechanism ;
+    rdfs:label "Agent output executed as code"@en ;
+    dct:description "A step runs what an agent planned as code or a command. Whatever shaped the plan, whether a user, retrieved content or a model error, is then executed with that step's privileges, and with no validation, sandbox gate or approval in between nothing distinguishes a harmful instruction from an intended one."@en ;
+    pair:mechanismForRisk asi:asi05-unexpected-code-execution .
+
+pat:Mechanism_FaultPropagationAcrossAgents
+    a pair:RiskMechanism ;
+    rdfs:label "Fault propagation across agents"@en ;
+    dct:description "A decision made by one agent is passed on to others and acted on at each hop. When no step on the path can pause, limit or check what is passed along, one wrong decision becomes several actions, and every agent that receives it adds its own reach to the error."@en ;
+    pair:mechanismForRisk asi:asi08-cascading-failures .
+
+pat:Mechanism_ApprovalOnTheAgentsAccount
+    a pair:RiskMechanism ;
+    rdfs:label "Approval given on the agent's own account"@en ;
+    dct:description "The person asked to approve an action sees only what the agent produced: its plan, its summary, its rationale. Their approval can confirm the agent's account but cannot test it, so a recommendation that is wrong or manipulated passes the human check and leaves with the human's authority attached."@en ;
+    pair:mechanismForRisk asi:asi09-human-agent-trust-exploitation .
+
+pat:RiskCondition_CredentialCrossesAgentBoundary
+    a pair:RiskCondition ;
+    skos:prefLabel "A credential is used on both sides of an agent hand-off, or is written to agent memory"@en ;
+    pair:conditionForRisk asi:asi03-identity-and-privilege-abuse .
+
+pat:RiskCondition_ExternalComponentReachesPlanning
+    a pair:RiskCondition ;
+    skos:prefLabel "A component supplied from outside the system is read by the step that decides an agent's action, with no verification step before it"@en ;
+    pair:conditionForRisk asi:asi04-agentic-supply-chain .
+
+pat:RiskCondition_AgentPlanExecutedAsCode
+    a pair:RiskCondition ;
+    skos:prefLabel "A step that executes code runs an agent's plan with no execution guardrail, validation or approval in between"@en ;
+    pair:conditionForRisk asi:asi05-unexpected-code-execution .
+
+pat:RiskCondition_AgentDecisionPropagatesWithoutCheckpoint
+    a pair:RiskCondition ;
+    skos:prefLabel "One agent's decision is handed on twice before another agent acts on it, with no checkpoint on the way"@en ;
+    pair:conditionForRisk asi:asi08-cascading-failures .
+
+pat:RiskCondition_ApprovalSeesOnlyAgentOutput
+    a pair:RiskCondition ;
+    skos:prefLabel "Every input to the human approval step was produced by the agent whose action it approves"@en ;
+    pair:conditionForRisk asi:asi09-human-agent-trust-exploitation .
+
+#################################################################
+# Risks in AI/ML systems, Zhang et al. (2022) (mlr:)
+#################################################################
+
+mlr:dataset-shift
+    pair:hasRiskMechanism pat:Mechanism_UnobservedDistributionShift ;
+    pair:hasRiskCondition pat:RiskCondition_ServedModelWithoutShiftMonitoring .
+
+mlr:out-of-domain-data
+    pair:hasRiskMechanism pat:Mechanism_UncheckedInputDomain ;
+    pair:hasRiskCondition pat:RiskCondition_InputReachesModelWithoutDomainCheck .
+
+mlr:adversarial-attack
+    pair:hasRiskMechanism pat:Mechanism_UnscreenedAdversarialInput ;
+    pair:hasRiskCondition pat:RiskCondition_UntrustedInputReachesModel .
+
+mlr:model-bias
+    pair:hasRiskMechanism pat:Mechanism_UnexaminedLearnedBias ;
+    pair:hasRiskCondition pat:RiskCondition_PersonalTrainingDataWithoutFairnessEvaluation .
+
+mlr:model-misspecification
+    pair:hasRiskMechanism pat:Mechanism_UnvalidatedModelFit ;
+    pair:hasRiskCondition pat:RiskCondition_TrainedModelServedWithoutEvaluation .
+
+mlr:model-uncertainty
+    pair:hasRiskMechanism pat:Mechanism_UnreportedPredictionUncertainty ;
+    pair:hasRiskCondition pat:RiskCondition_PredictionActedOnWithoutUncertainty .
+
+pat:Mechanism_UnobservedDistributionShift
+    a pair:RiskMechanism ;
+    rdfs:label "Distribution shift nothing observes"@en ;
+    dct:description "A model encodes relationships it found in its training data. In operation the inputs, the balance of outcomes, or the relationship between them can drift away from that data, and accuracy falls without the model signalling it. When no step compares what is served against a baseline, the design contains no point at which the drift would be noticed."@en ;
+    pair:mechanismForRisk mlr:dataset-shift .
+
+pat:Mechanism_UncheckedInputDomain
+    a pair:RiskMechanism ;
+    rdfs:label "Inputs outside the model's domain answered as if inside it"@en ;
+    dct:description "A model trained on a closed set of examples returns an answer for any input it is given, including inputs unlike anything it learned from, and its confidence does not fall to match. Without a step that checks whether an input belongs to the domain the model covers, such inputs are answered like any other and the answer is passed on."@en ;
+    pair:mechanismForRisk mlr:out-of-domain-data .
+
+pat:Mechanism_UnscreenedAdversarialInput
+    a pair:RiskMechanism ;
+    rdfs:label "Adversarial input reaching a model unscreened"@en ;
+    dct:description "Small, deliberate changes to an input can move a learned model to a wrong output while the input still looks unchanged to a person. When content an outsider can shape reaches the model with no step that screens it, whoever controls that content can choose what the model returns."@en ;
+    pair:mechanismForRisk mlr:adversarial-attack .
+
+pat:Mechanism_UnexaminedLearnedBias
+    a pair:RiskMechanism ;
+    rdfs:label "Bias learned from data about people, unexamined before use"@en ;
+    dct:description "A model fitted to records about people reproduces the imbalances in those records and can add its own through modelling choices. Accuracy measured over everyone can stay high while some groups receive worse outcomes, so unless the model is evaluated group by group before it is used, the disparity first shows up in its decisions."@en ;
+    pair:mechanismForRisk mlr:model-bias .
+
+pat:Mechanism_UnvalidatedModelFit
+    a pair:RiskMechanism ;
+    rdfs:label "Model released without validating its fit"@en ;
+    dct:description "Whether a model's form and variables fit the problem only shows when it is tested on data it did not learn from. A model that goes from training to serving with no evaluation in between can underfit, overfit, or leave out what matters, and the first evidence of it is wrong predictions in operation."@en ;
+    pair:mechanismForRisk mlr:model-misspecification .
+
+pat:Mechanism_UnreportedPredictionUncertainty
+    a pair:RiskMechanism ;
+    rdfs:label "Prediction acted on without its uncertainty"@en ;
+    dct:description "A prediction is a point estimate, and how far it can be trusted varies from one case to the next. When the prediction alone is passed to a step that acts on it or to a person, with no measure of its uncertainty and no review, a low-confidence case is acted on exactly like a high-confidence one."@en ;
+    pair:mechanismForRisk mlr:model-uncertainty .
+
+pat:RiskCondition_ServedModelWithoutShiftMonitoring
+    a pair:RiskCondition ;
+    skos:prefLabel "A deployed model serves incoming requests and no monitoring step compares what it serves against a baseline"@en ;
+    pair:conditionForRisk mlr:dataset-shift .
+
+pat:RiskCondition_InputReachesModelWithoutDomainCheck
+    a pair:RiskCondition ;
+    skos:prefLabel "An input reaches a prediction step with no step that checks it belongs to the model's domain"@en ;
+    pair:conditionForRisk mlr:out-of-domain-data .
+
+pat:RiskCondition_UntrustedInputReachesModel
+    a pair:RiskCondition ;
+    skos:prefLabel "Content an outsider can shape reaches a prediction step with no input screening"@en ;
+    pair:conditionForRisk mlr:adversarial-attack .
+
+pat:RiskCondition_PersonalTrainingDataWithoutFairnessEvaluation
+    a pair:RiskCondition ;
+    skos:prefLabel "A model is trained on data about people and no fairness evaluation of the trained model is represented"@en ;
+    pair:conditionForRisk mlr:model-bias .
+
+pat:RiskCondition_TrainedModelServedWithoutEvaluation
+    a pair:RiskCondition ;
+    skos:prefLabel "A trained model reaches a prediction step with no evaluation step between training and serving"@en ;
+    pair:conditionForRisk mlr:model-misspecification .
+
+pat:RiskCondition_PredictionActedOnWithoutUncertainty
+    a pair:RiskCondition ;
+    skos:prefLabel "A prediction reaches an action or a user with neither an uncertainty estimate nor human review"@en ;
+    pair:conditionForRisk mlr:model-uncertainty .
+
+#################################################################
+# IBM AI Risk Atlas (atlas:)
+#################################################################
+
+atlas:improper-retraining
+    pair:hasRiskMechanism pat:Mechanism_UnvettedFeedbackIntoTraining ;
+    pair:hasRiskCondition pat:RiskCondition_ModelOutputFeedsOwnTrainingData .
+
+atlas:membership-inference-attack
+    pair:hasRiskMechanism pat:Mechanism_TrainingMembershipExposedByQueries ;
+    pair:hasRiskCondition pat:RiskCondition_PublicQueriesReachModelTrainedOnPersonalData .
+
+atlas:data-contamination
+    pair:hasRiskMechanism pat:Mechanism_EvaluationOnTrainingData ;
+    pair:hasRiskCondition pat:RiskCondition_EvaluationReadsTrainingData .
+
+atlas:personal-information-in-prompt
+    pair:hasRiskMechanism pat:Mechanism_ProtectedContentLeavesForAProvider ;
+    pair:hasRiskCondition pat:RiskCondition_ProtectedContentReachesExternalModel .
+
+atlas:extraction-attack
+    pair:hasRiskMechanism pat:Mechanism_ModelCopiedThroughOpenQueries ;
+    pair:hasRiskCondition pat:RiskCondition_PublicQueriesReachInHouseModelUnthrottled .
+
+pat:Mechanism_UnvettedFeedbackIntoTraining
+    a pair:RiskMechanism ;
+    rdfs:label "Unvetted feedback into training"@en ;
+    dct:description "Data produced downstream of a model, its own outputs or what users did with them, flows back into the data it is trained on. Each retraining then learns partly from the model's earlier behaviour, so its errors and biases are reinforced rather than corrected unless something checks that data before it is reused."@en ;
+    pair:mechanismForRisk atlas:improper-retraining .
+
+pat:Mechanism_TrainingMembershipExposedByQueries
+    a pair:RiskMechanism ;
+    rdfs:label "Training membership exposed through open queries"@en ;
+    dct:description "A model behaves measurably differently on records it was trained on than on records it has not seen. When anyone can query a model trained on records about people, comparing its answers lets them infer whose records were in the training set, and through that, facts about those people; no output has to contain the data for it to leak."@en ;
+    pair:mechanismForRisk atlas:membership-inference-attack .
+
+pat:Mechanism_EvaluationOnTrainingData
+    a pair:RiskMechanism ;
+    rdfs:label "Evaluation over data the model learned from"@en ;
+    dct:description "An evaluation that reads the data a model was trained on, or a superset of it, scores the model partly on examples it has already seen. The result overstates how the model will perform on new data, and the release decision it supports rests on that overstatement."@en ;
+    pair:mechanismForRisk atlas:data-contamination .
+
+pat:RiskCondition_ModelOutputFeedsOwnTrainingData
+    a pair:RiskCondition ;
+    skos:prefLabel "Data downstream of the model a training step produces is read by that training step again, with no data validation on the way"@en ;
+    pair:conditionForRisk atlas:improper-retraining .
+
+pat:RiskCondition_PublicQueriesReachModelTrainedOnPersonalData
+    a pair:RiskCondition ;
+    skos:prefLabel "A model trained on personal data answers queries that originate from a public population"@en ;
+    pair:conditionForRisk atlas:membership-inference-attack .
+
+pat:RiskCondition_EvaluationReadsTrainingData
+    a pair:RiskCondition ;
+    skos:prefLabel "An evaluation step reads data that the evaluated model's training input was taken from"@en ;
+    pair:conditionForRisk atlas:data-contamination .
+
+pat:Mechanism_ProtectedContentLeavesForAProvider
+    a pair:RiskMechanism ;
+    rdfs:label "Protected content leaves for a model provider"@en ;
+    dct:description "A step sends its inputs to a model run by a third party. Whatever personal or confidential content is among them leaves the organisation at that point, under the provider's retention and processing terms rather than the deployer's, and the architecture shows nothing removing it first."@en ;
+    pair:mechanismForRisk atlas:personal-information-in-prompt .
+
+pat:Mechanism_ModelCopiedThroughOpenQueries
+    a pair:RiskMechanism ;
+    rdfs:label "A model copied through open queries"@en ;
+    dct:description "A model the organisation trained answers whoever asks, as often as they ask. Enough input and output pairs are a training set for a surrogate that behaves like the original, so the investment, and any weakness the copy can then be probed for offline, is exposed without the weights ever leaving."@en ;
+    pair:mechanismForRisk atlas:extraction-attack .
+
+pat:RiskCondition_ProtectedContentReachesExternalModel
+    a pair:RiskCondition ;
+    skos:prefLabel "A step using a third-party model reads content carrying a personal or confidential classification"@en ;
+    pair:conditionForRisk atlas:personal-information-in-prompt .
+
+pat:RiskCondition_PublicQueriesReachInHouseModelUnthrottled
+    a pair:RiskCondition ;
+    skos:prefLabel "A model trained in the system answers public queries with no rate limit represented"@en ;
+    pair:conditionForRisk atlas:extraction-attack .
+
+#################################################################
+# Eticas AI Risk Taxonomy (eticas:)
+#################################################################
+
+eticas:untraceable-agent-actions
+    pair:hasRiskMechanism pat:Mechanism_AgentActsWithoutARecord ;
+    pair:hasRiskCondition pat:RiskCondition_AgentActionNotLogged .
+
+eticas:weak-data-controls
+    pair:hasRiskMechanism pat:Mechanism_PersonalDataKeptWhereItWasNotNeeded ;
+    pair:hasRiskCondition pat:RiskCondition_PersonalDataWrittenToLogOrMemory .
+
+pat:Mechanism_AgentActsWithoutARecord
+    a pair:RiskMechanism ;
+    rdfs:label "An agent acts without leaving a record"@en ;
+    dct:description "An agent's tool call or state change leaves no record the architecture shows: no step logs what was decided, what was called, or what came back. When something goes wrong, nobody can reconstruct which action caused it, in what order, or on whose instruction, so the fault can neither be attributed nor traced to the other places it reached."@en ;
+    pair:mechanismForRisk eticas:untraceable-agent-actions .
+
+pat:Mechanism_PersonalDataKeptWhereItWasNotNeeded
+    a pair:RiskMechanism ;
+    rdfs:label "Personal data kept where it was not needed"@en ;
+    dct:description "A step that records requests or retains context for later turns stores personal data along with it. The log or the memory then outlives the interaction it served, is read by people and processes the original purpose never involved, and is exposed by every later breach of that store."@en ;
+    pair:mechanismForRisk eticas:weak-data-controls .
+
+pat:RiskCondition_AgentActionNotLogged
+    a pair:RiskCondition ;
+    skos:prefLabel "An agent's tool call or state change is read by no logging step, nor is its plan or result"@en ;
+    pair:conditionForRisk eticas:untraceable-agent-actions .
+
+pat:RiskCondition_PersonalDataWrittenToLogOrMemory
+    a pair:RiskCondition ;
+    skos:prefLabel "A logging or memory-write step reads content carrying a personal-data classification"@en ;
+    pair:conditionForRisk eticas:weak-data-controls .

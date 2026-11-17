@@ -290,6 +290,11 @@ Read before non-trivial changes.
   (`pair:hasDerivedMechanism`) so the same explanation reproduces unchanged across systems and
   runs. Sentences naming concrete matched elements are built in the presentation layer from
   mechanism text plus evidence labels, **never stored in the graph**.
+- **A mechanism and a risk condition are PAIR-AI's, so they are minted in `pat:`** and live in
+  `ontology/patterns/risk_mechanisms.ttl`, attached to their taxonomy entry by
+  `pair:hasRiskMechanism` / `pair:hasRiskCondition`. Until 2026-11-10 they sat in the
+  catalogue's namespace (`owasp:mechanism-…`) under `nexus:` properties, which read as OWASP's
+  and IBM's terms; IBM's Nexus schema has neither.
 
 ### Vocabulary and modelling
 
@@ -385,9 +390,11 @@ Read before non-trivial changes.
 - **TÜV AI.ST taxonomy is excluded** (licence verified 2026-08-03, still closed). Do not mint
   TÜV concepts, reproduce its tables, or add TÜV mappings. Citing it in prose is normal
   scholarship and remains fine. Reopen only on written permission from <info@tuev-lab.ai>.
-- **MIT upstream terms are unverified.** `mit_air_risk_control.ttl` reproduces the MIT
-  RiskControlGroup layer verbatim; Apache 2.0 covers IBM's packaging, not MIT's own rights.
-  Resolve before publication.
+- **MIT's data is CC BY 4.0, verified 2026-11-10** (airisk.mit.edu footer; Slattery et al.,
+  2026, in *Patterns*). The three MIT files and the cross-walk CSV attribute it in `dct:rights`
+  and `NOTICE.md`. **IBM's Nexus material stays Apache 2.0**: each derived file says so, the
+  licence text ships in `LICENSES/Apache-2.0.txt` (on the `.dockerignore` allow-list), and
+  Nexus has no `NOTICE` to propagate. A new Nexus-derived file takes the same `dct:rights`.
 - **R6's own-SSSOM export has never been generated.** The project consumes upstream sets
   instead. Say so rather than implying the export exists.
 
@@ -397,9 +404,11 @@ Read before non-trivial changes.
 BY-**SA** 4.0, whose ShareAlike term binds adaptations — reuse only their identifiers,
 numbering, and links, and write every definition, mechanism, and condition from scratch.
 Copying their descriptions, mitigation lists, or attack scenarios would pull ShareAlike onto
-the file and conflict with the repository licence. IBM AI Atlas Nexus is Apache 2.0; NIST
-AI 600-1 is a U.S. government work with no domestic copyright. Record every ingested source
-in `NOTICE.md`.
+the file and conflict with the repository licence. **Check new OWASP-derived prose against
+OWASP's text before it lands**: an LLM drafting from their descriptions reproduces their
+sentence shapes, which is how eleven definitions came to track OWASP's until 2026-11-10.
+IBM AI Atlas Nexus is Apache 2.0; NIST AI 600-1 is a U.S. government work with no domestic
+copyright. Record every ingested source in `NOTICE.md`.
 
 ---
 
@@ -854,8 +863,12 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   entry (`nexus:Risk` / `RiskGroup`), the entry's own `rdfs:seeAlso` or `dct:source`, then its
   scheme's. Every link is the upstream Nexus data's or one the repository already cited: IBM
   entries carry their per-entry page, ASI entries the Agentic Top 10 page that upstream gives
-  each of them, and MIT, NIST and the Zhang scheme link the catalogue, since none publishes a
-  page per entry. **A link is never minted from a URL pattern**: an entry with no upstream URL
+  each of them, and NIST and the Zhang scheme link the catalogue, since neither publishes a
+  page per entry. **MIT does, in its Navigator** (2026-11-10): each of the 25 domains and
+  subdomains carries `rdfs:seeAlso <https://airisk.mit.edu/navigator#/subdomain/2-2>`, every
+  route requested and its page title checked against our label. Eticas's MIT handles
+  (`airisk.mit.edu/domain/subdomain-2.2`) return 404 and are not used.
+  **A link is never minted from a URL pattern**: an entry with no upstream URL
   falls back to its catalogue's page. (`atlas:data-usage` looked like such an entry until
   2026-11-07, when it turned out to be misnamed `data-usage-restrictions`; under its upstream
   id it has a page.) `test_every_source_on_a_risk_page_can_be_opened`
@@ -910,9 +923,9 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   point at a hidden row.
 - **There is no "Start from a risk" button.** The risk level is not an entry point in the
   current build, so the front door offers the two layers that are.
-- **A risk pattern with no `dct:description` borrows the definition of the entry it was derived
-  from, attributed.** The taxonomy entry names the risk; the risk pattern says when the library
-  raises it. The two must not be presented as one sentence.
+- **Every risk pattern carries its own `dct:description`** (since 2026-11-10). Six used to borrow
+  their anchor's definition, shown as "LLM03:2025 Supply Chain — …", which presented PAIR-AI's
+  text as OWASP's. The entry names the risk; the risk pattern says when the library raises it.
 - **Risk patterns are shelved by the kind of system, never by harm.** A risk pattern is a
   weakness in a design; the risk is the harm it may end in, and a shelf must not blur the two.
   So the shelf is `pair:riskPatternFamily`, from the motif family scheme — GenAI 10, Agentic 11,
@@ -923,9 +936,11 @@ Background: `docs/notes/risk_view_and_backward_method.md` (gitignored).
   travels with the entry as **may lead to** chips, and the detail groups entries by the domain
   each rolls up to (`mayIndicateRisk` → `skos:broader` into
   `mit:MIT_AI_Risk_Repository_Domain_Taxonomy`) so a reader sees which link produced which
-  domain. Entries rolling up to nothing are listed as **also catalogued as** — a citation, not
-  an outcome. **OWASP is a source**, shown as `source:` beside the risk pattern's name, never as a
-  category and never as a code chip standing in for the name.
+  domain. **Catalogues are references, never sources** (2026-11-10, for licence safety): a risk
+  page ends with a **References** panel, "Primary reference" (the `pair:derivedFrom` entry the pattern
+  operationalizes) and "Related risks" (entries rolling up to no domain, a citation, not an
+  outcome), marked "cited, not reproduced". The mechanism carries no chip, and a risk pattern
+  states no `dct:source`: a document URL there claimed the content came from OWASP.
 - **Do not curate a link without a source.** `GoalHijack` and `InsecureAgentCommunication` reach
   no risk domain, because nothing upstream maps an OWASP entry to one. The page says so ("no
   risk domain linked"). `test_what_a_pattern_may_lead_to_is_traversed_never_asserted` pins both

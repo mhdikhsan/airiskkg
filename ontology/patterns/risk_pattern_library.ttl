@@ -10,7 +10,6 @@
 @prefix asi:   <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
 @prefix mlr:   <http://w3id.org/airiskkg/taxonomy/ml-risk#> .
 @prefix eticas: <https://taxonomy.eticas.ai/risk/> .
-@prefix etm:   <http://w3id.org/airiskkg/taxonomy/eticas-mechanisms#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
@@ -141,69 +140,69 @@ pat:PromptInjection_UntrustedPromptContextCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Untrusted content enters prompt context"@en ;
     pair:operationalizesRiskCondition
-        owasp:condition-untrusted-input-enters-prompt-context ,
-        owasp:condition-retrieved-content-enters-generation-context .
+        pat:RiskCondition_UntrustedInputEntersPromptContext ,
+        pat:RiskCondition_RetrievedContentEntersGenerationContext .
 
 pat:SensitiveInfo_SensitiveContextCondition
     a pair:PropertyPathCondition ;
     rdfs:label "Sensitive information is present in model context"@en ;
-    pair:operationalizesRiskCondition owasp:condition-sensitive-data-in-context .
+    pair:operationalizesRiskCondition pat:RiskCondition_SensitiveDataInContext .
 
 pat:SensitiveInfo_OutputExposureCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Generated output can expose sensitive information"@en ;
-    pair:operationalizesRiskCondition owasp:condition-generated-output-exposed-to-user .
+    pair:operationalizesRiskCondition pat:RiskCondition_GeneratedOutputExposedToUser .
 
 pat:SupplyChain_ExternalDependencyCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "External model, data, dependency, provider, or artifact is used"@en ;
-    pair:operationalizesRiskCondition owasp:condition-externally-sourced-model-data-or-dependency .
+    pair:operationalizesRiskCondition pat:RiskCondition_ExternallySourcedModelDataOrDependency .
 
 pat:Poisoning_UntrustedTrainingOrIndexingDataCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Untrusted data enters training, fine-tuning, evaluation, or indexing"@en ;
-    pair:operationalizesRiskCondition owasp:condition-untrusted-data-enters-training-finetuning-or-indexing .
+    pair:operationalizesRiskCondition pat:RiskCondition_UntrustedDataEntersTrainingFinetuningOrIndexing .
 
 pat:ImproperOutputHandling_UnvalidatedOutputCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "LLM output is used without validation or sanitization"@en ;
-    pair:operationalizesRiskCondition owasp:condition-llm-output-used-without-validation .
+    pair:operationalizesRiskCondition pat:RiskCondition_LLMOutputUsedWithoutValidation .
 
 pat:ExcessiveAgency_ToolOrStateChangeCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "LLM can trigger tools, permissions, transactions, or state changes"@en ;
-    pair:operationalizesRiskCondition owasp:condition-llm-can-trigger-tools-or-state-changes .
+    pair:operationalizesRiskCondition pat:RiskCondition_LLMCanTriggerToolsOrStateChanges .
 
 pat:SystemPromptLeakage_HiddenInstructionCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Hidden instructions or system configuration are present in prompt context"@en ;
-    pair:operationalizesRiskCondition owasp:condition-hidden-instructions-in-prompt-context .
+    pair:operationalizesRiskCondition pat:RiskCondition_HiddenInstructionsInPromptContext .
 
 pat:VectorEmbeddingWeakness_RetrievalCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Vector retrieval or embedding index is used for generation context"@en ;
     pair:operationalizesRiskCondition
-        owasp:condition-vector-store-used-for-retrieval ,
-        owasp:condition-retrieved-content-enters-generation-context ,
-        owasp:condition-retrieval-filtering-or-ranking-is-risk-relevant .
+        pat:RiskCondition_VectorStoreUsedForRetrieval ,
+        pat:RiskCondition_RetrievedContentEntersGenerationContext ,
+        pat:RiskCondition_RetrievalFilteringOrRankingIsRiskRelevant .
 
 pat:Misinformation_UngroundedGenerationCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Generation occurs without sufficient grounding or verification"@en ;
     pair:operationalizesRiskCondition
-        owasp:condition-generation-without-grounding-or-verification ,
-        owasp:condition-generated-output-exposed-to-user .
+        pat:RiskCondition_GenerationWithoutGroundingOrVerification ,
+        pat:RiskCondition_GeneratedOutputExposedToUser .
 
 pat:UnboundedConsumption_UnboundedUseCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Prompt, retrieval, tool, or model use is not bounded"@en ;
-    pair:operationalizesRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
+    pair:operationalizesRiskCondition pat:RiskCondition_UnboundedPromptRetrievalToolOrModelUse .
 
 pat:UnboundedConsumption_RepeatablePathCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "The consuming path can be driven repeatedly"@en ;
     rdfs:comment "Either the flow loops - a step's output comes back to it through another step, in query rewriting, RAG and its iterative and recursive variants, plan reflection or debate - or it is reachable from public input, so volume is not the system's own choice. Direct prompting has no loop, so without this the branch asked only whether an LLM call existed without a rate limiter, which is true of nearly every unmitigated GenAI system."@en ;
-    pair:operationalizesRiskCondition owasp:condition-unbounded-prompt-retrieval-tool-or-model-use .
+    pair:operationalizesRiskCondition pat:RiskCondition_UnboundedPromptRetrievalToolOrModelUse .
 
 # risk patterns
 
@@ -288,7 +287,6 @@ pat:TrainingToServingMotif
 pat:PromptInjectionRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm01-prompt-injection ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Prompt injection risk pattern"@en ;
     dct:description """
     Applies to motifs where untrusted user, retrieved, or tool-supplied
@@ -301,7 +299,7 @@ pat:PromptInjectionRiskPattern
         pat:AdaptiveRAGMotif ,
         pat:LLMBasedInformationRetrievalMotif ,
         pat:QueryRewritingMotif ;
-    pair:hasMechanism owasp:mechanism-instruction-override ;
+    pair:hasMechanism pat:Mechanism_InstructionOverride ;
     pair:hasApplicabilityCondition pat:PromptInjection_UntrustedPromptContextCondition ;
     pair:mayIndicateRisk
         owasp:llm01-prompt-injection ,
@@ -320,11 +318,16 @@ pat:PromptInjectionRiskPattern
 pat:SupplyChainCompromiseRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm03-supply-chain ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Supply chain compromise risk pattern"@en ;
+    dct:description """
+    Applies where a step uses a model, dataset, package or other artifact the
+    represented system takes in from outside rather than builds itself: one
+    declared external, or one that enters the graph with nothing inside
+    producing it.
+    """@en ;
     pair:hasMotif pat:ExternalDependencyMotif ,
         pat:FineTuningMotif ;
-    pair:hasMechanism owasp:mechanism-supply-chain-compromise ;
+    pair:hasMechanism pat:Mechanism_SupplyChainCompromise ;
     pair:hasApplicabilityCondition pat:SupplyChain_ExternalDependencyCondition ;
     pair:mayIndicateRisk
         owasp:llm03-supply-chain ,
@@ -348,13 +351,17 @@ pat:SupplyChainCompromiseRiskPattern
 pat:DataAndModelPoisoningRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm04-data-and-model-poisoning ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Data and model poisoning risk pattern"@en ;
+    dct:description """
+    Applies where content of untrusted provenance is bound in a match that
+    trains, fine-tunes, embeds or augments data, so it reaches what a model
+    learns from or retrieves.
+    """@en ;
     pair:hasMotif pat:EmbeddingsMotif ,
         pat:FineTuningMotif ,
         pat:TrainingToServingMotif ,
         pat:RetrievalDataAugmentationMotif ;
-    pair:hasMechanism owasp:mechanism-data-or-model-poisoning ;
+    pair:hasMechanism pat:Mechanism_DataOrModelPoisoning ;
     pair:hasApplicabilityCondition pat:Poisoning_UntrustedTrainingOrIndexingDataCondition ;
     pair:mayIndicateRisk
         owasp:llm04-data-and-model-poisoning ,
@@ -372,7 +379,6 @@ pat:DataAndModelPoisoningRiskPattern
 pat:ImproperOutputHandlingRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm05-improper-output-handling ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Improper output handling risk pattern"@en ;
     dct:description """
     Applies to motifs where generated LLM output reaches a user or downstream
@@ -380,7 +386,7 @@ pat:ImproperOutputHandlingRiskPattern
     guardrail step.
     """@en ;
     pair:hasMotif pat:DirectPromptingMotif ;
-    pair:hasMechanism owasp:mechanism-unsafe-output-propagation ;
+    pair:hasMechanism pat:Mechanism_UnsafeOutputPropagation ;
     pair:hasApplicabilityCondition pat:ImproperOutputHandling_UnvalidatedOutputCondition ;
     pair:mayIndicateRisk
         owasp:llm05-improper-output-handling ,
@@ -395,9 +401,13 @@ pat:ImproperOutputHandlingRiskPattern
 pat:ExcessiveAgencyRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm06-excessive-agency ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Excessive agency risk pattern"@en ;
-    pair:hasMechanism owasp:mechanism-excessive-agency-action-execution ;
+    dct:description """
+    Applies where the output of a generation step reaches a tool invocation or
+    state-changing step with no represented approval, policy enforcement or rate
+    limit in between.
+    """@en ;
+    pair:hasMechanism pat:Mechanism_ExcessiveAgencyActionExecution ;
     pair:hasApplicabilityCondition pat:ExcessiveAgency_ToolOrStateChangeCondition ;
     pair:mayIndicateRisk
         owasp:llm06-excessive-agency ,
@@ -415,10 +425,14 @@ pat:ExcessiveAgencyRiskPattern
 pat:SystemPromptLeakageRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm07-system-prompt-leakage ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "System prompt leakage risk pattern"@en ;
+    dct:description """
+    Applies where a system prompt feeds a generation step whose output reaches
+    users with no represented output guardrail, output validation or redaction
+    on that output.
+    """@en ;
     pair:hasMotif pat:DirectPromptingMotif ;
-    pair:hasMechanism owasp:mechanism-system-prompt-exposure ;
+    pair:hasMechanism pat:Mechanism_SystemPromptExposure ;
     pair:hasApplicabilityCondition
         pat:SystemPromptLeakage_HiddenInstructionCondition ,
         pat:SensitiveInfo_OutputExposureCondition ;
@@ -437,12 +451,16 @@ pat:SystemPromptLeakageRiskPattern
 pat:VectorAndEmbeddingWeaknessRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm08-vector-and-embedding-weaknesses ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Vector and embedding weakness risk pattern"@en ;
+    dct:description """
+    Applies wherever vector-based retrieval, embedding or reranking is
+    represented, because the weakness rests on how the index is built and
+    governed rather than on a control step a graph can show.
+    """@en ;
     pair:hasMotif pat:VectorBasedInformationRetrievalMotif ,
         pat:EmbeddingsMotif ,
         pat:RerankerMotif ;
-    pair:hasMechanism owasp:mechanism-vector-embedding-retrieval-weakness ;
+    pair:hasMechanism pat:Mechanism_VectorEmbeddingRetrievalWeakness ;
     pair:hasApplicabilityCondition pat:VectorEmbeddingWeakness_RetrievalCondition ;
     pair:mayIndicateRisk
         owasp:llm08-vector-and-embedding-weaknesses ,
@@ -458,7 +476,6 @@ pat:VectorAndEmbeddingWeaknessRiskPattern
 pat:DirectPromptingWithoutGroundingRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm09-misinformation ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Direct Prompting without grounding risk pattern"@en ;
     skos:altLabel "Direct LLM answering without grounding risk pattern"@en ;
     dct:description """
@@ -467,7 +484,7 @@ pat:DirectPromptingWithoutGroundingRiskPattern
     step in the architecture graph.
     """@en ;
     pair:hasMotif pat:DirectPromptingMotif ;
-    pair:hasMechanism owasp:mechanism-unsupported-generation ;
+    pair:hasMechanism pat:Mechanism_UnsupportedGeneration ;
     pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;
     pair:mayIndicateRisk
         owasp:llm09-misinformation ,
@@ -486,13 +503,17 @@ pat:DirectPromptingWithoutGroundingRiskPattern
 pat:MisinformationFromWeakGroundingRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm09-misinformation ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Misinformation from weak grounding risk pattern"@en ;
+    dct:description """
+    Applies where a response is generated from retrieved context, or where a
+    model itself produces the results a retrieval returns, with no represented
+    evaluation or scoring step reading what is produced.
+    """@en ;
     pair:hasMotif pat:RetrievalAugmentedGenerationMotif ,
         pat:IterativeRAGMotif ,
         pat:AdaptiveRAGMotif ,
         pat:LLMBasedInformationRetrievalMotif ;
-    pair:hasMechanism owasp:mechanism-unsupported-generation ;
+    pair:hasMechanism pat:Mechanism_UnsupportedGeneration ;
     pair:hasApplicabilityCondition pat:Misinformation_UngroundedGenerationCondition ;
     pair:mayIndicateRisk
         owasp:llm09-misinformation ,
@@ -511,7 +532,6 @@ pat:MisinformationFromWeakGroundingRiskPattern
 pat:UnboundedConsumptionRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm10-unbounded-consumption ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Unbounded consumption risk pattern"@en ;
     dct:description """
     Applies to motifs where model calls, retrieval breadth, prompt expansion,
@@ -524,7 +544,7 @@ pat:UnboundedConsumptionRiskPattern
         pat:QueryRewritingMotif ,
         pat:PlanReflectionMotif ,
         pat:AgentDelegationMotif ;
-    pair:hasMechanism owasp:mechanism-unbounded-resource-consumption ;
+    pair:hasMechanism pat:Mechanism_UnboundedResourceConsumption ;
     pair:hasApplicabilityCondition pat:UnboundedConsumption_UnboundedUseCondition ,
         pat:UnboundedConsumption_RepeatablePathCondition ;
     pair:mayIndicateRisk
@@ -845,22 +865,21 @@ pat:RetrievalScreening_MatchingOQP
 pat:ToolMisuse_UnmediatedActionCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A planned action reaches a tool or state change with no mediating control"@en ;
-    pair:operationalizesRiskCondition asi:condition-tool-invocation-without-mediation .
+    pair:operationalizesRiskCondition pat:RiskCondition_ToolInvocationWithoutMediation .
 
 pat:MemoryPoisoning_UnvalidatedWriteCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Content is committed to agent memory without a represented validation step"@en ;
-    pair:operationalizesRiskCondition asi:condition-untrusted-content-written-to-agent-memory .
+    pair:operationalizesRiskCondition pat:RiskCondition_UntrustedContentWrittenToAgentMemory .
 
 pat:MemoryPoisoning_RecalledIntoGenerationCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Recalled agent memory reaches a later generation context"@en ;
-    pair:operationalizesRiskCondition asi:condition-agent-memory-reread-into-generation .
+    pair:operationalizesRiskCondition pat:RiskCondition_AgentMemoryRereadIntoGeneration .
 
 pat:ToolMisuseRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom asi:asi02-tool-misuse ;
-    dct:source <https://genai.owasp.org/> ;
     rdfs:label "Tool misuse risk pattern"@en ;
     dct:description """
     Applies to a Tool-Using Agent or Tool/Agent Registry match where the planning
@@ -869,7 +888,7 @@ pat:ToolMisuseRiskPattern
     between.
     """@en ;
     pair:hasMotif pat:ToolUsingAgentMotif ;
-    pair:hasMechanism asi:mechanism-unconstrained-tool-execution ;
+    pair:hasMechanism pat:Mechanism_UnconstrainedToolExecution ;
     pair:hasApplicabilityCondition pat:ToolMisuse_UnmediatedActionCondition ;
     pair:mayIndicateRisk
         asi:asi02-tool-misuse ,
@@ -886,7 +905,6 @@ pat:ToolMisuseRiskPattern
 pat:MemoryPoisoningRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom asi:asi06-memory-and-context-poisoning ;
-    dct:source <https://genai.owasp.org/> ;
     rdfs:label "Memory and context poisoning risk pattern"@en ;
     dct:description """
     Applies to an Agent Memory Loop match where content is committed to the store
@@ -894,7 +912,7 @@ pat:MemoryPoisoningRiskPattern
     generation step. 
     """@en ;
     pair:hasMotif pat:AgentMemoryLoopMotif ;
-    pair:hasMechanism asi:mechanism-persisted-context-corruption ;
+    pair:hasMechanism pat:Mechanism_PersistedContextCorruption ;
     pair:hasApplicabilityCondition
         pat:MemoryPoisoning_UnvalidatedWriteCondition ,
         pat:MemoryPoisoning_RecalledIntoGenerationCondition ;
@@ -942,17 +960,16 @@ pat:MemoryPoisoningOQP
 pat:GoalHijack_UntrustedPlanningInputCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Untrusted content reaches the step that decides the agent's next action"@en ;
-    pair:operationalizesRiskCondition asi:condition-untrusted-content-reaches-planning .
+    pair:operationalizesRiskCondition pat:RiskCondition_UntrustedContentReachesPlanning .
 
 pat:InsecureAgentCommunication_UnvalidatedHandoffCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "An inter-agent message is acted on with no represented validation step"@en ;
-    pair:operationalizesRiskCondition asi:condition-agent-handoff-without-validation .
+    pair:operationalizesRiskCondition pat:RiskCondition_AgentHandoffWithoutValidation .
 
 pat:GoalHijackRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom asi:asi01-agent-goal-hijack ;
-    dct:source <https://genai.owasp.org/> ;
     rdfs:label "Agent goal hijack risk pattern"@en ;
     dct:description """
     Applies to an agentic match whose planning or goal creation step consumes
@@ -963,7 +980,7 @@ pat:GoalHijackRiskPattern
         pat:GoalCreationMotif ,
         pat:ModelQueryingMotif ,
         pat:PlanReflectionMotif ;
-    pair:hasMechanism asi:mechanism-goal-redirection-through-consumed-content ;
+    pair:hasMechanism pat:Mechanism_GoalRedirectionThroughConsumedContent ;
     pair:hasApplicabilityCondition pat:GoalHijack_UntrustedPlanningInputCondition ;
     pair:mayIndicateRisk
         asi:asi01-agent-goal-hijack ,
@@ -978,7 +995,6 @@ pat:GoalHijackRiskPattern
 pat:InsecureAgentCommunicationRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom asi:asi07-insecure-inter-agent-communication ;
-    dct:source <https://genai.owasp.org/> ;
     rdfs:label "Insecure inter-agent communication risk pattern"@en ;
     dct:description """
     Applies to an Agent Delegation, Voting-based or Debate-based Cooperation
@@ -990,7 +1006,7 @@ pat:InsecureAgentCommunicationRiskPattern
     """@en ;
     pair:hasMotif pat:AgentDelegationMotif ,
         pat:VotingBasedCooperationMotif ;
-    pair:hasMechanism asi:mechanism-unauthenticated-agent-handoff ;
+    pair:hasMechanism pat:Mechanism_UnauthenticatedAgentHandoff ;
     pair:hasApplicabilityCondition pat:InsecureAgentCommunication_UnvalidatedHandoffCondition ;
     pair:mayIndicateRisk
         asi:asi07-insecure-inter-agent-communication ,
@@ -1075,13 +1091,12 @@ pat:InsecureAgentCommunicationOQP
 pat:SensitiveInformationDisclosureRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom owasp:llm02-sensitive-information-disclosure ;
-    dct:source <https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/> ;
     rdfs:label "Sensitive information disclosure risk pattern"@en ;
     dct:description """
     Applies wherever content carrying a protected category reaches an element
     exposed to a user, with no represented control on the way out.
     """@en ;
-    pair:hasMechanism owasp:mechanism-sensitive-data-propagation ;
+    pair:hasMechanism pat:Mechanism_SensitiveDataPropagation ;
     pair:hasApplicabilityCondition
         pat:SensitiveInfo_SensitiveContextCondition ,
         pat:SensitiveInfo_OutputExposureCondition ,
@@ -1226,72 +1241,72 @@ pat:Control_IndependentEvidenceForApproval
 pat:DatasetShift_UnmonitoredServingCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A deployed model serves requests with no monitoring against a baseline"@en ;
-    pair:operationalizesRiskCondition mlr:condition-served-model-without-shift-monitoring .
+    pair:operationalizesRiskCondition pat:RiskCondition_ServedModelWithoutShiftMonitoring .
 
 pat:OutOfDomainInput_UncheckedInputCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "An input reaches the model with no domain check"@en ;
-    pair:operationalizesRiskCondition mlr:condition-input-reaches-model-without-domain-check .
+    pair:operationalizesRiskCondition pat:RiskCondition_InputReachesModelWithoutDomainCheck .
 
 pat:AdversarialEvasion_UntrustedInputCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "Content an outsider can shape reaches the model unscreened"@en ;
-    pair:operationalizesRiskCondition mlr:condition-untrusted-input-reaches-model .
+    pair:operationalizesRiskCondition pat:RiskCondition_UntrustedInputReachesModel .
 
 pat:ModelBias_PersonalTrainingDataCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A model is trained on data about people with no fairness evaluation"@en ;
-    pair:operationalizesRiskCondition mlr:condition-personal-training-data-without-fairness-evaluation .
+    pair:operationalizesRiskCondition pat:RiskCondition_PersonalTrainingDataWithoutFairnessEvaluation .
 
 pat:UnevaluatedModel_NoEvaluationCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A trained model is served with no evaluation in between"@en ;
-    pair:operationalizesRiskCondition mlr:condition-trained-model-served-without-evaluation .
+    pair:operationalizesRiskCondition pat:RiskCondition_TrainedModelServedWithoutEvaluation .
 
 pat:UnqualifiedPrediction_ActedOnCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A prediction is acted on with neither its uncertainty nor a review"@en ;
-    pair:operationalizesRiskCondition mlr:condition-prediction-acted-on-without-uncertainty .
+    pair:operationalizesRiskCondition pat:RiskCondition_PredictionActedOnWithoutUncertainty .
 
 pat:ImproperRetraining_FeedbackLoopCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "What the model produces flows back into its own training data unvetted"@en ;
-    pair:operationalizesRiskCondition atlas:condition-model-output-feeds-own-training-data .
+    pair:operationalizesRiskCondition pat:RiskCondition_ModelOutputFeedsOwnTrainingData .
 
 pat:MembershipInference_PublicQueryCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A model trained on personal data answers public queries"@en ;
-    pair:operationalizesRiskCondition atlas:condition-public-queries-reach-model-trained-on-personal-data .
+    pair:operationalizesRiskCondition pat:RiskCondition_PublicQueriesReachModelTrainedOnPersonalData .
 
 pat:DataContamination_SharedDataCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "The evaluation reads data the model was trained from"@en ;
-    pair:operationalizesRiskCondition atlas:condition-evaluation-reads-training-data .
+    pair:operationalizesRiskCondition pat:RiskCondition_EvaluationReadsTrainingData .
 
 pat:IdentityPrivilegeAbuse_SharedCredentialCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A credential crosses an agent hand-off or is written to memory"@en ;
-    pair:operationalizesRiskCondition asi:condition-credential-crosses-agent-boundary .
+    pair:operationalizesRiskCondition pat:RiskCondition_CredentialCrossesAgentBoundary .
 
 pat:AgenticSupplyChain_ExternalComponentCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "An external component reaches the agent's planning unverified"@en ;
-    pair:operationalizesRiskCondition asi:condition-external-component-reaches-planning .
+    pair:operationalizesRiskCondition pat:RiskCondition_ExternalComponentReachesPlanning .
 
 pat:UnexpectedCodeExecution_UngatedExecutionCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "An agent's plan is executed as code with no gate in between"@en ;
-    pair:operationalizesRiskCondition asi:condition-agent-plan-executed-as-code .
+    pair:operationalizesRiskCondition pat:RiskCondition_AgentPlanExecutedAsCode .
 
 pat:CascadingFailures_UncheckedRelayCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A decision is handed on twice and acted on with no checkpoint"@en ;
-    pair:operationalizesRiskCondition asi:condition-agent-decision-propagates-without-checkpoint .
+    pair:operationalizesRiskCondition pat:RiskCondition_AgentDecisionPropagatesWithoutCheckpoint .
 
 pat:HumanAgentTrust_AgentOnlyEvidenceCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "The approver sees only what the agent produced"@en ;
-    pair:operationalizesRiskCondition asi:condition-approval-sees-only-agent-output .
+    pair:operationalizesRiskCondition pat:RiskCondition_ApprovalSeesOnlyAgentOutput .
 
 # Motif side of the binding (pair:hasRiskPattern mirrors pair:hasMotif)
 
@@ -1353,14 +1368,13 @@ pat:AgentMemoryLoopMotif
 pat:DatasetShiftRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom mlr:dataset-shift ;
-    dct:source <https://doi.org/10.1016/j.dss.2022.113800> ;
     rdfs:label "Dataset shift risk pattern"@en ;
     dct:description """
     Applies where a deployed model serves incoming requests and no represented
     monitoring step compares what it serves against a baseline from training.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ;
-    pair:hasMechanism mlr:mechanism-unobserved-distribution-shift ;
+    pair:hasMechanism pat:Mechanism_UnobservedDistributionShift ;
     pair:hasApplicabilityCondition pat:DatasetShift_UnmonitoredServingCondition ;
     pair:mayIndicateRisk
         mlr:dataset-shift ,
@@ -1376,14 +1390,13 @@ pat:DatasetShiftRiskPattern
 pat:OutOfDomainInputRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom mlr:out-of-domain-data ;
-    dct:source <https://doi.org/10.1016/j.dss.2022.113800> ;
     rdfs:label "Out-of-domain input risk pattern"@en ;
     dct:description """
     Applies where an input reaches a prediction step with no represented step
     that checks it lies within the domain the model was built for.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ;
-    pair:hasMechanism mlr:mechanism-unchecked-input-domain ;
+    pair:hasMechanism pat:Mechanism_UncheckedInputDomain ;
     pair:hasApplicabilityCondition pat:OutOfDomainInput_UncheckedInputCondition ;
     pair:mayIndicateRisk
         mlr:out-of-domain-data ,
@@ -1398,14 +1411,13 @@ pat:OutOfDomainInputRiskPattern
 pat:AdversarialEvasionRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom mlr:adversarial-attack ;
-    dct:source <https://doi.org/10.1016/j.dss.2022.113800> ;
     rdfs:label "Adversarial evasion risk pattern"@en ;
     dct:description """
     Applies where content an outsider can shape reaches a prediction step with no
     represented input screening on the way.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ;
-    pair:hasMechanism mlr:mechanism-unscreened-adversarial-input ;
+    pair:hasMechanism pat:Mechanism_UnscreenedAdversarialInput ;
     pair:hasApplicabilityCondition pat:AdversarialEvasion_UntrustedInputCondition ;
     pair:mayIndicateRisk
         mlr:adversarial-attack ,
@@ -1420,7 +1432,6 @@ pat:AdversarialEvasionRiskPattern
 pat:ModelBiasRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom mlr:model-bias ;
-    dct:source <https://doi.org/10.1016/j.dss.2022.113800> ;
     rdfs:label "Model bias risk pattern"@en ;
     dct:description """
     Applies where a model is trained on data carrying a personal-data
@@ -1430,7 +1441,7 @@ pat:ModelBiasRiskPattern
     pair:hasMotif pat:PipelineTrainingMotif ,
         pat:TrainThenServeMotif ,
         pat:TrainingToServingMotif ;
-    pair:hasMechanism mlr:mechanism-unexamined-learned-bias ;
+    pair:hasMechanism pat:Mechanism_UnexaminedLearnedBias ;
     pair:hasApplicabilityCondition pat:ModelBias_PersonalTrainingDataCondition ;
     pair:mayIndicateRisk
         mlr:model-bias ,
@@ -1448,7 +1459,6 @@ pat:ModelBiasRiskPattern
 pat:UnevaluatedModelRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom mlr:model-misspecification ;
-    dct:source <https://doi.org/10.1016/j.dss.2022.113800> ;
     rdfs:label "Unevaluated model risk pattern"@en ;
     dct:description """
     Applies where a model produced by a training step reaches a prediction step
@@ -1456,7 +1466,7 @@ pat:UnevaluatedModelRiskPattern
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ,
         pat:TrainingToServingMotif ;
-    pair:hasMechanism mlr:mechanism-unvalidated-model-fit ;
+    pair:hasMechanism pat:Mechanism_UnvalidatedModelFit ;
     pair:hasApplicabilityCondition pat:UnevaluatedModel_NoEvaluationCondition ;
     pair:mayIndicateRisk
         mlr:model-misspecification ,
@@ -1471,7 +1481,6 @@ pat:UnevaluatedModelRiskPattern
 pat:UnqualifiedPredictionRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom mlr:model-uncertainty ;
-    dct:source <https://doi.org/10.1016/j.dss.2022.113800> ;
     rdfs:label "Unqualified prediction risk pattern"@en ;
     dct:description """
     Applies where a prediction reaches a step that acts on it, or a user, and
@@ -1479,7 +1488,7 @@ pat:UnqualifiedPredictionRiskPattern
     human review reaches the same place.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ;
-    pair:hasMechanism mlr:mechanism-unreported-prediction-uncertainty ;
+    pair:hasMechanism pat:Mechanism_UnreportedPredictionUncertainty ;
     pair:hasApplicabilityCondition pat:UnqualifiedPrediction_ActedOnCondition ;
     pair:mayIndicateRisk
         mlr:model-uncertainty ,
@@ -1497,7 +1506,6 @@ pat:UnqualifiedPredictionRiskPattern
 pat:ImproperRetrainingRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom atlas:improper-retraining ;
-    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/risk_atlas_data.yaml> ;
     rdfs:label "Improper retraining risk pattern"@en ;
     dct:description """
     Applies where data downstream of the model a training step produces flows
@@ -1508,7 +1516,7 @@ pat:ImproperRetrainingRiskPattern
         pat:TrainThenServeMotif ,
         pat:TrainingToServingMotif ,
         pat:FineTuningMotif ;
-    pair:hasMechanism atlas:mechanism-unvetted-feedback-into-training ;
+    pair:hasMechanism pat:Mechanism_UnvettedFeedbackIntoTraining ;
     pair:hasApplicabilityCondition pat:ImproperRetraining_FeedbackLoopCondition ;
     pair:mayIndicateRisk
         atlas:improper-retraining ,
@@ -1523,7 +1531,6 @@ pat:ImproperRetrainingRiskPattern
 pat:TrainingDataMembershipInferenceRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom atlas:membership-inference-attack ;
-    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/risk_atlas_data.yaml> ;
     rdfs:label "Training data membership inference risk pattern"@en ;
     dct:description """
     Applies where a model trained on data carrying a personal-data classification
@@ -1532,7 +1539,7 @@ pat:TrainingDataMembershipInferenceRiskPattern
     does not show, so a finding is settled by triage.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ;
-    pair:hasMechanism atlas:mechanism-training-membership-exposed-by-queries ;
+    pair:hasMechanism pat:Mechanism_TrainingMembershipExposedByQueries ;
     pair:hasApplicabilityCondition pat:MembershipInference_PublicQueryCondition ;
     pair:mayIndicateRisk
         atlas:membership-inference-attack ,
@@ -1547,7 +1554,6 @@ pat:TrainingDataMembershipInferenceRiskPattern
 pat:EvaluationDataContaminationRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom atlas:data-contamination ;
-    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/risk_atlas_data.yaml> ;
     rdfs:label "Evaluation data contamination risk pattern"@en ;
     dct:description """
     Applies where an evaluation step reads data that the evaluated model's
@@ -1557,7 +1563,7 @@ pat:EvaluationDataContaminationRiskPattern
     pair:hasMotif pat:PipelineTrainingMotif ,
         pat:TrainThenServeMotif ,
         pat:FineTuningMotif ;
-    pair:hasMechanism atlas:mechanism-evaluation-on-training-data ;
+    pair:hasMechanism pat:Mechanism_EvaluationOnTrainingData ;
     pair:hasApplicabilityCondition pat:DataContamination_SharedDataCondition ;
     pair:mayIndicateRisk
         atlas:data-contamination ,
@@ -1573,7 +1579,6 @@ pat:EvaluationDataContaminationRiskPattern
 pat:IdentityPrivilegeAbuseRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom asi:asi03-identity-and-privilege-abuse ;
-    dct:source <https://genai.owasp.org/> ;
     rdfs:label "Identity and privilege abuse risk pattern"@en ;
     dct:description """
     Applies to an Agent Delegation match where the same credential is used by the
@@ -1583,7 +1588,7 @@ pat:IdentityPrivilegeAbuseRiskPattern
     """@en ;
     pair:hasMotif pat:AgentDelegationMotif ,
         pat:AgentMemoryLoopMotif ;
-    pair:hasMechanism asi:mechanism-authority-inherited-across-handoff ;
+    pair:hasMechanism pat:Mechanism_AuthorityInheritedAcrossHandoff ;
     pair:hasApplicabilityCondition pat:IdentityPrivilegeAbuse_SharedCredentialCondition ;
     pair:mayIndicateRisk
         asi:asi03-identity-and-privilege-abuse ,
@@ -1599,7 +1604,6 @@ pat:IdentityPrivilegeAbuseRiskPattern
 pat:AgenticSupplyChainRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom asi:asi04-agentic-supply-chain ;
-    dct:source <https://genai.owasp.org/> ;
     rdfs:label "Agentic supply chain risk pattern"@en ;
     dct:description """
     Applies to an agentic match whose planning step reads a component marked as
@@ -1608,7 +1612,7 @@ pat:AgenticSupplyChainRiskPattern
     """@en ;
     pair:hasMotif pat:ToolUsingAgentMotif ,
         pat:AgentDelegationMotif ;
-    pair:hasMechanism asi:mechanism-external-component-steers-agent ;
+    pair:hasMechanism pat:Mechanism_ExternalComponentSteersAgent ;
     pair:hasApplicabilityCondition pat:AgenticSupplyChain_ExternalComponentCondition ;
     pair:mayIndicateRisk
         asi:asi04-agentic-supply-chain ,
@@ -1622,7 +1626,6 @@ pat:AgenticSupplyChainRiskPattern
 pat:UnexpectedCodeExecutionRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom asi:asi05-unexpected-code-execution ;
-    dct:source <https://genai.owasp.org/> ;
     rdfs:label "Unexpected code execution risk pattern"@en ;
     dct:description """
     Applies to a Tool-Using Agent or Tool/Agent Registry match whose tool step
@@ -1630,7 +1633,7 @@ pat:UnexpectedCodeExecutionRiskPattern
     human approval feeds that step.
     """@en ;
     pair:hasMotif pat:ToolUsingAgentMotif ;
-    pair:hasMechanism asi:mechanism-agent-output-run-as-code ;
+    pair:hasMechanism pat:Mechanism_AgentOutputRunAsCode ;
     pair:hasApplicabilityCondition pat:UnexpectedCodeExecution_UngatedExecutionCondition ;
     pair:mayIndicateRisk
         asi:asi05-unexpected-code-execution ,
@@ -1645,7 +1648,6 @@ pat:UnexpectedCodeExecutionRiskPattern
 pat:CascadingFailuresRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom asi:asi08-cascading-failures ;
-    dct:source <https://genai.owasp.org/> ;
     rdfs:label "Cascading failures risk pattern"@en ;
     dct:description """
     Applies to an Agent Delegation match whose receiving agent hands work on to a
@@ -1653,7 +1655,7 @@ pat:CascadingFailuresRiskPattern
     first hand-off and the action.
     """@en ;
     pair:hasMotif pat:AgentDelegationMotif ;
-    pair:hasMechanism asi:mechanism-fault-propagation-across-agents ;
+    pair:hasMechanism pat:Mechanism_FaultPropagationAcrossAgents ;
     pair:hasApplicabilityCondition pat:CascadingFailures_UncheckedRelayCondition ;
     pair:mayIndicateRisk
         asi:asi08-cascading-failures ,
@@ -1669,7 +1671,6 @@ pat:CascadingFailuresRiskPattern
 pat:HumanAgentTrustExploitationRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom asi:asi09-human-agent-trust-exploitation ;
-    dct:source <https://genai.owasp.org/> ;
     rdfs:label "Human-agent trust exploitation risk pattern"@en ;
     dct:description """
     Applies where a human approval step gates an agent's action and every input
@@ -1678,7 +1679,7 @@ pat:HumanAgentTrustExploitationRiskPattern
     human oversight.
     """@en ;
     pair:hasMotif pat:ToolUsingAgentMotif ;
-    pair:hasMechanism asi:mechanism-approval-on-the-agents-account ;
+    pair:hasMechanism pat:Mechanism_ApprovalOnTheAgentsAccount ;
     pair:hasApplicabilityCondition pat:HumanAgentTrust_AgentOnlyEvidenceCondition ;
     pair:mayIndicateRisk
         asi:asi09-human-agent-trust-exploitation ,
@@ -1830,27 +1831,26 @@ pat:Control_ModelAccessHardening
 pat:UntraceableAgentActions_NoRecordCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "No logging step reads what an agent's action step uses or produces"@en ;
-    pair:operationalizesRiskCondition etm:condition-agent-action-not-logged .
+    pair:operationalizesRiskCondition pat:RiskCondition_AgentActionNotLogged .
 
 pat:ProtectedDataToExternalModel_ProtectedInputCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A step using a third-party model reads personal or confidential content"@en ;
-    pair:operationalizesRiskCondition atlas:condition-protected-content-reaches-external-model .
+    pair:operationalizesRiskCondition pat:RiskCondition_ProtectedContentReachesExternalModel .
 
 pat:PersonalDataRetained_StoredPersonalDataCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A log record or agent memory carries personal data"@en ;
-    pair:operationalizesRiskCondition etm:condition-personal-data-written-to-log-or-memory .
+    pair:operationalizesRiskCondition pat:RiskCondition_PersonalDataWrittenToLogOrMemory .
 
 pat:ModelExtraction_OpenQueriesCondition
     a pair:ApplicabilityCondition ;
     rdfs:label "A model trained in the system answers public queries with no rate limit"@en ;
-    pair:operationalizesRiskCondition atlas:condition-public-queries-reach-in-house-model-unthrottled .
+    pair:operationalizesRiskCondition pat:RiskCondition_PublicQueriesReachInHouseModelUnthrottled .
 
 pat:UntraceableAgentActionsRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom eticas:untraceable-agent-actions ;
-    dct:source <https://taxonomy.eticas.ai/> ;
     rdfs:label "Untraceable agent actions risk pattern"@en ;
     dct:description """
     Applies to a Tool-Using Agent or Tool/Agent Registry match where no
@@ -1858,7 +1858,7 @@ pat:UntraceableAgentActionsRiskPattern
     on, or the result it produces.
     """@en ;
     pair:hasMotif pat:ToolUsingAgentMotif ;
-    pair:hasMechanism etm:mechanism-agent-acts-without-a-record ;
+    pair:hasMechanism pat:Mechanism_AgentActsWithoutARecord ;
     pair:hasApplicabilityCondition pat:UntraceableAgentActions_NoRecordCondition ;
     pair:mayIndicateRisk
         eticas:untraceable-agent-actions ,
@@ -1872,7 +1872,6 @@ pat:UntraceableAgentActionsRiskPattern
 pat:ProtectedDataToExternalModelRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom atlas:personal-information-in-prompt ;
-    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/risk_atlas_data.yaml> ;
     rdfs:label "Protected data to external model risk pattern"@en ;
     dct:description """
     Applies where the generation or prediction step of a match uses a model
@@ -1883,7 +1882,7 @@ pat:ProtectedDataToExternalModelRiskPattern
     pair:hasMotif pat:DirectPromptingMotif ,
         pat:RetrievalAugmentedGenerationMotif ,
         pat:PredictionServingMotif ;
-    pair:hasMechanism atlas:mechanism-protected-content-leaves-for-a-provider ;
+    pair:hasMechanism pat:Mechanism_ProtectedContentLeavesForAProvider ;
     pair:hasApplicabilityCondition pat:ProtectedDataToExternalModel_ProtectedInputCondition ;
     pair:mayIndicateRisk
         atlas:personal-information-in-prompt ,
@@ -1897,7 +1896,6 @@ pat:ProtectedDataToExternalModelRiskPattern
 pat:PersonalDataRetainedRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom eticas:weak-data-controls ;
-    dct:source <https://taxonomy.eticas.ai/> ;
     rdfs:label "Personal data retained risk pattern"@en ;
     dct:description """
     Applies where the log record of a Prediction Logging match, or the memory of
@@ -1906,7 +1904,7 @@ pat:PersonalDataRetainedRiskPattern
     """@en ;
     pair:hasMotif pat:PredictionLoggingMotif ,
         pat:AgentMemoryLoopMotif ;
-    pair:hasMechanism etm:mechanism-personal-data-kept-where-it-was-not-needed ;
+    pair:hasMechanism pat:Mechanism_PersonalDataKeptWhereItWasNotNeeded ;
     pair:hasApplicabilityCondition pat:PersonalDataRetained_StoredPersonalDataCondition ;
     pair:mayIndicateRisk
         eticas:weak-data-controls ,
@@ -1919,7 +1917,6 @@ pat:PersonalDataRetainedRiskPattern
 pat:ModelExtractionRiskPattern
     a pair:RiskPattern ;
     pair:derivedFrom atlas:extraction-attack ;
-    dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/knowledge_graph/risk_atlas_data.yaml> ;
     rdfs:label "Model extraction risk pattern"@en ;
     dct:description """
     Applies where a model trained in the represented system serves requests that
@@ -1927,7 +1924,7 @@ pat:ModelExtractionRiskPattern
     the prediction step or sits upstream of the request.
     """@en ;
     pair:hasMotif pat:PredictionServingMotif ;
-    pair:hasMechanism atlas:mechanism-model-copied-through-open-queries ;
+    pair:hasMechanism pat:Mechanism_ModelCopiedThroughOpenQueries ;
     pair:hasApplicabilityCondition pat:ModelExtraction_OpenQueriesCondition ;
     pair:mayIndicateRisk
         atlas:extraction-attack ,

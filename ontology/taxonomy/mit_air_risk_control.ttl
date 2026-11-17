@@ -12,7 +12,8 @@
     # licence; its section 4 duties (retain notices, state changes, propagate NOTICE)
     # are met here and in /NOTICE.md.
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
-    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Derived from IBM AI Atlas Nexus, licensed Apache License 2.0 - see https://www.apache.org/licenses/LICENSE-2.0. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary. The RiskControlGroup layer reproduces the MIT draft mitigation taxonomy verbatim. Apache 2.0 covers IBM's packaging, not upstream rights, and MIT's own terms are not yet verified."@en ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Contains material derived from IBM AI Atlas Nexus (https://github.com/IBM/ai-atlas-nexus), Copyright IBM Corporation and the AI Atlas Nexus contributors, licensed under the Apache License, Version 2.0; that material remains under Apache 2.0, and a copy of the licence is in LICENSES/Apache-2.0.txt. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary. The RiskControlGroup layer reproduces the draft mitigation taxonomy of the MIT AI Risk Initiative, licensed CC BY 4.0 (https://airisk.mit.edu/); its categories and sub-categories are unchanged, and the concrete controls under them are PAIR-AI's."@en ;
+    dct:bibliographicCitation "MIT AI Risk Initiative. (2025, July 28). Mapping AI risk mitigations: Evidence scan & draft mitigation taxonomy. https://airisk.mit.edu/blog/mapping-ai-risk-mitigations"@en ;
     rdfs:label "MIT AI Risk Control Subset for AI Risk KG" ;
     dct:title "MIT AI Risk Control Subset for AI Risk KG" ;
     dct:description """

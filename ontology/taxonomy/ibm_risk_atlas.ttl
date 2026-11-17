@@ -1,5 +1,4 @@
 @prefix atlas: <http://w3id.org/airiskkg/taxonomy/ibm-risk-atlas#> .
-@prefix pair:  <http://w3id.org/airiskkg/pair-ai#> .
 @prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
@@ -12,7 +11,7 @@
     # licence; its section 4 duties (retain notices, state changes, propagate NOTICE)
     # are met here and in /NOTICE.md.
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
-    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Derived from IBM AI Atlas Nexus, licensed Apache License 2.0 - see https://www.apache.org/licenses/LICENSE-2.0. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary."@en ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Contains material derived from IBM AI Atlas Nexus (https://github.com/IBM/ai-atlas-nexus), Copyright IBM Corporation and the AI Atlas Nexus contributors, licensed under the Apache License, Version 2.0; that material remains under Apache 2.0, and a copy of the licence is in LICENSES/Apache-2.0.txt. Changes were made: the upstream data was subset, restructured into RDF, and aligned to the PAIR-AI vocabulary."@en ;
     rdfs:label "IBM AI Risk Atlas Subset for AI Risk KG" ;
     dct:title "IBM AI Risk Atlas Subset for AI Risk KG" ;
     dct:description """
@@ -608,81 +607,3 @@ atlas:extraction-attack a nexus:Risk ;
     nexus:riskType "inference" ;
     nexus:descriptor "amplified by generative AI" ;
     rdfs:seeAlso <https://www.ibm.com/docs/en/watsonx/saas?topic=SSYOK8/wsj/ai-risk-atlas/extraction-attack.html> .
-
-# PAIR-AI mechanisms and conditions for the Atlas entries a risk pattern derives
-# from directly. Written for this knowledge base; not IBM text.
-
-atlas:improper-retraining
-    nexus:hasRiskMechanism atlas:mechanism-unvetted-feedback-into-training ;
-    nexus:hasRiskCondition atlas:condition-model-output-feeds-own-training-data .
-
-atlas:membership-inference-attack
-    nexus:hasRiskMechanism atlas:mechanism-training-membership-exposed-by-queries ;
-    nexus:hasRiskCondition atlas:condition-public-queries-reach-model-trained-on-personal-data .
-
-atlas:data-contamination
-    nexus:hasRiskMechanism atlas:mechanism-evaluation-on-training-data ;
-    nexus:hasRiskCondition atlas:condition-evaluation-reads-training-data .
-
-atlas:mechanism-unvetted-feedback-into-training
-    a pair:RiskMechanism ;
-    rdfs:label "Unvetted feedback into training"@en ;
-    dct:description "Data produced downstream of a model, its own outputs or what users did with them, flows back into the data it is trained on. Each retraining then learns partly from the model's earlier behaviour, so its errors and biases are reinforced rather than corrected unless something checks that data before it is reused."@en ;
-    nexus:mechanismForRisk atlas:improper-retraining .
-
-atlas:mechanism-training-membership-exposed-by-queries
-    a pair:RiskMechanism ;
-    rdfs:label "Training membership exposed through open queries"@en ;
-    dct:description "A model behaves measurably differently on records it was trained on than on records it has not seen. When anyone can query a model trained on records about people, comparing its answers lets them infer whose records were in the training set, and through that, facts about those people; no output has to contain the data for it to leak."@en ;
-    nexus:mechanismForRisk atlas:membership-inference-attack .
-
-atlas:mechanism-evaluation-on-training-data
-    a pair:RiskMechanism ;
-    rdfs:label "Evaluation over data the model learned from"@en ;
-    dct:description "An evaluation that reads the data a model was trained on, or a superset of it, scores the model partly on examples it has already seen. The result overstates how the model will perform on new data, and the release decision it supports rests on that overstatement."@en ;
-    nexus:mechanismForRisk atlas:data-contamination .
-
-atlas:condition-model-output-feeds-own-training-data
-    a nexus:RiskCondition ;
-    skos:prefLabel "Data downstream of the model a training step produces is read by that training step again, with no data validation on the way"@en ;
-    nexus:conditionForRisk atlas:improper-retraining .
-
-atlas:condition-public-queries-reach-model-trained-on-personal-data
-    a nexus:RiskCondition ;
-    skos:prefLabel "A model trained on personal data answers queries that originate from a public population"@en ;
-    nexus:conditionForRisk atlas:membership-inference-attack .
-
-atlas:condition-evaluation-reads-training-data
-    a nexus:RiskCondition ;
-    skos:prefLabel "An evaluation step reads data that the evaluated model's training input was taken from"@en ;
-    nexus:conditionForRisk atlas:data-contamination .
-
-atlas:personal-information-in-prompt
-    nexus:hasRiskMechanism atlas:mechanism-protected-content-leaves-for-a-provider ;
-    nexus:hasRiskCondition atlas:condition-protected-content-reaches-external-model .
-
-atlas:extraction-attack
-    nexus:hasRiskMechanism atlas:mechanism-model-copied-through-open-queries ;
-    nexus:hasRiskCondition atlas:condition-public-queries-reach-in-house-model-unthrottled .
-
-atlas:mechanism-protected-content-leaves-for-a-provider
-    a pair:RiskMechanism ;
-    rdfs:label "Protected content leaves for a model provider"@en ;
-    dct:description "A step sends its inputs to a model run by a third party. Whatever personal or confidential content is among them leaves the organisation at that point, under the provider's retention and processing terms rather than the deployer's, and the architecture shows nothing removing it first."@en ;
-    nexus:mechanismForRisk atlas:personal-information-in-prompt .
-
-atlas:mechanism-model-copied-through-open-queries
-    a pair:RiskMechanism ;
-    rdfs:label "A model copied through open queries"@en ;
-    dct:description "A model the organisation trained answers whoever asks, as often as they ask. Enough input and output pairs are a training set for a surrogate that behaves like the original, so the investment, and any weakness the copy can then be probed for offline, is exposed without the weights ever leaving."@en ;
-    nexus:mechanismForRisk atlas:extraction-attack .
-
-atlas:condition-protected-content-reaches-external-model
-    a nexus:RiskCondition ;
-    skos:prefLabel "A step using a third-party model reads content carrying a personal or confidential classification"@en ;
-    nexus:conditionForRisk atlas:personal-information-in-prompt .
-
-atlas:condition-public-queries-reach-in-house-model-unthrottled
-    a nexus:RiskCondition ;
-    skos:prefLabel "A model trained in the system answers public queries with no rate limit represented"@en ;
-    nexus:conditionForRisk atlas:extraction-attack .

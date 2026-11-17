@@ -5,6 +5,7 @@
 @prefix ai:     <https://w3id.org/dpv/ai#> .
 @prefix dpv:    <https://w3id.org/dpv#> .
 @prefix airo:   <https://w3id.org/airo#> .
+@prefix nexus:  <http://w3id.org/airiskkg/taxonomy/nexus#> .
 @prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:    <http://purl.org/dc/terms/> .
 @prefix vann:   <http://purl.org/vocab/vann/> .
@@ -75,6 +76,11 @@ pair:RiskPattern a owl:Class ;
 pair:RiskMechanism a owl:Class ;
     rdfs:label "Risk Mechanism"@en ;
     rdfs:comment "The curated causal account of how or why a matched configuration under the observed conditions can lead to harm."@en .
+
+pair:RiskCondition a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Risk Condition"@en ;
+    rdfs:comment "A precondition, stated in words, under which a taxonomy entry's risk can arise. An applicability condition operationalizes one or more of them."@en .
 
 pair:PatternImplementation a owl:Class ;
     rdfs:label "Pattern Implementation"@en ;
@@ -226,13 +232,39 @@ pair:NonTechnicalControl a skos:Concept ;
 
 pair:operationalizesRiskCondition a owl:ObjectProperty ;
     rdfs:label "operationalizes risk condition"@en ;
-    rdfs:comment "Links an applicability condition to the external taxonomy risk-condition entry it operationalizes."@en ;
+    rdfs:comment "Links an applicability condition to the risk condition it operationalizes."@en ;
     rdfs:domain pair:ApplicabilityCondition ;
-    rdfs:range rdfs:Resource .
+    rdfs:range pair:RiskCondition .
+
+pair:hasRiskMechanism a owl:ObjectProperty ;
+    rdfs:label "has risk mechanism"@en ;
+    rdfs:comment "Links a taxonomy entry to the risk mechanism PAIR-AI states for it. A risk pattern derived from that entry carries the same mechanism."@en ;
+    rdfs:domain nexus:RiskTaxonomyEntry ;
+    rdfs:range pair:RiskMechanism ;
+    owl:inverseOf pair:mechanismForRisk .
+
+pair:mechanismForRisk a owl:ObjectProperty ;
+    rdfs:label "mechanism for risk"@en ;
+    rdfs:comment "Links a risk mechanism to the taxonomy entry it explains."@en ;
+    rdfs:domain pair:RiskMechanism ;
+    rdfs:range nexus:RiskTaxonomyEntry .
+
+pair:hasRiskCondition a owl:ObjectProperty ;
+    rdfs:label "has risk condition"@en ;
+    rdfs:comment "Links a taxonomy entry to a risk condition PAIR-AI states for it."@en ;
+    rdfs:domain nexus:RiskTaxonomyEntry ;
+    rdfs:range pair:RiskCondition ;
+    owl:inverseOf pair:conditionForRisk .
+
+pair:conditionForRisk a owl:ObjectProperty ;
+    rdfs:label "condition for risk"@en ;
+    rdfs:comment "Links a risk condition to the taxonomy entry it supports."@en ;
+    rdfs:domain pair:RiskCondition ;
+    rdfs:range nexus:RiskTaxonomyEntry .
 
 pair:derivedFrom a owl:ObjectProperty ;
     rdfs:label "derived from"@en ;
-    rdfs:comment "Derivation provenance for curated motifs and risk patterns. Its object is always an entity - a taxonomy concept or a pair:DesignPatternCitation - never a document URL, which is what dct:source is for."@en ;
+    rdfs:comment "What a curated motif or risk pattern is anchored to: the design pattern a motif's structure was read off, or the taxonomy entry a risk pattern operationalizes. A citation, not a claim that content was copied: the pattern's description, mechanism and conditions are written for PAIR-AI. Its object is always an entity - a taxonomy concept or a pair:DesignPatternCitation - never a document URL."@en ;
     rdfs:domain [
         a owl:Class ;
         owl:unionOf (pair:GraphMotif pair:RiskPattern)

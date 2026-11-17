@@ -1,7 +1,6 @@
 @prefix asi:   <http://w3id.org/airiskkg/taxonomy/owasp-asi#> .
 @prefix owasp: <http://w3id.org/airiskkg/taxonomy/owasp-llm#> .
 @prefix nexus: <http://w3id.org/airiskkg/taxonomy/nexus#> .
-@prefix pair:  <http://w3id.org/airiskkg/pair-ai#> .
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
@@ -14,7 +13,8 @@
     RDF representation of selected OWASP Top 10 for Agentic Applications 2026 (ASI)
     entries, for the agentic layer of graph-pattern-based AI risk assessment.
 
-    All ten entries are catalogued. Nine carry mechanisms and conditions, because a
+    All ten entries are catalogued. Nine carry mechanisms and conditions (in
+    ontology/patterns/risk_mechanisms.ttl), because a
     risk pattern derives from each: their structural signature is something a
     submitted architecture graph can show. ASI10 Rogue Agents is catalogued only. It
     is defined by behavioural divergence after deployment, which has no shape in a
@@ -34,14 +34,15 @@
     # 2026, which is published under CC BY-SA 4.0; ShareAlike binds adaptations, so
     # only entry identifiers, numbering, and links to the official material are
     # reused - facts and short names, not protected expression. Every
-    # skos:definition, RiskMechanism, and RiskCondition below is written from
-    # scratch for PAIR-AI's structural model and is NOT a copy or close paraphrase
-    # of OWASP's descriptions, mitigation lists, or attack scenarios.
+    # skos:definition below is written from scratch for PAIR-AI's structural model
+    # and is NOT a copy or close paraphrase of OWASP's descriptions, mitigation
+    # lists, or attack scenarios. The risk mechanisms and risk conditions are
+    # PAIR-AI's and live in ontology/patterns/risk_mechanisms.ttl.
     #
     # Anyone extending this file must keep that discipline: reference OWASP, never
     # reproduce its prose. See /NOTICE.md.
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
-    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Entry identifiers and numbering are referenced from the OWASP Top 10 for Agentic Applications 2026 (OWASP GenAI Security Project - Agentic Security Initiative), which is licensed CC BY-SA 4.0 - see https://creativecommons.org/licenses/by-sa/4.0/. Changes were made: only identifiers, numbering, and links are reused; all definitions and risk mechanisms here are original."@en ;
+    dct:rights "PAIR-AI original modelling work, CC BY 4.0. Entry identifiers and numbering are referenced from the OWASP Top 10 for Agentic Applications 2026 (OWASP GenAI Security Project - Agentic Security Initiative), which is licensed CC BY-SA 4.0 - see https://creativecommons.org/licenses/by-sa/4.0/. Changes were made: only identifiers, numbering, and links are reused; all definitions here are original."@en ;
     dct:bibliographicCitation "OWASP GenAI Security Project. (2025). OWASP Top 10 for Agentic Applications 2026 (Version 2026). https://genai.owasp.org/"@en ;
 
     dct:source <https://genai.owasp.org/> ;
@@ -64,7 +65,7 @@ asi:asi01-agent-goal-hijack a nexus:Risk ;
 
 asi:asi02-tool-misuse a nexus:Risk ;
     skos:prefLabel "ASI02:2026 Tool Misuse and Exploitation" ;
-    skos:definition "An agent applies a tool it is genuinely permitted to use in a way the designer did not intend, because nothing between the decision and the call constrains scope, cost, or reversibility." ;
+    skos:definition "An agent calls a tool it is allowed to call, but for the wrong purpose, too often, or with arguments nobody meant, because nothing between the decision and the call limits what the call may do." ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     skos:topConceptOf asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
@@ -89,72 +90,6 @@ asi:asi07-insecure-inter-agent-communication a nexus:Risk ;
     nexus:tag "asi07-insecure-inter-agent-communication" ;
     rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
 
-asi:asi02-tool-misuse
-    nexus:hasRiskMechanism asi:mechanism-unconstrained-tool-execution ;
-    nexus:hasRiskCondition asi:condition-tool-invocation-without-mediation .
-
-asi:asi06-memory-and-context-poisoning
-    nexus:hasRiskMechanism asi:mechanism-persisted-context-corruption ;
-    nexus:hasRiskCondition asi:condition-untrusted-content-written-to-agent-memory ,
-        asi:condition-agent-memory-reread-into-generation .
-
-asi:mechanism-unconstrained-tool-execution
-    a pair:RiskMechanism ;
-    rdfs:label "Unconstrained tool execution from model decisions"@en ;
-    dct:description "A model decision is carried into an external action with nothing in between that can narrow, price, pause, or refuse it, so an incorrect or manipulated decision becomes an effect on other systems."@en ;
-    nexus:mechanismForRisk asi:asi02-tool-misuse .
-
-asi:mechanism-persisted-context-corruption
-    a pair:RiskMechanism ;
-    rdfs:label "Corruption of persisted agent context"@en ;
-    dct:description "Because retained content is read back into later generation, anything unchecked that reaches the store outlives the turn that produced it and shapes reasoning the architecture no longer traces to its origin."@en ;
-    nexus:mechanismForRisk asi:asi06-memory-and-context-poisoning .
-
-asi:condition-tool-invocation-without-mediation
-    a nexus:RiskCondition ;
-    skos:prefLabel "A model-driven step reaches a tool or state change with no mediating control"@en ;
-    nexus:conditionForRisk asi:asi02-tool-misuse .
-
-asi:condition-untrusted-content-written-to-agent-memory
-    a nexus:RiskCondition ;
-    skos:prefLabel "Content of untrusted or generated provenance is written to agent memory"@en ;
-    nexus:conditionForRisk asi:asi06-memory-and-context-poisoning .
-
-asi:condition-agent-memory-reread-into-generation
-    a nexus:RiskCondition ;
-    skos:prefLabel "Agent memory is read back into a later generation context"@en ;
-    nexus:conditionForRisk asi:asi06-memory-and-context-poisoning .
-
-asi:asi01-agent-goal-hijack
-    nexus:hasRiskMechanism asi:mechanism-goal-redirection-through-consumed-content ;
-    nexus:hasRiskCondition asi:condition-untrusted-content-reaches-planning .
-
-asi:asi07-insecure-inter-agent-communication
-    nexus:hasRiskMechanism asi:mechanism-unauthenticated-agent-handoff ;
-    nexus:hasRiskCondition asi:condition-agent-handoff-without-validation .
-
-asi:mechanism-goal-redirection-through-consumed-content
-    a pair:RiskMechanism ;
-    rdfs:label "Goal redirection through consumed content"@en ;
-    dct:description "The step that decides what to do next reads the same channel as ordinary content, so instructions arriving as data are weighed alongside the principal's objective. Nothing downstream can distinguish a hijacked plan from a legitimate one: the agent's later steps are correct execution of an objective it should never have adopted, which is what separates this from output-level manipulation."@en ;
-    nexus:mechanismForRisk asi:asi01-agent-goal-hijack .
-
-asi:mechanism-unauthenticated-agent-handoff
-    a pair:RiskMechanism ;
-    rdfs:label "Unauthenticated handoff between agents"@en ;
-    dct:description "Work crosses from one agent to another as a message with no represented step that establishes where it came from or whether it is well formed. The receiving agent's own permissions are then applied to instructions it did not verify, so trust granted to the sending agent is effectively extended to whoever could write to the channel."@en ;
-    nexus:mechanismForRisk asi:asi07-insecure-inter-agent-communication .
-
-asi:condition-untrusted-content-reaches-planning
-    a nexus:RiskCondition ;
-    skos:prefLabel "Content of untrusted provenance reaches the step that decides the agent's next action"@en ;
-    nexus:conditionForRisk asi:asi01-agent-goal-hijack .
-
-asi:condition-agent-handoff-without-validation
-    a nexus:RiskCondition ;
-    skos:prefLabel "A message passes between agents with no represented validation or policy step"@en ;
-    nexus:conditionForRisk asi:asi07-insecure-inter-agent-communication .
-
 asi:asi03-identity-and-privilege-abuse a nexus:Risk ;
     skos:prefLabel "ASI03:2026 Identity & Privilege Abuse" ;
     skos:definition "An agent acts with authority it was handed rather than authority scoped to its task, so whoever can steer the agent inherits that authority as well." ;
@@ -166,7 +101,7 @@ asi:asi03-identity-and-privilege-abuse a nexus:Risk ;
 
 asi:asi04-agentic-supply-chain a nexus:Risk ;
     skos:prefLabel "ASI04:2026 Agentic Supply Chain Vulnerabilities" ;
-    skos:definition "Components an agent takes in while it runs, such as tools, tool descriptions, prompt templates, registries and peer agents, come from parties outside the deployer's control, and a tampered one steers the agent from inside its own execution." ;
+    skos:definition "An agent assembles part of itself at run time from pieces others supply, so whoever can alter one of those pieces can steer the agent from inside, without passing through any input its users give it." ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     skos:topConceptOf asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
@@ -184,7 +119,7 @@ asi:asi05-unexpected-code-execution a nexus:Risk ;
 
 asi:asi08-cascading-failures a nexus:Risk ;
     skos:prefLabel "ASI08:2026 Cascading Failures" ;
-    skos:definition "One agent's fault is passed to other agents and acted on at each step, so a single error spreads across systems faster than anyone checks it." ;
+    skos:definition "An error made by one agent is handed on and acted on by the next, and by the one after, so its effects multiply along the chain before any step questions it." ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     skos:topConceptOf asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
@@ -202,85 +137,10 @@ asi:asi09-human-agent-trust-exploitation a nexus:Risk ;
 
 asi:asi10-rogue-agents a nexus:Risk ;
     skos:prefLabel "ASI10:2026 Rogue Agents" ;
-    skos:definition "An agent's behaviour departs from its intended function after deployment while it keeps operating within the access it was granted." ;
+    skos:definition "An agent goes on working inside the access it was given while what it does drifts away from what it was built to do." ;
     rdfs:comment "Catalogued, not detected. The entry is defined by behavioural divergence after deployment, which a represented architecture cannot show, so no risk pattern derives from it."@en ;
     skos:inScheme asi:OWASP_Agentic_Top_10_2026 ;
     skos:topConceptOf asi:OWASP_Agentic_Top_10_2026 ;
     nexus:isDefinedByTaxonomy asi:OWASP_Agentic_Top_10_2026 ;
     nexus:tag "asi10-rogue-agents" ;
     rdfs:seeAlso <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> .
-
-asi:asi03-identity-and-privilege-abuse
-    nexus:hasRiskMechanism asi:mechanism-authority-inherited-across-handoff ;
-    nexus:hasRiskCondition asi:condition-credential-crosses-agent-boundary .
-
-asi:asi04-agentic-supply-chain
-    nexus:hasRiskMechanism asi:mechanism-external-component-steers-agent ;
-    nexus:hasRiskCondition asi:condition-external-component-reaches-planning .
-
-asi:asi05-unexpected-code-execution
-    nexus:hasRiskMechanism asi:mechanism-agent-output-run-as-code ;
-    nexus:hasRiskCondition asi:condition-agent-plan-executed-as-code .
-
-asi:asi08-cascading-failures
-    nexus:hasRiskMechanism asi:mechanism-fault-propagation-across-agents ;
-    nexus:hasRiskCondition asi:condition-agent-decision-propagates-without-checkpoint .
-
-asi:asi09-human-agent-trust-exploitation
-    nexus:hasRiskMechanism asi:mechanism-approval-on-the-agents-account ;
-    nexus:hasRiskCondition asi:condition-approval-sees-only-agent-output .
-
-asi:mechanism-authority-inherited-across-handoff
-    a pair:RiskMechanism ;
-    rdfs:label "Authority inherited across a hand-off"@en ;
-    dct:description "A credential that authorises one agent also authorises the agent it hands work to, or is kept where later work can reach it. The receiving step then acts with access sized for a different task, and anything able to steer that step can use it: a narrow request carries broad authority, and nothing in between checks it again."@en ;
-    nexus:mechanismForRisk asi:asi03-identity-and-privilege-abuse .
-
-asi:mechanism-external-component-steers-agent
-    a pair:RiskMechanism ;
-    rdfs:label "Externally supplied component steering agent decisions"@en ;
-    dct:description "The step that decides what an agent does reads a component supplied from outside, such as a tool catalogue, a prompt template, a package or a peer's description of itself, and treats it as part of the agent's own configuration. A component altered upstream then redirects the agent without any input from its users, and the architecture shows no point at which the component is checked before it is trusted."@en ;
-    nexus:mechanismForRisk asi:asi04-agentic-supply-chain .
-
-asi:mechanism-agent-output-run-as-code
-    a pair:RiskMechanism ;
-    rdfs:label "Agent output executed as code"@en ;
-    dct:description "A step runs what an agent planned as code or a command. Whatever shaped the plan, whether a user, retrieved content or a model error, is then executed with that step's privileges, and with no validation, sandbox gate or approval in between nothing distinguishes a harmful instruction from an intended one."@en ;
-    nexus:mechanismForRisk asi:asi05-unexpected-code-execution .
-
-asi:mechanism-fault-propagation-across-agents
-    a pair:RiskMechanism ;
-    rdfs:label "Fault propagation across agents"@en ;
-    dct:description "A decision made by one agent is passed on to others and acted on at each hop. When no step on the path can pause, limit or check what is passed along, one wrong decision becomes several actions, and every agent that receives it adds its own reach to the error."@en ;
-    nexus:mechanismForRisk asi:asi08-cascading-failures .
-
-asi:mechanism-approval-on-the-agents-account
-    a pair:RiskMechanism ;
-    rdfs:label "Approval given on the agent's own account"@en ;
-    dct:description "The person asked to approve an action sees only what the agent produced: its plan, its summary, its rationale. Their approval can confirm the agent's account but cannot test it, so a recommendation that is wrong or manipulated passes the human check and leaves with the human's authority attached."@en ;
-    nexus:mechanismForRisk asi:asi09-human-agent-trust-exploitation .
-
-asi:condition-credential-crosses-agent-boundary
-    a nexus:RiskCondition ;
-    skos:prefLabel "A credential is used on both sides of an agent hand-off, or is written to agent memory"@en ;
-    nexus:conditionForRisk asi:asi03-identity-and-privilege-abuse .
-
-asi:condition-external-component-reaches-planning
-    a nexus:RiskCondition ;
-    skos:prefLabel "A component supplied from outside the system is read by the step that decides an agent's action, with no verification step before it"@en ;
-    nexus:conditionForRisk asi:asi04-agentic-supply-chain .
-
-asi:condition-agent-plan-executed-as-code
-    a nexus:RiskCondition ;
-    skos:prefLabel "A step that executes code runs an agent's plan with no execution guardrail, validation or approval in between"@en ;
-    nexus:conditionForRisk asi:asi05-unexpected-code-execution .
-
-asi:condition-agent-decision-propagates-without-checkpoint
-    a nexus:RiskCondition ;
-    skos:prefLabel "One agent's decision is handed on twice before another agent acts on it, with no checkpoint on the way"@en ;
-    nexus:conditionForRisk asi:asi08-cascading-failures .
-
-asi:condition-approval-sees-only-agent-output
-    a nexus:RiskCondition ;
-    skos:prefLabel "Every input to the human approval step was produced by the agent whose action it approves"@en ;
-    nexus:conditionForRisk asi:asi09-human-agent-trust-exploitation .

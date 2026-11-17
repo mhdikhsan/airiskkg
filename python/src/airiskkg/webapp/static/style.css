@@ -2422,6 +2422,7 @@ body.editor-hidden .pane-head { display: none; }
 .lib-card-actions { display: flex; gap: 8px; margin-left: auto; }
 
 /* The mechanism and what raises it, one panel. */
+.lib-mech-name { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: var(--text); }
 .lib-mech-text { margin: 0; font-size: 14px; line-height: 1.65; color: #c5cad4; }
 .lib-mech-when { padding-top: 12px; border-top: 1px dashed var(--border); }
 .lib-when-list { margin: 6px 0 0; padding-left: 18px; font-size: 13.5px; line-height: 1.6; color: var(--text); }
@@ -2429,7 +2430,6 @@ body.editor-hidden .pane-head { display: none; }
 
 .lib-harm { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 .lib-domain { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-.lib-domain.also { width: 100%; padding-top: 12px; border-top: 1px dashed var(--border); }
 
 .lib-controls { display: flex; flex-direction: column; gap: 10px; }
 .lib-control {
@@ -3475,7 +3475,7 @@ body.risk-list-page { display: block; height: auto; min-height: 100%; overflow: 
 .rl-entry h3 a { color: inherit; text-decoration: none; }
 .rl-entry h3 a:hover { text-decoration: underline; }
 .rl-entry:target { border-color: var(--accent); }
-.rl-source { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 6px; }
+.rl-source { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .rl-lede { margin: 0 0 8px; font-size: 13px; line-height: 1.45; color: var(--text-dim); }
 .rl-entry dl { margin: 0; display: grid; gap: 3px; font-size: 12.5px; }
 .rl-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; }

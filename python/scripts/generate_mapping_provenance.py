@@ -216,6 +216,13 @@ MAPPING_PREDICATES = (
 )
 
 
+def _licence_of(block: dict) -> str:
+    """IBM's Nexus sets are Apache 2.0; Eticas publishes CC BY 4.0, as does PAIR-AI."""
+    if block["tsv"]:
+        return "https://www.apache.org/licenses/LICENSE-2.0"
+    return "https://creativecommons.org/licenses/by/4.0/"
+
+
 def _prefixes(text: str) -> str:
     return "\n".join(line for line in text.splitlines() if line.startswith("@prefix"))
 
@@ -363,6 +370,10 @@ def main(argv: list[str] | None = None) -> int:
         "@prefix prov:   <http://www.w3.org/ns/prov#> .",
         "@prefix pairm:  <http://w3id.org/airiskkg/taxonomy/mappings/provenance#> .",
         "",
+        "<http://w3id.org/airiskkg/taxonomy/mappings/provenance#> a owl:Ontology ;",
+        "    dct:license <https://creativecommons.org/licenses/by/4.0/> ;",
+        '    dct:rights "PAIR-AI provenance records, CC BY 4.0. Each mapping set states the licence of the mappings it records in sssom:license; the Nexus sets are IBM AI Atlas Nexus data under the Apache License 2.0 (see LICENSES/Apache-2.0.txt)."@en .',
+        "",
     ]
 
     seen_sets = []
@@ -372,6 +383,7 @@ def main(argv: list[str] | None = None) -> int:
         seen_sets.append(block["set"])
         lines.append(f"pairm:{block['set']} a sssom:MappingSet ;")
         lines.append(f'    rdfs:label "{block["label"]}"@en ;')
+        lines.append(f"    sssom:license <{_licence_of(block)}> ;")
         if block["tsv"]:
             lines.append(f"    dct:source <{NEXUS_TSV}{block['tsv']}> ;")
         if block.get("source"):

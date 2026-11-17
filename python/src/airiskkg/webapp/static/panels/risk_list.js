@@ -18,12 +18,6 @@ function entryOf(risk, motifName) {
   const told = describe(risk);
   return el("section", { class: "rl-entry", id: risk.id }, [
     el("h3", {}, el("a", { href: "#" + risk.id }, shortName(risk.label, RISK_SUFFIX))),
-    (risk.derivedFrom || []).length
-      ? el("div", { class: "rl-source" }, [
-        el("span", { class: "lib-meta-lead" }, "source"),
-        ...risk.derivedFrom.map((ref) => refChip(ref, "tax")),
-      ])
-      : null,
     told.text
       ? el("p", { class: "rl-lede" }, [
         told.from ? el("span", { class: "lib-from" }, told.from + " — ") : null,
@@ -37,6 +31,10 @@ function entryOf(risk, motifName) {
       row("Suggested controls", listed((risk.controls || []).map((c) => c.label), "none")),
       row("Related motifs", listed(risk.motifs.map(motifName),
         "any motif match whose conditions hold")),
+      (risk.derivedFrom || []).length
+        ? row("Primary reference", el("span", { class: "rl-source" },
+          risk.derivedFrom.map((ref) => refChip(ref, "tax"))))
+        : null,
     ]),
   ]);
 }

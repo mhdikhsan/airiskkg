@@ -509,6 +509,8 @@ def main() -> int:
         ("ontology/patterns/risk_pattern_library.ttl",
          f"the {len(risk_patterns)} risk patterns, the {len(controls)} suggested controls, "
          "and the control-to-MIT bridge"),
+        ("ontology/patterns/risk_mechanisms.ttl",
+         "the risk mechanisms and risk conditions stated for the taxonomy entries risk patterns derive from"),
         ("ontology/patterns/control_mitigation_layer.ttl",
          "technical/non-technical classification and `realizedByMotif`"),
         ("ontology/core/pair_ai_pattern.ttl", "the pattern meta-vocabulary: roles, predicates, data categories"),

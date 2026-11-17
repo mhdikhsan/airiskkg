@@ -4393,7 +4393,7 @@ def test_every_risk_is_listed_on_one_page_under_the_name_the_library_gives_it(pa
     assert sorted(listed["names"]) == sorted(rail["names"]), (
         "the page names a risk differently from the library rail")
     assert listed["rows"] == ["Risk mechanism", "Raised when", "May lead to",
-                              "Suggested controls", "Related motifs"], listed["rows"]
+                              "Suggested controls", "Related motifs", "Primary reference"], listed["rows"]
     assert listed["inView"], f"/risks#{listed['wanted']} did not open at that risk"
     assert not listed["wide"], "the page scrolls sideways"
     assert rail["linked"], "the library does not link to the page"

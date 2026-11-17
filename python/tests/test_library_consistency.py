@@ -250,7 +250,7 @@ def test_pattern_mechanism_belongs_to_its_anchor(aligned) -> None:
         mech = aligned.value(rp, PAIR.hasMechanism)
         if anchor is None or mech is None:
             continue
-        if (anchor, NEXUS.hasRiskMechanism, mech) not in aligned:
+        if (anchor, PAIR.hasRiskMechanism, mech) not in aligned:
             offenders.append(f"{rp}: mechanism {mech} is not the mechanism of anchor {anchor}")
     assert not offenders, "\n".join(sorted(offenders))
 
@@ -261,7 +261,7 @@ def test_pattern_conditions_operationalize_anchor_conditions(aligned) -> None:
         anchor = _anchor(aligned, rp)
         if anchor is None:
             continue
-        anchor_conditions = set(aligned.objects(anchor, NEXUS.hasRiskCondition))
+        anchor_conditions = set(aligned.objects(anchor, PAIR.hasRiskCondition))
         for cond in aligned.objects(rp, PAIR.hasApplicabilityCondition):
             if (rp, cond) in CONDITION_EXCEPTIONS:
                 continue
@@ -676,6 +676,21 @@ def test_every_motif_and_risk_pattern_states_its_source(libraries) -> None:
         f"{len(missing_source)} entries without dct:source or pair:derivedFrom: "
         + ", ".join(missing_source)
     )
+
+
+def test_a_risk_pattern_describes_itself_and_cites_no_document(libraries) -> None:
+    """A borrowed definition showed PAIR-AI's text under OWASP's name, and a
+    document URL in dct:source claimed the content came from that document. A
+    risk pattern names its catalogue entry by pair:derivedFrom, as a citation."""
+    offenders = []
+    for pattern in sorted(libraries.subjects(RDF.type, PAIR.RiskPattern), key=str):
+        if libraries.value(pattern, DCTERMS.description) is None:
+            offenders.append(f"{pattern}: no dct:description of its own")
+        offenders.extend(
+            f"{pattern}: dct:source {source}"
+            for source in libraries.objects(pattern, DCTERMS.source)
+        )
+    assert not offenders, "\n".join(offenders)
 
 
 def test_derived_from_points_at_an_entity_never_at_a_document(libraries, aligned) -> None:

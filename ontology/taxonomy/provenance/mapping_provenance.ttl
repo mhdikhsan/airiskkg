@@ -27,69 +27,85 @@
 @prefix prov:   <http://www.w3.org/ns/prov#> .
 @prefix pairm:  <http://w3id.org/airiskkg/taxonomy/mappings/provenance#> .
 
+<http://w3id.org/airiskkg/taxonomy/mappings/provenance#> a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights "PAIR-AI provenance records, CC BY 4.0. Each mapping set states the licence of the mappings it records in sssom:license; the Nexus sets are IBM AI Atlas Nexus data under the Apache License 2.0 (see LICENSES/Apache-2.0.txt)."@en .
+
 pairm:nexus-ibm2owasp a sssom:MappingSet ;
     rdfs:label "IBM Atlas to OWASP LLM Top 10 (Nexus)"@en ;
+    sssom:license <https://www.apache.org/licenses/LICENSE-2.0> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/ibm2owasp.tsv> ;
     dct:description "Adopted verbatim from the upstream SSSOM set. Predicates and directions are reproduced as curated there, not re-derived here."@en ;
     sssom:mapping_tool "upstream" .
 
 pairm:nexus-ibm2mit a sssom:MappingSet ;
     rdfs:label "IBM Atlas to MIT AI Risk Repository (Nexus)"@en ;
+    sssom:license <https://www.apache.org/licenses/LICENSE-2.0> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/mit-ai-risk-repository_ibm-risk-atlas.tsv> ;
     dct:description "Adopted verbatim from the upstream SSSOM set. Predicates and directions are reproduced as curated there, not re-derived here."@en ;
     sssom:mapping_tool "upstream" .
 
 pairm:nexus-asi2owasp a sssom:MappingSet ;
     rdfs:label "OWASP ASI to OWASP LLM Top 10 (Nexus)"@en ;
+    sssom:license <https://www.apache.org/licenses/LICENSE-2.0> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/owasp_asi2owasp_llm.tsv> ;
     dct:description "Adopted verbatim from the upstream SSSOM set. Predicates and directions are reproduced as curated there, not re-derived here."@en ;
     sssom:mapping_tool "upstream" .
 
 pairm:nexus-ibm2nist a sssom:MappingSet ;
     rdfs:label "IBM Atlas to NIST AI 600-1 (Nexus)"@en ;
+    sssom:license <https://www.apache.org/licenses/LICENSE-2.0> ;
     dct:source <https://github.com/IBM/ai-atlas-nexus/blob/main/src/ai_atlas_nexus/data/mappings/ibm2nistgenai.tsv> ;
     dct:description "Adopted verbatim from the upstream SSSOM set. Predicates and directions are reproduced as curated there, not re-derived here."@en ;
     sssom:mapping_tool "upstream" .
 
 pairm:pair-ai-curation a sssom:MappingSet ;
     rdfs:label "PAIR-AI project curation"@en ;
+    sssom:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:description "Curated by this project because no upstream SSSOM row exists. Each mapping carries a stated rationale in the source file; no measured confidence is claimed."@en ;
     sssom:mapping_tool "pair-ai" .
 
 pairm:pair-ai-risk-to-control-embedding a sssom:MappingSet ;
     rdfs:label "OWASP risk to MIT control family, embedding-derived"@en ;
+    sssom:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:source "PAIR-AI risk-to-mitigation CSV, data/mappings/Final_Mapped_Taxonomy_Table_Output.csv (OWASP -> IBM Atlas -> MIT-action embedding mapping; 93 rows, 7 OWASP risks, 30 IBM risks, 52 MIT actions), applied 2026-07-17. Method per its own reference doc: embedding-matched, cosine top-3, UNVALIDATED - reproducible but not adjudicated. Rollup: each risk's mapped actions collected to their MIT sub-categories, mapped 1:1 to mitctrl:*, with three approximations (2.2 Model Alignment -> model-safety-engineering; 4.4 Governance Disclosure -> risk-disclosure; 4.5 Third-Party System Access -> access-management). Covers LLM01-06 and LLM09 only; LLM07/08/10 keep prior curation. Defects carried from the source: action A0973 sits in sub-category 2.3 but is tagged Category 3 (does not affect the rollup, which keys on Sub_category); OWASP ids embed the year inline (llm022025-) unlike the ontology. All 30 referenced IBM risks are declared in this project since 2026-10-09."@en ;
     dct:description "NOT validated. These links were produced without human adjudication of each row; treat as a baseline pending review, not as curated correspondences."@en ;
     sssom:mapping_tool "pair-ai" .
 
 pairm:unrecorded-risk-to-control a sssom:MappingSet ;
     rdfs:label "Atlas and MIT risk to control family, provenance unrecorded"@en ;
+    sssom:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:description "NOT validated. These links were produced without human adjudication of each row; treat as a baseline pending review, not as curated correspondences."@en ;
     sssom:mapping_tool "unrecorded" .
 
 pairm:pair-ai-risk-to-control-curated a sssom:MappingSet ;
     rdfs:label "OWASP risk to MIT control family, prior project curation"@en ;
+    sssom:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:description "Curated by this project because no upstream SSSOM row exists. Each mapping carries a stated rationale in the source file; no measured confidence is claimed."@en ;
     sssom:mapping_tool "pair-ai" .
 
 pairm:pair-ai-vocabulary-alignment a sssom:MappingSet ;
     rdfs:label "Alignments declared inline in a vocabulary file"@en ;
+    sssom:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:description "Curated by this project because no upstream SSSOM row exists. Each mapping carries a stated rationale in the source file; no measured confidence is claimed."@en ;
     sssom:mapping_tool "pair-ai" .
 
 pairm:eticas-published a sssom:MappingSet ;
     rdfs:label "Eticas AI Risk Taxonomy cross-walk, as published"@en ;
+    sssom:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:source <https://taxonomy.eticas.ai/risk/scheme> ;
     dct:description "Adopted from the Eticas AI Risk Taxonomy (data/eticas.ttl) by generate_eticas_layer.py. Predicates and directions are reproduced as published; only targets this knowledge base declares are kept."@en ;
     sssom:mapping_tool "upstream" .
 
 pairm:pair-ai-control-bridge a sssom:MappingSet ;
     rdfs:label "PAIR-AI control catalogue to MIT mitigation family (indicative)"@en ;
+    sssom:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:description "NOT validated. These links were produced without human adjudication of each row; treat as a baseline pending review, not as curated correspondences."@en ;
     sssom:mapping_tool "pair-ai" .
 
 pairm:beam-external-vocabulary-alignment a sssom:MappingSet ;
     rdfs:label "BEAM/PAIR-AI vocabulary alignment to Boxology, DPV and AIRO"@en ;
+    sssom:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:description "Curated by this project because no upstream SSSOM row exists. Each mapping carries a stated rationale in the source file; no measured confidence is claimed."@en ;
     sssom:mapping_tool "pair-ai" .
 

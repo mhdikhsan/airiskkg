@@ -15,8 +15,8 @@
 # This is NOT the complete MIT mitigation database - it is every action the
 # cross-walk actually cites.
 #
-# LICENSING: reproduces MIT AI Risk Mitigation Database action ids and names. Same
-# unresolved item recorded in CLAUDE.md for mit_air_risk_control.ttl.
+# LICENSING: reproduces MIT AI Risk Initiative mitigation action ids and names,
+# licensed CC BY 4.0 (https://airisk.mit.edu/). See /NOTICE.md.
 
 @prefix mitact:  <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-mitigation-action#> .
 @prefix mitctrl: <http://w3id.org/airiskkg/taxonomy/mit-ai-risk-control#> .
@@ -35,6 +35,9 @@
     risk-to-mitigation cross-walk, placed under the sub-categories they belong to.
     Adds the level that the 2026-07-17 rollup collapsed away.
     """@en ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights "PAIR-AI arrangement, CC BY 4.0. Action ids and names are from the AI risk mitigation work of the MIT AI Risk Initiative, licensed CC BY 4.0 (https://airisk.mit.edu/), reached through IBM AI Atlas Nexus (Apache 2.0, Copyright IBM Corporation and the AI Atlas Nexus contributors; see LICENSES/Apache-2.0.txt). Changes were made: only the actions the PAIR-AI cross-walk cites are kept, placed under their sub-categories."@en ;
+    dct:bibliographicCitation "MIT AI Risk Initiative. (2025, July 28). Mapping AI risk mitigations: Evidence scan & draft mitigation taxonomy. https://airisk.mit.edu/blog/mapping-ai-risk-mitigations"@en ;
     dct:source <https://github.com/IBM/ai-atlas-nexus> ;
     dct:source "MIT AI Risk Mitigation Database, via data/mappings/Final_Mapped_Taxonomy_Table_Output.csv"@en .
 

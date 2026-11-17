@@ -9,6 +9,7 @@
 
 <http://w3id.org/airiskkg/shacl/process-input-contract>
     a owl:Ontology ;
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:title "PAIR-AI Business Process Input Contract"@en ;
     sh:declare [ sh:prefix "bpmn" ; sh:namespace "https://sBPMN.github.io/2.0/classes#"^^xsd:anyURI ] ,
                [ sh:prefix "bp" ; sh:namespace "https://sBPMN.github.io/2.0/properties#"^^xsd:anyURI ] ,

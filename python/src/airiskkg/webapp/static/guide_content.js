@@ -447,7 +447,7 @@ export const LIBRARY_PAGE = {
   ],
   headings: {
     description: "Description", mechanism: "Mechanism", conditions: "Conditions", motifs: "Motifs", controls: "Suggested controls",
-    taxonomy: "Taxonomy entries", source: "Source", structure: "Structure", roles: "Roles", citations: "Design pattern citations",
+    taxonomy: "Taxonomy entries", source: "Primary reference", structure: "Structure", roles: "Roles", citations: "Design pattern citations",
     riskPatterns: "AI risk patterns", definition: "Definition", parents: "Parent roles", children: "Child roles", usedBy: "Motifs that use it",
     suggestedBy: "Suggested against", realizedBy: "Candidate structure", nature: "Nature", origin: "Origin",
   },

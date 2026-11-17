@@ -13,9 +13,13 @@ ontology file's `owl:Ontology` header.
 
 <https://github.com/IBM/ai-atlas-nexus>
 
-Apache 2.0 text: <https://www.apache.org/licenses/LICENSE-2.0>
+Apache 2.0 text: [LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt), as published at
+<https://www.apache.org/licenses/LICENSE-2.0>.
 
 Copyright IBM Corporation and the AI Atlas Nexus contributors.
+
+The material derived from Nexus remains under the Apache License 2.0; PAIR-AI's own
+modelling around it is CC BY 4.0. Each file below says so in its `dct:rights`.
 
 **Changes were made.** The upstream YAML data was subset to the entries needed
 for the current assessment examples, restructured into RDF, and aligned to the
@@ -33,15 +37,41 @@ Files derived from it:
 | `ontology/taxonomy/owasp_llm.ttl` | `nexus:tag` entry identifiers only |
 | `ontology/taxonomy/taxonomy_mapping.ttl` (Section 1) | ASI <-> OWASP LLM rows (`owasp_asi2owasp_llm.tsv`) and Atlas <-> NIST rows (`ibm2nistgenai.tsv`) |
 
-> **Open item.** Apache 2.0 covers IBM's packaging, not upstream rights in
-> third-party content Nexus itself redistributes. The MIT AI Risk Repository and
-> the MIT draft mitigation taxonomy are third-party works whose own terms have
-> not been verified — and `mit_air_risk_control.ttl` reproduces the MIT
-> RiskControlGroup layer verbatim. Verify MIT's terms before publication.
+Apache 2.0 covers IBM's packaging, not the rights in the third-party content Nexus
+redistributes. Of that content, the MIT material is attributed under its own licence
+below; OWASP, NIST and Eticas have sections of their own.
+
+Apache 2.0 §4(d) asks for the contents of an upstream `NOTICE` file to be carried
+along. The Nexus repository ships none (checked 2026-11-10: no `NOTICE` at its root),
+so there is nothing further to propagate.
+
+## MIT AI Risk Initiative — CC BY 4.0
+
+Verified 2026-11-10: "Data from the MIT AI Risk Initiative is licensed under CC BY 4.0"
+(<https://airisk.mit.edu/>, site footer), and the paper is published under CC BY 4.0.
+
+> Slattery, P., Saeri, A. K., Grundy, E. A. C., Graham, J., Noetel, M., Uuk, R.,
+> Dao, J., Pour, S., Casper, S., & Thompson, N. (2026). The AI risk repository: A
+> meta-review, database, and taxonomy of risks from artificial intelligence.
+> *Patterns*, Article 101517. <https://doi.org/10.1016/j.patter.2026.101517>
 >
-> Apache 2.0 §4(d) also requires propagating the contents of any upstream
-> `NOTICE` file. Check whether the Nexus repository ships one; if it does, its
-> attribution notices belong in this file.
+> MIT AI Risk Initiative. (2025, July 28). *Mapping AI risk mitigations: Evidence
+> scan & draft mitigation taxonomy*.
+> <https://airisk.mit.edu/blog/mapping-ai-risk-mitigations>
+
+CC BY 4.0, the same licence as this repository. The material reached this project
+through IBM AI Atlas Nexus, above.
+
+| File | What is reproduced |
+| --- | --- |
+| `ontology/taxonomy/mit_ai_risk_repo.ttl` | The domain taxonomy (subset), aligned to the PAIR-AI vocabulary |
+| `ontology/taxonomy/mit_air_risk_control.ttl` | The draft mitigation taxonomy's categories and sub-categories, unchanged; the concrete controls under them are PAIR-AI's |
+| `ontology/taxonomy/mit_mitigation_action.ttl` | The 52 mitigation action ids and names the PAIR-AI cross-walk cites |
+| `data/mappings/Final_Mapped_Taxonomy_Table_Output.csv` | The same action ids and names, in the cross-walk they were mapped in |
+
+**Changes were made.** The material was subset, restructured into RDF and aligned to
+the PAIR-AI vocabulary. The mitigation sub-category page does not name a licence of its
+own, so the site-wide data licence above is the one relied on.
 
 ## OWASP Top 10 for LLM Applications 2025 — CC BY-SA 4.0
 
@@ -52,9 +82,21 @@ CC BY-SA 4.0: <https://creativecommons.org/licenses/by-sa/4.0/>
 
 **Referenced, not adapted.** `ontology/taxonomy/owasp_llm.ttl` reuses only entry
 identifiers, numbering, and links to the official entry pages — facts and short
-names, not protected expression. Every `skos:definition`, `pair:RiskMechanism`,
-and risk condition in that file is written from scratch for PAIR-AI's structural
-model.
+names, not protected expression. Every `skos:definition` in that file, and every
+`pair:RiskMechanism` and risk condition attached to an OWASP entry in
+`ontology/patterns/risk_mechanisms.ttl`, is written for PAIR-AI's structural model.
+A risk pattern cites its OWASP entry by `pair:derivedFrom`, shown as "anchored to"
+under References, never as its source.
+
+**Checked against the source text, 2026-11-10.** Every sentence of the repository
+(RDF literals, Turtle comments, documentation and interface text, 8,136 in all) was
+compared with OWASP's own text: the ten LLM 2025 entries from the project's GitHub
+repository and the Agentic Top 10 2026 publication with its two public drafts. The
+measures were the longest shared word run, 4-gram overlap, and similarity to the
+closest OWASP sentence. Eleven definitions and one mechanism that followed OWASP's
+opening sentences were rewritten. Afterwards no definition or mechanism shares more
+than a publication title with OWASP's text (longest run 7 words, the title), and none
+is closer than 0.31 to any OWASP sentence.
 
 This distinction matters: CC BY-SA's ShareAlike term binds *adaptations*, and
 this repository is CC BY 4.0. **Anyone extending the OWASP taxonomy files must

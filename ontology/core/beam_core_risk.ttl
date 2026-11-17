@@ -5,7 +5,7 @@
 @prefix owl: <http://www.w3.org/2002/07/owl#>.
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
 @prefix terms: <http://purl.org/dc/terms/> .
-@prefix airo: <https://w3id.org/airo> .
+@prefix airo: <https://w3id.org/airo#> .
 
 <http://w3id.org/beam/risk#> rdf:type owl:Ontology ;
     <http://purl.org/dc/terms/description> """  A beam extension to describe the risk components of AI systems based on existing concepts defined in the AI Risk Ontology (AIRO)."""@en ;
